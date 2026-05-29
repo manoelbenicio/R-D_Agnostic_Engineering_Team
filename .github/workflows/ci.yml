@@ -1,0 +1,65 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: lint · typecheck · unit · integration · smoke · axe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.10'
+          cache: 'npm'
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Format check
+        run: npm run format:check
+      - name: Unit + integration tests (MSW-mocked CAO)
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Bundle size budget
+        run: node scripts/check-bundle-size.mjs
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright smoke tests
+        env:
+          VITE_USE_MSW: 'true'
+          VITE_ALLOW_CANVAS2D: 'true'
+        run: npm run test:smoke
+      - name: Run Accessibility Audit
+        run: |
+          VITE_USE_MSW=true VITE_ALLOW_CANVAS2D=true npx vite --port 5173 --strictPort &
+          for i in {1..30}; do
+            curl -s http://localhost:5173 && break
+            sleep 1
+          done
+          node scripts/run-axe.mjs
+
+  design-system-policy:
+    name: design-system locked-files policy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Block design-system edits without supervisor approval
+        run: bash scripts/check-design-system-policy.sh
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+

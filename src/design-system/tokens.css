@@ -1,0 +1,411 @@
+/* ============================================================
+ * AgentVerse Design System Tokens — DSS Universal Standard v3.0
+ * ============================================================
+ * Source of truth: src/design-system/frontend/styles.css (Indra DSS canon).
+ *
+ * STRATEGY: token VALUES align 100% with DSS. Token NAMES preserve all
+ * legacy SENTINEL aliases (--cyan, --void, --threat, --ops, --amber,
+ * --text-primary/muted/dim, --card, --panel, --border, --border-accent)
+ * so the 37 consumers across the codebase continue to compile and render
+ * without edits. New DSS tokens (timing, easing, extended spacing,
+ * --radius-glass-card) are added as first-class.
+ *
+ * The SENTINEL aesthetic (scanlines, scan-sweep, kpi-glow) is retained
+ * but recolored to Indra cyan (#00B0BD).
+ * ============================================================ */
+
+:root {
+  /* ============================================================
+   * DSS — 12 Canonical Brand Swatches (no substitution)
+   * ============================================================ */
+  --indra-deep:         #002B3A;
+  --indra-dark:         #003E50;
+  --indra-primary:      #06596E;
+  --indra-secondary:    #346679;
+  --indra-teal:         #3F96AE;
+  --indra-cyan:         #00B0BD;
+  --indra-light:        #7A9CAE;
+  --indra-blue-gray:    #B3C1DA;
+  --indra-sky:          #BADFF3;
+  --indra-warm-gray:    #B0B4BD;
+  --indra-off-white:    #F2F5F6;
+  --indra-white:        #FFFFFF;
+
+  /* DSS Status palette */
+  --indra-success: #27AE60;
+  --indra-warning: #FF9800;
+  --indra-error:   #E91E63;
+  --indra-gold:    #FFC107;
+
+  /* Surface derivatives (AgentVerse extensions) */
+  --indra-border:       rgba(255, 255, 255, 0.08);
+  --indra-card-surface: rgba(0, 62, 80, 0.45);
+
+  /* ============================================================
+   * Backwards-compat SENTINEL aliases (preserved names, Indra values)
+   * ============================================================ */
+  --void:  var(--indra-deep);                  /* was #06090d */
+  --panel: rgba(0, 43, 58, 0.85);              /* was rgba(11, 15, 23, 0.7) */
+  --card:  var(--indra-card-surface);          /* was rgba(11, 15, 23, 0.65) */
+
+  --cyan:   var(--indra-cyan);                 /* was #00f0ff */
+  --amber:  var(--indra-gold);                 /* was #ffb700 */
+  --threat: var(--indra-error);                /* was #ff3b30 */
+  --ops:    var(--indra-success);              /* was #00ff66 */
+
+  --text-primary: var(--indra-white);          /* was #e2e8f0 */
+  --text-muted:   var(--indra-blue-gray);      /* was #94a3b8 */
+  --text-dim:     var(--indra-warm-gray);      /* was #64748b */
+
+  --border:        var(--indra-border);
+  --border-accent: rgba(0, 176, 189, 0.25);    /* indra-cyan @ 25% */
+
+  /* ============================================================
+   * Chromatic alpha tokens — Indra-calibrated
+   *   *-soft   ≈ 5%  → ambient halos
+   *   *-tint   ≈ 10% → badge bg, subtle fill
+   *   *-edge   ≈ 30% → focus rings, accent borders
+   * ============================================================ */
+  --cyan-soft:    rgba(0, 176, 189, 0.05);
+  --cyan-tint:    rgba(0, 176, 189, 0.10);
+  --cyan-edge:    rgba(0, 176, 189, 0.30);
+  --ops-soft:     rgba(39, 174, 96, 0.05);
+  --ops-tint:     rgba(39, 174, 96, 0.10);
+  --ops-edge:     rgba(39, 174, 96, 0.30);
+  --amber-soft:   rgba(255, 193, 7, 0.05);
+  --amber-tint:   rgba(255, 193, 7, 0.10);
+  --amber-edge:   rgba(255, 193, 7, 0.30);
+  --threat-soft:  rgba(233, 30, 99, 0.05);
+  --threat-tint:  rgba(233, 30, 99, 0.10);
+  --threat-edge:  rgba(233, 30, 99, 0.30);
+
+  /* DSS status alpha tints (15% per badge spec) */
+  --success-tint: rgba(39, 174, 96, 0.15);
+  --warning-tint: rgba(255, 152, 0, 0.15);
+  --error-tint:   rgba(233, 30, 99, 0.15);
+  --gold-tint:    rgba(255, 193, 7, 0.15);
+  --info-tint:    rgba(0, 176, 189, 0.15);
+
+  /* ============================================================
+   * Surface tokens — neutral elevation and overlays
+   * ============================================================ */
+  --surface-elevated:       rgba(255, 255, 255, 0.04);
+  --surface-elevated-hover: rgba(255, 255, 255, 0.08);
+  --surface-overlay:        rgba(0, 24, 32, 0.85);
+  --surface-input:          rgba(0, 0, 0, 0.40);
+  --surface-deep:           #001820;
+
+  /* ============================================================
+   * Typography — DSS Universal Standard
+   * Segoe UI is FIRST per DSS spec. Inter is the explicit fallback,
+   * loaded via Google Fonts in index.html.
+   * ============================================================ */
+  --font-sans:    'Segoe UI', 'Inter', -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  --font-body:    var(--font-sans);
+  --font-display: var(--font-sans);
+
+  /* DSS type scale (11/12/14/15/16/18/24/32/48 px) */
+  --text-xs:    11px;
+  --text-sm:    12px;
+  --text-base:  14px;
+  --text-md:    15px;
+  --text-lg:    16px;
+  --text-xl:    18px;
+  --text-2xl:   24px;
+  --text-3xl:   32px;
+  --text-4xl:   48px;
+
+  /* Inter / Segoe weights 300–900 */
+  --weight-light:     300;
+  --weight-regular:   400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+  --weight-extra:     800;
+  --weight-black:     900;
+
+  /* DSS line heights */
+  --leading-tight:  1.1;
+  --leading-snug:   1.3;
+  --leading-normal: 1.6;
+
+  /* DSS letter spacing */
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.05em;
+  --tracking-wider:  0.08em;
+  --tracking-widest: 0.1em;
+
+  /* ============================================================
+   * Geometry — DSS spec
+   * ============================================================ */
+  --radius-button:     0;       /* DSS sharp corporate corners (was 6px) */
+  --radius-card:       8px;     /* DSS panels (was 12px in pre-Indra) */
+  --radius-glass-card: 16px;    /* DSS glass-card */
+  --radius-badge:      9999px;  /* DSS pills */
+
+  /* DSS extended spacing scale (4–120 px) */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  28px;
+  --space-8:  32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-30: 120px;
+
+  /* ============================================================
+   * Motion — DSS timing + easing
+   * ============================================================ */
+  --duration-fast:     200ms;
+  --duration-normal:   300ms;
+  --duration-slow:     500ms;
+  --duration-emphasis: 800ms;
+
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============================================================
+ * Smooth scroll (DSS — ISSUE-012)
+ * ============================================================ */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+/* ============================================================
+ * Section rhythm utilities (DSS — ISSUE-011)
+ * ============================================================ */
+.section {
+  padding: var(--space-30) 0;
+}
+.section--alt {
+  background: var(--indra-dark);
+}
+.section--light {
+  background: var(--indra-off-white);
+}
+.section-title {
+  font-size: 40px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--indra-white);
+  font-family: var(--font-display);
+}
+.section-eyebrow {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--indra-cyan);
+  margin-bottom: var(--space-3);
+}
+
+/* ============================================================
+ * Motion infrastructure — DSS [data-animate] (ISSUE-003)
+ * Pair with useDataAnimateObserver() from @/design-system to toggle
+ * .animate-in as elements scroll into view.
+ * ============================================================ */
+[data-animate] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity var(--duration-slow) var(--ease-out),
+              transform var(--duration-slow) var(--ease-out);
+  will-change: opacity, transform;
+}
+[data-animate].animate-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* DSS stagger utilities — pair with [data-animate] siblings */
+.stagger-1 { transition-delay: 0ms;   }
+.stagger-2 { transition-delay: 80ms;  }
+.stagger-3 { transition-delay: 160ms; }
+.stagger-4 { transition-delay: 240ms; }
+.stagger-5 { transition-delay: 320ms; }
+
+/* DSS keyframes (showcase parity) */
+@keyframes indra-fade-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes indra-slide-in-x {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ============================================================
+ * Ambient effects — recolored to Indra cyan #00B0BD
+ * (preserved from prior SENTINEL aesthetic)
+ * ============================================================ */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+.scanlines::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px;
+  z-index: 99;
+  pointer-events: none;
+}
+
+.scan-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.scan-sweep::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: -100px;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: rgba(0, 176, 189, 0.2);
+  box-shadow: 0 0 10px rgba(0, 176, 189, 0.5);
+  z-index: 100;
+  pointer-events: none;
+  animation: scan-sweep-anim 6s linear infinite;
+}
+@keyframes scan-sweep-anim {
+  0%   { top: -100px; }
+  100% { top: 110%; }
+}
+
+.kpi-glow {
+  box-shadow: 0 0 15px rgba(0, 176, 189, 0.15);
+  animation: kpi-glow-pulse 2s infinite ease-in-out;
+}
+@keyframes kpi-glow-pulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(0, 176, 189, 0.15); }
+  50%      { box-shadow: 0 0 25px rgba(0, 176, 189, 0.35); }
+}
+
+/* ============================================================
+ * Reduced-motion overrides
+ * ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .scan-sweep::before {
+    animation: none !important;
+    top: 50% !important;
+    height: 1px !important;
+    opacity: 0.3 !important;
+  }
+  .kpi-glow {
+    animation: none !important;
+    box-shadow: 0 0 15px rgba(0, 176, 189, 0.2) !important;
+  }
+  [data-animate] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+ * Button Interactive Pseudo-Classes — DSS-aligned
+ * ============================================================ */
+.sentinel-btn-sys {
+  transition: all var(--duration-fast) var(--ease-out);
+}
+.sentinel-btn-sys:focus-visible {
+  outline: 2px solid var(--indra-cyan) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px var(--cyan-edge) !important;
+}
+.sentinel-btn-sys.btn-primary:hover:not(:disabled) {
+  background: var(--indra-primary) !important;
+}
+.sentinel-btn-sys.btn-primary:active:not(:disabled) {
+  background: var(--indra-dark) !important;
+}
+.sentinel-btn-sys.btn-cyan:hover:not(:disabled) {
+  background: var(--indra-teal) !important;
+}
+.sentinel-btn-sys.btn-secondary:hover:not(:disabled) {
+  background: var(--cyan-tint) !important;
+}
+.sentinel-btn-sys.btn-ghost:hover:not(:disabled) {
+  text-decoration: underline !important;
+}
+.sentinel-btn-sys:disabled {
+  opacity: 0.4 !important;
+  pointer-events: none !important;
+}
+
+/* ============================================================
+ * Card hover (DSS spec — translateY(-3px) + 28px shadow)
+ * ============================================================ */
+.sentinel-card {
+  transition: transform var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+.sentinel-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+.indra-glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+/* ============================================================
+ * Prose — Indra type scale
+ * ============================================================ */
+.sentinel-prose h1, .sentinel-prose h2, .sentinel-prose h3 {
+  font-family: var(--font-display);
+  color: var(--indra-cyan);
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-3);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+}
+.sentinel-prose h1 { font-size: var(--text-2xl); line-height: var(--leading-tight); }
+.sentinel-prose h2 { font-size: var(--text-xl); line-height: var(--leading-snug); }
+.sentinel-prose h3 { font-size: var(--text-lg); line-height: var(--leading-snug); }
+.sentinel-prose p { margin-bottom: var(--space-3); line-height: var(--leading-normal); }
+.sentinel-prose ul, .sentinel-prose ol { padding-left: var(--space-5); margin-bottom: var(--space-4); }
+.sentinel-prose li { margin-bottom: var(--space-1); }
+.sentinel-prose code {
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.sentinel-prose pre {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  overflow-x: auto;
+  margin-bottom: var(--space-4);
+}
+
+/* ============================================================
+ * Body default — Indra DSS
+ * ============================================================ */
+body {
+  background: var(--void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  font-feature-settings: 'tnum';
+}

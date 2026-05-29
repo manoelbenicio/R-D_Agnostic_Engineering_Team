@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Local env
+.env.local
+.env.*.local
+.env
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+.vitest-cache/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Out-of-scope local content (skills/screenshots, not part of AgentVerse)
+agentic_features/
+data_expert_skills/
+frontend/

@@ -1,0 +1,69 @@
+schema: spec-driven
+
+context: |
+  # AgentVerse — Project Context
+
+  AgentVerse is a visual-first, canvas-driven web application that wraps the
+  CLI Agent Orchestrator (CAO) — letting users design, deploy, and monitor
+  multi-agent AI workflows by dragging blocks on a canvas, speaking to a
+  voice interface, or both.
+
+  ## Engine
+  AgentVerse is a frontend on top of CAO (CLI Agent Orchestrator) by AWS Labs.
+  CAO exposes a FastAPI server on `127.0.0.1:9889` with 32 REST endpoints
+  + 1 WebSocket endpoint for PTY terminal streaming. Every agent runs in a
+  real tmux session. AgentVerse does NOT modify CAO; it integrates over HTTP.
+
+  ## Differentiators
+  - **Canvas Builder**: drag-drop agent blocks, connect with handoff/assign/
+    send_message edges, click Deploy. Generates CAO profiles and sessions
+    automatically.
+  - **Speech-to-Canvas**: voice → NLU → canvas JSON. Native mic everywhere.
+  - **TMUX Substrate**: tmux is the always-running execution layer. UI surfaces
+    (Terminal View, Chat View, Canvas Status) decide how much to expose.
+
+  ## Tech Stack
+  - **Frontend**: Vite + TypeScript + React (assumed for canvas/UI work)
+  - **Terminal**: xterm.js + WebGL (mandatory) + WebSocket binary frames
+  - **Auth**: Firebase Authentication (GCP) — already deployed
+  - **Database**: Firestore (cloud) / Postgres / IndexedDB (local dev fallback)
+  - **Hosting**: Firebase Hosting / Cloud Run for SPA; Cloud Run/GKE/user-hosted
+    for CAO runtime (deferred to Milestone 2-3 deep-dive)
+  - **NLU**: BYOK — customer's own LLM key, cheapest available (Gemini Flash,
+    GPT-4o-mini, Haiku)
+  - **STT**: Web Speech API (Tier 1) → Whisper API (Tier 2) → Deepgram (Tier 3)
+
+  ## Design System — SENTINEL
+  Military/Bloomberg/NASA Mission Control aesthetic. Dark, cyan accents,
+  keyboard-first, terminal-native. Tokens defined in §3 of the master spec
+  (--void, --panel, --card, --cyan, --amber, --threat, --ops, --text-*).
+  Inter for UI, JetBrains Mono for terminal/code.
+
+  ## Deployment Model
+  - Local dev: `localhost:9889` CAO, no auth required
+  - Cloud staging: Firebase Auth enforced, `https://cao-staging.yourapp.com`
+  - Cloud production: Firebase Auth + per-tenant CAO isolation
+
+  ## Cost Model (BYOK)
+  Customers bring their own API keys for OpenAI, Anthropic, Google, AWS,
+  Azure, Moonshot. AgentVerse never pays for inference. FinOps is a Tier 1
+  wall-clock estimate with mandatory ⚠️ "rough estimate" labeling.
+
+  ## Multi-Agent Build Strategy
+  AgentVerse itself will be built by 5–6 multi-agents (supervisor + 3
+  frontend devs + voice/NLU dev + infra dev), with directory-level
+  ownership and locked design system. See §14 of the master spec.
+
+  ## Master Specification
+  The single source of truth is the AgentVerse Master Specification
+  Document — currently v4.2, "Ready for implementation" with all
+  53 decisions user-approved (15 overrides + 6 final resolutions).
+  This OpenSpec capture pins decisions into capability contracts and
+  a single change proposal for execution.
+
+# Per-artifact rules (optional)
+# rules:
+#   proposal:
+#     - Reference the master spec version when citing decisions
+#   tasks:
+#     - Tag each task with the agent role from §14 that owns it

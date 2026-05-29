@@ -1,0 +1,78 @@
+{
+  "name": "agentverse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AgentVerse v1 — multi-agent orchestration SPA on top of CAO",
+  "scripts": {
+    "dev": "vite --port 5173 --strictPort",
+    "dev:msw": "VITE_USE_MSW=true vite --port 5173 --strictPort",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:smoke": "playwright test tests/e2e/smoke.spec.ts",
+    "test:contract": "CAO_LIVE=1 vitest run --dir src/api/__tests__/contract",
+    "test:a11y": "vitest run --dir src/__tests__/a11y",
+    "prepare": "node -e \"process.exit(0)\""
+  },
+  "engines": {
+    "node": ">=20.10.0",
+    "npm": ">=10.2.0"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
+    "@tanstack/react-query": "^5.59.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-search": "^0.15.0",
+    "@xterm/addon-unicode11": "^0.8.0",
+    "@xterm/addon-web-links": "^0.11.0",
+    "@xterm/addon-webgl": "^0.18.0",
+    "@xterm/xterm": "^5.5.0",
+    "@xyflow/react": "^12.3.0",
+    "cronstrue": "^2.50.0",
+    "idb": "^8.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.27.0",
+    "recharts": "^2.13.0",
+    "zod": "^3.23.8",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "@playwright/test": "^1.47.2",
+    "@testing-library/jest-dom": "^6.5.0",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^20.16.10",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "@typescript-eslint/parser": "^8.8.0",
+    "@vitejs/plugin-react": "^4.3.2",
+    "@vitest/coverage-v8": "2.1.9",
+    "axe-core": "^4.10.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-agentverse": "file:./eslint-rules",
+    "eslint-plugin-react": "^7.37.1",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.12",
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^25.0.1",
+    "msw": "^2.4.9",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8",
+    "vitest": "^2.1.2"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
+}

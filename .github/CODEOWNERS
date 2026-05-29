@@ -1,0 +1,48 @@
+# AgentVerse v1 directory ownership (master spec §14.2 / design D9).
+# These owners gate review on every PR.
+
+# Supervisor — locked design system, app shell, shared cross-cutting types.
+/src/design-system/      @sup
+/src/shell/              @sup
+/src/shared/             @sup
+
+# Canvas Dev
+/src/canvas-builder/     @cv
+/src/canvas-document/    @cv
+/src/canvas-reconciler/  @cv
+/src/canvas-templates/   @cv
+
+# Terminal Dev
+/src/terminal/           @tm
+/src/terminal-grid/      @tm
+/src/chat-view/          @tm
+
+# Dashboard Dev
+/src/dashboard/          @db
+/src/finops/             @db
+/src/health/             @db
+
+# Studio Dev
+/src/agent-studio/       @st
+/src/flows/              @st
+/src/memory-viewer/      @st
+
+# Voice Dev
+/src/voice/              @vx
+
+# Infra Dev
+/src/api/                @if
+/src/settings/           @if
+
+# Top-level + docs + CI under supervisor.
+/openspec/               @sup
+/docs/                   @sup
+/.github/                @sup
+/scripts/                @sup
+/eslint-rules/           @sup
+package.json             @sup
+package-lock.json        @sup
+tsconfig*.json           @sup
+vite.config.ts           @sup
+vitest.config.ts         @sup
+playwright.config.ts     @sup
