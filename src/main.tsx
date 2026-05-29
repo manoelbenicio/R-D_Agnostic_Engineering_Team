@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from './shell/router';
 import { openDb } from './shared/storage/idb';
+import { bootstrapAuthStore } from './shell/auth-store';
 import '@/design-system/tokens.css';
 import './index.css';
 
@@ -11,6 +12,10 @@ import './index.css';
 openDb().catch((err) => {
   console.error('Failed to initialize IndexedDB:', err);
 });
+
+// Initialize the auth subscription if VITE_AUTH_PROVIDER is configured.
+// No-op when auth is disabled (default in local mode).
+bootstrapAuthStore();
 
 // Setup global QueryClient for TanStack Query (Decision D3)
 const queryClient = new QueryClient({
@@ -24,6 +29,10 @@ const queryClient = new QueryClient({
 });
 
 async function enableMockingIfRequested() {
+  // Production builds MUST NOT load MSW. The `import.meta.env.PROD` flag is
+  // statically replaced at build time, so this check tree-shakes the dynamic
+  // import out of the production bundle entirely.
+  if (import.meta.env.PROD) return;
   if (import.meta.env.VITE_USE_MSW !== 'true') return;
   const { worker } = await import('./api/__tests__/msw/browser');
   await worker.start({
@@ -48,7 +57,12 @@ if (typeof window !== 'undefined') {
   observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
-await enableMockingIfRequested();
+// Best-effort MSW startup. A failure here MUST NOT block the React render.
+try {
+  await enableMockingIfRequested();
+} catch (err) {
+  console.error('[main] MSW init failed; continuing without it:', err);
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -176,7 +176,7 @@ export const AgentStudioPage: React.FC = () => {
       <header className="agent-studio-header">
         <div>
           <h1>Agent Studio</h1>
-          <p>Manage CAO agent profiles, provider availability, and installable markdown profiles.</p>
+          <p>Manage agent profiles, provider availability, and installable markdown profiles.</p>
         </div>
         <div className="agent-studio-actions">
           <Button variant="secondary" onClick={openNewEditor}>

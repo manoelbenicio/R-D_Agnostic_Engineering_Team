@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom';
 import { NavBar } from './NavBar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ToastContainer } from './ToastContainer';
+import { RequireAuthGate } from './RequireAuthGate';
 import { dbGet, dbPut } from '@/shared/storage/idb';
 import { useKeyStore } from '@/api/key-store/store';
 import { useSettingsStore } from '@/settings/settings-store';
@@ -73,7 +74,9 @@ export const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }
       <NavBar />
       <main className="sentinel-main-content">
         <ErrorBoundary>
-          {children ?? <Outlet />}
+          <RequireAuthGate>
+            {children ?? <Outlet />}
+          </RequireAuthGate>
         </ErrorBoundary>
       </main>
       <ToastContainer />

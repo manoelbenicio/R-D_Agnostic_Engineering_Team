@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useHealthStore } from '@/api';
+import { LoginButton } from './LoginButton';
 
 export const NavBar: React.FC = () => {
   const { status } = useHealthStore();
@@ -16,20 +17,20 @@ export const NavBar: React.FC = () => {
         return {
           pillClass: 'health-pill-healthy',
           dotClass: 'health-dot-healthy',
-          text: 'CAO ONLINE',
+          text: 'RUNTIME ONLINE',
         };
       case 'unreachable':
         return {
           pillClass: 'health-pill-unreachable',
           dotClass: 'health-dot-unreachable',
-          text: 'CAO UNREACHABLE',
+          text: 'RUNTIME UNREACHABLE',
         };
       case 'loading':
       default:
         return {
           pillClass: 'health-pill-loading',
           dotClass: 'health-dot-loading',
-          text: 'CAO CONNECTING',
+          text: 'RUNTIME CONNECTING',
         };
     }
   };
@@ -74,6 +75,7 @@ export const NavBar: React.FC = () => {
           <span className={`health-dot ${health.dotClass}`}></span>
           <span className="health-text">{health.text}</span>
         </button>
+        <LoginButton />
       </div>
     </nav>
   );

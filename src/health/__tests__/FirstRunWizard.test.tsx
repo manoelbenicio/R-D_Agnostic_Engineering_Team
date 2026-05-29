@@ -44,7 +44,7 @@ describe('FirstRunWizard Component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Verifying CAO server connection...')).toBeInTheDocument();
+    expect(screen.getByText('Verifying runtime engine connection...')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Next: Configure Provider' })).toBeInTheDocument();

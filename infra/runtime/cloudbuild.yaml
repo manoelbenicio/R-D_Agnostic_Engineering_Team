@@ -1,0 +1,58 @@
+# AgentVerse — Cloud Build pipeline for the orchestration runtime image.
+#
+# Submit:
+#   gcloud builds submit --config infra/runtime/cloudbuild.yaml \
+#     --substitutions=_REGION=us-central1,_REPO=agentverse,_TAG=latest .
+#
+# Required substitutions:
+#   _REGION : Artifact Registry region                (e.g. us-central1)
+#   _REPO   : Artifact Registry repo name             (e.g. agentverse)
+#   _TAG    : Image tag                                (default: $SHORT_SHA)
+#
+# The image is pushed to:
+#   ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/runtime:${_TAG}
+#
+# After the push, deploy with:
+#   gcloud run deploy agentverse-runtime \
+#     --image ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/runtime:${_TAG} \
+#     --region ${_REGION} --platform managed
+# Or apply the declarative service manifest at infra/runtime/service.yaml.
+
+substitutions:
+  _REGION: us-central1
+  _REPO: agentverse
+  _TAG: ${SHORT_SHA}
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --tag=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/runtime:${_TAG}
+      - --tag=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/runtime:latest
+      - --file=infra/runtime/Dockerfile
+      - .
+
+  - id: push-tag
+    name: gcr.io/cloud-builders/docker
+    waitFor: [build]
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/runtime:${_TAG}
+
+  - id: push-latest
+    name: gcr.io/cloud-builders/docker
+    waitFor: [build]
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/runtime:latest
+
+images:
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/runtime:${_TAG}
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/runtime:latest
+
+timeout: 1200s

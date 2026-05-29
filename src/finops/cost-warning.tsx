@@ -8,21 +8,23 @@ export interface CostWarningProps extends React.HTMLAttributes<HTMLSpanElement> 
   showText?: boolean;
 }
 
-export const CostWarning: React.FC<CostWarningProps> = ({
+export function CostWarning({
   showText = false,
   className = '',
   ...props
-}) => (
-  <span
-    role="img"
-    className={`finops-cost-warning ${className}`}
-    title={COST_ESTIMATE_DISCLAIMER}
-    aria-label={showText ? undefined : COST_ESTIMATE_DISCLAIMER}
-    {...props}
-  >
-    <span aria-hidden="true">{COST_WARNING_GLYPH}</span>
-    {showText ? <span> rough estimate</span> : null}
-  </span>
-);
+}: CostWarningProps) {
+  return (
+    <span
+      role="img"
+      className={`finops-cost-warning ${className}`}
+      title={COST_ESTIMATE_DISCLAIMER}
+      aria-label={showText ? undefined : COST_ESTIMATE_DISCLAIMER}
+      {...props}
+    >
+      <span aria-hidden="true">{COST_WARNING_GLYPH}</span>
+      {showText ? <span> rough estimate</span> : null}
+    </span>
+  );
+}
 
 export default CostWarning;

@@ -395,9 +395,41 @@ export const GeneralPage: React.FC = () => {
       <div style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <Card>
           <FormField
-            label="CAO Base URL"
+            label="Runtime Mode"
+            id="general-runtime-mode"
+            helperText="Switch between the local Docker runtime and the deployed cloud runtime. The buttons fill the URL below; you can also override it manually."
+          >
+            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="sentinel-button sentinel-button-secondary"
+                onClick={() => void updateSetting('caoBaseUrl', 'http://127.0.0.1:9889')}
+              >
+                Local (Docker)
+              </button>
+              <button
+                type="button"
+                className="sentinel-button sentinel-button-secondary"
+                onClick={() => {
+                  const cloudUrl = (import.meta.env.VITE_CLOUD_RUNTIME_URL as string | undefined) || '';
+                  if (cloudUrl) {
+                    void updateSetting('caoBaseUrl', cloudUrl);
+                  } else {
+                    // No cloud URL baked in yet — leave the field unchanged and rely on the user typing it
+                    // eslint-disable-next-line no-alert
+                    alert('No cloud runtime URL is configured for this build. Run scripts/deploy-cloud.sh first, or paste the URL into the Runtime Base URL field.');
+                  }
+                }}
+              >
+                Cloud (Run)
+              </button>
+            </div>
+          </FormField>
+
+          <FormField
+            label="Runtime Base URL"
             id="general-cao-base-url"
-            helperText="The base URL for the Central Agent Orchestrator. Persistent to IndexedDB storage."
+            helperText="Base URL of the orchestration runtime. Persisted to IndexedDB. Use http://127.0.0.1:9889 for local Docker, or your Cloud Run URL for cloud."
           >
             <input
               type="text"

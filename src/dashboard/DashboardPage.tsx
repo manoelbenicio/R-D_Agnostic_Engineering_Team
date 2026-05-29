@@ -97,7 +97,7 @@ export const DashboardPage: React.FC = () => {
       <header className="dashboard-header">
         <div>
           <h1>Dashboard</h1>
-          <p>Central command view for live CAO sessions, fleet activity, and rough cost telemetry.</p>
+          <p>Central command view for live runtime sessions, fleet activity, and rough cost telemetry.</p>
         </div>
         {isLoading ? <Badge variant="processing">Refreshing</Badge> : <Badge variant="completed">Live</Badge>}
       </header>

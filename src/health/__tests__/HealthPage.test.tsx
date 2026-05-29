@@ -45,9 +45,9 @@ describe('HealthPage Component', () => {
     expect(screen.getByText('Browser Capabilities')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('CAO Server is running and responding.')).toBeInTheDocument();
+      expect(screen.getByText('Runtime engine is running and responding.')).toBeInTheDocument();
       expect(screen.getByText('tmux Server is active and operational.')).toBeInTheDocument();
-      expect(screen.getByText('CAO Provider: google')).toBeInTheDocument();
+      expect(screen.getByText('Provider: google')).toBeInTheDocument();
     });
   });
 
@@ -63,7 +63,7 @@ describe('HealthPage Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Cannot reach CAO at http/i)).toBeInTheDocument();
+      expect(screen.getByText(/Cannot reach the runtime at http/i)).toBeInTheDocument();
       expect(screen.getAllByRole('button', { name: 'Fix' }).length).toBeGreaterThan(0);
     });
   });

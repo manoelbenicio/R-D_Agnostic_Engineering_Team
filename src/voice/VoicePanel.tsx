@@ -1,4 +1,3 @@
-/* eslint-disable agentverse/no-sideways-capability-imports */
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '@/design-system/components/Modal';
@@ -18,13 +17,23 @@ import { CanvasDocument } from './types';
 import { matchRuntimeCommand, RuntimeCommand } from './runtime-commands';
 import { useToast } from '@/shell/toasts';
 import { caoClient } from '@/api/cao-client';
-import { reconcileCanvas } from '@/canvas-reconciler/reconciler';
-import { getCanvasProviderOptions } from '@/canvas-builder/provider-options';
-import { validateCanvasForDeploy } from '@/canvas-builder/deploy-validation';
+import { canvasCommandBus } from '@/shell/canvas-command-adapter';
+import {
+  executeRuntimeCommand,
+  type CommandExecutorDeps,
+  type ConfirmOptions,
+} from './command-executor';
 
 export interface VoicePanelProps {
   currentCanvas?: CanvasDocument | null;
   onUpdateCanvas?: (updater: (current: CanvasDocument) => CanvasDocument) => void;
+}
+
+interface DestructiveConfirmState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  resolve: (confirmed: boolean) => void;
 }
 
 export const VoicePanel: React.FC<VoicePanelProps> = ({ currentCanvas, onUpdateCanvas }) => {
@@ -47,296 +56,8 @@ export const VoicePanel: React.FC<VoicePanelProps> = ({ currentCanvas, onUpdateC
   const validatedProviders = useValidatedProviders();
   const [canvasDoc, setCanvasDoc] = useState<CanvasDocument | null>(null);
   const [softWarning, setSoftWarning] = useState<string | null>(null);
-  const [confirmDestructive, setConfirmDestructive] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  } | null>(null);
-
-  const handleExecuteCommand = async (command: RuntimeCommand) => {
-    if (command.action === 'cost') {
-      toast.info('Navigating to FinOps.');
-      navigate('/finops');
-      return;
-    }
-
-    if (command.action === 'focus') {
-      if (!currentCanvas) {
-        toast.error('No active canvas open.');
-        return;
-      }
-      const terminalMap = currentCanvas.deploy_state?.terminal_map;
-      if (!terminalMap) {
-        toast.error('Canvas is not deployed.');
-        return;
-      }
-      const resolved = command.target;
-      if (!resolved) {
-        toast.error('Target not specified for focus command.');
-        return;
-      }
-      let nodeId = '';
-      if (resolved.type === 'id') {
-        const match = Object.entries(terminalMap).find(([_, termId]) => termId === resolved.value);
-        if (match) {
-          navigate(`/canvas/${currentCanvas.id}/terminal/${resolved.value}`);
-          toast.success(`Focused on terminal ${resolved.value}`);
-          return;
-        }
-        if (terminalMap[resolved.value]) {
-          nodeId = resolved.value;
-        }
-      } else if (resolved.type === 'role') {
-        const node = currentCanvas.nodes.find((n) => n.data.role === resolved.value);
-        if (node) nodeId = node.id;
-      } else {
-        const node = currentCanvas.nodes.find(
-          (n) => n.data.display_name.toLowerCase() === resolved.value.toLowerCase()
-        );
-        if (node) nodeId = node.id;
-      }
-
-      const terminalId = terminalMap[nodeId];
-      if (terminalId) {
-        navigate(`/canvas/${currentCanvas.id}/terminal/${terminalId}`);
-        toast.success(`Focused on terminal for ${resolved.value}`);
-      } else {
-        toast.error(`Terminal for '${resolved.value}' not found in session.`);
-      }
-      return;
-    }
-
-    if (command.action === 'status') {
-      if (!currentCanvas) {
-        toast.error('No active canvas open.');
-        return;
-      }
-      const sessionName = currentCanvas.deploy_state?.session_name || currentCanvas.config?.session_name;
-      if (!sessionName) {
-        toast.error('No active session associated with this canvas.');
-        return;
-      }
-      try {
-        const terminalsList = await caoClient.listTerminalsInSession(sessionName);
-        if (terminalsList.length === 0) {
-          const text = 'No active terminals found in this session.';
-          toast.info(text);
-          window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
-        } else {
-          const statuses = terminalsList.map((t) => `${t.display_name || t.id} is ${t.status}`).join(', ');
-          const speechText = `Session status: ${statuses}`;
-          toast.success(speechText);
-          const utterance = new SpeechSynthesisUtterance(speechText);
-          utterance.lang = 'en-US';
-          window.speechSynthesis.speak(utterance);
-        }
-      } catch (err) {
-        toast.error('Failed to retrieve session status: ' + String(err));
-      }
-      return;
-    }
-
-    if (command.action === 'deploy') {
-      if (!currentCanvas) {
-        toast.error('No active canvas open.');
-        return;
-      }
-      if (currentCanvas.deploy_state?.status !== 'draft') {
-        toast.error('Canvas is already deployed.');
-        return;
-      }
-      const options = getCanvasProviderOptions(validatedProviders);
-      const validation = validateCanvasForDeploy(currentCanvas, options, validatedProviders);
-      if (!validation.ok) {
-        toast.error(`Validation failed: ${validation.reason}`);
-        return;
-      }
-      toast.info('Starting deployment via voice...');
-      try {
-        const result = await reconcileCanvas(currentCanvas.id, undefined, caoClient);
-        toast.success('Materialization completed successfully!');
-        if (onUpdateCanvas) {
-          onUpdateCanvas((_) => result);
-        }
-      } catch (err) {
-        toast.error('Deployment failed: ' + String(err));
-      }
-      return;
-    }
-
-    if (command.action === 'pause') {
-      if (!currentCanvas) {
-        toast.error('No active canvas open.');
-        return;
-      }
-      const terminalMap = currentCanvas.deploy_state?.terminal_map;
-      if (!terminalMap) {
-        toast.error('Canvas is not deployed.');
-        return;
-      }
-      const resolved = command.target;
-      if (!resolved) {
-        toast.error('Target not specified for pause command.');
-        return;
-      }
-      let nodeId = '';
-      if (resolved.type === 'id') {
-        const match = Object.entries(terminalMap).find(([_, termId]) => termId === resolved.value);
-        if (match) {
-          nodeId = match[0];
-        } else if (terminalMap[resolved.value]) {
-          nodeId = resolved.value;
-        }
-      } else if (resolved.type === 'role') {
-        const node = currentCanvas.nodes.find((n) => n.data.role === resolved.value);
-        if (node) nodeId = node.id;
-      } else {
-        const node = currentCanvas.nodes.find(
-          (n) => n.data.display_name.toLowerCase() === resolved.value.toLowerCase()
-        );
-        if (node) nodeId = node.id;
-      }
-
-      const terminalId = terminalMap[nodeId];
-      if (terminalId) {
-        try {
-          await caoClient.sendTerminalInput(terminalId, '\x13');
-          toast.info(`Sent pause signal to terminal for ${resolved.value}`);
-        } catch (err) {
-          toast.error('Failed to send pause signal: ' + String(err));
-        }
-      } else {
-        toast.error(`Terminal for '${resolved.value}' not found in session.`);
-      }
-      return;
-    }
-
-    if (command.action === 'add_node') {
-      window.dispatchEvent(new CustomEvent('voice-canvas-add-node', { detail: command }));
-      return;
-    }
-
-    if (command.action === 'connect') {
-      window.dispatchEvent(new CustomEvent('voice-canvas-connect', { detail: command }));
-      return;
-    }
-
-    if (command.action === 'kill') {
-      if (!currentCanvas) {
-        toast.error('No active canvas open.');
-        return;
-      }
-      const terminalMap = currentCanvas.deploy_state?.terminal_map;
-      if (!terminalMap) {
-        toast.error('Canvas is not deployed.');
-        return;
-      }
-      const resolved = command.target;
-      if (!resolved) {
-        toast.error('Target not specified for kill command.');
-        return;
-      }
-      let nodeId = '';
-      if (resolved.type === 'id') {
-        const match = Object.entries(terminalMap).find(([_, termId]) => termId === resolved.value);
-        if (match) {
-          nodeId = match[0];
-        } else if (terminalMap[resolved.value]) {
-          nodeId = resolved.value;
-        }
-      } else if (resolved.type === 'role') {
-        const node = currentCanvas.nodes.find((n) => n.data.role === resolved.value);
-        if (node) nodeId = node.id;
-      } else {
-        const node = currentCanvas.nodes.find(
-          (n) => n.data.display_name.toLowerCase() === resolved.value.toLowerCase()
-        );
-        if (node) nodeId = node.id;
-      }
-
-      const terminalId = terminalMap[nodeId];
-      if (!terminalId) {
-        toast.error(`Terminal for '${resolved.value}' not found in session.`);
-        return;
-      }
-
-      const nodeName = currentCanvas.nodes.find((n) => n.id === nodeId)?.data.display_name || resolved.value;
-
-      setConfirmDestructive({
-        isOpen: true,
-        title: 'Confirm Kill Terminal',
-        message: `Are you sure you want to kill the terminal for agent '${nodeName}'? This will terminate the agent process immediately.`,
-        onConfirm: async () => {
-          toast.info(`Killing terminal for ${nodeName}...`);
-          try {
-            await caoClient.deleteTerminal(terminalId);
-            toast.success(`Terminal for '${nodeName}' has been killed.`);
-            if (onUpdateCanvas) {
-              onUpdateCanvas((current) => {
-                const nextMap = { ...current.deploy_state.terminal_map };
-                delete nextMap[nodeId];
-                return {
-                  ...current,
-                  deploy_state: {
-                    ...current.deploy_state,
-                    status: Object.keys(nextMap).length === 0 ? 'draft' : 'degraded',
-                    terminal_map: nextMap,
-                  },
-                };
-              });
-            }
-          } catch (err) {
-            toast.error('Failed to kill terminal: ' + String(err));
-          }
-          handleClose();
-        },
-      });
-      return;
-    }
-
-    if (command.action === 'stop_all') {
-      if (!currentCanvas) {
-        toast.error('No active canvas open.');
-        return;
-      }
-      const sessionName = currentCanvas.deploy_state?.session_name || currentCanvas.config?.session_name;
-      if (!sessionName) {
-        toast.error('No active session found.');
-        return;
-      }
-
-      let activeCount = Object.keys(currentCanvas.deploy_state?.terminal_map || {}).length;
-      if (activeCount === 0) {
-        activeCount = currentCanvas.nodes.length;
-      }
-
-      setConfirmDestructive({
-        isOpen: true,
-        title: 'Confirm Stop All',
-        message: `Confirm stop all? This will kill ${activeCount} terminals and tear down the CAO session '${sessionName}'.`,
-        onConfirm: async () => {
-          toast.info(`Stopping all terminals for session '${sessionName}'...`);
-          try {
-            await caoClient.deleteSession(sessionName);
-            toast.success('Session torn down successfully.');
-            if (onUpdateCanvas) {
-              onUpdateCanvas((current) => ({
-                ...current,
-                deploy_state: {
-                  status: 'draft',
-                },
-              }));
-            }
-          } catch (err) {
-            toast.error('Failed to tear down session: ' + String(err));
-          }
-          handleClose();
-        },
-      });
-      return;
-    }
-  };
+  const [confirmDestructive, setConfirmDestructive] =
+    useState<DestructiveConfirmState | null>(null);
 
   // Keep track of active engine to stop it on unmount
   const engineRef = useRef<ReturnType<typeof getSTTEngine> | null>(null);
@@ -350,6 +71,65 @@ export const VoicePanel: React.FC<VoicePanelProps> = ({ currentCanvas, onUpdateC
     reset();
     setOpen(false);
     setSoftWarning(null);
+  };
+
+  /**
+   * Bridge between the executor's `confirm(opts)` Promise contract and the
+   * existing destructive-confirmation modal. Resolves with `true` when the
+   * user clicks Confirm, `false` when they Cancel or close the modal.
+   *
+   * Future direction: the destructive-confirmation modal could be lifted
+   * into a shell-owned service so that this local closure disappears, but
+   * that is out of scope for the current bus refactor.
+   */
+  const requestConfirm = (opts: ConfirmOptions): Promise<boolean> =>
+    new Promise<boolean>((resolve) => {
+      setConfirmDestructive({
+        isOpen: true,
+        title: opts.title,
+        message: opts.message,
+        resolve,
+      });
+    });
+
+  /**
+   * Build the executor deps from the panel's React-side resources.
+   * The shape matches `CommandExecutorDeps` exactly — see command-executor.ts
+   * for the full contract. Canvas-builder + canvas-reconciler access goes
+   * through the `canvasCommandBus` adapter (see
+   * `@/shell/canvas-command-adapter`), so this file no longer takes any
+   * sideways capability imports.
+   */
+  const buildExecutorDeps = (): CommandExecutorDeps => ({
+    canvas: currentCanvas ?? null,
+    cao: caoClient,
+    toast,
+    navigate,
+    confirm: requestConfirm,
+    bus: canvasCommandBus,
+    onUpdateCanvas,
+    speak: (text, lang) => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (lang) {
+        utterance.lang = lang;
+      }
+      window.speechSynthesis.speak(utterance);
+    },
+    emit: (event, command) => {
+      window.dispatchEvent(
+        new CustomEvent(`voice-canvas-${event}`, { detail: command }),
+      );
+    },
+  });
+
+  const handleExecuteCommand = async (command: RuntimeCommand): Promise<void> => {
+    const deps = buildExecutorDeps();
+    await executeRuntimeCommand(command, deps);
+    // Confirm-bearing actions (kill / stop_all) deferred the panel close until
+    // the user resolved the modal — close now.
+    if (command.action === 'kill' || command.action === 'stop_all') {
+      handleClose();
+    }
   };
 
   const startListening = () => {
@@ -400,6 +180,9 @@ export const VoicePanel: React.FC<VoicePanelProps> = ({ currentCanvas, onUpdateC
 
     const runtimeCommand = matchRuntimeCommand(transcript);
     if (runtimeCommand) {
+      // Non-destructive commands close the panel immediately so toast +
+      // navigation feedback is visible. Destructive ones (kill / stop_all)
+      // keep the panel open until the confirmation modal resolves.
       if (runtimeCommand.action !== 'kill' && runtimeCommand.action !== 'stop_all') {
         handleClose();
       }
@@ -416,7 +199,7 @@ export const VoicePanel: React.FC<VoicePanelProps> = ({ currentCanvas, onUpdateC
       const parsedIntent = await extractIntent(transcript);
       clearTimeout(warningTimeout);
       setIntent(parsedIntent);
-      
+
       const doc = voiceToCanvas(parsedIntent);
       setCanvasDoc(doc);
       setState('confirming');
@@ -763,8 +546,8 @@ export const VoicePanel: React.FC<VoicePanelProps> = ({ currentCanvas, onUpdateC
         <Modal
           isOpen={confirmDestructive.isOpen}
           onClose={() => {
+            confirmDestructive.resolve(false);
             setConfirmDestructive(null);
-            handleClose();
           }}
           title={confirmDestructive.title}
           actions={
@@ -772,8 +555,8 @@ export const VoicePanel: React.FC<VoicePanelProps> = ({ currentCanvas, onUpdateC
               <Button
                 variant="secondary"
                 onClick={() => {
+                  confirmDestructive.resolve(false);
                   setConfirmDestructive(null);
-                  handleClose();
                 }}
                 autoFocus
               >
@@ -782,7 +565,7 @@ export const VoicePanel: React.FC<VoicePanelProps> = ({ currentCanvas, onUpdateC
               <Button
                 variant="primary"
                 onClick={() => {
-                  confirmDestructive.onConfirm();
+                  confirmDestructive.resolve(true);
                   setConfirmDestructive(null);
                 }}
               >

@@ -1,0 +1,75 @@
+# AgentVerse — Cloud Run service manifest for the orchestration runtime.
+#
+# Apply with:
+#   envsubst < infra/runtime/service.yaml | \
+#     gcloud run services replace - --region us-central1
+#
+# Required env vars when applying:
+#   PROJECT_ID  : GCP project id                        (e.g. agentverse-prod)
+#   REGION      : Cloud Run region                      (e.g. us-central1)
+#   IMAGE_TAG   : Image tag to deploy                   (e.g. latest or $SHORT_SHA)
+#   SPA_ORIGIN  : Public origin of the SPA              (e.g. https://agentverse.web.app)
+#
+# Notes
+#   * `--allow-unauthenticated` is intentionally NOT set here. Auth enforcement
+#     is the job of the auth-proxy / Firebase JWT middleware (see
+#     openspec/changes/cloud-runtime-deployment).
+#   * `concurrency: 1` keeps each tmux-managed runtime process isolated. Per
+#     master spec §13, multi-tenant isolation is owned by a follow-up change.
+#   * Memory / CPU defaults are conservative; tune per workload.
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: agentverse-runtime
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      containerConcurrency: 1
+      timeoutSeconds: 3600
+      containers:
+        - image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/agentverse/runtime:${IMAGE_TAG}
+          ports:
+            - name: http1
+              containerPort: 9889
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          env:
+            - name: PORT
+              value: "9889"
+            - name: CAO_HOST
+              value: "0.0.0.0"
+            - name: CAO_CORS_ORIGINS
+              value: ${SPA_ORIGIN}
+            - name: CAO_ALLOWED_HOSTS
+              value: 0.0.0.0,127.0.0.1,localhost
+            - name: CAO_WS_ALLOWED_CLIENTS
+              value: ${SPA_ORIGIN}
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 9889
+            timeoutSeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9889
+            timeoutSeconds: 5
+            periodSeconds: 30
+  traffic:
+    - percent: 100
+      latestRevision: true

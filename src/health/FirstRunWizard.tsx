@@ -98,14 +98,14 @@ export const FirstRunWizard: React.FC<FirstRunWizardProps> = ({ onClose }) => {
         setCaoError(null);
       } else {
         setCaoOk(false);
-        setCaoError('CAO Server returned an unexpected health payload.');
+        setCaoError('Runtime engine returned an unexpected health payload.');
         // Revert URL
         caoClient.baseUrl = originalUrl;
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       setCaoOk(false);
-      setCaoError(`Cannot connect to CAO server: ${errMsg}`);
+      setCaoError(`Cannot connect to runtime engine: ${errMsg}`);
       // Revert URL
       caoClient.baseUrl = originalUrl;
     } finally {
@@ -232,15 +232,15 @@ export const FirstRunWizard: React.FC<FirstRunWizardProps> = ({ onClose }) => {
         </header>
 
         <div className="wizard-step-content">
-          {/* Step 1: Verify CAO */}
+          {/* Step 1: Verify Runtime */}
           {step === 1 && (
             <div>
               <p className="wizard-step-description">
-                AgentVerse coordinates with the Central Agent Orchestrator (CAO). Let&apos;s verify the server connection.
+                AgentVerse coordinates with an orchestration runtime. Let&apos;s verify the connection.
               </p>
               {loading ? (
                 <div style={{ padding: 'var(--space-4)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
-                  Verifying CAO server connection...
+                  Verifying runtime engine connection...
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -257,7 +257,7 @@ export const FirstRunWizard: React.FC<FirstRunWizardProps> = ({ onClose }) => {
                       <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--threat)', fontFamily: 'var(--font-mono)' }}>
                         {caoError}
                       </p>
-                      <FormField label="Edit CAO Base URL" id="wizard-cao-url">
+                      <FormField label="Edit Runtime Base URL" id="wizard-cao-url">
                         <input
                           type="text"
                           value={caoUrl}

@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from './AppLayout';
-import { PlaceholderPage } from './PlaceholderPage';
+import { CanvasTerminalRoute } from './CanvasTerminalRoute';
 import { NotFoundPage } from './NotFoundPage';
 
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
@@ -40,7 +40,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'canvas/:id/terminal/:terminalId',
-        element: <PlaceholderPage title="Terminal Grid" />,
+        element: <CanvasTerminalRoute />,
       },
       {
         path: 'agent-studio',

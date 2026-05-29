@@ -29,7 +29,7 @@ export const HealthPage: React.FC = () => {
   // States
   const [serverHealth, setServerHealth] = useState<ServerHealthState>({
     cao: 'loading',
-    caoExplanation: 'Checking CAO connectivity...',
+    caoExplanation: 'Checking runtime connectivity...',
     tmux: 'loading',
     tmuxExplanation: 'Checking tmux status...',
     providers: [],
@@ -64,23 +64,23 @@ export const HealthPage: React.FC = () => {
     }));
 
     let caoStatus: 'ok' | 'error' = 'error';
-    let caoExpl = `Cannot reach CAO at ${caoClient.baseUrl}`;
+    let caoExpl = `Cannot reach the runtime at ${caoClient.baseUrl}`;
     let tmuxStatus: 'ok' | 'error' = 'error';
     let tmuxExpl = 'Cannot communicate with tmux service.';
     let providerList: Array<{ name: string; installed: boolean }> = [];
 
-    // 1. CAO Server Check
+    // 1. Runtime engine check
     try {
       const res = await caoClient.getHealth();
       if (res && res.status === 'ok') {
         caoStatus = 'ok';
-        caoExpl = 'CAO Server is running and responding.';
+        caoExpl = 'Runtime engine is running and responding.';
       } else {
-        caoExpl = `CAO returned unexpected status: ${JSON.stringify(res)}`;
+        caoExpl = `Runtime returned an unexpected status: ${JSON.stringify(res)}`;
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      caoExpl = `Cannot reach CAO at ${caoClient.baseUrl} (${errMsg})`;
+      caoExpl = `Cannot reach the runtime at ${caoClient.baseUrl} (${errMsg})`;
     }
 
     // 2. tmux Check
@@ -228,10 +228,10 @@ export const HealthPage: React.FC = () => {
         <section>
           <h2 className="health-section-title">Server Health</h2>
           <div className="health-grid">
-            {/* CAO Server Row */}
+            {/* Runtime Engine Row */}
             <div className={`health-row ${serverHealth.cao === 'error' ? 'health-row-error' : ''}`}>
               <div className="health-info">
-                <span className="health-component-name">CAO Server</span>
+                <span className="health-component-name">Runtime Engine</span>
                 <span className="health-explanation">{serverHealth.caoExplanation}</span>
               </div>
               <div className="health-actions">
@@ -274,7 +274,7 @@ export const HealthPage: React.FC = () => {
               serverHealth.providers.map((p) => (
                 <div key={p.name} className={`health-row ${!p.installed ? 'health-row-warning' : ''}`}>
                   <div className="health-info">
-                    <span className="health-component-name">CAO Provider: {p.name}</span>
+                    <span className="health-component-name">Provider: {p.name}</span>
                     <span className="health-explanation">
                       {p.installed ? 'Provider engine is installed on CAO server.' : 'Provider engine is missing on CAO server.'}
                     </span>

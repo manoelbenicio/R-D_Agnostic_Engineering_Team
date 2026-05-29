@@ -1,9 +1,22 @@
 import { test, expect } from '@playwright/test';
+import { disableAnimations } from './helpers/disable-animations';
+import { installSpeechRecognitionMock } from './helpers/speech-recognition-mock';
 
 test.describe('AgentVerse App Shell Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
     page.on('console', (msg) => console.log('BROWSER LOG:', msg.text()));
     page.on('pageerror', (err) => console.error('BROWSER EXCEPTION:', err.message));
+
+    // Strip CSS animations / transitions on every navigation so Playwright's
+    // actionability checks don't see infinitely-animating elements (e.g. the
+    // voice 🛑 pulse-mic button) as "unstable" and reject the click.
+    await disableAnimations(page);
+
+    // Headless Chromium has no Web Speech API; install a deterministic
+    // polyfill so clicking 🎤 drives the real
+    // getSTTEngine() → VoiceCapture → setFinalTranscript →
+    // matchRuntimeCommand → executeRuntimeCommand pipeline end-to-end.
+    await installSpeechRecognitionMock(page, { transcript: 'focus on supervisor' });
 
     // Clear IndexedDB by visiting a static resource (no JS running) to avoid blocking connections
     await page.goto('/favicon.svg');
@@ -212,7 +225,31 @@ test.describe('AgentVerse App Shell Smoke Tests', () => {
     const xtermContainer = terminalHost.locator('.xterm');
     await expect(xtermContainer).toBeVisible();
 
-    // 6. Go back to canvas page to test voice command
+    // 6. Go back to canvas page to test voice command. We pin the STT engine
+    //    to 'webspeech' here so the SpeechRecognition polyfill installed in
+    //    beforeEach is exercised on the next page load. (The app's default is
+    //    'whisper', which requires real MediaRecorder + getUserMedia and would
+    //    immediately error out under headless Chromium.)
+    await page.evaluate(async () => {
+      return new Promise<void>((resolve, reject) => {
+        const req = indexedDB.open('AgentVerse', 1);
+        req.onsuccess = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains('settings')) {
+            db.close();
+            resolve();
+            return;
+          }
+          const tx = db.transaction('settings', 'readwrite');
+          const store = tx.objectStore('settings');
+          const reqPut = store.put({ key: 'sttEngine', value: 'webspeech' });
+          reqPut.onsuccess = () => resolve();
+          reqPut.onerror = () => reject(reqPut.error);
+        };
+        req.onerror = () => reject(req.error);
+      });
+    });
+
     await page.goto(`/canvas/${canvasId}`);
     await expect(page.locator('.react-flow__node').filter({ hasText: 'Supervisor' }).first()).toBeVisible();
 
@@ -223,22 +260,20 @@ test.describe('AgentVerse App Shell Smoke Tests', () => {
     const startMicBtn = page.locator('text=🎤');
     await expect(startMicBtn).toBeVisible();
 
-    // Expose final transcript in useVoiceStore and simulate state transition
-    // We do this instead of clicking because headless Chrome doesn't support WebSpeech API out of the box
-    await page.evaluate(() => {
-      const store = (window as any).useVoiceStore;
-      store.setState({
-        voiceState: 'listening',
-        finalTranscript: 'focus on supervisor',
-      });
-    });
+    // Click 🎤 to drive the real voice pipeline. The SpeechRecognition polyfill
+    // installed in beforeEach delivers a final transcript ('focus on supervisor')
+    // through getSTTEngine() → VoiceCapture.onresult → setFinalTranscript(...).
+    await startMicBtn.click();
 
     // Wait for voice panel overlay to be listening (containing the 🛑 button)
     const stopMicBtn = page.locator('text=🛑');
     await expect(stopMicBtn).toBeVisible();
 
-    // Click stop mic button 🛑 to execute command
-    await stopMicBtn.click({ force: true });
+    // Click stop mic to fire stopListening() → matchRuntimeCommand →
+    // executeRuntimeCommand. With animations disabled, the pulse-mic is now
+    // "stable" so a normal click (no force) passes Playwright's actionability
+    // check.
+    await stopMicBtn.click();
 
     // Expect to be navigated to the terminal output route
     await expect(page).toHaveURL(new RegExp(`/canvas/${canvasId}/terminal/term-.+`));

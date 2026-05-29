@@ -97,7 +97,7 @@ export const MemoryViewerPage: React.FC = () => {
       <header className="memory-viewer-header">
         <div>
           <h1>Memory Viewer</h1>
-          <p>Inspect CAO terminal memory context, visible agent directories, and staged manual memories.</p>
+          <p>Inspect per-terminal runtime memory context, visible agent directories, and staged manual memories.</p>
         </div>
       </header>
 
@@ -159,12 +159,12 @@ export const MemoryViewerPage: React.FC = () => {
           {memoryQuery.isLoading ? (
             <p className="memory-muted">Loading memories...</p>
           ) : memoryQuery.isError ? (
-            <p className="memory-error">Unable to load memory context from CAO.</p>
+            <p className="memory-error">Unable to load memory context from the runtime.</p>
           ) : filteredEntries.length === 0 ? (
             <div className="memory-empty-state">
               <strong>No memories visible in this view (v1 limitation)</strong>
               <p>
-                CAO v1 exposes per-terminal memory context and agent directories, but not a direct
+                The runtime exposes per-terminal memory context and agent directories, but not a direct
                 list-memories endpoint for every scope.
               </p>
             </div>

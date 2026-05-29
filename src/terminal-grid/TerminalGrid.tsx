@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { caoClient, sessionsQueryKeys, terminalQueryKeys } from '@/api';
 import type { Terminal, InboxMessage } from '@/api';
@@ -18,7 +18,8 @@ export interface TerminalGridProps {
 }
 
 export const TerminalGrid: React.FC<TerminalGridProps> = ({ sessionName }) => {
-  const { terminalId: routeTerminalId } = useParams<{ id: string; terminalId: string }>();
+  const { id: canvasId, terminalId: routeTerminalId } = useParams<{ id: string; terminalId: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
 
@@ -66,15 +67,17 @@ export const TerminalGrid: React.FC<TerminalGridProps> = ({ sessionName }) => {
     };
   }, [viewMode, priorViewMode]);
 
-  const handleAddTerminal = async () => {
-    try {
-      // In Milestone 1, we delegate adding a terminal to the Reconciler/Canvas Builder.
-      // But we can show a placeholder toast or create a simple one if supported.
-      toast.info('Delegating terminal creation to Reconciler / Canvas Builder...');
-    } catch (err: unknown) {
-      const error = err as Error;
-      toast.error(`Error adding terminal: ${error.message}`);
+  const handleAddTerminal = () => {
+    // Adding a terminal means adding a new agent node to the canvas, then
+    // re-deploying via the Reconciler's diff-based edit-after-deploy path
+    // (canvas-reconciler/spec.md §5). Send the user to the canvas builder
+    // for that canvas; if no canvas id is in the URL, surface an error toast
+    // since the user reached this view without a parent canvas context.
+    if (!canvasId) {
+      toast.error('Cannot add terminal: missing canvas context.');
+      return;
     }
+    navigate(`/canvas/${canvasId}`);
   };
 
   const handleFocus = (id: string) => {

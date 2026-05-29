@@ -252,24 +252,9 @@ const CanvasBuilderInner: React.FC = () => {
   const nodes = useMemo<FlowNode[]>(
     () => {
       if (!doc || doc.nodes.length === 0) {
-        return [
-          {
-            id: '__placeholder-agent__',
-            type: 'agent',
-            position: { x: 120, y: 140 },
-            data: ({
-              profile_name: 'placeholder',
-              display_name: 'Placeholder Agent',
-              role: 'custom',
-              system_prompt: '',
-              allowedTools: [],
-              is_entry_point: false,
-            } satisfies CanvasNode['data']) as unknown as Record<string, unknown>,
-            draggable: false,
-            connectable: false,
-            selectable: false,
-          },
-        ];
+        // Empty canvas: render no nodes. The .canvas-empty-overlay element rendered
+        // elsewhere in this page provides the empty-state guidance to the user.
+        return [];
       }
 
       return doc.nodes.map((node) => ({

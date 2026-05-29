@@ -225,7 +225,7 @@ export class CaoClient {
         body,
       });
     } catch (cause) {
-      throw new CaoNetworkError(`Unable to reach CAO endpoint ${path}.`, { endpoint: path, cause });
+      throw new CaoNetworkError(`Unable to reach runtime endpoint ${path}.`, { endpoint: path, cause });
     }
 
     if (!response.ok) {
