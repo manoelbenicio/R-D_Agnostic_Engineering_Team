@@ -70,6 +70,26 @@ export async function triggerLogin(cliProvider: string, configDir?: string): Pro
   }
 }
 
+/**
+ * Revoke/logout an OAuth session by asking the CAO backend
+ * to clear the credentials for a specific config directory.
+ */
+export async function revokeSession(sessionId: string, cliProvider: string, configDir: string): Promise<boolean> {
+  try {
+    const res = await fetch(
+      toEndpoint(`/auth/sessions/${sessionId}`),
+      {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: cliProvider, config_dir: configDir }),
+      }
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function requestJson<T>(path: string): Promise<T> {
   const response = await fetch(toEndpoint(path));
   if (!response.ok) {

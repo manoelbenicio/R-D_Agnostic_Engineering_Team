@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card } from '@/design-system';
 import { useSessionStore } from '@/api/session-store';
 import type { DiscoveredSession } from '@/api/session-discovery';
+import { AddSessionDialog } from './AddSessionDialog';
 import './sessions.css';
 
 const PROVIDERS = [
@@ -13,6 +14,8 @@ const PROVIDERS = [
 
 export const SessionsPage: React.FC = () => {
   const { sessions, loading, error, refresh, addSession } = useSessionStore();
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [dialogProvider, setDialogProvider] = useState<string>();
   const sessionsByProvider = useMemo(
     () =>
       new Map(
@@ -31,6 +34,11 @@ export const SessionsPage: React.FC = () => {
     document.title = 'Sessions · AgentVerse';
     void refresh();
   }, [refresh]);
+
+  const openAddDialog = (provider?: string) => {
+    setDialogProvider(provider);
+    setShowAddDialog(true);
+  };
 
   return (
     <main className="sessions-page">
@@ -81,7 +89,7 @@ export const SessionsPage: React.FC = () => {
                   <span className="sessions-provider-kicker">CLI Provider</span>
                   <h2>{provider.label}</h2>
                 </div>
-                <Button variant="secondary" onClick={() => void addSession(provider.id)}>
+                <Button variant="secondary" onClick={() => openAddDialog(provider.id)}>
                   + Add Session
                 </Button>
               </header>
@@ -113,6 +121,12 @@ export const SessionsPage: React.FC = () => {
           Expiring: <strong>{expiringCount}</strong>
         </span>
       </footer>
+
+      <AddSessionDialog
+        isOpen={showAddDialog}
+        defaultProvider={dialogProvider}
+        onClose={() => setShowAddDialog(false)}
+      />
     </main>
   );
 };
@@ -124,8 +138,21 @@ function SessionCard({
   session: DiscoveredSession;
   onRelogin: (cliProvider: string, configDir?: string) => Promise<void>;
 }) {
+  const revokeSession = useSessionStore((s) => s.revokeSession);
+  const [revoking, setRevoking] = useState(false);
+
+  const handleRevoke = async () => {
+    if (!window.confirm('Revoke session for ' + session.account_email + '?')) return;
+    setRevoking(true);
+    try {
+      await revokeSession(session.id);
+    } finally {
+      setRevoking(false);
+    }
+  };
+
   return (
-    <Card className={`session-card session-card-${session.status}`}>
+    <Card className={`session-card session-card-${session.status}${revoking ? ' session-card-revoking' : ''}`}>
       <div className="session-card-heading">
         <span
           className={`session-status-dot session-status-${session.status}`}
@@ -154,15 +181,17 @@ function SessionCard({
           <Button
             variant="ghost"
             onClick={() => void onRelogin(session.cli_provider, session.config_dir || undefined)}
+            disabled={revoking}
           >
             Re-Login
           </Button>
           <Button
             variant="ghost"
-            disabled
-            title="Revoke is not exposed by the current session API."
+            onClick={() => void handleRevoke()}
+            disabled={revoking}
+            title="Revoke this OAuth session"
           >
-            Revoke
+            {revoking ? 'Revoking…' : 'Revoke'}
           </Button>
         </div>
       </div>

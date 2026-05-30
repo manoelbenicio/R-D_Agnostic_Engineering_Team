@@ -1,0 +1,119 @@
+.add-session-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgba(0, 24, 32, 0.72);
+  backdrop-filter: blur(12px);
+  animation: add-session-overlay-in var(--duration-fast) var(--ease-out);
+}
+
+.add-session-dialog {
+  width: min(100%, 560px);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-glass-card);
+  background: rgba(0, 43, 58, 0.92);
+  padding: var(--space-5);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.52),
+    0 0 32px var(--cyan-soft);
+  animation: add-session-dialog-in var(--duration-normal) var(--ease-out);
+}
+
+.add-session-dialog-header,
+.add-session-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.add-session-dialog-header {
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.add-session-dialog-header span {
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+.add-session-dialog-header h2 {
+  margin: var(--space-1) 0 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+}
+
+.add-session-close {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-3xl);
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.add-session-close:hover,
+.add-session-close:focus-visible {
+  color: var(--cyan);
+  outline: none;
+}
+
+.add-session-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.add-session-feedback {
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--border);
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.add-session-feedback-success {
+  border-color: var(--ops-edge);
+  background: var(--ops-tint);
+  color: var(--ops);
+}
+
+.add-session-feedback-error {
+  border-color: var(--threat-edge);
+  background: var(--threat-tint);
+  color: var(--threat);
+}
+
+.add-session-actions {
+  justify-content: flex-end;
+}
+
+@keyframes add-session-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes add-session-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

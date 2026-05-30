@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { discoverSessions, triggerLogin, type DiscoveredSession } from './session-discovery';
+import { discoverSessions, triggerLogin, revokeSession as revokeSessionApi, type DiscoveredSession } from './session-discovery';
 
 export interface SessionState {
   sessions: DiscoveredSession[];
@@ -10,6 +10,7 @@ export interface SessionState {
   addSession: (cliProvider: string, configDir?: string) => Promise<void>;
   getSession: (id: string) => DiscoveredSession | undefined;
   getSessionsForProvider: (cliProvider: string) => DiscoveredSession[];
+  revokeSession: (sessionId: string) => Promise<boolean>;
   clearError: () => void;
 }
 
@@ -42,5 +43,14 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   getSessionsForProvider: (cliProvider) => (
     get().sessions.filter((session) => session.cli_provider === cliProvider)
   ),
+  revokeSession: async (sessionId: string) => {
+    const session = get().sessions.find(s => s.id === sessionId);
+    if (!session) return false;
+    const success = await revokeSessionApi(sessionId, session.cli_provider, session.config_dir);
+    if (success) {
+      await get().refresh();
+    }
+    return success;
+  },
   clearError: () => set({ error: null }),
 }));
