@@ -16,6 +16,7 @@ export interface SettingsStoreState {
   fonts: FontSettings;
   sttEngine: string;
   theme: string;
+  spBaseUrl: string;
   initialized: boolean;
 
   init: () => Promise<void>;
@@ -36,6 +37,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   },
   sttEngine: 'whisper',
   theme: 'dark',
+  spBaseUrl: 'https://sharepoint.minsait.com',
   initialized: false,
 
   init: async () => {
@@ -47,6 +49,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       const fontsRec = await dbGet('settings', 'fonts');
       const sttEngineRec = await dbGet('settings', 'sttEngine');
       const themeRec = await dbGet('settings', 'theme');
+      const spBaseUrlRec = await dbGet('settings', 'spBaseUrl');
 
       const loadedCaoBaseUrl = (caoBaseUrlRec?.value as string) || import.meta.env.VITE_CAO_BASE_URL || 'http://127.0.0.1:9889';
       caoClient.baseUrl = loadedCaoBaseUrl.replace(/\/$/, '');
@@ -67,6 +70,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
         fonts: loadedFonts,
         sttEngine: (sttEngineRec?.value as string) || 'whisper',
         theme: (themeRec?.value as string) || 'dark',
+        spBaseUrl: (spBaseUrlRec?.value as string) || 'https://sharepoint.minsait.com',
         initialized: true,
       });
     } catch (err) {

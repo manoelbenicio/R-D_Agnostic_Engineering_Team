@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentVerse — MCP, Proxy e o que falta (visual)</title>
+  <style>
+    :root {
+      --deep: #002B3A;
+      --dark: #003E50;
+      --cyan: #00B0BD;
+      --teal: #3F96AE;
+      --light: #7A9CAE;
+      --sky: #BADFF3;
+      --off: #F2F5F6;
+      --white: #fff;
+      --success: #27AE60;
+      --error: #E91E63;
+      --gold: #FFC107;
+      --border: rgba(255, 255, 255, .10);
+      --card: rgba(0, 62, 80, .55);
+      --mono: 'JetBrains Mono', Consolas, monospace;
+      --sans: 'Inter', system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--off);
+      line-height: 1.6;
+      background: linear-gradient(160deg, #001821, var(--deep) 45%, var(--dark));
+      background-attachment: fixed
+    }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 20px 80px
+    }
+
+    header {
+      text-align: center;
+      padding: 36px 16px 26px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 26px
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      border: 1px solid var(--cyan);
+      border-radius: 9999px;
+      padding: 6px 15px;
+      margin-bottom: 14px
+    }
+
+    h1 {
+      font-size: 34px;
+      font-weight: 800;
+      margin: 0 0 8px;
+      background: linear-gradient(90deg, var(--white), var(--sky));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent
+    }
+
+    .sub {
+      color: var(--blue-gray, #B3C1DA);
+      font-size: 15px;
+      max-width: 620px;
+      margin: 0 auto
+    }
+
+    .legend {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 20px 0 4px
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--off)
+    }
+
+    .dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      display: inline-block
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin: 18px 0;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, .25)
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      display: block
+    }
+
+    h2 {
+      font-size: 20px;
+      color: #fff;
+      margin: 36px 0 12px
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    th {
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase
+    }
+
+    .pill {
+      font-family: var(--mono);
+      font-size: 11px;
+      border-radius: 9999px;
+      padding: 3px 10px;
+      white-space: nowrap
+    }
+
+    .ok {
+      background: rgba(39, 174, 96, .16);
+      color: #6fe0a0;
+      border: 1px solid rgba(39, 174, 96, .45)
+    }
+
+    .no {
+      background: rgba(233, 30, 99, .16);
+      color: #ff7aa8;
+      border: 1px solid rgba(233, 30, 99, .45)
+    }
+
+    code {
+      font-family: var(--mono);
+      background: rgba(0, 0, 0, .32);
+      padding: 2px 6px;
+      border-radius: 5px;
+      color: var(--sky);
+      font-size: 12.5px
+    }
+
+    footer {
+      text-align: center;
+      color: var(--light);
+      font-size: 13px;
+      margin-top: 46px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="badge">Visual honesto · MCP + Proxy</div>
+      <h1>MCP, o Proxy, e o que ainda falta</h1>
+      <p class="sub">O mesmo diagrama mostra o caminho real das chamadas entre agentes (MCP) e marca, por cor, o que já
+        existe e o que ainda <b>não está conectado</b>.</p>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--success)"></span>Pronto e funcionando</span>
+        <span><span class="dot" style="background:var(--cyan)"></span>Construído, com testes</span>
+        <span><span class="dot" style="background:var(--error)"></span>Falta conectar (no CAO)</span>
+      </div>
+    </header>
+
+    <div class="card">
+      <svg viewBox="0 0 980 560" role="img" aria-label="Fluxo MCP com proxy e status">
+        <defs>
+          <marker id="cy" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8"
+            orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--cyan)" />
+          </marker>
+          <marker id="gn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8"
+            orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--success)" />
+          </marker>
+          <marker id="rd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8"
+            orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--error)" />
+          </marker>
+        </defs>
+
+        <!-- cao-server boundary -->
+        <rect x="20" y="60" width="940" height="480" rx="16" fill="rgba(0,176,189,.04)" stroke="var(--cyan)"
+          stroke-width="1.5" />
+        <text x="44" y="88" fill="var(--sky)" font-family="monospace" font-size="13" font-weight="700">cao-server
+          (cli-agent-orchestrator) — roda no container</text>
+
+        <!-- Agent A -->
+        <rect x="60" y="150" width="180" height="100" rx="12" fill="rgba(39,174,96,.10)" stroke="var(--success)" />
+        <text x="150" y="186" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">Agente A</text>
+        <text x="150" y="208" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="11">codex ·
+          tmux</text>
+        <text x="150" y="230" text-anchor="middle" fill="#6fe0a0" font-family="monospace" font-size="10">✓ roda</text>
+
+        <!-- MCP router (cao) -->
+        <rect x="370" y="120" width="240" height="70" rx="10" fill="rgba(39,174,96,.10)" stroke="var(--success)" />
+        <text x="490" y="150" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">Roteador MCP</text>
+        <text x="490" y="172" text-anchor="middle" fill="#6fe0a0" font-family="monospace" font-size="10">✓ existe no CAO
+          (handoff/assign/send)</text>
+
+        <!-- PROXY — built but not wired -->
+        <rect x="350" y="250" width="280" height="120" rx="14" fill="rgba(0,176,189,.14)" stroke="var(--cyan)"
+          stroke-width="2.5" stroke-dasharray="7 5" />
+        <text x="490" y="284" text-anchor="middle" fill="var(--cyan)" font-size="16" font-weight="800">🚦
+          VALIDATION-PROXY</text>
+        <text x="490" y="308" text-anchor="middle" fill="var(--sky)" font-family="monospace"
+          font-size="11">topology-guard.ts · validation-proxy.ts</text>
+        <text x="490" y="330" text-anchor="middle" fill="var(--cyan)" font-family="monospace" font-size="11">✓
+          construído + testado</text>
+        <text x="490" y="352" text-anchor="middle" fill="#ff7aa8" font-family="monospace" font-size="11">✗ ainda NÃO
+          ligado ao roteador MCP</text>
+
+        <!-- Agent B allowed -->
+        <rect x="740" y="120" width="180" height="100" rx="12" fill="rgba(39,174,96,.10)" stroke="var(--success)" />
+        <text x="830" y="156" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">Agente B</text>
+        <text x="830" y="178" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="11">kiro-cli ·
+          tmux</text>
+        <text x="830" y="200" text-anchor="middle" fill="#6fe0a0" font-family="monospace" font-size="10">aresta existe
+          ✓</text>
+
+        <!-- Agent C denied -->
+        <rect x="740" y="280" width="180" height="100" rx="12" fill="rgba(233,30,99,.07)" stroke="var(--error)"
+          stroke-dasharray="5 4" />
+        <text x="830" y="316" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">Agente C</text>
+        <text x="830" y="338" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="11">agy ·
+          tmux</text>
+        <text x="830" y="360" text-anchor="middle" fill="#ff7aa8" font-family="monospace" font-size="10">sem aresta
+          ✗</text>
+
+        <!-- A -> MCP router (MCP call) -->
+        <path d="M240,180 L368,160" stroke="var(--cyan)" stroke-width="2.5" marker-end="url(#cy)" />
+        <text x="300" y="150" text-anchor="middle" fill="var(--sky)" font-family="monospace" font-size="11">1. chamada
+          MCP</text>
+        <text x="300" y="200" text-anchor="middle" fill="var(--light)" font-family="monospace"
+          font-size="10">handoff("Reviewer")</text>
+
+        <!-- HOJE: MCP router -> B/C diretamente (sem passar pelo proxy) -->
+        <path d="M610,150 L738,150" stroke="var(--success)" stroke-width="2.5" marker-end="url(#gn)" />
+        <path d="M610,170 L738,310" stroke="var(--success)" stroke-width="2.5" marker-end="url(#gn)" />
+        <text x="675" y="250" text-anchor="middle" fill="#6fe0a0" font-family="monospace" font-size="11"
+          transform="rotate(20 675 250)">HOJE: entrega sem checar</text>
+
+        <!-- ONDE O PROXY DEVERIA ENTRAR: dashed red between router and proxy -->
+        <path d="M490,190 L490,248" stroke="var(--error)" stroke-width="2.5" stroke-dasharray="7 5"
+          marker-end="url(#rd)" />
+        <text x="500" y="222" fill="#ff7aa8" font-family="monospace" font-size="10">2. (faltando) desviar p/ o
+          proxy</text>
+
+        <!-- proxy decisions (dashed = not active yet) -->
+        <path d="M630,300 L738,170" stroke="var(--success)" stroke-width="2" stroke-dasharray="4 4" opacity=".6"
+          marker-end="url(#gn)" />
+        <text x="690" y="240" text-anchor="middle" fill="#6fe0a0" font-family="monospace" font-size="9"
+          opacity=".7">permitiria ✓</text>
+        <path d="M630,340 L738,330" stroke="var(--error)" stroke-width="2" stroke-dasharray="4 4" opacity=".7"
+          marker-end="url(#rd)" />
+        <text x="690" y="320" text-anchor="middle" fill="#ff7aa8" font-family="monospace" font-size="9"
+          opacity=".8">bloquearia ✗</text>
+
+        <!-- caption box -->
+        <rect x="60" y="430" width="860" height="86" rx="10" fill="rgba(0,0,0,.22)" stroke="var(--border)" />
+        <text x="80" y="458" fill="#fff" font-size="13" font-weight="700" font-family="Inter,sans-serif">Resumo
+          visual:</text>
+        <text x="80" y="480" fill="#6fe0a0" font-family="monospace" font-size="11.5">VERDE = funciona hoje (agentes +
+          roteador MCP entregam as chamadas).</text>
+        <text x="80" y="500" fill="#ff7aa8" font-family="monospace" font-size="11.5">VERMELHO tracejado = o desvio para
+          o proxy NÃO existe ainda — por isso ele não bloqueia nada na prática.</text>
+      </svg>
+    </div>
+
+    <h2>Em uma frase</h2>
+    <div class="card">
+      <p style="font-size:16px;margin:0">Hoje, quando um agente chama outro, o <b style="color:#6fe0a0">roteador MCP do
+          CAO entrega direto</b> (linhas verdes) — <b>sem passar pelo proxy</b>. O proxy <b
+          style="color:var(--cyan)">existe e está testado</b> (a caixa pontilhada), mas o <b
+          style="color:#ff7aa8">desvio que o colocaria no caminho ainda não foi feito</b> (a seta vermelha tracejada).
+        Fazer esse desvio = plugar no CAO (plugin para auditar, ou patch/fork para bloquear).</p>
+    </div>
+
+    <h2>Tabela do estado real</h2>
+    <div class="card">
+      <table>
+        <tr>
+          <th>Peça</th>
+          <th>No diagrama</th>
+          <th>Estado</th>
+        </tr>
+        <tr>
+          <td>Agentes (codex/kiro/agy)</td>
+          <td>caixas verdes</td>
+          <td><span class="pill ok">rodam no container</span></td>
+        </tr>
+        <tr>
+          <td>Roteador MCP (handoff/assign/send)</td>
+          <td>caixa verde central</td>
+          <td><span class="pill ok">existe no CAO</span></td>
+        </tr>
+        <tr>
+          <td>Lógica do proxy (<code>topology-guard.ts</code>)</td>
+          <td>caixa ciano pontilhada</td>
+          <td><span class="pill ok">construída + testes</span></td>
+        </tr>
+        <tr>
+          <td>Desvio MCP → proxy</td>
+          <td>seta vermelha tracejada</td>
+          <td><span class="pill no">não existe</span></td>
+        </tr>
+        <tr>
+          <td>Proxy plugado e bloqueando</td>
+          <td>—</td>
+          <td><span class="pill no">depende de plugin/fork do CAO</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <footer>AgentVerse · MCP + Proxy (visual honesto) · self-contained · 2026-05-29</footer>
+  </div>
+</body>
+
+</html>

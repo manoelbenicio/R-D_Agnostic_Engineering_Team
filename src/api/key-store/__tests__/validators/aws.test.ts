@@ -26,7 +26,7 @@ describe('validateAWS', () => {
 
     const res = await validateAWS('mock-access-key-id', 'mock-secret-access-key');
     expect(res.ok).toBe(true);
-    expect(res.models).toEqual(['q-developer', 'kiro-agent-v1']);
+    expect(res.models).toEqual(['opus-4.8', 'opus-4.7', 'opus-4.6', 'kiro-agent-v1', 'q-developer']);
 
     expect(capturedBody).toBe('Action=GetCallerIdentity&Version=2011-06-15');
     expect(capturedHeaders).not.toBeNull();

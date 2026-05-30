@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docker Data Inventory — 21LAPGLMVPJ4</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2d3148;
+      --text: #e4e6f0;
+      --text-dim: #8b8fa8;
+      --accent: #6c5ce7;
+      --green: #00b894;
+      --red: #e17055;
+      --yellow: #fdcb6e;
+      --blue: #74b9ff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 32px;
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, #6c5ce7, #74b9ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .summary-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .summary-card .label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4px;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 32px 0 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title .icon { font-size: 1.4rem; }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    thead th {
+      background: #1e2235;
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid rgba(45, 49, 72, 0.5);
+      vertical-align: middle;
+    }
+
+    tbody td:last-child { border-right: none; }
+
+    tbody tr:hover { background: rgba(108, 92, 231, 0.06); }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-yes {
+      background: rgba(0, 184, 148, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(0, 184, 148, 0.3);
+    }
+
+    .badge-no {
+      background: rgba(225, 112, 85, 0.12);
+      color: var(--red);
+      border: 1px solid rgba(225, 112, 85, 0.25);
+    }
+
+    .badge-type {
+      background: rgba(108, 92, 231, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(108, 92, 231, 0.25);
+    }
+
+    .path {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.78rem;
+      color: var(--blue);
+      word-break: break-all;
+    }
+
+    .size-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .size-bar .bar {
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--blue));
+      min-width: 2px;
+    }
+
+    .size-text {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .name-cell {
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot-red { background: var(--red); }
+    .dot-yellow { background: var(--yellow); }
+  </style>
+</head>
+<body>
+
+  <h1>🐳 Docker Data Inventory</h1>
+  <p class="subtitle">Host: 21LAPGLMVPJ4 &nbsp;|&nbsp; WSL: Ubuntu 2 &nbsp;|&nbsp; Docker: v29.4.3 &nbsp;|&nbsp; Generated: 2026-05-28 21:28</p>
+
+  <div class="summary-cards">
+    <div class="summary-card">
+      <div class="value">73.75 GB</div>
+      <div class="label">VHDX File Size</div>
+    </div>
+    <div class="summary-card">
+      <div class="value">69 GB</div>
+      <div class="label">Used Inside WSL</div>
+    </div>
+    <div class="summary-card">
+      <div class="value">41 GB</div>
+      <div class="label">Docker Root Dir</div>
+    </div>
+    <div class="summary-card">
+      <div class="value">28 / 17</div>
+      <div class="label">Containers (Total / Active)</div>
+    </div>
+    <div class="summary-card">
+      <div class="value">391 MB</div>
+      <div class="label">Total Volume Data</div>
+    </div>
+  </div>
+
+  <!-- VHDX DATA DRIVE -->
+  <div class="section-title"><span class="icon">💾</span> Data Drive (VHDX)</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Full Path</th>
+          <th>Size</th>
+          <th>In Use?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><span class="badge badge-type">VHDX</span></td>
+          <td class="name-cell">ext4.vhdx</td>
+          <td class="path">C:\Users\mbenicios\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu_79rhkp1fndgsc\LocalState\ext4.vhdx</td>
+          <td>
+            <div class="size-bar">
+              <span class="size-text">73.75 GB</span>
+              <div class="bar" style="width: 100%;"></div>
+            </div>
+          </td>
+          <td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CONTAINERS -->
+  <div class="section-title"><span class="icon">📦</span> Containers (28)</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Image</th>
+          <th>Full Path (Merged Dir)</th>
+          <th>Status</th>
+          <th>In Use?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">smythos-app</td><td>smythos/smythos-studio:alpha</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h (healthy)</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>2</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">smythos-traefik</td><td>traefik:v3.6.2</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>3</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">smythos-mysql</td><td>mysql:8.0</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h (healthy)</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>4</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">smythos-redis</td><td>redis:7-alpine</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h (healthy)</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>5</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">smythos-git-sync</td><td>registry.k8s.io/git-sync/git-sync:v4.2.4</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h (healthy)</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>6</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-web-1</td><td>langgenius/dify-web:1.14.2</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>7</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-ssrf_proxy-1</td><td>ubuntu/squid:latest</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>8</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-db_postgres-1</td><td>postgres:15-alpine</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h (healthy)</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>9</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-sandbox-1</td><td>langgenius/dify-sandbox:0.2.15</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h (healthy)</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>10</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-weaviate-1</td><td>semitechnologies/weaviate:1.27.0</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>11</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-redis-1</td><td>redis:6-alpine</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h (healthy)</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>12</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">agentverse-db</td><td>postgres:16-alpine</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h (healthy)</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>13</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">portalshift-db</td><td>postgres:16-alpine</td><td class="path">/var/lib/docker/overlay2/…/merged</td><td>Up 32h (healthy)</td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td></tr>
+        <tr><td>14</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-nginx-1</td><td>nginx:latest</td><td class="path">—</td><td>Created</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>15</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-worker_beat-1</td><td>langgenius/dify-api:1.14.2</td><td class="path">—</td><td>Created</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>16</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-api_websocket-1</td><td>langgenius/dify-api:1.14.2</td><td class="path">—</td><td>Created</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>17</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-worker-1</td><td>langgenius/dify-api:1.14.2</td><td class="path">—</td><td>Created</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>18</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-api-1</td><td>langgenius/dify-api:1.14.2</td><td class="path">—</td><td>Created</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>19</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-plugin_daemon-1</td><td>langgenius/dify-plugin-daemon:0.6.1-local</td><td class="path">—</td><td>Created</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>20</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">docker-init_permissions-1</td><td>busybox:latest</td><td class="path">—</td><td>Exited (0) 36h ago</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>21</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">jobflow-docling-api</td><td>ad99cfb8bf7a</td><td class="path">—</td><td>Exited 10 days ago</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>22</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">portalratecard-etl-api-1</td><td>e5985c1ec7d0</td><td class="path">—</td><td>Exited 12 days ago</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>23</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">portalratecard-redis-1</td><td>redis:7-alpine</td><td class="path">—</td><td>Exited 10 days ago</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>24</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">portalratecard-postgres-1</td><td>7d400e340efb</td><td class="path">—</td><td>Exited 10 days ago</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>25</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">dn_api</td><td>505dccac1ea5</td><td class="path">—</td><td>Exited 10 days ago</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>26</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">dn_pgadmin</td><td>cefc4cc6b7d9</td><td class="path">—</td><td>Exited 10 days ago</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>27</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">dn_postgres</td><td>4e6e670bb069</td><td class="path">—</td><td>Exited 10 days ago</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+        <tr><td>28</td><td><span class="badge badge-type">CTR</span></td><td class="name-cell">dn_redis</td><td>redis:7-alpine</td><td class="path">—</td><td>Exited 10 days ago</td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- VOLUMES -->
+  <div class="section-title"><span class="icon">💿</span> Volumes (15)</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Full Path</th>
+          <th>Size</th>
+          <th>In Use?</th>
+          <th>Used By</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">smythos-studio_mysql_data</td><td class="path">/var/lib/docker/volumes/smythos-studio_mysql_data/_data</td><td><div class="size-bar"><span class="size-text">204 MB</span><div class="bar" style="width:100%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>smythos-mysql</td></tr>
+        <tr><td>2</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">agentic_platform_pgdata</td><td class="path">/var/lib/docker/volumes/agentic_platform_pgdata/_data</td><td><div class="size-bar"><span class="size-text">47 MB</span><div class="bar" style="width:23%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>agentverse-db</td></tr>
+        <tr><td>3</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">dn_pgdata</td><td class="path">/var/lib/docker/volumes/dn_pgdata/_data</td><td><div class="size-bar"><span class="size-text">47 MB</span><div class="bar" style="width:23%"></div></div></td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td><td>dn_postgres (stopped)</td></tr>
+        <tr><td>4</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">portal2portal_estimatior_ai_pgdata</td><td class="path">/var/lib/docker/volumes/portal2portal_estimatior_ai_pgdata/_data</td><td><div class="size-bar"><span class="size-text">46 MB</span><div class="bar" style="width:22%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>portalshift-db</td></tr>
+        <tr><td>5</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">portalratecard_pgdata</td><td class="path">/var/lib/docker/volumes/portalratecard_pgdata/_data</td><td><div class="size-bar"><span class="size-text">46 MB</span><div class="bar" style="width:22%"></div></div></td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td><td>portalratecard-postgres (stopped)</td></tr>
+        <tr><td>6</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">8d1d4af143d1…</td><td class="path">/var/lib/docker/volumes/8d1d4af143d1c88f08220f87e5da6c53b57cc188338b3f9ef33dd936cbd207b7/_data</td><td><div class="size-bar"><span class="size-text">196 KB</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td><td>dn_pgadmin (stopped)</td></tr>
+        <tr><td>7</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">smythos-studio_redis_data</td><td class="path">/var/lib/docker/volumes/smythos-studio_redis_data/_data</td><td><div class="size-bar"><span class="size-text">55 KB</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>smythos-redis</td></tr>
+        <tr><td>8</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">smythos-studio_smythos_data</td><td class="path">/var/lib/docker/volumes/smythos-studio_smythos_data/_data</td><td><div class="size-bar"><span class="size-text">3 B</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>smythos-app</td></tr>
+        <tr><td>9</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">smythos-studio_traefik_letsencrypt</td><td class="path">/var/lib/docker/volumes/smythos-studio_traefik_letsencrypt/_data</td><td><div class="size-bar"><span class="size-text">0 B</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>smythos-traefik</td></tr>
+        <tr><td>10</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">5dd410fd9f63…</td><td class="path">/var/lib/docker/volumes/5dd410fd9f63d5e3e266b5bb80719d7cf6e6317fbd7362043a28c1dca7f7fab0/_data</td><td><div class="size-bar"><span class="size-text">20 KB</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>docker-ssrf_proxy-1</td></tr>
+        <tr><td>11</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">e1b7f57dd4fd…</td><td class="path">/var/lib/docker/volumes/e1b7f57dd4fd39c4f6a4306d3f0969645adbb83648d3a7dc6e313ef4c0e88e77/_data</td><td><div class="size-bar"><span class="size-text">2 KB</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>docker-ssrf_proxy-1</td></tr>
+        <tr><td>12</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">69c267e1eb58…</td><td class="path">/var/lib/docker/volumes/69c267e1eb5833f5d67b9b1eaeb2b6886ca46c5e021ec0c0095e33742c378e1f/_data</td><td><div class="size-bar"><span class="size-text">0 B</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td><td>portalratecard-redis (stopped)</td></tr>
+        <tr><td>13</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">709946a89b6c…</td><td class="path">/var/lib/docker/volumes/709946a89b6c1661438e0e995bf3a9f51bc422862f865e43c918cf595e328510/_data</td><td><div class="size-bar"><span class="size-text">0 B</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td><td>dn_redis (stopped)</td></tr>
+        <tr><td>14</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">dashboard_job_tracker_docling-tmp</td><td class="path">/var/lib/docker/volumes/dashboard_job_tracker_docling-tmp/_data</td><td><div class="size-bar"><span class="size-text">0 B</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td><td>—</td></tr>
+        <tr><td>15</td><td><span class="badge badge-type">VOL</span></td><td class="name-cell">jobflow-docling-tmp</td><td class="path">/var/lib/docker/volumes/jobflow-docling-tmp/_data</td><td><div class="size-bar"><span class="size-text">0 B</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td><td>jobflow-docling-api (stopped)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- IMAGES -->
+  <div class="section-title"><span class="icon">🖼️</span> Images (17)</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Type</th>
+          <th>Image</th>
+          <th>ID</th>
+          <th>Full Path</th>
+          <th>Size</th>
+          <th>In Use?</th>
+          <th>Used By</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">langgenius/dify-api:1.14.2</td><td>062815df8ed6</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">4.12 GB</span><div class="bar" style="width:100%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>docker-worker_beat-1 +4</td></tr>
+        <tr><td>2</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">smythos/smythos-studio:alpha</td><td>7816d468d980</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">2.47 GB</span><div class="bar" style="width:60%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>smythos-app</td></tr>
+        <tr><td>3</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">langgenius/dify-plugin-daemon:0.6.1-local</td><td>fa7ad45e1b2a</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">2.31 GB</span><div class="bar" style="width:56%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>docker-plugin_daemon-1</td></tr>
+        <tr><td>4</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">mysql:8.0</td><td>7dcddc01f13b</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">1.10 GB</span><div class="bar" style="width:27%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>smythos-mysql</td></tr>
+        <tr><td>5</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">langgenius/dify-sandbox:0.2.15</td><td>750e1111426e</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">848 MB</span><div class="bar" style="width:20%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>docker-sandbox-1</td></tr>
+        <tr><td>6</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">langgenius/dify-web:1.14.2</td><td>db73434e185a</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">759 MB</span><div class="bar" style="width:18%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>docker-web-1</td></tr>
+        <tr><td>7</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">postgres:16-alpine</td><td>16bc17c64a57</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">396 MB</span><div class="bar" style="width:10%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>agentverse-db +1</td></tr>
+        <tr><td>8</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">postgres:15-alpine</td><td>df7bca0066e6</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">392 MB</span><div class="bar" style="width:10%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>docker-db_postgres-1</td></tr>
+        <tr><td>9</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">ubuntu/squid:latest</td><td>6a097f68bae7</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">303 MB</span><div class="bar" style="width:7%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>docker-ssrf_proxy-1</td></tr>
+        <tr><td>10</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">nginx:latest</td><td>5aca99593157</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">241 MB</span><div class="bar" style="width:6%"></div></div></td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td><td>docker-nginx-1 (created)</td></tr>
+        <tr><td>11</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">traefik:v3.6.2</td><td>aaf0f6185419</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">240 MB</span><div class="bar" style="width:6%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>smythos-traefik</td></tr>
+        <tr><td>12</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">semitechnologies/weaviate:1.27.0</td><td>53fa576934f8</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">234 MB</span><div class="bar" style="width:6%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>docker-weaviate-1</td></tr>
+        <tr><td>13</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">node:22-alpine</td><td>968df39aedce</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">230 MB</span><div class="bar" style="width:6%"></div></div></td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td><td>—</td></tr>
+        <tr><td>14</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">registry.k8s.io/git-sync/git-sync:v4.2.4</td><td>8bfbf2862369</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">85 MB</span><div class="bar" style="width:2%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>smythos-git-sync</td></tr>
+        <tr><td>15</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">redis:7-alpine</td><td>6ab0b6e73817</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">58 MB</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>smythos-redis</td></tr>
+        <tr><td>16</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">redis:6-alpine</td><td>c9ab371a96b0</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">42 MB</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-yes"><span class="dot dot-green"></span> YES</span></td><td>docker-redis-1</td></tr>
+        <tr><td>17</td><td><span class="badge badge-type">IMG</span></td><td class="name-cell">busybox:latest</td><td>fd8d9aa63ba2</td><td class="path">/var/lib/docker/overlay2/…</td><td><div class="size-bar"><span class="size-text">7 MB</span><div class="bar" style="width:1%"></div></div></td><td><span class="badge badge-no"><span class="dot dot-red"></span> NO</span></td><td>docker-init_permissions (exited)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    Docker Data Inventory &bull; Generated by Antigravity IDE &bull; 2026-05-28
+  </div>
+
+</body>
+</html>

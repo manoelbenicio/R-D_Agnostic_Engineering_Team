@@ -8,6 +8,7 @@ type AgentNodeData = CanvasNode['data'];
 export const AgentNode: React.FC<NodeProps> = ({ data, selected }) => {
   const agentData = data as unknown as AgentNodeData;
   const badgeStatus = agentData.is_entry_point ? 'completed' : 'idle';
+  const agentColor = agentData.color || 'var(--cyan)';
 
   return (
     <Card
@@ -16,7 +17,8 @@ export const AgentNode: React.FC<NodeProps> = ({ data, selected }) => {
       style={{
         width: 230,
         padding: 'var(--space-4)',
-        borderColor: selected ? 'var(--cyan)' : 'var(--border)',
+        borderColor: agentColor,
+        boxShadow: selected ? `0 0 24px ${agentColor}40` : undefined,
       }}
     >
       <Handle type="target" position={Position.Left} className="canvas-node-handle" />

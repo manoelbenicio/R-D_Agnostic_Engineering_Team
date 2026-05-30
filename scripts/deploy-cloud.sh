@@ -53,7 +53,16 @@ PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || echo 
 REGION="${REGION:-us-central1}"
 IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo latest)}"
 ARTIFACT_REPO="${ARTIFACT_REPO:-agentverse}"
-SERVICE_NAME="${SERVICE_NAME:-agentverse-runtime}"
+# Per-tenant model (task 3.4): one Cloud Run service per tenant from a shared
+# image. Defaults deploy the `default` tenant; override TENANT_ID per tenant.
+TENANT_ID="${TENANT_ID:-default}"
+SERVICE_NAME="${SERVICE_NAME:-agentverse-runtime-${TENANT_ID}}"
+MIN_SCALE="${MIN_SCALE:-0}"
+MAX_SCALE="${MAX_SCALE:-10}"
+CONTAINER_CONCURRENCY="${CONTAINER_CONCURRENCY:-1}"
+CPU_LIMIT="${CPU_LIMIT:-1}"
+MEMORY_LIMIT="${MEMORY_LIMIT:-1Gi}"
+TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-3600}"
 RUNTIME_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/runtime:${IMAGE_TAG}"
 FIREBASE_PROJECT="${FIREBASE_PROJECT:-}"
 
@@ -66,6 +75,7 @@ step "AgentVerse cloud deploy"
 hr
 echo "  PROJECT_ID    : ${PROJECT_ID:-<unset>}"
 echo "  REGION        : $REGION"
+echo "  TENANT_ID     : $TENANT_ID"
 echo "  IMAGE_TAG     : $IMAGE_TAG"
 echo "  RUNTIME_IMAGE : $RUNTIME_IMAGE"
 echo "  SERVICE_NAME  : $SERVICE_NAME"
@@ -94,7 +104,11 @@ ok "image pushed to Artifact Registry"
 
 step "Applying Cloud Run service manifest"
 SPA_ORIGIN_PLACEHOLDER="https://${PROJECT_ID}.web.app"
-PROJECT_ID="${PROJECT_ID}" REGION="${REGION}" IMAGE_TAG="${IMAGE_TAG}" SPA_ORIGIN="${SPA_ORIGIN_PLACEHOLDER}" \
+TENANT_ID="${TENANT_ID}" PROJECT_ID="${PROJECT_ID}" REGION="${REGION}" IMAGE_TAG="${IMAGE_TAG}" \
+  SPA_ORIGIN="${SPA_ORIGIN_PLACEHOLDER}" \
+  MIN_SCALE="${MIN_SCALE}" MAX_SCALE="${MAX_SCALE}" \
+  CONTAINER_CONCURRENCY="${CONTAINER_CONCURRENCY}" \
+  CPU_LIMIT="${CPU_LIMIT}" MEMORY_LIMIT="${MEMORY_LIMIT}" TIMEOUT_SECONDS="${TIMEOUT_SECONDS}" \
   envsubst < infra/runtime/service.yaml \
   | gcloud run services replace - --region "${REGION}" --project "${PROJECT_ID}"
 ok "Cloud Run service applied"

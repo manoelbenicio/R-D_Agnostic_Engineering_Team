@@ -1,6 +1,6 @@
 import { CanvasDocument, CanvasEdge, CanvasNode, OrchestrationType } from '@/shared/canvas-types';
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
-import { SCHEMA_VERSION } from '@/canvas-document/schema-version';
+import { SCHEMA_VERSION } from '@/shared/schema-version';
 
 export interface CanvasTemplate {
   id: string;
@@ -259,7 +259,7 @@ function template({
       edges: canvasEdges,
       config: {
         working_directory: '~',
-        provider_default: 'claude_code',
+        provider_default: '',
       },
       deploy_state: { status: 'draft' },
     },
@@ -289,8 +289,8 @@ function templateNode({
       profile_name: `${role}-${templateId}-${index + 1}`,
       display_name: label,
       role,
-      provider: 'claude_code',
-      model: 'claude-3-5-sonnet-latest',
+      provider: undefined,
+      model: '',
       system_prompt: systemPromptForRole(role, label),
       allowedTools: allowedToolsForRole(role),
       is_entry_point: index === 0,

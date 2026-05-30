@@ -45,14 +45,40 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         procps \
         tini \
+        unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv (fast Python tool installer).
 RUN pip install --no-cache-dir "uv>=0.4,<0.6"
 
+# Node.js 20 (required to bundle npm-distributed worker CLIs, e.g. Codex CLI).
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install the orchestration runtime engine.
 RUN uv tool install --python 3.12 cli-agent-orchestrator
 ENV PATH="/root/.local/bin:${PATH}"
+
+# Optional worker CLI bundling (task 2.6 — USER DECISION, not chosen here).
+#   A fresh deploy can only *execute* canvases if a worker CLI is on PATH.
+#   This is intentionally left empty so no CLI is baked in by default; the
+#   user picks which to bundle (e.g. Claude Code, Kiro CLI, etc.).
+#
+#   Pass a command to run via the build arg, e.g.:
+#     docker build --build-arg WORKER_CLI="npm i -g @anthropic-ai/claude-code" ...
+#     docker build --build-arg WORKER_CLI="uv tool install kiro-cli" ...
+#   See docs/cloud-runtime-auth.md "Bundling a worker CLI" for the options
+#   matrix and tradeoffs. Empty (default) = no CLI installed.
+ARG WORKER_CLI=""
+RUN if [ -n "$WORKER_CLI" ]; then \
+        echo "Bundling worker CLI: $WORKER_CLI" && sh -c "$WORKER_CLI"; \
+    else \
+        echo "No WORKER_CLI provided — image ships without a worker CLI (task 2.6 deferred)."; \
+    fi
+
+# Antigravity CLI installs as 'agy' but CAO detects 'gemini'. Create a symlink.
+RUN if command -v agy >/dev/null 2>&1; then ln -sf "$(command -v agy)" /usr/local/bin/gemini; fi
 
 # Upstream cli-agent-orchestrator hardcodes CORS_ORIGINS / ALLOWED_HOSTS in
 # constants.py and ignores the CAO_CORS_ORIGINS / CAO_ALLOWED_HOSTS env vars.

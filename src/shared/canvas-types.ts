@@ -16,6 +16,10 @@ export interface CanvasNode {
     system_prompt: string;
     allowedTools?: string[];
     is_entry_point: boolean;
+    /** Agent wire color — used for edges originating from this node and its border accent. */
+    color?: string;
+    /** Links this agent to a specific OAuth session for billing/auth routing. */
+    session_id?: string;
   };
 }
 
@@ -32,6 +36,7 @@ export interface CanvasNodeSnapshot {
   allowedTools: string[];
   model: string;
   provider: string;
+  session_id?: string;
 }
 
 export interface CanvasDocument {
@@ -58,4 +63,17 @@ export interface CanvasDocument {
     profile_snapshots?: Record<string, CanvasNodeSnapshot>;
     edge_change_advisory?: boolean;
   };
+}
+
+/** Represents an authenticated CLI session detected on the host machine. */
+export interface AuthSession {
+  id: string;
+  cli_provider: string;
+  account_email: string;
+  config_dir: string;
+  status: 'active' | 'expiring' | 'expired';
+  expires_at?: string;
+  subscription_type?: string;
+  billing_label?: string;
+  auth_method: 'oauth' | 'sso' | 'gcloud' | 'api_key';
 }

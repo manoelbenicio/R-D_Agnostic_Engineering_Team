@@ -5,8 +5,9 @@
  * Skipped unless `KEYSTORE_LIVE=1` AND both `AWS_ACCESS_KEY_ID` and
  * `AWS_SECRET_ACCESS_KEY` are set.
  *
- * Note: the validator returns a synthetic models list (`q-developer`,
- * `kiro-agent-v1`) when STS accepts the signed request, so the assertions
+ * Note: the validator returns a synthetic models list (`opus-4.8`,
+ * `opus-4.7`, `opus-4.6`, `kiro-agent-v1`, `q-developer`) when STS accepts the
+ * signed request, so the assertions
  * mirror that contract — what we are really proving here is that the sigv4
  * signing logic still produces a 200 from the live STS endpoint.
  */

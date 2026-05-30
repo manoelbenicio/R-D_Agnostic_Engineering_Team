@@ -4,8 +4,11 @@ import { Badge, Card, CostLabel, FormField, Button } from '@/design-system';
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
 import { useSettingsStore } from '@/settings/settings-store';
 import { useCostEstimate } from './use-cost-estimate';
+import { useTokenCost } from './use-token-cost';
+import type { CostConfidence } from './token-cost';
 import { formatPercent, formatUsd } from './format';
-import { CostWarning, COST_ESTIMATE_DISCLAIMER } from './cost-warning';
+import { CostWarning } from './cost-warning';
+import { COST_ESTIMATE_DISCLAIMER } from './cost-warning-constants';
 import './finops.css';
 
 type SettingsWithBudget = {
@@ -16,6 +19,7 @@ type SettingsWithBudget = {
 export const FinopsPage: React.FC = () => {
   const window = useMemo(() => getMonthToDateWindow(Date.now()), []);
   const { data, isLoading, error } = useCostEstimate(window);
+  const { data: tokenCost } = useTokenCost(window);
   const settings = useSettingsStore((state) => state as unknown as SettingsWithBudget);
   const budgetUsd = settings.finopsBudgetUsd ?? 100;
   const [budgetInput, setBudgetInput] = useState(String(budgetUsd));
@@ -84,6 +88,10 @@ export const FinopsPage: React.FC = () => {
         <KpiCard title="Cost Rate">
           <CostLabel value={`${formatUsd(estimate.currentHourlyRate)}/hr`} />
         </KpiCard>
+        <KpiCard title="Token Cost (Tier 2)">
+          <CostLabel value={formatUsd(tokenCost?.total ?? 0)} />
+          <ConfidenceBadge confidence={tokenCost?.confidence ?? 'estimated'} />
+        </KpiCard>
       </section>
 
       <section className="finops-content-grid">
@@ -130,6 +138,21 @@ function KpiCard({ title, children }: { title: string; children: React.ReactNode
       <span className="finops-label">{title}</span>
       <div className="finops-kpi-body">{children}</div>
     </Card>
+  );
+}
+
+function ConfidenceBadge({ confidence }: { confidence: CostConfidence }) {
+  const variant = confidence === 'measured' ? 'completed' : confidence === 'mixed' ? 'processing' : 'idle';
+  const label =
+    confidence === 'measured'
+      ? 'Measured'
+      : confidence === 'mixed'
+        ? 'Partially measured'
+        : 'Estimated';
+  return (
+    <Badge variant={variant} title="Measured = from real token usage; Estimated = Tier 1 wall-clock fallback">
+      {label}
+    </Badge>
   );
 }
 

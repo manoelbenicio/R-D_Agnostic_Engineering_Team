@@ -63,6 +63,9 @@ export const NavBar: React.FC = () => {
           <NavLink to="/memory" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} id="nav-link-memory">
             Memory
           </NavLink>
+          <NavLink to="/sessions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} id="nav-link-sessions">
+            Sessions
+          </NavLink>
         </div>
       </div>
       <div className="navbar-right">

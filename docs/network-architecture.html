@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AgentVerse — Arquitetura de Rede &amp; SO</title>
+<style>
+  :root{
+    --deep:#002B3A;--dark:#003E50;--primary:#06596E;--secondary:#346679;
+    --teal:#3F96AE;--cyan:#00B0BD;--light:#7A9CAE;--blue-gray:#B3C1DA;
+    --sky:#BADFF3;--off:#F2F5F6;--white:#fff;
+    --success:#27AE60;--warning:#FF9800;--error:#E91E63;--gold:#FFC107;
+    --host:#7c5cff;--container:#00B0BD;--external:#FFC107;
+    --border:rgba(255,255,255,.10);--card:rgba(0,62,80,.55);
+    --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+    --sans:'Inter',system-ui,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--sans);color:var(--off);line-height:1.62;
+    background:linear-gradient(160deg,#001821,var(--deep) 45%,var(--dark));
+    background-attachment:fixed}
+  .wrap{max-width:1240px;margin:0 auto;padding:40px 22px 90px}
+  header.hero{text-align:center;padding:48px 20px 36px;border-bottom:1px solid var(--border);margin-bottom:34px}
+  .badge{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--cyan);border:1px solid var(--cyan);border-radius:9999px;padding:6px 16px;margin-bottom:18px;
+    box-shadow:0 0 18px rgba(0,176,189,.25)}
+  h1{font-size:40px;font-weight:800;margin:0 0 10px;background:linear-gradient(90deg,var(--white),var(--sky));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--blue-gray);font-size:16px;max-width:760px;margin:0 auto}
+  h2{font-size:24px;font-weight:700;margin:52px 0 16px;color:var(--white);display:flex;align-items:center;gap:12px}
+  h2 .n{font-family:var(--mono);font-size:14px;color:var(--cyan);border:1px solid var(--cyan);border-radius:8px;
+    padding:3px 10px;min-width:32px;text-align:center}
+  h3{font-size:17px;color:var(--sky);margin:24px 0 10px}
+  p{color:var(--blue-gray)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin:18px 0;
+    backdrop-filter:blur(6px);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}h1{font-size:30px}}
+  code{font-family:var(--mono);background:rgba(0,0,0,.32);padding:2px 6px;border-radius:5px;color:var(--sky);font-size:12.5px}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--cyan);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.07em}
+  .pill{font-family:var(--mono);font-size:11px;border-radius:9999px;padding:2px 9px;white-space:nowrap}
+  .ok{background:rgba(39,174,96,.15);color:#6fe0a0;border:1px solid rgba(39,174,96,.4)}
+  .no{background:rgba(233,30,99,.15);color:#ff7aa8;border:1px solid rgba(233,30,99,.4)}
+  .warn{background:rgba(255,152,0,.15);color:#ffc266;border:1px solid rgba(255,152,0,.4)}
+  .toc{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:24px}
+  .toc a{font-size:12.5px;color:var(--sky);text-decoration:none;border:1px solid var(--border);border-radius:9999px;
+    padding:6px 13px;transition:.2s}
+  .toc a:hover{border-color:var(--cyan);color:var(--cyan)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0}
+  .legend span{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--blue-gray)}
+  .dot{width:13px;height:13px;border-radius:3px;display:inline-block}
+  svg{width:100%;height:auto;display:block;border-radius:10px}
+  .note{font-size:13px;color:var(--light);border-left:3px solid var(--cyan);padding:6px 0 6px 14px;margin:14px 0}
+  .note.bad{border-color:var(--error)}
+  .kv{font-family:var(--mono);font-size:13px}
+  .kv b{color:var(--sky)}
+  ol li,ul li{color:var(--blue-gray);margin:5px 0}
+  footer{text-align:center;color:var(--light);font-size:13px;margin-top:56px;border-top:1px solid var(--border);padding-top:22px}
+  .tag{display:inline-block;font-family:var(--mono);font-size:11px;border-radius:6px;padding:2px 8px;margin:3px 4px 0 0}
+  .t-host{background:rgba(124,92,255,.14);border:1px solid var(--host);color:#c9bbff}
+  .t-cont{background:rgba(0,176,189,.12);border:1px solid var(--container);color:var(--sky)}
+  .t-ext{background:rgba(255,193,7,.12);border:1px solid var(--external);color:#ffd874}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="badge">Network &amp; OS Architecture · SME view</div>
+    <h1>AgentVerse — Rede &amp; Sistema Operacional</h1>
+    <p class="sub">Quem comunica com quem, em qual porta, com qual protocolo, em qual processo e em qual sistema operacional. Dados <strong style="color:var(--cyan)">verificados</strong> no container real (Debian 13, tini, uvicorn, tmux 3.5a).</p>
+    <nav class="toc">
+      <a href="#planta">1 · Planta de rede</a>
+      <a href="#camadas">2 · Camadas SO</a>
+      <a href="#orquestrador">3 · O robô orquestrador</a>
+      <a href="#portas">4 · Portas &amp; protocolos</a>
+      <a href="#conexoes">5 · Matriz de conexões</a>
+      <a href="#sequencia">6 · Sequência (deploy)</a>
+      <a href="#cloud">7 · Mudança no cloud</a>
+      <a href="#stack">8 · Stack verificada</a>
+    </nav>
+  </header>
+
+  <!-- 1. PLANTA -->
+  <section id="planta">
+    <h2><span class="n">1</span> Planta de rede (LOCAL)</h2>
+    <p>Três zonas de confiança: a <b>máquina host</b> (seu WSL/Windows), o <b>container Docker</b> (sandbox isolado), e o <b>mundo externo</b> (APIs dos provedores). O navegador e o Docker rodam no host; o runtime e os agentes rodam dentro do container.</p>
+    <div class="card">
+      <div class="legend">
+        <span><span class="dot" style="background:var(--host)"></span>Host (sua máquina)</span>
+        <span><span class="dot" style="background:var(--container)"></span>Container Docker</span>
+        <span><span class="dot" style="background:var(--external)"></span>Externo (internet)</span>
+      </div>
+      <svg viewBox="0 0 1000 560" role="img" aria-label="Diagrama de rede local">
+        <defs>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--cyan)"/></marker>
+          <marker id="ax" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--gold)"/></marker>
+        </defs>
+
+        <!-- HOST zone -->
+        <rect x="20" y="20" width="600" height="520" rx="14" fill="rgba(124,92,255,.05)" stroke="var(--host)" stroke-width="1.5" stroke-dasharray="6 4"/>
+        <text x="40" y="46" fill="#c9bbff" font-family="monospace" font-size="13" font-weight="700">HOST — WSL2 / Windows (kernel 6.6 microsoft-standard)</text>
+
+        <!-- Browser -->
+        <rect x="48" y="70" width="250" height="78" rx="10" fill="rgba(124,92,255,.12)" stroke="var(--host)"/>
+        <text x="173" y="98" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">🖥️ Navegador</text>
+        <text x="173" y="118" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="10">SPA React (Vite)</text>
+        <text x="173" y="134" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="10">IndexedDB local</text>
+
+        <!-- Vite -->
+        <rect x="340" y="70" width="250" height="78" rx="10" fill="rgba(124,92,255,.12)" stroke="var(--host)"/>
+        <text x="465" y="98" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">⚡ Vite Dev Server</text>
+        <text x="465" y="118" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="10">processo Node 20 no host</text>
+        <text x="465" y="134" text-anchor="middle" fill="#6fe0a0" font-family="monospace" font-size="11">:5173</text>
+
+        <!-- Docker engine band -->
+        <rect x="48" y="200" width="542" height="320" rx="12" fill="rgba(0,176,189,.05)" stroke="var(--container)" stroke-width="1.5"/>
+        <text x="68" y="224" fill="var(--sky)" font-family="monospace" font-size="12" font-weight="700">🐳 Docker Engine 29 → container "agentverse-runtime"</text>
+
+        <!-- cao-server -->
+        <rect x="72" y="244" width="494" height="96" rx="10" fill="rgba(0,176,189,.12)" stroke="var(--container)"/>
+        <text x="319" y="270" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">🤖 cao-server  (uvicorn / FastAPI)</text>
+        <text x="319" y="290" text-anchor="middle" fill="#6fe0a0" font-family="monospace" font-size="11">escuta 0.0.0.0:9889  · PID1 = tini</text>
+        <text x="319" y="310" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="10">REST + WebSocket + MCP control plane</text>
+        <text x="319" y="326" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="10">localhost-only (rejeita Host/IP não-loopback)</text>
+
+        <!-- tmux sessions -->
+        <rect x="72" y="356" width="494" height="148" rx="10" fill="rgba(255,193,7,.06)" stroke="var(--gold)" stroke-dasharray="4 3"/>
+        <text x="319" y="378" text-anchor="middle" fill="#ffd874" font-size="12" font-weight="700">tmux 3.5a — sessões isoladas (1 por agente)</text>
+        <rect x="92" y="392" width="140" height="96" rx="8" fill="rgba(255,193,7,.10)" stroke="var(--gold)"/>
+        <text x="162" y="416" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">codex</text>
+        <text x="162" y="434" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="9">/usr/bin/codex</text>
+        <text x="162" y="452" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="9">CAO_TERMINAL_ID</text>
+        <rect x="249" y="392" width="140" height="96" rx="8" fill="rgba(255,193,7,.10)" stroke="var(--gold)"/>
+        <text x="319" y="416" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">kiro-cli</text>
+        <text x="319" y="434" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="9">~/.local/bin</text>
+        <text x="319" y="452" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="9">PTY próprio</text>
+        <rect x="406" y="392" width="140" height="96" rx="8" fill="rgba(255,193,7,.10)" stroke="var(--gold)"/>
+        <text x="476" y="416" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">agy</text>
+        <text x="476" y="434" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="9">Antigravity</text>
+        <text x="476" y="452" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="9">~/.local/bin</text>
+
+        <!-- EXTERNAL zone -->
+        <rect x="660" y="20" width="320" height="520" rx="14" fill="rgba(255,193,7,.05)" stroke="var(--external)" stroke-width="1.5" stroke-dasharray="6 4"/>
+        <text x="680" y="46" fill="#ffd874" font-family="monospace" font-size="13" font-weight="700">EXTERNO — Internet</text>
+        <rect x="690" y="392" width="260" height="96" rx="10" fill="rgba(255,193,7,.10)" stroke="var(--external)"/>
+        <text x="820" y="424" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">APIs dos provedores</text>
+        <text x="820" y="444" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="10">OpenAI · AWS/Kiro · Google</text>
+
+        <!-- ===== VALIDATION-PROXY (MCP control plane checkpoint) — drawn on top ===== -->
+        <!-- arrow: agent MCP call rises from tmux up into cao-server, passing the proxy -->
+        <path d="M110,420 L110,352" stroke="var(--error)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+        <text x="118" y="404" fill="#ff7aa8" font-family="monospace" font-size="9">MCP handoff/</text>
+        <text x="118" y="416" fill="#ff7aa8" font-family="monospace" font-size="9">assign/send</text>
+        <!-- the proxy band sitting on the cao-server <-> tmux boundary -->
+        <rect x="96" y="330" width="446" height="22" rx="11" fill="rgba(0,176,189,.20)" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="4 3"/>
+        <text x="319" y="345" text-anchor="middle" fill="var(--cyan)" font-family="Inter,sans-serif" font-size="11" font-weight="700">🚦 VALIDATION-PROXY — checa cada chamada MCP contra a topologia do canvas</text>
+        <text x="820" y="462" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="10">HTTPS :443 (saída)</text>
+
+        <!-- connections -->
+        <!-- browser -> vite -->
+        <path d="M298,109 L338,109" stroke="var(--cyan)" stroke-width="2" marker-end="url(#a)"/>
+        <!-- browser -> cao (loopback) -->
+        <path d="M150,148 L150,243" stroke="var(--cyan)" stroke-width="2" marker-end="url(#a)"/>
+        <text x="60" y="200" fill="var(--sky)" font-family="monospace" font-size="10">HTTP+WS</text>
+        <text x="55" y="214" fill="var(--sky)" font-family="monospace" font-size="10">127.0.0.1:9889</text>
+        <!-- agents -> external apis -->
+        <path d="M546,440 L688,440" stroke="var(--gold)" stroke-width="2" marker-end="url(#ax)"/>
+        <text x="600" y="430" fill="#ffd874" font-family="monospace" font-size="10">HTTPS</text>
+        <!-- creds mount -->
+        <text x="62" y="528" fill="var(--light)" font-family="monospace" font-size="10">bind-mount ~/.codex ~/.kiro ~/.gemini ~/.aws (read-only) → container</text>
+      </svg>
+    </div>
+    <div class="note">A <b>fronteira de confiança</b> mais importante: o navegador fala com o runtime <b>só pelo loopback</b> <code>127.0.0.1:9889</code>. Os agentes (dentro do container) falam com as APIs externas em <code>HTTPS :443</code> de saída, usando as credenciais montadas do host.</div>
+    <div class="note" style="border-color:var(--cyan)"><b>🚦 Onde entra o proxy:</b> a faixa ciano no diagrama fica <b>dentro do cao-server, no plano de controle MCP</b> — exatamente na fronteira entre as sessões tmux (agentes) e o roteamento do servidor. Quando um agente (ex.: <code>codex</code>) chama <code>handoff</code>/<code>assign</code>/<code>send_message</code> para outro, a chamada <b>sobe por MCP</b> (seta vermelha) e o proxy a intercepta <b>antes da entrega</b>: aresta existe no canvas → entrega; não existe → bloqueia e registra. Note que o proxy <b>não</b> fica no caminho navegador↔runtime (loopback) nem na saída HTTPS — só no tráfego <b>agente↔agente</b>.</div>
+  </section>
+
+  <!-- 2. CAMADAS SO -->
+  <section id="camadas">
+    <h2><span class="n">2</span> Camadas de sistema operacional</h2>
+    <p>Empilhamento real, de baixo (hardware) para cima (agente). Cada camada é um nível de isolamento.</p>
+    <div class="card">
+      <table>
+        <tr><th>Nível</th><th>Camada</th><th>Tecnologia (verificada)</th><th>Papel</th></tr>
+        <tr><td>0</td><td>Hardware / Windows</td><td>Windows + WSL2</td><td>máquina física</td></tr>
+        <tr><td>1</td><td>Kernel Linux (WSL2)</td><td><code>6.6.114 microsoft-standard-WSL2</code></td><td>kernel compartilhado</td></tr>
+        <tr><td>2</td><td>Docker Engine</td><td><code>Docker 29.4.3</code></td><td>cria/isola containers (namespaces, cgroups)</td></tr>
+        <tr><td>3</td><td>SO do container</td><td><code>Debian GNU/Linux 13 (trixie)</code></td><td>userland isolado do agente</td></tr>
+        <tr><td>4</td><td>PID 1 / init</td><td><code>tini</code></td><td>encaminha SIGTERM, evita zumbis</td></tr>
+        <tr><td>5</td><td>Runtime engine</td><td><code>uvicorn</code> + FastAPI (Python 3.12.13)</td><td>cao-server :9889</td></tr>
+        <tr><td>6</td><td>Multiplexador de sessões</td><td><code>tmux 3.5a</code></td><td>1 sessão/PTY por agente</td></tr>
+        <tr><td>7</td><td>Agentes (workers)</td><td><code>codex</code> · <code>kiro-cli</code> · <code>agy</code> (Node 20)</td><td>fazem o trabalho</td></tr>
+      </table>
+    </div>
+    <div class="note">WSL2 = o Docker e o "Linux" usam o <b>mesmo kernel</b> (6.6). O container Debian 13 <b>não</b> tem kernel próprio — ele compartilha o do WSL2; isolamento é por namespaces/cgroups do Docker, não por VM.</div>
+  </section>
+
+  <!-- 3. ORQUESTRADOR -->
+  <section id="orquestrador">
+    <h2><span class="n">3</span> O "robô orquestrador" — onde está e o que faz</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Quem é o orquestrador</h3>
+        <p>É o <code>cao-server</code> (CLI Agent Orchestrator, da AWS Labs) — processo Python/uvicorn que roda <b>dentro do container</b>, na porta <code>9889</code>. Ele não "pensa"; ele <b>coordena</b>:</p>
+        <ul>
+          <li>cria <b>sessões tmux</b> (uma por agente);</li>
+          <li>lança o CLI worker certo em cada uma;</li>
+          <li>roteia mensagens entre agentes via <b>MCP</b> identificando cada um pelo <code>CAO_TERMINAL_ID</code>;</li>
+          <li>rastreia status (IDLE/PROCESSING/COMPLETED/ERROR);</li>
+          <li>faz stream do PTY de volta pela SPA via WebSocket.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Padrão: supervisor → workers</h3>
+        <p>Um agente <b>supervisor</b> (entry point) delega para <b>workers</b> especialistas usando 3 primitivas MCP:</p>
+        <table>
+          <tr><th>Primitiva</th><th>Semântica</th></tr>
+          <tr><td><code>handoff</code></td><td>síncrono — transfere e espera o resultado</td></tr>
+          <tr><td><code>assign</code></td><td>assíncrono — dispara e segue (callback depois)</td></tr>
+          <tr><td><code>send_message</code></td><td>mensagem para a inbox de um agente existente</td></tr>
+        </table>
+        <div class="note" style="margin-top:12px">Essas 3 chamadas viajam por <b>MCP dentro do cao-server</b> — <b>não</b> passam pela SPA. É exatamente o caminho que o <b>validation-proxy</b> precisa interceptar.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. PORTAS -->
+  <section id="portas">
+    <h2><span class="n">4</span> Portas, protocolos &amp; binding</h2>
+    <div class="card">
+      <table>
+        <tr><th>Porta</th><th>Processo</th><th>Bind</th><th>Protocolo</th><th>Zona</th></tr>
+        <tr><td><code>5173</code></td><td>Vite dev server</td><td>host</td><td>HTTP</td><td><span class="tag t-host">host</span></td></tr>
+        <tr><td><code>4173</code></td><td>Vite preview (build)</td><td>host</td><td>HTTP</td><td><span class="tag t-host">host</span></td></tr>
+        <tr><td><code>9889</code></td><td>cao-server (uvicorn)</td><td><code>0.0.0.0</code> no container → publicado em <code>127.0.0.1:9889</code> do host</td><td>HTTP + WebSocket + MCP</td><td><span class="tag t-cont">container</span></td></tr>
+        <tr><td><code>443</code></td><td>agentes → APIs LLM</td><td>saída</td><td>HTTPS</td><td><span class="tag t-ext">externo</span></td></tr>
+      </table>
+      <div class="note">O uvicorn escuta em <code>0.0.0.0:9889</code> <em>dentro</em> do container, mas o <code>docker run -p 127.0.0.1:9889:9889</code> só expõe ao loopback do host. Além disso o próprio cao-server <b>rejeita</b> qualquer Host/IP não-loopback (defesa anti DNS-rebinding) — por isso o WebSocket fecha com código <code>4003 ip_not_allowed</code> se a origem não for permitida.</div>
+    </div>
+    <div class="card">
+      <h3>Endpoints reais do runtime</h3>
+      <table>
+        <tr><th>Endpoint</th><th>Método</th><th>Uso</th></tr>
+        <tr><td><code>/health</code></td><td>GET</td><td>liveness (retorna <code>{"status":"ok"}</code>)</td></tr>
+        <tr><td><code>/sessions</code></td><td>GET/POST/DELETE</td><td>gestão de sessões</td></tr>
+        <tr><td><code>/sessions/{s}/terminals</code></td><td>GET/POST</td><td>terminais por sessão</td></tr>
+        <tr><td><code>/terminals/{id}/output</code></td><td>GET</td><td>scrollback (full/tail/visible)</td></tr>
+        <tr><td><code>/terminals/{id}/input</code></td><td>POST</td><td>enviar input ao PTY</td></tr>
+        <tr><td><code>/terminals/{id}/ws</code></td><td>WS</td><td>stream binário do PTY (xterm)</td></tr>
+        <tr><td><code>/terminals/{id}/inbox/messages</code></td><td>GET/POST</td><td>inbox entre agentes</td></tr>
+        <tr><td><code>/flows</code></td><td>GET/POST…</td><td>execuções agendadas (cron)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5. MATRIZ -->
+  <section id="conexoes">
+    <h2><span class="n">5</span> Matriz de conexões — quem fala com quem</h2>
+    <div class="card">
+      <table>
+        <tr><th>Origem</th><th>Destino</th><th>Canal</th><th>Direção</th><th>Notas</th></tr>
+        <tr><td>Navegador (SPA)</td><td>Vite :5173</td><td>HTTP</td><td>→</td><td>carrega a app (só dev)</td></tr>
+        <tr><td>Navegador (SPA)</td><td>cao-server :9889</td><td>HTTP/REST</td><td>↔</td><td>sessões, terminais, flows</td></tr>
+        <tr><td>Navegador (SPA)</td><td>cao-server :9889</td><td>WebSocket</td><td>↔</td><td>stream PTY (binário, xterm)</td></tr>
+        <tr><td>Navegador (SPA)</td><td>IndexedDB</td><td>API browser</td><td>↔</td><td>canvas, chaves, usage (client-side)</td></tr>
+        <tr><td>cao-server</td><td>tmux</td><td>processo/PTY</td><td>→</td><td>cria sessão por agente</td></tr>
+        <tr><td>Agente A</td><td>Agente B</td><td><b>MCP</b> (via cao-mcp-server)</td><td>→</td><td>handoff/assign/send_message — <b>ponto do proxy</b></td></tr>
+        <tr><td>Agente (codex/kiro/agy)</td><td>API do provedor</td><td>HTTPS :443</td><td>→</td><td>saída p/ internet; auth via creds montadas</td></tr>
+        <tr><td>Docker host</td><td>container <code>/root/.cao</code> etc.</td><td>bind-mount + volume</td><td>↔</td><td>credenciais (ro) + estado (rw)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6. SEQUENCIA -->
+  <section id="sequencia">
+    <h2><span class="n">6</span> Sequência — deploy de um canvas (ponta a ponta)</h2>
+    <div class="card">
+      <svg viewBox="0 0 980 430" role="img" aria-label="Diagrama de sequência">
+        <defs><marker id="s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--cyan)"/></marker></defs>
+        <!-- lifelines -->
+        <g font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">
+          <text x="90" y="28">Navegador</text><text x="340" y="28">cao-server</text>
+          <text x="590" y="28">tmux</text><text x="840" y="28">Agente CLI</text>
+        </g>
+        <g stroke="var(--border)" stroke-width="1">
+          <line x1="90" y1="40" x2="90" y2="410"/><line x1="340" y1="40" x2="340" y2="410"/>
+          <line x1="590" y1="40" x2="590" y2="410"/><line x1="840" y1="40" x2="840" y2="410"/>
+        </g>
+        <g font-family="monospace" font-size="11" fill="var(--sky)">
+          <line x1="90" y1="70" x2="335" y2="70" stroke="var(--cyan)" stroke-width="2" marker-end="url(#s)"/>
+          <text x="210" y="62" text-anchor="middle">POST /sessions (REST)</text>
+          <line x1="340" y1="120" x2="585" y2="120" stroke="var(--cyan)" stroke-width="2" marker-end="url(#s)"/>
+          <text x="465" y="112" text-anchor="middle">cria sessão + PTY</text>
+          <line x1="590" y1="170" x2="835" y2="170" stroke="var(--cyan)" stroke-width="2" marker-end="url(#s)"/>
+          <text x="712" y="162" text-anchor="middle">lança codex/kiro/agy</text>
+          <line x1="835" y1="220" x2="595" y2="220" stroke="var(--gold)" stroke-width="2" marker-end="url(#s)"/>
+          <text x="712" y="212" text-anchor="middle" fill="#ffd874">HTTPS :443 → API do provedor</text>
+          <line x1="585" y1="270" x2="345" y2="270" stroke="var(--cyan)" stroke-width="2" marker-end="url(#s)"/>
+          <text x="465" y="262" text-anchor="middle">output do PTY</text>
+          <line x1="335" y1="320" x2="95" y2="320" stroke="var(--cyan)" stroke-width="2" marker-end="url(#s)"/>
+          <text x="210" y="312" text-anchor="middle">WS: stream binário (xterm)</text>
+          <line x1="835" y1="370" x2="595" y2="370" stroke="var(--error)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#s)"/>
+          <text x="712" y="362" text-anchor="middle" fill="#ff7aa8">MCP handoff → validation-proxy checa</text>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 7. CLOUD -->
+  <section id="cloud">
+    <h2><span class="n">7</span> O que muda no Cloud (GCP)</h2>
+    <div class="card">
+      <table>
+        <tr><th>Componente</th><th>Local</th><th>Cloud</th></tr>
+        <tr><td>SPA</td><td>Vite :5173 (host)</td><td>Firebase Hosting :443 (CDN)</td></tr>
+        <tr><td>Runtime</td><td>Docker :9889 (loopback)</td><td>Cloud Run :$PORT (HTTPS público)</td></tr>
+        <tr><td>Credenciais</td><td>bind-mount do host</td><td>Secret Manager → env</td></tr>
+        <tr><td>Rede do runtime</td><td>loopback-only ✓</td><td><span class="pill no">conflito</span> rejeita host/IP não-loopback</td></tr>
+      </table>
+      <div class="note bad"><b>Bloqueio de rede (testado):</b> o cao-server foi desenhado para <b>localhost-only</b>. Em Cloud Run ele recebe um Host público (<code>*.run.app</code>) e conexões não-loopback → responde <code>400</code> no HTTP e fecha o WS com <code>4003 ip_not_allowed</code>. Para cloud funcionar: (a) um <b>reverse-proxy</b> dentro do container reescrevendo Host→<code>localhost</code> e terminando o WS, ou (b) <b>patch no CAO</b> para liberar a origem do Cloud Run (= manter fork). Decisão pendente.</div>
+    </div>
+  </section>
+
+  <!-- 8. STACK -->
+  <section id="stack">
+    <h2><span class="n">8</span> Stack tecnológica (verificada no container)</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Backend / runtime</h3>
+        <p class="kv">SO: <b>Debian GNU/Linux 13 (trixie)</b><br>
+        init: <b>tini</b> (PID 1)<br>
+        engine: <b>cli-agent-orchestrator</b> (uvicorn + FastAPI)<br>
+        Python: <b>3.12.13</b> · uv tool<br>
+        sessões: <b>tmux 3.5a</b><br>
+        Node (p/ Codex): <b>v20.20.2</b></p>
+      </div>
+      <div class="card">
+        <h3>Workers (agentes) — paths reais</h3>
+        <p class="kv">codex → <b>/usr/bin/codex</b><br>
+        kiro-cli → <b>/root/.local/bin/kiro-cli</b><br>
+        agy → <b>/root/.local/bin/agy</b><br>
+        cao-server → <b>/root/.local/bin/cao-server</b></p>
+      </div>
+      <div class="card">
+        <h3>Frontend</h3>
+        <p class="kv">React 18 + Vite 5 · TypeScript<br>
+        Zustand (estado) · TanStack Query (rede)<br>
+        xterm.js (terminal) · React Flow (canvas)<br>
+        IndexedDB (persistência client-side)</p>
+      </div>
+      <div class="card">
+        <h3>Host &amp; infra</h3>
+        <p class="kv">Host: <b>WSL2</b> kernel 6.6.114<br>
+        Docker: <b>29.4.3</b><br>
+        Cloud (alvo): Cloud Run + Firebase Hosting + Artifact Registry + Secret Manager<br>
+        Auth: Firebase Auth (JWT) — cloud</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>AgentVerse · Arquitetura de Rede &amp; SO · dados verificados no container em 2026-05-29 · self-contained (offline)</footer>
+</div>
+</body>
+</html>

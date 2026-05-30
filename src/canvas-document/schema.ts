@@ -33,6 +33,8 @@ const canvasNodeSchema = z.object({
     system_prompt: z.string(),
     allowedTools: z.array(z.string()).optional(),
     is_entry_point: z.boolean(),
+    color: z.string().optional(),
+    session_id: z.string().optional(),
   }),
 });
 

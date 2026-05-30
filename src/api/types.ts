@@ -84,6 +84,7 @@ export interface Flow {
 export interface CreateSessionInput {
   profile: string;
   working_directory: string;
+  env_vars?: Record<string, string>;  // Per-terminal env var injection for OAuth routing
 }
 
 export type AddTerminalInput = CreateSessionInput;

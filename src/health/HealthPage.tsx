@@ -221,6 +221,16 @@ export const HealthPage: React.FC = () => {
       <header className="health-header">
         <h1>System Health & Diagnostics</h1>
         <p>Verify Central Orchestrator status, validation of API keys, and browser compatibility flags.</p>
+        <Button
+          variant="secondary"
+          disabled={serverHealth.providersLoading}
+          onClick={() => {
+            void checkServers();
+            toast.info('Re-syncing runtime & CLI auth…');
+          }}
+        >
+          {serverHealth.providersLoading ? 'Re-syncing…' : '↻ Re-sync Runtime & CLIs'}
+        </Button>
       </header>
 
       <div className="health-sections">

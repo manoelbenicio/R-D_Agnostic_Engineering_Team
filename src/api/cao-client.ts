@@ -200,6 +200,29 @@ export class CaoClient {
     });
   }
 
+  /** Discover authenticated CLI sessions on the CAO host. */
+  async listAuthSessions(): Promise<{
+    id: string;
+    cli_provider: string;
+    account_email: string;
+    config_dir: string;
+    status: string;
+    expires_at?: string;
+    subscription_type?: string;
+    auth_method: string;
+  }[]> {
+    try {
+      const res = await fetch(`${this.baseUrl}/auth/sessions`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  }
+
   private async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const endpoint = this.toEndpoint(path);
     const responseMode = options.responseMode ?? 'json';

@@ -24,13 +24,21 @@ export function generateProfileMarkdown(data: {
   name: string;
   role: string;
   provider: string;
+  model?: string;
   allowedTools: string[];
   systemPrompt: string;
+  session_id?: string;
 }): string {
   const lines: string[] = ['---'];
   lines.push(`name: ${data.name}`);
   lines.push(`role: ${data.role}`);
   lines.push(`provider: ${data.provider}`);
+  if (data.model) {
+    lines.push(`model: ${data.model}`);
+  }
+  if (data.session_id) {
+    lines.push(`session_id: ${data.session_id}`);
+  }
   if (data.allowedTools && data.allowedTools.length > 0) {
     lines.push('allowedTools:');
     for (const tool of data.allowedTools) {
@@ -154,8 +162,9 @@ export async function reconcileCanvas(
         const toolsChanged = !arraysEqual(node.data.allowedTools || [], snapshot.allowedTools || []);
         const modelChanged = (node.data.model || '') !== (snapshot.model || '');
         const providerChanged = (node.data.provider || providerDefault) !== (snapshot.provider || '');
+        const sessionChanged = (node.data.session_id || '') !== (snapshot.session_id || '');
 
-        if (systemPromptChanged || toolsChanged || modelChanged || providerChanged) {
+        if (systemPromptChanged || toolsChanged || modelChanged || providerChanged || sessionChanged) {
           nodesToUpdate.push(node);
         }
       }
@@ -262,8 +271,10 @@ export async function reconcileCanvas(
           name: profileName,
           role: node.data.role,
           provider: node.data.provider || currentCanvasDoc.config.provider_default,
+          model: node.data.model,
           allowedTools: node.data.allowedTools || [],
           systemPrompt: finalSystemPrompt,
+          session_id: node.data.session_id,
         });
 
         // Save before CAO call (atomic persistence)
@@ -280,6 +291,7 @@ export async function reconcileCanvas(
               allowedTools: node.data.allowedTools || [],
               model: node.data.model || '',
               provider: node.data.provider || currentCanvasDoc.config.provider_default,
+              session_id: node.data.session_id || '',
             },
           };
           await canvasStore.save(currentCanvasDoc);
@@ -454,8 +466,10 @@ export async function reconcileCanvas(
             name: profileName,
             role: nodeToUpdate.data.role,
             provider: nodeToUpdate.data.provider || currentCanvasDoc.config.provider_default,
+            model: nodeToUpdate.data.model,
             allowedTools: nodeToUpdate.data.allowedTools || [],
             systemPrompt: finalSystemPrompt,
+            session_id: nodeToUpdate.data.session_id,
           });
 
           // Install updated profile
@@ -494,6 +508,7 @@ export async function reconcileCanvas(
               allowedTools: nodeToUpdate.data.allowedTools || [],
               model: nodeToUpdate.data.model || '',
               provider: nodeToUpdate.data.provider || currentCanvasDoc.config.provider_default,
+              session_id: nodeToUpdate.data.session_id || '',
             },
           };
           await canvasStore.save(currentCanvasDoc);
@@ -530,8 +545,10 @@ export async function reconcileCanvas(
             name: profileName,
             role: nodeToAdd.data.role,
             provider: nodeToAdd.data.provider || currentCanvasDoc.config.provider_default,
+            model: nodeToAdd.data.model,
             allowedTools: nodeToAdd.data.allowedTools || [],
             systemPrompt: finalSystemPrompt,
+            session_id: nodeToAdd.data.session_id,
           });
 
           await client.installProfile(profileMarkdown);
@@ -553,6 +570,7 @@ export async function reconcileCanvas(
               allowedTools: nodeToAdd.data.allowedTools || [],
               model: nodeToAdd.data.model || '',
               provider: nodeToAdd.data.provider || currentCanvasDoc.config.provider_default,
+              session_id: nodeToAdd.data.session_id || '',
             },
           };
           await canvasStore.save(currentCanvasDoc);

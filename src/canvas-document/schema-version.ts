@@ -1,5 +1,2 @@
-export const SCHEMA_VERSION = 1;
-
-export function isCompatible(doc: { schema_version: number }): boolean {
-  return doc.schema_version <= SCHEMA_VERSION;
-}
+// Backwards-compatible re-export. New code should import from '@/shared/schema-version'.
+export { SCHEMA_VERSION, isCompatible } from '@/shared/schema-version';

@@ -1,5 +1,5 @@
 /* eslint-disable agentverse/no-sideways-capability-imports */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Background,
   Connection,
@@ -16,6 +16,7 @@ import {
   ReactFlowProvider,
   applyEdgeChanges,
   applyNodeChanges,
+  reconnectEdge,
   useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -23,6 +24,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Card, Modal } from '@/design-system';
 import { NoProvidersNotice } from '@/api/key-store/no-providers-notice';
 import { useValidatedProviders } from '@/api/key-store/use-validated-providers';
+import { useInstalledCliProviders } from '@/api/use-installed-cli-providers';
 import { useKeyStore } from '@/api/key-store/store';
 import { canvasStore } from '@/canvas-document/store';
 import { CanvasDocument, CanvasEdge, CanvasNode, OrchestrationType } from '@/shared/canvas-types';
@@ -44,8 +46,8 @@ import AgentPalette from './AgentPalette';
 import BlockConfigurationPanel from './BlockConfigurationPanel';
 import OrchestrationEdge from './OrchestrationEdge';
 import { validateCanvasForDeploy } from './deploy-validation';
-import { getCanvasProviderOptions } from './provider-options';
-import { createAgentNode, StarterRole } from './role-templates';
+import { getCanvasProviderOptionsWithCli } from './provider-options';
+import { AGENT_COLOR_PALETTE, createAgentNode, StarterRole } from './role-templates';
 import './canvas-builder.css';
 
 type FlowNode = Node<Record<string, unknown>, 'agent'>;
@@ -66,9 +68,10 @@ const CanvasBuilderInner: React.FC = () => {
   const toast = useToast();
   const reactFlow = useReactFlow();
   const validatedProviders = useValidatedProviders();
+  const { installed: installedCliProviders } = useInstalledCliProviders();
   const providerOptions = useMemo(
-    () => getCanvasProviderOptions(validatedProviders),
-    [validatedProviders]
+    () => getCanvasProviderOptionsWithCli(validatedProviders, installedCliProviders),
+    [validatedProviders, installedCliProviders]
   );
   const setVoiceOpen = useVoiceStore((state) => state.setOpen);
   const keyStoreInit = useKeyStore((state) => state.init);
@@ -82,6 +85,10 @@ const CanvasBuilderInner: React.FC = () => {
   const [isTouchOnly, setTouchOnly] = useState(false);
   const [isReconciling, setReconciling] = useState(false);
   const [entryPointDialogOpen, setEntryPointDialogOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+  const [zenMode, setZenMode] = useState(false);
+  const [panelsCollapsed, setPanelsCollapsed] = useState(false);
 
   useVoiceHotkey();
 
@@ -125,14 +132,14 @@ const CanvasBuilderInner: React.FC = () => {
 
   const updateDoc = useCallback(
     (updater: (current: CanvasDocument) => CanvasDocument) => {
-      console.log('[DEBUG] updateDoc called, isReconciling:', isReconciling);
+
       setDoc((current) => {
         if (!current) {
-          console.log('[DEBUG] updateDoc: current is null');
+
           return current;
         }
         if (isReconciling || current.deploy_state.status === 'deploying') {
-          console.log('[DEBUG] updateDoc: early exit (isReconciling/deploying)', isReconciling, current.deploy_state.status);
+
           return current;
         }
         const nextDoc = updater(structuredClone(current));
@@ -143,7 +150,7 @@ const CanvasBuilderInner: React.FC = () => {
         ) {
           return current;
         }
-        console.log('[DEBUG] updateDoc: updated successfully, nodes count:', nextDoc.nodes.length);
+
         setPast((items) => [...items.slice(-19), structuredClone(current)]);
         setFuture([]);
         return nextDoc;
@@ -156,10 +163,10 @@ const CanvasBuilderInner: React.FC = () => {
     const handleAddNodeEvent = (e: Event) => {
       const customEvent = e as CustomEvent<{ role: string; provider?: string }>;
       const { role, provider } = customEvent.detail;
-      const options = getCanvasProviderOptions(validatedProviders);
-      console.log('[DEBUG] handleAddNodeEvent:', role, provider, 'validatedProviders:', validatedProviders, 'options:', options);
-      const defaultProvider = provider || options[0]?.provider || 'claude_code';
-      console.log('[DEBUG] handleAddNodeEvent defaultProvider:', defaultProvider);
+      const options = getCanvasProviderOptionsWithCli(validatedProviders, installedCliProviders);
+
+      const defaultProvider = provider || options[0]?.provider || '';
+
       
       updateDoc((current) => {
         const newNode = createAgentNode({
@@ -167,9 +174,16 @@ const CanvasBuilderInner: React.FC = () => {
           position: { x: 250, y: 150 + current.nodes.length * 50 },
           hasEntryPoint: current.nodes.some((n) => n.data.is_entry_point),
           provider: defaultProvider,
+          nodeIndex: current.nodes.length,
         });
         
-        newNode.data.model = defaultProvider === 'claude_code' ? 'claude-3-5-sonnet' : 'gpt-4o';
+        const providerModelMap: Record<string, string> = {
+          kiro_cli: 'opus-4.8',
+          gemini_cli: 'gemini-3.5-flash',
+          codex: 'gpt-5.5',
+          claude_code: 'claude-sonnet-4-20250514',
+        };
+        newNode.data.model = providerModelMap[defaultProvider] || '';
         
         const nextNodes = [...current.nodes, newNode];
         return {
@@ -249,6 +263,16 @@ const CanvasBuilderInner: React.FC = () => {
     [updateDoc]
   );
 
+  const handleEdgeDelete = useCallback(
+    (edgeId: string) => {
+      updateDoc((current) => ({
+        ...current,
+        edges: current.edges.filter((edge) => edge.id !== edgeId),
+      }));
+    },
+    [updateDoc]
+  );
+
   const nodes = useMemo<FlowNode[]>(
     () => {
       if (!doc || doc.nodes.length === 0) {
@@ -272,8 +296,8 @@ const CanvasBuilderInner: React.FC = () => {
 
   const edges = useMemo<FlowEdge[]>(
     () =>
-      (doc?.edges ?? []).map((edge) => toFlowEdge(edge, handleEdgeTypeChange)),
-    [doc?.edges, handleEdgeTypeChange]
+      (doc?.edges ?? []).map((edge) => toFlowEdge(edge, doc?.nodes ?? [], handleEdgeTypeChange, handleEdgeDelete)),
+    [doc?.edges, doc?.nodes, handleEdgeTypeChange, handleEdgeDelete]
   );
 
   const onNodesChange = useCallback(
@@ -319,7 +343,7 @@ const CanvasBuilderInner: React.FC = () => {
           return current;
         }
         const currentFlowEdges: FlowEdge[] = current.edges.map((edge) =>
-          toFlowEdge(edge, handleEdgeTypeChange)
+          toFlowEdge(edge, current.nodes, handleEdgeTypeChange, handleEdgeDelete)
         );
         const nextFlowEdges = applyEdgeChanges(changes, currentFlowEdges);
         return {
@@ -328,27 +352,74 @@ const CanvasBuilderInner: React.FC = () => {
         };
       });
     },
-    [isTouchOnly, isCanvasLocked, handleEdgeTypeChange, updateDoc]
+    [isTouchOnly, isCanvasLocked, handleEdgeTypeChange, handleEdgeDelete, updateDoc]
   );
 
   const onConnect = useCallback(
     (connection: Connection) => {
       if (!connection.source || !connection.target || isTouchOnly || isCanvasLocked) return;
-      updateDoc((current) => ({
-        ...current,
-        edges: [
-          ...current.edges,
-          {
-            id: crypto.randomUUID(),
-            source: connection.source!,
-            target: connection.target!,
-            type: 'handoff',
-            label: 'handoff',
-          },
-        ],
-      }));
+      // Prevent self-connections
+      if (connection.source === connection.target) return;
+      updateDoc((current) => {
+        // Prevent duplicate edges between same source→target
+        const duplicate = current.edges.some(
+          (e) => e.source === connection.source && e.target === connection.target
+        );
+        if (duplicate) return current;
+        return {
+          ...current,
+          edges: [
+            ...current.edges,
+            {
+              id: crypto.randomUUID(),
+              source: connection.source!,
+              target: connection.target!,
+              type: 'handoff',
+              label: 'handoff',
+            },
+          ],
+        };
+      });
     },
     [isTouchOnly, isCanvasLocked, updateDoc]
+  );
+
+  const edgeReconnectSuccessful = React.useRef(true);
+
+  const onReconnectStart = useCallback(() => {
+    edgeReconnectSuccessful.current = false;
+  }, []);
+
+  const onReconnect = useCallback(
+    (oldEdge: FlowEdge, newConnection: Connection) => {
+      edgeReconnectSuccessful.current = true;
+      if (!newConnection.source || !newConnection.target || isTouchOnly || isCanvasLocked) return;
+      updateDoc((current) => {
+        const currentFlowEdges: FlowEdge[] = current.edges.map((edge) =>
+          toFlowEdge(edge, current.nodes, handleEdgeTypeChange, handleEdgeDelete)
+        );
+        const nextFlowEdges = reconnectEdge(oldEdge, newConnection, currentFlowEdges);
+        return {
+          ...current,
+          edges: nextFlowEdges.map(fromFlowEdge),
+        };
+      });
+    },
+    [isTouchOnly, isCanvasLocked, handleEdgeTypeChange, handleEdgeDelete, updateDoc]
+  );
+
+  const onReconnectEnd = useCallback(
+    (_event: MouseEvent | TouchEvent, edge: FlowEdge) => {
+      if (!edgeReconnectSuccessful.current) {
+        // Dropped in empty space → delete the edge
+        updateDoc((current) => ({
+          ...current,
+          edges: current.edges.filter((e) => e.id !== edge.id),
+        }));
+      }
+      edgeReconnectSuccessful.current = true;
+    },
+    [updateDoc]
   );
 
   const updateNode = useCallback(
@@ -388,12 +459,106 @@ const CanvasBuilderInner: React.FC = () => {
             role,
             position,
             hasEntryPoint: current.nodes.some((node) => node.data.is_entry_point),
+            nodeIndex: current.nodes.length,
           }),
         ],
       }));
     },
     [isTouchOnly, reactFlow, updateDoc]
   );
+
+  /* ─── Context Menu Handlers ─── */
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: FlowNode) => {
+      event.preventDefault();
+      setContextMenu({ nodeId: node.id, x: event.clientX, y: event.clientY });
+    },
+    []
+  );
+
+  const closeContextMenu = useCallback(() => setContextMenu(null), []);
+
+  const handleSetEntryPoint = useCallback(() => {
+    if (!contextMenu) return;
+    const { nodeId } = contextMenu;
+    updateDoc((current) => ({
+      ...current,
+      nodes: current.nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          is_entry_point: node.id === nodeId,
+        },
+      })),
+    }));
+    setContextMenu(null);
+  }, [contextMenu, updateDoc]);
+
+  const handleDuplicateNode = useCallback(() => {
+    if (!contextMenu || !doc) return;
+    const { nodeId } = contextMenu;
+    const sourceNode = doc.nodes.find((n) => n.id === nodeId);
+    if (!sourceNode) { setContextMenu(null); return; }
+    const newId = crypto.randomUUID();
+    updateDoc((current) => {
+      const color = AGENT_COLOR_PALETTE[current.nodes.length % AGENT_COLOR_PALETTE.length];
+      const duplicate: CanvasNode = {
+        ...structuredClone(sourceNode),
+        id: newId,
+        position: {
+          x: sourceNode.position.x + 48,
+          y: sourceNode.position.y + 48,
+        },
+        data: {
+          ...structuredClone(sourceNode.data),
+          profile_name: `${sourceNode.data.role}-${newId.slice(0, 8)}`,
+          display_name: `${sourceNode.data.display_name} (copy)`,
+          is_entry_point: false,
+          color,
+        },
+      };
+      return {
+        ...current,
+        nodes: [...current.nodes, duplicate],
+      };
+    });
+    setContextMenu(null);
+  }, [contextMenu, doc, updateDoc]);
+
+  const handleDeleteNode = useCallback(() => {
+    if (!contextMenu) return;
+    const { nodeId } = contextMenu;
+    updateDoc((current) => ({
+      ...current,
+      nodes: current.nodes.filter((n) => n.id !== nodeId),
+      edges: current.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+    }));
+    if (selectedNodeId === contextMenu.nodeId) setSelectedNodeId(null);
+    setContextMenu(null);
+  }, [contextMenu, selectedNodeId, updateDoc]);
+
+  const handleDeleteAllConnections = useCallback(() => {
+    if (!contextMenu) return;
+    const { nodeId } = contextMenu;
+    updateDoc((current) => ({
+      ...current,
+      edges: current.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+    }));
+    setContextMenu(null);
+  }, [contextMenu, updateDoc]);
+
+  // Click-away listener to close context menu
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as HTMLElement)) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [contextMenu]);
 
   const handleSave = useCallback(async () => {
     if (!doc) return;
@@ -424,15 +589,57 @@ const CanvasBuilderInner: React.FC = () => {
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      const isSave = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's';
-      if (isSave) {
+      const mod = event.ctrlKey || event.metaKey;
+      const key = event.key.toLowerCase();
+
+      // Ctrl/Cmd+S → Save
+      if (mod && key === 's') {
         event.preventDefault();
         void handleSave();
+        return;
+      }
+
+      // Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y → Redo
+      if (mod && ((key === 'z' && event.shiftKey) || key === 'y')) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+
+      // Ctrl/Cmd+Z → Undo
+      if (mod && key === 'z') {
+        event.preventDefault();
+        undo();
+        return;
+      }
+
+      // Escape → Deselect (or exit zen mode)
+      if (key === 'escape') {
+        if (zenMode) {
+          setZenMode(false);
+        } else {
+          setSelectedNodeId(null);
+        }
+        return;
+      }
+
+      // F11 → Toggle zen mode
+      if (key === 'f11') {
+        event.preventDefault();
+        setZenMode((prev) => !prev);
+        return;
+      }
+
+      // Ctrl/Cmd+B → Toggle side panels
+      if (mod && key === 'b') {
+        event.preventDefault();
+        setPanelsCollapsed((prev) => !prev);
+        return;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave]);
+  }, [handleSave, zenMode]);
 
   const undo = () => {
     setPast((items) => {
@@ -466,9 +673,9 @@ const CanvasBuilderInner: React.FC = () => {
   const deployValidation = useMemo(
     () =>
       doc
-        ? validateCanvasForDeploy(doc, providerOptions, validatedProviders)
+        ? validateCanvasForDeploy(doc, providerOptions, validatedProviders, installedCliProviders)
         : { ok: false, reason: 'Canvas is loading' },
-    [doc, providerOptions, validatedProviders]
+    [doc, providerOptions, validatedProviders, installedCliProviders]
   );
 
   const handleDeploy = async () => {
@@ -539,7 +746,7 @@ const CanvasBuilderInner: React.FC = () => {
   }
 
   return (
-    <main className="canvas-builder-page">
+    <main className={`canvas-builder-page${zenMode ? ' canvas-zen-mode' : ''}${panelsCollapsed ? ' canvas-panels-collapsed' : ''}`}>
       <header className="canvas-toolbar">
         <div>
           <h1 className="canvas-page-title">{doc.name}</h1>
@@ -554,6 +761,12 @@ const CanvasBuilderInner: React.FC = () => {
           </Button>
           <Button variant="secondary" onClick={() => setTemplatePickerOpen(true)}>
             Use Template
+          </Button>
+          <Button variant="secondary" onClick={() => setPanelsCollapsed((p) => !p)} title="Toggle side panels (Ctrl+B)">
+            {panelsCollapsed ? '⟨⟩ Panels' : '⟩⟨ Collapse'}
+          </Button>
+          <Button variant="secondary" onClick={() => setZenMode((p) => !p)} title="Zen mode — maximize canvas (F11)">
+            {zenMode ? '⊡ Exit Zen' : '⊞ Zen Mode'}
           </Button>
           <Button variant="secondary" onClick={() => setVoiceOpen(true)}>
             Mic
@@ -600,7 +813,7 @@ const CanvasBuilderInner: React.FC = () => {
 
       <EdgeAdvisoryBanner visible={Boolean(doc.deploy_state.edge_change_advisory)} />
 
-      {validatedProviders.length === 0 ? <NoProvidersNotice /> : null}
+      {validatedProviders.length === 0 && installedCliProviders.length === 0 ? <NoProvidersNotice /> : null}
       {isReconciling ? (
         <Card className="canvas-reconciling-banner">Reconciling...</Card>
       ) : null}
@@ -629,18 +842,76 @@ const CanvasBuilderInner: React.FC = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onReconnect={onReconnect}
+            onReconnectStart={onReconnectStart}
+            onReconnectEnd={onReconnectEnd}
+            onNodeContextMenu={onNodeContextMenu}
+            onPaneClick={closeContextMenu}
             onSelectionChange={({ nodes: selectedNodes }) =>
               setSelectedNodeId(selectedNodes[0]?.id ?? null)
             }
             nodesDraggable={!isTouchOnly}
             nodesConnectable={!isTouchOnly && !isCanvasLocked}
             elementsSelectable={!isTouchOnly && !isCanvasLocked}
+            deleteKeyCode={isCanvasLocked ? null : ['Backspace', 'Delete']}
+            edgesReconnectable={!isTouchOnly && !isCanvasLocked}
+            snapToGrid
+            snapGrid={[24, 24]}
             fitView
+            proOptions={{ hideAttribution: true }}
           >
             <Background color="rgba(0, 176, 189, 0.18)" gap={24} />
             <Controls />
             <MiniMap pannable zoomable />
+            <div className="canvas-edge-legend">
+              <div className="canvas-edge-legend-item">
+                <span className="canvas-edge-legend-swatch canvas-edge-legend--handoff" />
+                <span>handoff (solid)</span>
+              </div>
+              <div className="canvas-edge-legend-item">
+                <span className="canvas-edge-legend-swatch canvas-edge-legend--assign" />
+                <span>assign (dashed)</span>
+              </div>
+              <div className="canvas-edge-legend-item">
+                <span className="canvas-edge-legend-swatch canvas-edge-legend--send_message" />
+                <span>send_message (dotted)</span>
+              </div>
+              <div className="canvas-edge-legend-note">color = source agent</div>
+            </div>
           </ReactFlow>
+          {contextMenu && (
+            <div
+              ref={contextMenuRef}
+              className="canvas-context-menu"
+              style={{ top: contextMenu.y, left: contextMenu.x }}
+            >
+              <button
+                className="canvas-context-menu-item"
+                onClick={handleSetEntryPoint}
+              >
+                ⊎ Set as Entry Point
+              </button>
+              <button
+                className="canvas-context-menu-item"
+                onClick={handleDuplicateNode}
+              >
+                ⧉ Duplicate Node
+              </button>
+              <button
+                className="canvas-context-menu-item canvas-context-menu-item--danger"
+                onClick={handleDeleteNode}
+              >
+                ✕ Delete Node
+              </button>
+              <div className="canvas-context-menu-divider" />
+              <button
+                className="canvas-context-menu-item canvas-context-menu-item--danger"
+                onClick={handleDeleteAllConnections}
+              >
+                ⊘ Delete All Connections
+              </button>
+            </div>
+          )}
         </div>
         {!isTouchOnly ? (
           <BlockConfigurationPanel
@@ -687,21 +958,19 @@ const CanvasBuilderInner: React.FC = () => {
 
 function toFlowEdge(
   edge: CanvasEdge,
-  onTypeChange: (edgeId: string, type: OrchestrationType) => void
+  nodes: CanvasNode[],
+  onTypeChange: (edgeId: string, type: OrchestrationType) => void,
+  onDelete: (edgeId: string) => void
 ): FlowEdge {
-  const dash = edge.type === 'assign' ? '8 6' : edge.type === 'send_message' ? '2 6' : undefined;
+  const sourceNode = nodes.find((n) => n.id === edge.source);
+  const sourceColor = sourceNode?.data.color;
   return {
     id: edge.id,
     source: edge.source,
     target: edge.target,
     type: 'orchestration',
-    data: { orchestrationType: edge.type, onTypeChange },
-    markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--cyan)' },
-    style: {
-      stroke: 'var(--cyan)',
-      strokeDasharray: dash,
-      transition: 'stroke-dasharray 80ms ease, opacity 80ms ease',
-    },
+    data: { orchestrationType: edge.type, onTypeChange, onDelete, sourceColor },
+    markerEnd: { type: MarkerType.ArrowClosed, color: sourceColor || 'var(--cyan)' },
   };
 }
 

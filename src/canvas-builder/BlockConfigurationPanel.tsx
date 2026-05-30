@@ -1,11 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { FormField, StatusBadge } from '@/design-system';
 import { PROVIDERS_REGISTRY, ProviderType as KeyProviderType } from '@/api/key-store/registry';
 import { useKeyStore } from '@/api/key-store/store';
+import { useSessionStore } from '@/api/session-store';
 import { CanvasNode, ProviderType } from '@/shared/canvas-types';
 import { CanvasProviderOption, findSourceProvider } from './provider-options';
-import { ROLE_TEMPLATES, StarterRole, roleFromValue } from './role-templates';
+import { ROLE_TEMPLATES, StarterRole, roleFromValue, AGENT_COLOR_PALETTE } from './role-templates';
 
 export interface BlockConfigurationPanelProps {
   node?: CanvasNode;
@@ -19,12 +20,18 @@ export const BlockConfigurationPanel: React.FC<BlockConfigurationPanelProps> = (
   onUpdateNode,
 }) => {
   const cachedModels = useKeyStore((state) => state.cachedModels);
+  const { sessions, refresh: refreshSessions } = useSessionStore();
+  const providerSessions = sessions.filter((session) => session.cli_provider === (node?.data.provider ?? ''));
   const modelOptions = useMemo(() => {
     if (!node?.data.provider) return [];
     const sourceProvider = findSourceProvider(node.data.provider, providerOptions);
     if (!sourceProvider) return [];
     return cachedModels[sourceProvider] ?? [];
   }, [cachedModels, node?.data.provider, providerOptions]);
+
+  useEffect(() => {
+    if (sessions.length === 0) void refreshSessions();
+  }, [refreshSessions, sessions.length]);
 
   if (!node) {
     return (
@@ -61,6 +68,7 @@ export const BlockConfigurationPanel: React.FC<BlockConfigurationPanelProps> = (
     patchData({
       provider: providerValue ? (providerValue as ProviderType) : undefined,
       model: undefined,
+      session_id: undefined,
     });
   };
 
@@ -114,12 +122,63 @@ export const BlockConfigurationPanel: React.FC<BlockConfigurationPanelProps> = (
         <span>Entry point</span>
       </label>
 
+      <FormField id="block-color" label="Agent Color">
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {AGENT_COLOR_PALETTE.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => patchData({ color: c })}
+              title={c}
+              aria-label={`Set agent color to ${c}`}
+              style={{
+                width: 24, height: 24,
+                borderRadius: '50%',
+                border: node.data.color === c ? '2px solid #fff' : '2px solid transparent',
+                background: c,
+                cursor: 'pointer',
+                transition: 'border-color 0.15s ease, transform 0.1s ease',
+                transform: node.data.color === c ? 'scale(1.2)' : 'scale(1)',
+              }}
+            />
+          ))}
+          <input
+            type="color"
+            value={node.data.color || '#00b0bd'}
+            onChange={(e) => patchData({ color: e.target.value })}
+            title="Custom color"
+            aria-label="Custom agent color"
+            style={{ width: 24, height: 24, padding: 0, border: 'none', cursor: 'pointer', borderRadius: '50%' }}
+          />
+        </div>
+      </FormField>
+
       <FormField label="Provider" id="node-provider">
         <select id="node-provider" value={node.data.provider ?? ''} onChange={(event) => handleProviderChange(event.target.value)}>
           <option value="">No provider selected</option>
           {providerOptions.map((option) => (
             <option key={`${option.sourceProvider}:${option.provider}`} value={option.provider}>
               {option.label}
+            </option>
+          ))}
+        </select>
+      </FormField>
+
+      <FormField
+        label="Auth Session"
+        id="block-session"
+        helperText={providerSessions.length === 0 && node.data.provider ? 'No sessions - visit Sessions page' : undefined}
+      >
+        <select
+          id="block-session"
+          value={node.data.session_id ?? ''}
+          disabled={!node.data.provider}
+          onChange={(event) => patchData({ session_id: event.target.value || undefined })}
+        >
+          <option value="">Auto (default session)</option>
+          {providerSessions.map((session) => (
+            <option key={session.id} value={session.id}>
+              {sessionOptionLabel(session.status)} {session.account_email}
             </option>
           ))}
         </select>
@@ -182,6 +241,12 @@ function modelHelperText(sourceProvider?: KeyProviderType): string {
   if (!sourceProvider) return 'Choose a validated provider before selecting a model.';
   const label = PROVIDERS_REGISTRY.find((provider) => provider.id === sourceProvider)?.label ?? sourceProvider;
   return `Models listed from the validated ${label} response. No default is selected.`;
+}
+
+function sessionOptionLabel(status: 'active' | 'expiring' | 'expired'): string {
+  if (status === 'active') return '[active]';
+  if (status === 'expiring') return '[expiring]';
+  return '[expired]';
 }
 
 export default BlockConfigurationPanel;

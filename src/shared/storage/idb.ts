@@ -22,6 +22,22 @@ export interface AgentVerseDB extends DBSchema {
     key: string;
     value: { key: string; value: unknown };
   };
+  usage_events: {
+    key: string;
+    value: {
+      id: string;
+      timestampMs: number;
+      provider: string;
+      model: string;
+      inputTokens: number;
+      outputTokens: number;
+      totalTokens: number;
+      sessionName?: string;
+      terminalId?: string;
+      canvasId?: string;
+    };
+    indexes: { 'by-canvas': string; 'by-timestamp': number };
+  };
 }
 
 let dbInstance: IDBPDatabase<AgentVerseDB> | null = null;

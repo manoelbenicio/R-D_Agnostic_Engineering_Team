@@ -201,9 +201,16 @@ body {
 /* Main Content */
 .sentinel-main-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 40px 24px;
   overflow-y: auto;
   background: radial-gradient(circle at 50% 0%, rgba(0, 43, 58, 0.5) 0%, var(--bg-primary) 70%);
+}
+
+/* Give canvas builder maximum real estate */
+.sentinel-main-content:has(.canvas-builder-page) {
+  padding: 12px 16px;
 }
 
 /* Cyberpunk Card components */
@@ -499,13 +506,11 @@ body {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Accessibility fixes (Task 21.5) */
+/* Hide React Flow attribution — using proOptions={{ hideAttribution: true }} as primary method */
 .react-flow__attribution,
 .react-flow__attribution a,
 a[href$="reactflow.dev"] {
-  color: var(--neon-cyan) !important;
-  background: var(--surface-overlay) !important;
-  opacity: 1 !important;
+  display: none !important;
 }
 
 #error-reload-btn,

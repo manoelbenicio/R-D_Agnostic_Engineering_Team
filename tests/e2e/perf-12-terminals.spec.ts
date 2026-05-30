@@ -46,7 +46,7 @@ test.describe('Performance: 12+ concurrent terminal streams', () => {
 
     await page.evaluate(async () => {
       return new Promise<void>((resolve, reject) => {
-        const req = indexedDB.open('AgentVerse', 1);
+        const req = indexedDB.open('AgentVerse', 2);
         req.onupgradeneeded = () => {
           const db = req.result;
           if (!db.objectStoreNames.contains('app_state')) {

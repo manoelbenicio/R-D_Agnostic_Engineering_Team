@@ -17,7 +17,7 @@ describe('Canvas Store', () => {
     expect(doc.nodes).toEqual([]);
     expect(doc.edges).toEqual([]);
     expect(doc.config.working_directory).toBe('~');
-    expect(doc.config.provider_default).toBe('claude_code');
+    expect(doc.config.provider_default).toBe('');
     expect(doc.deploy_state.status).toBe('draft');
   });
 

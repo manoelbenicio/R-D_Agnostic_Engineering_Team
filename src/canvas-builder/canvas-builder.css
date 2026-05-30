@@ -3,7 +3,42 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+/* canvas-list-page still needs a min-height fallback */
+.canvas-list-page {
   min-height: calc(100vh - 144px);
+}
+
+.canvas-builder-page {
+  flex: 1;
+}
+
+/* ── Zen Mode: full-screen canvas takeover ── */
+.canvas-zen-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--bg-primary);
+  padding: var(--space-2);
+  gap: var(--space-2);
+  min-height: unset;
+}
+
+.canvas-zen-mode .canvas-toolbar {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--panel);
+}
+
+.canvas-zen-mode .canvas-page-title {
+  font-size: 1rem;
+}
+
+.canvas-zen-mode .canvas-workspace {
+  min-height: 0;
+  flex: 1;
 }
 
 .canvas-page-title {
@@ -44,8 +79,26 @@
 .canvas-workspace {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr) 360px;
+  grid-template-rows: 1fr;
   gap: var(--space-4);
-  min-height: 680px;
+  flex: 1;
+  min-height: 0; /* allow grid to shrink below content size */
+  transition: grid-template-columns 0.25s ease;
+}
+
+/* ── Collapsed panels: canvas takes full width ── */
+.canvas-panels-collapsed .canvas-workspace {
+  grid-template-columns: 0px minmax(0, 1fr) 0px;
+  gap: 0;
+}
+
+.canvas-panels-collapsed .canvas-palette,
+.canvas-panels-collapsed .canvas-config-panel {
+  overflow: hidden;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .canvas-palette,
@@ -59,7 +112,8 @@
 .canvas-palette,
 .canvas-config-panel {
   padding: var(--space-4);
-  overflow: auto;
+  overflow-y: auto;
+  min-height: 0; /* allow flex/grid children to scroll */
 }
 
 .canvas-panel-title {
@@ -107,8 +161,12 @@
 
 .canvas-flow-shell {
   position: relative;
-  min-height: 680px;
+  min-height: 0;
   overflow: hidden;
+}
+
+.canvas-zen-mode .canvas-flow-shell {
+  min-height: 0;
 }
 
 .canvas-flow-shell .react-flow {
@@ -135,10 +193,16 @@
 
 .canvas-agent-node {
   max-width: none !important;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  cursor: pointer;
+}
+
+.canvas-agent-node:hover {
+  box-shadow: 0 0 16px currentColor;
 }
 
 .canvas-agent-node.is-selected {
-  box-shadow: 0 0 24px var(--cyan-tint);
+  /* glow handled inline per agent color */
 }
 
 .canvas-agent-node-header {
@@ -164,15 +228,31 @@
 }
 
 .canvas-node-handle {
-  width: 10px !important;
-  height: 10px !important;
-  border-color: var(--void) !important;
+  width: 14px !important;
+  height: 14px !important;
+  border: 2px solid var(--cyan) !important;
+  background: var(--surface-deep) !important;
+  cursor: crosshair !important;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 6px rgba(0, 176, 189, 0.4);
+}
+
+.canvas-node-handle:hover {
   background: var(--cyan) !important;
+  transform: scale(1.4);
+  box-shadow: 0 0 12px rgba(0, 176, 189, 0.8);
+}
+
+.canvas-edge-controls {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: all;
 }
 
 .canvas-edge-label {
-  position: absolute;
-  z-index: 10;
   border: 1px solid var(--border-accent);
   border-radius: var(--radius-button);
   background: var(--surface-deep);
@@ -181,6 +261,31 @@
   font-family: var(--font-mono);
   font-size: 0.7rem;
   pointer-events: all;
+  cursor: pointer;
+}
+
+.canvas-edge-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-accent);
+  border-radius: 50%;
+  background: var(--surface-deep);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  pointer-events: all;
+  line-height: 1;
+}
+
+.canvas-edge-delete:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+  transform: scale(1.2);
 }
 
 .canvas-config-id {
@@ -294,4 +399,113 @@
   gap: 3px;
   color: var(--amber);
   font-family: var(--font-mono);
+}
+
+/* ─── Node Context Menu ─── */
+
+.canvas-context-menu {
+  position: fixed;
+  z-index: 100;
+  min-width: 200px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-card);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  padding: 4px 0;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.canvas-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.1s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.canvas-context-menu-item:hover {
+  background: rgba(0, 176, 189, 0.15);
+  color: var(--cyan);
+}
+
+.canvas-context-menu-item--danger:hover {
+  background: rgba(220, 38, 38, 0.15);
+  color: #ef4444;
+}
+
+.canvas-context-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* ── Edge Legend ──────────────────────────────────── */
+
+.canvas-edge-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-button);
+  background: rgba(10, 12, 16, 0.72);
+  backdrop-filter: blur(6px);
+  padding: 8px 12px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.canvas-edge-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+}
+
+.canvas-edge-legend-swatch {
+  display: inline-block;
+  width: 24px;
+  height: 0;
+  border-top-width: 2px;
+  border-top-style: solid;
+}
+
+.canvas-edge-legend--handoff {
+  border-top-color: rgba(255, 255, 255, 0.7);
+  border-top-style: solid;
+}
+
+.canvas-edge-legend--assign {
+  border-top-color: rgba(255, 255, 255, 0.7);
+  border-top-style: dashed;
+}
+
+.canvas-edge-legend--send_message {
+  border-top-color: rgba(255, 255, 255, 0.7);
+  border-top-style: dotted;
+}
+
+.canvas-edge-legend-note {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+  margin-top: 2px;
 }

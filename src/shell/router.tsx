@@ -4,7 +4,7 @@ import { CanvasTerminalRoute } from './CanvasTerminalRoute';
 import { NotFoundPage } from './NotFoundPage';
 
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
-import { ProvidersPage, GeneralPage, AppearancePage } from '@/settings/routes';
+import { ProvidersPage, GeneralPage, AppearancePage, SharePointAssessmentPage } from '@/settings/routes';
 
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
 import { CanvasListPage } from '@/canvas-builder/CanvasListPage';
@@ -20,6 +20,8 @@ import { HealthPage } from '@/health/HealthPage';
 import { FlowsPage } from '@/flows';
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
 import { MemoryViewerPage } from '@/memory-viewer';
+// eslint-disable-next-line agentverse/no-sideways-capability-imports
+import { SessionsPage } from '@/sessions';
 
 export const router = createBrowserRouter([
   {
@@ -59,6 +61,10 @@ export const router = createBrowserRouter([
         element: <MemoryViewerPage />,
       },
       {
+        path: 'sessions',
+        element: <SessionsPage />,
+      },
+      {
         path: 'settings/providers',
         element: <ProvidersPage />,
       },
@@ -69,6 +75,10 @@ export const router = createBrowserRouter([
       {
         path: 'settings/general',
         element: <GeneralPage />,
+      },
+      {
+        path: 'settings/sharepoint',
+        element: <SharePointAssessmentPage />,
       },
       {
         path: 'health',

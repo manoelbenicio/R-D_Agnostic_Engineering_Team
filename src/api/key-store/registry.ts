@@ -26,19 +26,19 @@ export const PROVIDERS_REGISTRY: ProviderDefinition[] = [
     id: 'openai',
     label: 'OpenAI',
     fields: [{ name: 'apiKey', label: 'API Key', type: 'password' }],
-    defaultModels: ['gpt-4o', 'gpt-4o-mini', 'o1-preview', 'o1-mini'],
+    defaultModels: ['codex-5.5-high-thinking', 'gpt-5.5', 'o3', 'o4-mini', 'gpt-4.1', 'gpt-4o', 'gpt-4o-mini'],
   },
   {
     id: 'anthropic',
     label: 'Anthropic',
     fields: [{ name: 'apiKey', label: 'API Key', type: 'password' }],
-    defaultModels: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
+    defaultModels: ['opus-4.8', 'claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
   },
   {
     id: 'google',
     label: 'Google Gemini',
     fields: [{ name: 'apiKey', label: 'API Key', type: 'password' }],
-    defaultModels: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'],
+    defaultModels: ['gemini-3.5-flash-high-thinking', 'gemini-3.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash-exp'],
   },
   {
     id: 'aws',
@@ -47,7 +47,7 @@ export const PROVIDERS_REGISTRY: ProviderDefinition[] = [
       { name: 'accessKeyId', label: 'Access Key ID', type: 'text' },
       { name: 'secretAccessKey', label: 'Secret Access Key', type: 'password' },
     ],
-    defaultModels: ['q-developer', 'kiro-agent-v1'],
+    defaultModels: ['opus-4.8', 'opus-4.7', 'kiro-agent-v1', 'q-developer'],
   },
   {
     id: 'azure',

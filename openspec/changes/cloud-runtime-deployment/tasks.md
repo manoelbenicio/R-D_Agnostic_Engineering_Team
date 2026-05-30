@@ -37,9 +37,12 @@ they are not user-visible and refactoring them now widens blast radius.
       mounts (Cloud Storage / Filestore) plug into this directly
 - [x] 2.5 Bake conservative CORS / WS allow-list defaults that the deploy
       manifest overrides per environment
-- [ ] 2.6 Pre-install at least one worker CLI (Claude Code or Kiro CLI) so a
-      fresh deploy can actually execute deployed canvases. Deferred until the
-      user picks which CLIs to bundle by default.
+- [~] 2.6 Pre-install at least one worker CLI (Claude Code or Kiro CLI) so a
+      fresh deploy can actually execute deployed canvases. IaC-ready: the
+      Dockerfile exposes a `WORKER_CLI` build ARG and `cloudbuild.yaml` a
+      `_WORKER_CLI` substitution — empty by default so NO CLI is baked in.
+      Options matrix documented in `docs/cloud-runtime-auth.md`. The actual CLI
+      choice remains a USER DECISION (deferred).
 
 ## 3. Cloud Build + Cloud Run manifests (IF)
 
@@ -51,7 +54,15 @@ they are not user-visible and refactoring them now widens blast radius.
 - [x] 3.3 Authentication: deploy intentionally does NOT set
       `--allow-unauthenticated`; the auth-proxy / Firebase JWT enforcement is
       the next change
-- [ ] 3.4 Per-tenant isolation pattern (out of scope for this change)
+- [x] 3.4 Per-tenant isolation pattern — IaC implemented: one Cloud Run
+      *service* per tenant from a shared, tenant-neutral image.
+      `service.yaml` parametrized by `TENANT_ID` (service name + labels namespaced),
+      per-tenant `CAO_TENANT_ID` / `CAO_STATE_PREFIX`, per-tenant CORS origin,
+      tunable `MIN_SCALE`/`MAX_SCALE`/`CONTAINER_CONCURRENCY`/`CPU_LIMIT`/`MEMORY_LIMIT`/
+      `TIMEOUT_SECONDS`. `cloudbuild.yaml` gains an optional `_TENANT` for
+      tenant-pinned images. `deploy-cloud.sh` exports all vars (default tenant
+      = `default`). BLOCKED on a real GCP project: per-tenant Secret Manager
+      secrets (commented `secretKeyRef` in `service.yaml`).
 
 ## 4. SPA hosting on Firebase Hosting (IF)
 
@@ -87,11 +98,18 @@ contain none of the Firebase SDK (tree-shaken via `import.meta.env.PROD` and
 - [x] 6.3 `src/shell/app-fetch.ts` rewritten to attach
       `Authorization: Bearer <jwt>` when auth is enabled and a token is
       available, otherwise pass-through
-- [ ] 6.4 Login UI (deferred until enforcement). When the user wants auth on,
-      a follow-up wires a login button + protected-route guard.
-- [ ] 6.5 Server-side enforcement (deferred — owned by `validation-proxy` /
-      this change's auth-proxy section once we pick Cloud Run IAM vs custom
-      proxy)
+- [x] 6.4 Login UI — `LoginButton` (NavBar), `LoginScreen` + `LoginPanel`,
+      and `RequireAuthGate` (wraps content in `AppLayout`) backed by
+      `auth-store.ts`. Inert in local mode (`isAuthEnabled()` false); renders
+      the login flow only when `VITE_AUTH_PROVIDER=firebase`.
+- [~] 6.5 Server-side enforcement — DECISION POINT documented in
+      `docs/cloud-runtime-auth.md` (Cloud Run IAM vs custom proxy vs hybrid,
+      with tradeoffs). Credential-free skeleton added: `service.yaml` keeps the
+      no-`--allow-unauthenticated` network boundary + commented per-tenant
+      secret wiring, and `infra/runtime/auth-proxy/README.md` holds a
+      non-functional Option B reference (no deps, never built into the image).
+      The enforcement choice remains a human decision (deferred); E2E verify
+      needs GCP creds (task 8.6).
 
 ## 7. SPA Mode toggle (SUP)
 
@@ -105,19 +123,39 @@ contain none of the Firebase SDK (tree-shaken via `import.meta.env.PROD` and
 
 ## 8. Verification (IF)
 
-- [ ] 8.1 `npm run lint` clean
-- [ ] 8.2 `npm run typecheck` clean
-- [ ] 8.3 `npm test` green (with the rebrand-related test string updates)
-- [ ] 8.4 `docker build -t agentverse-runtime:latest -f infra/runtime/Dockerfile .`
-      builds and the container responds with HTTP 200 on `/health`
+- [x] 8.1 `npm run lint` clean (0 errors; 3 pre-existing warnings unrelated to this change)
+- [x] 8.2 `npm run typecheck` clean
+- [x] 8.3 `npm test` green (389 passed / 8 skipped) with the rebrand string updates
+- [~] 8.4 `docker build -t agentverse-runtime:latest -f infra/runtime/Dockerfile .`
+      builds and the container responds with HTTP 200 on `/health`.
+      NOT RUN (no Docker daemon available / no CAO source context). Static
+      checks done instead: Dockerfile reviewed; `WORKER_CLI` ARG added; would
+      run as written once a daemon + build context are present.
 - [ ] 8.5 `./start.sh` (local mode) brings up the runtime + SPA end-to-end
+      (deferred — needs a local CAO + Docker)
 - [ ] 8.6 `./start.sh cloud-deploy` runs cleanly end-to-end against a real GCP
-      project (requires user creds; documented as a runbook deliverable)
+      project (deferred — requires user GCP creds; documented as a runbook)
+
+### 8.x Syntax-only validations performed (no Docker/GCP, this change)
+
+- [x] `bash -n scripts/deploy-cloud.sh` → syntax valid.
+- [x] `python3 yaml.safe_load_all` on `infra/runtime/cloudbuild.yaml` → parses.
+- [x] `python3 yaml.safe_load` on `infra/runtime/service.yaml` (raw) → parses.
+- [x] `envsubst` render of `service.yaml` with sample tenant vars → parses;
+      `metadata.name = agentverse-runtime-acme`, `containerConcurrency = 1`.
+- Would run with Docker: `docker build ... -f infra/runtime/Dockerfile .`
+  (optionally `--build-arg WORKER_CLI=…`).
+- Would run with GCP: `gcloud builds submit --config infra/runtime/cloudbuild.yaml`
+  then `envsubst < service.yaml | gcloud run services replace -`.
 
 ## Out of scope
 
-- Per-tenant CAO isolation (next change after this lands)
-- Auth-proxy implementation choice (Cloud Run IAM vs custom FastAPI proxy)
+- Per-tenant CAO isolation: IaC model now landed (task 3.4). Still out of
+  scope: provisioning real per-tenant Secret Manager secrets + IAM (needs a
+  GCP project).
+- Auth-proxy implementation choice (Cloud Run IAM vs custom FastAPI proxy):
+  tradeoffs documented in `docs/cloud-runtime-auth.md` (task 6.5); the choice
+  itself is still a human decision and unimplemented.
 - Cost monitoring of Cloud Run + Firebase Hosting (folds into FinOps Tier 2)
 - Replacing internal `CaoClient` / `caoQueryKeys` / file paths with neutral
   names (cosmetic-only refactor, deferred until brand decision is final)

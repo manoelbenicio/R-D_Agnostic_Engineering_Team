@@ -110,7 +110,7 @@ export async function validateAWS(
       return { ok: false, error: `AWS validation failed (${res.status}): ${errText}` };
     }
     
-    return { ok: true, models: ['q-developer', 'kiro-agent-v1'] };
+    return { ok: true, models: ['opus-4.8', 'opus-4.7', 'opus-4.6', 'kiro-agent-v1', 'q-developer'] };
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
     return { ok: false, error: `AWS connection failed: ${errMsg}` };

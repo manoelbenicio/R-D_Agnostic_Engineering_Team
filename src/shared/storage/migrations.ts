@@ -1,7 +1,7 @@
 import { IDBPDatabase, IDBPTransaction, StoreNames } from 'idb';
 import { AgentVerseDB } from './idb';
 
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 type AgentVerseStoreNames = ArrayLike<StoreNames<AgentVerseDB>>;
 
 export function runMigrations(
@@ -29,5 +29,13 @@ export function runMigrations(
     // Seed the initial schema_version in app_state
     const appStateStore = transaction.objectStore('app_state');
     appStateStore.put({ key: 'schema_version', value: CURRENT_SCHEMA_VERSION });
+  }
+
+  if (oldVersion < 2) {
+    // FinOps Tier 2: persisted token-usage events (keyPath: id), indexed by
+    // canvas so per-canvas cost roll-ups don't scan the whole store.
+    const usageStore = db.createObjectStore('usage_events', { keyPath: 'id' });
+    usageStore.createIndex('by-canvas', 'canvasId');
+    usageStore.createIndex('by-timestamp', 'timestampMs');
   }
 }

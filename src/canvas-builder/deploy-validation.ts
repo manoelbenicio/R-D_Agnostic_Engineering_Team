@@ -10,7 +10,15 @@ export interface DeployValidationResult {
 export function validateCanvasForDeploy(
   doc: CanvasDocument,
   providerOptions: CanvasProviderOption[],
-  validatedProviders: ProviderType[]
+  validatedProviders: ProviderType[],
+  /**
+   * Canvas providers whose CLI is installed (and OAuth-authenticated) on the
+   * CAO server — from `listProviders()` where `installed === true`. A node is
+   * deployable if its CLI is installed OR a BYOK key is validated; BYOK is
+   * optional because CLIs like codex/kiro authenticate via their own OAuth
+   * session inside the runtime, not via an AgentVerse-held API key.
+   */
+  installedCliProviders: ReadonlyArray<string> = []
 ): DeployValidationResult {
   if (doc.nodes.length === 0) {
     return { ok: false, reason: 'Canvas is empty - add at least one agent block' };
@@ -27,6 +35,8 @@ export function validateCanvasForDeploy(
     };
   }
 
+  const installed = new Set(installedCliProviders);
+
   for (const node of doc.nodes) {
     if (!node.data.provider) {
       return {
@@ -35,11 +45,17 @@ export function validateCanvasForDeploy(
       };
     }
 
+    // Path 1: the CLI for this canvas provider is installed/authenticated on CAO (OAuth).
+    const cliInstalled = installed.has(node.data.provider);
+
+    // Path 2: a BYOK key for the underlying source provider is validated.
     const option = providerOptions.find((candidate) => candidate.provider === node.data.provider);
-    if (!option || !validatedProviders.includes(option.sourceProvider)) {
+    const byokValidated = !!option && validatedProviders.includes(option.sourceProvider);
+
+    if (!cliInstalled && !byokValidated) {
       return {
         ok: false,
-        reason: `Node ${node.id} references unconfigured provider ${node.data.provider}`,
+        reason: `Node ${node.id}: provider ${node.data.provider} is neither installed on the runtime (OAuth) nor configured with an API key`,
       };
     }
 

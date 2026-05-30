@@ -9,8 +9,16 @@ const costEstimateMock = vi.hoisted(() => ({
   useCostEstimate: vi.fn(),
 }));
 
+const tokenCostMock = vi.hoisted(() => ({
+  useTokenCost: vi.fn(),
+}));
+
 vi.mock('../use-cost-estimate', () => ({
   useCostEstimate: costEstimateMock.useCostEstimate,
+}));
+
+vi.mock('../use-token-cost', () => ({
+  useTokenCost: tokenCostMock.useTokenCost,
 }));
 
 vi.mock('@/settings/settings-store', () => ({
@@ -29,6 +37,18 @@ vi.mock('recharts', () => ({
 
 beforeEach(() => {
   updateSetting.mockClear();
+  tokenCostMock.useTokenCost.mockReturnValue({
+    data: {
+      total: 0,
+      byProvider: {},
+      byCanvas: {},
+      byModel: {},
+      confidence: 'estimated',
+      totalTokens: 0,
+      unpricedEvents: 0,
+      eventCount: 0,
+    },
+  });
   costEstimateMock.useCostEstimate.mockReturnValue({
     isLoading: false,
     error: null,

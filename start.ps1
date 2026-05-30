@@ -1,4 +1,4 @@
-# AgentVerse system bootstrap (PowerShell) — single entrypoint for Windows.
+# AgentVerse system bootstrap (PowerShell) - single entrypoint for Windows.
 #
 # Usage:
 #   .\start.ps1                 # default: production preview (built dist/)
@@ -38,11 +38,11 @@ $PreviewLog = Join-Path $LogDir 'agentverse-preview.log'
 $DevLog     = Join-Path $LogDir 'agentverse-dev.log'
 $CaoLog     = Join-Path $LogDir 'agentverse-cao.log'
 
-function Step($msg) { Write-Host "» $msg" -ForegroundColor Cyan }
-function Ok  ($msg) { Write-Host "  ✓ $msg" -ForegroundColor Green }
-function Warn($msg) { Write-Host "  ! $msg" -ForegroundColor Yellow }
-function Err ($msg) { Write-Host "  ✗ $msg" -ForegroundColor Red }
-function Hr        { Write-Host ('─' * 60) -ForegroundColor DarkGray }
+function Step($msg) { Write-Host "> $msg" -ForegroundColor Cyan }
+function Ok  ($msg) { Write-Host "  [OK] $msg" -ForegroundColor Green }
+function Warn($msg) { Write-Host "  [WARN] $msg" -ForegroundColor Yellow }
+function Err ($msg) { Write-Host "  [ERR] $msg" -ForegroundColor Red }
+function Hr        { Write-Host ('-' * 60) -ForegroundColor DarkGray }
 
 function Test-Url($url, [int]$timeout = 3) {
     try {
@@ -91,37 +91,38 @@ function Stop-Pattern($pattern) {
 }
 
 function Show-Help {
-@"
-AgentVerse bootstrap (PowerShell)
-
-Usage: .\start.ps1 [COMMAND]
-
-Commands:
-  agentic_system    (default) Build if needed, probe CAO, start production preview
-  prod              Alias of agentic_system
-  dev               Start vite dev server (HMR, requires real CAO)
-  stop              Stop everything this script started
-  status            Report what is listening on AgentVerse + CAO ports
-  help, -Help       This help
-
-Environment overrides:
-  VITE_CAO_BASE_URL   CAO endpoint to probe        (default http://127.0.0.1:9889)
-  PREVIEW_PORT        Production preview port      (default 4173)
-  DEV_PORT            Vite dev server port         (default 5173)
-  CAO_DOCKER_IMAGE    Docker image to start CAO    (default empty — opt-in)
-  CAO_START_CMD       Shell command to start CAO   (default empty — opt-in)
-  OPEN_BROWSER        auto | yes | no              (default auto)
-
-CAO is an EXTERNAL service (master spec §13). It is not bundled with this
-repository. Set CAO_DOCKER_IMAGE or CAO_START_CMD to have this script start
-it for you, or run CAO yourself before invoking start.ps1.
-
-Examples:
-  .\start.ps1
-  .\start.ps1 dev
-  `$env:CAO_DOCKER_IMAGE='cao-server:latest'; .\start.ps1
-  .\start.ps1 stop
-"@
+    $helpText = @(
+        "AgentVerse bootstrap (PowerShell)",
+        "",
+        "Usage: .\start.ps1 [COMMAND]",
+        "",
+        "Commands:",
+        "  agentic_system    (default) Build if needed, probe CAO, start production preview",
+        "  prod              Alias of agentic_system",
+        "  dev               Start vite dev server (HMR, requires real CAO)",
+        "  stop              Stop everything this script started",
+        "  status            Report what is listening on AgentVerse + CAO ports",
+        "  help, -Help       This help",
+        "",
+        "Environment overrides:",
+        "  VITE_CAO_BASE_URL   CAO endpoint to probe        (default http://127.0.0.1:9889)",
+        "  PREVIEW_PORT        Production preview port      (default 4173)",
+        "  DEV_PORT            Vite dev server port         (default 5173)",
+        "  CAO_DOCKER_IMAGE    Docker image to start CAO    (default empty - opt-in)",
+        "  CAO_START_CMD       Shell command to start CAO   (default empty - opt-in)",
+        "  OPEN_BROWSER        auto | yes | no              (default auto)",
+        "",
+        "CAO is an EXTERNAL service (master spec Section 13). It is not bundled with this",
+        "repository. Set CAO_DOCKER_IMAGE or CAO_START_CMD to have this script start",
+        "it for you, or run CAO yourself before invoking start.ps1.",
+        "",
+        "Examples:",
+        "  .\start.ps1",
+        "  .\start.ps1 dev",
+        "  `$env:CAO_DOCKER_IMAGE='cao-server:latest'; .\start.ps1",
+        "  .\start.ps1 stop"
+    )
+    $helpText | ForEach-Object { Write-Host $_ }
 }
 
 function Test-Node {
@@ -138,7 +139,7 @@ function Test-Node {
 function Test-Deps {
     Step 'Checking dependencies'
     if (-not (Test-Path 'node_modules')) {
-        Warn 'node_modules\ missing — running npm ci'
+        Warn 'node_modules\ missing - running npm ci'
         & npm ci
     }
     Ok 'dependencies installed'
@@ -180,17 +181,12 @@ function Start-CaoIfConfigured {
     if ($CaoDockerImage) {
         Step "Starting CAO from Docker image: $CaoDockerImage"
         if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { Err 'docker not found'; return $false }
-        & docker rm -f agentverse-cao 2>$null | Out-Null
-        & docker run -d --name agentverse-cao -p 9889:9889 `
-            -e CAO_CORS_ORIGINS=http://localhost:5173,http://localhost:4173 `
-            -e CAO_ALLOWED_HOSTS=127.0.0.1,localhost `
-            -e CAO_WS_ALLOWED_CLIENTS=http://localhost:5173,http://localhost:4173 `
-            $CaoDockerImage 2>$CaoLog | Out-Null
+        & docker run -d --name agentverse-cao -p 9889:9889 -e CAO_CORS_ORIGINS=http://localhost:5173,http://localhost:4173 -e CAO_ALLOWED_HOSTS=127.0.0.1,localhost -e CAO_WS_ALLOWED_CLIENTS=http://localhost:5173,http://localhost:4173 $CaoDockerImage 2>$CaoLog | Out-Null
         for ($i = 0; $i -lt 30; $i++) {
             Start-Sleep 1
             if ((Test-Url "$($env:VITE_CAO_BASE_URL)/health") -eq 200) { Ok 'CAO is up (HTTP 200)'; return $true }
         }
-        Err "CAO did not become healthy within 30s — check $CaoLog"
+        Err "CAO did not become healthy within 30s - check $CaoLog"
         return $false
     }
 
@@ -201,26 +197,24 @@ function Start-CaoIfConfigured {
             Start-Sleep 1
             if ((Test-Url "$($env:VITE_CAO_BASE_URL)/health") -eq 200) { Ok 'CAO is up (HTTP 200)'; return $true }
         }
-        Err "CAO did not become healthy within 30s — check $CaoLog"
+        Err "CAO did not become healthy within 30s - check $CaoLog"
         return $false
     }
 
-    Write-Host @"
-  ! CAO is required for canvas deploys, terminal streaming, and flows.
-    Per master spec §13 it is an EXTERNAL service. To start it, do ONE of:
-      1) `$env:CAO_DOCKER_IMAGE = 'cao-server:latest'; .\start.ps1
-      2) `$env:CAO_START_CMD = 'uv run cao serve --port 9889'; .\start.ps1
-      3) Start CAO yourself in another terminal at $($env:VITE_CAO_BASE_URL).
-
-    The SPA will start anyway and the Health page will show CAO offline.
-"@ -ForegroundColor Yellow
+    Write-Host "  ! CAO is required for canvas deploys, terminal streaming, and flows." -ForegroundColor Yellow
+    Write-Host "    Per master spec Section 13 it is an EXTERNAL service. To start it, do ONE of:" -ForegroundColor Yellow
+    Write-Host "      1) `$env:CAO_DOCKER_IMAGE = 'cao-server:latest'; .\start.ps1" -ForegroundColor Yellow
+    Write-Host "      2) `$env:CAO_START_CMD = 'uv run cao serve --port 9889'; .\start.ps1" -ForegroundColor Yellow
+    Write-Host "      3) Start CAO yourself in another terminal at $($env:VITE_CAO_BASE_URL)." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "    The SPA will start anyway and the Health page will show CAO offline." -ForegroundColor Yellow
     return $true
 }
 
 function Start-Preview {
     Step "Starting production preview on :$PreviewPort"
     if (Test-Listening $PreviewPort) {
-        Warn "port $PreviewPort already in use — assuming a preview is already running"
+        Warn "port $PreviewPort already in use - assuming a preview is already running"
     } else {
         Spawn-Detached -logPath $PreviewLog -command 'npm.cmd' -argList @('run','preview') | Out-Null
         for ($i = 0; $i -lt 15; $i++) {
@@ -228,14 +222,14 @@ function Start-Preview {
             if ((Test-Url "http://localhost:$PreviewPort/") -eq 200) { Ok 'preview responding'; break }
         }
     }
-    if ((Test-Url "http://localhost:$PreviewPort/") -ne 200) { Err "preview did not come up — check $PreviewLog"; return $false }
+    if ((Test-Url "http://localhost:$PreviewPort/") -ne 200) { Err "preview did not come up - check $PreviewLog"; return $false }
     return $true
 }
 
 function Start-Dev {
     Step "Starting vite dev server on :$DevPort"
     if (Test-Listening $DevPort) {
-        Warn "port $DevPort already in use — assuming dev server is already running"
+        Warn "port $DevPort already in use - assuming dev server is already running"
     } else {
         Spawn-Detached -logPath $DevLog -command 'npm.cmd' -argList @('run','dev') | Out-Null
         for ($i = 0; $i -lt 15; $i++) {
@@ -243,7 +237,7 @@ function Start-Dev {
             if ((Test-Url "http://localhost:$DevPort/") -eq 200) { Ok 'dev responding'; break }
         }
     }
-    if ((Test-Url "http://localhost:$DevPort/") -ne 200) { Err "dev server did not come up — check $DevLog"; return $false }
+    if ((Test-Url "http://localhost:$DevPort/") -ne 200) { Err "dev server did not come up - check $DevLog"; return $false }
     return $true
 }
 
@@ -273,7 +267,7 @@ function Cmd-Stop {
 }
 
 function Cmd-UpProd {
-    Hr; Step 'Bootstrapping AgentVerse — production'; Hr
+    Hr; Step 'Bootstrapping AgentVerse - production'; Hr
     Test-Node
     Test-Deps
     Build-IfStale
@@ -290,7 +284,7 @@ function Cmd-UpProd {
 }
 
 function Cmd-UpDev {
-    Hr; Step 'Bootstrapping AgentVerse — dev (HMR)'; Hr
+    Hr; Step 'Bootstrapping AgentVerse - dev (HMR)'; Hr
     Test-Node
     Test-Deps
     [void](Start-CaoIfConfigured)

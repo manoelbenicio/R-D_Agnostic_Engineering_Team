@@ -34,7 +34,7 @@ async function runA11yAudit() {
     console.log("Writing wizard_completed = true to IndexedDB...");
     await page.evaluate(async () => {
       return new Promise((resolve, reject) => {
-        const req = indexedDB.open('AgentVerse', 1);
+        const req = indexedDB.open('AgentVerse', 2);
         req.onsuccess = () => {
           const db = req.result;
           const tx = db.transaction('app_state', 'readwrite');

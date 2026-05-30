@@ -1,42 +1,68 @@
 # AgentVerse — Cloud Run service manifest for the orchestration runtime.
 #
-# Apply with:
-#   envsubst < infra/runtime/service.yaml | \
-#     gcloud run services replace - --region us-central1
+# PER-TENANT MODEL (task 3.4)
+#   Isolation is one Cloud Run *service* per tenant, built from the *same*
+#   shared image. The image is tenant-neutral; everything tenant-specific is
+#   injected here at apply time. This gives each tenant:
+#     * its own service name / URL          (network + identity boundary)
+#     * its own env + secrets               (config + credential boundary)
+#     * its own autoscaling + resource caps (blast-radius + cost boundary)
+#     * containerConcurrency=1              (process isolation per tmux runtime)
 #
-# Required env vars when applying:
-#   PROJECT_ID  : GCP project id                        (e.g. agentverse-prod)
-#   REGION      : Cloud Run region                      (e.g. us-central1)
-#   IMAGE_TAG   : Image tag to deploy                   (e.g. latest or $SHORT_SHA)
-#   SPA_ORIGIN  : Public origin of the SPA              (e.g. https://agentverse.web.app)
+# Apply (single tenant) with:
+#   TENANT_ID=acme PROJECT_ID=… REGION=us-central1 IMAGE_TAG=latest \
+#   SPA_ORIGIN=https://acme.example.app \
+#     envsubst < infra/runtime/service.yaml \
+#     | gcloud run services replace - --region "$REGION"
+#
+# scripts/deploy-cloud.sh exports every variable below with a safe default, so
+# a bare `./scripts/deploy-cloud.sh` deploys the `default` tenant.
+#
+# Required / tunable env vars (defaults live in scripts/deploy-cloud.sh):
+#   TENANT_ID              : tenant slug, namespaces the service    (e.g. acme)
+#   PROJECT_ID             : GCP project id                         (e.g. agentverse-prod)
+#   REGION                 : Cloud Run region                       (e.g. us-central1)
+#   IMAGE_TAG              : image tag to deploy                    (e.g. latest or $SHORT_SHA)
+#   SPA_ORIGIN             : public origin of the SPA               (e.g. https://acme.example.app)
+#   MIN_SCALE / MAX_SCALE  : per-tenant autoscaling bounds          (e.g. 0 / 10)
+#   CONTAINER_CONCURRENCY  : in-flight requests per instance        (1 = isolated)
+#   CPU_LIMIT / MEMORY_LIMIT : per-tenant resource caps             (e.g. 1 / 1Gi)
+#   TIMEOUT_SECONDS        : request timeout                        (e.g. 3600)
 #
 # Notes
-#   * `--allow-unauthenticated` is intentionally NOT set here. Auth enforcement
-#     is the job of the auth-proxy / Firebase JWT middleware (see
-#     openspec/changes/cloud-runtime-deployment).
-#   * `concurrency: 1` keeps each tmux-managed runtime process isolated. Per
-#     master spec §13, multi-tenant isolation is owned by a follow-up change.
-#   * Memory / CPU defaults are conservative; tune per workload.
+#   * `--allow-unauthenticated` is intentionally NOT set here. Server-side auth
+#     enforcement (Cloud Run IAM vs custom proxy) is documented in
+#     docs/cloud-runtime-auth.md (task 6.5 — human decision point).
+#   * Per-tenant provider secrets live in Secret Manager. The wiring is shown
+#     in the commented `secretKeyRef` block below; it is commented out because
+#     the secret must be provisioned first (BLOCKED: needs a real GCP project —
+#     see docs/cloud-runtime-auth.md "Per-tenant secrets").
 
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: agentverse-runtime
+  name: agentverse-runtime-${TENANT_ID}
+  labels:
+    app: agentverse-runtime
+    tenant: ${TENANT_ID}
   annotations:
     run.googleapis.com/launch-stage: BETA
     run.googleapis.com/ingress: all
 spec:
   template:
     metadata:
+      labels:
+        app: agentverse-runtime
+        tenant: ${TENANT_ID}
       annotations:
-        autoscaling.knative.dev/minScale: "0"
-        autoscaling.knative.dev/maxScale: "10"
+        autoscaling.knative.dev/minScale: "${MIN_SCALE}"
+        autoscaling.knative.dev/maxScale: "${MAX_SCALE}"
         run.googleapis.com/cpu-throttling: "true"
         run.googleapis.com/execution-environment: gen2
         run.googleapis.com/startup-cpu-boost: "true"
     spec:
-      containerConcurrency: 1
-      timeoutSeconds: 3600
+      containerConcurrency: ${CONTAINER_CONCURRENCY}
+      timeoutSeconds: ${TIMEOUT_SECONDS}
       containers:
         - image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/agentverse/runtime:${IMAGE_TAG}
           ports:
@@ -44,19 +70,35 @@ spec:
               containerPort: 9889
           resources:
             limits:
-              cpu: "1"
-              memory: 1Gi
+              cpu: "${CPU_LIMIT}"
+              memory: ${MEMORY_LIMIT}
           env:
             - name: PORT
               value: "9889"
             - name: CAO_HOST
               value: "0.0.0.0"
+            - name: CAO_TENANT_ID
+              value: ${TENANT_ID}
+            # Per-tenant state prefix. With a Cloud Run gen2 volume mount this
+            # keeps each tenant's sessions/logs/profiles under its own path.
+            - name: CAO_STATE_PREFIX
+              value: /root/.cao/${TENANT_ID}
             - name: CAO_CORS_ORIGINS
               value: ${SPA_ORIGIN}
             - name: CAO_ALLOWED_HOSTS
               value: 0.0.0.0,127.0.0.1,localhost
             - name: CAO_WS_ALLOWED_CLIENTS
               value: ${SPA_ORIGIN}
+            # --- Per-tenant provider secrets (BLOCKED: needs GCP Secret Manager) ---
+            # Provision first:
+            #   gcloud secrets create agentverse-${TENANT_ID}-provider-keys --replication-policy=automatic
+            #   gcloud secrets versions add agentverse-${TENANT_ID}-provider-keys --data-file=keys.env
+            # then uncomment:
+            # - name: CAO_PROVIDER_KEYS
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: agentverse-${TENANT_ID}-provider-keys
+            #       key: latest
           startupProbe:
             httpGet:
               path: /health

@@ -1,6 +1,6 @@
 import { openDb } from '@/shared/storage/idb';
 import { CanvasDocument } from '@/shared/canvas-types';
-import { SCHEMA_VERSION, isCompatible } from './schema-version';
+import { SCHEMA_VERSION, isCompatible } from '@/shared/schema-version';
 import { parseCanvasDocument } from './schema';
 
 export interface CanvasStore {
@@ -121,7 +121,7 @@ export const canvasStore: CanvasStore = {
       edges: [],
       config: {
         working_directory: '~',
-        provider_default: 'claude_code',
+        provider_default: '',
       },
       deploy_state: {
         status: 'draft',

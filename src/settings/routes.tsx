@@ -84,6 +84,9 @@ const SettingsNav: React.FC = () => {
       <Link to="/settings/appearance" style={linkStyle('appearance')}>
         Appearance
       </Link>
+      <Link to="/settings/sharepoint" style={linkStyle('sharepoint')}>
+        SharePoint Assessment
+      </Link>
     </div>
   );
 };
@@ -676,6 +679,80 @@ export const AppearancePage: React.FC = () => {
               <option value="dark" style={{ background: '#1c1c1e' }}>Sentinel Dark (Default - Locked)</option>
             </select>
           </FormField>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// 4. SharePointAssessmentPage component
+export const SharePointAssessmentPage: React.FC = () => {
+  const initSettings = useSettingsStore((s) => s.init);
+  const settingsInitialized = useSettingsStore((s) => s.initialized);
+  const spBaseUrl = useSettingsStore((s) => s.spBaseUrl);
+  const updateSetting = useSettingsStore((s) => s.updateSetting);
+  const toast = useToast();
+
+  const [inputUrl, setInputUrl] = useState(spBaseUrl);
+
+  useEffect(() => {
+    if (!settingsInitialized) {
+      void initSettings();
+    }
+  }, [initSettings, settingsInitialized]);
+
+  useEffect(() => {
+    setInputUrl(spBaseUrl);
+  }, [spBaseUrl]);
+
+  const handleSave = async () => {
+    const trimmed = inputUrl.trim();
+    if (!trimmed) {
+      toast.error('SharePoint Connection URL cannot be empty');
+      return;
+    }
+    // Validate connection string (accepts http/https URLs, domains, and IP addresses)
+    const isValid = /^(https?:\/\/)?([\w.-]+|(\d{1,3}\.){3}\d{1,3})(:\d+)?(\/.*)?$/.test(trimmed);
+    if (!isValid) {
+      toast.error('Please enter a valid URL, Domain, or IP Address');
+      return;
+    }
+
+    try {
+      await updateSetting('spBaseUrl', trimmed);
+      toast.success('SharePoint connection URL saved successfully!');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to save configuration: ${errMsg}`);
+    }
+  };
+
+  return (
+    <div style={containerStyle}>
+      <h1 style={titleStyle}>SharePoint Assessment</h1>
+      <p style={descStyle}>Configure the SharePoint connection endpoint URL used by assessment agents.</p>
+      <SettingsNav />
+
+      <div style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <Card>
+          <FormField
+            label="SharePoint Connection URL"
+            id="sharepoint-base-url"
+            helperText="The connection URL to Microsoft SharePoint. Supports domain hostnames (e.g. sharepoint.minsait.com) and IP addresses (e.g. 192.168.1.100)."
+          >
+            <input
+              type="text"
+              value={inputUrl}
+              onChange={(e) => setInputUrl(e.target.value)}
+              placeholder="e.g. https://sharepoint.minsait.com or 192.168.1.100"
+            />
+          </FormField>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
+            <Button variant="primary" onClick={handleSave}>
+              Save Connection URL
+            </Button>
+          </div>
         </Card>
       </div>
     </div>

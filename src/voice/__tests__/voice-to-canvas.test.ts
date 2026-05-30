@@ -262,7 +262,7 @@ describe('voiceToCanvas', () => {
       const entry = doc.nodes.find((n) => n.data.is_entry_point);
       expect(entry?.data.role).toBe('supervisor');
       expect(doc.edges.every((e) => e.type === 'handoff')).toBe(true);
-      expect(doc.config.provider_default).toBe('claude_code');
+      expect(doc.config.provider_default).toBe('');
     });
   });
 });

@@ -14,6 +14,7 @@ describe('useSettingsStore', () => {
       },
       sttEngine: 'whisper',
       theme: 'dark',
+      spBaseUrl: 'https://sharepoint.minsait.com',
       initialized: false,
     });
   });
@@ -27,6 +28,15 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().defaultWorkingDir).toBe('C:/my-workspace');
     expect(useSettingsStore.getState().theme).toBe('light');
     expect(useSettingsStore.getState().defaultProvider).toBe('');
+    expect(useSettingsStore.getState().spBaseUrl).toBe('https://sharepoint.minsait.com');
+  });
+
+  it('can initialize spBaseUrl from IndexedDB', async () => {
+    await dbPut('settings', { key: 'spBaseUrl', value: 'http://192.168.1.100' });
+
+    await useSettingsStore.getState().init();
+
+    expect(useSettingsStore.getState().spBaseUrl).toBe('http://192.168.1.100');
   });
 
   it('can update settings and persist to IndexedDB', async () => {
@@ -36,5 +46,14 @@ describe('useSettingsStore', () => {
 
     const dbRecord = await dbGet('settings', 'defaultProvider');
     expect(dbRecord?.value).toBe('openai');
+  });
+
+  it('can update spBaseUrl and persist to IndexedDB', async () => {
+    await useSettingsStore.getState().updateSetting('spBaseUrl', 'https://sp.local');
+
+    expect(useSettingsStore.getState().spBaseUrl).toBe('https://sp.local');
+
+    const dbRecord = await dbGet('settings', 'spBaseUrl');
+    expect(dbRecord?.value).toBe('https://sp.local');
   });
 });

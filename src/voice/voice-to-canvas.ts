@@ -1,6 +1,6 @@
 /* eslint-disable agentverse/no-sideways-capability-imports */
 import { CanvasDocument, CanvasNode, CanvasEdge, CreateCanvasIntent, ProviderType } from './types';
-import { SCHEMA_VERSION } from '@/canvas-document/schema-version';
+import { SCHEMA_VERSION } from '@/shared/schema-version';
 
 interface RoleTemplate {
   profile_name: string;
@@ -118,7 +118,7 @@ export function voiceToCanvas(intent: CreateCanvasIntent): CanvasDocument {
     edges,
     config: {
       working_directory: '~',
-      provider_default: 'claude_code',
+      provider_default: '',
     },
     deploy_state: {
       status: 'draft',

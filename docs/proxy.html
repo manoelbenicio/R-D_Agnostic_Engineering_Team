@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AgentVerse — O Validation Proxy</title>
+<style>
+  :root{
+    --deep:#002B3A;--dark:#003E50;--teal:#3F96AE;--cyan:#00B0BD;--light:#7A9CAE;
+    --blue-gray:#B3C1DA;--sky:#BADFF3;--off:#F2F5F6;--white:#fff;
+    --success:#27AE60;--error:#E91E63;--gold:#FFC107;
+    --border:rgba(255,255,255,.10);--card:rgba(0,62,80,.55);
+    --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;--sans:'Inter',system-ui,Segoe UI,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--sans);color:var(--off);line-height:1.6;
+    background:linear-gradient(160deg,#001821,var(--deep) 45%,var(--dark));background-attachment:fixed}
+  .wrap{max-width:1040px;margin:0 auto;padding:44px 22px 90px}
+  header{text-align:center;padding:40px 20px 30px;border-bottom:1px solid var(--border);margin-bottom:30px}
+  .badge{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--cyan);border:1px solid var(--cyan);border-radius:9999px;padding:6px 16px;margin-bottom:16px;
+    box-shadow:0 0 18px rgba(0,176,189,.25)}
+  h1{font-size:38px;font-weight:800;margin:0 0 8px;background:linear-gradient(90deg,var(--white),var(--sky));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--blue-gray);font-size:16px;max-width:680px;margin:0 auto}
+  h2{font-size:22px;color:var(--white);margin:46px 0 14px;display:flex;align-items:center;gap:10px}
+  h2 .n{font-family:var(--mono);font-size:13px;color:var(--cyan);border:1px solid var(--cyan);border-radius:8px;padding:3px 9px}
+  p{color:var(--blue-gray)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin:18px 0;
+    backdrop-filter:blur(6px);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  code{font-family:var(--mono);background:rgba(0,0,0,.32);padding:2px 6px;border-radius:5px;color:var(--sky);font-size:12.5px}
+  svg{width:100%;height:auto;display:block}
+  .steps{counter-reset:s;margin:0;padding:0;list-style:none}
+  .steps li{counter-increment:s;position:relative;padding:14px 14px 14px 56px;margin:10px 0;
+    background:rgba(0,0,0,.18);border:1px solid var(--border);border-radius:10px;color:var(--blue-gray)}
+  .steps li::before{content:counter(s);position:absolute;left:14px;top:14px;width:28px;height:28px;border-radius:50%;
+    background:var(--cyan);color:#012;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:var(--mono)}
+  .steps li.deny::before{background:var(--error);color:#fff}
+  .steps b{color:var(--white)}
+  .pill{font-family:var(--mono);font-size:11px;border-radius:9999px;padding:2px 9px}
+  .ok{background:rgba(39,174,96,.15);color:#6fe0a0;border:1px solid rgba(39,174,96,.4)}
+  .no{background:rgba(233,30,99,.15);color:#ff7aa8;border:1px solid rgba(233,30,99,.4)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--border)}
+  th{color:var(--cyan);font-family:var(--mono);font-size:11px;text-transform:uppercase}
+  .note{font-size:13px;color:var(--light);border-left:3px solid var(--cyan);padding:6px 0 6px 14px;margin:14px 0}
+  footer{text-align:center;color:var(--light);font-size:13px;margin-top:50px;border-top:1px solid var(--border);padding-top:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="badge">Zoom · Validation Proxy</div>
+    <h1>O Proxy de Validação de Topologia</h1>
+    <p class="sub">Onde fica, o que intercepta e como decide. É o "porteiro" das chamadas <b>entre agentes</b>.</p>
+  </header>
+
+  <!-- 1 — ONDE FICA -->
+  <section>
+    <h2><span class="n">1</span> Onde ele fica</h2>
+    <p>O proxy <b>não é um servidor separado</b> e <b>não fica entre o navegador e o runtime</b>. Ele é um checkpoint <b>dentro do cao-server, no plano de controle MCP</b> — o único ponto por onde toda chamada agente→agente passa.</p>
+    <div class="card">
+      <svg viewBox="0 0 920 470" role="img" aria-label="Zoom no fluxo MCP com o proxy">
+        <defs>
+          <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--success)"/></marker>
+          <marker id="c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--cyan)"/></marker>
+          <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--error)"/></marker>
+        </defs>
+
+        <!-- cao-server container -->
+        <rect x="20" y="20" width="880" height="430" rx="14" fill="rgba(0,176,189,.05)" stroke="var(--cyan)" stroke-width="1.5"/>
+        <text x="44" y="46" fill="var(--sky)" font-family="monospace" font-size="12" font-weight="700">cao-server (container) — plano de controle MCP</text>
+
+        <!-- Agent A -->
+        <rect x="60" y="90" width="190" height="92" rx="10" fill="rgba(255,193,7,.10)" stroke="var(--gold)"/>
+        <text x="155" y="124" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">Agente A</text>
+        <text x="155" y="146" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="11">codex (tmux)</text>
+        <text x="155" y="164" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="10">CAO_TERMINAL_ID=A</text>
+
+        <!-- THE PROXY (center) -->
+        <rect x="350" y="70" width="220" height="132" rx="14" fill="rgba(0,176,189,.18)" stroke="var(--cyan)" stroke-width="2.5"/>
+        <text x="460" y="104" text-anchor="middle" fill="var(--cyan)" font-size="16" font-weight="800">🚦 VALIDATION</text>
+        <text x="460" y="126" text-anchor="middle" fill="var(--cyan)" font-size="16" font-weight="800">PROXY</text>
+        <text x="460" y="150" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="10">consulta a topologia</text>
+        <text x="460" y="166" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="10">do canvas (edges)</text>
+        <text x="460" y="186" text-anchor="middle" fill="var(--sky)" font-family="monospace" font-size="10">topology-guard.ts</text>
+
+        <!-- Agent B (allowed) -->
+        <rect x="670" y="60" width="190" height="92" rx="10" fill="rgba(39,174,96,.10)" stroke="var(--success)"/>
+        <text x="765" y="94" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">Agente B</text>
+        <text x="765" y="116" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="11">kiro-cli (tmux)</text>
+        <text x="765" y="134" text-anchor="middle" fill="#6fe0a0" font-family="monospace" font-size="10">aresta existe ✓</text>
+
+        <!-- Agent C (denied) -->
+        <rect x="670" y="200" width="190" height="92" rx="10" fill="rgba(233,30,99,.08)" stroke="var(--error)" stroke-dasharray="5 4"/>
+        <text x="765" y="234" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">Agente C</text>
+        <text x="765" y="256" text-anchor="middle" fill="var(--light)" font-family="monospace" font-size="11">agy (tmux)</text>
+        <text x="765" y="274" text-anchor="middle" fill="#ff7aa8" font-family="monospace" font-size="10">sem aresta ✗</text>
+
+        <!-- A -> proxy -->
+        <path d="M250,136 L348,136" stroke="var(--cyan)" stroke-width="2.5" marker-end="url(#c)"/>
+        <text x="299" y="126" text-anchor="middle" fill="var(--sky)" font-family="monospace" font-size="10">handoff</text>
+        <!-- proxy -> B allowed -->
+        <path d="M570,118 L668,106" stroke="var(--success)" stroke-width="2.5" marker-end="url(#g)"/>
+        <text x="620" y="100" text-anchor="middle" fill="#6fe0a0" font-family="monospace" font-size="10">PERMITE</text>
+        <!-- proxy -> C denied -->
+        <path d="M570,160 L668,232" stroke="var(--error)" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#r)"/>
+        <text x="612" y="210" text-anchor="middle" fill="#ff7aa8" font-family="monospace" font-size="10">BLOQUEIA + registra</text>
+
+        <!-- decision detail -->
+        <rect x="60" y="330" width="800" height="96" rx="10" fill="rgba(0,0,0,.22)" stroke="var(--border)"/>
+        <text x="80" y="358" fill="var(--white)" font-size="13" font-weight="700" font-family="Inter,sans-serif">A decisão (pura lógica, sem rede):</text>
+        <text x="80" y="382" fill="var(--sky)" font-family="monospace" font-size="12">if  edge(handoff, A → destino)  ∈  canvas.edges   →   PERMITE (entrega ao destino)</text>
+        <text x="80" y="404" fill="#ff7aa8" font-family="monospace" font-size="12">else                                              →   BLOQUEIA (4xx + violation log)</text>
+      </svg>
+    </div>
+    <div class="note">Repare: a chamada nunca vai <b>direto</b> de A para B/C. Ela sempre passa pelo proxy primeiro, porque é o <code>cao-server</code> (via MCP) quem entrega — e o proxy vive nesse ponto de entrega.</div>
+  </section>
+
+  <!-- 2 — O FLUXO PASSO A PASSO -->
+  <section>
+    <h2><span class="n">2</span> O fluxo, passo a passo</h2>
+    <div class="card">
+      <ol class="steps">
+        <li><b>Agente A</b> (codex) decide delegar e chama a primitiva MCP <code>handoff(target="Reviewer")</code>.</li>
+        <li>A chamada <b>sobe por MCP</b> até o <code>cao-server</code>, que identifica o chamador pelo <code>CAO_TERMINAL_ID</code>.</li>
+        <li><b>🚦 O proxy intercepta aqui</b> — antes da entrega. Resolve A → nó de origem, target → nó de destino, e consulta <code>canvas.edges</code>.</li>
+        <li>Existe a aresta <code>handoff: A → Reviewer</code> no canvas? <span class="pill ok">SIM → entrega</span> o cao-server roteia para o Agente B.</li>
+        <li class="deny">Não existe (ex.: A → agy)? <span class="pill no">NÃO → bloqueia</span> retorna erro e grava um registro auditável; a chamada nunca chega ao destino.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 3 — POR QUE EXISTE -->
+  <section>
+    <h2><span class="n">3</span> Por que ele existe (o risco R3)</h2>
+    <div class="card">
+      <p>Sem o proxy, a <b>única</b> coisa que impede um agente de chamar outro fora do desenho é uma <b>instrução no prompt</b> ("seus alvos permitidos são X, Y"). Mas um LLM <b>pode ignorar o prompt</b>. Nada <i>força</i> o respeito à topologia.</p>
+      <table>
+        <tr><th>Camada</th><th>O que faz</th><th>Garantia</th></tr>
+        <tr><td>Prompt (canvas-topology)</td><td>diz ao supervisor quais alvos são permitidos</td><td><span class="pill no">fraca — LLM pode ignorar</span></td></tr>
+        <tr><td><b>Validation-proxy</b></td><td>bloqueia a chamada se a aresta não existe</td><td><span class="pill ok">forte — determinística</span></td></tr>
+      </table>
+      <div class="note"><b>Analogia:</b> o prompt é uma placa "entre só por esta porta". O proxy é a <b>fechadura</b> que realmente tranca as outras portas.</div>
+    </div>
+  </section>
+
+  <!-- 4 — ONDE NO CODIGO / STATUS -->
+  <section>
+    <h2><span class="n">4</span> Onde está no código &amp; status</h2>
+    <div class="card">
+      <table>
+        <tr><th>Peça</th><th>Onde</th><th>Status</th></tr>
+        <tr><td>Cérebro (a lógica de decisão)</td><td><code>src/shared/topology-guard.ts</code></td><td><span class="pill ok">pronto + testes</span></td></tr>
+        <tr><td>Invólucro / auditoria</td><td><code>src/shared/validation-proxy.ts</code></td><td><span class="pill ok">pronto + testes</span></td></tr>
+        <tr><td>Ponto de interceptação real (no CAO)</td><td>handlers MCP do <code>cao-server</code></td><td><span class="pill no">decisão pendente</span></td></tr>
+      </table>
+      <div class="note bad" style="border-left:3px solid var(--error)"><b>A decisão pendente:</b> a lógica está pronta, mas plugá-la <i>de verdade</i> no CAO tem dois modos:
+        <br>• <b>Auditar</b> (só registrar violações) → dá pra fazer com um <b>plugin</b> do CAO, sem fork.
+        <br>• <b>Bloquear</b> (a fechadura real) → exige <b>patchar os handlers MCP</b> do CAO = manter um fork.</div>
+    </div>
+  </section>
+
+  <footer>AgentVerse · Validation Proxy (zoom) · self-contained (offline) · 2026-05-29</footer>
+</div>
+</body>
+</html>
