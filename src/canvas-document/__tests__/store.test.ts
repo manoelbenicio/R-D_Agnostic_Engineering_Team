@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { canvasStore } from '../store';
+import { parseCanvasDocument } from '../schema';
 import { openDb } from '@/shared/storage/idb';
 import { CanvasDocument } from '@/shared/canvas-types';
 
@@ -88,5 +89,62 @@ describe('Canvas Store', () => {
     expect(consoleWarnSpy.mock.calls[0]?.[0]).toContain('incompatible schema version 999');
 
     consoleWarnSpy.mockRestore();
+  });
+});
+
+describe('session_id schema support', () => {
+  const createDocumentWithNode = (sessionId?: string): CanvasDocument => {
+    const node: CanvasDocument['nodes'][number] = {
+      id: '11111111-1111-4111-8111-111111111111',
+      type: 'agent',
+      position: { x: 120, y: 80 },
+      data: {
+        profile_name: 'test_agent',
+        display_name: 'Test Agent',
+        role: 'developer',
+        provider: 'claude_code',
+        model: 'claude-sonnet-4',
+        system_prompt: 'You are a test agent.',
+        allowedTools: ['Read'],
+        is_entry_point: true,
+        ...(sessionId === undefined ? {} : { session_id: sessionId }),
+      },
+    };
+
+    return {
+      id: '22222222-2222-4222-8222-222222222222',
+      name: 'Session schema canvas',
+      version: 1,
+      created_at: '2026-05-30T16:00:00.000Z',
+      updated_at: '2026-05-30T16:00:00.000Z',
+      schema_version: 1,
+      nodes: [node],
+      edges: [],
+      config: {
+        working_directory: '~',
+        provider_default: 'claude_code',
+      },
+      deploy_state: {
+        status: 'draft',
+      },
+    };
+  };
+
+  it('parses a canvas document with session_id on a node', () => {
+    const parsed = parseCanvasDocument(createDocumentWithNode('test-session-123'));
+
+    expect(parsed.nodes[0]?.data.session_id).toBe('test-session-123');
+  });
+
+  it('parses a canvas document with session_id omitted', () => {
+    const parsed = parseCanvasDocument(createDocumentWithNode());
+
+    expect(parsed.nodes[0]?.data.session_id).toBeUndefined();
+  });
+
+  it('parses a canvas document with an empty session_id', () => {
+    const parsed = parseCanvasDocument(createDocumentWithNode(''));
+
+    expect(parsed.nodes[0]?.data.session_id).toBe('');
   });
 });

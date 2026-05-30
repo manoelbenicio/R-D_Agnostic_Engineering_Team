@@ -55,6 +55,51 @@
 | 2026-05-30T16:13:00Z | GEMINI-1-LEAD | CHECK-IN | final-quality-gate | 🔵 IN PROGRESS | Running final quality verification |
 | 2026-05-30T16:13:00Z | GEMINI-1-LEAD | CHECK-OUT | final-quality-gate | ✅ DONE | FINAL GATE PASSED — tsc 0 errors, vitest 412 passed |
 
+| 2026-05-30T16:17:39Z | C1-D | CHECK-IN | src/api/__tests__/session-store.test.ts | 🔵 IN PROGRESS | Creating session store unit tests |
+| 2026-05-30T16:17:39Z | C1-E | CHECK-IN | src/canvas-document/__tests__/store.test.ts | 🔵 IN PROGRESS | Adding session_id schema validation tests |
+| 2026-05-30T16:17:39Z | C1-F | CHECK-IN | src/sessions/SessionStatusBadge.tsx | 🔵 IN PROGRESS | Creating session status badge component |
+| 2026-05-30T16:17:39Z | C1-F | CHECK-IN | src/sessions/session-status-badge.css | 🔵 IN PROGRESS | Creating session status badge styling |
+| 2026-05-30T16:17:39Z | C1-F | CHECK-IN | src/sessions/index.ts | 🔵 IN PROGRESS | Exporting session status badge |
+| 2026-05-30T16:22:52Z | C1-D | CHECK-OUT | src/api/__tests__/session-store.test.ts | ✅ DONE | Added session store unit tests |
+| 2026-05-30T16:22:52Z | C1-E | CHECK-OUT | src/canvas-document/__tests__/store.test.ts | ✅ DONE | Added session_id schema validation tests |
+| 2026-05-30T16:22:52Z | C1-F | CHECK-OUT | src/sessions/SessionStatusBadge.tsx | ✅ DONE | Created session status badge component |
+| 2026-05-30T16:22:52Z | C1-F | CHECK-OUT | src/sessions/session-status-badge.css | ✅ DONE | Created session status badge styling |
+| 2026-05-30T16:22:52Z | C1-F | CHECK-OUT | src/sessions/index.ts | ✅ DONE | Exported session status badge |
+| 2026-05-30T16:22:52Z | CODEX-1-LEAD | CHECK-IN | Wave 1B Quality Gate | 🔵 IN PROGRESS | Running npx tsc --noEmit and npx vitest run |
+| 2026-05-30T16:22:52Z | CODEX-1-LEAD | CHECK-OUT | Wave 1B Quality Gate | ✅ DONE | Wave 1B Gate PASSED |
+| 2026-05-30T16:23:49Z | C2-D | CHECK-IN | src/canvas-builder/canvas-builder.css | 🔵 IN PROGRESS | Expanding canvas workspace for large monitors |
+| 2026-05-30T16:23:49Z | C2-D | CHECK-IN | src/canvas-builder/CanvasBuilderPage.tsx | 🔵 IN PROGRESS | Wiring fullscreen canvas expansion class |
+| 2026-05-30T16:27:50Z | C2-D | CHECK-OUT | src/canvas-builder/canvas-builder.css | ✅ DONE | Expanded full-viewport canvas workspace and floating config panel |
+| 2026-05-30T16:27:50Z | C2-D | CHECK-OUT | src/canvas-builder/CanvasBuilderPage.tsx | ✅ DONE | Wired fullscreen expansion class |
+| 2026-05-30T16:27:50Z | C2-E | CHECK-IN | src/canvas-builder/canvas-builder.css | 🔵 IN PROGRESS | Styling floating canvas controls |
+| 2026-05-30T16:27:50Z | C2-E | CHECK-IN | src/canvas-builder/CanvasBuilderPage.tsx | 🔵 IN PROGRESS | Adding fit view, zoom, fullscreen controls, and shortcuts |
+| 2026-05-30T16:31:36Z | C2-E | CHECK-OUT | src/canvas-builder/canvas-builder.css | ✅ DONE | Styled floating canvas viewport controls |
+| 2026-05-30T16:31:36Z | C2-E | CHECK-OUT | src/canvas-builder/CanvasBuilderPage.tsx | ✅ DONE | Added fit view, zoom, fullscreen controls, and keyboard shortcuts |
+| 2026-05-30T16:31:36Z | C2-F | CHECK-IN | src/sessions/AddSessionDialog.tsx | 🔵 IN PROGRESS | Creating OAuth session dialog |
+| 2026-05-30T16:31:36Z | C2-F | CHECK-IN | src/sessions/add-session-dialog.css | 🔵 IN PROGRESS | Styling OAuth session dialog |
+| 2026-05-30T16:31:36Z | C2-F | CHECK-IN | src/sessions/SessionsPage.tsx | 🔵 IN PROGRESS | Wiring provider add-session buttons to dialog |
+| 2026-05-30T16:25:00Z | G1-D | CHECK-IN | src/canvas-reconciler/reconciler.ts | 🔵 IN PROGRESS | Injecting env vars into CAO client calls |
+| 2026-05-30T16:25:00Z | G1-E | CHECK-IN | src/sessions/useSessionMonitor.ts | 🔵 IN PROGRESS | Creating session monitor hook |
+| 2026-05-30T16:25:00Z | G1-E | CHECK-IN | src/sessions/index.ts | 🔵 IN PROGRESS | Exporting useSessionMonitor hook |
+| 2026-05-30T16:25:00Z | G1-F | CHECK-IN | src/shell/AppLayout.tsx | 🔵 IN PROGRESS | Integrating useSessionMonitor globally |
+| 2026-05-30T16:25:00Z | G1-F | CHECK-IN | src/sessions/__tests__/useSessionMonitor.test.ts | 🔵 IN PROGRESS | Creating useSessionMonitor tests |
+| 2026-05-30T16:27:00Z | G1-D | CHECK-OUT | src/canvas-reconciler/reconciler.ts | ✅ DONE | Wired session env vars into CAO client deploy/add calls |
+| 2026-05-30T16:27:00Z | G1-E | CHECK-OUT | src/sessions/useSessionMonitor.ts | ✅ DONE | Created session monitor hook |
+| 2026-05-30T16:27:00Z | G1-E | CHECK-OUT | src/sessions/index.ts | ✅ DONE | Exported useSessionMonitor hook |
+| 2026-05-30T16:27:00Z | G1-F | CHECK-OUT | src/shell/AppLayout.tsx | ✅ DONE | Integrated session monitor hook globally |
+| 2026-05-30T16:27:00Z | G1-F | CHECK-OUT | src/sessions/__tests__/useSessionMonitor.test.ts | ✅ DONE | Created unit tests for useSessionMonitor |
+| 2026-05-30T16:27:00Z | GEMINI-1-LEAD | CHECK-IN | Wave 3B Quality Gate | 🔵 IN PROGRESS | Running quality gate verification |
+| 2026-05-30T16:27:00Z | GEMINI-1-LEAD | CHECK-OUT | Wave 3B Quality Gate | ✅ DONE | Wave 3B Gate PASSED |
+
+| 2026-05-30T16:27:00Z | C1-G | CHECK-IN | src/shell/NavBar.tsx | 🔵 IN PROGRESS | Wiring SessionStatusBadge into navbar |
+| 2026-05-30T16:27:00Z | C1-H | CHECK-IN | tests/e2e/sessions.spec.ts | 🔵 IN PROGRESS | Creating sessions E2E smoke tests |
+| 2026-05-30T16:32:38Z | C1-G | CHECK-OUT | src/shell/NavBar.tsx | ✅ DONE | Wired SessionStatusBadge into navbar |
+| 2026-05-30T16:32:38Z | C1-H | CHECK-OUT | tests/e2e/sessions.spec.ts | ✅ DONE | Added sessions E2E smoke tests |
+| 2026-05-30T16:32:38Z | C1-I | CHECK-IN | git commit | 🔵 IN PROGRESS | Staging all pending work and creating Wave 1B+1C commit |
+| 2026-05-30T16:33:25Z | C1-I | CHECK-OUT | git commit | ✅ DONE | Created Wave 1B+1C commit |
+| 2026-05-30T16:33:25Z | CODEX-1-LEAD | CHECK-IN | Wave 1C Quality Gate | 🔵 IN PROGRESS | Verifying TypeScript, Vitest, Playwright, and commit |
+| 2026-05-30T16:33:25Z | CODEX-1-LEAD | CHECK-OUT | Wave 1C Quality Gate | ✅ DONE | Wave 1C Gate PASSED |
+
 ---
 
 ## Rules
@@ -77,7 +122,7 @@
 | `src/canvas-document/schema.ts` | — | 🟢 Available |
 | `src/api/session-discovery.ts` | — | 🟢 Available |
 | `src/api/session-store.ts` | — | 🟢 Available |
-| `src/sessions/SessionsPage.tsx` | — | 🟢 Available |
+| `src/sessions/SessionsPage.tsx` | C2-F | 🔴 Locked |
 | `src/sessions/sessions.css` | — | 🟢 Available |
 | `src/sessions/index.ts` | — | 🟢 Available |
 | `src/canvas-builder/BlockConfigurationPanel.tsx` | — | 🟢 Available |
@@ -87,3 +132,15 @@
 | `src/api/types.ts` | — | 🟢 Available |
 | `src/api/cao-client.ts` | — | 🟢 Available |
 | `src/api/__tests__/session-discovery.test.ts` | — | 🟢 Available (NEW) |
+| `src/api/__tests__/session-store.test.ts` | — | 🟢 Available (NEW) |
+| `src/canvas-document/__tests__/store.test.ts` | — | 🟢 Available |
+| `src/sessions/SessionStatusBadge.tsx` | — | 🟢 Available (NEW) |
+| `src/sessions/session-status-badge.css` | — | 🟢 Available (NEW) |
+| `src/canvas-builder/canvas-builder.css` | — | 🟢 Available |
+| `src/canvas-builder/CanvasBuilderPage.tsx` | — | 🟢 Available |
+| `src/sessions/AddSessionDialog.tsx` | C2-F | 🔴 Locked (NEW) |
+| `src/sessions/add-session-dialog.css` | C2-F | 🔴 Locked (NEW) |
+| `src/sessions/useSessionMonitor.ts` | — | 🟢 Available (NEW) |
+| `src/sessions/__tests__/useSessionMonitor.test.ts` | — | 🟢 Available (NEW) |
+| `src/shell/AppLayout.tsx` | — | 🟢 Available (NEW) |
+| `tests/e2e/sessions.spec.ts` | — | 🟢 Available (NEW) |

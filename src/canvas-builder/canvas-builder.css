@@ -12,33 +12,57 @@
 
 .canvas-builder-page {
   flex: 1;
+  width: 100%;
+  max-width: none;
+  height: calc(100vh - 64px);
+  min-height: 0;
+  margin: -12px -16px;
+  padding: 12px 16px;
+  overflow: hidden;
 }
 
 /* ── Zen Mode: full-screen canvas takeover ── */
-.canvas-zen-mode {
+.canvas-zen-mode,
+.canvas-fullscreen-mode {
   position: fixed;
   inset: 0;
   z-index: 200;
   background: var(--bg-primary);
-  padding: var(--space-2);
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
   gap: var(--space-2);
   min-height: unset;
 }
 
-.canvas-zen-mode .canvas-toolbar {
+.canvas-zen-mode .canvas-toolbar,
+.canvas-fullscreen-mode .canvas-toolbar {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--panel);
 }
 
-.canvas-zen-mode .canvas-page-title {
+.canvas-zen-mode .canvas-page-title,
+.canvas-fullscreen-mode .canvas-page-title {
   font-size: 1rem;
 }
 
-.canvas-zen-mode .canvas-workspace {
+.canvas-zen-mode .canvas-workspace,
+.canvas-fullscreen-mode .canvas-workspace {
   min-height: 0;
   flex: 1;
+}
+
+.canvas-fullscreen-mode .canvas-palette,
+.canvas-fullscreen-mode .canvas-config-panel {
+  display: none;
+}
+
+.canvas-fullscreen-mode .canvas-workspace {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
 
 .canvas-page-title {
@@ -77,18 +101,21 @@
 }
 
 .canvas-workspace {
+  position: relative;
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 360px;
+  grid-template-columns: 220px minmax(0, 1fr);
   grid-template-rows: 1fr;
   gap: var(--space-4);
   flex: 1;
   min-height: 0; /* allow grid to shrink below content size */
+  width: 100%;
+  max-width: none;
   transition: grid-template-columns 0.25s ease;
 }
 
 /* ── Collapsed panels: canvas takes full width ── */
 .canvas-panels-collapsed .canvas-workspace {
-  grid-template-columns: 0px minmax(0, 1fr) 0px;
+  grid-template-columns: 0 minmax(0, 1fr);
   gap: 0;
 }
 
@@ -114,6 +141,18 @@
   padding: var(--space-4);
   overflow-y: auto;
   min-height: 0; /* allow flex/grid children to scroll */
+}
+
+.canvas-config-panel {
+  position: absolute;
+  top: 64px;
+  right: var(--space-4);
+  z-index: 20;
+  width: min(360px, calc(100% - var(--space-8)));
+  max-height: calc(100% - 80px);
+  background: rgba(0, 43, 58, 0.9);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.38);
 }
 
 .canvas-panel-title {
@@ -161,16 +200,83 @@
 
 .canvas-flow-shell {
   position: relative;
+  width: 100%;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
-.canvas-zen-mode .canvas-flow-shell {
+.canvas-zen-mode .canvas-flow-shell,
+.canvas-fullscreen-mode .canvas-flow-shell {
   min-height: 0;
 }
 
 .canvas-flow-shell .react-flow {
+  width: 100%;
+  height: 100%;
   background: var(--surface-deep);
+}
+
+.canvas-flow-shell .react-flow__renderer {
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+.canvas-flow-shell .react-flow__minimap {
+  width: clamp(180px, 12vw, 260px);
+  height: clamp(112px, 8vw, 168px);
+  border: 1px solid var(--border-accent);
+  background: var(--surface-overlay);
+}
+
+.canvas-floating-toolbar {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-badge);
+  background: rgba(0, 24, 32, 0.82);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+}
+
+.canvas-floating-control {
+  min-height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-badge);
+  background: transparent;
+  padding: 4px 9px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.canvas-floating-control:hover,
+.canvas-floating-control:focus-visible {
+  border-color: var(--cyan-edge);
+  background: var(--cyan-tint);
+  color: var(--cyan);
+  outline: none;
+}
+
+.canvas-zoom-level {
+  min-width: 48px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-align: center;
 }
 
 .canvas-empty-overlay {

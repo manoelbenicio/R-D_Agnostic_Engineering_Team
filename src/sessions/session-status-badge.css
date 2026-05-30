@@ -1,0 +1,69 @@
+.session-status-badge {
+  min-height: 30px;
+  white-space: nowrap;
+}
+
+.session-status-badge:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 3px;
+}
+
+.session-status-badge-text {
+  line-height: 1;
+}
+
+.session-status-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.session-status-badge-active {
+  border-color: var(--ops-edge);
+  color: var(--neon-green);
+  box-shadow: 0 0 10px var(--ops-tint);
+}
+
+.session-status-badge-active:hover {
+  background: var(--ops-soft);
+  box-shadow: 0 0 15px var(--ops-tint);
+}
+
+.session-status-badge-dot-active {
+  background-color: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
+}
+
+.session-status-badge-expiring {
+  border-color: var(--amber-edge);
+  color: var(--neon-amber);
+  box-shadow: 0 0 10px var(--amber-tint);
+}
+
+.session-status-badge-expiring:hover {
+  background: var(--amber-soft);
+  box-shadow: 0 0 15px var(--amber-tint);
+}
+
+.session-status-badge-dot-expiring {
+  background-color: var(--neon-amber);
+  box-shadow: 0 0 8px var(--neon-amber);
+}
+
+.session-status-badge-expired {
+  border-color: var(--threat-edge);
+  color: var(--neon-red);
+  box-shadow: 0 0 10px var(--threat-tint);
+}
+
+.session-status-badge-expired:hover {
+  background: var(--threat-soft);
+  box-shadow: 0 0 15px var(--threat-tint);
+}
+
+.session-status-badge-dot-expired {
+  background-color: var(--neon-red);
+  box-shadow: 0 0 8px var(--neon-red);
+}

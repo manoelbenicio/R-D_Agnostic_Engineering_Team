@@ -1,6 +1,8 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useHealthStore } from '@/api';
+// eslint-disable-next-line agentverse/no-sideways-capability-imports
+import { SessionStatusBadge } from '@/sessions';
 import { LoginButton } from './LoginButton';
 
 export const NavBar: React.FC = () => {
@@ -69,6 +71,7 @@ export const NavBar: React.FC = () => {
         </div>
       </div>
       <div className="navbar-right">
+        <SessionStatusBadge />
         <button
           className={`health-pill ${health.pillClass}`}
           onClick={handleHealthClick}

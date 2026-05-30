@@ -12,10 +12,14 @@ import { canvasStore } from '@/canvas-document/store';
 import { FirstRunWizard } from '@/health/FirstRunWizard';
 import { useHealthStore } from '@/api';
 import { useDataAnimateObserver } from '@/design-system';
+import { useSessionMonitor } from '@/sessions';
 
 export const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   // DSS motion infrastructure — reveals [data-animate] descendants on scroll.
   useDataAnimateObserver();
+
+  // Monitor sessions globally
+  useSessionMonitor();
 
   const initKeys = useKeyStore((s) => s.init);
   const keysInitialized = useKeyStore((s) => s.initialized);

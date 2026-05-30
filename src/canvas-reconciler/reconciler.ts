@@ -3,6 +3,8 @@ import { canvasStore } from '@/canvas-document/store';
 import { CaoClient, caoClient } from '@/api/cao-client';
 import { CanvasDocument, CanvasNode, CanvasEdge } from '@/shared/canvas-types';
 import { useDeployStore, DeployStep } from './deploy-store';
+import { resolveSessionEnv } from '@/api/session-discovery';
+import { useSessionStore } from '@/api/session-store';
 
 export class EntryPointChangedError extends Error {
   constructor() {
@@ -318,9 +320,19 @@ export async function reconcileCanvas(
         await canvasStore.save(currentCanvasDoc);
 
         try {
+          let terminalEnv: Record<string, string> = {};
+          if (entryPointNode.data.session_id) {
+            const sessionStore = useSessionStore.getState();
+            const session = sessionStore.getSession(entryPointNode.data.session_id);
+            if (session) {
+              terminalEnv = resolveSessionEnv(session, entryPointNode.data.model);
+            }
+          }
+
           const session = await client.createSession({
             profile: entryPointProfileName,
             working_directory: currentCanvasDoc.config.working_directory || '~',
+            env_vars: Object.keys(terminalEnv).length > 0 ? terminalEnv : undefined,
           });
           anyCallSucceeded = true;
           sessionName = session.name;
@@ -380,9 +392,19 @@ export async function reconcileCanvas(
         await canvasStore.save(currentCanvasDoc);
 
         try {
+          let terminalEnv: Record<string, string> = {};
+          if (node.data.session_id) {
+            const sessionStore = useSessionStore.getState();
+            const session = sessionStore.getSession(node.data.session_id);
+            if (session) {
+              terminalEnv = resolveSessionEnv(session, node.data.model);
+            }
+          }
+
           const terminal = await client.addTerminalToSession(sessionName, {
             profile: profileName,
             working_directory: currentCanvasDoc.config.working_directory || '~',
+            env_vars: Object.keys(terminalEnv).length > 0 ? terminalEnv : undefined,
           });
           anyCallSucceeded = true;
 
@@ -492,9 +514,19 @@ export async function reconcileCanvas(
           await canvasStore.save(currentCanvasDoc);
 
           // Add new terminal
+          let terminalEnv: Record<string, string> = {};
+          if (nodeToUpdate.data.session_id) {
+            const sessionStore = useSessionStore.getState();
+            const session = sessionStore.getSession(nodeToUpdate.data.session_id);
+            if (session) {
+              terminalEnv = resolveSessionEnv(session, nodeToUpdate.data.model);
+            }
+          }
+
           const terminal = await client.addTerminalToSession(sessionName, {
             profile: profileName,
             working_directory: currentCanvasDoc.config.working_directory || '~',
+            env_vars: Object.keys(terminalEnv).length > 0 ? terminalEnv : undefined,
           });
 
           currentCanvasDoc.deploy_state.terminal_map = {
@@ -554,9 +586,19 @@ export async function reconcileCanvas(
           await client.installProfile(profileMarkdown);
           anyCallSucceeded = true;
 
+          let terminalEnv: Record<string, string> = {};
+          if (nodeToAdd.data.session_id) {
+            const sessionStore = useSessionStore.getState();
+            const session = sessionStore.getSession(nodeToAdd.data.session_id);
+            if (session) {
+              terminalEnv = resolveSessionEnv(session, nodeToAdd.data.model);
+            }
+          }
+
           const terminal = await client.addTerminalToSession(sessionName, {
             profile: profileName,
             working_directory: currentCanvasDoc.config.working_directory || '~',
+            env_vars: Object.keys(terminalEnv).length > 0 ? terminalEnv : undefined,
           });
 
           currentCanvasDoc.deploy_state.terminal_map = {

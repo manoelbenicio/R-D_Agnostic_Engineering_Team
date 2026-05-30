@@ -89,9 +89,21 @@ const CanvasBuilderInner: React.FC = () => {
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const [zenMode, setZenMode] = useState(false);
   const [panelsCollapsed, setPanelsCollapsed] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   useVoiceHotkey();
 
+  const handleFitView = useCallback(() => {
+    void reactFlow.fitView({ padding: 0.16, duration: 300, minZoom: 0.2, maxZoom: 1.4 });
+  }, [reactFlow]);
+
+  const handleZoomIn = useCallback(() => {
+    void reactFlow.zoomIn();
+  }, [reactFlow]);
+
+  const handleZoomOut = useCallback(() => {
+    void reactFlow.zoomOut();
+  }, [reactFlow]);
 
   useEffect(() => {
     if (!keyStoreInitialized) {
@@ -592,6 +604,30 @@ const CanvasBuilderInner: React.FC = () => {
       const mod = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
 
+      if (mod && event.shiftKey && key === 'f') {
+        event.preventDefault();
+        setZenMode((prev) => !prev);
+        return;
+      }
+
+      if (mod && key === '0') {
+        event.preventDefault();
+        handleFitView();
+        return;
+      }
+
+      if (mod && (key === '=' || key === '+')) {
+        event.preventDefault();
+        handleZoomIn();
+        return;
+      }
+
+      if (mod && key === '-') {
+        event.preventDefault();
+        handleZoomOut();
+        return;
+      }
+
       // Ctrl/Cmd+S → Save
       if (mod && key === 's') {
         event.preventDefault();
@@ -639,7 +675,7 @@ const CanvasBuilderInner: React.FC = () => {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, zenMode]);
+  }, [handleFitView, handleSave, handleZoomIn, handleZoomOut, zenMode]);
 
   const undo = () => {
     setPast((items) => {
@@ -746,7 +782,7 @@ const CanvasBuilderInner: React.FC = () => {
   }
 
   return (
-    <main className={`canvas-builder-page${zenMode ? ' canvas-zen-mode' : ''}${panelsCollapsed ? ' canvas-panels-collapsed' : ''}`}>
+    <main className={`canvas-builder-page${zenMode ? ' canvas-zen-mode canvas-fullscreen-mode' : ''}${panelsCollapsed ? ' canvas-panels-collapsed' : ''}`}>
       <header className="canvas-toolbar">
         <div>
           <h1 className="canvas-page-title">{doc.name}</h1>
@@ -826,6 +862,28 @@ const CanvasBuilderInner: React.FC = () => {
       <section className="canvas-workspace">
         {!isTouchOnly ? <AgentPalette /> : null}
         <div className="canvas-flow-shell" onDrop={handleDrop} onDragOver={(event) => event.preventDefault()}>
+          <div className="canvas-floating-toolbar" aria-label="Canvas viewport controls">
+            <button type="button" className="canvas-floating-control" onClick={handleFitView}>
+              Fit View
+            </button>
+            <button type="button" className="canvas-floating-control" onClick={handleZoomOut} aria-label="Zoom out">
+              -
+            </button>
+            <span className="canvas-zoom-level" aria-live="polite">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <button type="button" className="canvas-floating-control" onClick={handleZoomIn} aria-label="Zoom in">
+              +
+            </button>
+            <button
+              type="button"
+              className="canvas-floating-control"
+              onClick={() => setZenMode((prev) => !prev)}
+              aria-pressed={zenMode}
+            >
+              {zenMode ? 'Exit Fullscreen' : 'Fullscreen'}
+            </button>
+          </div>
           {doc.nodes.length === 0 ? (
             <div className="canvas-empty-overlay">
               <span>Drop an agent block or start from a template.</span>
@@ -858,6 +916,11 @@ const CanvasBuilderInner: React.FC = () => {
             snapToGrid
             snapGrid={[24, 24]}
             fitView
+            fitViewOptions={{ padding: 0.16, minZoom: 0.2, maxZoom: 1.4 }}
+            minZoom={0.15}
+            maxZoom={2.5}
+            onlyRenderVisibleElements
+            onViewportChange={(viewport) => setZoomLevel(viewport.zoom)}
             proOptions={{ hideAttribution: true }}
           >
             <Background color="rgba(0, 176, 189, 0.18)" gap={24} />
