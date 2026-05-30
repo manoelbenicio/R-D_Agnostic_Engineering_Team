@@ -44,6 +44,7 @@ import {
 import AgentNode from './AgentNode';
 import AgentPalette from './AgentPalette';
 import BlockConfigurationPanel from './BlockConfigurationPanel';
+import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 import OrchestrationEdge from './OrchestrationEdge';
 import { validateCanvasForDeploy } from './deploy-validation';
 import { getCanvasProviderOptionsWithCli } from './provider-options';
@@ -90,6 +91,7 @@ const CanvasBuilderInner: React.FC = () => {
   const [zenMode, setZenMode] = useState(false);
   const [panelsCollapsed, setPanelsCollapsed] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
 
   useVoiceHotkey();
 
@@ -104,6 +106,8 @@ const CanvasBuilderInner: React.FC = () => {
   const handleZoomOut = useCallback(() => {
     void reactFlow.zoomOut();
   }, [reactFlow]);
+
+  const closeShortcutsHelp = useCallback(() => setShortcutsHelpOpen(false), []);
 
   useEffect(() => {
     if (!keyStoreInitialized) {
@@ -182,7 +186,7 @@ const CanvasBuilderInner: React.FC = () => {
       
       updateDoc((current) => {
         const newNode = createAgentNode({
-          role: role as any,
+          role: role as StarterRole,
           position: { x: 250, y: 150 + current.nodes.length * 50 },
           hasEntryPoint: current.nodes.some((n) => n.data.is_entry_point),
           provider: defaultProvider,
@@ -255,7 +259,7 @@ const CanvasBuilderInner: React.FC = () => {
       window.removeEventListener('voice-canvas-add-node', handleAddNodeEvent);
       window.removeEventListener('voice-canvas-connect', handleConnectEvent);
     };
-  }, [updateDoc, validatedProviders, toast]);
+  }, [installedCliProviders, updateDoc, validatedProviders, toast]);
 
   const selectedNode = useMemo(
     () => doc?.nodes.find((node) => node.id === selectedNodeId),
@@ -303,7 +307,7 @@ const CanvasBuilderInner: React.FC = () => {
         connectable: !isTouchOnly,
       }));
     },
-    [doc?.nodes, isTouchOnly, selectedNodeId]
+    [doc, isTouchOnly, selectedNodeId]
   );
 
   const edges = useMemo<FlowEdge[]>(
@@ -599,10 +603,36 @@ const CanvasBuilderInner: React.FC = () => {
     }
   }, [doc, toast]);
 
+  const undo = useCallback(() => {
+    setPast((items) => {
+      const previous = items.at(-1);
+      if (!previous || !doc) return items;
+      setFuture((futureItems) => [structuredClone(doc), ...futureItems].slice(0, 20));
+      setDoc(previous);
+      return items.slice(0, -1);
+    });
+  }, [doc]);
+
+  const redo = useCallback(() => {
+    setFuture((items) => {
+      const next = items[0];
+      if (!next || !doc) return items;
+      setPast((pastItems) => [...pastItems.slice(-19), structuredClone(doc)]);
+      setDoc(next);
+      return items.slice(1);
+    });
+  }, [doc]);
+
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const mod = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
+
+      if (key === '?' && !isEditableTarget(event.target)) {
+        event.preventDefault();
+        setShortcutsHelpOpen(true);
+        return;
+      }
 
       if (mod && event.shiftKey && key === 'f') {
         event.preventDefault();
@@ -651,7 +681,9 @@ const CanvasBuilderInner: React.FC = () => {
 
       // Escape → Deselect (or exit zen mode)
       if (key === 'escape') {
-        if (zenMode) {
+        if (shortcutsHelpOpen) {
+          setShortcutsHelpOpen(false);
+        } else if (zenMode) {
           setZenMode(false);
         } else {
           setSelectedNodeId(null);
@@ -675,27 +707,7 @@ const CanvasBuilderInner: React.FC = () => {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleFitView, handleSave, handleZoomIn, handleZoomOut, zenMode]);
-
-  const undo = () => {
-    setPast((items) => {
-      const previous = items.at(-1);
-      if (!previous || !doc) return items;
-      setFuture((futureItems) => [structuredClone(doc), ...futureItems].slice(0, 20));
-      setDoc(previous);
-      return items.slice(0, -1);
-    });
-  };
-
-  const redo = () => {
-    setFuture((items) => {
-      const next = items[0];
-      if (!next || !doc) return items;
-      setPast((pastItems) => [...pastItems.slice(-19), structuredClone(doc)]);
-      setDoc(next);
-      return items.slice(1);
-    });
-  };
+  }, [handleFitView, handleSave, handleZoomIn, handleZoomOut, redo, shortcutsHelpOpen, undo, zenMode]);
 
   const handleTemplateSelect = async (templateDoc: CanvasDocument) => {
     const saved = await canvasStore.save(templateDoc);
@@ -883,6 +895,15 @@ const CanvasBuilderInner: React.FC = () => {
             >
               {zenMode ? 'Exit Fullscreen' : 'Fullscreen'}
             </button>
+            <button
+              type="button"
+              className="canvas-floating-control"
+              onClick={() => setShortcutsHelpOpen(true)}
+              aria-label="Show keyboard shortcuts"
+              title="Keyboard shortcuts (?)"
+            >
+              ?
+            </button>
           </div>
           {doc.nodes.length === 0 ? (
             <div className="canvas-empty-overlay">
@@ -903,6 +924,7 @@ const CanvasBuilderInner: React.FC = () => {
             onReconnect={onReconnect}
             onReconnectStart={onReconnectStart}
             onReconnectEnd={onReconnectEnd}
+            onNodeClick={(_event, node) => setSelectedNodeId(node.id)}
             onNodeContextMenu={onNodeContextMenu}
             onPaneClick={closeContextMenu}
             onSelectionChange={({ nodes: selectedNodes }) =>
@@ -990,6 +1012,7 @@ const CanvasBuilderInner: React.FC = () => {
         onClose={() => setTemplatePickerOpen(false)}
         onSelect={(templateDoc) => void handleTemplateSelect(templateDoc)}
       />
+      <KeyboardShortcutsHelp isOpen={shortcutsHelpOpen} onClose={closeShortcutsHelp} />
       <VoicePanel currentCanvas={doc} onUpdateCanvas={updateDoc} />
       <DeployProgressPanel status={doc.deploy_state.status} />
       <Modal
@@ -1053,3 +1076,10 @@ function fromFlowEdge(edge: FlowEdge): CanvasEdge {
 }
 
 export default CanvasBuilderPage;
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName))
+  );
+}

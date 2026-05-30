@@ -17,12 +17,17 @@ export interface SettingsStoreState {
   sttEngine: string;
   theme: string;
   spBaseUrl: string;
+  sessionAutoRefreshInterval: number;
+  sessionShowExpiredWarnings: boolean;
+  sessionMaskEmails: boolean;
   initialized: boolean;
 
   init: () => Promise<void>;
-  updateSetting: <K extends keyof Omit<SettingsStoreState, 'initialized' | 'init' | 'updateSetting'>>(
+  updateSetting: <
+    K extends keyof Omit<SettingsStoreState, 'initialized' | 'init' | 'updateSetting'>,
+  >(
     key: K,
-    value: SettingsStoreState[K]
+    value: SettingsStoreState[K],
   ) => Promise<void>;
 }
 
@@ -38,6 +43,9 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   sttEngine: 'whisper',
   theme: 'dark',
   spBaseUrl: 'https://sharepoint.minsait.com',
+  sessionAutoRefreshInterval: 5,
+  sessionShowExpiredWarnings: true,
+  sessionMaskEmails: false,
   initialized: false,
 
   init: async () => {
@@ -50,8 +58,14 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       const sttEngineRec = await dbGet('settings', 'sttEngine');
       const themeRec = await dbGet('settings', 'theme');
       const spBaseUrlRec = await dbGet('settings', 'spBaseUrl');
+      const sessionAutoRefreshIntervalRec = await dbGet('settings', 'sessionAutoRefreshInterval');
+      const sessionShowExpiredWarningsRec = await dbGet('settings', 'sessionShowExpiredWarnings');
+      const sessionMaskEmailsRec = await dbGet('settings', 'sessionMaskEmails');
 
-      const loadedCaoBaseUrl = (caoBaseUrlRec?.value as string) || import.meta.env.VITE_CAO_BASE_URL || 'http://127.0.0.1:9889';
+      const loadedCaoBaseUrl =
+        (caoBaseUrlRec?.value as string) ||
+        import.meta.env.VITE_CAO_BASE_URL ||
+        'http://127.0.0.1:9889';
       caoClient.baseUrl = loadedCaoBaseUrl.replace(/\/$/, '');
 
       const loadedFonts = (fontsRec?.value as FontSettings) || {
@@ -71,6 +85,11 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
         sttEngine: (sttEngineRec?.value as string) || 'whisper',
         theme: (themeRec?.value as string) || 'dark',
         spBaseUrl: (spBaseUrlRec?.value as string) || 'https://sharepoint.minsait.com',
+        sessionAutoRefreshInterval:
+          (sessionAutoRefreshIntervalRec?.value as number | undefined) ?? 5,
+        sessionShowExpiredWarnings:
+          (sessionShowExpiredWarningsRec?.value as boolean | undefined) ?? true,
+        sessionMaskEmails: (sessionMaskEmailsRec?.value as boolean | undefined) ?? false,
         initialized: true,
       });
     } catch (err) {

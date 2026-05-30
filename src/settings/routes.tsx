@@ -113,6 +113,15 @@ const descStyle: React.CSSProperties = {
   marginBottom: 'var(--space-5)',
 };
 
+const sessionToggleStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 'var(--space-2)',
+  color: 'var(--text-primary)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '0.8rem',
+};
+
 // 1. ProvidersPage component
 export const ProvidersPage: React.FC = () => {
   const toast = useToast();
@@ -195,7 +204,8 @@ export const ProvidersPage: React.FC = () => {
     <div style={containerStyle}>
       <h1 style={titleStyle}>API Key Management</h1>
       <p style={descStyle}>
-        Manage your API keys for model providers. Keys are stored locally in plaintext IndexedDB and never sent to telemetry.
+        Manage your API keys for model providers. Keys are stored locally in plaintext IndexedDB and
+        never sent to telemetry.
       </p>
       <SettingsNav />
 
@@ -214,17 +224,9 @@ export const ProvidersPage: React.FC = () => {
           const modelsList = cachedModels[provider.id] || [];
 
           const badgeStatus =
-            status === 'set'
-              ? 'completed'
-              : status === 'invalid'
-              ? 'error'
-              : 'idle';
+            status === 'set' ? 'completed' : status === 'invalid' ? 'error' : 'idle';
           const badgeLabel =
-            status === 'set'
-              ? 'Validated'
-              : status === 'invalid'
-              ? 'Invalid'
-              : 'Unconfigured';
+            status === 'set' ? 'Validated' : status === 'invalid' ? 'Invalid' : 'Unconfigured';
 
           return (
             <Card
@@ -337,7 +339,14 @@ export const ProvidersPage: React.FC = () => {
                 )}
               </div>
 
-              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
+              <div
+                style={{
+                  marginTop: 'auto',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 'var(--space-2)',
+                }}
+              >
                 {isSet ? (
                   <Button
                     variant="secondary"
@@ -371,6 +380,9 @@ export const GeneralPage: React.FC = () => {
   const caoBaseUrl = useSettingsStore((s) => s.caoBaseUrl);
   const defaultProvider = useSettingsStore((s) => s.defaultProvider);
   const defaultWorkingDir = useSettingsStore((s) => s.defaultWorkingDir);
+  const sessionAutoRefreshInterval = useSettingsStore((s) => s.sessionAutoRefreshInterval);
+  const sessionShowExpiredWarnings = useSettingsStore((s) => s.sessionShowExpiredWarnings);
+  const sessionMaskEmails = useSettingsStore((s) => s.sessionMaskEmails);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
 
   const validatedProviders = useValidatedProviders();
@@ -392,10 +404,19 @@ export const GeneralPage: React.FC = () => {
   return (
     <div style={containerStyle}>
       <h1 style={titleStyle}>General Settings</h1>
-      <p style={descStyle}>Configure core behaviors and default configurations for the AgentVerse environment.</p>
+      <p style={descStyle}>
+        Configure core behaviors and default configurations for the AgentVerse environment.
+      </p>
       <SettingsNav />
 
-      <div style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <div
+        style={{
+          maxWidth: '600px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-4)',
+        }}
+      >
         <Card>
           <FormField
             label="Runtime Mode"
@@ -414,13 +435,16 @@ export const GeneralPage: React.FC = () => {
                 type="button"
                 className="sentinel-button sentinel-button-secondary"
                 onClick={() => {
-                  const cloudUrl = (import.meta.env.VITE_CLOUD_RUNTIME_URL as string | undefined) || '';
+                  const cloudUrl =
+                    (import.meta.env.VITE_CLOUD_RUNTIME_URL as string | undefined) || '';
                   if (cloudUrl) {
                     void updateSetting('caoBaseUrl', cloudUrl);
                   } else {
                     // No cloud URL baked in yet — leave the field unchanged and rely on the user typing it
                     // eslint-disable-next-line no-alert
-                    alert('No cloud runtime URL is configured for this build. Run scripts/deploy-cloud.sh first, or paste the URL into the Runtime Base URL field.');
+                    alert(
+                      'No cloud runtime URL is configured for this build. Run scripts/deploy-cloud.sh first, or paste the URL into the Runtime Base URL field.',
+                    );
                   }
                 }}
               >
@@ -447,10 +471,7 @@ export const GeneralPage: React.FC = () => {
             id="general-default-provider"
             helperText="Select the default LLM provider for agent nodes. Gated strictly to validated providers."
           >
-            <select
-              value={defaultProvider}
-              onChange={handleProviderChange}
-            >
+            <select value={defaultProvider} onChange={handleProviderChange}>
               <option value="">None</option>
               {validatedProviders.map((provId) => {
                 const label = PROVIDERS_REGISTRY.find((p) => p.id === provId)?.label || provId;
@@ -475,6 +496,60 @@ export const GeneralPage: React.FC = () => {
               placeholder="e.g. C:/VMs/Projetos/Workspace"
             />
           </FormField>
+        </Card>
+
+        <Card>
+          <h3
+            style={{
+              fontFamily: 'var(--font-display)',
+              marginBottom: 'var(--space-4)',
+              fontSize: '1.25rem',
+            }}
+          >
+            Sessions
+          </h3>
+          <FormField
+            label="Auto-refresh interval"
+            id="general-session-auto-refresh"
+            helperText="Choose how often AgentVerse refreshes discovered CLI authentication sessions."
+          >
+            <select
+              id="general-session-auto-refresh"
+              value={sessionAutoRefreshInterval}
+              onChange={(event) =>
+                void updateSetting('sessionAutoRefreshInterval', Number(event.target.value))
+              }
+            >
+              <option value={1}>1 min</option>
+              <option value={5}>5 min</option>
+              <option value={15}>15 min</option>
+              <option value={30}>30 min</option>
+              <option value={0}>Off</option>
+            </select>
+          </FormField>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <label style={sessionToggleStyle}>
+              <input
+                type="checkbox"
+                role="switch"
+                checked={sessionShowExpiredWarnings}
+                onChange={(event) =>
+                  void updateSetting('sessionShowExpiredWarnings', event.target.checked)
+                }
+              />
+              <span>Show expiring warnings</span>
+            </label>
+            <label style={sessionToggleStyle}>
+              <input
+                type="checkbox"
+                role="switch"
+                checked={sessionMaskEmails}
+                onChange={(event) => void updateSetting('sessionMaskEmails', event.target.checked)}
+              />
+              <span>Mask emails in UI</span>
+            </label>
+          </div>
         </Card>
       </div>
     </div>
@@ -523,9 +598,22 @@ export const AppearancePage: React.FC = () => {
       <p style={descStyle}>Configure system fonts and visual options for the interface.</p>
       <SettingsNav />
 
-      <div style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <div
+        style={{
+          maxWidth: '600px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-4)',
+        }}
+      >
         <Card>
-          <h3 style={{ fontFamily: 'var(--font-display)', marginBottom: 'var(--space-4)', fontSize: '1.25rem' }}>
+          <h3
+            style={{
+              fontFamily: 'var(--font-display)',
+              marginBottom: 'var(--space-4)',
+              fontSize: '1.25rem',
+            }}
+          >
             Typography Settings
           </h3>
 
@@ -540,15 +628,25 @@ export const AppearancePage: React.FC = () => {
                 value={getFontSelectValue(fonts.display)}
                 onChange={(e) => handleSelectChange('display', e.target.value)}
               >
-                <option value="Inter" style={{ background: '#1c1c1e' }}>Inter</option>
-                <option value="JetBrains Mono" style={{ background: '#1c1c1e' }}>JetBrains Mono</option>
-                <option value="system-ui" style={{ background: '#1c1c1e' }}>System UI (system-ui)</option>
-                <option value="custom" style={{ background: '#1c1c1e' }}>Custom...</option>
+                <option value="Inter" style={{ background: '#1c1c1e' }}>
+                  Inter
+                </option>
+                <option value="JetBrains Mono" style={{ background: '#1c1c1e' }}>
+                  JetBrains Mono
+                </option>
+                <option value="system-ui" style={{ background: '#1c1c1e' }}>
+                  System UI (system-ui)
+                </option>
+                <option value="custom" style={{ background: '#1c1c1e' }}>
+                  Custom...
+                </option>
               </select>
             </FormField>
 
             {!standardFonts.includes(fonts.display) && (
-              <div style={{ marginTop: 'calc(-1 * var(--space-2))', marginBottom: 'var(--space-4)' }}>
+              <div
+                style={{ marginTop: 'calc(-1 * var(--space-2))', marginBottom: 'var(--space-4)' }}
+              >
                 <FormField label="Custom Display Font Name" id="appearance-custom-display">
                   <input
                     type="text"
@@ -569,7 +667,8 @@ export const AppearancePage: React.FC = () => {
                     border: '1px solid rgba(255, 183, 0, 0.2)',
                   }}
                 >
-                  ⚠ Custom fonts require matching system installation or stylesheet injection to render correctly.
+                  ⚠ Custom fonts require matching system installation or stylesheet injection to
+                  render correctly.
                 </div>
               </div>
             )}
@@ -586,15 +685,25 @@ export const AppearancePage: React.FC = () => {
                 value={getFontSelectValue(fonts.body)}
                 onChange={(e) => handleSelectChange('body', e.target.value)}
               >
-                <option value="Inter" style={{ background: '#1c1c1e' }}>Inter</option>
-                <option value="JetBrains Mono" style={{ background: '#1c1c1e' }}>JetBrains Mono</option>
-                <option value="system-ui" style={{ background: '#1c1c1e' }}>System UI (system-ui)</option>
-                <option value="custom" style={{ background: '#1c1c1e' }}>Custom...</option>
+                <option value="Inter" style={{ background: '#1c1c1e' }}>
+                  Inter
+                </option>
+                <option value="JetBrains Mono" style={{ background: '#1c1c1e' }}>
+                  JetBrains Mono
+                </option>
+                <option value="system-ui" style={{ background: '#1c1c1e' }}>
+                  System UI (system-ui)
+                </option>
+                <option value="custom" style={{ background: '#1c1c1e' }}>
+                  Custom...
+                </option>
               </select>
             </FormField>
 
             {!standardFonts.includes(fonts.body) && (
-              <div style={{ marginTop: 'calc(-1 * var(--space-2))', marginBottom: 'var(--space-4)' }}>
+              <div
+                style={{ marginTop: 'calc(-1 * var(--space-2))', marginBottom: 'var(--space-4)' }}
+              >
                 <FormField label="Custom Body Font Name" id="appearance-custom-body">
                   <input
                     type="text"
@@ -615,7 +724,8 @@ export const AppearancePage: React.FC = () => {
                     border: '1px solid rgba(255, 183, 0, 0.2)',
                   }}
                 >
-                  ⚠ Custom fonts require matching system installation or stylesheet injection to render correctly.
+                  ⚠ Custom fonts require matching system installation or stylesheet injection to
+                  render correctly.
                 </div>
               </div>
             )}
@@ -632,15 +742,25 @@ export const AppearancePage: React.FC = () => {
                 value={getFontSelectValue(fonts.mono)}
                 onChange={(e) => handleSelectChange('mono', e.target.value)}
               >
-                <option value="JetBrains Mono" style={{ background: '#1c1c1e' }}>JetBrains Mono</option>
-                <option value="Inter" style={{ background: '#1c1c1e' }}>Inter</option>
-                <option value="system-ui" style={{ background: '#1c1c1e' }}>System UI (system-ui)</option>
-                <option value="custom" style={{ background: '#1c1c1e' }}>Custom...</option>
+                <option value="JetBrains Mono" style={{ background: '#1c1c1e' }}>
+                  JetBrains Mono
+                </option>
+                <option value="Inter" style={{ background: '#1c1c1e' }}>
+                  Inter
+                </option>
+                <option value="system-ui" style={{ background: '#1c1c1e' }}>
+                  System UI (system-ui)
+                </option>
+                <option value="custom" style={{ background: '#1c1c1e' }}>
+                  Custom...
+                </option>
               </select>
             </FormField>
 
             {!standardFonts.includes(fonts.mono) && (
-              <div style={{ marginTop: 'calc(-1 * var(--space-2))', marginBottom: 'var(--space-4)' }}>
+              <div
+                style={{ marginTop: 'calc(-1 * var(--space-2))', marginBottom: 'var(--space-4)' }}
+              >
                 <FormField label="Custom Monospace Font Name" id="appearance-custom-mono">
                   <input
                     type="text"
@@ -661,7 +781,8 @@ export const AppearancePage: React.FC = () => {
                     border: '1px solid rgba(255, 183, 0, 0.2)',
                   }}
                 >
-                  ⚠ Custom fonts require matching system installation or stylesheet injection to render correctly.
+                  ⚠ Custom fonts require matching system installation or stylesheet injection to
+                  render correctly.
                 </div>
               </div>
             )}
@@ -676,7 +797,9 @@ export const AppearancePage: React.FC = () => {
             helperText="The visual theme settings. Gated to SENTINEL system theme for v1."
           >
             <select value={theme} disabled style={{ opacity: 0.7, cursor: 'not-allowed' }}>
-              <option value="dark" style={{ background: '#1c1c1e' }}>Sentinel Dark (Default - Locked)</option>
+              <option value="dark" style={{ background: '#1c1c1e' }}>
+                Sentinel Dark (Default - Locked)
+              </option>
             </select>
           </FormField>
         </Card>
@@ -730,10 +853,19 @@ export const SharePointAssessmentPage: React.FC = () => {
   return (
     <div style={containerStyle}>
       <h1 style={titleStyle}>SharePoint Assessment</h1>
-      <p style={descStyle}>Configure the SharePoint connection endpoint URL used by assessment agents.</p>
+      <p style={descStyle}>
+        Configure the SharePoint connection endpoint URL used by assessment agents.
+      </p>
       <SettingsNav />
 
-      <div style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <div
+        style={{
+          maxWidth: '600px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-4)',
+        }}
+      >
         <Card>
           <FormField
             label="SharePoint Connection URL"

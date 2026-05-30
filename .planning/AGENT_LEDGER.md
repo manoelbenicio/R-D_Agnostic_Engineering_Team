@@ -128,6 +128,21 @@
 | 2026-05-30T17:16:29Z | CODEX-1-LEAD | CHECK-IN | Wave 1E Quality Gate | 🔵 IN PROGRESS | Verifying TypeScript, Vitest, and commit |
 | 2026-05-30T17:16:29Z | CODEX-1-LEAD | CHECK-OUT | Wave 1E Quality Gate | ✅ DONE | Wave 1E Gate PASSED |
 | 2026-05-30T17:14:29Z | CODEX-2-LEAD | CHECK-OUT | Wave 2B Quality Gate | ✅ DONE | Wave 2B Gate PASSED — TypeScript, Vitest, and 2560x1440 browser verification passed |
+| 2026-05-30T17:21:41Z | C2-G | CHECK-IN | src/settings/settings-store.ts | 🔵 IN PROGRESS | Adding persisted session preferences |
+| 2026-05-30T17:21:41Z | C2-G | CHECK-IN | src/settings/routes.tsx | 🔵 IN PROGRESS | Adding Sessions settings panel |
+| 2026-05-30T17:21:41Z | C2-H | CHECK-IN | tests/e2e/sessions.spec.ts | 🔵 IN PROGRESS | Expanding Sessions page E2E coverage |
+| 2026-05-30T17:21:41Z | C2-H | CHECK-IN | tests/e2e/canvas-session.spec.ts | 🔵 IN PROGRESS | Creating canvas session and toolbar E2E coverage |
+| 2026-05-30T17:21:41Z | C2-I | CHECK-IN | src/canvas-builder/KeyboardShortcutsHelp.tsx | 🔵 IN PROGRESS | Creating canvas keyboard shortcuts help overlay |
+| 2026-05-30T17:21:41Z | C2-I | CHECK-IN | src/canvas-builder/keyboard-shortcuts-help.css | 🔵 IN PROGRESS | Styling canvas keyboard shortcuts help overlay |
+| 2026-05-30T17:21:41Z | C2-I | CHECK-IN | src/canvas-builder/CanvasBuilderPage.tsx | 🔵 IN PROGRESS | Wiring ? shortcut and help overlay |
+| 2026-05-30T18:00:49Z | C2-G | CHECK-OUT | src/settings/settings-store.ts | ✅ DONE | Added persisted session preferences |
+| 2026-05-30T18:00:49Z | C2-G | CHECK-OUT | src/settings/routes.tsx | ✅ DONE | Added Sessions settings panel |
+| 2026-05-30T18:00:49Z | C2-H | CHECK-OUT | tests/e2e/sessions.spec.ts | ✅ DONE | Added Sessions E2E coverage; collapse assertion is conditional until GEMINI-owned UI lands |
+| 2026-05-30T18:00:49Z | C2-H | CHECK-OUT | tests/e2e/canvas-session.spec.ts | ✅ DONE | Added canvas session, toolbar, and shortcuts E2E coverage |
+| 2026-05-30T18:00:49Z | C2-I | CHECK-OUT | src/canvas-builder/KeyboardShortcutsHelp.tsx | ✅ DONE | Created canvas keyboard shortcuts help overlay |
+| 2026-05-30T18:00:49Z | C2-I | CHECK-OUT | src/canvas-builder/keyboard-shortcuts-help.css | ✅ DONE | Styled canvas keyboard shortcuts help overlay |
+| 2026-05-30T18:00:49Z | C2-I | CHECK-OUT | src/canvas-builder/CanvasBuilderPage.tsx | ✅ DONE | Wired ? shortcut, overlay mount, and explicit node selection |
+| 2026-05-30T18:00:49Z | CODEX-2-LEAD | BLOCKED | Wave 2C Quality Gate | 🟡 BLOCKED | Sessions provider collapse control is absent in GEMINI-owned src/sessions/SessionsPage.tsx; Playwright: 14 passed, 1 conditional skip |
 
 ---
 
@@ -181,3 +196,9 @@
 | `src/sessions/index.ts` | — | 🟢 Available |
 | `src/sessions/SessionStatusBadge.tsx` | — | 🟢 Available |
 | `src/sessions/session-status-badge.css` | — | 🟢 Available |
+| `src/settings/settings-store.ts` | — | 🟢 Available |
+| `src/settings/routes.tsx` | — | 🟢 Available |
+| `tests/e2e/sessions.spec.ts` | — | 🟢 Available |
+| `tests/e2e/canvas-session.spec.ts` | — | 🟢 Available (NEW) |
+| `src/canvas-builder/KeyboardShortcutsHelp.tsx` | — | 🟢 Available (NEW) |
+| `src/canvas-builder/keyboard-shortcuts-help.css` | — | 🟢 Available (NEW) |

@@ -70,4 +70,51 @@ test.describe('Sessions Page', () => {
     await page.goto('/');
     await expect(page.locator('.session-status-badge')).toBeVisible();
   });
+
+  test('Add Session button opens dialog', async ({ page }) => {
+    await page.goto('/sessions');
+    await page.getByRole('button', { name: '+ Add Session' }).first().click();
+
+    const dialog = page.getByRole('dialog', { name: 'Add Auth Session' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('#add-session-provider')).toHaveValue('claude_code');
+  });
+
+  test('provider sections are collapsible', async ({ page }) => {
+    await page.goto('/sessions');
+    const section = page.locator('.sessions-provider-section').first();
+    const toggle = section.locator('button[aria-expanded]').first();
+
+    test.fixme(
+      (await toggle.count()) === 0,
+      'SessionsPage.tsx is owned by GEMINI-1 and does not expose a provider collapse control yet.',
+    );
+
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('refresh button shows loading state', async ({ page }) => {
+    await page.route('**/auth/sessions', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: '[]',
+      });
+    });
+
+    await page.goto('/sessions');
+    await expect(page.getByText('Discovering sessions...')).toBeHidden();
+
+    await page.getByRole('button', { name: 'Refresh All' }).click();
+    await expect(page.getByText('Discovering sessions...')).toBeVisible();
+  });
+
+  test('page title is Sessions · AgentVerse', async ({ page }) => {
+    await page.goto('/sessions');
+    await expect(page).toHaveTitle('Sessions · AgentVerse');
+  });
 });
