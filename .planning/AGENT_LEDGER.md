@@ -115,6 +115,19 @@
 | 2026-05-30T16:45:46Z | C1-L | CHECK-OUT | src/canvas-builder/AgentNode.tsx | ✅ DONE | Added agent node OAuth session badge |
 | 2026-05-30T16:46:35Z | CODEX-1-LEAD | CHECK-IN | Wave 1D Quality Gate | 🔵 IN PROGRESS | Verifying TypeScript, Vitest, and commit |
 | 2026-05-30T16:46:35Z | CODEX-1-LEAD | CHECK-OUT | Wave 1D Quality Gate | ✅ DONE | Wave 1D Gate PASSED |
+| 2026-05-30T17:12:30Z | C1-M | CHECK-IN | src/dashboard/DashboardPage.tsx | 🔵 IN PROGRESS | Adding dashboard session summary widget |
+| 2026-05-30T17:12:30Z | C1-N | CHECK-IN | src/sessions/SessionStatusBadge.tsx | 🔵 IN PROGRESS | Improving keyboard accessibility |
+| 2026-05-30T17:12:30Z | C1-N | CHECK-IN | src/sessions/session-status-badge.css | 🔵 IN PROGRESS | Improving focus styling and contrast |
+| 2026-05-30T17:12:30Z | C1-O | CHECK-IN | src/sessions/provider-icons.tsx | 🔵 IN PROGRESS | Creating provider icon utility |
+| 2026-05-30T17:12:30Z | C1-O | CHECK-IN | src/sessions/index.ts | 🔵 IN PROGRESS | Exporting provider icon utility |
+| 2026-05-30T17:15:43Z | C1-M | CHECK-OUT | src/dashboard/DashboardPage.tsx | ✅ DONE | Added dashboard session summary widget |
+| 2026-05-30T17:15:43Z | C1-N | CHECK-OUT | src/sessions/SessionStatusBadge.tsx | ✅ DONE | Improved keyboard accessibility |
+| 2026-05-30T17:15:43Z | C1-N | CHECK-OUT | src/sessions/session-status-badge.css | ✅ DONE | Improved focus styling and contrast |
+| 2026-05-30T17:15:43Z | C1-O | CHECK-OUT | src/sessions/provider-icons.tsx | ✅ DONE | Created provider icon utility |
+| 2026-05-30T17:15:43Z | C1-O | CHECK-OUT | src/sessions/index.ts | ✅ DONE | Exported provider icon utility |
+| 2026-05-30T17:16:29Z | CODEX-1-LEAD | CHECK-IN | Wave 1E Quality Gate | 🔵 IN PROGRESS | Verifying TypeScript, Vitest, and commit |
+| 2026-05-30T17:16:29Z | CODEX-1-LEAD | CHECK-OUT | Wave 1E Quality Gate | ✅ DONE | Wave 1E Gate PASSED |
+| 2026-05-30T17:14:29Z | CODEX-2-LEAD | CHECK-OUT | Wave 2B Quality Gate | ✅ DONE | Wave 2B Gate PASSED — TypeScript, Vitest, and 2560x1440 browser verification passed |
 
 ---
 
@@ -163,3 +176,8 @@
 | `src/terminal-grid/TabBar.tsx` | — | 🟢 Available |
 | `src/finops/FinopsPage.tsx` | — | 🟢 Available |
 | `src/canvas-builder/AgentNode.tsx` | — | 🟢 Available |
+| `src/dashboard/DashboardPage.tsx` | — | 🟢 Available |
+| `src/sessions/provider-icons.tsx` | — | 🟢 Available (NEW) |
+| `src/sessions/index.ts` | — | 🟢 Available |
+| `src/sessions/SessionStatusBadge.tsx` | — | 🟢 Available |
+| `src/sessions/session-status-badge.css` | — | 🟢 Available |

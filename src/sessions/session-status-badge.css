@@ -1,15 +1,26 @@
 .session-status-badge {
   min-height: 30px;
   white-space: nowrap;
+  background: var(--surface-overlay);
 }
 
 .session-status-badge:focus-visible {
-  outline: 2px solid var(--neon-cyan);
+  outline: 2px solid var(--cyan);
   outline-offset: 3px;
+  box-shadow: 0 0 0 4px var(--cyan-soft), 0 0 15px var(--cyan-tint);
 }
 
 .session-status-badge-text {
   line-height: 1;
+}
+
+.session-status-badge-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 .session-status-badge-dot {
@@ -22,7 +33,7 @@
 
 .session-status-badge-active {
   border-color: var(--ops-edge);
-  color: var(--neon-green);
+  color: var(--ops);
   box-shadow: 0 0 10px var(--ops-tint);
 }
 
@@ -38,7 +49,7 @@
 
 .session-status-badge-expiring {
   border-color: var(--amber-edge);
-  color: var(--neon-amber);
+  color: var(--amber);
   box-shadow: 0 0 10px var(--amber-tint);
 }
 
@@ -54,7 +65,7 @@
 
 .session-status-badge-expired {
   border-color: var(--threat-edge);
-  color: var(--neon-red);
+  color: var(--threat);
   box-shadow: 0 0 10px var(--threat-tint);
 }
 

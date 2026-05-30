@@ -15,11 +15,13 @@ import {
 } from 'recharts';
 import { Badge, Button, Card, CostLabel } from '@/design-system';
 import { caoClient, type InboxMessage, type Session, type Terminal } from '@/api';
+import { useSessionStore } from '@/api/session-store';
 import { TerminalView } from '@/terminal';
 import { useCostEstimate } from '@/finops';
 import { formatPercent, formatUsd } from '@/finops/format';
 import { useSettingsStore } from '@/settings/settings-store';
 import { canvasStore } from '@/canvas-document/store';
+import { ProviderIcon } from '@/sessions';
 import './dashboard.css';
 
 interface SessionTerminal extends Terminal {
@@ -50,6 +52,7 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [activityFeed, setActivityFeed] = useState<ActivityEntry[]>([]);
   const [clearedIds, setClearedIds] = useState<Set<string>>(new Set());
+  const { sessions: authSessions, refresh: refreshSessions } = useSessionStore();
   const budgetUsd = useSettingsStore((state) => (state as unknown as SettingsWithBudget).finopsBudgetUsd ?? 100);
   const costWindow = useMemo(() => getMonthToDateWindow(Date.now()), []);
   const { data: costData } = useCostEstimate(costWindow);
@@ -72,7 +75,14 @@ export const DashboardPage: React.FC = () => {
     { name: 'error', value: fleet.error },
     { name: 'offline', value: fleet.offline },
   ];
+  const sessionSummary = useMemo(() => summarizeAuthSessions(authSessions), [authSessions]);
   const watchedTerminal = snapshot.terminals[0];
+
+  useEffect(() => {
+    if (authSessions.length === 0) {
+      void refreshSessions();
+    }
+  }, [authSessions.length, refreshSessions]);
 
   useEffect(() => {
     if (!data) return;
@@ -110,6 +120,37 @@ export const DashboardPage: React.FC = () => {
 
       <section className="dashboard-kpi-grid" aria-label="Dashboard KPIs">
         <KpiCard title="Fleet Status" value={fleet.active} detail={`${snapshot.terminals.length} total terminals`} />
+        <KpiCard
+          title="AUTH SESSIONS"
+          value={sessionSummary.active}
+          detail={`${sessionSummary.active} active · ${sessionSummary.expiring} expiring · ${sessionSummary.expired} expired`}
+          tone={sessionSummary.tone}
+          onClick={() => navigate('/sessions')}
+          ariaLabel="Open auth sessions management"
+        >
+          <div>{sessionSummary.active}</div>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 'var(--space-2)',
+              marginTop: 'var(--space-2)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.72rem',
+              color: 'var(--text-muted)',
+            }}
+          >
+            {sessionSummary.providers.length > 0 ? (
+              sessionSummary.providers.map((provider) => (
+                <span key={provider.id} title={provider.title}>
+                  <ProviderIcon provider={provider.id} size={12} /> {provider.shortLabel}: {provider.count}
+                </span>
+              ))
+            ) : (
+              <span>No providers</span>
+            )}
+          </div>
+        </KpiCard>
         <KpiCard title="Cost / MTD" detail="rough estimate">
           <CostLabel value={formatUsd(costTotal)} />
         </KpiCard>
@@ -209,17 +250,43 @@ function KpiCard({
   title,
   value,
   detail,
+  tone = 'neutral',
+  onClick,
+  ariaLabel,
   danger = false,
   children,
 }: {
   title: string;
   value?: React.ReactNode;
   detail: string;
+  tone?: 'neutral' | 'healthy' | 'warning' | 'danger';
+  onClick?: () => void;
+  ariaLabel?: string;
   danger?: boolean;
   children?: React.ReactNode;
 }) {
+  const isInteractive = Boolean(onClick);
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (!onClick) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick();
+    }
+  };
+
   return (
-    <Card className={`dashboard-kpi-card ${danger ? 'is-danger' : ''}`}>
+    <Card
+      className={`dashboard-kpi-card ${danger ? 'is-danger' : ''}`}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role={isInteractive ? 'button' : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      aria-label={ariaLabel}
+      style={{
+        cursor: isInteractive ? 'pointer' : undefined,
+        borderLeft: tone === 'neutral' ? undefined : `4px solid ${toneColor(tone)}`,
+      }}
+    >
       <span className="dashboard-label">{title}</span>
       <div className="dashboard-kpi-value">{children ?? value}</div>
       <span className="dashboard-kpi-detail">{detail}</span>
@@ -229,6 +296,63 @@ function KpiCard({
 
 function PanelTitle({ title }: { title: string }) {
   return <h2 className="dashboard-panel-title">{title}</h2>;
+}
+
+function summarizeAuthSessions(sessions: ReturnType<typeof useSessionStore.getState>['sessions']) {
+  const active = sessions.filter((session) => session.status === 'active').length;
+  const expiring = sessions.filter((session) => session.status === 'expiring').length;
+  const expired = sessions.filter((session) => session.status === 'expired').length;
+  const providerCounts = sessions.reduce<Record<string, number>>((acc, session) => {
+    acc[session.cli_provider] = (acc[session.cli_provider] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    active,
+    expiring,
+    expired,
+    tone: expired > 0 ? 'danger' as const : expiring > 0 ? 'warning' as const : 'healthy' as const,
+    providers: Object.entries(providerCounts)
+      .map(([id, count]) => ({
+        id,
+        count,
+        shortLabel: shortProviderLabel(id),
+        title: `${providerLabel(id)}: ${count}`,
+      }))
+      .sort((a, b) => a.shortLabel.localeCompare(b.shortLabel)),
+  };
+}
+
+function toneColor(tone: 'neutral' | 'healthy' | 'warning' | 'danger') {
+  switch (tone) {
+    case 'healthy':
+      return 'var(--ops)';
+    case 'warning':
+      return 'var(--amber)';
+    case 'danger':
+      return 'var(--threat)';
+    case 'neutral':
+    default:
+      return 'transparent';
+  }
+}
+
+function shortProviderLabel(provider: string): string {
+  const labels: Record<string, string> = {
+    claude_code: 'Claude',
+    codex: 'Codex',
+    gemini_cli: 'Gemini',
+    kiro_cli: 'Kiro',
+  };
+  return labels[provider] ?? provider;
+}
+
+function providerLabel(provider: string): string {
+  return provider
+    .split(/[_-]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 async function loadDashboardSnapshot(): Promise<DashboardSnapshot> {

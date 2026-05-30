@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useId, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionStore } from '@/api/session-store';
 import './session-status-badge.css';
@@ -8,6 +8,7 @@ type BadgeStatus = 'active' | 'expiring' | 'expired';
 export const SessionStatusBadge: React.FC = () => {
   const { sessions, refresh } = useSessionStore();
   const navigate = useNavigate();
+  const descriptionId = useId();
 
   useEffect(() => {
     if (sessions.length === 0) {
@@ -28,22 +29,40 @@ export const SessionStatusBadge: React.FC = () => {
 
     return {
       active,
+      expiring,
+      expired,
       status,
       tooltip: parts.length > 0 ? parts.join(', ') : '0 active',
     };
   }, [sessions]);
 
+  const handleNavigate = () => navigate('/sessions');
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleNavigate();
+    }
+  };
+  const accessibleLabel = `Session status: ${summary.active} active, ${summary.expiring} expiring, ${summary.expired} expired. Click to manage sessions.`;
+
   return (
     <button
       type="button"
       className={`health-pill session-status-badge session-status-badge-${summary.status}`}
-      onClick={() => navigate('/sessions')}
+      onClick={handleNavigate}
+      onKeyDown={handleKeyDown}
       title={summary.tooltip}
-      aria-label={`Auth sessions: ${summary.tooltip}`}
+      role="button"
+      tabIndex={0}
+      aria-label={accessibleLabel}
+      aria-describedby={descriptionId}
     >
       <span className={`session-status-badge-dot session-status-badge-dot-${summary.status}`} />
       <span className="health-text session-status-badge-text">
         {summary.active} {summary.active === 1 ? 'session' : 'sessions'}
+      </span>
+      <span id={descriptionId} className="session-status-badge-sr">
+        {accessibleLabel}
       </span>
     </button>
   );
