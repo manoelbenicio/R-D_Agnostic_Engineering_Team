@@ -1,5 +1,6 @@
 import React, { FormEvent, useMemo, useState } from 'react';
 import { RadialBar, RadialBarChart, ResponsiveContainer } from 'recharts';
+import { useSessionStore } from '@/api/session-store';
 import { Badge, Card, CostLabel, FormField, Button } from '@/design-system';
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
 import { useSettingsStore } from '@/settings/settings-store';
@@ -9,6 +10,7 @@ import type { CostConfidence } from './token-cost';
 import { formatPercent, formatUsd } from './format';
 import { CostWarning } from './cost-warning';
 import { COST_ESTIMATE_DISCLAIMER } from './cost-warning-constants';
+import { PROVIDER_COST_PER_HOUR } from './cost-constants';
 import './finops.css';
 
 type SettingsWithBudget = {
@@ -20,9 +22,11 @@ export const FinopsPage: React.FC = () => {
   const window = useMemo(() => getMonthToDateWindow(Date.now()), []);
   const { data, isLoading, error } = useCostEstimate(window);
   const { data: tokenCost } = useTokenCost(window);
+  const sessions = useSessionStore((state) => state.sessions);
   const settings = useSettingsStore((state) => state as unknown as SettingsWithBudget);
   const budgetUsd = settings.finopsBudgetUsd ?? 100;
   const [budgetInput, setBudgetInput] = useState(String(budgetUsd));
+  const [groupBy, setGroupBy] = useState<'provider' | 'session'>('provider');
   const estimate = data ?? {
     total: 0,
     byProvider: {},
@@ -33,6 +37,11 @@ export const FinopsPage: React.FC = () => {
   };
   const budgetUtil = budgetUsd > 0 ? Math.min(100, (estimate.total / budgetUsd) * 100) : 0;
   const providerRows = toSortedRows(estimate.byProvider);
+  const sessionRows = useMemo(
+    () => toSortedRows(groupCostBySession(estimate.terminals, window, sessions)),
+    [estimate.terminals, sessions, window],
+  );
+  const costGroupRows = groupBy === 'session' ? sessionRows : providerRows;
   const canvasRows = toSortedRows(estimate.byCanvas).slice(0, 10);
 
   const handleBudgetSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -48,7 +57,34 @@ export const FinopsPage: React.FC = () => {
           <h1>FinOps</h1>
           <p>{COST_ESTIMATE_DISCLAIMER}</p>
         </div>
-        {isLoading ? <Badge variant="processing">Refreshing</Badge> : <Badge variant="completed">Live</Badge>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          <div
+            aria-label="Cost grouping"
+            role="group"
+            style={{
+              display: 'inline-flex',
+              gap: 0,
+              padding: 2,
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-button)',
+              background: 'var(--surface-overlay)',
+            }}
+          >
+            <Button
+              variant={groupBy === 'provider' ? 'primary' : 'secondary'}
+              onClick={() => setGroupBy('provider')}
+            >
+              By Provider
+            </Button>
+            <Button
+              variant={groupBy === 'session' ? 'primary' : 'secondary'}
+              onClick={() => setGroupBy('session')}
+            >
+              By Session
+            </Button>
+          </div>
+          {isLoading ? <Badge variant="processing">Refreshing</Badge> : <Badge variant="completed">Live</Badge>}
+        </div>
       </header>
 
       {error ? (
@@ -96,8 +132,12 @@ export const FinopsPage: React.FC = () => {
 
       <section className="finops-content-grid">
         <Card className="finops-panel">
-          <PanelTitle title="Cost by Provider" />
-          <CostTable rows={providerRows} total={estimate.total} emptyLabel="No provider cost yet." />
+          <PanelTitle title={groupBy === 'session' ? 'Cost by Session' : 'Cost by Provider'} />
+          <CostTable
+            rows={costGroupRows}
+            total={estimate.total}
+            emptyLabel={groupBy === 'session' ? 'No session cost yet.' : 'No provider cost yet.'}
+          />
         </Card>
 
         <Card className="finops-panel">
@@ -208,6 +248,72 @@ function toSortedRows(record: Record<string, number>): Array<{ id: string; cost:
   return Object.entries(record)
     .map(([id, cost]) => ({ id, cost }))
     .sort((a, b) => b.cost - a.cost || a.id.localeCompare(b.id));
+}
+
+function groupCostBySession(
+  terminals: Array<{
+    provider?: string;
+    started_at?: string | number | Date | null;
+    stopped_at?: string | number | Date | null;
+    last_active?: string | number | Date | null;
+    created_at?: string | number | Date | null;
+    session_id?: string | null;
+    sessionId?: string | null;
+    auth_session_id?: string | null;
+  }>,
+  window: { startMs: number; endMs: number },
+  sessions: ReturnType<typeof useSessionStore.getState>['sessions'],
+): Record<string, number> {
+  const groups: Record<string, number> = {};
+  for (const terminal of terminals) {
+    const cost = estimateTerminalCost(terminal, window);
+    if (cost <= 0) continue;
+    const sessionId = terminal.session_id ?? terminal.sessionId ?? terminal.auth_session_id;
+    const session = sessionId ? sessions.find((item) => item.id === sessionId) : undefined;
+    const label = session ? `${session.account_email} — ${formatProviderLabel(session.cli_provider)}` : 'Unassigned';
+    groups[label] = Math.round(((groups[label] ?? 0) + cost) * 100) / 100;
+  }
+  return groups;
+}
+
+function estimateTerminalCost(
+  terminal: {
+    provider?: string;
+    started_at?: string | number | Date | null;
+    stopped_at?: string | number | Date | null;
+    last_active?: string | number | Date | null;
+    created_at?: string | number | Date | null;
+  },
+  window: { startMs: number; endMs: number },
+): number {
+  const startedMs = readTimestamp(terminal.started_at ?? terminal.last_active ?? terminal.created_at);
+  if (startedMs === undefined) return 0;
+  const stoppedMs = readTimestamp(terminal.stopped_at) ?? window.endMs;
+  const activeMs = Math.min(stoppedMs, window.endMs) - Math.max(startedMs, window.startMs);
+  const hours = Math.max(0, activeMs) / 3_600_000;
+  const hourly = readHourlyRate(terminal.provider);
+  return Math.round(hours * hourly * 100) / 100;
+}
+
+function readHourlyRate(provider?: string): number {
+  if (!provider) return 0;
+  return (PROVIDER_COST_PER_HOUR as Record<string, number>)[provider] ?? 0;
+}
+
+function readTimestamp(value: string | number | Date | null | undefined): number | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  if (value instanceof Date) return value.getTime();
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function formatProviderLabel(provider: string): string {
+  return provider
+    .split(/[_-]/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function getMonthToDateWindow(nowMs: number) {

@@ -78,6 +78,14 @@
 | 2026-05-30T16:31:36Z | C2-F | CHECK-IN | src/sessions/AddSessionDialog.tsx | 🔵 IN PROGRESS | Creating OAuth session dialog |
 | 2026-05-30T16:31:36Z | C2-F | CHECK-IN | src/sessions/add-session-dialog.css | 🔵 IN PROGRESS | Styling OAuth session dialog |
 | 2026-05-30T16:31:36Z | C2-F | CHECK-IN | src/sessions/SessionsPage.tsx | 🔵 IN PROGRESS | Wiring provider add-session buttons to dialog |
+| 2026-05-30T16:37:30Z | C2-F | CHECK-OUT | src/sessions/AddSessionDialog.tsx | ✅ DONE | Created OAuth session dialog |
+| 2026-05-30T16:37:30Z | C2-F | CHECK-OUT | src/sessions/add-session-dialog.css | ✅ DONE | Styled OAuth session dialog |
+| 2026-05-30T16:37:30Z | C2-F | CHECK-OUT | src/sessions/SessionsPage.tsx | ✅ DONE | Wired provider add-session buttons to dialog |
+| 2026-05-30T16:37:30Z | C2-E | CHECK-IN | src/canvas-builder/CanvasBuilderPage.tsx | 🔵 IN PROGRESS | Resolving scoped React hook and TypeScript lint warnings |
+| 2026-05-30T16:38:24Z | C2-F | CHECK-IN | src/sessions/AddSessionDialog.tsx | 🔵 IN PROGRESS | Applying scoped Prettier formatting |
+| 2026-05-30T16:39:14Z | C2-E | CHECK-OUT | src/canvas-builder/CanvasBuilderPage.tsx | ✅ DONE | Resolved scoped React hook and TypeScript lint warnings |
+| 2026-05-30T16:39:14Z | C2-F | CHECK-OUT | src/sessions/AddSessionDialog.tsx | ✅ DONE | Applied scoped Prettier formatting |
+| 2026-05-30T16:39:14Z | CODEX-2-LEAD | CHECK-IN | Wave 2B Quality Gate | 🔵 IN PROGRESS | Running npx tsc --noEmit and npx vitest run |
 | 2026-05-30T16:25:00Z | G1-D | CHECK-IN | src/canvas-reconciler/reconciler.ts | 🔵 IN PROGRESS | Injecting env vars into CAO client calls |
 | 2026-05-30T16:25:00Z | G1-E | CHECK-IN | src/sessions/useSessionMonitor.ts | 🔵 IN PROGRESS | Creating session monitor hook |
 | 2026-05-30T16:25:00Z | G1-E | CHECK-IN | src/sessions/index.ts | 🔵 IN PROGRESS | Exporting useSessionMonitor hook |
@@ -99,6 +107,14 @@
 | 2026-05-30T16:33:25Z | C1-I | CHECK-OUT | git commit | ✅ DONE | Created Wave 1B+1C commit |
 | 2026-05-30T16:33:25Z | CODEX-1-LEAD | CHECK-IN | Wave 1C Quality Gate | 🔵 IN PROGRESS | Verifying TypeScript, Vitest, Playwright, and commit |
 | 2026-05-30T16:33:25Z | CODEX-1-LEAD | CHECK-OUT | Wave 1C Quality Gate | ✅ DONE | Wave 1C Gate PASSED |
+| 2026-05-30T16:41:38Z | C1-J | CHECK-IN | src/terminal-grid/TabBar.tsx | 🔵 IN PROGRESS | Adding session-aware terminal tab indicators |
+| 2026-05-30T16:41:38Z | C1-K | CHECK-IN | src/finops/FinopsPage.tsx | 🔵 IN PROGRESS | Adding FinOps session grouping toggle |
+| 2026-05-30T16:41:38Z | C1-L | CHECK-IN | src/canvas-builder/AgentNode.tsx | 🔵 IN PROGRESS | Adding agent node OAuth session badge |
+| 2026-05-30T16:45:46Z | C1-J | CHECK-OUT | src/terminal-grid/TabBar.tsx | ✅ DONE | Added session-aware terminal tab indicators |
+| 2026-05-30T16:45:46Z | C1-K | CHECK-OUT | src/finops/FinopsPage.tsx | ✅ DONE | Added FinOps session grouping toggle |
+| 2026-05-30T16:45:46Z | C1-L | CHECK-OUT | src/canvas-builder/AgentNode.tsx | ✅ DONE | Added agent node OAuth session badge |
+| 2026-05-30T16:46:35Z | CODEX-1-LEAD | CHECK-IN | Wave 1D Quality Gate | 🔵 IN PROGRESS | Verifying TypeScript, Vitest, and commit |
+| 2026-05-30T16:46:35Z | CODEX-1-LEAD | CHECK-OUT | Wave 1D Quality Gate | ✅ DONE | Wave 1D Gate PASSED |
 
 ---
 
@@ -122,7 +138,7 @@
 | `src/canvas-document/schema.ts` | — | 🟢 Available |
 | `src/api/session-discovery.ts` | — | 🟢 Available |
 | `src/api/session-store.ts` | — | 🟢 Available |
-| `src/sessions/SessionsPage.tsx` | C2-F | 🔴 Locked |
+| `src/sessions/SessionsPage.tsx` | — | 🟢 Available |
 | `src/sessions/sessions.css` | — | 🟢 Available |
 | `src/sessions/index.ts` | — | 🟢 Available |
 | `src/canvas-builder/BlockConfigurationPanel.tsx` | — | 🟢 Available |
@@ -138,9 +154,12 @@
 | `src/sessions/session-status-badge.css` | — | 🟢 Available (NEW) |
 | `src/canvas-builder/canvas-builder.css` | — | 🟢 Available |
 | `src/canvas-builder/CanvasBuilderPage.tsx` | — | 🟢 Available |
-| `src/sessions/AddSessionDialog.tsx` | C2-F | 🔴 Locked (NEW) |
-| `src/sessions/add-session-dialog.css` | C2-F | 🔴 Locked (NEW) |
+| `src/sessions/AddSessionDialog.tsx` | — | 🟢 Available |
+| `src/sessions/add-session-dialog.css` | — | 🟢 Available |
 | `src/sessions/useSessionMonitor.ts` | — | 🟢 Available (NEW) |
 | `src/sessions/__tests__/useSessionMonitor.test.ts` | — | 🟢 Available (NEW) |
 | `src/shell/AppLayout.tsx` | — | 🟢 Available (NEW) |
 | `tests/e2e/sessions.spec.ts` | — | 🟢 Available (NEW) |
+| `src/terminal-grid/TabBar.tsx` | — | 🟢 Available |
+| `src/finops/FinopsPage.tsx` | — | 🟢 Available |
+| `src/canvas-builder/AgentNode.tsx` | — | 🟢 Available |
