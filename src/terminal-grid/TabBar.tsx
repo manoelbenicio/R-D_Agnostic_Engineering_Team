@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { caoClient, sessionsQueryKeys } from '@/api';
 import type { Terminal } from '@/api';
+// eslint-disable-next-line agentverse/no-sideways-capability-imports
 import { canvasStore } from '@/canvas-document/store';
 import { StatusBadge } from '@/design-system';
 import { useSessionStore } from '@/api/session-store';

@@ -79,5 +79,6 @@ src/
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — D1–D15 + R1–R9 summary.
 - [`docs/patterns/`](./docs/patterns/) — established conventions per topic.
 - [`docs/cao-cors.md`](./docs/cao-cors.md) — CAO env vars to allow this SPA.
+- [`docs/dev-environment.md`](./docs/dev-environment.md) — canonical Windows toolchain workflow + node_modules recovery.
 - [`docs/key-storage-v1.md`](./docs/key-storage-v1.md) — v1 BYOK threat model.
 - `openspec/changes/milestone-1-canvas-deploy-run/` — authoritative spec.

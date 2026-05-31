@@ -5,8 +5,10 @@
   "type": "module",
   "description": "AgentVerse v1 — multi-agent orchestration SPA on top of CAO",
   "scripts": {
+    "predev": "node scripts/check-dev-env.mjs",
     "dev": "vite --port 5173 --strictPort",
     "dev:msw": "VITE_USE_MSW=true vite --port 5173 --strictPort",
+    "prebuild": "node scripts/check-dev-env.mjs",
     "build": "tsc -b && vite build",
     "postbuild": "node scripts/strip-msw-from-dist.mjs",
     "preview": "vite preview --port 4173 --strictPort",

@@ -20,12 +20,14 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    // Repo lives on a Windows mount (/mnt/c) accessed from WSL, where inotify
-    // events don't fire. Poll so HMR reliably detects file edits.
-    watch: {
-      usePolling: true,
-      interval: 300,
-    },
+    // Canonical dev runs natively (Windows) with reliable native file watching.
+    // Polling is only needed when serving from a mounted filesystem (e.g. WSL on
+    // /mnt/c), where inotify events don't fire. Opt in with VITE_WATCH_POLLING=true.
+    // See docs/dev-environment.md.
+    watch:
+      process.env.VITE_WATCH_POLLING === 'true'
+        ? { usePolling: true, interval: 300 }
+        : undefined,
   },
   preview: {
     port: 4173,
