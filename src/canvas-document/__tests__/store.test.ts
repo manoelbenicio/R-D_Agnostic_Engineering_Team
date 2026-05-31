@@ -72,6 +72,21 @@ describe('Canvas Store', () => {
     expect(versions).toHaveLength(0);
   });
 
+  it('persist() overwrites the working copy without bumping version or appending a snapshot', async () => {
+    const d = canvasStore.createDraft();
+    const saved = await canvasStore.save(d);
+    expect(saved.version).toBe(1);
+
+    await canvasStore.persist({ ...saved, name: 'Autosaved name' });
+
+    const fetched = await canvasStore.get(d.id);
+    expect(fetched?.name).toBe('Autosaved name');
+    expect(fetched?.version).toBe(1); // unchanged by persist
+
+    const versions = await canvasStore.listVersions(d.id);
+    expect(versions).toHaveLength(1); // no extra snapshot appended
+  });
+
   it('returns null and emits a warning on get() when schema_version exceeds SCHEMA_VERSION', async () => {
     const db = await openDb();
     const futureDoc = {

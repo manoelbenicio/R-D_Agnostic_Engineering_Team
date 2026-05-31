@@ -45,6 +45,7 @@ import AgentNode from './AgentNode';
 import AgentPalette from './AgentPalette';
 import BlockConfigurationPanel from './BlockConfigurationPanel';
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
+import { VersionHistory } from './VersionHistory';
 import OrchestrationEdge from './OrchestrationEdge';
 import { validateCanvasForDeploy } from './deploy-validation';
 import { getCanvasProviderOptionsWithCli } from './provider-options';
@@ -92,6 +93,13 @@ const CanvasBuilderInner: React.FC = () => {
   const [panelsCollapsed, setPanelsCollapsed] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Autosave bookkeeping: latest doc (for flush on hide/unmount) and the
+  // signature of the content last written, to skip redundant persists.
+  const docRef = useRef<CanvasDocument | null>(null);
+  docRef.current = doc;
+  const lastAutosavedRef = useRef<string | null>(null);
 
   useVoiceHotkey();
 
@@ -131,11 +139,13 @@ const CanvasBuilderInner: React.FC = () => {
       if (cancelled) return;
       if (loaded) {
         setDoc(loaded);
+        lastAutosavedRef.current = autosaveSignature(loaded);
         setPast([]);
         setFuture([]);
       } else {
         const draft = canvasStore.createDraft();
         setDoc(draft);
+        lastAutosavedRef.current = autosaveSignature(draft);
         toast.warning('Canvas not found. Opened a new draft instead.');
       }
     }
@@ -145,6 +155,39 @@ const CanvasBuilderInner: React.FC = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Autosave: debounce-persist edits to IndexedDB and flush immediately when the
+  // tab is hidden/unloaded (e.g. an OAuth popup steals focus) or on unmount, so
+  // unsaved canvas work survives reload and navigation.
+  useEffect(() => {
+    if (!doc) return;
+    const status = doc.deploy_state.status;
+    if (isReconciling || status === 'deploying') return;
+
+    const signature = autosaveSignature(doc);
+    if (signature === lastAutosavedRef.current) return;
+
+    const flush = () => {
+      const current = docRef.current;
+      if (!current) return;
+      const sig = autosaveSignature(current);
+      if (sig === lastAutosavedRef.current) return;
+      lastAutosavedRef.current = sig;
+      void canvasStore.persist(structuredClone(current));
+    };
+
+    const timer = window.setTimeout(flush, 800);
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', flush);
+    };
+  }, [doc, isReconciling]);
 
   const updateDoc = useCallback(
     (updater: (current: CanvasDocument) => CanvasDocument) => {
@@ -709,6 +752,19 @@ const CanvasBuilderInner: React.FC = () => {
     return () => window.removeEventListener('keydown', handler);
   }, [handleFitView, handleSave, handleZoomIn, handleZoomOut, redo, shortcutsHelpOpen, undo, zenMode]);
 
+  const handleRestoreVersion = useCallback(
+    (snapshot: CanvasDocument) => {
+      const restored = structuredClone(snapshot);
+      setDoc(restored);
+      setSelectedNodeId(null);
+      setPast([]);
+      setFuture([]);
+      lastAutosavedRef.current = autosaveSignature(restored);
+      toast.success(`Restored v${snapshot.version}. Save to keep it as the latest version.`);
+    },
+    [toast]
+  );
+
   const handleTemplateSelect = async (templateDoc: CanvasDocument) => {
     const saved = await canvasStore.save(templateDoc);
     setDoc(saved);
@@ -809,6 +865,9 @@ const CanvasBuilderInner: React.FC = () => {
           </Button>
           <Button variant="secondary" onClick={() => setTemplatePickerOpen(true)}>
             Use Template
+          </Button>
+          <Button variant="secondary" onClick={() => setHistoryOpen(true)}>
+            History
           </Button>
           <Button variant="secondary" onClick={() => setPanelsCollapsed((p) => !p)} title="Toggle side panels (Ctrl+B)">
             {panelsCollapsed ? '⟨⟩ Panels' : '⟩⟨ Collapse'}
@@ -1013,6 +1072,12 @@ const CanvasBuilderInner: React.FC = () => {
         onSelect={(templateDoc) => void handleTemplateSelect(templateDoc)}
       />
       <KeyboardShortcutsHelp isOpen={shortcutsHelpOpen} onClose={closeShortcutsHelp} />
+      <VersionHistory
+        canvasId={doc.id}
+        isOpen={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onRestore={handleRestoreVersion}
+      />
       <VoicePanel currentCanvas={doc} onUpdateCanvas={updateDoc} />
       <DeployProgressPanel status={doc.deploy_state.status} />
       <Modal
@@ -1082,4 +1147,16 @@ function isEditableTarget(target: EventTarget | null): boolean {
     target instanceof HTMLElement &&
     (target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName))
   );
+}
+
+// Signature of the meaningful canvas content. Excludes version/timestamps so
+// autosave only fires on real edits, not on save-driven version bumps.
+function autosaveSignature(doc: CanvasDocument): string {
+  return JSON.stringify({
+    name: doc.name,
+    nodes: doc.nodes,
+    edges: doc.edges,
+    config: doc.config,
+    deploy_state: doc.deploy_state,
+  });
 }

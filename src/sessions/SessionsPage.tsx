@@ -16,6 +16,17 @@ export const SessionsPage: React.FC = () => {
   const { sessions, loading, error, refresh, addSession } = useSessionStore();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [dialogProvider, setDialogProvider] = useState<string>();
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const toggleCollapse = (providerId: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(providerId)) {
+        next.delete(providerId);
+      } else {
+        next.add(providerId);
+      }
+      return next;
+    });
   const sessionsByProvider = useMemo(
     () =>
       new Map(
@@ -82,29 +93,46 @@ export const SessionsPage: React.FC = () => {
       <div className="sessions-provider-stack">
         {PROVIDERS.map((provider) => {
           const providerSessions = sessionsByProvider.get(provider.id) ?? [];
+          const isCollapsed = collapsed.has(provider.id);
+          const bodyId = `sessions-provider-body-${provider.id}`;
           return (
             <section className="sessions-provider-section" key={provider.id}>
               <header className="sessions-provider-header">
-                <div>
-                  <span className="sessions-provider-kicker">CLI Provider</span>
-                  <h2>{provider.label}</h2>
-                </div>
+                <button
+                  type="button"
+                  className="sessions-provider-toggle"
+                  aria-expanded={!isCollapsed}
+                  aria-controls={bodyId}
+                  onClick={() => toggleCollapse(provider.id)}
+                >
+                  <span className="sessions-provider-chevron" aria-hidden="true">
+                    {isCollapsed ? '▸' : '▾'}
+                  </span>
+                  <span>
+                    <span className="sessions-provider-kicker">CLI Provider</span>
+                    <h2>{provider.label}</h2>
+                  </span>
+                </button>
                 <Button variant="secondary" onClick={() => openAddDialog(provider.id)}>
                   + Add Session
                 </Button>
               </header>
 
-              {providerSessions.length > 0 ? (
-                <div className="sessions-grid">
-                  {providerSessions.map((session) => (
-                    <SessionCard key={session.id} session={session} onRelogin={addSession} />
-                  ))}
+              {!isCollapsed ? (
+                <div id={bodyId}>
+                  {providerSessions.length > 0 ? (
+                    <div className="sessions-grid">
+                      {providerSessions.map((session) => (
+                        <SessionCard key={session.id} session={session} onRelogin={addSession} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="sessions-provider-empty">
+                      No {provider.label} sessions detected.
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="sessions-provider-empty">
-                  No {provider.label} sessions detected.
-                </div>
-              )}
+              ) : null}
             </section>
           );
         })}

@@ -85,11 +85,6 @@ test.describe('Sessions Page', () => {
     const section = page.locator('.sessions-provider-section').first();
     const toggle = section.locator('button[aria-expanded]').first();
 
-    test.fixme(
-      (await toggle.count()) === 0,
-      'SessionsPage.tsx is owned by GEMINI-1 and does not expose a provider collapse control yet.',
-    );
-
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');

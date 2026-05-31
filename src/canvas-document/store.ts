@@ -7,6 +7,7 @@ export interface CanvasStore {
   list(): Promise<CanvasDocument[]>;
   get(id: string): Promise<CanvasDocument | null>;
   save(doc: CanvasDocument): Promise<CanvasDocument>;
+  persist(doc: CanvasDocument): Promise<void>;
   delete(id: string): Promise<void>;
   listVersions(id: string): Promise<CanvasDocument[]>;
   createDraft(): CanvasDocument;
@@ -79,6 +80,15 @@ export const canvasStore: CanvasStore = {
     await db.put('canvas_versions', snapshot);
 
     return validated;
+  },
+
+  async persist(doc: CanvasDocument): Promise<void> {
+    // Autosave: overwrite the working copy in `canvases` without bumping the
+    // version or appending a `canvas_versions` snapshot. Keeps in-flight edits
+    // durable across reload/navigation without polluting version history.
+    const db = await openDb();
+    const validated = parseCanvasDocument({ ...doc, updated_at: new Date().toISOString() });
+    await db.put('canvases', validated);
   },
 
   async delete(id: string): Promise<void> {

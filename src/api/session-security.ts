@@ -6,7 +6,7 @@
 /** Mask email for display: "john.doe@example.com" → "jo***@example.com" */
 export function maskEmail(email: string): string {
   const [local, domain] = email.split('@');
-  if (!domain) return email;
+  if (!local || !domain) return email;
   const visibleChars = Math.min(2, local.length);
   return local.slice(0, visibleChars) + '***@' + domain;
 }

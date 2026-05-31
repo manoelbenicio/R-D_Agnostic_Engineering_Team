@@ -6,6 +6,12 @@ import path from 'node:path';
 // CAO_CORS_ORIGINS / CAO_WS_ALLOWED_CLIENTS.
 export default defineConfig({
   plugins: [react()],
+  // Scan only the real SPA entry. Without this, Vite globs every *.html in the
+  // repo (snake-game/, docs/, data_expert_skills/, playwright-report/, …) as
+  // entries and dependency optimization fails.
+  optimizeDeps: {
+    entries: ['index.html'],
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -14,6 +20,12 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    // Repo lives on a Windows mount (/mnt/c) accessed from WSL, where inotify
+    // events don't fire. Poll so HMR reliably detects file edits.
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
   },
   preview: {
     port: 4173,
