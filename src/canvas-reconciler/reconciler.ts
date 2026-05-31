@@ -330,6 +330,7 @@ export async function reconcileCanvas(
           }
 
           const session = await client.createSession({
+            provider: entryPointNode.data.provider || currentCanvasDoc.config.provider_default,
             profile: entryPointProfileName,
             working_directory: currentCanvasDoc.config.working_directory || '~',
             env_vars: Object.keys(terminalEnv).length > 0 ? terminalEnv : undefined,
@@ -402,6 +403,7 @@ export async function reconcileCanvas(
           }
 
           const terminal = await client.addTerminalToSession(sessionName, {
+            provider: node.data.provider || currentCanvasDoc.config.provider_default,
             profile: profileName,
             working_directory: currentCanvasDoc.config.working_directory || '~',
             env_vars: Object.keys(terminalEnv).length > 0 ? terminalEnv : undefined,
@@ -524,6 +526,7 @@ export async function reconcileCanvas(
           }
 
           const terminal = await client.addTerminalToSession(sessionName, {
+            provider: nodeToUpdate.data.provider || currentCanvasDoc.config.provider_default,
             profile: profileName,
             working_directory: currentCanvasDoc.config.working_directory || '~',
             env_vars: Object.keys(terminalEnv).length > 0 ? terminalEnv : undefined,
@@ -596,6 +599,7 @@ export async function reconcileCanvas(
           }
 
           const terminal = await client.addTerminalToSession(sessionName, {
+            provider: nodeToAdd.data.provider || currentCanvasDoc.config.provider_default,
             profile: profileName,
             working_directory: currentCanvasDoc.config.working_directory || '~',
             env_vars: Object.keys(terminalEnv).length > 0 ? terminalEnv : undefined,

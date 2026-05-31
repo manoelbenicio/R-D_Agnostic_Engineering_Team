@@ -58,7 +58,7 @@ export const DeployProgressPanel: React.FC<DeployProgressPanelProps> = ({ status
       style={{
         position: 'fixed',
         bottom: '80px',
-        right: '24px',
+        left: '180px',
         width: '360px',
         zIndex: 900,
       }}

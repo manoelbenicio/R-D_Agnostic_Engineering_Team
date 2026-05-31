@@ -55,7 +55,12 @@ export class CaoClient {
   }
 
   createSession(input: CreateSessionInput): Promise<Session> {
-    return this.request('/sessions', { method: 'POST', body: input });
+    const params = new URLSearchParams({
+      provider: input.provider,
+      agent_profile: input.profile,
+      working_directory: input.working_directory || '~',
+    });
+    return this.request(`/sessions?${params.toString()}`, { method: 'POST' });
   }
 
   listSessions(): Promise<Session[]> {
@@ -74,9 +79,15 @@ export class CaoClient {
   }
 
   addTerminalToSession(sessionName: string, input: AddTerminalInput): Promise<Terminal> {
-    return this.request(`/sessions/${encodeURIComponent(sessionName)}/terminals`, {
+    const params = new URLSearchParams({
+      provider: input.provider,
+      agent_profile: input.profile,
+    });
+    if (input.working_directory) {
+      params.set('working_directory', input.working_directory);
+    }
+    return this.request(`/sessions/${encodeURIComponent(sessionName)}/terminals?${params.toString()}`, {
       method: 'POST',
-      body: input,
     });
   }
 
