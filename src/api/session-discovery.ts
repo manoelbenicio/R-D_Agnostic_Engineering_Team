@@ -1,5 +1,6 @@
 import { caoClient } from './cao-client';
 import type { ProviderAvailability } from './types';
+import { isExpiringSoon } from './session-security';
 
 export interface DiscoveredSession {
   id: string;
@@ -12,9 +13,22 @@ export interface DiscoveredSession {
   auth_method: 'oauth' | 'sso' | 'gcloud' | 'api_key';
 }
 
+/**
+ * Backend `_session_status` only emits 'active' | 'expired'. Derive the
+ * 'expiring' band on the client from `expires_at` so the expiring UX (yellow
+ * dot, footer count, monitor warning) works against the live CAO contract.
+ */
+function withExpiringStatus(session: DiscoveredSession): DiscoveredSession {
+  if (session.status === 'active' && isExpiringSoon(session.expires_at)) {
+    return { ...session, status: 'expiring' };
+  }
+  return session;
+}
+
 export async function discoverSessions(): Promise<DiscoveredSession[]> {
   try {
-    return await requestJson<DiscoveredSession[]>('/auth/sessions');
+    const sessions = await requestJson<DiscoveredSession[]>('/auth/sessions');
+    return sessions.map(withExpiringStatus);
   } catch {
     const providers = await requestJson<ProviderAvailability[]>('/agents/providers');
     return providers

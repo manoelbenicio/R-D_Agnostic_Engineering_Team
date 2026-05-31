@@ -1,4 +1,4 @@
-import { CanvasDocument, CanvasEdge, CanvasNode, OrchestrationType } from '@/shared/canvas-types';
+import { CanvasDocument, CanvasEdge, CanvasNode, OrchestrationType, ProviderType } from '@/shared/canvas-types';
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
 import { SCHEMA_VERSION } from '@/shared/schema-version';
 

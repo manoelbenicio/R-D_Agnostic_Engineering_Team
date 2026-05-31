@@ -71,6 +71,18 @@ if _hosts_env:
     ALLOWED_HOSTS = [h.strip() for h in _hosts_env.split(',') if h.strip()]
 PY
 
+# Add AgentVerse auth/session discovery endpoints expected by the SPA.
+COPY infra/cao/auth_routes.py /tmp/agentverse-auth-routes.py
+RUN API_DIR="$(find /root/.local/share/uv/tools/cli-agent-orchestrator -path '*/cli_agent_orchestrator/api' -type d | head -1)" \
+    && cp /tmp/agentverse-auth-routes.py "$API_DIR/auth_routes.py" \
+    && MAIN="$API_DIR/main.py" \
+    && if ! grep -q 'from cli_agent_orchestrator.api.auth_routes import auth_router' "$MAIN"; then \
+        sed -i '/^from cli_agent_orchestrator.utils.terminal import/a from cli_agent_orchestrator.api.auth_routes import auth_router' "$MAIN"; \
+    fi \
+    && if ! grep -q 'app.include_router(auth_router)' "$MAIN"; then \
+        sed -i '/^# Security: DNS Rebinding Protection/i app.include_router(auth_router)\n' "$MAIN"; \
+    fi
+
 EXPOSE 9889
 
 # Runtime CORS / host allow-lists per docs/cao-cors.md. Override at run time.

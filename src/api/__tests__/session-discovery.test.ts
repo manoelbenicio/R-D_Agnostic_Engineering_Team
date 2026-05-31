@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { resolveSessionEnv } from '../session-discovery';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { resolveSessionEnv, discoverSessions } from '../session-discovery';
 
 describe('resolveSessionEnv', () => {
   it('sets CLAUDE_CONFIG_DIR and ANTHROPIC_MODEL for claude_code', () => {
@@ -94,5 +94,44 @@ describe('resolveSessionEnv', () => {
     const env = resolveSessionEnv(session);
     expect(env.CLAUDE_CONFIG_DIR).toBe('/home/.claude');
     expect(env.ANTHROPIC_MODEL).toBeUndefined();
+  });
+});
+
+describe('discoverSessions — expiring derivation', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const stubSessions = (sessions: unknown[]) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(sessions), { status: 200 })),
+    );
+  };
+
+  it("derives 'expiring' from expires_at within the threshold", async () => {
+    const soon = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 min
+    stubSessions([
+      { id: 'claude_code:default', cli_provider: 'claude_code', account_email: 'a@b.com', config_dir: '', status: 'active', expires_at: soon, auth_method: 'oauth' },
+    ]);
+    const result = await discoverSessions();
+    expect(result[0]?.status).toBe('expiring');
+  });
+
+  it("leaves 'active' when expiry is far away", async () => {
+    const far = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h
+    stubSessions([
+      { id: 'kiro_cli:default', cli_provider: 'kiro_cli', account_email: 'a@b.com', config_dir: '', status: 'active', expires_at: far, auth_method: 'oauth' },
+    ]);
+    const result = await discoverSessions();
+    expect(result[0]?.status).toBe('active');
+  });
+
+  it("never downgrades an 'expired' session", async () => {
+    stubSessions([
+      { id: 'codex:default', cli_provider: 'codex', account_email: 'a@b.com', config_dir: '', status: 'expired', auth_method: 'oauth' },
+    ]);
+    const result = await discoverSessions();
+    expect(result[0]?.status).toBe('expired');
   });
 });

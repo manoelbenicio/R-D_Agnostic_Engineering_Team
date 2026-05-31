@@ -7,6 +7,7 @@ import { useSessionStore } from '@/api/session-store';
 import { CanvasNode, ProviderType } from '@/shared/canvas-types';
 import { CanvasProviderOption, findSourceProvider } from './provider-options';
 import { ROLE_TEMPLATES, StarterRole, roleFromValue, AGENT_COLOR_PALETTE } from './role-templates';
+import { ALLOWED_TOOLS, HIGH_PRIVILEGE_TOOLS, unknownTools } from './allowed-tools';
 
 export interface BlockConfigurationPanelProps {
   node?: CanvasNode;
@@ -51,6 +52,16 @@ export const BlockConfigurationPanel: React.FC<BlockConfigurationPanelProps> = (
       },
     }));
   };
+
+  const toggleTool = (toolId: string) => {
+    const current = node.data.allowedTools ?? [];
+    const next = current.includes(toolId)
+      ? current.filter((tool) => tool !== toolId)
+      : [...current, toolId];
+    patchData({ allowedTools: next });
+  };
+
+  const unknownSelected = unknownTools(node.data.allowedTools ?? []);
 
   const handleRoleChange = (roleValue: string) => {
     const role = roleFromValue(roleValue);
@@ -201,18 +212,38 @@ export const BlockConfigurationPanel: React.FC<BlockConfigurationPanelProps> = (
       </FormField>
 
       <FormField label="Allowed tools" id="node-allowed-tools">
-        <input
-          id="node-allowed-tools"
-          value={(node.data.allowedTools ?? []).join(', ')}
-          onChange={(event) =>
-            patchData({
-              allowedTools: event.target.value
-                .split(',')
-                .map((item) => item.trim())
-                .filter(Boolean),
-            })
-          }
-        />
+        <fieldset id="node-allowed-tools" className="canvas-tools-fieldset">
+          {ALLOWED_TOOLS.map((tool) => {
+            const selected = (node.data.allowedTools ?? []).includes(tool.id);
+            const highPrivilege = HIGH_PRIVILEGE_TOOLS.includes(tool.id);
+            return (
+              <label
+                key={tool.id}
+                className={`canvas-tool-option${highPrivilege ? ' canvas-tool-option--privileged' : ''}`}
+                title={tool.description}
+              >
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  onChange={() => toggleTool(tool.id)}
+                />
+                <span className="canvas-tool-name">{tool.label}</span>
+                <span className="canvas-tool-desc">{tool.description}</span>
+              </label>
+            );
+          })}
+          {unknownSelected.length > 0 ? (
+            <div className="canvas-tools-warning" role="alert">
+              <span>Unknown tools on this node: {unknownSelected.join(', ')}. Uncheck to remove.</span>
+              {unknownSelected.map((tool) => (
+                <label key={tool} className="canvas-tool-option canvas-tool-option--unknown">
+                  <input type="checkbox" checked onChange={() => toggleTool(tool)} />
+                  <span className="canvas-tool-name">{tool}</span>
+                </label>
+              ))}
+            </div>
+          ) : null}
+        </fieldset>
       </FormField>
 
       <FormField label="System prompt" id="node-system-prompt">
