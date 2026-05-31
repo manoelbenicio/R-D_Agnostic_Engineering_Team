@@ -14,11 +14,14 @@ async function completeFirstRun(page: Page) {
   await page.goto('/');
   await page.evaluate(async () => {
     await new Promise<void>((resolve, reject) => {
-      const openRequest = indexedDB.open('AgentVerse', 2);
+      const openRequest = indexedDB.open('AgentVerse', 3);
       openRequest.onupgradeneeded = () => {
         const db = openRequest.result;
         if (!db.objectStoreNames.contains('app_state')) {
           db.createObjectStore('app_state', { keyPath: 'key' });
+        }
+        if (!db.objectStoreNames.contains('sessions')) {
+          db.createObjectStore('sessions');
         }
       };
       openRequest.onsuccess = () => {
@@ -88,6 +91,18 @@ test.describe('Sessions Page', () => {
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('provider sections collapse and expand', async ({ page }) => {
+    await page.goto('/sessions');
+    const header = page.locator('.provider-section__header').first();
+    const body = page.locator('.provider-section__body').first();
+
+    await header.click();
+    await expect(body).toHaveClass(/provider-section__body--collapsed/);
+
+    await header.click();
+    await expect(body).not.toHaveClass(/provider-section__body--collapsed/);
   });
 
   test('refresh button shows loading state', async ({ page }) => {

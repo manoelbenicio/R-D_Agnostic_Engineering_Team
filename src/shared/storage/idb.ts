@@ -1,5 +1,6 @@
 import { openDB, IDBPDatabase, IDBPTransaction, StoreNames, DBSchema, IDBPObjectStore } from 'idb';
 import { CURRENT_SCHEMA_VERSION, runMigrations } from './migrations';
+import type { DiscoveredSession } from '@/api/session-discovery';
 
 export interface AgentVerseDB extends DBSchema {
   canvases: {
@@ -21,6 +22,13 @@ export interface AgentVerseDB extends DBSchema {
   app_state: {
     key: string;
     value: { key: string; value: unknown };
+  };
+  sessions: {
+    key: string;
+    value: {
+      sessions: DiscoveredSession[];
+      lastRefreshed: string | null;
+    };
   };
   usage_events: {
     key: string;

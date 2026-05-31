@@ -10,19 +10,22 @@ import { useSessionStore } from '@/api/session-store';
  * - Logs expiring sessions to console as warnings
  */
 export function useSessionMonitor(intervalMs = 5 * 60 * 1000): void {
-  const { refresh, sessions } = useSessionStore();
+  const { hydrate, refresh, sessions } = useSessionStore();
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
 
   // Periodic refresh
   useEffect(() => {
-    void refresh(); // Run immediately on mount
+    void (async () => {
+      await hydrate();
+      await refresh();
+    })(); // Run immediately on mount
     intervalRef.current = setInterval(() => {
       void refresh();
     }, intervalMs);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [refresh, intervalMs]);
+  }, [hydrate, refresh, intervalMs]);
 
   // Refresh on window focus
   useEffect(() => {

@@ -1,7 +1,7 @@
 import { IDBPDatabase, IDBPTransaction, StoreNames } from 'idb';
 import { AgentVerseDB } from './idb';
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 type AgentVerseStoreNames = ArrayLike<StoreNames<AgentVerseDB>>;
 
 export function runMigrations(
@@ -37,5 +37,9 @@ export function runMigrations(
     const usageStore = db.createObjectStore('usage_events', { keyPath: 'id' });
     usageStore.createIndex('by-canvas', 'canvasId');
     usageStore.createIndex('by-timestamp', 'timestampMs');
+  }
+
+  if (oldVersion < 3 && !db.objectStoreNames.contains('sessions')) {
+    db.createObjectStore('sessions');
   }
 }

@@ -100,26 +100,39 @@ export const SessionsPage: React.FC = () => {
               <header className="sessions-provider-header">
                 <button
                   type="button"
-                  className="sessions-provider-toggle"
+                  className="sessions-provider-toggle provider-section__header"
                   aria-expanded={!isCollapsed}
                   aria-controls={bodyId}
                   onClick={() => toggleCollapse(provider.id)}
                 >
-                  <span className="sessions-provider-chevron" aria-hidden="true">
+                  <span
+                    className={`sessions-provider-chevron provider-section__chevron ${
+                      isCollapsed ? '' : 'provider-section__chevron--open'
+                    }`}
+                    aria-hidden="true"
+                  >
                     {isCollapsed ? '▸' : '▾'}
                   </span>
                   <span>
                     <span className="sessions-provider-kicker">CLI Provider</span>
                     <h2>{provider.label}</h2>
                   </span>
+                  <span className="provider-section__count">{providerSessions.length}</span>
                 </button>
                 <Button variant="secondary" onClick={() => openAddDialog(provider.id)}>
                   + Add Session
                 </Button>
               </header>
 
-              {!isCollapsed ? (
-                <div id={bodyId}>
+              <div
+                id={bodyId}
+                className={`provider-section__body ${
+                  isCollapsed ? 'provider-section__body--collapsed' : ''
+                }`}
+                aria-hidden={isCollapsed}
+              >
+                {!isCollapsed ? (
+                  <>
                   {providerSessions.length > 0 ? (
                     <div className="sessions-grid">
                       {providerSessions.map((session) => (
@@ -131,8 +144,9 @@ export const SessionsPage: React.FC = () => {
                       No {provider.label} sessions detected.
                     </div>
                   )}
-                </div>
-              ) : null}
+                  </>
+                ) : null}
+              </div>
             </section>
           );
         })}

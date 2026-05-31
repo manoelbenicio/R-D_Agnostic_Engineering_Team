@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { useSessionMonitor } from '../useSessionMonitor';
 
+const mockHydrate = vi.fn().mockResolvedValue(undefined);
 const mockRefresh = vi.fn().mockResolvedValue(undefined);
 let mockSessions: any[] = [];
 
 vi.mock('@/api/session-store', () => ({
   useSessionStore: vi.fn(() => ({
+    hydrate: mockHydrate,
     refresh: mockRefresh,
     sessions: mockSessions,
   })),
@@ -14,13 +16,15 @@ vi.mock('@/api/session-store', () => ({
 
 describe('useSessionMonitor', () => {
   beforeEach(() => {
+    mockHydrate.mockClear();
     mockRefresh.mockClear();
     mockSessions = [];
   });
 
-  it('calls refresh on mount', () => {
+  it('hydrates and refreshes on mount', async () => {
     renderHook(() => useSessionMonitor());
-    expect(mockRefresh).toHaveBeenCalled();
+    expect(mockHydrate).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledTimes(1));
   });
 
   it('calls refresh on window focus', () => {
