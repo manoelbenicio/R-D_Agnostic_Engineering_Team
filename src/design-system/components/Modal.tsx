@@ -8,6 +8,10 @@ export interface ModalProps {
   title: string;
   children: React.ReactNode;
   actions?: React.ReactNode;
+  /** Extra CSS class for the modal card (e.g. to widen it for pickers) */
+  className?: string;
+  /** Override default modal dimensions (merged with defaults) */
+  style?: React.CSSProperties;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -16,6 +20,8 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   actions,
+  className,
+  style: styleProp,
 }) => {
   if (!isOpen) return null;
 
@@ -37,12 +43,17 @@ export const Modal: React.FC<ModalProps> = ({
   const modalStyle: React.CSSProperties = {
     width: '100%',
     maxWidth: '500px',
+    maxHeight: '90vh',
+    display: 'flex',
+    flexDirection: 'column',
+    ...styleProp,
   };
 
   return (
     <div style={overlayStyle} onClick={onClose} id="modal-overlay">
       <Card
         style={modalStyle}
+        className={className}
         glow="cyan"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -69,7 +80,7 @@ export const Modal: React.FC<ModalProps> = ({
           </button>
         </div>
         
-        <div style={{ color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 'var(--space-6)' }}>
+        <div style={{ color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 'var(--space-6)', overflowY: 'auto', flex: 1, minHeight: 0 }}>
           {children}
         </div>
         
