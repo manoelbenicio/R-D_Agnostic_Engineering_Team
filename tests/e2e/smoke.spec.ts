@@ -1,6 +1,14 @@
+/**
+ * AgentVerse App Shell — Smoke Tests
+ *
+ * Base URL is driven by VITE_GO_CORE_BASE_URL env var (default: http://127.0.0.1:8080).
+ * No hard-coded legacy runtime ports — see Sprint-3 CRIT-004.
+ */
 import { test, expect } from '@playwright/test';
 import { disableAnimations } from './helpers/disable-animations';
 import { installSpeechRecognitionMock } from './helpers/speech-recognition-mock';
+
+const GO_CORE_BASE_URL = process.env.VITE_GO_CORE_BASE_URL || 'http://127.0.0.1:8080';
 
 test.describe('AgentVerse App Shell Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -71,10 +79,12 @@ test.describe('AgentVerse App Shell Smoke Tests', () => {
     const placeholder = page.locator('text=Canvas List');
     await expect(placeholder).toBeVisible();
 
-    // Verify CAO health pill exists and displays ONLINE status
-    const healthPill = page.locator('#cao-health-pill');
+    // Verify GO Core health pill exists and displays healthy status
+    // data-testid follows GO Core naming — see Sprint-3 GATE 3
+    expect(GO_CORE_BASE_URL).toMatch(/^https?:\/\//);
+    const healthPill = page.locator('[data-testid="health-pill"]');
     await expect(healthPill).toBeVisible();
-    await expect(healthPill).toContainText('CAO ONLINE');
+    await expect(healthPill).toContainText(/online|healthy/i);
   });
 
   test('should navigate to 404 page for unknown routes', async ({ page }) => {
@@ -190,7 +200,6 @@ test.describe('AgentVerse App Shell Smoke Tests', () => {
     await expect(page.locator('.react-flow__node').filter({ hasText: 'Reviewer' }).first()).toBeVisible();
 
     // 4. Click Deploy to run
-    await page.waitForTimeout(1000);
     const deployBtn = page.locator('button:has-text("Deploy")');
     await expect(deployBtn).toBeVisible();
     await expect(deployBtn).toBeEnabled();

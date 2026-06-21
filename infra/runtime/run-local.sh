@@ -4,7 +4,7 @@
 # container reuses the same logins as your terminal/IDE — no headless tokens).
 #
 #   bash infra/runtime/run-local.sh build   # build the image (one-off / on change)
-#   bash infra/runtime/run-local.sh up       # run the runtime on :9889
+#   bash infra/runtime/run-local.sh up       # run the runtime on :8080
 #   bash infra/runtime/run-local.sh down     # stop + remove the container
 #   bash infra/runtime/run-local.sh logs     # follow logs
 #
@@ -13,7 +13,7 @@ set -euo pipefail
 
 IMAGE="agentverse-runtime:local"
 NAME="agentverse-runtime"
-PORT="${CAO_PORT:-9889}"
+PORT="${GO_CORE_PORT:-8080}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Worker CLIs bundled into the image (USER DECISION):
@@ -57,10 +57,10 @@ build() {
 up() {
   docker rm -f "$NAME" >/dev/null 2>&1 || true
   echo "Starting $NAME on :$PORT (mounting ${#CRED_MOUNTS[@]} credential paths)…"
-  docker run -d --rm --name "$NAME" -p "$PORT:9889" \
-    -e CAO_CORS_ORIGINS=http://localhost:5173,http://localhost:4173 \
-    -e CAO_ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0 \
-    -e CAO_WS_ALLOWED_CLIENTS=http://localhost:5173,http://localhost:4173 \
+  docker run -d --rm --name "$NAME" -p "$PORT:8080" \
+    -e GO_CORE_CORS_ORIGINS=http://localhost:5173,http://localhost:4173 \
+    -e GO_CORE_ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0 \
+    -e GO_CORE_WS_ALLOWED_CLIENTS=http://localhost:5173,http://localhost:4173 \
     "${CRED_MOUNTS[@]}" \
     "$IMAGE"
   echo "Runtime up. Health: curl http://localhost:$PORT/health"

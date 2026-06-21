@@ -1,7 +1,7 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Badge, Button, Card, FormField, Prose } from '@/design-system';
-import { caoClient } from '@/api';
+import { goCoreClient } from '@/api';
 import type { MemoryEntry, MemoryFormState, MemoryScope, MemoryType, MemoryViewerData } from './types';
 import { memoryMatchesSearch, parseTerminalMemoryContext, renderMemoryMarkdown } from './memory-context';
 import './memory-viewer.css';
@@ -295,10 +295,10 @@ const MemoryDetail: React.FC<{ entry: MemoryEntry | null }> = ({ entry }) => {
 };
 
 async function loadMemoryViewerData(): Promise<MemoryViewerData> {
-  const [sessions, agentDirs] = await Promise.all([caoClient.listSessions(), caoClient.getAgentDirs()]);
+  const [sessions, agentDirs] = await Promise.all([goCoreClient.listSessions(), goCoreClient.getAgentDirs()]);
   const terminalGroups = await Promise.all(
     sessions.map(async (session) => {
-      const terminals = await caoClient.listTerminalsInSession(session.name);
+      const terminals = await goCoreClient.listTerminalsInSession(session.name);
       return terminals.map((terminal) => ({ terminal, sessionName: session.name }));
     })
   );
@@ -308,7 +308,7 @@ async function loadMemoryViewerData(): Promise<MemoryViewerData> {
     terminalSources.map(async ({ terminal, sessionName }) => ({
       terminal,
       sessionName,
-      context: await caoClient.getTerminalMemoryContext(terminal.id),
+      context: await goCoreClient.getTerminalMemoryContext(terminal.id),
     }))
   );
 

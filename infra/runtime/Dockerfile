@@ -5,7 +5,7 @@
 #   surface AgentVerse talks to. Internally it wraps the upstream
 #   `cli-agent-orchestrator` Python package (awslabs/cli-agent-orchestrator on
 #   PyPI) and binds to the port supplied by Cloud Run via $PORT, with a
-#   sensible local default of 9889.
+#   sensible local default of 8080.
 #
 # Cloud Run notes
 #   * Cloud Run injects $PORT at runtime (8080 by default for managed). Our
@@ -19,11 +19,11 @@
 # Local build
 #   docker build -t agentverse-runtime:latest -f infra/runtime/Dockerfile .
 #
-# Local run (binds 9889)
-#   docker run -d --rm --name agentverse-runtime -p 9889:9889 \
-#     -e CAO_CORS_ORIGINS=http://localhost:5173,http://localhost:4173 \
-#     -e CAO_ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0 \
-#     -e CAO_WS_ALLOWED_CLIENTS=http://localhost:5173,http://localhost:4173 \
+# Local run (binds 8080)
+#   docker run -d --rm --name agentverse-runtime -p 8080:8080 \
+#     -e GO_CORE_CORS_ORIGINS=http://localhost:5173,http://localhost:4173 \
+#     -e GO_CORE_ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0 \
+#     -e GO_CORE_WS_ALLOWED_CLIENTS=http://localhost:5173,http://localhost:4173 \
 #     agentverse-runtime:latest
 #
 # Cloud Run deploy
@@ -77,40 +77,40 @@ RUN if [ -n "$WORKER_CLI" ]; then \
         echo "No WORKER_CLI provided — image ships without a worker CLI (task 2.6 deferred)."; \
     fi
 
-# Antigravity CLI installs as 'agy' but CAO detects 'gemini'. Create a symlink.
+# Antigravity CLI installs as 'agy' but GO Core detects 'gemini'. Create a symlink.
 RUN if command -v agy >/dev/null 2>&1; then ln -sf "$(command -v agy)" /usr/local/bin/gemini; fi
 
 # Upstream cli-agent-orchestrator hardcodes CORS_ORIGINS / ALLOWED_HOSTS in
-# constants.py and ignores the CAO_CORS_ORIGINS / CAO_ALLOWED_HOSTS env vars.
+# constants.py and ignores the GO_CORE_CORS_ORIGINS / GO_CORE_ALLOWED_HOSTS env vars.
 # Patch constants.py to honour those env vars so the documented run-time
 # overrides (and Cloud Run origins) actually take effect.
 RUN CONST="$(find /root/.local/share/uv/tools/cli-agent-orchestrator -path '*/cli_agent_orchestrator/constants.py' | head -1)" \
     && grep -q 'AGENTVERSE_CORS_OVERRIDE' "$CONST" || cat >> "$CONST" <<'PY'
 
 # --- AGENTVERSE_CORS_OVERRIDE ---
-# Honour CAO_CORS_ORIGINS / CAO_ALLOWED_HOSTS env vars (upstream hardcodes these).
+# Honour GO_CORE_CORS_ORIGINS / GO_CORE_ALLOWED_HOSTS env vars (upstream hardcodes these).
 import os as _os
-_cors_env = _os.environ.get('CAO_CORS_ORIGINS')
+_cors_env = _os.environ.get('GO_CORE_CORS_ORIGINS')
 if _cors_env:
     CORS_ORIGINS = [o.strip() for o in _cors_env.split(',') if o.strip()]
-_hosts_env = _os.environ.get('CAO_ALLOWED_HOSTS')
+_hosts_env = _os.environ.get('GO_CORE_ALLOWED_HOSTS')
 if _hosts_env:
     ALLOWED_HOSTS = [h.strip() for h in _hosts_env.split(',') if h.strip()]
 PY
 
 # Default CORS / host allow-list — overridable per environment.
 # Cloud Run will receive its own origin via $CORS_ORIGINS env at deploy time.
-ENV CAO_CORS_ORIGINS=http://localhost:5173,http://localhost:4173 \
-    CAO_ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0 \
-    CAO_WS_ALLOWED_CLIENTS=http://localhost:5173,http://localhost:4173
+ENV GO_CORE_CORS_ORIGINS=http://localhost:5173,http://localhost:4173 \
+    GO_CORE_ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0 \
+    GO_CORE_WS_ALLOWED_CLIENTS=http://localhost:5173,http://localhost:4173
 
 # State volume — sessions, logs, profiles. Cloud Run instances are
 # ephemeral; mount a Cloud Storage bucket via Cloud Run gen2 volume mounts
 # or use a writable in-memory tmpfs for stateless runs.
-VOLUME ["/root/.cao"]
+VOLUME ["/root/.go-core"]
 
 # Default port for local dev. Cloud Run overrides via $PORT.
-EXPOSE 9889
+EXPOSE 8080
 
 # Entrypoint — uses tini for proper PID 1 signal handling, and exec's into
 # the runtime engine, binding to whatever port Cloud Run (or local) supplies.
@@ -118,15 +118,15 @@ COPY <<'SH' /usr/local/bin/runtime-entrypoint
 #!/usr/bin/env bash
 set -e
 
-# Cloud Run injects $PORT (default 8080); local default is 9889.
-RUNTIME_PORT="${PORT:-${CAO_PORT:-9889}}"
-RUNTIME_HOST="${CAO_HOST:-0.0.0.0}"
+# Cloud Run injects $PORT (default 8080); local default is 8080.
+RUNTIME_PORT="${PORT:-${GO_CORE_PORT:-8080}}"
+RUNTIME_HOST="${GO_CORE_HOST:-0.0.0.0}"
 
 # Prefer flag form when supported, fall back to env-driven mode.
-if cao-server --help 2>/dev/null | grep -q -- "--host"; then
-    exec cao-server --host "$RUNTIME_HOST" --port "$RUNTIME_PORT"
+if go-core-server --help 2>/dev/null | grep -q -- "--host"; then
+    exec go-core-server --host "$RUNTIME_HOST" --port "$RUNTIME_PORT"
 else
-    exec env CAO_HOST="$RUNTIME_HOST" CAO_PORT="$RUNTIME_PORT" cao-server
+    exec env GO_CORE_HOST="$RUNTIME_HOST" GO_CORE_PORT="$RUNTIME_PORT" go-core-server
 fi
 SH
 RUN chmod +x /usr/local/bin/runtime-entrypoint

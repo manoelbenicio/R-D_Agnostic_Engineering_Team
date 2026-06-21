@@ -90,7 +90,7 @@ describe('useSessionStore', () => {
   });
 
   it('stores an error message when refresh fails', async () => {
-    mockDiscoverSessions.mockRejectedValue(new Error('CAO offline'));
+    mockDiscoverSessions.mockRejectedValue(new Error('GO Core offline'));
 
     await act(async () => {
       await useSessionStore.getState().refresh();
@@ -98,7 +98,7 @@ describe('useSessionStore', () => {
 
     expect(useSessionStore.getState().sessions).toEqual([]);
     expect(useSessionStore.getState().loading).toBe(false);
-    expect(useSessionStore.getState().error).toBe('CAO offline');
+    expect(useSessionStore.getState().error).toBe('GO Core offline');
   });
 
   it('returns a matching session by id', () => {

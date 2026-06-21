@@ -21,7 +21,7 @@ const PROVIDER_OPTIONS: Record<KeyProviderType, CanvasProviderOption[]> = {
   opencode: [{ provider: 'opencode_cli', sourceProvider: 'opencode', label: 'OpenCode CLI' }],
 };
 
-/** Map CLI provider names (from CAO /agents/providers) to canvas options. */
+/** Map CLI provider names (from GO Core /agents/providers) to canvas options. */
 const CLI_PROVIDER_OPTIONS: Record<string, CanvasProviderOption> = {
   codex: { provider: 'codex', sourceProvider: 'openai', label: 'Codex (CLI)' },
   kiro_cli: { provider: 'kiro_cli', sourceProvider: 'aws', label: 'Kiro CLI' },
@@ -37,7 +37,7 @@ export function getCanvasProviderOptions(validatedProviders: KeyProviderType[]):
 }
 
 /**
- * Merge API-key-validated providers with CLI-installed providers from the CAO
+ * Merge API-key-validated providers with CLI-installed providers from the GO Core server
  * runtime. CLI providers authenticated via `kiro-cli login`, `codex auth`, etc.
  * don't need a browser API key — they use their own OAuth tokens.
  */
@@ -65,4 +65,3 @@ export function findSourceProvider(
 ): KeyProviderType | undefined {
   return options.find((option) => option.provider === provider)?.sourceProvider;
 }
-

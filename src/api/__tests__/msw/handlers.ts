@@ -118,14 +118,14 @@ const flows = new Map<string, Flow>([
   ],
 ]);
 
-const caoWs = typeof ws !== 'undefined' ? ws.link('ws://127.0.0.1:9889/terminals/:id/ws') : null;
-const caoWss = typeof ws !== 'undefined' ? ws.link('wss://127.0.0.1:9889/terminals/:id/ws') : null;
-const caoWsLocal = typeof ws !== 'undefined' ? ws.link('ws://localhost:9889/terminals/:id/ws') : null;
-const caoWssLocal = typeof ws !== 'undefined' ? ws.link('wss://localhost:9889/terminals/:id/ws') : null;
+const goCoreWs = typeof ws !== 'undefined' ? ws.link('ws://127.0.0.1:8080/terminals/:id/ws') : null;
+const goCoreWss = typeof ws !== 'undefined' ? ws.link('wss://127.0.0.1:8080/terminals/:id/ws') : null;
+const goCoreWsLocal = typeof ws !== 'undefined' ? ws.link('ws://localhost:8080/terminals/:id/ws') : null;
+const goCoreWssLocal = typeof ws !== 'undefined' ? ws.link('wss://localhost:8080/terminals/:id/ws') : null;
 
 const handleConnection = ({ client }: { client: any }) => {
   const encoder = new TextEncoder();
-  client.send(encoder.encode('\r\n[Mock CAO Terminal Connected]\r\n').buffer);
+  client.send(encoder.encode('\r\n[Mock GO Core Terminal Connected]\r\n').buffer);
 
   let frameCounter = 0;
   const interval = setInterval(() => {
@@ -354,14 +354,14 @@ export const handlers = [
   }),
 
   http.get('*/skills/:name', ({ params }) => {
-    return HttpResponse.text(`# ${params.name}\n\nSkill body loaded from CAO.`);
+    return HttpResponse.text(`# ${params.name}\n\nSkill body loaded from GO Core.`);
   }),
 
-  ...(caoWs && caoWss && caoWsLocal && caoWssLocal ? [
-    caoWs.addEventListener('connection', handleConnection),
-    caoWss.addEventListener('connection', handleConnection),
-    caoWsLocal.addEventListener('connection', handleConnection),
-    caoWssLocal.addEventListener('connection', handleConnection),
+  ...(goCoreWs && goCoreWss && goCoreWsLocal && goCoreWssLocal ? [
+    goCoreWs.addEventListener('connection', handleConnection),
+    goCoreWss.addEventListener('connection', handleConnection),
+    goCoreWsLocal.addEventListener('connection', handleConnection),
+    goCoreWssLocal.addEventListener('connection', handleConnection),
   ] : []),
 ];
 

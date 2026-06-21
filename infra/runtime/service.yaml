@@ -67,34 +67,34 @@ spec:
         - image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/agentverse/runtime:${IMAGE_TAG}
           ports:
             - name: http1
-              containerPort: 9889
+              containerPort: 8080
           resources:
             limits:
               cpu: "${CPU_LIMIT}"
               memory: ${MEMORY_LIMIT}
           env:
             - name: PORT
-              value: "9889"
-            - name: CAO_HOST
+              value: "8080"
+            - name: GO_CORE_HOST
               value: "0.0.0.0"
-            - name: CAO_TENANT_ID
+            - name: GO_CORE_TENANT_ID
               value: ${TENANT_ID}
             # Per-tenant state prefix. With a Cloud Run gen2 volume mount this
             # keeps each tenant's sessions/logs/profiles under its own path.
-            - name: CAO_STATE_PREFIX
-              value: /root/.cao/${TENANT_ID}
-            - name: CAO_CORS_ORIGINS
+            - name: GO_CORE_STATE_PREFIX
+              value: /root/.go-core/${TENANT_ID}
+            - name: GO_CORE_CORS_ORIGINS
               value: ${SPA_ORIGIN}
-            - name: CAO_ALLOWED_HOSTS
+            - name: GO_CORE_ALLOWED_HOSTS
               value: 0.0.0.0,127.0.0.1,localhost
-            - name: CAO_WS_ALLOWED_CLIENTS
+            - name: GO_CORE_WS_ALLOWED_CLIENTS
               value: ${SPA_ORIGIN}
             # --- Per-tenant provider secrets (BLOCKED: needs GCP Secret Manager) ---
             # Provision first:
             #   gcloud secrets create agentverse-${TENANT_ID}-provider-keys --replication-policy=automatic
             #   gcloud secrets versions add agentverse-${TENANT_ID}-provider-keys --data-file=keys.env
             # then uncomment:
-            # - name: CAO_PROVIDER_KEYS
+            # - name: GO_CORE_PROVIDER_KEYS
             #   valueFrom:
             #     secretKeyRef:
             #       name: agentverse-${TENANT_ID}-provider-keys
@@ -102,14 +102,14 @@ spec:
           startupProbe:
             httpGet:
               path: /health
-              port: 9889
+              port: 8080
             timeoutSeconds: 5
             periodSeconds: 5
             failureThreshold: 12
           livenessProbe:
             httpGet:
               path: /health
-              port: 9889
+              port: 8080
             timeoutSeconds: 5
             periodSeconds: 30
   traffic:

@@ -1,17 +1,17 @@
-/* eslint-disable agentverse/no-sideways-capability-imports -- HealthPage needs to read key-store status and check CAO-client API health directly for diagnosing capability status. */
+/* eslint-disable agentverse/no-sideways-capability-imports -- HealthPage needs to read key-store status and check GO Core API health directly for diagnosing capability status. */
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useKeyStore } from '@/api/key-store/store';
 import { PROVIDERS_REGISTRY } from '@/api/key-store/registry';
-import { caoClient } from '@/api/cao-client';
+import { goCoreClient } from '@/api';
 import { Button } from '@/design-system/components/Button';
 import { StatusBadge } from '@/design-system/components/StatusBadge';
 import { useToast } from '@/shell/toasts';
 import './health.css';
 
 interface ServerHealthState {
-  cao: 'ok' | 'error' | 'loading';
-  caoExplanation: string;
+  goCore: 'ok' | 'error' | 'loading';
+  goCoreExplanation: string;
   tmux: 'ok' | 'error' | 'loading';
   tmuxExplanation: string;
   providers: Array<{ name: string; installed: boolean }>;
@@ -28,8 +28,8 @@ export const HealthPage: React.FC = () => {
 
   // States
   const [serverHealth, setServerHealth] = useState<ServerHealthState>({
-    cao: 'loading',
-    caoExplanation: 'Checking runtime connectivity...',
+    goCore: 'loading',
+    goCoreExplanation: 'Checking runtime connectivity...',
     tmux: 'loading',
     tmuxExplanation: 'Checking tmux status...',
     providers: [],
@@ -58,43 +58,43 @@ export const HealthPage: React.FC = () => {
   const checkServers = useCallback(async () => {
     setServerHealth((prev) => ({
       ...prev,
-      cao: 'loading',
+      goCore: 'loading',
       tmux: 'loading',
       providersLoading: true,
     }));
 
-    let caoStatus: 'ok' | 'error' = 'error';
-    let caoExpl = `Cannot reach the runtime at ${caoClient.baseUrl}`;
+    let goCoreStatus: 'ok' | 'error' = 'error';
+    let goCoreExpl = `Cannot reach the runtime at ${goCoreClient.baseUrl}`;
     let tmuxStatus: 'ok' | 'error' = 'error';
     let tmuxExpl = 'Cannot communicate with tmux service.';
     let providerList: Array<{ name: string; installed: boolean }> = [];
 
     // 1. Runtime engine check
     try {
-      const res = await caoClient.getHealth();
+      const res = await goCoreClient.getHealth();
       if (res && res.status === 'ok') {
-        caoStatus = 'ok';
-        caoExpl = 'Runtime engine is running and responding.';
+        goCoreStatus = 'ok';
+        goCoreExpl = 'Runtime engine is running and responding.';
       } else {
-        caoExpl = `Runtime returned an unexpected status: ${JSON.stringify(res)}`;
+        goCoreExpl = `Runtime returned an unexpected status: ${JSON.stringify(res)}`;
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      caoExpl = `Cannot reach the runtime at ${caoClient.baseUrl} (${errMsg})`;
+      goCoreExpl = `Cannot reach the runtime at ${goCoreClient.baseUrl} (${errMsg})`;
     }
 
     // 2. tmux Check
     try {
-      await caoClient.listSessions();
+      await goCoreClient.listSessions();
       tmuxStatus = 'ok';
       tmuxExpl = 'tmux Server is active and operational.';
     } catch {
       // Outage or connection issue
     }
 
-    // 3. CAO Managed Providers Check
+    // 3. GO Core Managed Providers Check
     try {
-      const providers = await caoClient.listProviders();
+      const providers = await goCoreClient.listProviders();
       providerList = providers.map((p) => ({
         name: p.name,
         installed: p.installed,
@@ -104,8 +104,8 @@ export const HealthPage: React.FC = () => {
     }
 
     setServerHealth({
-      cao: caoStatus,
-      caoExplanation: caoExpl,
+      goCore: goCoreStatus,
+      goCoreExplanation: goCoreExpl,
       tmux: tmuxStatus,
       tmuxExplanation: tmuxExpl,
       providers: providerList,
@@ -239,17 +239,17 @@ export const HealthPage: React.FC = () => {
           <h2 className="health-section-title">Server Health</h2>
           <div className="health-grid">
             {/* Runtime Engine Row */}
-            <div className={`health-row ${serverHealth.cao === 'error' ? 'health-row-error' : ''}`}>
+            <div className={`health-row ${serverHealth.goCore === 'error' ? 'health-row-error' : ''}`}>
               <div className="health-info">
                 <span className="health-component-name">Runtime Engine</span>
-                <span className="health-explanation">{serverHealth.caoExplanation}</span>
+                <span className="health-explanation">{serverHealth.goCoreExplanation}</span>
               </div>
               <div className="health-actions">
                 <StatusBadge
-                  status={serverHealth.cao === 'ok' ? 'completed' : serverHealth.cao === 'loading' ? 'processing' : 'error'}
-                  label={serverHealth.cao === 'ok' ? 'Operational' : serverHealth.cao === 'loading' ? 'Checking...' : 'Outage'}
+                  status={serverHealth.goCore === 'ok' ? 'completed' : serverHealth.goCore === 'loading' ? 'processing' : 'error'}
+                  label={serverHealth.goCore === 'ok' ? 'Operational' : serverHealth.goCore === 'loading' ? 'Checking...' : 'Outage'}
                 />
-                {serverHealth.cao === 'error' && (
+                {serverHealth.goCore === 'error' && (
                   <Button variant="secondary" onClick={() => navigate('/settings/general')}>
                     Fix
                   </Button>
@@ -271,11 +271,11 @@ export const HealthPage: React.FC = () => {
               </div>
             </div>
 
-            {/* CAO Managed Providers */}
+            {/* GO Core Managed Providers */}
             {serverHealth.providersLoading ? (
               <div className="health-row">
                 <div className="health-info">
-                  <span className="health-component-name">CAO Model Providers</span>
+                  <span className="health-component-name">GO Core Model Providers</span>
                   <span className="health-explanation">Retrieving installed provider modules...</span>
                 </div>
                 <StatusBadge status="processing" label="Loading..." />
@@ -286,7 +286,7 @@ export const HealthPage: React.FC = () => {
                   <div className="health-info">
                     <span className="health-component-name">Provider: {p.name}</span>
                     <span className="health-explanation">
-                      {p.installed ? 'Provider engine is installed on CAO server.' : 'Provider engine is missing on CAO server.'}
+                      {p.installed ? 'Provider engine is installed on GO Core server.' : 'Provider engine is missing on GO Core server.'}
                     </span>
                   </div>
                   <div className="health-actions">

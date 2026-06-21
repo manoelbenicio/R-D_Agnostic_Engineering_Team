@@ -164,6 +164,7 @@
 | 2026-05-30T18:16:00Z | FINAL-C | CHECK-IN | .planning/SHIP_REPORT.md | 🔵 IN PROGRESS | Creating ship report |
 | 2026-05-30T18:16:30Z | FINAL-C | CHECK-OUT | .planning/SHIP_REPORT.md | ✅ DONE | Comprehensive ship report created |
 | 2026-05-30T18:17:00Z | WAVE-4-FINAL | CHECK-OUT | final-gate | ✅ DONE | SESSION MANAGEMENT FEATURE SHIPPED |
+| 2026-06-21T00:00:00Z | OP-AGENT | CHECK-OUT PARCIAL | — | 🟡 PARTIAL | reatribuído pelo orquestrador |
 
 ---
 

@@ -16,7 +16,7 @@ import { dbPut } from '@/shared/storage/idb';
 import { CanvasDocument } from './types';
 import { matchRuntimeCommand, RuntimeCommand } from './runtime-commands';
 import { useToast } from '@/shell/toasts';
-import { caoClient } from '@/api/cao-client';
+import { goCoreClient } from '@/api';
 import { canvasCommandBus } from '@/shell/canvas-command-adapter';
 import {
   executeRuntimeCommand,
@@ -102,7 +102,7 @@ export const VoicePanel: React.FC<VoicePanelProps> = ({ currentCanvas, onUpdateC
    */
   const buildExecutorDeps = (): CommandExecutorDeps => ({
     canvas: currentCanvas ?? null,
-    cao: caoClient,
+    goCore: goCoreClient,
     toast,
     navigate,
     confirm: requestConfirm,

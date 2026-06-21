@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { caoClient } from './cao-client';
+import { goCoreClient } from './go-core-client';  // CRIT-003.8
 import type { HealthResponse } from './types';
 
 const HEALTH_POLL_INTERVAL_MS = 10_000;
@@ -44,7 +44,7 @@ export const useHealthStore = create<HealthState>((set, get) => ({
   },
   pollNow: async () => {
     try {
-      const health = await caoClient.getHealth();
+      const health = await goCoreClient.getHealth();
       set({
         status: health.status === 'ok' ? 'healthy' : 'unreachable',
         health,
@@ -55,7 +55,7 @@ export const useHealthStore = create<HealthState>((set, get) => ({
     } catch (error) {
       set({
         status: 'unreachable',
-        error: error instanceof Error ? error : new Error('Unknown CAO health error.'),
+        error: error instanceof Error ? error : new Error('Unknown GO Core health error.'),
         lastCheckedAt: Date.now(),
         bannerVisible: true,
       });

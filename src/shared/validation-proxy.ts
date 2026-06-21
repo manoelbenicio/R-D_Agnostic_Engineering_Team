@@ -14,18 +14,18 @@
  * actually invoked to *prevent* (not merely observe) a violation is a human
  * architecture decision that folds into `cloud-runtime-deployment`:
  *
- *   (a) CAO middleware — intercept orchestration inside CAO before the call
- *       executes. Strongest enforcement; BLOCKED: CAO source is not in this
+ *   (a) GO Core middleware — intercept orchestration inside GO Core before the call
+ *       executes. Strongest enforcement; BLOCKED: GO Core source is not in this
  *       repo, so the actual interception patch cannot be written here.
- *   (b) Sidecar proxy — a process in front of CAO's orchestration endpoints
+ *   (b) Sidecar proxy — a process in front of GO Core's orchestration endpoints
  *       that calls `guardOrchestration` and returns 4xx on deny. Needs the
  *       cloud-runtime auth-proxy to exist first.
  *   (c) SPA-side only — observe/audit. CANNOT prevent: agent→agent calls
- *       happen inside CAO, not through the SPA's HTTP surface (the SPA's
+ *       happen inside GO Core, not through the SPA's HTTP surface (the SPA's
  *       `sendInboxMessage` / `sendTerminalInput` are user→terminal). SPA-side
  *       use is defense-in-depth + UI surfacing only.
  *
- * Do NOT invent CAO server code here. Until (a)/(b) is chosen and the cloud
+ * Do NOT invent GO Core server code here. Until (a)/(b) is chosen and the cloud
  * runtime lands, this remains the unit-tested core that all three options
  * call unchanged.
  *
@@ -74,7 +74,7 @@ export interface ValidationProxy {
 /**
  * Build a proxy bound to one deployed canvas.
  *
- * `deploy_state.terminal_map` maps `node_id → terminal_id`; CAO emits calls
+ * `deploy_state.terminal_map` maps `node_id → terminal_id`; GO Core emits calls
  * referencing terminal ids, so we invert it and resolve any terminal id back
  * to its node id before delegating to the topology guard (task §2.2).
  */

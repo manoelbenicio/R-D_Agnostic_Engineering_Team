@@ -19,7 +19,7 @@ import { reconcileCanvas } from '@/canvas-reconciler/reconciler';
 import { getCanvasProviderOptions } from '@/canvas-builder/provider-options';
 import { validateCanvasForDeploy } from '@/canvas-builder/deploy-validation';
 import { useKeyStore } from '@/api/key-store/store';
-import { caoClient } from '@/api/cao-client';
+import { goCoreClient } from '@/api';
 
 /**
  * Wrap the canvas-builder validator into the bus's `CanvasValidationResult`
@@ -62,6 +62,6 @@ function adaptProviderOptions(): ProviderOption[] {
  */
 export const canvasCommandBus: CanvasCommandBus = {
   validateForDeploy: adaptValidation,
-  reconcile: (canvasId: string) => reconcileCanvas(canvasId, undefined, caoClient),
+  reconcile: (canvasId: string) => reconcileCanvas(canvasId, undefined, goCoreClient),
   getProviderOptions: adaptProviderOptions,
 };

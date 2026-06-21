@@ -1,5 +1,5 @@
-export class CaoApiError extends Error {
-  override readonly name = 'CaoApiError';
+export class GoCoreApiError extends Error {
+  override readonly name = 'GoCoreApiError';
   readonly status: number;
   readonly endpoint: string;
   readonly body: unknown;
@@ -12,8 +12,8 @@ export class CaoApiError extends Error {
   }
 }
 
-export class CaoNetworkError extends Error {
-  override readonly name = 'CaoNetworkError';
+export class GoCoreNetworkError extends Error {
+  override readonly name = 'GoCoreNetworkError';
   readonly endpoint: string;
 
   constructor(message: string, options: { endpoint: string; cause?: unknown }) {

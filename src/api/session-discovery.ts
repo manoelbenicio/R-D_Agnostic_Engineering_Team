@@ -1,4 +1,4 @@
-import { caoClient } from './cao-client';
+import { goCoreClient } from './go-core-client';  // CRIT-003.7
 import type { ProviderAvailability } from './types';
 import { isExpiringSoon } from './session-security';
 
@@ -16,7 +16,7 @@ export interface DiscoveredSession {
 /**
  * Backend `_session_status` only emits 'active' | 'expired'. Derive the
  * 'expiring' band on the client from `expires_at` so the expiring UX (yellow
- * dot, footer count, monitor warning) works against the live CAO contract.
+ * dot, footer count, monitor warning) works against the live GO Core contract.
  */
 function withExpiringStatus(session: DiscoveredSession): DiscoveredSession {
   if (session.status === 'active' && isExpiringSoon(session.expires_at)) {
@@ -80,12 +80,12 @@ export async function triggerLogin(cliProvider: string, configDir?: string): Pro
   });
 
   if (!response.ok) {
-    throw new Error(`CAO login request failed with HTTP ${response.status}.`);
+    throw new Error(`GO Core login request failed with HTTP ${response.status}.`);
   }
 }
 
 /**
- * Revoke/logout an OAuth session by asking the CAO backend
+ * Revoke/logout an OAuth session by asking the GO Core backend
  * to clear the credentials for a specific config directory.
  */
 export async function revokeSession(sessionId: string, cliProvider: string, configDir: string): Promise<boolean> {
@@ -107,11 +107,11 @@ export async function revokeSession(sessionId: string, cliProvider: string, conf
 async function requestJson<T>(path: string): Promise<T> {
   const response = await fetch(toEndpoint(path));
   if (!response.ok) {
-    throw new Error(`CAO request failed with HTTP ${response.status} for ${path}.`);
+    throw new Error(`GO Core request failed with HTTP ${response.status} for ${path}.`);
   }
   return (await response.json()) as T;
 }
 
 function toEndpoint(path: string): string {
-  return `${caoClient.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  return `${goCoreClient.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
 }

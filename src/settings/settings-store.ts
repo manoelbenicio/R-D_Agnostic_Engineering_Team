@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { dbGet, dbPut } from '@/shared/storage/idb';
 import { applyFontOverrides } from '@/design-system/utils/font-override';
-import { caoClient } from '@/api/cao-client';
+import { goCoreClient } from '@/api/go-core-client';
+// CRIT-003.9: caoBaseUrl → goCoreBaseUrl
 
 export interface FontSettings {
   body: string;
@@ -10,7 +11,9 @@ export interface FontSettings {
 }
 
 export interface SettingsStoreState {
-  caoBaseUrl: string;
+  goCoreBaseUrl: string;
+  /** @deprecated Use goCoreBaseUrl */
+  get caoBaseUrl(): string;
   defaultProvider: string;
   defaultWorkingDir: string;
   fonts: FontSettings;
@@ -24,7 +27,7 @@ export interface SettingsStoreState {
 
   init: () => Promise<void>;
   updateSetting: <
-    K extends keyof Omit<SettingsStoreState, 'initialized' | 'init' | 'updateSetting'>,
+    K extends keyof Omit<SettingsStoreState, 'initialized' | 'init' | 'updateSetting' | 'caoBaseUrl'>,
   >(
     key: K,
     value: SettingsStoreState[K],
@@ -32,7 +35,9 @@ export interface SettingsStoreState {
 }
 
 export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
-  caoBaseUrl: import.meta.env.VITE_CAO_BASE_URL || 'http://127.0.0.1:9889',
+  goCoreBaseUrl: import.meta.env.VITE_GO_CORE_BASE_URL || 'http://127.0.0.1:8080',
+  // Backward-compat getter for code still reading caoBaseUrl
+  get caoBaseUrl() { return get().goCoreBaseUrl; },
   defaultProvider: '',
   defaultWorkingDir: '',
   fonts: {
@@ -51,7 +56,9 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   init: async () => {
     if (get().initialized) return;
     try {
-      const caoBaseUrlRec = await dbGet('settings', 'caoBaseUrl');
+      // CRIT-003.9: read goCoreBaseUrl first, fall back to legacy caoBaseUrl key
+      const goCoreBaseUrlRec = await dbGet('settings', 'goCoreBaseUrl');
+      const legacyCaoBaseUrlRec = await dbGet('settings', 'caoBaseUrl');
       const defaultProviderRec = await dbGet('settings', 'defaultProvider');
       const defaultWorkingDirRec = await dbGet('settings', 'defaultWorkingDir');
       const fontsRec = await dbGet('settings', 'fonts');
@@ -62,11 +69,13 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       const sessionShowExpiredWarningsRec = await dbGet('settings', 'sessionShowExpiredWarnings');
       const sessionMaskEmailsRec = await dbGet('settings', 'sessionMaskEmails');
 
-      const loadedCaoBaseUrl =
-        (caoBaseUrlRec?.value as string) ||
-        import.meta.env.VITE_CAO_BASE_URL ||
-        'http://127.0.0.1:9889';
-      caoClient.baseUrl = loadedCaoBaseUrl.replace(/\/$/, '');
+      const loadedGoCoreBaseUrl =
+        (goCoreBaseUrlRec?.value as string) ||
+        // Migrate from legacy caoBaseUrl setting (IDB v3→v4)
+        (legacyCaoBaseUrlRec?.value as string) ||
+        import.meta.env.VITE_GO_CORE_BASE_URL ||
+        'http://127.0.0.1:8080';
+      goCoreClient.baseUrl = loadedGoCoreBaseUrl.replace(/\/$/, '');
 
       const loadedFonts = (fontsRec?.value as FontSettings) || {
         body: 'system-ui',
@@ -78,7 +87,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       applyFontOverrides(loadedFonts);
 
       set({
-        caoBaseUrl: loadedCaoBaseUrl,
+        goCoreBaseUrl: loadedGoCoreBaseUrl,
         defaultProvider: (defaultProviderRec?.value as string) || '',
         defaultWorkingDir: (defaultWorkingDirRec?.value as string) || '',
         fonts: loadedFonts,
@@ -108,8 +117,8 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       applyFontOverrides(value as FontSettings);
     }
 
-    if (key === 'caoBaseUrl') {
-      caoClient.baseUrl = (value as string).replace(/\/$/, '');
+    if (key === 'goCoreBaseUrl') {
+      goCoreClient.baseUrl = (value as string).replace(/\/$/, '');
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

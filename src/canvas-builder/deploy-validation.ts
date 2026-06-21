@@ -13,7 +13,7 @@ export function validateCanvasForDeploy(
   validatedProviders: ProviderType[],
   /**
    * Canvas providers whose CLI is installed (and OAuth-authenticated) on the
-   * CAO server — from `listProviders()` where `installed === true`. A node is
+   * GO Core server — from `listProviders()` where `installed === true`. A node is
    * deployable if its CLI is installed OR a BYOK key is validated; BYOK is
    * optional because CLIs like codex/kiro authenticate via their own OAuth
    * session inside the runtime, not via an AgentVerse-held API key.
@@ -45,7 +45,7 @@ export function validateCanvasForDeploy(
       };
     }
 
-    // Path 1: the CLI for this canvas provider is installed/authenticated on CAO (OAuth).
+    // Path 1: the CLI for this canvas provider is installed/authenticated on GO Core (OAuth).
     const cliInstalled = installed.has(node.data.provider);
 
     // Path 2: a BYOK key for the underlying source provider is validated.

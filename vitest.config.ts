@@ -14,6 +14,13 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/__tests__/setup.ts'],
     css: true,
+    testTimeout: 60000,        // evita timeouts em UNC path
+    pool: 'forks',             // melhor isolamento que threads
+    poolOptions: {
+      forks: { singleFork: false },
+    },
+    clearMocks: true,          // limpa mocks entre testes
+    restoreMocks: true,        // restaura spies entre testes
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
@@ -27,9 +34,9 @@ export default defineConfig({
         'src/**/index.ts',
       ],
     },
-    // Contract tests are gated behind CAO_LIVE=1; exclude by default.
+    // Contract tests are gated behind GO_CORE_LIVE=1; exclude by default.
     exclude:
-      process.env.CAO_LIVE === '1'
+      process.env.GO_CORE_LIVE === '1'
         ? configDefaults.exclude
         : [...configDefaults.exclude, 'src/api/__tests__/contract/**', 'tests/e2e/**'],
   },

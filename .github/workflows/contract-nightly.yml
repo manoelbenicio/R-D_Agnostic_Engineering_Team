@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   contract-nightly:
-    name: nightly CAO live contract
+    name: nightly GO Core live contract
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,29 +21,29 @@ jobs:
           cache: 'npm'
       - name: Install
         run: npm ci
-      - name: Start CAO container
-        run: docker run -d --name cao -p 9889:9889 cao-server
-      - name: Wait for CAO container to be ready
+      - name: Start GO Core container
+        run: docker run -d --name go-core -p 8080:8080 go-core-server
+      - name: Wait for GO Core container to be ready
         run: |
           for i in {1..30}; do
-            curl -s http://localhost:9889/health && break
+            curl -s http://localhost:8080/health && break
             sleep 1
           done
       - name: Contract suite
         env:
-          CAO_LIVE: '1'
-          VITE_CAO_BASE_URL: http://localhost:9889
+          GO_CORE_LIVE: '1'
+          VITE_GO_CORE_BASE_URL: http://localhost:8080
         run: npm run test:contract
       - name: Create issue details on failure
         if: failure()
         run: |
-          echo "The nightly contract suite failed against a live CAO container. There might be a shape drift in the CAO API." > issue.txt
+          echo "The nightly contract suite failed against a live GO Core container. There might be a shape drift in the GO Core API." > issue.txt
           echo "Please check the run logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> issue.txt
       - name: Create issue on failure
         if: failure()
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "🚨 Nightly CAO Contract Drift Detected!"
+          title: "Nightly GO Core Contract Drift Detected"
           content-filepath: ./issue.txt
           labels: |
             bug

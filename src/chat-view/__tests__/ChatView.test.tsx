@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { caoClient } from '@/api';
+import { goCoreClient } from '@/api';
 import { ChatView } from '../ChatView';
 
 const subscribers = new Map<string, (frame: ArrayBuffer) => void>();
@@ -49,7 +49,7 @@ describe('ChatView', () => {
   });
 
   it('submits composer input to the most recently bubbled terminal on Enter', async () => {
-    const sendSpy = vi.spyOn(caoClient, 'sendTerminalInput').mockResolvedValue(undefined);
+    const sendSpy = vi.spyOn(goCoreClient, 'sendTerminalInput').mockResolvedValue(undefined);
     const user = userEvent.setup();
     renderWithQueryClient(<ChatView sessionName="demo-session" />);
 

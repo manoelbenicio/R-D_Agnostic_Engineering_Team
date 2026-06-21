@@ -1101,7 +1101,7 @@ const CanvasBuilderInner: React.FC = () => {
           </>
         }
       >
-        Tear Down resets the deployed CAO session to draft before the entry point can change.
+        Tear Down resets the deployed GO Core session to draft before the entry point can change.
       </Modal>
     </main>
   );

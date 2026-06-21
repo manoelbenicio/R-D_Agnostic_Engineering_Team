@@ -37,6 +37,10 @@ substitutions:
   # WORKER_CLI build arg (task 2.6). Empty = no CLI baked in; the user picks.
   # See docs/cloud-runtime-auth.md "Bundling a worker CLI".
   _WORKER_CLI: ""
+  # GO Core live-flag — set to '1' in trigger config when GO Core backend is available.
+  # Sprint-3 RCA-A4: legacy live-flag variable replaced with GO_CORE_LIVE.
+  _GO_CORE_LIVE: '0'
+  _GO_CORE_BASE_URL: 'http://127.0.0.1:8080'
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -76,5 +80,24 @@ steps:
       - |
         IMAGE="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/runtime${_TENANT:+-${_TENANT}}"
         docker push "$${IMAGE}:latest"
+
+  # Sprint-3 CRIT-002 / RCA-A4: Contract tests gated on GO_CORE_LIVE.
+  # These tests validate the frontend ↔ GO Core HTTP contract.
+  # Skipped automatically when GO Core is not deployed in this environment.
+  - name: 'node:20-slim'
+    id: 'contract-tests'
+    waitFor: [push-latest]
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        if [[ "$$GO_CORE_LIVE" == "1" ]]; then
+          npx vitest run tests/contract/ --reporter=verbose
+        else
+          echo "Contract tests skipped (GO_CORE_LIVE != 1)"
+        fi
+    env:
+      - 'GO_CORE_LIVE=${_GO_CORE_LIVE}'
+      - 'VITE_GO_CORE_BASE_URL=${_GO_CORE_BASE_URL}'
 
 timeout: 1200s

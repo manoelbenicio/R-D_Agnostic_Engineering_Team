@@ -2,8 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
-// Per cao-integration/spec.md and tasks 1.1, dev server MUST be 5173 to match
-// CAO_CORS_ORIGINS / CAO_WS_ALLOWED_CLIENTS.
+// Per GO Core integration spec and tasks 1.1, dev server MUST be 5173 to match
+// GO_CORE_CORS_ORIGINS / GO_CORE_WS_ALLOWED_CLIENTS.
 export default defineConfig({
   plugins: [react()],
   // Scan only the real SPA entry. Without this, Vite globs every *.html in the

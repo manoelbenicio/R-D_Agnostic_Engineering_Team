@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HealthPage } from '../HealthPage';
-import { caoClient } from '@/api/cao-client';
+import { goCoreClient } from '@/api';
 import { useKeyStore } from '@/api/key-store/store';
 
 describe('HealthPage Component', () => {
@@ -27,9 +27,9 @@ describe('HealthPage Component', () => {
   });
 
   it('renders sections and handles healthy server state', async () => {
-    vi.spyOn(caoClient, 'getHealth').mockResolvedValue({ status: 'ok' });
-    vi.spyOn(caoClient, 'listSessions').mockResolvedValue([]);
-    vi.spyOn(caoClient, 'listProviders').mockResolvedValue([
+    vi.spyOn(goCoreClient, 'getHealth').mockResolvedValue({ status: 'ok' });
+    vi.spyOn(goCoreClient, 'listSessions').mockResolvedValue([]);
+    vi.spyOn(goCoreClient, 'listProviders').mockResolvedValue([
       { name: 'google', installed: true },
     ]);
 
@@ -51,10 +51,10 @@ describe('HealthPage Component', () => {
     });
   });
 
-  it('handles CAO server outage and displays fix button', async () => {
-    vi.spyOn(caoClient, 'getHealth').mockRejectedValue(new Error('Connection timed out'));
-    vi.spyOn(caoClient, 'listSessions').mockRejectedValue(new Error('Connection timed out'));
-    vi.spyOn(caoClient, 'listProviders').mockRejectedValue(new Error('Connection timed out'));
+  it('handles GO Core server outage and displays fix button', async () => {
+    vi.spyOn(goCoreClient, 'getHealth').mockRejectedValue(new Error('Connection timed out'));
+    vi.spyOn(goCoreClient, 'listSessions').mockRejectedValue(new Error('Connection timed out'));
+    vi.spyOn(goCoreClient, 'listProviders').mockRejectedValue(new Error('Connection timed out'));
 
     render(
       <MemoryRouter>
@@ -69,9 +69,9 @@ describe('HealthPage Component', () => {
   });
 
   it('handles microphone verification success', async () => {
-    vi.spyOn(caoClient, 'getHealth').mockResolvedValue({ status: 'ok' });
-    vi.spyOn(caoClient, 'listSessions').mockResolvedValue([]);
-    vi.spyOn(caoClient, 'listProviders').mockResolvedValue([]);
+    vi.spyOn(goCoreClient, 'getHealth').mockResolvedValue({ status: 'ok' });
+    vi.spyOn(goCoreClient, 'listSessions').mockResolvedValue([]);
+    vi.spyOn(goCoreClient, 'listProviders').mockResolvedValue([]);
 
     const mockStream = {
       getTracks: () => [{ stop: vi.fn() }],

@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { caoClient } from './cao-client';
+import { goCoreClient } from './go-core-client';  // CRIT-003.8
 
 /**
- * Installed (and OAuth-authenticated) CLI providers reported by the CAO
+ * Installed (and OAuth-authenticated) CLI providers reported by the GO Core server
  * runtime via `GET /agents/providers`. These are the `name`s whose CLI is
  * present on the server (e.g. `codex`, `kiro_cli`) — the OAuth path that does
  * NOT require a BYOK API key.
@@ -15,9 +15,9 @@ import { caoClient } from './cao-client';
  */
 export function useInstalledCliProviders() {
   const query = useQuery({
-    queryKey: ['cao', 'installed-providers'],
+    queryKey: ['goCore', 'installed-providers'],
     queryFn: async () => {
-      const providers = await caoClient.listProviders();
+      const providers = await goCoreClient.listProviders();
       return providers.filter((p) => p.installed).map((p) => String(p.name));
     },
     staleTime: 10_000,

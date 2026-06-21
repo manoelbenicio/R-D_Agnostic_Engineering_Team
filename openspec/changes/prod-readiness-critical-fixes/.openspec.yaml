@@ -1,0 +1,13 @@
+schema: 1
+name: prod-readiness-critical-fixes
+title: "PROD Readiness: Critical Fixes & Risk Mitigation"
+status: proposed
+created: 2026-06-19
+owner: IF (infra) + SUP (supervisor)
+priority: critical
+labels:
+  - blocker
+  - prod-readiness
+  - typescript
+  - ci-cd
+  - reconciliation

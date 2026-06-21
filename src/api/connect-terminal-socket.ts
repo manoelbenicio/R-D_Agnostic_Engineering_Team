@@ -1,4 +1,4 @@
-import { CAO_BASE_URL } from './base-url';
+import { GO_CORE_BASE_URL } from './go-core-base-url';
 import { IpNotAllowed, TerminalNotFound } from './errors';
 
 export type TerminalSocketClose =
@@ -20,7 +20,7 @@ export interface TerminalSocketHandle {
   close: (code?: number, reason?: string) => void;
 }
 
-export function buildTerminalSocketUrl(terminalId: string, baseUrl = CAO_BASE_URL): string {
+export function buildTerminalSocketUrl(terminalId: string, baseUrl = GO_CORE_BASE_URL): string {
   const url = new URL(baseUrl);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   url.pathname = `/terminals/${encodeURIComponent(terminalId)}/ws`;
@@ -32,7 +32,7 @@ export function buildTerminalSocketUrl(terminalId: string, baseUrl = CAO_BASE_UR
 export function connectTerminalSocket(
   terminalId: string,
   handlers: TerminalSocketHandlers,
-  baseUrl = CAO_BASE_URL
+  baseUrl = GO_CORE_BASE_URL
 ): TerminalSocketHandle {
   const socket = new WebSocket(buildTerminalSocketUrl(terminalId, baseUrl));
   socket.binaryType = 'arraybuffer';

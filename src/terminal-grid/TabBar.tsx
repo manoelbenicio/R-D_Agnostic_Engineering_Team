@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { caoClient, sessionsQueryKeys } from '@/api';
+import { goCoreClient, sessionsQueryKeys } from '@/api';
 import type { Terminal } from '@/api';
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
 import { canvasStore } from '@/canvas-document/store';
@@ -28,7 +28,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   const sessionRefreshMarker = useSessionStore((state) => `${state.sessions.length}:${state.lastRefreshed ?? ''}`);
   const { data: terminals = [] } = useQuery<Terminal[]>({
     queryKey: sessionsQueryKeys.terminals(sessionName),
-    queryFn: () => caoClient.listTerminalsInSession(sessionName),
+    queryFn: () => goCoreClient.listTerminalsInSession(sessionName),
     refetchInterval: 3000,
     refetchIntervalInBackground: false,
   });

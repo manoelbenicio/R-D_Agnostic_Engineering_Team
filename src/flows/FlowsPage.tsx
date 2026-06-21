@@ -3,7 +3,7 @@ import React, { FormEvent, useMemo, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, FormField, Modal, StatusBadge } from '@/design-system';
-import { caoClient, caoQueryKeys, Flow } from '@/api';
+import { goCoreClient, goCoreQueryKeys, Flow } from '@/api';
 import { useToast } from '@/shell/toasts';
 import { useValidatedProviders } from '@/api/key-store/use-validated-providers';
 import {
@@ -38,15 +38,15 @@ export const FlowsPage: React.FC = () => {
   const scheduleValidation = useMemo(() => validateCron(form.schedule), [form.schedule]);
 
   const flowsQuery = useQuery({
-    queryKey: caoQueryKeys.flows(),
-    queryFn: () => caoClient.listFlows(),
+    queryKey: goCoreQueryKeys.flows(),
+    queryFn: () => goCoreClient.listFlows(),
     refetchInterval: 15_000,
     refetchIntervalInBackground: false,
   });
 
   const profilesQuery = useQuery({
-    queryKey: caoQueryKeys.profiles(),
-    queryFn: () => caoClient.listProfiles(),
+    queryKey: goCoreQueryKeys.profiles(),
+    queryFn: () => goCoreClient.listProfiles(),
   });
 
   const providerOptions = useMemo(
@@ -67,9 +67,9 @@ export const FlowsPage: React.FC = () => {
   }, [flowsQuery.data, search]);
 
   const saveMutation = useMutation({
-    mutationFn: (flow: Flow) => caoClient.createFlow(flow),
+    mutationFn: (flow: Flow) => goCoreClient.createFlow(flow),
     onSuccess: async (flow) => {
-      await queryClient.invalidateQueries({ queryKey: caoQueryKeys.flows() });
+      await queryClient.invalidateQueries({ queryKey: goCoreQueryKeys.flows() });
       setEditorMode('closed');
       toast.success(`Saved flow ${flow.name}.`);
     },
@@ -79,29 +79,29 @@ export const FlowsPage: React.FC = () => {
   });
 
   const runMutation = useMutation({
-    mutationFn: (name: string) => caoClient.runFlow(name),
+    mutationFn: (name: string) => goCoreClient.runFlow(name),
     onSuccess: (_, name) => toast.success(`Run started for ${name}.`),
     onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
   });
 
   const toggleMutation = useMutation({
     mutationFn: ({ name, enabled }: { name: string; enabled: boolean }) =>
-      enabled ? caoClient.enableFlow(name) : caoClient.disableFlow(name),
+      enabled ? goCoreClient.enableFlow(name) : goCoreClient.disableFlow(name),
     onMutate: async ({ name, enabled }) => {
-      await queryClient.cancelQueries({ queryKey: caoQueryKeys.flows() });
-      const previous = queryClient.getQueryData<Flow[]>(caoQueryKeys.flows());
-      queryClient.setQueryData<Flow[]>(caoQueryKeys.flows(), (current = []) =>
+      await queryClient.cancelQueries({ queryKey: goCoreQueryKeys.flows() });
+      const previous = queryClient.getQueryData<Flow[]>(goCoreQueryKeys.flows());
+      queryClient.setQueryData<Flow[]>(goCoreQueryKeys.flows(), (current = []) =>
         current.map((flow) => (flow.name === name ? { ...flow, enabled } : flow))
       );
       return { previous };
     },
     onError: (error, _variables, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(caoQueryKeys.flows(), context.previous);
+        queryClient.setQueryData(goCoreQueryKeys.flows(), context.previous);
       }
       toast.error(error instanceof Error ? error.message : String(error));
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: caoQueryKeys.flows() }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: goCoreQueryKeys.flows() }),
   });
 
   const openCreate = () => {
@@ -139,7 +139,7 @@ export const FlowsPage: React.FC = () => {
       <header className="flows-header">
         <div>
           <h1>Flows</h1>
-          <p>Schedule recurring CAO profile runs with validated providers and cron previews.</p>
+          <p>Schedule recurring GO Core profile runs with validated providers and cron previews.</p>
         </div>
         <Button variant="primary" onClick={openCreate}>
           New Flow

@@ -1,3 +1,6 @@
+// Types shared between GO Core client and the rest of the SPA.
+// CRIT-001 + CRIT-003.1: prod-readiness-critical-fixes
+
 export interface HealthResponse {
   status: 'ok';
 }
@@ -84,6 +87,7 @@ export interface Flow {
 export interface CreateSessionInput {
   profile: string;
   working_directory: string;
+  provider: string;  // CRIT-001: required by GO Core (was missing — caused 6 TS errors)
   env_vars?: Record<string, string>;  // Per-terminal env var injection for OAuth routing
 }
 

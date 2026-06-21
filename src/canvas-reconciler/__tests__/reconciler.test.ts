@@ -7,7 +7,7 @@ import { useDeployStore } from '../deploy-store';
 
 describe('Canvas Reconciler', () => {
   let doc: CanvasDocument;
-  let mockCaoClient: any;
+  let mockGoCoreClient: any;
 
   beforeEach(async () => {
     // Reset Zustand store
@@ -85,8 +85,8 @@ describe('Canvas Reconciler', () => {
 
     await canvasStore.save(doc);
 
-    // Create a mock CaoClient
-    mockCaoClient = {
+    // Create a mock GoCoreClient
+    mockGoCoreClient = {
       installProfile: vi.fn().mockResolvedValue({ name: 'profile-mock' }),
       createSession: vi.fn().mockResolvedValue({
         name: 'session_test',
@@ -118,7 +118,7 @@ describe('Canvas Reconciler', () => {
   });
 
   it('handles full happy-path 3-node deploy', async () => {
-    const result = await reconcileCanvas(doc.id, undefined, mockCaoClient as any);
+    const result = await reconcileCanvas(doc.id, undefined, mockGoCoreClient as any);
 
     expect(result.deploy_state.status).toBe('deployed');
     expect(result.deploy_state.session_name).toContain('session_');
@@ -137,19 +137,19 @@ describe('Canvas Reconciler', () => {
       provider: 'openai',
     });
 
-    expect(mockCaoClient.installProfile).toHaveBeenCalledTimes(3);
-    expect(mockCaoClient.createSession).toHaveBeenCalledTimes(1);
-    expect(mockCaoClient.addTerminalToSession).toHaveBeenCalledTimes(2);
+    expect(mockGoCoreClient.installProfile).toHaveBeenCalledTimes(3);
+    expect(mockGoCoreClient.createSession).toHaveBeenCalledTimes(1);
+    expect(mockGoCoreClient.addTerminalToSession).toHaveBeenCalledTimes(2);
   });
 
   it('handles partial-failure -> degraded state transition', async () => {
     // Make second terminal creation fail
-    mockCaoClient.addTerminalToSession = vi
+    mockGoCoreClient.addTerminalToSession = vi
       .fn()
       .mockResolvedValueOnce({ id: 'term-2', profile: 'developer', status: 'idle', working_directory: '~' })
-      .mockRejectedValueOnce(new Error('CAO error creating reviewer terminal'));
+      .mockRejectedValueOnce(new Error('GO Core error creating reviewer terminal'));
 
-    await expect(reconcileCanvas(doc.id, undefined, mockCaoClient as any)).rejects.toThrow();
+    await expect(reconcileCanvas(doc.id, undefined, mockGoCoreClient as any)).rejects.toThrow();
 
     const fetched = await canvasStore.get(doc.id);
     expect(fetched?.deploy_state.status).toBe('degraded');
@@ -159,14 +159,14 @@ describe('Canvas Reconciler', () => {
     });
     expect(fetched?.deploy_state.errors).toHaveLength(1);
     expect(fetched?.deploy_state.errors?.[0]?.node_id).toBe('00000000-0000-4000-8000-000000000003');
-    expect(fetched?.deploy_state.errors?.[0]?.error).toBe('CAO error creating reviewer terminal');
+    expect(fetched?.deploy_state.errors?.[0]?.error).toBe('GO Core error creating reviewer terminal');
   });
 
   it('handles all-fail -> draft rollback state transition', async () => {
     // Make first profile install fail
-    mockCaoClient.installProfile = vi.fn().mockRejectedValue(new Error('Connection failure'));
+    mockGoCoreClient.installProfile = vi.fn().mockRejectedValue(new Error('Connection failure'));
 
-    await expect(reconcileCanvas(doc.id, undefined, mockCaoClient as any)).rejects.toThrow();
+    await expect(reconcileCanvas(doc.id, undefined, mockGoCoreClient as any)).rejects.toThrow();
 
     const fetched = await canvasStore.get(doc.id);
     expect(fetched?.deploy_state.status).toBe('draft');
@@ -204,14 +204,14 @@ describe('Canvas Reconciler', () => {
     };
     await canvasStore.save(degradedDoc);
 
-    mockCaoClient.addTerminalToSession = vi.fn().mockResolvedValue({
+    mockGoCoreClient.addTerminalToSession = vi.fn().mockResolvedValue({
       id: 'term-3-retry',
       profile: 'reviewer_00000000_0000_4000_8000_000000000003',
       status: 'idle',
       working_directory: '~',
     });
 
-    const result = await reconcileCanvas(doc.id, undefined, mockCaoClient as any);
+    const result = await reconcileCanvas(doc.id, undefined, mockGoCoreClient as any);
 
     expect(result.deploy_state.status).toBe('deployed');
     expect(result.deploy_state.terminal_map).toEqual({
@@ -222,9 +222,9 @@ describe('Canvas Reconciler', () => {
     expect(result.deploy_state.errors).toEqual([]);
 
     // Profile install should only run for reviewer (not already in snapshots/terminal map)
-    expect(mockCaoClient.installProfile).toHaveBeenCalledTimes(1);
-    expect(mockCaoClient.createSession).not.toHaveBeenCalled();
-    expect(mockCaoClient.addTerminalToSession).toHaveBeenCalledTimes(1);
+    expect(mockGoCoreClient.installProfile).toHaveBeenCalledTimes(1);
+    expect(mockGoCoreClient.createSession).not.toHaveBeenCalled();
+    expect(mockGoCoreClient.addTerminalToSession).toHaveBeenCalledTimes(1);
   });
 
   it('handles resume and cancel options on reload-mid-deploy', async () => {
@@ -250,7 +250,7 @@ describe('Canvas Reconciler', () => {
     await canvasStore.save(deployingDoc);
 
     // 2. Check Resume action
-    const afterResume = await reconcileCanvas(doc.id, undefined, mockCaoClient as any);
+    const afterResume = await reconcileCanvas(doc.id, undefined, mockGoCoreClient as any);
     expect(afterResume.deploy_state.status).toBe('deployed');
     expect(afterResume.deploy_state.terminal_map).toEqual({
       '00000000-0000-4000-8000-000000000001': 'term-1',
@@ -317,14 +317,14 @@ describe('Canvas Reconciler', () => {
       nodes: [...deployedDoc.nodes, newDeveloper],
     };
 
-    mockCaoClient.addTerminalToSession = vi.fn().mockResolvedValue({
+    mockGoCoreClient.addTerminalToSession = vi.fn().mockResolvedValue({
       id: 'term-4',
       profile: 'new_developer_00000000_0000_4000_8000_000000000004',
       status: 'idle',
       working_directory: '~',
     });
 
-    const result = await reconcileCanvas(doc.id, editedDoc, mockCaoClient as any);
+    const result = await reconcileCanvas(doc.id, editedDoc, mockGoCoreClient as any);
 
     expect(result.deploy_state.status).toBe('deployed');
     expect(result.deploy_state.terminal_map).toEqual({
@@ -335,9 +335,9 @@ describe('Canvas Reconciler', () => {
     });
 
     // Reconciler should only install 1 profile and add 1 terminal
-    expect(mockCaoClient.installProfile).toHaveBeenCalledTimes(1);
-    expect(mockCaoClient.addTerminalToSession).toHaveBeenCalledTimes(1);
-    expect(mockCaoClient.deleteTerminal).not.toHaveBeenCalled();
+    expect(mockGoCoreClient.installProfile).toHaveBeenCalledTimes(1);
+    expect(mockGoCoreClient.addTerminalToSession).toHaveBeenCalledTimes(1);
+    expect(mockGoCoreClient.deleteTerminal).not.toHaveBeenCalled();
   });
 
   it('handles diff-remove-node in edit-after-deploy', async () => {
@@ -383,7 +383,7 @@ describe('Canvas Reconciler', () => {
       edges: deployedDoc.edges.filter(e => e.target !== '00000000-0000-4000-8000-000000000003'),
     };
 
-    const result = await reconcileCanvas(doc.id, editedDoc, mockCaoClient as any);
+    const result = await reconcileCanvas(doc.id, editedDoc, mockGoCoreClient as any);
 
     expect(result.deploy_state.status).toBe('deployed');
     expect(result.deploy_state.terminal_map).toEqual({
@@ -391,9 +391,9 @@ describe('Canvas Reconciler', () => {
       '00000000-0000-4000-8000-000000000002': 'term-2',
     });
 
-    expect(mockCaoClient.deleteTerminal).toHaveBeenCalledWith('term-3');
-    expect(mockCaoClient.installProfile).not.toHaveBeenCalled();
-    expect(mockCaoClient.addTerminalToSession).not.toHaveBeenCalled();
+    expect(mockGoCoreClient.deleteTerminal).toHaveBeenCalledWith('term-3');
+    expect(mockGoCoreClient.installProfile).not.toHaveBeenCalled();
+    expect(mockGoCoreClient.addTerminalToSession).not.toHaveBeenCalled();
   });
 
   it('handles diff-change-profile-content in edit-after-deploy', async () => {
@@ -440,14 +440,14 @@ describe('Canvas Reconciler', () => {
       nodes: [deployedDoc.nodes[0]!, developerNode],
     };
 
-    mockCaoClient.addTerminalToSession = vi.fn().mockResolvedValue({
+    mockGoCoreClient.addTerminalToSession = vi.fn().mockResolvedValue({
       id: 'term-2-new',
       profile: 'developer_00000000_0000_4000_8000_000000000002',
       status: 'idle',
       working_directory: '~',
     });
 
-    const result = await reconcileCanvas(doc.id, editedDoc, mockCaoClient as any);
+    const result = await reconcileCanvas(doc.id, editedDoc, mockGoCoreClient as any);
 
     expect(result.deploy_state.status).toBe('deployed');
     expect(result.deploy_state.terminal_map).toEqual({
@@ -455,12 +455,12 @@ describe('Canvas Reconciler', () => {
       '00000000-0000-4000-8000-000000000002': 'term-2-new',
     });
 
-    expect(mockCaoClient.deleteTerminal).toHaveBeenCalledWith('term-2');
-    expect(mockCaoClient.installProfile).toHaveBeenCalledTimes(1);
-    expect(mockCaoClient.addTerminalToSession).toHaveBeenCalledTimes(1);
+    expect(mockGoCoreClient.deleteTerminal).toHaveBeenCalledWith('term-2');
+    expect(mockGoCoreClient.installProfile).toHaveBeenCalledTimes(1);
+    expect(mockGoCoreClient.addTerminalToSession).toHaveBeenCalledTimes(1);
   });
 
-  it('handles diff-display-only edits without triggering CAO calls', async () => {
+  it('handles diff-display-only edits without triggering GO Core calls', async () => {
     // Setup deployed state
     const deployedDoc = {
       ...doc,
@@ -497,17 +497,17 @@ describe('Canvas Reconciler', () => {
       nodes: [supervisorNode],
     };
 
-    const result = await reconcileCanvas(doc.id, editedDoc, mockCaoClient as any);
+    const result = await reconcileCanvas(doc.id, editedDoc, mockGoCoreClient as any);
 
     expect(result.deploy_state.status).toBe('deployed');
     expect(result.nodes[0]!.data.display_name).toBe('Renamed Supervisor');
     expect(result.nodes[0]!.position).toEqual({ x: 500, y: 500 });
 
-    // Ensure absolutely NO CAO calls were made
-    expect(mockCaoClient.installProfile).not.toHaveBeenCalled();
-    expect(mockCaoClient.createSession).not.toHaveBeenCalled();
-    expect(mockCaoClient.addTerminalToSession).not.toHaveBeenCalled();
-    expect(mockCaoClient.deleteTerminal).not.toHaveBeenCalled();
+    // Ensure absolutely NO GO Core calls were made
+    expect(mockGoCoreClient.installProfile).not.toHaveBeenCalled();
+    expect(mockGoCoreClient.createSession).not.toHaveBeenCalled();
+    expect(mockGoCoreClient.addTerminalToSession).not.toHaveBeenCalled();
+    expect(mockGoCoreClient.deleteTerminal).not.toHaveBeenCalled();
   });
 
   it('blocks entry-point changes by throwing EntryPointChangedError', async () => {
@@ -544,7 +544,7 @@ describe('Canvas Reconciler', () => {
       nodes,
     };
 
-    await expect(reconcileCanvas(doc.id, editedDoc, mockCaoClient as any)).rejects.toThrow(
+    await expect(reconcileCanvas(doc.id, editedDoc, mockGoCoreClient as any)).rejects.toThrow(
       EntryPointChangedError
     );
 
@@ -576,12 +576,12 @@ describe('Canvas Reconciler', () => {
     };
     await canvasStore.save(deployedDoc);
 
-    const result = await tearDownCanvas(doc.id, mockCaoClient as any);
+    const result = await tearDownCanvas(doc.id, mockGoCoreClient as any);
 
     expect(result.deploy_state.status).toBe('draft');
     expect(result.deploy_state.terminal_map).toEqual({});
     expect(result.deploy_state.session_name).toBeUndefined();
 
-    expect(mockCaoClient.deleteSession).toHaveBeenCalledWith('session_test');
+    expect(mockGoCoreClient.deleteSession).toHaveBeenCalledWith('session_test');
   });
 });

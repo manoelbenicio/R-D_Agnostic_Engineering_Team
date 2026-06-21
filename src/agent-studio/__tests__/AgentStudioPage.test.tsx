@@ -120,7 +120,7 @@ describe('AgentStudioPage', () => {
     expect(options).toEqual(['', 'claude_code']);
   });
 
-  it('installs a built-in profile through CAO and refreshes the list', async () => {
+  it('installs a built-in profile through GO Core and refreshes the list', async () => {
     renderStudio();
 
     const builtinButton = (await screen.findByText('SENTINEL Reviewer')).closest('button');

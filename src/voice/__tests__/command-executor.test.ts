@@ -37,7 +37,7 @@ function makeToast(): ToastApi {
   };
 }
 
-type MockCao = {
+type MockGoCore = {
   listTerminalsInSession: ReturnType<typeof vi.fn>;
   sendTerminalInput: ReturnType<typeof vi.fn>;
   deleteTerminal: ReturnType<typeof vi.fn>;
@@ -47,7 +47,7 @@ type MockCao = {
 interface DepsOverride {
   canvas?: CanvasDocument | null;
   confirmResult?: boolean;
-  cao?: Partial<MockCao>;
+  goCore?: Partial<MockGoCore>;
   reconcile?: CanvasCommandBus['reconcile'];
   validateForDeploy?: CanvasCommandBus['validateForDeploy'];
   getProviderOptions?: CanvasCommandBus['getProviderOptions'];
@@ -61,7 +61,7 @@ function makeDeps(overrides: DepsOverride = {}): {
   toast: ToastApi;
   navigate: ReturnType<typeof vi.fn>;
   confirm: ReturnType<typeof vi.fn>;
-  cao: MockCao;
+  goCore: MockGoCore;
   bus: CanvasCommandBus;
   reconcile: ReturnType<typeof vi.fn>;
   validateForDeploy: ReturnType<typeof vi.fn>;
@@ -76,12 +76,12 @@ function makeDeps(overrides: DepsOverride = {}): {
     .fn()
     .mockResolvedValue(overrides.confirmResult ?? true);
 
-  const cao: MockCao = {
+  const goCore: MockGoCore = {
     listTerminalsInSession: vi.fn().mockResolvedValue([]),
     sendTerminalInput: vi.fn().mockResolvedValue(undefined),
     deleteTerminal: vi.fn().mockResolvedValue(undefined),
     deleteSession: vi.fn().mockResolvedValue(undefined),
-    ...overrides.cao,
+    ...overrides.goCore,
   };
 
   const reconcile =
@@ -112,7 +112,7 @@ function makeDeps(overrides: DepsOverride = {}): {
 
   const deps: CommandExecutorDeps = {
     canvas: overrides.canvas ?? null,
-    cao: cao as unknown as CommandExecutorDeps['cao'],
+    goCore: goCore as unknown as CommandExecutorDeps['goCore'],
     toast,
     navigate,
     confirm: confirm as unknown as CommandExecutorDeps['confirm'],
@@ -127,7 +127,7 @@ function makeDeps(overrides: DepsOverride = {}): {
     toast,
     navigate,
     confirm,
-    cao,
+    goCore,
     bus,
     reconcile,
     validateForDeploy,
@@ -340,7 +340,7 @@ describe('executeRuntimeCommand — status', () => {
   it('happy path with terminals: builds summary and speaks it', async () => {
     const ctx = makeDeps({
       canvas: makeCanvas(),
-      cao: {
+      goCore: {
         listTerminalsInSession: vi.fn().mockResolvedValue([
           { id: 't1', display_name: 'Sup', status: 'active', profile: 'p', working_directory: '~' },
           { id: 't2', display_name: undefined, status: 'idle', profile: 'p', working_directory: '~' },
@@ -349,7 +349,7 @@ describe('executeRuntimeCommand — status', () => {
     });
     const result = await executeRuntimeCommand(cmd.status, ctx.deps);
     expect(result.status).toBe('ok');
-    expect(ctx.cao.listTerminalsInSession).toHaveBeenCalledWith('session-test');
+    expect(ctx.goCore.listTerminalsInSession).toHaveBeenCalledWith('session-test');
     expect(ctx.toast.success).toHaveBeenCalledWith(
       'Session status: Sup is active, t2 is idle',
     );
@@ -362,7 +362,7 @@ describe('executeRuntimeCommand — status', () => {
   it('happy path with empty list: toasts info and speaks fallback', async () => {
     const ctx = makeDeps({
       canvas: makeCanvas(),
-      cao: { listTerminalsInSession: vi.fn().mockResolvedValue([]) },
+      goCore: { listTerminalsInSession: vi.fn().mockResolvedValue([]) },
     });
     const result = await executeRuntimeCommand(cmd.status, ctx.deps);
     expect(result.status).toBe('ok');
@@ -374,10 +374,10 @@ describe('executeRuntimeCommand — status', () => {
     );
   });
 
-  it('CAO failure: surfaces api_error and toasts the reason', async () => {
+  it('GO Core failure: surfaces api_error and toasts the reason', async () => {
     const ctx = makeDeps({
       canvas: makeCanvas(),
-      cao: {
+      goCore: {
         listTerminalsInSession: vi.fn().mockRejectedValue(new Error('boom')),
       },
     });
@@ -395,7 +395,7 @@ describe('executeRuntimeCommand — status', () => {
     canvas.config.session_name = 'cfg-session';
     const ctx = makeDeps({ canvas });
     await executeRuntimeCommand(cmd.status, ctx.deps);
-    expect(ctx.cao.listTerminalsInSession).toHaveBeenCalledWith('cfg-session');
+    expect(ctx.goCore.listTerminalsInSession).toHaveBeenCalledWith('cfg-session');
   });
 });
 
@@ -496,23 +496,23 @@ describe('executeRuntimeCommand — pause', () => {
       ctx.deps,
     );
     expect(result.status).toBe('target_not_found');
-    expect(ctx.cao.sendTerminalInput).not.toHaveBeenCalled();
+    expect(ctx.goCore.sendTerminalInput).not.toHaveBeenCalled();
   });
 
   it('happy path: sends ctrl+S byte to the resolved terminal', async () => {
     const ctx = makeDeps({ canvas: makeCanvas() });
     const result = await executeRuntimeCommand(cmd.pauseByRole('developer'), ctx.deps);
     expect(result.status).toBe('ok');
-    expect(ctx.cao.sendTerminalInput).toHaveBeenCalledWith('term-2', '\x13');
+    expect(ctx.goCore.sendTerminalInput).toHaveBeenCalledWith('term-2', '\x13');
     expect(ctx.toast.info).toHaveBeenCalledWith(
       'Sent pause signal to terminal for developer',
     );
   });
 
-  it('CAO failure: surfaces api_error', async () => {
+  it('GO Core failure: surfaces api_error', async () => {
     const ctx = makeDeps({
       canvas: makeCanvas(),
-      cao: {
+      goCore: {
         sendTerminalInput: vi.fn().mockRejectedValue(new Error('net err')),
       },
     });
@@ -601,7 +601,7 @@ describe('executeRuntimeCommand — kill', () => {
     expect(ctx.confirm).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Confirm Kill Terminal' }),
     );
-    expect(ctx.cao.deleteTerminal).not.toHaveBeenCalled();
+    expect(ctx.goCore.deleteTerminal).not.toHaveBeenCalled();
     expect(ctx.onUpdateCanvas).not.toHaveBeenCalled();
   });
 
@@ -610,7 +610,7 @@ describe('executeRuntimeCommand — kill', () => {
     const result = await executeRuntimeCommand(cmd.killByRole('developer'), ctx.deps);
     expect(result.status).toBe('ok');
     expect(ctx.confirm).toHaveBeenCalled();
-    expect(ctx.cao.deleteTerminal).toHaveBeenCalledWith('term-2');
+    expect(ctx.goCore.deleteTerminal).toHaveBeenCalledWith('term-2');
     expect(ctx.toast.success).toHaveBeenCalledWith(
       "Terminal for 'Frontend Dev' has been killed.",
     );
@@ -647,10 +647,10 @@ describe('executeRuntimeCommand — kill', () => {
     expect(next.deploy_state.terminal_map).toEqual({});
   });
 
-  it('CAO deletion failure: surfaces api_error', async () => {
+  it('GO Core deletion failure: surfaces api_error', async () => {
     const ctx = makeDeps({
       canvas: makeCanvas(),
-      cao: { deleteTerminal: vi.fn().mockRejectedValue(new Error('cant kill')) },
+      goCore: { deleteTerminal: vi.fn().mockRejectedValue(new Error('cant kill')) },
     });
     const result = await executeRuntimeCommand(cmd.killByRole('developer'), ctx.deps);
     expect(result.status).toBe('api_error');
@@ -683,7 +683,7 @@ describe('executeRuntimeCommand — stop_all', () => {
     const ctx = makeDeps({ canvas: makeCanvas(), confirmResult: false });
     const result = await executeRuntimeCommand(cmd.stopAll, ctx.deps);
     expect(result.status).toBe('cancelled');
-    expect(ctx.cao.deleteSession).not.toHaveBeenCalled();
+    expect(ctx.goCore.deleteSession).not.toHaveBeenCalled();
   });
 
   it('confirmation message includes terminal count and session name', async () => {
@@ -693,7 +693,7 @@ describe('executeRuntimeCommand — stop_all', () => {
       expect.objectContaining({
         title: 'Confirm Stop All',
         message: expect.stringContaining(
-          "kill 3 terminals and tear down the CAO session 'session-test'",
+          "kill 3 terminals and tear down the GO Core session 'session-test'",
         ),
       }),
     );
@@ -720,7 +720,7 @@ describe('executeRuntimeCommand — stop_all', () => {
     const ctx = makeDeps({ canvas: makeCanvas(), confirmResult: true });
     const result = await executeRuntimeCommand(cmd.stopAll, ctx.deps);
     expect(result.status).toBe('ok');
-    expect(ctx.cao.deleteSession).toHaveBeenCalledWith('session-test');
+    expect(ctx.goCore.deleteSession).toHaveBeenCalledWith('session-test');
     expect(ctx.toast.success).toHaveBeenCalledWith('Session torn down successfully.');
     const updater = ctx.onUpdateCanvas.mock.calls[0]?.[0] as (
       c: CanvasDocument,
@@ -729,10 +729,10 @@ describe('executeRuntimeCommand — stop_all', () => {
     expect(next.deploy_state.status).toBe('draft');
   });
 
-  it('CAO failure: surfaces api_error', async () => {
+  it('GO Core failure: surfaces api_error', async () => {
     const ctx = makeDeps({
       canvas: makeCanvas(),
-      cao: { deleteSession: vi.fn().mockRejectedValue(new Error('teardown failed')) },
+      goCore: { deleteSession: vi.fn().mockRejectedValue(new Error('teardown failed')) },
     });
     const result = await executeRuntimeCommand(cmd.stopAll, ctx.deps);
     expect(result.status).toBe('api_error');

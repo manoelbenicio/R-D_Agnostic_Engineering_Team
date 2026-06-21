@@ -15,7 +15,7 @@
  * target. Everything else is blocked with an explicit, auditable reason.
  *
  * Pure + dependency-free (only `@/shared` types) so it can run SPA-side
- * today and be lifted into a CAO-side proxy later without changes.
+ * today and be lifted into a GO Core-side proxy later without changes.
  */
 
 import type {
@@ -37,7 +37,7 @@ export interface TopologyEdge {
  * `aliases` maps every identity a runtime call might use (node id,
  * `profile_name`, generated `<profile_name>_<node_id_with_underscores>`, and
  * `display_name`) back to the canonical node id, so the guard tolerates the
- * different identifiers CAO and the supervisor prompt use interchangeably.
+ * different identifiers GO Core and the supervisor prompt use interchangeably.
  */
 export interface CanvasTopology {
   canvasId: string;

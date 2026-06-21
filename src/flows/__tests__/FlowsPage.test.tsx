@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowsPage } from '../FlowsPage';
-import { caoClient, Flow } from '@/api';
+import { goCoreClient, Flow } from '@/api';
 
 vi.mock('@monaco-editor/react', () => ({
   default: ({
@@ -24,7 +24,7 @@ vi.mock('@/api', async (importOriginal) => {
   const original = await importOriginal<object>();
   return {
     ...original,
-    caoClient: {
+    goCoreClient: {
       listFlows: vi.fn(),
       createFlow: vi.fn(),
       runFlow: vi.fn(),
@@ -69,23 +69,23 @@ describe('FlowsPage', () => {
       },
     ];
 
-    vi.mocked(caoClient.listFlows).mockImplementation(async () => flows);
-    vi.mocked(caoClient.listProfiles).mockResolvedValue([
+    vi.mocked(goCoreClient.listFlows).mockImplementation(async () => flows);
+    vi.mocked(goCoreClient.listProfiles).mockResolvedValue([
       {
         name: 'supervisor',
         role: 'Supervisor',
         provider: 'openai',
       },
     ]);
-    vi.mocked(caoClient.createFlow).mockImplementation(async (flow: Flow) => {
+    vi.mocked(goCoreClient.createFlow).mockImplementation(async (flow: Flow) => {
       flows = [flow, ...flows.filter((item) => item.name !== flow.name)];
       return flow;
     });
-    vi.mocked(caoClient.runFlow).mockResolvedValue();
-    vi.mocked(caoClient.disableFlow).mockImplementation(async (name: string) => {
+    vi.mocked(goCoreClient.runFlow).mockResolvedValue();
+    vi.mocked(goCoreClient.disableFlow).mockImplementation(async (name: string) => {
       flows = flows.map((flow) => (flow.name === name ? { ...flow, enabled: false } : flow));
     });
-    vi.mocked(caoClient.enableFlow).mockImplementation(async (name: string) => {
+    vi.mocked(goCoreClient.enableFlow).mockImplementation(async (name: string) => {
       flows = flows.map((flow) => (flow.name === name ? { ...flow, enabled: true } : flow));
     });
   });
@@ -102,7 +102,7 @@ describe('FlowsPage', () => {
 
     expect(screen.getAllByText(/Expression has only 2 parts/).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Save Flow' })).toBeDisabled();
-    expect(caoClient.createFlow).not.toHaveBeenCalled();
+    expect(goCoreClient.createFlow).not.toHaveBeenCalled();
   });
 
   it('quick-pick fills every 5 minutes cron', async () => {
@@ -123,13 +123,13 @@ describe('FlowsPage', () => {
     fireEvent.click(within(card).getByRole('checkbox'));
 
     await waitFor(() => {
-      expect(caoClient.disableFlow).toHaveBeenCalledWith('nightly-review');
+      expect(goCoreClient.disableFlow).toHaveBeenCalledWith('nightly-review');
     });
     await waitFor(() => {
       expect(screen.getByText('Disabled')).toBeInTheDocument();
     });
 
-    expect(caoClient.listFlows).toHaveBeenCalled();
+    expect(goCoreClient.listFlows).toHaveBeenCalled();
   });
 });
 

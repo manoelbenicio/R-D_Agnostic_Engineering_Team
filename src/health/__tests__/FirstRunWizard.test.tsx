@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { FirstRunWizard } from '../FirstRunWizard';
-import { caoClient } from '@/api/cao-client';
+import { goCoreClient } from '@/api';
 import { useKeyStore } from '@/api/key-store/store';
 import { canvasStore } from '@/canvas-document/store';
 import * as idb from '@/shared/storage/idb';
@@ -35,8 +35,8 @@ describe('FirstRunWizard Component', () => {
     });
   });
 
-  it('renders step 1 and validates CAO connection successfully', async () => {
-    vi.spyOn(caoClient, 'getHealth').mockResolvedValue({ status: 'ok' });
+  it('renders step 1 and validates GO Core connection successfully', async () => {
+    vi.spyOn(goCoreClient, 'getHealth').mockResolvedValue({ status: 'ok' });
 
     render(
       <MemoryRouter>
@@ -52,7 +52,7 @@ describe('FirstRunWizard Component', () => {
   });
 
   it('allows skipping setup at step 1', async () => {
-    vi.spyOn(caoClient, 'getHealth').mockResolvedValue({ status: 'ok' });
+    vi.spyOn(goCoreClient, 'getHealth').mockResolvedValue({ status: 'ok' });
 
     render(
       <MemoryRouter>
@@ -70,7 +70,7 @@ describe('FirstRunWizard Component', () => {
   });
 
   it('instantiates template and finishes onboarding at step 3', async () => {
-    vi.spyOn(caoClient, 'getHealth').mockResolvedValue({ status: 'ok' });
+    vi.spyOn(goCoreClient, 'getHealth').mockResolvedValue({ status: 'ok' });
     
     const mockDoc = { id: 'mock-canvas-id', name: 'Code Review Pipeline' };
     vi.spyOn(canvasStore, 'save').mockResolvedValue(mockDoc as any);

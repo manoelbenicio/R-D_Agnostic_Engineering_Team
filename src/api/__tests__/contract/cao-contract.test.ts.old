@@ -31,6 +31,7 @@ runContract('CAO live contract', () => {
 
     const session = await client.createSession({
       profile: installedProfile.name,
+      provider: 'codex',
       working_directory: workingDirectory,
     });
     expectSession(session);
@@ -43,6 +44,7 @@ runContract('CAO live contract', () => {
 
     const terminal = await client.addTerminalToSession(session.name, {
       profile: installedProfile.name,
+      provider: 'codex',
       working_directory: workingDirectory,
     });
     expectTerminal(terminal);

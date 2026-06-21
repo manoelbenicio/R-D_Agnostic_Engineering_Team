@@ -14,7 +14,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Badge, Button, Card, CostLabel } from '@/design-system';
-import { caoClient, type InboxMessage, type Session, type Terminal } from '@/api';
+import { goCoreClient, type InboxMessage, type Session, type Terminal } from '@/api';
 import { useSessionStore } from '@/api/session-store';
 import { TerminalView } from '@/terminal';
 import { useCostEstimate } from '@/finops';
@@ -356,11 +356,11 @@ function providerLabel(provider: string): string {
 }
 
 async function loadDashboardSnapshot(): Promise<DashboardSnapshot> {
-  const sessions = await caoClient.listSessions();
+  const sessions = await goCoreClient.listSessions();
   const canvases = await canvasStore.list();
   const terminalGroups = await Promise.all(
     sessions.map(async (session) => {
-      const terminals = await caoClient.listTerminalsInSession(session.name);
+      const terminals = await goCoreClient.listTerminalsInSession(session.name);
       return terminals.map((terminal) => ({
         ...terminal,
         session_name: terminal.session_name ?? session.name,
@@ -371,7 +371,7 @@ async function loadDashboardSnapshot(): Promise<DashboardSnapshot> {
   const terminals = terminalGroups.flat();
   const inboxGroups = await Promise.all(
     terminals.map(async (terminal) => {
-      const messages = await caoClient.listInboxMessages(terminal.id, { limit: 20 });
+      const messages = await goCoreClient.listInboxMessages(terminal.id, { limit: 20 });
       return messages.map((message) => toInboxActivity(message, terminal));
     })
   );

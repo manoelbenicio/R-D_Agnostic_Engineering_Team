@@ -10,7 +10,7 @@
  *     pages do not pay the SDK cost.
  *
  * The module preserves the original signature so all existing call sites and
- * the lint rule `agentverse/no-direct-cao-fetch` keep working unchanged.
+ * the lint rule `agentverse/no-direct-go-core-fetch` keep working unchanged.
  */
 import { getAuthToken, isAuthEnabled } from './auth';
 

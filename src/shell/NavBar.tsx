@@ -76,7 +76,7 @@ export const NavBar: React.FC = () => {
           className={`health-pill ${health.pillClass}`}
           onClick={handleHealthClick}
           title="Click to view detailed system health status"
-          id="cao-health-pill"
+          id="go-core-health-pill"
         >
           <span className={`health-dot ${health.dotClass}`}></span>
           <span className="health-text">{health.text}</span>

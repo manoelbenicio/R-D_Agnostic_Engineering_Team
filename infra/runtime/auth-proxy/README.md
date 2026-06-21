@@ -22,8 +22,8 @@ localhost. The shape would be roughly:
 # from fastapi import FastAPI, Request, HTTPException
 # from firebase_admin import auth, initialize_app   # needs creds at runtime
 #
-# RUNTIME_UPSTREAM = "http://127.0.0.1:9889"
-# EXPECTED_TENANT = os.environ["CAO_TENANT_ID"]
+# RUNTIME_UPSTREAM = "http://127.0.0.1:8080"
+# EXPECTED_TENANT = os.environ["GO_CORE_TENANT_ID"]
 # initialize_app()
 # app = FastAPI()
 #

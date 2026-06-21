@@ -1,7 +1,7 @@
 /* eslint-disable agentverse/no-sideways-capability-imports */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { caoClient } from '@/api/cao-client';
+import { goCoreClient } from '@/api';
 import { useKeyStore } from '@/api/key-store/store';
 import { PROVIDERS_REGISTRY, ProviderType } from '@/api/key-store/registry';
 import { TEMPLATES, instantiateTemplate } from '@/canvas-templates';
@@ -64,10 +64,10 @@ export const FirstRunWizard: React.FC<FirstRunWizardProps> = ({ onClose }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Step 1: Verify CAO states
-  const [caoUrl, setCaoUrl] = useState('');
-  const [caoOk, setCaoOk] = useState(false);
-  const [caoError, setCaoError] = useState<string | null>(null);
+  // Step 1: Verify GO Core states
+  const [goCoreUrl, setGoCoreUrl] = useState('');
+  const [goCoreOk, setGoCoreOk] = useState(false);
+  const [goCoreError, setGoCoreError] = useState<string | null>(null);
 
   // Step 2: Configure Provider states
   const [selectedProvider, setSelectedProvider] = useState<ProviderType>('google');
@@ -82,44 +82,44 @@ export const FirstRunWizard: React.FC<FirstRunWizardProps> = ({ onClose }) => {
   }, [keyStoreInit, keyStoreInitialized]);
 
   // Step 1: Run connection check on mount or when url changes
-  const runCaoCheck = async (urlToCheck: string) => {
+  const runGoCoreCheck = async (urlToCheck: string) => {
     setLoading(true);
-    setCaoError(null);
-    const originalUrl = caoClient.baseUrl;
+    setGoCoreError(null);
+    const originalUrl = goCoreClient.baseUrl;
 
     if (urlToCheck) {
-      caoClient.baseUrl = urlToCheck.replace(/\/$/, '');
+      goCoreClient.baseUrl = urlToCheck.replace(/\/$/, '');
     }
 
     try {
-      const res = await caoClient.getHealth();
+      const res = await goCoreClient.getHealth();
       if (res && res.status === 'ok') {
-        setCaoOk(true);
-        setCaoError(null);
+        setGoCoreOk(true);
+        setGoCoreError(null);
       } else {
-        setCaoOk(false);
-        setCaoError('Runtime engine returned an unexpected health payload.');
+        setGoCoreOk(false);
+        setGoCoreError('Runtime engine returned an unexpected health payload.');
         // Revert URL
-        caoClient.baseUrl = originalUrl;
+        goCoreClient.baseUrl = originalUrl;
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      setCaoOk(false);
-      setCaoError(`Cannot connect to runtime engine: ${errMsg}`);
+      setGoCoreOk(false);
+      setGoCoreError(`Cannot connect to runtime engine: ${errMsg}`);
       // Revert URL
-      caoClient.baseUrl = originalUrl;
+      goCoreClient.baseUrl = originalUrl;
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    setCaoUrl(caoClient.baseUrl);
-    void runCaoCheck(caoClient.baseUrl);
+    setGoCoreUrl(goCoreClient.baseUrl);
+    void runGoCoreCheck(goCoreClient.baseUrl);
   }, []);
 
-  const handleRetryCao = () => {
-    void runCaoCheck(caoUrl);
+  const handleRetryGoCore = () => {
+    void runGoCoreCheck(goCoreUrl);
   };
 
   // Step 2: Validate API key
@@ -247,26 +247,26 @@ export const FirstRunWizard: React.FC<FirstRunWizardProps> = ({ onClose }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                     <span>Connection Status:</span>
                     <StatusBadge
-                      status={caoOk ? 'completed' : 'error'}
-                      label={caoOk ? 'Connected' : 'Disconnected'}
+                      status={goCoreOk ? 'completed' : 'error'}
+                      label={goCoreOk ? 'Connected' : 'Disconnected'}
                     />
                   </div>
 
-                  {!caoOk && (
+                  {!goCoreOk && (
                     <Card glow="red" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                       <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--threat)', fontFamily: 'var(--font-mono)' }}>
-                        {caoError}
+                        {goCoreError}
                       </p>
-                      <FormField label="Edit Runtime Base URL" id="wizard-cao-url">
+                      <FormField label="Edit Runtime Base URL" id="wizard-go-core-url">
                         <input
                           type="text"
-                          value={caoUrl}
-                          onChange={(e) => setCaoUrl(e.target.value)}
-                          placeholder="e.g. http://127.0.0.1:9889"
+                          value={goCoreUrl}
+                          onChange={(e) => setGoCoreUrl(e.target.value)}
+                          placeholder="e.g. http://127.0.0.1:8080"
                         />
                       </FormField>
                       <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-                        <Button variant="secondary" onClick={handleRetryCao}>
+                        <Button variant="secondary" onClick={handleRetryGoCore}>
                           Retry Connection
                         </Button>
                         <Button variant="ghost" onClick={() => setStep(2)}>
@@ -276,7 +276,7 @@ export const FirstRunWizard: React.FC<FirstRunWizardProps> = ({ onClose }) => {
                     </Card>
                   )}
 
-                  {caoOk && (
+                  {goCoreOk && (
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
                       <Button variant="primary" onClick={() => setStep(2)}>
                         Next: Configure Provider

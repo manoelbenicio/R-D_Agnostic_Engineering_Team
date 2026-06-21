@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { caoClient } from '@/api';
+import { goCoreClient } from '@/api';
 import type { Session, Terminal } from '@/api/types';
 import { computeCostEstimate, type CostEstimate, type CostTerminal, type CostWindow } from './cost-estimate';
 
@@ -28,10 +28,10 @@ export function useCostEstimate(window: CostWindow) {
   return useQuery({
     queryKey: ['finops', 'estimate', windowKey],
     queryFn: async (): Promise<UseCostEstimateResult> => {
-      const sessions = (await caoClient.listSessions()) as SessionWithCanvas[];
+      const sessions = (await goCoreClient.listSessions()) as SessionWithCanvas[];
       const terminalGroups = await Promise.all(
         sessions.map(async (session) => {
-          const terminals = (await caoClient.listTerminalsInSession(session.name)) as TerminalWithCostFields[];
+          const terminals = (await goCoreClient.listTerminalsInSession(session.name)) as TerminalWithCostFields[];
           return terminals.map((terminal) => ({
             ...terminal,
             canvas_id: terminal.canvas_id ?? terminal.canvasId ?? session.canvas_id ?? session.canvasId ?? session.name,

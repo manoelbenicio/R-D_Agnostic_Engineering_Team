@@ -2,7 +2,7 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { caoClient, type Session, type Terminal } from '@/api';
+import { goCoreClient, type Session, type Terminal } from '@/api';
 import { MemoryViewerPage } from '../MemoryViewerPage';
 
 const sessions: Session[] = [
@@ -38,12 +38,12 @@ const terminals: Terminal[] = [
 describe('MemoryViewerPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.spyOn(caoClient, 'listSessions').mockResolvedValue(sessions);
-    vi.spyOn(caoClient, 'listTerminalsInSession').mockResolvedValue(terminals);
-    vi.spyOn(caoClient, 'getAgentDirs').mockResolvedValue({
+    vi.spyOn(goCoreClient, 'listSessions').mockResolvedValue(sessions);
+    vi.spyOn(goCoreClient, 'listTerminalsInSession').mockResolvedValue(terminals);
+    vi.spyOn(goCoreClient, 'getAgentDirs').mockResolvedValue({
       dirs: ['C:/Users/mbenicios/.codex/agents'],
     });
-    vi.spyOn(caoClient, 'getTerminalMemoryContext').mockImplementation(async (id) => {
+    vi.spyOn(goCoreClient, 'getTerminalMemoryContext').mockImplementation(async (id) => {
       if (id === 'term-project') {
         return [
           '---',
@@ -103,9 +103,9 @@ describe('MemoryViewerPage', () => {
   });
 
   it('shows the v1 limitation empty-state copy when no memory entries are visible', async () => {
-    vi.spyOn(caoClient, 'listSessions').mockResolvedValue([]);
-    vi.spyOn(caoClient, 'listTerminalsInSession').mockResolvedValue([]);
-    vi.spyOn(caoClient, 'getTerminalMemoryContext').mockResolvedValue('');
+    vi.spyOn(goCoreClient, 'listSessions').mockResolvedValue([]);
+    vi.spyOn(goCoreClient, 'listTerminalsInSession').mockResolvedValue([]);
+    vi.spyOn(goCoreClient, 'getTerminalMemoryContext').mockResolvedValue('');
 
     renderWithQueryClient(<MemoryViewerPage />);
 

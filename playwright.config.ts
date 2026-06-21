@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5173;
+const GO_CORE_BASE_URL = process.env.VITE_GO_CORE_BASE_URL || 'http://127.0.0.1:8080';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -23,7 +24,7 @@ export default defineConfig({
     port: 5173,
     env: {
       VITE_USE_MSW: 'true',
-      VITE_CAO_BASE_URL: 'http://127.0.0.1:9889',
+      VITE_GO_CORE_BASE_URL: GO_CORE_BASE_URL,
       VITE_ALLOW_CANVAS2D: 'true',
     },
     reuseExistingServer: !process.env.CI,

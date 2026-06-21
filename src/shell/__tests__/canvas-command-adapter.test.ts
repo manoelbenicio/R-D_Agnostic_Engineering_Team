@@ -36,8 +36,8 @@ vi.mock('@/api/key-store/store', () => ({
   useKeyStore: { getState: vi.fn() },
 }));
 
-vi.mock('@/api/cao-client', () => ({
-  caoClient: { __mock: 'cao-client-stub' },
+vi.mock('@/api/go-core-client', () => ({
+  goCoreClient: { __mock: 'go-core-client-stub' },
 }));
 
 import { canvasCommandBus } from '../canvas-command-adapter';
@@ -113,7 +113,7 @@ describe('canvasCommandBus.reconcile', () => {
     setKeyStoreState({ validated: [], cachedModels: {} });
   });
 
-  it('forwards the canvas id to `reconcileCanvas` with the bound caoClient', async () => {
+  it('forwards the canvas id to `reconcileCanvas` with the bound goCoreClient', async () => {
     const canvas = { id: 'c1' } as CanvasDocument;
     mockedReconcile.mockResolvedValue(canvas);
 

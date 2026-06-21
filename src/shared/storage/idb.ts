@@ -53,8 +53,8 @@ let dbInstance: IDBPDatabase<AgentVerseDB> | null = null;
 export async function openDb(): Promise<IDBPDatabase<AgentVerseDB>> {
   if (dbInstance) return dbInstance;
   dbInstance = await openDB<AgentVerseDB>('AgentVerse', CURRENT_SCHEMA_VERSION, {
-    upgrade(db, oldVersion, newVersion, transaction) {
-      runMigrations(db, oldVersion, newVersion, transaction);
+    async upgrade(db, oldVersion, newVersion, transaction) {
+      await runMigrations(db, oldVersion, newVersion, transaction);
     },
   });
   return dbInstance;

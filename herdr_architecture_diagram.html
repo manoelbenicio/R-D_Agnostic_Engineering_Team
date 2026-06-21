@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Herdr — Arquitetura Técnica 360° | Executive Deep Dive</title>
+<meta name="description" content="Premium technical architecture diagram comparing Herdr, tmux, and GNU Screen multiplexers">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   INDRA DESIGN SYSTEM — Executive Dashboard Tokens
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  /* Indra Brand Colors */
+  --indra-primary: #0A2463;
+  --indra-primary-light: #1E3A8A;
+  --indra-accent: #3B82F6;
+  --indra-accent-glow: #60A5FA;
+  --indra-success: #10B981;
+  --indra-warning: #F59E0B;
+  --indra-danger: #EF4444;
+  --indra-info: #6366F1;
+  --indra-herdr: #8B5CF6;
+  --indra-tmux: #059669;
+  --indra-screen: #D97706;
+
+  /* Surfaces */
+  --bg-base: #030712;
+  --bg-surface: #0F1117;
+  --bg-card: rgba(15, 23, 42, 0.8);
+  --bg-card-hover: rgba(30, 41, 59, 0.9);
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --border-subtle: rgba(148, 163, 184, 0.08);
+  --border-active: rgba(99, 102, 241, 0.3);
+
+  /* Text */
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-accent: #818CF8;
+
+  /* Animation */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ambient glow */
+.ambient-glow {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.15;
+}
+.ambient-glow--1 {
+  top: -200px;
+  left: -100px;
+  background: var(--indra-accent);
+  animation: ambientFloat 12s ease-in-out infinite;
+}
+.ambient-glow--2 {
+  bottom: -200px;
+  right: -100px;
+  background: var(--indra-herdr);
+  animation: ambientFloat 15s ease-in-out infinite reverse;
+}
+
+@keyframes ambientFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.12; }
+  50% { transform: translate(40px, -30px) scale(1.1); opacity: 0.2; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════════════ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(3, 7, 18, 0.85);
+  backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: var(--space-md) var(--space-xl);
+}
+.header__inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+.header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+.header__logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--indra-herdr), var(--indra-accent));
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: white;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+.header__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.header__subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.header__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--indra-herdr);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+.header__badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--indra-herdr);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VIEW NAVIGATION TABS
+   ═══════════════════════════════════════════════════════════ */
+.view-nav {
+  position: sticky;
+  top: 73px;
+  z-index: 90;
+  background: rgba(3, 7, 18, 0.75);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: var(--space-sm) var(--space-xl);
+}
+.view-nav__inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  gap: var(--space-xs);
+}
+.view-tab {
+  padding: 10px 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: all var(--duration-fast) var(--ease-out);
+  position: relative;
+  letter-spacing: 0.02em;
+}
+.view-tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-glass);
+}
+.view-tab.active {
+  color: var(--text-primary);
+  background: rgba(99, 102, 241, 0.12);
+}
+.view-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 2px;
+  background: var(--indra-accent);
+  border-radius: 2px;
+}
+.view-tab__icon {
+  margin-right: 8px;
+  font-size: 1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN CONTENT
+   ═══════════════════════════════════════════════════════════ */
+.main {
+  position: relative;
+  z-index: 1;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-xl);
+}
+.view-panel {
+  display: none;
+  animation: fadeInView 0.5s var(--ease-out) both;
+}
+.view-panel.active { display: block; }
+@keyframes fadeInView {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION TITLES
+   ═══════════════════════════════════════════════════════════ */
+.section-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-sm);
+  background: linear-gradient(135deg, var(--text-primary), var(--indra-accent-glow));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.section-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2xl);
+  max-width: 700px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARDS
+   ═══════════════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  backdrop-filter: blur(10px);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+.card:hover {
+  border-color: var(--border-active);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(99,102,241,0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KPI STRIP
+   ═══════════════════════════════════════════════════════════ */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-2xl);
+}
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg) var(--space-xl);
+  text-align: center;
+  animation: fadeInUp 0.5s var(--ease-out) both;
+}
+.kpi-card:nth-child(1) { animation-delay: 0ms; }
+.kpi-card:nth-child(2) { animation-delay: 80ms; }
+.kpi-card:nth-child(3) { animation-delay: 160ms; }
+.kpi-card:nth-child(4) { animation-delay: 240ms; }
+.kpi-card:nth-child(5) { animation-delay: 320ms; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.kpi-card__value {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-family: 'JetBrains Mono', monospace;
+}
+.kpi-card__value--herdr { color: var(--indra-herdr); }
+.kpi-card__value--tmux { color: var(--indra-tmux); }
+.kpi-card__value--screen { color: var(--indra-screen); }
+.kpi-card__value--accent { color: var(--indra-accent); }
+.kpi-card__label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPARISON TABLE
+   ═══════════════════════════════════════════════════════════ */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 250px repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-2xl);
+  font-size: 0.85rem;
+}
+.comparison-grid__cell {
+  background: var(--bg-surface);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+}
+.comparison-grid__header {
+  background: rgba(15, 23, 42, 0.95);
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: var(--space-lg);
+  justify-content: center;
+  text-align: center;
+}
+.comparison-grid__header--herdr {
+  border-top: 3px solid var(--indra-herdr);
+  color: var(--indra-herdr);
+}
+.comparison-grid__header--tmux {
+  border-top: 3px solid var(--indra-tmux);
+  color: var(--indra-tmux);
+}
+.comparison-grid__header--screen {
+  border-top: 3px solid var(--indra-screen);
+  color: var(--indra-screen);
+}
+.comparison-grid__label {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.check { color: var(--indra-success); font-weight: 700; }
+.cross { color: var(--text-muted); }
+.partial { color: var(--indra-warning); }
+
+/* ═══════════════════════════════════════════════════════════
+   ARCHITECTURE DIAGRAM (SVG CANVAS)
+   ═══════════════════════════════════════════════════════════ */
+.arch-canvas {
+  position: relative;
+  width: 100%;
+  min-height: 600px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin-bottom: var(--space-2xl);
+}
+.arch-canvas svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Animated connection lines */
+.connection-line {
+  stroke: var(--indra-accent);
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 8 4;
+  animation: dashFlow 1.5s linear infinite;
+}
+.connection-line--herdr { stroke: var(--indra-herdr); }
+.connection-line--tmux { stroke: var(--indra-tmux); }
+@keyframes dashFlow {
+  to { stroke-dashoffset: -24; }
+}
+
+/* Animated pulse on nodes */
+.node-pulse {
+  animation: nodePulse 3s ease-in-out infinite;
+}
+@keyframes nodePulse {
+  0%, 100% { r: 6; opacity: 0.8; }
+  50% { r: 10; opacity: 0.3; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FLOW NODES (CSS Architecture Nodes)
+   ═══════════════════════════════════════════════════════════ */
+.arch-flow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+.flow-node {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.5s var(--ease-out) both;
+}
+.flow-node::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+.flow-node--server::before { background: linear-gradient(90deg, var(--indra-herdr), var(--indra-accent)); }
+.flow-node--client::before { background: linear-gradient(90deg, var(--indra-accent), var(--indra-success)); }
+.flow-node--socket::before { background: linear-gradient(90deg, var(--indra-warning), var(--indra-danger)); }
+.flow-node--pty::before { background: linear-gradient(90deg, var(--indra-success), var(--indra-info)); }
+.flow-node--agent::before { background: linear-gradient(90deg, var(--indra-herdr), var(--indra-danger)); }
+.flow-node--detect::before { background: linear-gradient(90deg, var(--indra-info), var(--indra-herdr)); }
+
+.flow-node__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  margin-bottom: var(--space-md);
+}
+.flow-node__icon--server { background: rgba(139, 92, 246, 0.15); }
+.flow-node__icon--client { background: rgba(59, 130, 246, 0.15); }
+.flow-node__icon--socket { background: rgba(245, 158, 11, 0.15); }
+.flow-node__icon--pty { background: rgba(16, 185, 129, 0.15); }
+.flow-node__icon--agent { background: rgba(239, 68, 68, 0.15); }
+.flow-node__icon--detect { background: rgba(99, 102, 241, 0.15); }
+
+.flow-node__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+}
+.flow-node__desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.flow-node__tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: var(--space-md);
+  font-family: 'JetBrains Mono', monospace;
+}
+.flow-node__tag--port { background: rgba(245, 158, 11, 0.15); color: var(--indra-warning); }
+.flow-node__tag--proto { background: rgba(99, 102, 241, 0.15); color: var(--indra-info); }
+.flow-node__tag--status { background: rgba(16, 185, 129, 0.15); color: var(--indra-success); }
+
+/* ═══════════════════════════════════════════════════════════
+   PROS / CONS
+   ═══════════════════════════════════════════════════════════ */
+.pros-cons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+.pros-cons__col {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+}
+.pros-cons__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.pros-cons__title--herdr { color: var(--indra-herdr); border-bottom-color: rgba(139,92,246,0.2); }
+.pros-cons__title--tmux { color: var(--indra-tmux); border-bottom-color: rgba(5,150,105,0.2); }
+.pros-cons__title--screen { color: var(--indra-screen); border-bottom-color: rgba(217,119,6,0.2); }
+
+.pros-cons__list {
+  list-style: none;
+}
+.pros-cons__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(148,163,184,0.05);
+}
+.pros-cons__item:last-child { border-bottom: none; }
+.pros-cons__icon--pro { color: var(--indra-success); font-weight: 700; flex-shrink: 0; }
+.pros-cons__icon--con { color: var(--indra-danger); font-weight: 700; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   SOCKET EXPLAINER
+   ═══════════════════════════════════════════════════════════ */
+.socket-explainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+@media (max-width: 900px) {
+  .socket-explainer { grid-template-columns: 1fr; }
+  .comparison-grid { grid-template-columns: 1fr; }
+}
+.socket-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+}
+.socket-card__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.socket-card__code {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(148,163,184,0.1);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--indra-accent-glow);
+  overflow-x: auto;
+  line-height: 1.8;
+}
+.socket-card__desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-md);
+  line-height: 1.7;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATED ARCHITECTURE SVG
+   ═══════════════════════════════════════════════════════════ */
+.svg-arch {
+  width: 100%;
+  height: 620px;
+  margin-bottom: var(--space-2xl);
+}
+
+/* Particle animation on connections */
+@keyframes particleMove {
+  0% { offset-distance: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ORCHESTRATION TIMELINE
+   ═══════════════════════════════════════════════════════════ */
+.timeline {
+  position: relative;
+  padding-left: 40px;
+  margin-bottom: var(--space-2xl);
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--indra-herdr), var(--indra-accent), transparent);
+}
+.timeline__step {
+  position: relative;
+  padding-bottom: var(--space-xl);
+  animation: fadeInUp 0.5s var(--ease-out) both;
+}
+.timeline__step::before {
+  content: attr(data-step);
+  position: absolute;
+  left: -40px;
+  top: 2px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--indra-primary-light);
+  border: 2px solid var(--indra-herdr);
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--indra-accent-glow);
+}
+.timeline__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.timeline__desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.timeline__tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(139, 92, 246, 0.12);
+  color: var(--indra-herdr);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AGENT STATE INDICATORS
+   ═══════════════════════════════════════════════════════════ */
+.agent-states {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-2xl);
+}
+.agent-state {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  text-align: center;
+}
+.agent-state__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin: 0 auto var(--space-sm);
+}
+.agent-state__dot--blocked { background: var(--indra-danger); animation: criticalPulse 2s ease-in-out infinite; }
+.agent-state__dot--working { background: var(--indra-accent); animation: workingPulse 1.5s ease-in-out infinite; }
+.agent-state__dot--done { background: var(--indra-success); }
+.agent-state__dot--idle { background: var(--text-muted); }
+.agent-state__dot--unknown { background: var(--indra-warning); }
+@keyframes criticalPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+@keyframes workingPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+}
+.agent-state__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.agent-state__desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TWO-COL LAYOUT
+   ═══════════════════════════════════════════════════════════ */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ═══════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════ */
+.footer {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="ambient-glow ambient-glow--1"></div>
+<div class="ambient-glow ambient-glow--2"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HEADER
+     ═══════════════════════════════════════════════════════════ -->
+<header class="header" id="top">
+  <div class="header__inner">
+    <div class="header__brand">
+      <div class="header__logo">H</div>
+      <div>
+        <div class="header__title">Herdr — Arquitetura Técnica 360°</div>
+        <div class="header__subtitle">Agent Multiplexer Deep Dive • Herdr vs tmux vs GNU Screen</div>
+      </div>
+    </div>
+    <div class="header__badge">LIVE ARCHITECTURE</div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════
+     VIEW TABS
+     ═══════════════════════════════════════════════════════════ -->
+<nav class="view-nav">
+  <div class="view-nav__inner">
+    <button class="view-tab active" data-view="macro"><span class="view-tab__icon">🔭</span>MACRO — Executive View</button>
+    <button class="view-tab" data-view="micro"><span class="view-tab__icon">🔬</span>MICRO — Component View</button>
+    <button class="view-tab" data-view="deep"><span class="view-tab__icon">🧬</span>DEEP DIVE — Socket & Network</button>
+    <button class="view-tab" data-view="gaps"><span class="view-tab__icon">🚀</span>GAPS & ORQUESTRAÇÃO</button>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- ═══════════════════════════════════════════════════════════
+     VIEW 1: MACRO — EXECUTIVE VIEW (C-LEVEL)
+     ═══════════════════════════════════════════════════════════ -->
+<section class="view-panel active" id="view-macro">
+
+  <h2 class="section-title">Visão Executiva — Multiplexadores em Contexto</h2>
+  <p class="section-subtitle">Herdr é para agentes de codificação o que tmux é para terminais: um multiplexador que roda onde seus agentes rodam, adicionando consciência semântica de estado.</p>
+
+  <!-- KPIs -->
+  <div class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-card__value kpi-card__value--herdr" data-count="17">0</div><div class="kpi-card__label">Agentes Suportados</div></div>
+    <div class="kpi-card"><div class="kpi-card__value kpi-card__value--accent" data-count="60">0</div><div class="kpi-card__label">Métodos Socket API</div></div>
+    <div class="kpi-card"><div class="kpi-card__value kpi-card__value--tmux" data-count="5">0</div><div class="kpi-card__label">Estados Semânticos</div></div>
+    <div class="kpi-card"><div class="kpi-card__value kpi-card__value--herdr">0ms</div><div class="kpi-card__label">Latência Network (Local Socket)</div></div>
+    <div class="kpi-card"><div class="kpi-card__value kpi-card__value--accent" data-count="3">0</div><div class="kpi-card__label">Plataformas (Linux/macOS/Win)</div></div>
+  </div>
+
+  <!-- COMPARISON TABLE -->
+  <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:var(--space-lg);">Comparativo Completo: Herdr vs tmux vs GNU Screen</h3>
+
+  <div class="comparison-grid">
+    <div class="comparison-grid__cell comparison-grid__header">Capacidade</div>
+    <div class="comparison-grid__cell comparison-grid__header comparison-grid__header--herdr">⬡ Herdr</div>
+    <div class="comparison-grid__cell comparison-grid__header comparison-grid__header--tmux">◆ tmux</div>
+    <div class="comparison-grid__cell comparison-grid__header comparison-grid__header--screen">● GNU Screen</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Terminal Multiplexing</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> PTY real por pane</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> PTY real por pane</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> PTY por janela</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Sessões Persistentes</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> + Live Handoff</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Detach/Attach</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Detach/Attach</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Detecção de Agentes AI</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Automática (17 agentes)</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Não possui</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Não possui</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Estado Semântico (idle/working/blocked)</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> 5 estados + rollup</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Sem estado</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Sem estado</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">IPC / Socket API</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> NDJSON ~60 métodos</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> Comandos tmux, socket limitado</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Apenas stuffing</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Plugin System</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> TOML manifests, marketplace</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> Via tmux.conf, TPM</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Limitado</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Mouse Native</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Click, drag, right-click</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> Modo mouse</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Limitado</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Workspaces (Projeto-Level)</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Hierarquia WS → Tab → Pane</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Sessão → Janela → Pane</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Sessão → Janela</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Remote Attach (SSH)</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> --remote (thin client)</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> SSH + attach</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> SSH + attach</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Session Restore (Agentes)</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Native agent resume</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> Via plugins (tmux-resurrect)</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Não restaura</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Linguagem Principal</div>
+    <div class="comparison-grid__cell">Rust 🦀</div>
+    <div class="comparison-grid__cell">C</div>
+    <div class="comparison-grid__cell">C</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Rede / Porta</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Local Socket Only (0 portas)</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Unix Socket (0 portas)</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Unix Socket (0 portas)</div>
+  </div>
+
+  <!-- PROS / CONS -->
+  <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:var(--space-lg);">PROs & CONs — Análise Comparativa</h3>
+
+  <div class="pros-cons">
+    <div class="pros-cons__col">
+      <div class="pros-cons__title pros-cons__title--herdr">⬡ Herdr</div>
+      <ul class="pros-cons__list">
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Detecção automática de 17+ agentes AI com estado semântico</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Socket API rica (NDJSON, ~60 métodos) — orquestrável por agentes</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Live Handoff — atualiza binário sem perder PTYs</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Plugin system com marketplace e event hooks</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Rollup de estado: pane → tab → workspace → sidebar</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Remote attach thin-client com keybindings locais</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Rust — segurança de memória, performance</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Projeto novo — ecossistema menor que tmux</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Windows em beta</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> IDs efêmeros — requer re-leitura frequente</li>
+      </ul>
+    </div>
+
+    <div class="pros-cons__col">
+      <div class="pros-cons__title pros-cons__title--tmux">◆ tmux</div>
+      <ul class="pros-cons__list">
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Maduro — 15+ anos, extremamente estável</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Ecossistema enorme (TPM, plugins, comunidade)</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Disponível em quase todo servidor Linux</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Scriptável via tmux.conf e comandos</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Copy mode poderoso</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Sem consciência de agentes AI</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Socket API limitada — sem NDJSON</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Sem estado semântico de processos</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Sem plugins nativos de detecção</li>
+      </ul>
+    </div>
+
+    <div class="pros-cons__col">
+      <div class="pros-cons__title pros-cons__title--screen">● GNU Screen</div>
+      <ul class="pros-cons__list">
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Legado — disponível há 35+ anos</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Simples de usar para casos básicos</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Serial console support</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--pro">✓</span> Pré-instalado em muitos servidores</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Sem panes verticais nativos (até versão recente)</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Sem socket API</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Sem detecção de agentes</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Sem plugin system</li>
+        <li class="pros-cons__item"><span class="pros-cons__icon--con">✗</span> Desenvolvimento lento</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     VIEW 2: MICRO — COMPONENT VIEW
+     ═══════════════════════════════════════════════════════════ -->
+<section class="view-panel" id="view-micro">
+
+  <h2 class="section-title">Componentes Internos — Como Funciona Passo a Passo</h2>
+  <p class="section-subtitle">Desde o frontend TUI até a detecção de agentes, cada componente tem um papel preciso na arquitetura do Herdr.</p>
+
+  <!-- ARCHITECTURE NODES -->
+  <div class="arch-flow">
+    <div class="flow-node flow-node--server" style="animation-delay:0ms">
+      <div class="flow-node__icon flow-node__icon--server">🖥️</div>
+      <div class="flow-node__title">Herdr Server (Background)</div>
+      <div class="flow-node__desc">Processo daemon que gerencia todos os PTYs. Mantém estado de workspaces, tabs, panes e agentes. Persiste sessão em session.json. Não expõe portas de rede — comunica apenas via socket local.</div>
+      <span class="flow-node__tag flow-node__tag--proto">Rust Binary • PID isolado</span>
+    </div>
+
+    <div class="flow-node flow-node--client" style="animation-delay:80ms">
+      <div class="flow-node__icon flow-node__icon--client">📺</div>
+      <div class="flow-node__title">Herdr Client (TUI)</div>
+      <div class="flow-node__desc">Terminal User Interface que se conecta ao servidor. Renderiza panes, sidebar com estados de agentes, tabs. Suporta mouse nativo (click, drag, right-click). Múltiplos clientes simultâneos.</div>
+      <span class="flow-node__tag flow-node__tag--status">3 Modos: Terminal • Prefix • Navigate</span>
+    </div>
+
+    <div class="flow-node flow-node--socket" style="animation-delay:160ms">
+      <div class="flow-node__icon flow-node__icon--socket">🔌</div>
+      <div class="flow-node__title">Socket Local (IPC)</div>
+      <div class="flow-node__desc">Unix Domain Socket (Linux/macOS) ou Named Pipe (Windows). Zero portas de rede. Protocolo NDJSON — cada mensagem é uma linha JSON terminada por \n. Request/Response com IDs.</div>
+      <span class="flow-node__tag flow-node__tag--port">~/.config/herdr/herdr.sock</span>
+    </div>
+
+    <div class="flow-node flow-node--pty" style="animation-delay:240ms">
+      <div class="flow-node__icon flow-node__icon--pty">⚡</div>
+      <div class="flow-node__title">PTY Manager</div>
+      <div class="flow-node__desc">Gerencia pseudo-terminais reais. Cada pane possui seu PTY com shell/processo independente. Captura output, envia input, preserva scrollback. BSP layout tree para splits.</div>
+      <span class="flow-node__tag flow-node__tag--proto">ioctl • TIOCGWINSZ • fork/exec</span>
+    </div>
+
+    <div class="flow-node flow-node--detect" style="animation-delay:320ms">
+      <div class="flow-node__icon flow-node__icon--detect">🔍</div>
+      <div class="flow-node__title">Agent Detection Engine</div>
+      <div class="flow-node__desc">Detecta foreground process → avalia lifecycle hooks OU screen manifests (TOML) → classifica estado (idle/working/blocked/done/unknown). Bottom-buffer snapshot, não viewport scrollada.</div>
+      <span class="flow-node__tag flow-node__tag--status">Manifests: Bundled → Remote → Local Override</span>
+    </div>
+
+    <div class="flow-node flow-node--agent" style="animation-delay:400ms">
+      <div class="flow-node__icon flow-node__icon--agent">🤖</div>
+      <div class="flow-node__title">Agent Skill Layer</div>
+      <div class="flow-node__desc">Agentes AI rodando dentro de panes (HERDR_ENV=1) podem usar CLI/Socket para orquestrar: criar panes, esperar output, ler resultados, spawnar outros agentes. É assim que agentes "veem" uns aos outros.</div>
+      <span class="flow-node__tag flow-node__tag--proto">HERDR_ENV=1 • herdr CLI</span>
+    </div>
+  </div>
+
+  <!-- AGENT STATE INDICATORS -->
+  <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:var(--space-lg);">Estados Semânticos dos Agentes (Live)</h3>
+
+  <div class="agent-states">
+    <div class="agent-state">
+      <div class="agent-state__dot agent-state__dot--blocked"></div>
+      <div class="agent-state__label">BLOCKED</div>
+      <div class="agent-state__desc">Precisa de input/aprovação</div>
+    </div>
+    <div class="agent-state">
+      <div class="agent-state__dot agent-state__dot--working"></div>
+      <div class="agent-state__label">WORKING</div>
+      <div class="agent-state__desc">Executando ativamente</div>
+    </div>
+    <div class="agent-state">
+      <div class="agent-state__dot agent-state__dot--done"></div>
+      <div class="agent-state__label">DONE</div>
+      <div class="agent-state__desc">Finalizado, não visto</div>
+    </div>
+    <div class="agent-state">
+      <div class="agent-state__dot agent-state__dot--idle"></div>
+      <div class="agent-state__label">IDLE</div>
+      <div class="agent-state__desc">Pronto ou já visto</div>
+    </div>
+    <div class="agent-state">
+      <div class="agent-state__dot agent-state__dot--unknown"></div>
+      <div class="agent-state__label">UNKNOWN</div>
+      <div class="agent-state__desc">Não classificável</div>
+    </div>
+  </div>
+
+  <!-- ORCHESTRATION TIMELINE -->
+  <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:var(--space-lg);">Quem é o Orquestrador? — Fluxo de Orquestração</h3>
+
+  <div class="card" style="margin-bottom:var(--space-2xl);border-left:3px solid var(--indra-herdr);">
+    <p style="font-size:0.9rem;color:var(--text-secondary);line-height:1.8;">
+      <strong style="color:var(--indra-herdr);">Resposta-chave:</strong> O Herdr <strong>não é</strong> um orquestrador top-down como Kubernetes. Ele é um <strong>observador inteligente + facilitador de comunicação</strong>. Cada agente AI mantém sua autonomia. O Herdr:<br><br>
+      ① <strong>Detecta</strong> agentes automaticamente (foreground process + manifests)<br>
+      ② <strong>Classifica</strong> estado semântico (blocked/working/done/idle)<br>
+      ③ <strong>Propaga</strong> estado via rollup (pane → tab → workspace → sidebar)<br>
+      ④ <strong>Facilita</strong> comunicação inter-agente via Socket API<br>
+      ⑤ <strong>Permite</strong> que agentes orquestrem uns aos outros via Agent Skill (herdr CLI)
+    </p>
+  </div>
+
+  <div class="timeline">
+    <div class="timeline__step" data-step="01" style="animation-delay:0ms">
+      <div class="timeline__title">Usuário inicia herdr</div>
+      <div class="timeline__desc">Server spawna (ou reattach). Cria workspace default com shell.</div>
+      <span class="timeline__tag">herdr</span>
+    </div>
+    <div class="timeline__step" data-step="02" style="animation-delay:100ms">
+      <div class="timeline__title">Agente AI é iniciado no pane</div>
+      <div class="timeline__desc">Usuário digita "claude" ou "codex" no terminal. Herdr injeta HERDR_ENV=1 e HERDR_SOCKET_PATH.</div>
+      <span class="timeline__tag">pane.send_input("claude\n")</span>
+    </div>
+    <div class="timeline__step" data-step="03" style="animation-delay:200ms">
+      <div class="timeline__title">Detecção automática de agente</div>
+      <div class="timeline__desc">Server detecta foreground process, avalia screen manifests TOML, classifica estado como "idle".</div>
+      <span class="timeline__tag">agent.detect → idle</span>
+    </div>
+    <div class="timeline__step" data-step="04" style="animation-delay:300ms">
+      <div class="timeline__title">Agente começa a trabalhar</div>
+      <div class="timeline__desc">Spinner na TUI → estado muda para "working". Sidebar mostra ⠋ animado.</div>
+      <span class="timeline__tag">agent_status → working</span>
+    </div>
+    <div class="timeline__step" data-step="05" style="animation-delay:400ms">
+      <div class="timeline__title">Agente precisa de aprovação</div>
+      <div class="timeline__desc">Screen manifest detecta prompt de permissão → estado "blocked". Sidebar mostra ◉ vermelho.</div>
+      <span class="timeline__tag">agent_status → blocked</span>
+    </div>
+    <div class="timeline__step" data-step="06" style="animation-delay:500ms">
+      <div class="timeline__title">Outro agente espera via Socket API</div>
+      <div class="timeline__desc">Agent Skill usa "herdr wait agent-status w1:p1 --status done" para coordenar trabalho entre agentes sem polling manual.</div>
+      <span class="timeline__tag">events.wait → done</span>
+    </div>
+    <div class="timeline__step" data-step="07" style="animation-delay:600ms">
+      <div class="timeline__title">Rollup de estado</div>
+      <div class="timeline__desc">Pane(blocked) → Tab(blocked) → Workspace(blocked) → Sidebar(◉). Prioridade: blocked > working > done > idle.</div>
+      <span class="timeline__tag">rollup → sidebar</span>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     VIEW 3: DEEP DIVE — SOCKET & NETWORK
+     ═══════════════════════════════════════════════════════════ -->
+<section class="view-panel" id="view-deep">
+
+  <h2 class="section-title">Deep Dive — Sockets, Rede e Protocolo</h2>
+  <p class="section-subtitle">Entenda como funciona a comunicação inter-processo, por que não há portas de rede, e como os agentes se comunicam.</p>
+
+  <!-- ANIMATED SVG ARCHITECTURE -->
+  <div class="arch-canvas">
+    <svg viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg" class="svg-arch">
+      <!-- Background -->
+      <defs>
+        <linearGradient id="grad-herdr" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.2"/>
+          <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.1"/>
+        </linearGradient>
+        <linearGradient id="grad-conn" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#8B5CF6"/>
+          <stop offset="100%" stop-color="#3B82F6"/>
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- SERVER BOX -->
+      <rect x="400" y="40" width="400" height="200" rx="16" fill="url(#grad-herdr)" stroke="#8B5CF6" stroke-width="1.5" stroke-opacity="0.4"/>
+      <text x="600" y="75" text-anchor="middle" fill="#8B5CF6" font-size="14" font-weight="700" font-family="Inter">HERDR SERVER (Background Daemon)</text>
+      <text x="600" y="95" text-anchor="middle" fill="#94A3B8" font-size="11" font-family="Inter">PID isolado • Gerencia PTYs • Mantém estado</text>
+
+      <!-- PTY boxes inside server -->
+      <rect x="420" y="115" width="110" height="50" rx="8" fill="rgba(16,185,129,0.1)" stroke="#10B981" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="475" y="137" text-anchor="middle" fill="#10B981" font-size="10" font-weight="600" font-family="JetBrains Mono">PTY:0 Shell</text>
+      <text x="475" y="155" text-anchor="middle" fill="#64748B" font-size="9" font-family="JetBrains Mono">bash</text>
+
+      <rect x="545" y="115" width="110" height="50" rx="8" fill="rgba(139,92,246,0.1)" stroke="#8B5CF6" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="600" y="137" text-anchor="middle" fill="#8B5CF6" font-size="10" font-weight="600" font-family="JetBrains Mono">PTY:1 Claude</text>
+      <text x="600" y="155" text-anchor="middle" fill="#64748B" font-size="9" font-family="JetBrains Mono">working ⠋</text>
+
+      <rect x="670" y="115" width="110" height="50" rx="8" fill="rgba(239,68,68,0.1)" stroke="#EF4444" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="725" y="137" text-anchor="middle" fill="#EF4444" font-size="10" font-weight="600" font-family="JetBrains Mono">PTY:2 Codex</text>
+      <text x="725" y="155" text-anchor="middle" fill="#64748B" font-size="9" font-family="JetBrains Mono">blocked ◉</text>
+
+      <!-- Detection Engine -->
+      <rect x="430" y="180" width="340" height="45" rx="8" fill="rgba(99,102,241,0.08)" stroke="#6366F1" stroke-width="1" stroke-opacity="0.2"/>
+      <text x="600" y="207" text-anchor="middle" fill="#6366F1" font-size="10" font-weight="600" font-family="Inter">🔍 Detection Engine: Process → Manifests → State Classification</text>
+
+      <!-- SOCKET -->
+      <ellipse cx="600" cy="310" rx="90" ry="30" fill="rgba(245,158,11,0.1)" stroke="#F59E0B" stroke-width="1.5" stroke-opacity="0.5"/>
+      <text x="600" y="306" text-anchor="middle" fill="#F59E0B" font-size="11" font-weight="700" font-family="JetBrains Mono">UNIX SOCKET</text>
+      <text x="600" y="322" text-anchor="middle" fill="#94A3B8" font-size="9" font-family="JetBrains Mono">herdr.sock (NDJSON)</text>
+
+      <!-- Connection: Server → Socket -->
+      <line x1="600" y1="240" x2="600" y2="280" class="connection-line connection-line--herdr"/>
+      <circle cx="600" cy="260" r="4" fill="#8B5CF6" class="node-pulse"/>
+
+      <!-- CLIENT -->
+      <rect x="60" y="400" width="220" height="130" rx="12" fill="rgba(59,130,246,0.08)" stroke="#3B82F6" stroke-width="1.5" stroke-opacity="0.3"/>
+      <text x="170" y="430" text-anchor="middle" fill="#3B82F6" font-size="12" font-weight="700" font-family="Inter">📺 Herdr Client (TUI)</text>
+      <text x="170" y="450" text-anchor="middle" fill="#94A3B8" font-size="10" font-family="Inter">Terminal Render</text>
+      <text x="170" y="470" text-anchor="middle" fill="#94A3B8" font-size="9" font-family="JetBrains Mono">Mouse • Keyboard • Sidebar</text>
+      <text x="170" y="500" text-anchor="middle" fill="#64748B" font-size="9" font-family="JetBrains Mono">Modo: Terminal/Prefix/Nav</text>
+
+      <!-- CLI -->
+      <rect x="350" y="420" width="200" height="90" rx="12" fill="rgba(16,185,129,0.08)" stroke="#10B981" stroke-width="1.5" stroke-opacity="0.3"/>
+      <text x="450" y="450" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700" font-family="Inter">⌨️ herdr CLI</text>
+      <text x="450" y="470" text-anchor="middle" fill="#94A3B8" font-size="10" font-family="JetBrains Mono">herdr pane split</text>
+      <text x="450" y="488" text-anchor="middle" fill="#94A3B8" font-size="10" font-family="JetBrains Mono">herdr wait output</text>
+
+      <!-- AGENT SKILL -->
+      <rect x="620" y="420" width="220" height="90" rx="12" fill="rgba(139,92,246,0.08)" stroke="#8B5CF6" stroke-width="1.5" stroke-opacity="0.3"/>
+      <text x="730" y="450" text-anchor="middle" fill="#8B5CF6" font-size="12" font-weight="700" font-family="Inter">🤖 Agent Skill</text>
+      <text x="730" y="470" text-anchor="middle" fill="#94A3B8" font-size="10" font-family="JetBrains Mono">HERDR_ENV=1</text>
+      <text x="730" y="488" text-anchor="middle" fill="#94A3B8" font-size="10" font-family="JetBrains Mono">Orquestra via Socket</text>
+
+      <!-- REMOTE -->
+      <rect x="920" y="400" width="220" height="130" rx="12" fill="rgba(99,102,241,0.08)" stroke="#6366F1" stroke-width="1.5" stroke-opacity="0.3"/>
+      <text x="1030" y="430" text-anchor="middle" fill="#6366F1" font-size="12" font-weight="700" font-family="Inter">🌐 Remote Client</text>
+      <text x="1030" y="450" text-anchor="middle" fill="#94A3B8" font-size="10" font-family="Inter">herdr --remote workbox</text>
+      <text x="1030" y="470" text-anchor="middle" fill="#94A3B8" font-size="9" font-family="JetBrains Mono">SSH tunnel → Socket</text>
+      <text x="1030" y="500" text-anchor="middle" fill="#64748B" font-size="9" font-family="JetBrains Mono">Thin Client • Local KB</text>
+
+      <!-- Connection lines -->
+      <path d="M 170 400 Q 170 310 510 310" class="connection-line" stroke="#3B82F6"/>
+      <path d="M 450 420 Q 450 310 600 310" class="connection-line" stroke="#10B981"/>
+      <path d="M 730 420 Q 730 310 690 310" class="connection-line connection-line--herdr"/>
+      <path d="M 1030 400 Q 1030 310 690 310" class="connection-line" stroke="#6366F1"/>
+
+      <!-- Animated particles -->
+      <circle r="3" fill="#3B82F6" filter="url(#glow)">
+        <animateMotion dur="3s" repeatCount="indefinite" path="M 170 400 Q 170 310 510 310"/>
+      </circle>
+      <circle r="3" fill="#10B981" filter="url(#glow)">
+        <animateMotion dur="2.5s" repeatCount="indefinite" path="M 450 420 Q 450 310 600 310"/>
+      </circle>
+      <circle r="3" fill="#8B5CF6" filter="url(#glow)">
+        <animateMotion dur="2s" repeatCount="indefinite" path="M 730 420 Q 730 310 690 310"/>
+      </circle>
+      <circle r="3" fill="#6366F1" filter="url(#glow)">
+        <animateMotion dur="4s" repeatCount="indefinite" path="M 1030 400 Q 1030 310 690 310"/>
+      </circle>
+
+      <!-- Labels -->
+      <text x="120" y="360" fill="#3B82F6" font-size="9" font-weight="600" font-family="JetBrains Mono" opacity="0.7">NDJSON</text>
+      <text x="440" y="380" fill="#10B981" font-size="9" font-weight="600" font-family="JetBrains Mono" opacity="0.7">NDJSON</text>
+      <text x="720" y="380" fill="#8B5CF6" font-size="9" font-weight="600" font-family="JetBrains Mono" opacity="0.7">NDJSON</text>
+      <text x="920" y="360" fill="#6366F1" font-size="9" font-weight="600" font-family="JetBrains Mono" opacity="0.7">SSH + NDJSON</text>
+
+      <!-- Legend -->
+      <rect x="30" y="40" width="280" height="180" rx="12" fill="rgba(15,23,42,0.9)" stroke="rgba(148,163,184,0.1)" stroke-width="1"/>
+      <text x="50" y="68" fill="#F8FAFC" font-size="12" font-weight="700" font-family="Inter">🔒 Segurança de Rede</text>
+      <text x="50" y="90" fill="#94A3B8" font-size="10" font-family="Inter">• Zero portas TCP/UDP abertas</text>
+      <text x="50" y="108" fill="#94A3B8" font-size="10" font-family="Inter">• Socket local (filesystem permissions)</text>
+      <text x="50" y="126" fill="#94A3B8" font-size="10" font-family="Inter">• Sem servidor HTTP/gRPC</text>
+      <text x="50" y="144" fill="#94A3B8" font-size="10" font-family="Inter">• Sem cloud/conta necessária</text>
+      <text x="50" y="162" fill="#94A3B8" font-size="10" font-family="Inter">• Remote: usa SSH existente</text>
+      <text x="50" y="180" fill="#94A3B8" font-size="10" font-family="Inter">• Binário nativo, sem Electron</text>
+      <text x="50" y="205" fill="#F59E0B" font-size="9" font-weight="600" font-family="JetBrains Mono">Port exposure: 0 (todas as 3 ferramentas)</text>
+    </svg>
+  </div>
+
+  <!-- SOCKET EXPLAINER -->
+  <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:var(--space-lg);">Conceitos de Socket — Unix Domain Socket vs TCP</h3>
+
+  <div class="socket-explainer">
+    <div class="socket-card">
+      <div class="socket-card__title">🔌 O que é um Unix Domain Socket?</div>
+      <div class="socket-card__desc">
+        Um <strong>Unix Domain Socket (UDS)</strong> é um endpoint de comunicação inter-processo (IPC) que existe como um arquivo no filesystem (ex: <code>herdr.sock</code>). Diferente de TCP sockets, ele <strong>não usa a stack de rede</strong> — a comunicação acontece inteiramente no kernel, sem overhead de protocolo de rede.<br><br>
+        <strong>Herdr, tmux e GNU Screen</strong> todos usam Unix Domain Sockets. Nenhum abre portas TCP/UDP. A segurança é controlada por <strong>permissões do filesystem</strong> (chmod/chown).
+      </div>
+    </div>
+
+    <div class="socket-card">
+      <div class="socket-card__title">📡 Herdr Socket API — Protocolo NDJSON</div>
+      <div class="socket-card__code">
+<span style="color:#64748B">// Conectar ao socket</span>
+socat - UNIX-CONNECT:~/.config/herdr/herdr.sock
+
+<span style="color:#64748B">// Request (uma linha JSON + \n)</span>
+{"id":"1","method":"ping","params":{}}
+
+<span style="color:#64748B">// Response</span>
+{"id":"1","result":{"type":"pong"}}
+
+<span style="color:#64748B">// Listar agentes</span>
+{"id":"2","method":"agent.list","params":{}}
+
+<span style="color:#64748B">// Esperar estado de agente</span>
+{"id":"3","method":"events.wait","params":{
+  "type":"pane.agent_status_changed",
+  "pane_id":"w1:p1","agent_status":"done"
+}}
+      </div>
+    </div>
+
+    <div class="socket-card">
+      <div class="socket-card__title">⚖️ UDS vs TCP — Comparativo</div>
+      <div class="socket-card__desc">
+        <table style="width:100%;font-size:0.8rem;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);">
+            <td style="padding:6px 0;color:var(--text-muted);font-weight:600;">Aspecto</td>
+            <td style="padding:6px;color:var(--indra-herdr);font-weight:600;">UDS (Herdr/tmux)</td>
+            <td style="padding:6px;color:var(--indra-danger);font-weight:600;">TCP Socket</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.05);">
+            <td style="padding:6px 0;">Escopo</td>
+            <td style="padding:6px;">Local (máquina)</td>
+            <td style="padding:6px;">Rede (qualquer IP)</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.05);">
+            <td style="padding:6px 0;">Segurança</td>
+            <td style="padding:6px;">Filesystem perms</td>
+            <td style="padding:6px;">Firewall + TLS</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.05);">
+            <td style="padding:6px 0;">Latência</td>
+            <td style="padding:6px;">~0ms (kernel IPC)</td>
+            <td style="padding:6px;">+ms (stack rede)</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.05);">
+            <td style="padding:6px 0;">Porta</td>
+            <td style="padding:6px;">Nenhuma (arquivo)</td>
+            <td style="padding:6px;">porta:número</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;">Exposição</td>
+            <td style="padding:6px;">Zero attack surface</td>
+            <td style="padding:6px;">Exposto a rede</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="socket-card">
+      <div class="socket-card__title">🔄 Como Agentes se Comunicam</div>
+      <div class="socket-card__desc">
+        Agentes AI rodando dentro de panes Herdr <strong>não se comunicam diretamente entre si</strong>. Toda comunicação passa pelo <strong>Herdr Server</strong> como intermediário:<br><br>
+        <strong>1.</strong> Agent A roda em pane w1:p1<br>
+        <strong>2.</strong> Agent A usa <code>herdr pane split</code> → cria pane w1:p2<br>
+        <strong>3.</strong> Agent A usa <code>herdr pane run w1:p2 "codex"</code> → spawna Agent B<br>
+        <strong>4.</strong> Agent A usa <code>herdr wait agent-status w1:p2 --status done</code><br>
+        <strong>5.</strong> Agent A usa <code>herdr pane read w1:p2</code> → lê resultado do Agent B<br><br>
+        <em>É um padrão de orquestração por observable state, não por mensagens diretas.</em>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERSISTENCE -->
+  <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:var(--space-lg);">Camadas de Persistência — O que sobrevive a cada cenário</h3>
+
+  <div class="comparison-grid" style="grid-template-columns: 220px repeat(4, 1fr);">
+    <div class="comparison-grid__cell comparison-grid__header">Cenário</div>
+    <div class="comparison-grid__cell comparison-grid__header" style="border-top-color:var(--indra-success)">Processos</div>
+    <div class="comparison-grid__cell comparison-grid__header" style="border-top-color:var(--indra-accent)">Layout</div>
+    <div class="comparison-grid__cell comparison-grid__header" style="border-top-color:var(--indra-warning)">Screen/Output</div>
+    <div class="comparison-grid__cell comparison-grid__header" style="border-top-color:var(--indra-herdr)">Conversa Agent</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Detach → Reattach</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Continuam</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Preservado</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Live terminal</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Nunca parou</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Server Restart</div>
+    <div class="comparison-grid__cell"><span class="cross">✗</span> Perdidos</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> session.json</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> pane_history</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> agent resume</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Update --handoff</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> Best effort</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Preservado</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Se handoff ok</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Se handoff ok</div>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     VIEW 4: GAPS & ORCHESTRATION
+     ═══════════════════════════════════════════════════════════ -->
+<section class="view-panel" id="view-gaps">
+
+  <h2 class="section-title">Gaps & Orquestração — O Que Falta para Projeto Real</h2>
+  <p class="section-subtitle">Análise fundamentada na documentação oficial herdr.dev — O que o Herdr provê, o que falta, e soluções open-source para preencher cada gap.</p>
+
+  <!-- HERDR REALITY CHECK -->
+  <div style="background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.05)); border: 1px solid rgba(139,92,246,0.2); border-radius: var(--radius-xl); padding: var(--space-2xl); margin-bottom: var(--space-2xl);">
+    <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: var(--space-lg); color: var(--indra-herdr);">⚡ Herdr = Infraestrutura, NÃO Orquestrador</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xl); font-size: 0.85rem;">
+      <div>
+        <h4 style="color: var(--indra-success); margin-bottom: var(--space-md); font-size: 0.9rem;">✅ O que Herdr PROVÊ (Documentado)</h4>
+        <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px;">
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-success); margin-right: 8px;">●</span>PTY isolado por agente <span style="opacity:0.5; font-size:0.7rem;">— herdr.dev/docs/concepts</span></li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-success); margin-right: 8px;">●</span>Detecção automática de 17+ agentes <span style="opacity:0.5; font-size:0.7rem;">— herdr.dev/docs/agents</span></li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-success); margin-right: 8px;">●</span>5 estados semânticos com rollup <span style="opacity:0.5; font-size:0.7rem;">— herdr.dev/docs/agents</span></li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-success); margin-right: 8px;">●</span>Socket API NDJSON (~60 métodos) <span style="opacity:0.5; font-size:0.7rem;">— herdr.dev/docs/socket-api</span></li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-success); margin-right: 8px;">●</span>Git worktrees (worktree.create) <span style="opacity:0.5; font-size:0.7rem;">— herdr.dev/docs/socket-api</span></li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-success); margin-right: 8px;">●</span>Plugin system extensível <span style="opacity:0.5; font-size:0.7rem;">— herdr.dev/docs/plugins</span></li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-success); margin-right: 8px;">●</span>Safety rule HERDR_ENV=1 <span style="opacity:0.5; font-size:0.7rem;">— herdr.dev/docs/agent-skill</span></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color: var(--indra-danger); margin-bottom: var(--space-md); font-size: 0.9rem;">❌ O que Herdr NÃO PROVÊ (Ausente na doc oficial)</h4>
+        <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px;">
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-danger); margin-right: 8px;">○</span>Task management / Kanban board</li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-danger); margin-right: 8px;">○</span>Orquestração top-down (supervisor → workers)</li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-danger); margin-right: 8px;">○</span>File locking entre agentes</li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-danger); margin-right: 8px;">○</span>Check-ins / Status reports periódicos</li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-danger); margin-right: 8px;">○</span>Quality gates (test/lint before merge)</li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-danger); margin-right: 8px;">○</span>Contratos de escopo por agente</li>
+          <li style="color: var(--text-secondary);"><span style="color: var(--indra-danger); margin-right: 8px;">○</span>Task assignment automático</li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top: var(--space-lg); font-size: 0.78rem; color: var(--text-muted); font-style: italic;">📋 Fonte: herdr.dev/docs/how-to-work — "Herdr is a background session server plus one or more terminal clients."</p>
+  </div>
+
+  <!-- WHO IS THE ORCHESTRATOR -->
+  <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: var(--space-lg);">🧠 Quem é o Orquestrador?</h3>
+  <div class="card" style="margin-bottom: var(--space-2xl); border-left: 3px solid var(--indra-warning);">
+    <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.8;">
+      <strong style="color: var(--indra-warning);">Resposta fundamentada:</strong> Herdr <strong>não atribui tarefas</strong> a agentes. O fabricante define Herdr como <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">background session server</code> — não como "orchestrator" ou "task manager".
+      <br><br>
+      A orquestração acontece de 3 formas possíveis:<br>
+      <strong>1.</strong> O <strong>humano</strong> decide o que cada agente faz (atribuição manual)<br>
+      <strong>2.</strong> Um <strong>agente supervisor</strong> usa o Agent Skill para delegar via <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">herdr pane split + herdr pane run</code><br>
+      <strong>3.</strong> <strong>Tool externo</strong> (Taskter, CAO) gerencia o kanban e atribui tasks
+    </p>
+    <p style="margin-top: var(--space-md); font-size: 0.72rem; color: var(--text-muted);">📋 Fonte: herdr.dev/docs/agent-skill — "The skill is not a separate app or service. It is a markdown instruction file for agents."</p>
+  </div>
+
+  <!-- CHECK-INS, CONTRACTS, FILE ISOLATION -->
+  <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: var(--space-lg);">Perguntas Críticas — Respostas Fundamentadas</h3>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-2xl);">
+    <!-- Check-ins -->
+    <div class="card" style="border-top: 3px solid var(--indra-info);">
+      <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--indra-info); margin-bottom: var(--space-md);">📋 Check-ins?</h4>
+      <div style="background: rgba(239,68,68,0.1); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; color: var(--indra-danger); margin-bottom: var(--space-md);">❌ NÃO EXISTE NATIVAMENTE</div>
+      <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7;">Herdr provê <strong>event subscription</strong> (pane.agent_status_changed) e <strong>state rollup</strong> passivo, mas <strong>não</strong> check-ins programados.</p>
+      <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-sm);">Busca: "check-in", "standup", "report" — 0 resultados em herdr.dev</p>
+    </div>
+    <!-- Contracts -->
+    <div class="card" style="border-top: 3px solid var(--indra-warning);">
+      <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--indra-warning); margin-bottom: var(--space-md);">📝 Contratos?</h4>
+      <div style="background: rgba(245,158,11,0.1); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; color: var(--indra-warning); margin-bottom: var(--space-md);">⚠️ PARCIAL — Apenas Safety Rule</div>
+      <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7;">Existe <strong>1 contrato</strong>: <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">HERDR_ENV=1</code> — contrato de <strong>acesso</strong>. Não existe contrato de qualidade, escopo, ou SLA.</p>
+      <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-sm);">Fonte: herdr.dev/docs/agent-skill — "one guardrail"</p>
+    </div>
+    <!-- File Isolation -->
+    <div class="card" style="border-top: 3px solid var(--indra-danger);">
+      <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--indra-danger); margin-bottom: var(--space-md);">🔒 Isolamento de Código?</h4>
+      <div style="background: rgba(245,158,11,0.1); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; color: var(--indra-warning); margin-bottom: var(--space-md);">⚠️ PARCIAL — PTY sim, Filesystem não</div>
+      <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7;">PTYs isolados ✅. Git worktrees disponíveis ✅. Mas <strong>file locking não existe</strong> — dois agentes podem editar o mesmo arquivo simultaneamente.</p>
+      <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-sm);">Busca: "lock", "mutex" — 0 resultados em herdr.dev</p>
+    </div>
+  </div>
+
+  <!-- OPEN SOURCE SOLUTIONS MATRIX -->
+  <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: var(--space-lg);">🔧 Soluções Open-Source para Preencher os Gaps</h3>
+  <p class="section-subtitle" style="margin-bottom: var(--space-lg);">Ferramentas pesquisadas em GitHub, Reddit, YT e fóruns — verificadas com acesso programático em 2026-06-21.</p>
+
+  <div class="comparison-grid" style="grid-template-columns: 180px repeat(6, 1fr); margin-bottom: var(--space-2xl);">
+    <div class="comparison-grid__cell comparison-grid__header">Ferramenta</div>
+    <div class="comparison-grid__cell comparison-grid__header">Kanban</div>
+    <div class="comparison-grid__cell comparison-grid__header">Orchestration</div>
+    <div class="comparison-grid__cell comparison-grid__header">File Lock</div>
+    <div class="comparison-grid__cell comparison-grid__header">MCP</div>
+    <div class="comparison-grid__cell comparison-grid__header">Linguagem</div>
+    <div class="comparison-grid__cell comparison-grid__header" style="border-top: 3px solid var(--indra-herdr); color: var(--indra-herdr);">Herdr Compat</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Taskter</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> TUI Board</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Scheduler</div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> stdio</div>
+    <div class="comparison-grid__cell">Rust</div>
+    <div class="comparison-grid__cell"><span style="color: var(--indra-herdr); font-weight: 700;">⭐ ALTA</span></div>
+
+    <div class="comparison-grid__cell comparison-grid__label">CAO (AWS)</div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Supervisor</div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell"><span class="check">✓</span></div>
+    <div class="comparison-grid__cell">TypeScript</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> MÉDIA</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">kanban-md</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> File-based</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> Claim</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> YAML claim</div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell">Go/CLI</div>
+    <div class="comparison-grid__cell"><span style="color: var(--indra-herdr); font-weight: 700;">⭐ ALTA</span></div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Backlog.md</div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Markdown</div>
+    <div class="comparison-grid__cell"><span class="partial">◐</span> MCP tools</div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell"><span class="check">✓</span></div>
+    <div class="comparison-grid__cell">CLI</div>
+    <div class="comparison-grid__cell"><span style="color: var(--indra-herdr); font-weight: 700;">⭐ ALTA</span></div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Nika</div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> DAG YAML</div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell">Rust</div>
+    <div class="comparison-grid__cell"><span style="color: var(--indra-herdr); font-weight: 700;">⭐ ALTA</span></div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Worktrunk</div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell"><span class="check">✓</span> Worktree</div>
+    <div class="comparison-grid__cell"><span class="cross">—</span></div>
+    <div class="comparison-grid__cell">CLI</div>
+    <div class="comparison-grid__cell"><span style="color: var(--indra-herdr); font-weight: 700;">⭐ ALTA</span></div>
+  </div>
+
+  <!-- PROPOSED ARCHITECTURE -->
+  <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: var(--space-lg);">🏗️ Arquitetura Proposta: Herdr + Camada de Orquestração</h3>
+
+  <div class="arch-canvas" style="min-height: 480px; padding: var(--space-xl);">
+    <svg viewBox="0 0 1100 440" style="width:100%;height:100%;">
+      <!-- Background labels -->
+      <text x="550" y="30" text-anchor="middle" fill="#64748B" font-size="11" font-family="JetBrains Mono" font-weight="600" letter-spacing="3">ARQUITETURA COMPOSTA — HERDR + ORCHESTRATION LAYER</text>
+
+      <!-- HERDR LAYER -->
+      <rect x="50" y="50" width="1000" height="130" rx="12" fill="rgba(139,92,246,0.06)" stroke="rgba(139,92,246,0.3)" stroke-width="1.5" stroke-dasharray="6 3"/>
+      <text x="80" y="75" fill="#8B5CF6" font-size="11" font-weight="700" font-family="JetBrains Mono">HERDR SERVER (Existente)</text>
+
+      <rect x="80" y="90" width="140" height="70" rx="8" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.3)"/>
+      <text x="150" y="115" text-anchor="middle" fill="#8B5CF6" font-size="10" font-weight="700">PTY:0</text>
+      <text x="150" y="130" text-anchor="middle" fill="#94A3B8" font-size="9">Supervisor</text>
+      <circle cx="150" cy="145" r="5" fill="#3B82F6">
+        <animate attributeName="r" values="5;8;5" dur="2s" repeatCount="indefinite"/>
+      </circle>
+
+      <rect x="250" y="90" width="140" height="70" rx="8" fill="rgba(59,130,246,0.1)" stroke="rgba(59,130,246,0.3)"/>
+      <text x="320" y="115" text-anchor="middle" fill="#3B82F6" font-size="10" font-weight="700">PTY:1</text>
+      <text x="320" y="130" text-anchor="middle" fill="#94A3B8" font-size="9">Worker A</text>
+      <circle cx="320" cy="145" r="5" fill="#10B981">
+        <animate attributeName="r" values="5;7;5" dur="1.5s" repeatCount="indefinite"/>
+      </circle>
+
+      <rect x="420" y="90" width="140" height="70" rx="8" fill="rgba(59,130,246,0.1)" stroke="rgba(59,130,246,0.3)"/>
+      <text x="490" y="115" text-anchor="middle" fill="#3B82F6" font-size="10" font-weight="700">PTY:2</text>
+      <text x="490" y="130" text-anchor="middle" fill="#94A3B8" font-size="9">Worker B</text>
+      <circle cx="490" cy="145" r="5" fill="#F59E0B"/>
+
+      <rect x="590" y="90" width="140" height="70" rx="8" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.3)"/>
+      <text x="660" y="115" text-anchor="middle" fill="#10B981" font-size="10" font-weight="700">PTY:3</text>
+      <text x="660" y="130" text-anchor="middle" fill="#94A3B8" font-size="9">Board Plugin</text>
+
+      <rect x="760" y="90" width="260" height="70" rx="8" fill="rgba(99,102,241,0.08)" stroke="rgba(99,102,241,0.2)"/>
+      <text x="890" y="115" text-anchor="middle" fill="#6366F1" font-size="10" font-weight="700">Socket API + Detection</text>
+      <text x="890" y="130" text-anchor="middle" fill="#94A3B8" font-size="8">NDJSON • herdr.sock • events</text>
+
+      <!-- SOCKET CONNECTION -->
+      <line x1="550" y1="180" x2="550" y2="220" stroke="#6366F1" stroke-width="2" stroke-dasharray="6 3">
+        <animate attributeName="stroke-dashoffset" values="0;-18" dur="1s" repeatCount="indefinite"/>
+      </line>
+      <circle cx="550" cy="200" r="4" fill="#6366F1">
+        <animate attributeName="cy" values="185;215;185" dur="1.5s" repeatCount="indefinite"/>
+      </circle>
+
+      <!-- ORCHESTRATION LAYER -->
+      <rect x="50" y="220" width="1000" height="200" rx="12" fill="rgba(245,158,11,0.04)" stroke="rgba(245,158,11,0.25)" stroke-width="1.5" stroke-dasharray="6 3"/>
+      <text x="80" y="245" fill="#F59E0B" font-size="11" font-weight="700" font-family="JetBrains Mono">ORCHESTRATION LAYER (A Construir)</text>
+
+      <rect x="80" y="260" width="200" height="140" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.2)"/>
+      <text x="180" y="285" text-anchor="middle" fill="#F59E0B" font-size="10" font-weight="700">📋 Task Manager</text>
+      <text x="180" y="305" text-anchor="middle" fill="#94A3B8" font-size="8">Kanban Board TUI</text>
+      <text x="180" y="320" text-anchor="middle" fill="#94A3B8" font-size="8">.tasks/*.md (Git-native)</text>
+      <text x="180" y="335" text-anchor="middle" fill="#94A3B8" font-size="8">Backlog → In Progress → Done</text>
+      <text x="180" y="355" text-anchor="middle" fill="#64748B" font-size="7" font-style="italic">Taskter / kanban-md / Backlog.md</text>
+
+      <rect x="310" y="260" width="200" height="140" rx="8" fill="rgba(239,68,68,0.08)" stroke="rgba(239,68,68,0.2)"/>
+      <text x="410" y="285" text-anchor="middle" fill="#EF4444" font-size="10" font-weight="700">🔒 Lock Manager</text>
+      <text x="410" y="305" text-anchor="middle" fill="#94A3B8" font-size="8">Advisory File Locks</text>
+      <text x="410" y="320" text-anchor="middle" fill="#94A3B8" font-size="8">TTL auto-expire</text>
+      <text x="410" y="335" text-anchor="middle" fill="#94A3B8" font-size="8">Lock visibility cross-agent</text>
+      <text x="410" y="355" text-anchor="middle" fill="#64748B" font-size="7" font-style="italic">Custom plugin (a construir)</text>
+
+      <rect x="540" y="260" width="200" height="140" rx="8" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.2)"/>
+      <text x="640" y="285" text-anchor="middle" fill="#10B981" font-size="10" font-weight="700">🌿 Worktree Automator</text>
+      <text x="640" y="305" text-anchor="middle" fill="#94A3B8" font-size="8">Auto git worktree per task</text>
+      <text x="640" y="320" text-anchor="middle" fill="#94A3B8" font-size="8">Branch isolation per agent</text>
+      <text x="640" y="335" text-anchor="middle" fill="#94A3B8" font-size="8">Merge via PR review</text>
+      <text x="640" y="355" text-anchor="middle" fill="#64748B" font-size="7" font-style="italic">Worktrunk + herdr worktree.*</text>
+
+      <rect x="770" y="260" width="250" height="140" rx="8" fill="rgba(99,102,241,0.08)" stroke="rgba(99,102,241,0.2)"/>
+      <text x="895" y="285" text-anchor="middle" fill="#6366F1" font-size="10" font-weight="700">📊 Quality Gates & Reports</text>
+      <text x="895" y="305" text-anchor="middle" fill="#94A3B8" font-size="8">Test/Lint before merge</text>
+      <text x="895" y="320" text-anchor="middle" fill="#94A3B8" font-size="8">Check-in cron reports</text>
+      <text x="895" y="335" text-anchor="middle" fill="#94A3B8" font-size="8">Progress dashboard</text>
+      <text x="895" y="355" text-anchor="middle" fill="#64748B" font-size="7" font-style="italic">Herdr plugin events + custom</text>
+    </svg>
+  </div>
+
+  <!-- EVIDENCE TABLE -->
+  <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: var(--space-lg);">📚 Tabela de Evidências — Anti-Alucinação</h3>
+
+  <div class="comparison-grid" style="grid-template-columns: 300px 100px 1fr; margin-bottom: var(--space-2xl);">
+    <div class="comparison-grid__cell comparison-grid__header">Afirmação</div>
+    <div class="comparison-grid__cell comparison-grid__header">Status</div>
+    <div class="comparison-grid__cell comparison-grid__header">Fonte Oficial</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Herdr é um session server</div>
+    <div class="comparison-grid__cell"><span class="check">✓ FATO</span></div>
+    <div class="comparison-grid__cell"><a href="https://herdr.dev/docs/how-to-work/" style="color: var(--indra-accent-glow); text-decoration: none; font-size: 0.8rem;">herdr.dev/docs/how-to-work</a></div>
+
+    <div class="comparison-grid__cell comparison-grid__label">5 estados semânticos com rollup</div>
+    <div class="comparison-grid__cell"><span class="check">✓ FATO</span></div>
+    <div class="comparison-grid__cell"><a href="https://herdr.dev/docs/agents/" style="color: var(--indra-accent-glow); text-decoration: none; font-size: 0.8rem;">herdr.dev/docs/agents</a></div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Safety rule HERDR_ENV=1</div>
+    <div class="comparison-grid__cell"><span class="check">✓ FATO</span></div>
+    <div class="comparison-grid__cell"><a href="https://herdr.dev/docs/agent-skill/" style="color: var(--indra-accent-glow); text-decoration: none; font-size: 0.8rem;">herdr.dev/docs/agent-skill</a></div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Git worktrees via Socket API</div>
+    <div class="comparison-grid__cell"><span class="check">✓ FATO</span></div>
+    <div class="comparison-grid__cell"><a href="https://herdr.dev/docs/socket-api/" style="color: var(--indra-accent-glow); text-decoration: none; font-size: 0.8rem;">herdr.dev/docs/socket-api — worktree.*</a></div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Herdr não delega tarefas</div>
+    <div class="comparison-grid__cell"><span class="check">✓ AUSÊNCIA</span></div>
+    <div class="comparison-grid__cell" style="font-size: 0.8rem; color: var(--text-muted);">Nenhuma doc menciona task delegation</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Não existe check-in nativo</div>
+    <div class="comparison-grid__cell"><span class="check">✓ AUSÊNCIA</span></div>
+    <div class="comparison-grid__cell" style="font-size: 0.8rem; color: var(--text-muted);">Termo não aparece em nenhuma página</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Não existe file locking</div>
+    <div class="comparison-grid__cell"><span class="check">✓ AUSÊNCIA</span></div>
+    <div class="comparison-grid__cell" style="font-size: 0.8rem; color: var(--text-muted);">Termos "lock", "mutex" ausentes</div>
+
+    <div class="comparison-grid__cell comparison-grid__label">Não existe kanban nativo</div>
+    <div class="comparison-grid__cell"><span class="check">✓ AUSÊNCIA</span></div>
+    <div class="comparison-grid__cell" style="font-size: 0.8rem; color: var(--text-muted);">Termos "kanban", "board", "backlog" ausentes</div>
+  </div>
+
+  <!-- PRD LINK -->
+  <div style="background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(59,130,246,0.05)); border: 1px solid rgba(16,185,129,0.2); border-radius: var(--radius-xl); padding: var(--space-xl); text-align: center;">
+    <h4 style="font-size: 1rem; font-weight: 700; color: var(--indra-success); margin-bottom: var(--space-sm);">📄 PRD Completo Disponível</h4>
+    <p style="font-size: 0.85rem; color: var(--text-secondary);">O Product Requirements Document com user stories, requisitos funcionais/não-funcionais, roadmap de 3 fases e matriz de riscos foi gerado como artefato separado.</p>
+  </div>
+
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>Herdr Architecture 360° — Documento técnico gerado a partir da documentação oficial herdr.dev</p>
+  <p style="margin-top:4px;">Design System: Indra Corporate • Construído com HTML/CSS/JS puro • Sem frameworks</p>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT — View Switching + KPI Animation
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+// View tab switching
+document.querySelectorAll('.view-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const viewId = 'view-' + tab.dataset.view;
+    const panel = document.getElementById(viewId);
+    if (panel) {
+      panel.classList.add('active');
+      // Re-trigger animations
+      panel.querySelectorAll('[data-count]').forEach(el => animateCounter(el));
+    }
+  });
+});
+
+// KPI counter animation
+function animateCounter(element) {
+  const end = parseInt(element.dataset.count);
+  if (isNaN(end)) return;
+  const duration = 1200;
+  const startTime = performance.now();
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(end * eased);
+    element.textContent = current;
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+// Intersection observer for scroll animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      if (entry.target.dataset.count) {
+        animateCounter(entry.target);
+      }
+      entry.target.style.animationPlayState = 'running';
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('[data-count]').forEach(el => observer.observe(el));
+document.querySelectorAll('.flow-node, .timeline__step, .kpi-card').forEach(el => observer.observe(el));
+
+// Initial KPI animation
+document.querySelectorAll('#view-macro [data-count]').forEach(el => {
+  setTimeout(() => animateCounter(el), 500);
+});
+</script>
+
+</body>
+</html>

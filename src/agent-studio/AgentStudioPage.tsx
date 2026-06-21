@@ -2,7 +2,7 @@
 import React, { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AgentProfile, caoClient, caoQueryKeys, ProviderAvailability, CaoApiError } from '@/api';
+import { AgentProfile, goCoreClient, goCoreQueryKeys, ProviderAvailability, GoCoreApiError } from '@/api';
 import { useValidatedProviders } from '@/api/key-store/use-validated-providers';
 import { Badge, Button, Card, FormField, Prose, StatusBadge } from '@/design-system';
 import { useToast } from '@/shell/toasts';
@@ -48,13 +48,13 @@ export const AgentStudioPage: React.FC = () => {
   const [sourceError, setSourceError] = useState<string | null>(null);
 
   const profilesQuery = useQuery({
-    queryKey: caoQueryKeys.profiles(),
-    queryFn: () => caoClient.listProfiles(),
+    queryKey: goCoreQueryKeys.profiles(),
+    queryFn: () => goCoreClient.listProfiles(),
   });
 
   const providersQuery = useQuery({
-    queryKey: caoQueryKeys.providers(),
-    queryFn: () => caoClient.listProviders(),
+    queryKey: goCoreQueryKeys.providers(),
+    queryFn: () => goCoreClient.listProviders(),
   });
 
   const selectedProfile = useMemo(() => {
@@ -86,15 +86,15 @@ export const AgentStudioPage: React.FC = () => {
   }, [profilesQuery.data, providerFilter, search]);
 
   const installMutation = useMutation({
-    mutationFn: (markdown: string) => caoClient.installProfile(markdown),
+    mutationFn: (markdown: string) => goCoreClient.installProfile(markdown),
     onSuccess: async (profile) => {
-      await queryClient.invalidateQueries({ queryKey: caoQueryKeys.profiles() });
+      await queryClient.invalidateQueries({ queryKey: goCoreQueryKeys.profiles() });
       setSelectedName(profile.name);
       setEditorMode('closed');
       toast.success(`Installed profile ${profile.name}.`);
     },
     onError: (error) => {
-      toast.error(formatCaoError(error));
+      toast.error(formatGoCoreError(error));
     },
   });
 
@@ -249,7 +249,7 @@ export const AgentStudioPage: React.FC = () => {
           </div>
 
           {profilesQuery.error ? (
-            <div className="agent-studio-error">{formatCaoError(profilesQuery.error)}</div>
+            <div className="agent-studio-error">{formatGoCoreError(profilesQuery.error)}</div>
           ) : profilesQuery.isLoading ? (
             <p className="agent-studio-muted">Loading profiles...</p>
           ) : filteredProfiles.length === 0 ? (
@@ -306,7 +306,7 @@ export const AgentStudioPage: React.FC = () => {
           body={body}
           providerOptions={providerOptions}
           isSaving={installMutation.isPending}
-          error={installMutation.error ? formatCaoError(installMutation.error) : null}
+          error={installMutation.error ? formatGoCoreError(installMutation.error) : null}
           onFrontmatterChange={setFrontmatter}
           onBodyChange={setBody}
           onCancel={() => setEditorMode('closed')}
@@ -444,7 +444,7 @@ function ProfileEditor({
           <div className="agent-detail-header">
             <div>
               <h2>{mode === 'source-preview' ? 'Preview Profile Source' : 'Profile Editor'}</h2>
-              <p>Save installs the assembled markdown through CAO.</p>
+              <p>Save installs the assembled markdown through GO Core.</p>
             </div>
             <Button type="button" variant="ghost" onClick={onCancel}>
               Close
@@ -574,8 +574,8 @@ function splitList(value: string): string[] {
     .filter(Boolean);
 }
 
-function formatCaoError(error: unknown): string {
-  if (error instanceof CaoApiError) {
+function formatGoCoreError(error: unknown): string {
+  if (error instanceof GoCoreApiError) {
     const body = typeof error.body === 'string' ? error.body : JSON.stringify(error.body);
     return `HTTP ${error.status}: ${body}`;
   }

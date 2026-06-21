@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { caoClient, sessionsQueryKeys, terminalQueryKeys } from '@/api';
+import { goCoreClient, sessionsQueryKeys, terminalQueryKeys } from '@/api';
 import type { Terminal, InboxMessage } from '@/api';
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
 import { TerminalView } from '@/terminal';
@@ -32,7 +32,7 @@ export const TerminalGrid: React.FC<TerminalGridProps> = ({ sessionName }) => {
   // Queries for terminals in the session
   const { data: terminals = [] } = useQuery<Terminal[]>({
     queryKey: sessionsQueryKeys.terminals(sessionName),
-    queryFn: () => caoClient.listTerminalsInSession(sessionName),
+    queryFn: () => goCoreClient.listTerminalsInSession(sessionName),
     refetchInterval: 3000,
     refetchIntervalInBackground: false,
   });
@@ -95,7 +95,7 @@ export const TerminalGrid: React.FC<TerminalGridProps> = ({ sessionName }) => {
   };
 
   const executeKill = useMutation({
-    mutationFn: (id: string) => caoClient.deleteTerminal(id),
+    mutationFn: (id: string) => goCoreClient.deleteTerminal(id),
     onSuccess: (_, id) => {
       toast.success(`Terminal killed successfully`);
       queryClient.invalidateQueries({ queryKey: sessionsQueryKeys.terminals(sessionName) });
@@ -324,21 +324,21 @@ const TerminalControlsCard: React.FC<TerminalControlsCardProps> = ({
   // Fetch Working Directory
   const { data: workingDir = 'Loading...' } = useQuery({
     queryKey: terminalQueryKeys.workingDirectory(terminalId),
-    queryFn: () => caoClient.getTerminalWorkingDirectory(terminalId),
+    queryFn: () => goCoreClient.getTerminalWorkingDirectory(terminalId),
     enabled: !!terminalId,
   });
 
   // Fetch Inbox Messages
   const { data: inboxMessages = [] } = useQuery<InboxMessage[]>({
     queryKey: terminalQueryKeys.inboxMessages(terminalId),
-    queryFn: () => caoClient.listInboxMessages(terminalId),
+    queryFn: () => goCoreClient.listInboxMessages(terminalId),
     enabled: !!terminalId,
     refetchInterval: 3000,
   });
 
   // Send Message Mutation
   const sendMessageMutation = useMutation({
-    mutationFn: (msg: string) => caoClient.sendTerminalInput(terminalId, msg),
+    mutationFn: (msg: string) => goCoreClient.sendTerminalInput(terminalId, msg),
     onSuccess: () => {
       setMessage('');
     },

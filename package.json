@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "AgentVerse v1 — multi-agent orchestration SPA on top of CAO",
+  "description": "AgentVerse v1 — multi-agent orchestration SPA on top of GO Core",
   "scripts": {
     "predev": "node scripts/check-dev-env.mjs",
     "dev": "vite --port 5173 --strictPort",
@@ -19,7 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:smoke": "playwright test tests/e2e/smoke.spec.ts",
-    "test:contract": "CAO_LIVE=1 vitest run --dir src/api/__tests__/contract",
+    "test:contract": "GO_CORE_LIVE=1 vitest run tests/contract/ --reporter=verbose",
     "test:keystore-contract": "KEYSTORE_LIVE=1 vitest run --dir src/api/key-store/__tests__/contract",
     "test:a11y": "vitest run --dir src/__tests__/a11y",
     "prepare": "node -e \"process.exit(0)\""

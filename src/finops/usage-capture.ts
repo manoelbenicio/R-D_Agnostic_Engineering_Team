@@ -11,11 +11,11 @@
  * estimate (`cost-estimate.ts`) stays the fallback. No usage figures are ever
  * synthesised here.
  *
- * BLOCKED (CAO side): there is currently no call site in the SPA. Terminal
+ * BLOCKED (GO Core side): there is currently no call site in the SPA. Terminal
  * output arrives as raw binary xterm frames over the WebSocket
  * (`src/api/connect-terminal-socket.ts` → `src/terminal/use-terminal-stream.ts`);
  * the runtime never surfaces a structured per-response `usage` block. Wiring
- * the call requires CAO to expose provider usage per terminal turn (response
+ * the call requires GO Core to expose provider usage per terminal turn (response
  * body or a dedicated usage event) — see tasks.md §6.1. Once it does, the
  * cross-capability seam in `@/shared/usage-capture-bus` (registered by the
  * shell adapter) should delegate to this function from the terminal pipeline.

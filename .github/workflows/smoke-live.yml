@@ -7,7 +7,7 @@ on:
 
 jobs:
   smoke-live-weekly:
-    name: weekly live CAO smoke
+    name: weekly live GO Core smoke
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,17 +19,17 @@ jobs:
         run: npm ci
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-      - name: Start CAO container
-        run: docker run -d --name cao -p 9889:9889 cao-server
-      - name: Wait for CAO container to be ready
+      - name: Start GO Core container
+        run: docker run -d --name go-core -p 8080:8080 go-core-server
+      - name: Wait for GO Core container to be ready
         run: |
           for i in {1..30}; do
-            curl -s http://localhost:9889/health && break
+            curl -s http://localhost:8080/health && break
             sleep 1
           done
-      - name: Run smoke against Live CAO (no MSW)
+      - name: Run smoke against live GO Core (no MSW)
         env:
-          CAO_LIVE: '1'
+          GO_CORE_LIVE: '1'
           VITE_USE_MSW: 'false'
-          VITE_CAO_BASE_URL: http://localhost:9889
+          VITE_GO_CORE_BASE_URL: http://localhost:8080
         run: npm run test:smoke

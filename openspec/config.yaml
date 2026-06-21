@@ -4,19 +4,19 @@ context: |
   # AgentVerse — Project Context
 
   AgentVerse is a visual-first, canvas-driven web application that wraps the
-  CLI Agent Orchestrator (CAO) — letting users design, deploy, and monitor
+  GO Core — letting users design, deploy, and monitor
   multi-agent AI workflows by dragging blocks on a canvas, speaking to a
   voice interface, or both.
 
   ## Engine
-  AgentVerse is a frontend on top of CAO (CLI Agent Orchestrator) by AWS Labs.
-  CAO exposes a FastAPI server on `127.0.0.1:9889` with 32 REST endpoints
+  AgentVerse is a frontend on top of GO Core.
+  GO Core exposes a server on `127.0.0.1:8080` with 32 REST endpoints
   + 1 WebSocket endpoint for PTY terminal streaming. Every agent runs in a
-  real tmux session. AgentVerse does NOT modify CAO; it integrates over HTTP.
+  real tmux session. AgentVerse does NOT modify GO Core; it integrates over HTTP.
 
   ## Differentiators
   - **Canvas Builder**: drag-drop agent blocks, connect with handoff/assign/
-    send_message edges, click Deploy. Generates CAO profiles and sessions
+    send_message edges, click Deploy. Generates GO Core profiles and sessions
     automatically.
   - **Speech-to-Canvas**: voice → NLU → canvas JSON. Native mic everywhere.
   - **TMUX Substrate**: tmux is the always-running execution layer. UI surfaces
@@ -28,7 +28,7 @@ context: |
   - **Auth**: Firebase Authentication (GCP) — already deployed
   - **Database**: Firestore (cloud) / Postgres / IndexedDB (local dev fallback)
   - **Hosting**: Firebase Hosting / Cloud Run for SPA; Cloud Run/GKE/user-hosted
-    for CAO runtime (deferred to Milestone 2-3 deep-dive)
+    for GO Core runtime (deferred to Milestone 2-3 deep-dive)
   - **NLU**: BYOK — customer's own LLM key, cheapest available (Gemini Flash,
     GPT-4o-mini, Haiku)
   - **STT**: Web Speech API (Tier 1) → Whisper API (Tier 2) → Deepgram (Tier 3)
@@ -40,9 +40,9 @@ context: |
   Inter for UI, JetBrains Mono for terminal/code.
 
   ## Deployment Model
-  - Local dev: `localhost:9889` CAO, no auth required
-  - Cloud staging: Firebase Auth enforced, `https://cao-staging.yourapp.com`
-  - Cloud production: Firebase Auth + per-tenant CAO isolation
+  - Local dev: `localhost:8080` GO Core, no auth required
+  - Cloud staging: Firebase Auth enforced, `https://gocore-staging.yourapp.com`
+  - Cloud production: Firebase Auth + per-tenant GO Core isolation
 
   ## Cost Model (BYOK)
   Customers bring their own API keys for OpenAI, Anthropic, Google, AWS,

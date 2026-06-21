@@ -377,7 +377,7 @@ export const ProvidersPage: React.FC = () => {
 export const GeneralPage: React.FC = () => {
   const initSettings = useSettingsStore((s) => s.init);
   const settingsInitialized = useSettingsStore((s) => s.initialized);
-  const caoBaseUrl = useSettingsStore((s) => s.caoBaseUrl);
+  const goCoreBaseUrl = useSettingsStore((s) => s.goCoreBaseUrl);
   const defaultProvider = useSettingsStore((s) => s.defaultProvider);
   const defaultWorkingDir = useSettingsStore((s) => s.defaultWorkingDir);
   const sessionAutoRefreshInterval = useSettingsStore((s) => s.sessionAutoRefreshInterval);
@@ -427,7 +427,7 @@ export const GeneralPage: React.FC = () => {
               <button
                 type="button"
                 className="sentinel-button sentinel-button-secondary"
-                onClick={() => void updateSetting('caoBaseUrl', 'http://127.0.0.1:9889')}
+                onClick={() => void updateSetting('goCoreBaseUrl', 'http://127.0.0.1:8080')}
               >
                 Local (Docker)
               </button>
@@ -438,7 +438,7 @@ export const GeneralPage: React.FC = () => {
                   const cloudUrl =
                     (import.meta.env.VITE_CLOUD_RUNTIME_URL as string | undefined) || '';
                   if (cloudUrl) {
-                    void updateSetting('caoBaseUrl', cloudUrl);
+                    void updateSetting('goCoreBaseUrl', cloudUrl);
                   } else {
                     // No cloud URL baked in yet — leave the field unchanged and rely on the user typing it
                     // eslint-disable-next-line no-alert
@@ -455,14 +455,14 @@ export const GeneralPage: React.FC = () => {
 
           <FormField
             label="Runtime Base URL"
-            id="general-cao-base-url"
-            helperText="Base URL of the orchestration runtime. Persisted to IndexedDB. Use http://127.0.0.1:9889 for local Docker, or your Cloud Run URL for cloud."
+            id="general-go-core-base-url"
+            helperText="Base URL of the orchestration runtime. Persisted to IndexedDB. Use http://127.0.0.1:8080 for local Docker, or your Cloud Run URL for cloud."
           >
             <input
               type="text"
-              value={caoBaseUrl}
-              onChange={(e) => void updateSetting('caoBaseUrl', e.target.value)}
-              placeholder="e.g. http://127.0.0.1:9889"
+              value={goCoreBaseUrl}
+              onChange={(e) => void updateSetting('goCoreBaseUrl', e.target.value)}
+              placeholder="e.g. http://127.0.0.1:8080"
             />
           </FormField>
 

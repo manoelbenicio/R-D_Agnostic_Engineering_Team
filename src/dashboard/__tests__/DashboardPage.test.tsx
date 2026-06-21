@@ -2,9 +2,20 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DashboardPage } from '../DashboardPage';
-import { caoClient } from '@/api';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { goCoreClient } from '@/api';
+
+const mockGoCoreClient = vi.hoisted(() => ({
+  listSessions: vi.fn(),
+  listTerminalsInSession: vi.fn(),
+  listInboxMessages: vi.fn(),
+}));
+
+const mockRefreshSessions = vi.hoisted(() => vi.fn());
+
+const mockCanvasStore = vi.hoisted(() => ({
+  list: vi.fn(),
+}));
 
 vi.mock('@/terminal', () => ({
   TerminalView: ({ terminalId, readOnly }: { terminalId: string; readOnly?: boolean }) => (
@@ -14,17 +25,21 @@ vi.mock('@/terminal', () => ({
   ),
 }));
 
-vi.mock('@/api', async (importOriginal) => {
-  const original = await importOriginal<object>();
-  return {
-    ...original,
-    caoClient: {
-      listSessions: vi.fn(),
-      listTerminalsInSession: vi.fn(),
-      listInboxMessages: vi.fn(),
-    },
-  };
-});
+vi.mock('@/api', () => ({
+  goCoreClient: mockGoCoreClient,
+}));
+
+vi.mock('@/api/session-store', () => ({
+  useSessionStore: Object.assign(
+    vi.fn(() => ({
+      sessions: [],
+      refresh: mockRefreshSessions,
+    })),
+    {
+      getState: () => ({ sessions: [] }),
+    }
+  ),
+}));
 
 vi.mock('@/finops', async (importOriginal) => {
   const original = await importOriginal<object>();
@@ -51,14 +66,7 @@ vi.mock('@/settings/settings-store', () => ({
 }));
 
 vi.mock('@/canvas-document/store', () => ({
-  canvasStore: {
-    list: vi.fn().mockResolvedValue([
-      {
-        id: 'canvas-1',
-        deploy_state: { terminal_map: { node1: 'term-1' } },
-      },
-    ]),
-  },
+  canvasStore: mockCanvasStore,
 }));
 
 vi.mock('recharts', () => ({
@@ -73,13 +81,26 @@ vi.mock('recharts', () => ({
   YAxis: () => <div />,
 }));
 
+let DashboardPage: typeof import('../DashboardPage').DashboardPage;
+
 describe('DashboardPage', () => {
+  vi.setConfig({ hookTimeout: 30_000 });
+  beforeAll(async () => {
+    ({ DashboardPage } = await import('../DashboardPage'));
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(caoClient.listSessions).mockResolvedValue([
+    mockCanvasStore.list.mockResolvedValue([
+      {
+        id: 'canvas-1',
+        deploy_state: { terminal_map: { node1: 'term-1' } },
+      },
+    ]);
+    vi.mocked(goCoreClient.listSessions).mockResolvedValue([
       { name: 'session-1', profile: 'supervisor', working_directory: '~', status: 'active' },
     ]);
-    vi.mocked(caoClient.listTerminalsInSession).mockResolvedValue([
+    vi.mocked(goCoreClient.listTerminalsInSession).mockResolvedValue([
       {
         id: 'term-1',
         session_name: 'session-1',
@@ -111,7 +132,7 @@ describe('DashboardPage', () => {
         created_at: '2026-05-27T20:02:00.000Z',
       },
     ]);
-    vi.mocked(caoClient.listInboxMessages).mockResolvedValue([
+    vi.mocked(goCoreClient.listInboxMessages).mockResolvedValue([
       {
         id: 'msg-1',
         terminal_id: 'term-1',

@@ -5,7 +5,7 @@
  *
  * Responsibilities:
  *   - Translate a `RuntimeCommand` into the appropriate side-effect (toast,
- *     CAO API call, navigation, deploy reconcile, in-place canvas mutation,
+ *     GO Core API call, navigation, deploy reconcile, in-place canvas mutation,
  *     UI-bridge event).
  *   - Surface every side-effect through the injected `CommandExecutorDeps`
  *     so the 9-action × N-error-path matrix is fully unit-testable without
@@ -20,7 +20,7 @@
  *     the architectural lint rule. No directive is required.
  */
 
-import type { CaoClient } from '@/api/cao-client';
+import type { GoCoreClient } from '@/api';
 import type { CanvasDocument } from '@/shared/canvas-types';
 import type { CanvasCommandBus } from '@/shared/canvas-command-bus';
 
@@ -49,11 +49,11 @@ export interface ConfirmOptions {
 }
 
 /**
- * Subset of `CaoClient` used by the executor. Tests pass a partial mock that
+ * Subset of `GoCoreClient` used by the executor. Tests pass a partial mock that
  * only implements these four methods.
  */
-export type CommandExecutorCaoClient = Pick<
-  CaoClient,
+export type CommandExecutorGoCoreClient = Pick<
+  GoCoreClient,
   'listTerminalsInSession' | 'sendTerminalInput' | 'deleteTerminal' | 'deleteSession'
 >;
 
@@ -69,8 +69,8 @@ export type CommandExecutorCaoClient = Pick<
 export interface CommandExecutorDeps {
   /** Current canvas snapshot, or `null` when no canvas is open. */
   canvas: CanvasDocument | null;
-  /** CAO client (subset). */
-  cao: CommandExecutorCaoClient;
+  /** GO Core client (subset). */
+  goCore: CommandExecutorGoCoreClient;
   /** Toast API; same shape as `useToast()`. */
   toast: ToastApi;
   /** Navigation callback. */
@@ -189,7 +189,7 @@ function fail(
  * Execute a parsed `RuntimeCommand` against the injected dependencies.
  *
  * Always resolves with a `CommandExecutorResult`; never throws (errors from
- * CAO calls are surfaced via `status: 'api_error'` and the matching
+ * GO Core calls are surfaced via `status: 'api_error'` and the matching
  * `toast.error(...)` call).
  */
 export async function executeRuntimeCommand(
@@ -295,7 +295,7 @@ async function executeStatus(
   }
 
   try {
-    const terminals = await deps.cao.listTerminalsInSession(sessionName);
+    const terminals = await deps.goCore.listTerminalsInSession(sessionName);
     if (terminals.length === 0) {
       const text = 'No active terminals found in this session.';
       deps.toast.info(text);
@@ -378,7 +378,7 @@ async function executePause(
 
   try {
     // Ctrl+S — preserves the original VoicePanel signal byte for "pause".
-    await deps.cao.sendTerminalInput(terminalId, '\x13');
+    await deps.goCore.sendTerminalInput(terminalId, '\x13');
     deps.toast.info(`Sent pause signal to terminal for ${target.value}`);
     return ok(command.action);
   } catch (err) {
@@ -446,7 +446,7 @@ async function executeKill(
 
   deps.toast.info(`Killing terminal for ${nodeName}...`);
   try {
-    await deps.cao.deleteTerminal(terminalId);
+    await deps.goCore.deleteTerminal(terminalId);
     deps.toast.success(`Terminal for '${nodeName}' has been killed.`);
     deps.onUpdateCanvas?.((current) => {
       const nextMap = { ...(current.deploy_state.terminal_map ?? {}) };
@@ -494,7 +494,7 @@ async function executeStopAll(
     title: 'Confirm Stop All',
     message:
       `Confirm stop all? This will kill ${activeCount} terminals and tear down ` +
-      `the CAO session '${sessionName}'.`,
+      `the GO Core session '${sessionName}'.`,
   });
   if (!confirmed) {
     return fail(command.action, 'cancelled');
@@ -502,7 +502,7 @@ async function executeStopAll(
 
   deps.toast.info(`Stopping all terminals for session '${sessionName}'...`);
   try {
-    await deps.cao.deleteSession(sessionName);
+    await deps.goCore.deleteSession(sessionName);
     deps.toast.success('Session torn down successfully.');
     deps.onUpdateCanvas?.((current) => ({
       ...current,

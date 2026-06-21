@@ -1,15 +1,15 @@
 import { IDBPDatabase, IDBPTransaction, StoreNames } from 'idb';
 import { AgentVerseDB } from './idb';
 
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;  // CRIT-003.15: bumped from 3 (caoBaseUrl→goCoreBaseUrl)
 type AgentVerseStoreNames = ArrayLike<StoreNames<AgentVerseDB>>;
 
-export function runMigrations(
+export async function runMigrations(
   db: IDBPDatabase<AgentVerseDB>,
   oldVersion: number,
   _newVersion: number | null,
   transaction: IDBPTransaction<AgentVerseDB, AgentVerseStoreNames, 'versionchange'>
-) {
+): Promise<void> {
   if (oldVersion < 1) {
     // 1. canvases (keyPath: id)
     db.createObjectStore('canvases', { keyPath: 'id' });
@@ -41,5 +41,17 @@ export function runMigrations(
 
   if (oldVersion < 3 && !db.objectStoreNames.contains('sessions')) {
     db.createObjectStore('sessions');
+  }
+
+  if (oldVersion < 4) {
+    // CRIT-003.15: Rename caoBaseUrl → goCoreBaseUrl in the settings store.
+    // Existing users who had stored a custom CAO URL will have it preserved under
+    // the new key. New installs start at v4 and never see the old key.
+    const settingsStore = transaction.objectStore('settings');
+    const oldRec = await settingsStore.get('caoBaseUrl');
+    if (oldRec) {
+      await settingsStore.put({ key: 'goCoreBaseUrl', value: oldRec.value });
+      await settingsStore.delete('caoBaseUrl');
+    }
   }
 }

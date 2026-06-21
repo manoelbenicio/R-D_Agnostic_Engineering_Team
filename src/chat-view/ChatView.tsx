@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Badge, Button, Card, FormField, Prose } from '@/design-system';
-import { caoClient, sessionsQueryKeys, type ProviderType, type Terminal } from '@/api';
+import { goCoreClient, sessionsQueryKeys, type ProviderType, type Terminal } from '@/api';
 import { subscribeTerminalSocket } from '@/api/terminal-socket-fanout';
 import { segmentByAgentBoundary } from './ansi-parser';
 import type { ChatBubble, ChatViewMode, ParsedSegment } from './types';
@@ -33,7 +33,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ sessionName }) => {
 
   const terminalsQuery = useQuery({
     queryKey: sessionsQueryKeys.terminals(sessionName),
-    queryFn: () => caoClient.listTerminalsInSession(sessionName),
+    queryFn: () => goCoreClient.listTerminalsInSession(sessionName),
     enabled: sessionName.length > 0,
   });
 
@@ -148,7 +148,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ sessionName }) => {
     if (!focusedTerminalId || message.length === 0) return;
 
     try {
-      await caoClient.sendTerminalInput(focusedTerminalId, message);
+      await goCoreClient.sendTerminalInput(focusedTerminalId, message);
       setComposerValue('');
       setQuotePrefix('');
       setStatusMessage('Mensagem enviada.');

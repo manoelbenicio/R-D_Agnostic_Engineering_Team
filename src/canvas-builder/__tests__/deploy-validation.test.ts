@@ -34,7 +34,7 @@ function canvasWith(provider: string, model = 'm'): CanvasDocument {
 }
 
 describe('validateCanvasForDeploy — OAuth/CLI path', () => {
-  it('allows deploy when the CLI is installed on CAO, with NO BYOK key', () => {
+  it('allows deploy when the CLI is installed on GO Core, with NO BYOK key', () => {
     const doc = canvasWith('codex');
     const res = validateCanvasForDeploy(doc, getCanvasProviderOptions([]), [], ['codex']);
     expect(res.ok).toBe(true);

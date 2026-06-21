@@ -1,6 +1,6 @@
 // eslint-disable-next-line agentverse/no-sideways-capability-imports
 import { canvasStore } from '@/canvas-document/store';
-import { CaoClient, caoClient } from '@/api/cao-client';
+import { GoCoreClient, goCoreClient } from '@/api';
 import { CanvasDocument, CanvasNode, CanvasEdge } from '@/shared/canvas-types';
 import { useDeployStore, DeployStep } from './deploy-store';
 import { resolveSessionEnv } from '@/api/session-discovery';
@@ -101,7 +101,7 @@ export function didEdgesChange(oldEdges: CanvasEdge[], newEdges: CanvasEdge[]): 
 export async function reconcileCanvas(
   canvasId: string,
   editedCanvas?: CanvasDocument,
-  client: CaoClient = caoClient
+  client: GoCoreClient = goCoreClient
 ): Promise<CanvasDocument> {
   // Retrieve the existing canvas in database
   const existingCanvas = await canvasStore.get(canvasId);
@@ -174,7 +174,7 @@ export async function reconcileCanvas(
 
     const edgesChanged = didEdgesChange(existingCanvas.edges, targetCanvas.edges);
 
-    // If no CAO action is needed, save edited canvas and return
+    // If no GO Core action is needed, save edited canvas and return
     if (nodesToAdd.length === 0 && nodesToRemove.length === 0 && nodesToUpdate.length === 0) {
       targetCanvas.deploy_state.edge_change_advisory = edgesChanged;
       // Preserve terminal map, snapshots, and status
@@ -197,7 +197,7 @@ export async function reconcileCanvas(
   if (isFirstDeploy || !editedCanvas) {
     // Standard/Retry deploy steps
     steps.push({ id: 'install-profiles', label: 'Install agent profiles', status: 'pending' });
-    steps.push({ id: 'create-session', label: 'Create CAO session', status: 'pending' });
+    steps.push({ id: 'create-session', label: 'Create GO Core session', status: 'pending' });
     
     // For non-entry-point nodes
     const nonEntryNodes = targetCanvas.nodes.filter((n) => !n.data.is_entry_point);
@@ -279,7 +279,7 @@ export async function reconcileCanvas(
           session_id: node.data.session_id,
         });
 
-        // Save before CAO call (atomic persistence)
+        // Save before GO Core call (atomic persistence)
         await canvasStore.save(currentCanvasDoc);
 
         try {
@@ -664,7 +664,7 @@ export async function reconcileCanvas(
 // 9.7 Tear Down
 export async function tearDownCanvas(
   canvasId: string,
-  client: CaoClient = caoClient
+  client: GoCoreClient = goCoreClient
 ): Promise<CanvasDocument> {
   const canvas = await canvasStore.get(canvasId);
   if (!canvas) throw new Error('Canvas not found');

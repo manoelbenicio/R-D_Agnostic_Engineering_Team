@@ -8,9 +8,9 @@
  *         - `@/shared/...` (the SUP-gated cross-cutting types)
  *         - `@/design-system/...` (the locked design system, consumed everywhere)
  *         - external packages
- *   - no-direct-cao-fetch (task 4.13)
- *       Outside `src/api/cao-client.ts`, calling `fetch(...)` with a literal that
- *       points to a CAO route (anything containing `/health`, `/sessions`,
+ *   - no-direct-go-core-fetch (task 4.13)
+ *       Outside `src/api/go-core-client.ts`, calling `fetch(...)` with a literal that
+ *       points to a GO Core route (anything containing `/health`, `/sessions`,
  *       `/terminals`, `/agents/`, `/flows`, `/skills`, `/agent-dirs`) fails the
  *       build.
  */
@@ -42,14 +42,14 @@ const CAPABILITIES = [
 // Capabilities that anyone can import from (cross-cutting, gated by ownership rules).
 //   - 'shared': SUP-gated cross-cutting types and IDB infra (D9).
 //   - 'design-system': locked tokens and base components — every UI consumes them.
-//   - 'api': the only path to CAO; every capability needs caoClient / useHealthStore /
+//   - 'api': the only path to GO Core; every capability needs goCoreClient / useHealthStore /
 //     query-keys. Keeping the cross-import allowed here mirrors design D11.
 //   - 'shell': exposes cross-cutting utilities (appFetch, useToast, ErrorBoundary).
 //     Every capability that does HTTP or surfaces errors needs these.
 const CROSS_CAPABILITY_OK = new Set(['shared', 'design-system', 'api', 'shell']);
 
-// CAO route fragments — appearing in a fetch URL outside the client is a violation.
-const CAO_ROUTE_FRAGMENTS = [
+// GO Core route fragments — appearing in a fetch URL outside the client is a violation.
+const GO_CORE_ROUTE_FRAGMENTS = [
   '/health',
   '/sessions',
   '/terminals',
@@ -118,24 +118,24 @@ const noSideways = {
   },
 };
 
-const noDirectCaoFetch = {
+const noDirectGoCoreFetch = {
   meta: {
     type: 'problem',
-    docs: { description: 'Forbid direct fetch() to CAO endpoints (4.13).' },
+    docs: { description: 'Forbid direct fetch() to GO Core endpoints (4.13).' },
     messages: {
       direct:
-        "Direct fetch to a CAO route is forbidden. Use the CaoClient in @/api/cao-client (task 4.13).",
+        "Direct fetch to a GO Core route is forbidden. Use goCoreClient in @/api/go-core-client (task 4.13).",
     },
     schema: [],
   },
   create(context) {
     const filename = context.filename || context.getFilename();
-    if (filename.includes(`${path.sep}api${path.sep}cao-client`)) return {};
+    if (filename.includes(`${path.sep}api${path.sep}go-core-client`)) return {};
     if (filename.includes(`__tests__`)) return {};
 
-    function literalLooksLikeCaoRoute(str) {
+    function literalLooksLikeGoCoreRoute(str) {
       if (typeof str !== 'string') return false;
-      return CAO_ROUTE_FRAGMENTS.some((fragment) => str.includes(fragment));
+      return GO_CORE_ROUTE_FRAGMENTS.some((fragment) => str.includes(fragment));
     }
 
     return {
@@ -144,13 +144,13 @@ const noDirectCaoFetch = {
         if (callee.type !== 'Identifier' || callee.name !== 'fetch') return;
         const first = node.arguments[0];
         if (!first) return;
-        if (first.type === 'Literal' && literalLooksLikeCaoRoute(first.value)) {
+        if (first.type === 'Literal' && literalLooksLikeGoCoreRoute(first.value)) {
           context.report({ node, messageId: 'direct' });
           return;
         }
         if (first.type === 'TemplateLiteral') {
           const raw = first.quasis.map((q) => q.value.cooked || '').join('');
-          if (literalLooksLikeCaoRoute(raw)) {
+          if (literalLooksLikeGoCoreRoute(raw)) {
             context.report({ node, messageId: 'direct' });
           }
         }
@@ -162,6 +162,7 @@ const noDirectCaoFetch = {
 module.exports = {
   rules: {
     'no-sideways-capability-imports': noSideways,
-    'no-direct-cao-fetch': noDirectCaoFetch,
+    'no-direct-go-core-fetch': noDirectGoCoreFetch,
+    'no-direct-cao-fetch': noDirectGoCoreFetch, // Backward-compat alias
   },
 };

@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import 'fake-indexeddb/auto';
-import { afterAll, afterEach, beforeAll } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 
 // MSW lifecycle. Capability-owned handlers are aggregated in
 // src/api/__tests__/msw/handlers.ts. Tests that need to override behaviour
@@ -42,3 +42,15 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
       dispatchEvent: () => false,
     }) as unknown as MediaQueryList;
 }
+
+// Limpar Zustand stores entre testes para evitar poluição de estado.
+beforeEach(async () => {
+  // Reset session store
+  try {
+    const { useSessionStore } = await import('@/api/session-store');
+    useSessionStore.setState({ sessions: [], loading: false, error: null, lastRefreshed: null });
+  } catch {
+    /* store pode nao existir em todos os contexts */
+  }
+});
+

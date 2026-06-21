@@ -26,7 +26,7 @@ module.exports = {
       { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
     ],
     'agentverse/no-sideways-capability-imports': 'error',
-    'agentverse/no-direct-cao-fetch': 'error',
+    'agentverse/no-direct-go-core-fetch': 'error',
   },
   ignorePatterns: [
     'dist/',
@@ -47,7 +47,7 @@ module.exports = {
       env: { node: true },
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
-        'agentverse/no-direct-cao-fetch': 'off',
+        'agentverse/no-direct-go-core-fetch': 'off',
       },
     },
   ],

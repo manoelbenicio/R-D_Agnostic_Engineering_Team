@@ -67,7 +67,7 @@ test.describe('Performance: 12+ concurrent terminal streams', () => {
 
     // 2. Create a mock session with 12 terminals via MSW endpoints
     await page.evaluate(async () => {
-      await fetch('http://127.0.0.1:9889/sessions', {
+      await fetch('http://127.0.0.1:8080/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: 'supervisor', working_directory: '~' }),
@@ -76,7 +76,7 @@ test.describe('Performance: 12+ concurrent terminal streams', () => {
 
     // Get real session name
     const sessions = await page.evaluate(async () => {
-      const resp = await fetch('http://127.0.0.1:9889/sessions');
+      const resp = await fetch('http://127.0.0.1:8080/sessions');
       return resp.json() as Promise<Array<{ name: string }>>;
     });
     const perfSessionName = sessions[sessions.length - 1]?.name ?? 'session-1';
@@ -85,7 +85,7 @@ test.describe('Performance: 12+ concurrent terminal streams', () => {
     for (let i = 1; i < TERMINAL_COUNT; i++) {
       await page.evaluate(
         async ({ sessName, idx }) => {
-          await fetch(`http://127.0.0.1:9889/sessions/${sessName}/terminals`, {
+          await fetch(`http://127.0.0.1:8080/sessions/${sessName}/terminals`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ profile: `agent-${idx}`, working_directory: '~' }),
@@ -97,7 +97,7 @@ test.describe('Performance: 12+ concurrent terminal streams', () => {
 
     // Verify terminal count
     const terminalIds = await page.evaluate(async (sessName) => {
-      const resp = await fetch(`http://127.0.0.1:9889/sessions/${sessName}/terminals`);
+      const resp = await fetch(`http://127.0.0.1:8080/sessions/${sessName}/terminals`);
       const data = (await resp.json()) as Array<{ id: string }>;
       return data.map((t) => t.id);
     }, perfSessionName);
@@ -119,7 +119,7 @@ test.describe('Performance: 12+ concurrent terminal streams', () => {
       const promises = ids.map(
         (id, idx) =>
           new Promise<void>((resolve) => {
-            const ws = new WebSocket(`ws://127.0.0.1:9889/terminals/${id}/ws`);
+            const ws = new WebSocket(`ws://127.0.0.1:8080/terminals/${id}/ws`);
             ws.binaryType = 'arraybuffer';
             ws.addEventListener('open', () => {
               openSockets.push(ws);

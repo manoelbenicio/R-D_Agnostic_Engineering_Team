@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { TerminalGrid } from '../TerminalGrid';
-import { caoClient } from '@/api';
+import { goCoreClient } from '@/api';
 import { TerminalSocketFanout } from '@/api/terminal-socket-fanout';
 
 // Mock the TerminalView component to bypass xterm.js WebGL and WebSocket dependencies
@@ -27,12 +27,12 @@ vi.mock('@/shell/toasts', () => ({
   useToast: () => mockToast,
 }));
 
-// Mock the caoClient API methods
+// Mock the goCoreClient API methods
 vi.mock('@/api', async (importOriginal) => {
   const original = await importOriginal<any>();
   return {
     ...original,
-    caoClient: {
+    goCoreClient: {
       listTerminalsInSession: vi.fn(),
       deleteTerminal: vi.fn(),
       getTerminalWorkingDirectory: vi.fn(),
@@ -67,13 +67,13 @@ describe('Terminal Grid & Tab Bar', () => {
         },
       },
     });
-    vi.mocked(caoClient.listTerminalsInSession).mockResolvedValue(mockTerminals);
-    vi.mocked(caoClient.getTerminalWorkingDirectory).mockResolvedValue('/app/workspace');
-    vi.mocked(caoClient.listInboxMessages).mockResolvedValue([
+    vi.mocked(goCoreClient.listTerminalsInSession).mockResolvedValue(mockTerminals);
+    vi.mocked(goCoreClient.getTerminalWorkingDirectory).mockResolvedValue('/app/workspace');
+    vi.mocked(goCoreClient.listInboxMessages).mockResolvedValue([
       { id: 'msg-1', terminal_id: 'term-1', message: 'Hello from supervisor', status: 'unread', created_at: '' },
     ]);
-    vi.mocked(caoClient.deleteTerminal).mockResolvedValue();
-    vi.mocked(caoClient.sendTerminalInput).mockResolvedValue();
+    vi.mocked(goCoreClient.deleteTerminal).mockResolvedValue();
+    vi.mocked(goCoreClient.sendTerminalInput).mockResolvedValue();
   });
 
   afterEach(() => {
@@ -229,7 +229,7 @@ describe('Terminal Grid & Tab Bar', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(caoClient.deleteTerminal).toHaveBeenCalledWith('term-1');
+      expect(goCoreClient.deleteTerminal).toHaveBeenCalledWith('term-1');
       expect(mockToast.success).toHaveBeenCalledWith('Terminal killed successfully');
     });
   });
