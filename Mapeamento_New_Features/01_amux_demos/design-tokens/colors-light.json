@@ -1,0 +1,21 @@
+{
+  "--bg": "oklch(98% 0.003 250)",
+  "--bg-2": "oklch(95% 0.005 250)",
+  "--bg-3": "oklch(92% 0.007 250)",
+  "--line": "oklch(88% 0.01 250)",
+  "--line-2": "oklch(80% 0.015 250)",
+  "--fg": "oklch(15% 0.01 90)",
+  "--fg-dim": "oklch(40% 0.012 90)",
+  "--fg-mute": "oklch(55% 0.012 90)",
+  "--accent": "oklch(70% 0.17 85)",
+  "--accent-dim": "oklch(70% 0.17 85 / .15)",
+  "--green": "oklch(60% 0.18 145)",
+  "--green-dim": "oklch(50% 0.16 145)",
+  "--green-glow": "oklch(60% 0.18 145 / .1)",
+  "--warn": "oklch(65% 0.18 65)",
+  "--err": "oklch(55% 0.20 25)",
+  "--blue": "oklch(55% 0.14 240)",
+  "--surface": "oklch(95% 0.005 250)",
+  "--surface-2": "oklch(92% 0.007 250)",
+  "--border": "oklch(88% 0.01 250)"
+}
