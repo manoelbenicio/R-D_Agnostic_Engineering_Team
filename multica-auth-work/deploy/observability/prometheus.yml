@@ -1,0 +1,51 @@
+# Prometheus — scrape + alerting (doc 05-observability.md §6)
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: multica-credential-obs
+
+rule_files:
+  - alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  # ---------------------------------------------------------------------------
+  # Servico de credencial/daemon — endpoint /metrics.
+  # PLACEHOLDER: as metricas do doc 05 §3 (credential_restore_total,
+  # cred_env_injection_total, account_status, rotation_total, ...) AINDA NAO
+  # estao instrumentadas no codigo Go (responsabilidade das streams
+  # W-VENDORS / W-INT). O backend do produto JA expoe /metrics num endereco
+  # separado controlado por METRICS_ADDR (ver .env.example do produto:
+  # "# METRICS_ADDR=127.0.0.1:9090") com as metricas de runtime
+  # (multica_*, go_*, process_*).
+  #
+  # Ajuste o target abaixo para onde o /metrics do servico estiver ouvindo:
+  #   - no host:               host.docker.internal:<METRICS_ADDR_PORT>
+  #   - na rede do produto:    backend:<METRICS_ADDR_PORT>  (requer rede compartilhada)
+  # O host.docker.internal ja resolve via extra_hosts:host-gateway no compose.
+  # ---------------------------------------------------------------------------
+  - job_name: credential-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["backend:9090"]
+        labels:
+          component: credential-daemon
+
+  # Postgres exporter — saude do store de credencial (RNF-04).
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels:
+          component: postgres
+
+  # Auto-monitoramento do Prometheus.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          component: prometheus

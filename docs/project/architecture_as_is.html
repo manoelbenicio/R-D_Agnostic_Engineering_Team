@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Credential Isolation - AS-IS</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b10;
+      --panel: #101722;
+      --text: #e8eef7;
+      --muted: #91a4bb;
+      --daemon: #22d3ee;
+      --execenv: #4aa3ff;
+      --shared: #ff5c7a;
+      --agent: #a3e635;
+      --db: #f97316;
+      --problem: #ff5c7a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(255, 92, 122, .18), transparent 30%),
+        radial-gradient(circle at 82% 28%, rgba(74, 163, 255, .12), transparent 28%),
+        linear-gradient(135deg, #070910 0%, #0b1017 46%, #0a0d13 100%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+    header { padding: 24px clamp(18px, 4vw, 48px) 12px; border-bottom: 1px solid rgba(145, 164, 187, .18); }
+    h1 { margin: 0; font-size: clamp(26px, 4vw, 46px); }
+    .tag { display:inline-block; background: var(--problem); color:#160406; font-weight:800; font-size:12px; padding:4px 10px; border-radius:999px; margin-bottom:10px; }
+    .subtitle { color: var(--muted); margin: 10px 0 0; max-width: 980px; line-height: 1.55; }
+    main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; padding: 18px clamp(14px, 3vw, 34px) 28px; }
+    .stage, .side {
+      background: linear-gradient(180deg, rgba(16, 23, 34, .92), rgba(10, 15, 22, .94));
+      border: 1px solid rgba(145, 164, 187, .2);
+      border-radius: 8px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .34);
+    }
+    .stage { min-height: 690px; overflow: hidden; position: relative; }
+    .side { padding: 18px; align-self: start; position: sticky; top: 18px; }
+    .legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+    .key { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+    .swatch { width: 13px; height: 13px; border-radius: 4px; box-shadow: 0 0 14px currentColor; }
+    svg { width: 100%; height: 100%; min-height: 690px; display: block; }
+    .zone { fill: rgba(255, 255, 255, .025); stroke: rgba(145, 164, 187, .18); stroke-width: 1.2; }
+    .zone.problem { fill: rgba(255,92,122,.06); stroke: rgba(255,92,122,.4); stroke-dasharray: 6 6; }
+    .zone-title { fill: var(--muted); font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .zone-title.problem { fill: #ff8ba0; }
+    .node rect { fill: rgba(18, 29, 43, .94); stroke-width: 2; filter: drop-shadow(0 10px 18px rgba(0,0,0,.35)); transition: filter .2s ease, stroke-width .2s ease, transform .2s ease; }
+    .node text { pointer-events: none; }
+    .node .title { fill: var(--text); font-size: 15px; font-weight: 800; }
+    .node .meta { fill: var(--muted); font-size: 11px; }
+    .node { cursor: pointer; }
+    .node:hover rect, .node.active rect { stroke-width: 3; filter: drop-shadow(0 0 18px var(--glow)); }
+    .node:hover { transform: translateY(-2px); }
+    .daemon rect { stroke: var(--daemon); --glow: rgba(34, 211, 238, .7); }
+    .execenv rect { stroke: var(--execenv); --glow: rgba(74, 163, 255, .7); }
+    .shared rect { stroke: var(--shared); --glow: rgba(255, 92, 122, .75); }
+    .agent rect { stroke: var(--agent); --glow: rgba(163, 230, 53, .7); }
+    .db rect { stroke: var(--db); --glow: rgba(249, 115, 22, .7); }
+    .flow { fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 8 10; animation: flow 1.25s linear infinite; opacity: .86; }
+    .flow.collide { stroke-width: 3.2; animation: flow .7s linear infinite; }
+    @keyframes flow { to { stroke-dashoffset: -36; } }
+    .warn { animation: pulseWarn 1.6s ease-in-out infinite; transform-origin: center; }
+    @keyframes pulseWarn { 0%,100% { opacity:.5; } 50% { opacity:1; } }
+    h2 { margin: 0 0 8px; font-size: 20px; }
+    .desc { color: var(--muted); line-height: 1.55; margin: 0 0 16px; }
+    .fact { border-top: 1px solid rgba(145, 164, 187, .16); padding-top: 12px; margin-top: 12px; color: #f2c9d1; font-size: 14px; line-height: 1.5; }
+    .badge { display: inline-block; color: #160406; background: var(--problem); border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 800; margin-bottom: 12px; }
+    @media (max-width: 980px) { main { grid-template-columns: 1fr; } .side { position: static; } .stage, svg { min-height: 820px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="tag">AS-IS · problema atual</span>
+    <h1>Autenticação de Agentes — Estado Atual</h1>
+    <p class="subtitle">Hoje todos os agentes compartilham UMA credencial global por vendor. O <code>auth.json</code> é symlinkado para um único <code>~/.codex</code>; logar uma segunda conta sobrescreve a primeira. Clique em cada componente para detalhes.</p>
+  </header>
+  <main>
+    <section class="stage" aria-label="Diagrama AS-IS">
+      <svg viewBox="0 0 1180 720" role="img">
+        <defs>
+          <marker id="a-cyan" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#22d3ee"></path></marker>
+          <marker id="a-blue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#4aa3ff"></path></marker>
+          <marker id="a-red" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#ff5c7a"></path></marker>
+          <marker id="a-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#a3e635"></path></marker>
+        </defs>
+
+        <rect class="zone" x="28" y="52" width="300" height="600" rx="18"></rect>
+        <text class="zone-title" x="50" y="86">Daemon / Tarefas</text>
+        <rect class="zone" x="360" y="52" width="440" height="600" rx="18"></rect>
+        <text class="zone-title" x="382" y="86">Preparação de Ambiente (execenv)</text>
+        <rect class="zone problem" x="832" y="52" width="316" height="600" rx="18"></rect>
+        <text class="zone-title problem" x="854" y="86">Credencial GLOBAL (compartilhada)</text>
+
+        <!-- flows: tasks -> execenv -->
+        <path class="flow" stroke="#22d3ee" marker-end="url(#a-cyan)" d="M250 170 C320 170 320 150 415 150"></path>
+        <path class="flow" stroke="#22d3ee" marker-end="url(#a-cyan)" d="M250 300 C320 300 320 260 415 260"></path>
+        <path class="flow" stroke="#22d3ee" marker-end="url(#a-cyan)" d="M250 430 C320 430 320 370 415 370"></path>
+        <!-- execenv symlinks all to ONE auth.json -->
+        <path class="flow" stroke="#4aa3ff" marker-end="url(#a-blue)" d="M575 150 C700 150 760 300 905 300"></path>
+        <path class="flow" stroke="#4aa3ff" marker-end="url(#a-blue)" d="M575 260 C700 260 760 300 905 300"></path>
+        <path class="flow" stroke="#4aa3ff" marker-end="url(#a-blue)" d="M575 370 C700 370 760 300 905 300"></path>
+        <!-- collision: second login overwrites -->
+        <path class="flow collide" stroke="#ff5c7a" marker-end="url(#a-red)" d="M990 385 C990 470 990 500 990 545"></path>
+        <!-- agents read same creds -->
+        <path class="flow" stroke="#a3e635" marker-end="url(#a-green)" d="M905 300 C860 620 300 640 250 560"></path>
+
+        <g class="node daemon" transform="translate(60 132)" data-title="Tarefa → Agente A" data-kind="Daemon" data-desc="O daemon prepara o ambiente da tarefa e injeta CODEX_HOME em daemon.go (~l.3380). Cada agente aponta para um CODEX_HOME por tarefa.">
+          <rect width="190" height="76" rx="10"></rect><text class="title" x="18" y="30">Tarefa → Agente A</text><text class="meta" x="18" y="54">CODEX_HOME por tarefa</text>
+        </g>
+        <g class="node daemon" transform="translate(60 262)" data-title="Tarefa → Agente B" data-kind="Daemon" data-desc="Outro agente, outra tarefa — mas todos convergem para a MESMA credencial global.">
+          <rect width="190" height="76" rx="10"></rect><text class="title" x="18" y="30">Tarefa → Agente B</text><text class="meta" x="18" y="54">CODEX_HOME por tarefa</text>
+        </g>
+        <g class="node daemon" transform="translate(60 392)" data-title="Tarefa → Agente C" data-kind="Daemon" data-desc="Terceiro agente. Nenhuma separação de conta: a credencial é única e global.">
+          <rect width="190" height="76" rx="10"></rect><text class="title" x="18" y="30">Tarefa → Agente C</text><text class="meta" x="18" y="54">CODEX_HOME por tarefa</text>
+        </g>
+
+        <g class="node execenv" transform="translate(415 112)" data-title="codex_home.go" data-kind="execenv" data-desc="Prepara o CODEX_HOME por tarefa, MAS symlinka auth.json para o ~/.codex global (codexSymlinkedFiles). Config.toml é copiado (isolado); a credencial NÃO é.">
+          <rect width="160" height="76" rx="10"></rect><text class="title" x="18" y="30">codex_home.go</text><text class="meta" x="18" y="54">symlink auth.json</text>
+        </g>
+        <g class="node execenv" transform="translate(415 222)" data-title="Symlink → global" data-kind="execenv" data-desc="Todos os homes por tarefa apontam, via symlink, para o mesmo auth.json. Comentário no código: 'Symlinks share state (e.g. auth tokens)'.">
+          <rect width="160" height="76" rx="10"></rect><text class="title" x="18" y="30">Symlink</text><text class="meta" x="18" y="54">→ ~/.codex único</text>
+        </g>
+        <g class="node execenv" transform="translate(415 332)" data-title="Injeção de env" data-kind="daemon.go" data-desc="daemon.go monta agentEnv e injeta CODEX_HOME. Ponto único de injeção — mas apontando para a fonte global.">
+          <rect width="160" height="76" rx="10"></rect><text class="title" x="18" y="30">agentEnv inject</text><text class="meta" x="18" y="54">daemon.go ~l.3380</text>
+        </g>
+
+        <g class="node shared" transform="translate(905 262)" data-title="~/.codex/auth.json (GLOBAL)" data-kind="Problema" data-desc="Uma única credencial para todas as contas. Chaves: access_token, refresh_token, account_id. É o ponto de sobreposição.">
+          <rect width="200" height="80" rx="10"></rect><text class="title" x="18" y="30">auth.json GLOBAL</text><text class="meta" x="18" y="54">1 credencial p/ todos</text>
+        </g>
+        <g class="node shared" transform="translate(905 545)" data-title="⚠ Sobreposição" data-kind="Falha" data-desc="Logar a conta B sobrescreve a conta A. Ao esgotar a janela de ~5h, o agente para e exige re-login manual. Capacidade de outras contas fica ociosa.">
+          <rect width="200" height="88" rx="10"></rect>
+          <text class="title warn" x="18" y="32">⚠ Sobrescreve</text><text class="meta" x="18" y="56">conta B mata conta A</text><text class="meta" x="18" y="74">re-login manual a cada 5h</text>
+        </g>
+      </svg>
+    </section>
+    <aside class="side" aria-live="polite">
+      <span class="badge" id="kind">Problema</span>
+      <h2 id="info-title">Clique em um componente</h2>
+      <p class="desc" id="info-desc">Fluxo ciano = tarefas do daemon; azul = symlink para a credencial global; vermelho = colisão (sobrescrita); verde = agentes lendo a MESMA credencial.</p>
+      <div class="fact"><strong>Causa-raiz:</strong> <code>codexSymlinkedFiles = ["auth.json"]</code> → credencial global compartilhada por design.</div>
+      <div class="fact"><strong>Sintoma:</strong> segunda conta sobrescreve a primeira; troca ao esgotar 5h é manual.</div>
+      <div class="legend">
+        <div class="key"><span class="swatch" style="background:var(--daemon);color:var(--daemon)"></span>Daemon/Tarefas</div>
+        <div class="key"><span class="swatch" style="background:var(--execenv);color:var(--execenv)"></span>execenv</div>
+        <div class="key"><span class="swatch" style="background:var(--shared);color:var(--shared)"></span>Credencial global</div>
+        <div class="key"><span class="swatch" style="background:var(--agent);color:var(--agent)"></span>Agentes</div>
+      </div>
+    </aside>
+  </main>
+  <script>
+    const nodes = Array.from(document.querySelectorAll('.node'));
+    const title = document.getElementById('info-title');
+    const desc = document.getElementById('info-desc');
+    const kind = document.getElementById('kind');
+    function activate(node) {
+      nodes.forEach(n => n.classList.remove('active'));
+      node.classList.add('active');
+      title.textContent = node.dataset.title; desc.textContent = node.dataset.desc; kind.textContent = node.dataset.kind;
+    }
+    nodes.forEach(node => node.addEventListener('click', () => activate(node)));
+    let index = 0;
+    setInterval(() => { if (document.querySelector('.node:hover')) return; activate(nodes[index % nodes.length]); index += 1; }, 5200);
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Alertmanager — roteamento para webhook local (placeholder).
+# Nenhum segredo aqui. Substitua o receiver local-webhook por Slack / email /
+# PagerDuty em producao (veja README.md).
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: local-webhook
+  group_by: ["alertname", "vendor", "component"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity="critical"
+      receiver: local-webhook
+      group_wait: 10s
+      repeat_interval: 1h
+    - matchers:
+        - severity="warning"
+      receiver: local-webhook
+
+receivers:
+  - name: local-webhook
+    webhook_configs:
+      # Placeholder: suba um receiver HTTP em host:5001/POST (ou troque a URL).
+      # host.docker.internal resolve via extra_hosts:host-gateway no compose.
+      - url: "http://host.docker.internal:5001/alertmanager"
+        send_resolved: true

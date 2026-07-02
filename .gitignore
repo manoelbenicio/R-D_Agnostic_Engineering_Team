@@ -45,3 +45,16 @@ frontend/
 snake-game/
 docker_inventory.html
 transformaca-agente-ofertas-qualificacao-bpo.md
+# --- SAFETY: never commit real credentials (added 2026-07-02) ---
+**/scripts/staging/creds/
+**/multica-auth-creds/
+**/auth.json
+!**/packages/views/locales/**/auth.json   # i18n strings, not secrets
+**/.env.production
+**/.env.staging
+**/deploy/observability/secrets/*
+!**/deploy/observability/secrets/*.example
+
+# --- SAFETY (reinforced): mobile env secrets ---
+multica-auth-work/apps/mobile/.env.production
+multica-auth-work/apps/mobile/.env.staging

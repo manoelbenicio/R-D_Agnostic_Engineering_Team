@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Credential Isolation - TO-BE</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b10;
+      --text: #e8eef7;
+      --muted: #91a4bb;
+      --daemon: #22d3ee;
+      --resolve: #c084fc;
+      --execenv: #4aa3ff;
+      --acc1: #36d399;
+      --acc2: #a3e635;
+      --acc3: #f8c14a;
+      --db: #f97316;
+      --rotate: #ff5c7a;
+      --ok: #36d399;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(54, 211, 153, .18), transparent 30%),
+        radial-gradient(circle at 82% 28%, rgba(192, 132, 252, .12), transparent 28%),
+        linear-gradient(135deg, #070910 0%, #0b1017 46%, #0a0d13 100%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+    header { padding: 24px clamp(18px, 4vw, 48px) 12px; border-bottom: 1px solid rgba(145, 164, 187, .18); }
+    h1 { margin: 0; font-size: clamp(26px, 4vw, 46px); }
+    .tag { display:inline-block; background: var(--ok); color:#04160c; font-weight:800; font-size:12px; padding:4px 10px; border-radius:999px; margin-bottom:10px; }
+    .subtitle { color: var(--muted); margin: 10px 0 0; max-width: 1000px; line-height: 1.55; }
+    main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; padding: 18px clamp(14px, 3vw, 34px) 28px; }
+    .stage, .side {
+      background: linear-gradient(180deg, rgba(16, 23, 34, .92), rgba(10, 15, 22, .94));
+      border: 1px solid rgba(145, 164, 187, .2);
+      border-radius: 8px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .34);
+    }
+    .stage { min-height: 700px; overflow: hidden; position: relative; }
+    .side { padding: 18px; align-self: start; position: sticky; top: 18px; }
+    .legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+    .key { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+    .swatch { width: 13px; height: 13px; border-radius: 4px; box-shadow: 0 0 14px currentColor; }
+    svg { width: 100%; height: 100%; min-height: 700px; display: block; }
+    .zone { fill: rgba(255, 255, 255, .025); stroke: rgba(145, 164, 187, .18); stroke-width: 1.2; }
+    .zone.ok { fill: rgba(54,211,153,.06); stroke: rgba(54,211,153,.35); }
+    .zone-title { fill: var(--muted); font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .zone-title.ok { fill: #7fe9c0; }
+    .node rect { fill: rgba(18, 29, 43, .94); stroke-width: 2; filter: drop-shadow(0 10px 18px rgba(0,0,0,.35)); transition: filter .2s ease, stroke-width .2s ease, transform .2s ease; }
+    .node text { pointer-events: none; }
+    .node .title { fill: var(--text); font-size: 15px; font-weight: 800; }
+    .node .meta { fill: var(--muted); font-size: 11px; }
+    .node { cursor: pointer; }
+    .node:hover rect, .node.active rect { stroke-width: 3; filter: drop-shadow(0 0 18px var(--glow)); }
+    .node:hover { transform: translateY(-2px); }
+    .daemon rect { stroke: var(--daemon); --glow: rgba(34,211,238,.7); }
+    .resolve rect { stroke: var(--resolve); --glow: rgba(192,132,252,.7); }
+    .execenv rect { stroke: var(--execenv); --glow: rgba(74,163,255,.7); }
+    .acc1 rect { stroke: var(--acc1); --glow: rgba(54,211,153,.7); }
+    .acc2 rect { stroke: var(--acc2); --glow: rgba(163,230,53,.7); }
+    .acc3 rect { stroke: var(--acc3); --glow: rgba(248,193,74,.7); }
+    .db rect { stroke: var(--db); --glow: rgba(249,115,22,.7); }
+    .rotate rect { stroke: var(--rotate); --glow: rgba(255,92,122,.7); }
+    .flow { fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 8 10; animation: flow 1.25s linear infinite; opacity: .9; }
+    .flow.dim { opacity:.4; stroke-width:1.8; }
+    @keyframes flow { to { stroke-dashoffset: -36; } }
+    h2 { margin: 0 0 8px; font-size: 20px; }
+    .desc { color: var(--muted); line-height: 1.55; margin: 0 0 16px; }
+    .fact { border-top: 1px solid rgba(145, 164, 187, .16); padding-top: 12px; margin-top: 12px; color: #c9d8ea; font-size: 14px; line-height: 1.5; }
+    .badge { display: inline-block; color: #04160c; background: var(--ok); border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 800; margin-bottom: 12px; }
+    @media (max-width: 980px) { main { grid-template-columns: 1fr; } .side { position: static; } .stage, svg { min-height: 900px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="tag">TO-BE · solução</span>
+    <h1>Isolamento de Credencial por Conta — Estado Alvo</h1>
+    <p class="subtitle">Cada conta vive isolada. O daemon resolve a conta do agente, restaura a credencial AS-IS no diretório próprio e injeta a env var nativa do vendor. Logar/renovar uma conta não afeta as outras. Fase 2 troca de conta automaticamente ao esgotar a janela de ~5h.</p>
+  </header>
+  <main>
+    <section class="stage" aria-label="Diagrama TO-BE">
+      <svg viewBox="0 0 1180 740" role="img">
+        <defs>
+          <marker id="t-cyan" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#22d3ee"></path></marker>
+          <marker id="t-purple" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#c084fc"></path></marker>
+          <marker id="t-blue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#4aa3ff"></path></marker>
+          <marker id="t-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#36d399"></path></marker>
+          <marker id="t-red" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#ff5c7a"></path></marker>
+          <marker id="t-orange" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f97316"></path></marker>
+        </defs>
+
+        <rect class="zone" x="24" y="52" width="250" height="640" rx="18"></rect>
+        <text class="zone-title" x="44" y="86">Daemon / Tarefa</text>
+        <rect class="zone" x="300" y="52" width="300" height="640" rx="18"></rect>
+        <text class="zone-title" x="320" y="86">Resolução + Injeção</text>
+        <rect class="zone ok" x="626" y="52" width="300" height="640" rx="18"></rect>
+        <text class="zone-title ok" x="646" y="86">Contas isoladas (1 pasta cada)</text>
+        <rect class="zone" x="952" y="52" width="200" height="640" rx="18"></rect>
+        <text class="zone-title" x="972" y="86">Postgres</text>
+
+        <!-- task -> resolve -->
+        <path class="flow" stroke="#22d3ee" marker-end="url(#t-cyan)" d="M200 200 C250 200 250 180 315 180"></path>
+        <!-- resolve reads assignment from pg -->
+        <path class="flow dim" stroke="#f97316" marker-end="url(#t-orange)" d="M965 180 C880 180 500 175 465 175"></path>
+        <!-- resolve -> prepare -->
+        <path class="flow" stroke="#c084fc" marker-end="url(#t-purple)" d="M390 210 C390 260 390 285 390 320"></path>
+        <!-- prepare restores per-account creds (green/lime/yellow) -->
+        <path class="flow" stroke="#36d399" marker-end="url(#t-green)" d="M470 350 C560 350 580 210 645 210"></path>
+        <path class="flow" stroke="#a3e635" marker-end="url(#t-green)" d="M470 360 C560 360 580 350 645 350"></path>
+        <path class="flow" stroke="#f8c14a" marker-end="url(#t-green)" d="M470 370 C560 370 580 490 645 490"></path>
+        <!-- creds restored AS-IS from pg -->
+        <path class="flow dim" stroke="#f97316" marker-end="url(#t-orange)" d="M965 210 C930 210 900 210 830 210"></path>
+        <path class="flow dim" stroke="#f97316" marker-end="url(#t-orange)" d="M965 350 C930 350 900 350 830 350"></path>
+        <path class="flow dim" stroke="#f97316" marker-end="url(#t-orange)" d="M965 490 C930 490 900 490 830 490"></path>
+        <!-- rotation loop phase 2 -->
+        <path class="flow" stroke="#ff5c7a" marker-end="url(#t-red)" d="M735 250 C770 285 770 315 735 350"></path>
+        <path class="flow" stroke="#ff5c7a" marker-end="url(#t-red)" d="M735 390 C770 425 770 455 735 490"></path>
+
+        <g class="node daemon" transform="translate(44 162)" data-title="Tarefa → Agente" data-kind="Daemon" data-desc="O daemon inicia a preparação de ambiente da tarefa como hoje — mas agora com a conta resolvida por agente.">
+          <rect width="156" height="76" rx="10"></rect><text class="title" x="16" y="30">Tarefa → Agente</text><text class="meta" x="16" y="54">por tarefa</text>
+        </g>
+
+        <g class="node resolve" transform="translate(315 142)" data-title="Resolver conta" data-kind="Atribuição" data-desc="Mapa agente → conta (superfície mínima de config). Lê a atribuição do Postgres. Sem atribuição → fallback ao comportamento global atual (compatível).">
+          <rect width="150" height="76" rx="10"></rect><text class="title" x="16" y="30">Resolver conta</text><text class="meta" x="16" y="54">agente → conta</text>
+        </g>
+        <g class="node execenv" transform="translate(315 320)" data-title="Preparar + injetar" data-kind="execenv + daemon.go" data-desc="Restaura a credencial da conta AS-IS no diretório próprio (0700) e injeta a env var nativa: Codex CODEX_HOME, Kiro XDG_DATA_HOME/KIRO_API_KEY, Antigravity HOME. Cópia (não symlink) evita contaminar refresh entre contas.">
+          <rect width="150" height="90" rx="10"></rect><text class="title" x="16" y="30">Preparar + injetar</text><text class="meta" x="16" y="54">restore AS-IS</text><text class="meta" x="16" y="72">env var nativa</text>
+        </g>
+
+        <g class="node acc1" transform="translate(645 172)" data-title="Conta 1 (isolada)" data-kind="Codex" data-desc="CODEX_HOME → dir próprio com auth.json restaurado. Logar/renovar aqui NÃO afeta as outras contas.">
+          <rect width="185" height="76" rx="10"></rect><text class="title" x="16" y="30">Conta 1 · Codex</text><text class="meta" x="16" y="54">CODEX_HOME próprio</text>
+        </g>
+        <g class="node acc2" transform="translate(645 312)" data-title="Conta 2 (isolada)" data-kind="Kiro" data-desc="XDG_DATA_HOME próprio (sqlite por conta) ou KIRO_API_KEY. Store nativo do vendor tolerado apenas dentro do home isolado.">
+          <rect width="185" height="76" rx="10"></rect><text class="title" x="16" y="30">Conta 2 · Kiro</text><text class="meta" x="16" y="54">XDG_DATA_HOME / API key</text>
+        </g>
+        <g class="node acc3" transform="translate(645 452)" data-title="Conta 3 (isolada)" data-kind="Antigravity" data-desc="HOME → ~/.gemini/antigravity-cli da conta. Token restaurado AS-IS.">
+          <rect width="185" height="76" rx="10"></rect><text class="title" x="16" y="30">Conta 3 · Antigravity</text><text class="meta" x="16" y="54">HOME próprio</text>
+        </g>
+        <g class="node rotate" transform="translate(645 592)" data-title="Rotação automática (Fase 2)" data-kind="Fase 2" data-desc="Detecta esgotamento (regex tela / 429 / ledger), faz snapshot da tarefa, troca para a próxima conta disponível (prioridade por expertise) e retoma. Se todas esgotadas: park + wake no menor cooldown.">
+          <rect width="185" height="82" rx="10"></rect><text class="title" x="16" y="30">Rotação (Fase 2)</text><text class="meta" x="16" y="54">esgotou 5h → próxima conta</text><text class="meta" x="16" y="72">retoma sem intervenção</text>
+        </g>
+
+        <g class="node db" transform="translate(965 300)" data-title="Postgres" data-kind="Persistência" data-desc="Postgres-only (pool de conexões). Guarda accounts, credentials (blob AS-IS via ref/KMS), assignments e rotation_events. Nunca segredo em log.">
+          <rect width="170" height="120" rx="10"></rect><text class="title" x="16" y="30">Postgres</text><text class="meta" x="16" y="54">accounts / creds</text><text class="meta" x="16" y="74">assignments</text><text class="meta" x="16" y="94">rotation_events</text>
+        </g>
+      </svg>
+    </section>
+    <aside class="side" aria-live="polite">
+      <span class="badge" id="kind">Solução</span>
+      <h2 id="info-title">Clique em um componente</h2>
+      <p class="desc" id="info-desc">Ciano = tarefa; roxo = resolução da conta; azul = preparação/injeção; verde/lima/amarelo = credenciais isoladas por conta; vermelho = laço de rotação (Fase 2); laranja = leitura/escrita no Postgres.</p>
+      <div class="fact"><strong>Chave:</strong> cópia por conta (não symlink global) → o refresh de uma conta nunca contamina outra.</div>
+      <div class="fact"><strong>Cirúrgico:</strong> só o caminho de auth muda; orquestração/canvas/dispatch permanecem intocados.</div>
+      <div class="fact"><strong>Concorrência:</strong> uma credencial válida pode servir N agentes durante seu ciclo (~5h).</div>
+      <div class="legend">
+        <div class="key"><span class="swatch" style="background:var(--resolve);color:var(--resolve)"></span>Resolução</div>
+        <div class="key"><span class="swatch" style="background:var(--execenv);color:var(--execenv)"></span>Injeção</div>
+        <div class="key"><span class="swatch" style="background:var(--acc1);color:var(--acc1)"></span>Contas isoladas</div>
+        <div class="key"><span class="swatch" style="background:var(--rotate);color:var(--rotate)"></span>Rotação (F2)</div>
+        <div class="key"><span class="swatch" style="background:var(--db);color:var(--db)"></span>Postgres</div>
+        <div class="key"><span class="swatch" style="background:var(--daemon);color:var(--daemon)"></span>Daemon</div>
+      </div>
+    </aside>
+  </main>
+  <script>
+    const nodes = Array.from(document.querySelectorAll('.node'));
+    const title = document.getElementById('info-title');
+    const desc = document.getElementById('info-desc');
+    const kind = document.getElementById('kind');
+    function activate(node) {
+      nodes.forEach(n => n.classList.remove('active'));
+      node.classList.add('active');
+      title.textContent = node.dataset.title; desc.textContent = node.dataset.desc; kind.textContent = node.dataset.kind;
+    }
+    nodes.forEach(node => node.addEventListener('click', () => activate(node)));
+    let index = 0;
+    setInterval(() => { if (document.querySelector('.node:hover')) return; activate(nodes[index % nodes.length]); index += 1; }, 5200);
+  </script>
+</body>
+</html>

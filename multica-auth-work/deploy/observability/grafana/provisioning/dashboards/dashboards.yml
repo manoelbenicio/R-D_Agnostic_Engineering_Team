@@ -1,0 +1,14 @@
+# Grafana dashboard provider — auto-load dos JSON em /var/lib/grafana/dashboards
+apiVersion: 1
+
+providers:
+  - name: credential-isolation
+    orgId: 1
+    folder: Credential Isolation
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

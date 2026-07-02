@@ -1,0 +1,122 @@
+# Alert rules -- rotation & credential domain.
+# Metrics are defined in server/internal/metrics/credential_metrics.go.
+#
+# REALITY NOTE: rotation_total / all_accounts_exhausted / accounts_available /
+# exhaustion_detected_total / rotation_duration_seconds are emitted by the DAEMON
+# process, which does NOT yet expose a metrics server (see docs/project/
+# BACKLOG-detection.md). Until the daemon-metrics stream (H2) lands, those series
+# are absent on backend /metrics and the rotation alerts stay inactive by design.
+# The alerts are defined against the REAL metric names so they light up the moment
+# the daemon exports them -- no rename needed.
+#
+# Drivable TODAY (no faked metric):
+#   - CredentialServiceDown : up{job="credential-service"} == 0  (target-down)
+#   - PostgresDown          : pg_up == 0                         (exporter->DB)
+# Validate:  docker exec multica-prometheus promtool check rules /etc/prometheus/alerts.yml
+# Reload:     curl -s -X POST http://localhost:9090/-/reload
+
+groups:
+  - name: credential-rotation
+    interval: 30s
+    rules:
+      - alert: AllAccountsExhausted
+        expr: all_accounts_exhausted == 1
+        for: 1m
+        labels:
+          severity: critical
+          component: rotation
+        annotations:
+          summary: "All accounts exhausted (vendor={{ $labels.vendor }})"
+          description: "all_accounts_exhausted{vendor} == 1 for >=1m -- every account for this vendor is exhausted or in cooldown. Park the agent and schedule a wake at min(cooldown_until)."
+
+      - alert: NoAccountsAvailable
+        expr: accounts_available == 0
+        for: 1m
+        labels:
+          severity: warning
+          component: rotation
+        annotations:
+          summary: "No available accounts (vendor={{ $labels.vendor }})"
+          description: "accounts_available{vendor} == 0 for >=1m -- no account can be leased to an agent for this vendor right now."
+
+      - alert: RotationErrorsSpiking
+        expr: sum by (vendor) (increase(rotation_total{result="error"}[5m])) > 0
+        labels:
+          severity: warning
+          component: rotation
+        annotations:
+          summary: "Rotation errors spiking (vendor={{ $labels.vendor }})"
+          description: 'increase(rotation_total{result="error"}[5m]) > 0 -- at least one account rotation failed in the last 5m. Check rotation_events (DB) and accounts.last_error.'
+
+      - alert: ExhaustionDetectedSpiking
+        expr: sum by (vendor) (increase(exhaustion_detected_total[5m])) > 0
+        labels:
+          severity: warning
+          component: detection
+        annotations:
+          summary: "Exhaustion detections spiking (vendor={{ $labels.vendor }})"
+          description: "increase(exhaustion_detected_total[5m]) > 0 -- exhaustion signals (screen / 429 / ledger) detected in the last 5m. Correlate with rotation_events."
+
+  - name: credential-isolation
+    interval: 30s
+    rules:
+      - alert: CredentialRestoreFailing
+        expr: sum by (vendor) (increase(credential_restore_total{result="error"}[5m])) > 0
+        labels:
+          severity: warning
+          component: credential-store
+        annotations:
+          summary: "Credential restore failing (vendor={{ $labels.vendor }})"
+          description: 'increase(credential_restore_total{result="error"}[5m]) > 0 -- restoring the per-account credential from its isolated path failed in the last 5m. Check the home_dir / auth.json copy and chmod 0600.'
+
+      - alert: EnvInjectionFailing
+        expr: sum by (vendor) (increase(cred_env_injection_total{result="error"}[5m])) > 0
+        labels:
+          severity: warning
+          component: execenv
+        annotations:
+          summary: "Env injection failing (vendor={{ $labels.vendor }})"
+          description: 'increase(cred_env_injection_total{result="error"}[5m]) > 0 -- injecting the vendor native env var failed in the last 5m.'
+
+      - alert: CredentialPrepareSlow
+        expr: histogram_quantile(0.95, sum by (vendor, le) (rate(credential_prepare_seconds_bucket[5m]))) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: execenv
+        annotations:
+          summary: "Credential prepare slow (vendor={{ $labels.vendor }})"
+          description: "p95 credential_prepare_seconds > 5s for >=5m -- per-account home/credential preparation is slow. Check home_dir disk latency and the credential copy."
+
+  - name: platform
+    interval: 30s
+    rules:
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: postgres
+        annotations:
+          summary: "Postgres down"
+          description: "pg_up == 0 for >=1m -- the credential store (Postgres) is unreachable from postgres-exporter. Check the DB container health and the exporter DATA_SOURCE credentials."
+
+      - alert: CredentialServiceDown
+        expr: up{job="credential-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: credential-service
+        annotations:
+          summary: "Credential service down"
+          description: 'up{job="credential-service"} == 0 for >=1m -- Prometheus cannot scrape the credential-service /metrics target. Check the backend/daemon container and METRICS_ADDR (prometheus.yml scrapes backend:9090).'
+
+      - alert: PostgresExporterDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          component: postgres-exporter
+        annotations:
+          summary: "Postgres exporter down"
+          description: 'up{job="postgres"} == 0 for >=1m -- postgres-exporter is not being scraped. Check the multica-postgres-exporter container (port 9187).'

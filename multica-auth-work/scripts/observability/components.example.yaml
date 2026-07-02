@@ -1,0 +1,16 @@
+components:
+  - name: rotation-overview
+    title: "Account Rotation"
+    panels:
+      - title: "Rotations total"
+        metric: rotation_total
+        type: stat
+        query: "sum by (reason) (rotation_total)"
+      - title: "All accounts exhausted"
+        metric: all_accounts_exhausted
+        type: gauge
+        query: "max by (vendor) (all_accounts_exhausted)"
+      - title: "Accounts available"
+        metric: accounts_available
+        type: timeseries
+        query: "accounts_available"
