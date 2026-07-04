@@ -188,6 +188,48 @@ STATUS_DISP = {"DONE": ("green", "● DONE"), "IN_PROGRESS": ("yellow", "▶ WOR
                "BLOCKED": ("red", "■ BLOCKED"), "FAILED": ("red", "✖ FAILED"),
                "CANCELLED": ("grey", "⊘ CANCEL"), "TODO": ("grey", "○ TODO")}
 
+# ---------- C-LEVEL executive report (markdown) ----------
+def report_md(host, rows, now):
+    c = {"DONE":0,"IN_PROGRESS":0,"BLOCKED":0,"FAILED":0,"CANCELLED":0,"TODO":0}
+    progs = []
+    for r in rows:
+        c[r["status"]] = c.get(r["status"],0)+1
+        if r["status"] != "CANCELLED": progs.append(r["prog"])
+    total = len(rows)
+    overall = int(round(sum(progs)/len(progs))) if progs else 0
+    faltam = total - c["DONE"] - c["CANCELLED"]
+    SL = {"DONE":"✅ DONE","IN_PROGRESS":"🔄 EM CURSO","BLOCKED":"⛔ BLOQUEADA",
+          "FAILED":"❌ FALHADA","CANCELLED":"⊘ CANCELADA","TODO":"⬜ EM ESPERA"}
+    L = []
+    L.append("# STATUS EXECUTIVO (C-LEVEL) — Rotation-Parity Polyglot")
+    L.append("")
+    L.append(f"> **Gerado:** {now.strftime('%Y-%m-%d %H:%M:%SZ')} · **Fonte:** Herdr socket + board ({host}) · **Mantido por:** Tech-Lead (Opus 4.8)")
+    L.append("")
+    L.append(f"## Panorama: **OVERALL {overall}%** — FALTAM **{faltam}/{total}**")
+    L.append("")
+    L.append(f"✅ {c['DONE']} concluídas · 🔄 {c['IN_PROGRESS']} em curso · ⬜ {c['TODO']} em espera · ⛔ {c['BLOCKED']} bloqueadas · ❌ {c['FAILED']} falhadas · ⊘ {c['CANCELLED']} canceladas")
+    L.append("")
+    L.append("| # | Item | Tarefa | Status | Dono | Prog | ETA | Observação |")
+    L.append("|---|------|--------|--------|------|-----:|-----|------------|")
+    for r in rows:
+        obs = (r.get("motivo","") or "").replace("|","/")[:70] if r["status"] != "DONE" else "—"
+        nm = r["tarefa"].replace(" [GATED]","").replace("|","/")[:44]
+        L.append(f"| {r.get('num','')} | {r['id']} | {nm} | {SL.get(r['status'],r['status'])} | {r['agent']} | {r['prog']}% | {r['eta']} | {obs} |")
+    L.append("")
+    issues = [r for r in rows if r["status"] != "DONE"]
+    if issues:
+        L.append("## Pendências (o que falta até GA)")
+        for r in issues:
+            L.append(f"- **{r['id']} — {r['tarefa'].replace(' [GATED]','')}** ({SL.get(r['status'])}, dono {r['agent']}, ETA {r['eta']}): {r.get('motivo','')}")
+        L.append("")
+    L.append("## Decisões pendentes do dono (owner-only)")
+    L.append("- **F5 vendor sign-off:** aceitar capabilities `not_validated` como disabled-by-default (ACCEPT recomendado p/ ausências factuais; #7 Smart Context = gate; #6 OpenCode arquivado = descopar).")
+    L.append("- **F7 deploy PROD:** **NO-GO** até G5/G10/F4/F6 verdes + runbook reconciliado.")
+    L.append("")
+    L.append("## Próximo marco (gate de GA)")
+    L.append("Deploy prodex AS-IS em PROD (F0) **somente após**: G5 Smart Context (shadow→canary), G10 container/kill-switch/rollback, F4 redaction/no-SQLite e F6 conformance — todos **verdes com evidência** — e aprovação do dono.")
+    return "\n".join(L)
+
 # ---------- render ----------
 def clip(s, n):
     s = str(s or ""); return s if len(s) <= n else s[:n-1] + "…"
@@ -388,6 +430,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ssh", default=DEFAULT_HOST); ap.add_argument("--board", default=DEFAULT_BOARD)
     ap.add_argument("--once", action="store_true"); ap.add_argument("--json", action="store_true")
+    ap.add_argument("--report", action="store_true", help="emite STATUS EXECUTIVO (markdown, C-Level)")
     ap.add_argument("--ascii", action="store_true"); ap.add_argument("--interval", type=float, default=5.0)
     ap.add_argument("--msg", metavar="TEXT"); ap.add_argument("--status", action="store_true"); ap.add_argument("--read", action="store_true")
     args = ap.parse_args()
@@ -407,13 +450,15 @@ def main():
         now = datetime.now(timezone.utc)
         agents, checkins, err = snapshot(host, args.board)
         rows = build_tasks(plan, checkins, agents, now)
+        if args.report:
+            return report_md(host, rows, now)
         if args.json:
             faltam = sum(1 for r in rows if r["status"] != "DONE")
             return json.dumps({"host": host, "at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
                                "total": len(rows), "faltam": faltam, "tasks": rows}, ensure_ascii=False, indent=2)
         return render(host, rows, now, col, args.ascii, err)
 
-    if args.once or args.json: print(frame()); return
+    if args.once or args.json or args.report: print(frame()); return
     tty = sys.stdout.isatty(); ALT_ON, ALT_OFF = "\033[?1049h\033[?25l", "\033[?25h\033[?1049l"
     try:
         if tty: sys.stdout.write(ALT_ON)
