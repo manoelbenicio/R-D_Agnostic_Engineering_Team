@@ -58,3 +58,4 @@ transformaca-agente-ofertas-qualificacao-bpo.md
 # --- SAFETY (reinforced): mobile env secrets ---
 multica-auth-work/apps/mobile/.env.production
 multica-auth-work/apps/mobile/.env.staging
+agentic-prompts-hub/
