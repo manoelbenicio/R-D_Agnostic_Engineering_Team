@@ -1,0 +1,63 @@
+# Savings KPI + spend dimensions — dashboards-as-code (design.md §8, aba SAVINGS).
+# Authored by GLM#52#B (Wave-1 stream RR-OBSERV). Overwrites any pre-existing stub.
+#
+# Every panel references ONLY real metrics from
+#   server/internal/metrics/credential_metrics.go
+# (validated by scripts/observability/gen_dashboards.py against CATALOG_METRICS).
+# No metric name is invented.
+#
+# The two Savings panels are a DOCUMENTED DERIVED EXPRESSION, not a new metric:
+#   Savings_est($) = sum(account_tokens_used) * P_metered
+# where account_tokens_used is the real gauge and P_metered is a hypothetical
+# blended metered price embedded as a constant in the PromQL query (3e-6 USD/token,
+# ~$3 per 1M tokens). The price side is NOT a real series yet, so these panels are
+# marked "ESTIMATED" in their titles. See docs/project/savings-kpi.md for the gap.
+#
+# Component name "savings" -> deploy/observability/grafana/dashboards/savings.generated.json
+# (dashboard title = component.title, dashboard uid = component.name).
+components:
+  - name: savings
+    title: "Savings KPI (Moat)"
+    panels:
+      # ---- SAVINGS KPI (the moat, in $) — ESTIMATED derived expression ----------
+      # metered spend is architecturally $0 (design.md §11 decision 1); observed
+      # subscription tokens are the tokens that would otherwise be billed metered.
+      - title: "Savings vs metered (ESTIMATED, USD)"
+        metric: account_tokens_used
+        type: stat
+        query: "sum(account_tokens_used) * 3e-6"
+      - title: "Savings by vendor (ESTIMATED, USD)"
+        metric: account_tokens_used
+        type: timeseries
+        query: "sum by (vendor) (account_tokens_used) * 3e-6"
+
+      # ---- SPEND DIMENSIONS (exact series, no estimation) ---------------------
+      # Token usage = observed spend proxy (the feedstock of the savings estimate).
+      - title: "Tokens used by vendor (observed spend proxy)"
+        metric: account_tokens_used
+        type: timeseries
+        query: "sum by (vendor) (account_tokens_used)"
+      - title: "Token usage by account (savings feedstock)"
+        metric: account_tokens_used
+        type: table
+        query: "account_tokens_used"
+      # Headroom: accounts still usable per vendor (flat-rate inventory).
+      - title: "Accounts available by vendor"
+        metric: accounts_available
+        type: timeseries
+        query: "sum by (vendor) (accounts_available)"
+      # Rotation pressure by reason (request-volume / failover dimension).
+      - title: "Rotations by reason"
+        metric: rotation_total
+        type: stat
+        query: "sum by (reason) (rotation_total)"
+      # Full-exhaustion alarm by vendor (when the moat is at risk of running out).
+      - title: "All accounts exhausted by vendor"
+        metric: all_accounts_exhausted
+        type: gauge
+        query: "max by (vendor) (all_accounts_exhausted)"
+      # Exhaustion signal rate (detection dimension — proactive vs reactive).
+      - title: "Exhaustion detected by signal"
+        metric: exhaustion_detected_total
+        type: timeseries
+        query: "sum by (signal) (rate(exhaustion_detected_total[5m]))"

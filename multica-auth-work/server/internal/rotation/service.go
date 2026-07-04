@@ -109,7 +109,7 @@ func (s *Service) OnExhaustion(ctx context.Context, agentID, vendor, tenantID st
 
 	var lastLoginErr error
 	for attempts := 0; attempts < s.maxAttempts; attempts++ {
-		next, err := s.pool.selectNext(ctx, vendor, tenantID, now, skip)
+		next, err := s.pool.selectNext(withSelectionAgentID(ctx, agentID), vendor, tenantID, now, skip)
 		if err != nil {
 			return Account{}, err
 		}
