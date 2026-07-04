@@ -135,8 +135,13 @@ def derive_priority(d):
 
 def derive_status(d):
     s = (d.get("status") or "").upper()
+    b = (d.get("build_result") or "").lower()
+    if any(x in s for x in ("CANCEL", "ABORT", "SUPERSED")): return "CANCELLED"
+    if "FAIL" in s: return "FAILED"
     if "BLOCK" in s: return "BLOCKED"
-    if "DONE" in s or "COMPLETE" in s: return "DONE"
+    if "DONE" in s or "COMPLETE" in s:
+        if any(k in b for k in ("fail", "red", "vermelho", "error", "erro")): return "FAILED"
+        return "DONE"
     if "PROGRESS" in s or "WORKING" in s: return "IN_PROGRESS"
     return "TODO"
 
@@ -183,7 +188,8 @@ def fmt_h(h):
 
 VIVO_COLOR = {"working": "green", "done": "green", "idle": "yellow", "blocked": "red", "unknown": "grey"}
 STATUS_DISP = {"DONE": ("green", "● DONE"), "IN_PROGRESS": ("yellow", "▶ WORKING"),
-               "BLOCKED": ("red", "■ BLOCKED"), "TODO": ("grey", "○ TODO")}
+               "BLOCKED": ("red", "■ BLOCKED"), "FAILED": ("red", "✖ FAILED"),
+               "CANCELLED": ("grey", "⊘ CANCEL"), "TODO": ("grey", "○ TODO")}
 
 # ---------- render ----------
 def clip(s, n):
@@ -215,8 +221,11 @@ def agg_status(matched):
     if not matched: return "TODO"
     sts = [derive_status(d) for d in matched]
     if "BLOCKED" in sts: return "BLOCKED"
+    if "FAILED" in sts: return "FAILED"
     if "IN_PROGRESS" in sts: return "IN_PROGRESS"
-    return "DONE" if all(s == "DONE" for s in sts) else "IN_PROGRESS"
+    if all(s == "CANCELLED" for s in sts): return "CANCELLED"
+    if all(s == "DONE" for s in sts): return "DONE"
+    return "DONE" if "DONE" in sts else "IN_PROGRESS"
 
 def build_tasks(plan, checkins, agents, now):
     rows = []
@@ -235,11 +244,23 @@ def build_tasks(plan, checkins, agents, now):
         pane = ag.get("pane_id") if ag else ""
         eta = (eta_display(latest, status, prog, now) if latest
                else ("0m" if status == "DONE" else (fmt_h(task.get("eta_hours")) if task.get("eta_hours") else "—")))
+        if status == "TODO":
+            motivo = "GATED — aguarda aprovação do dono + smokes verdes" if task.get("gated") else "não iniciado"
+        elif status == "IN_PROGRESS":
+            motivo = (latest.get("notes") if latest else "") or f"em curso ({prog}%)"
+        elif status == "BLOCKED":
+            motivo = ((latest.get("blockers") or latest.get("notes")) if latest else "") or "bloqueado"
+        elif status == "FAILED":
+            motivo = ((latest.get("build_result") or latest.get("notes")) if latest else "") or "build falhou"
+        elif status == "CANCELLED":
+            motivo = (latest.get("notes") if latest else "") or "cancelado/superseded"
+        else:
+            motivo = ""
         rows.append({"id": task.get("phase", "?"), "pri": task.get("priority") or "P2",
                      "tarefa": (task.get("name", "—") + (" [GATED]" if task.get("gated") else "")),
                      "status": status, "agent": agent_name, "pane": pane, "vivo": vivo,
                      "prog": prog, "eta": eta, "gated": task.get("gated"),
-                     "notes": (latest.get("notes") if latest else "") or ""})
+                     "motivo": motivo, "notes": (latest.get("notes") if latest else "") or ""})
     return rows
 
 def bar_cell(col, pct, width):
@@ -269,16 +290,15 @@ def render(host, rows, now, col, ascii_mode, err=None):
                             [("id","ID"),("pri","PRI"),("tarefa","TAREFA"),("status","STATUS"),
                              ("agente","AGENTE"),("vivo","VIVO"),("prog","PROGRESSO"),("eta","ETA")]])))
     L.append(col.cyan(rule))
-    counts = {"DONE":0,"IN_PROGRESS":0,"BLOCKED":0,"TODO":0}
+    counts = {"DONE":0,"IN_PROGRESS":0,"BLOCKED":0,"FAILED":0,"CANCELLED":0,"TODO":0}
     idle_pend = []; progs = []
     for r in rows:
         counts[r["status"]] = counts.get(r["status"],0)+1
-        progs.append(r["prog"])
+        if r["status"] != "CANCELLED": progs.append(r["prog"])
         scolor, slabel = STATUS_DISP.get(r["status"], ("grey", r["status"]))
         vcolor = VIVO_COLOR.get(r["vivo"], "grey")
         pricol = col.red if r["pri"]=="P0" else (col.yellow if r["pri"]=="P1" else col.grey)
         agente = clip(f'{r["agent"]}', W["agente"]-len(r["pane"])-3) + (col.grey(f' ({r["pane"]})') if r["pane"] else "")
-        # padding manual do agente (tem cor no pane)
         vis = len(clip(f'{r["agent"]}', W["agente"]-len(r["pane"])-3)) + (len(r["pane"])+3 if r["pane"] else 0)
         agente = agente + " "*max(0, W["agente"]-vis)
         cells = [
@@ -292,28 +312,41 @@ def render(host, rows, now, col, ascii_mode, err=None):
             (col.red if r["eta"]=="atraso" else col.grey)(cell(r["eta"], W["eta"])),
         ]
         L.append(col.cyan(row(cells)))
-        if r["vivo"] == "idle" and r["status"] != "DONE":
+        if r["vivo"] == "idle" and r["status"] not in ("DONE","CANCELLED"):
             idle_pend.append(f'{r["agent"]}({r["pane"] or "?"})')
     L.append(col.cyan(bot))
     # KPIs & ALERTS
+    total_t = len(rows)
     overall = int(round(sum(progs)/len(progs))) if progs else 0
+    faltam = total_t - counts['DONE'] - counts['CANCELLED']
     L.append("")
-    L.append(col.blue(" KPIs & ALERTS ").center(inner+4, "─") if not col.on else col.blue("── KPIs & ALERTS " + "─"*(inner-13)))
+    L.append(col.blue("── KPIs & ALERTS " + "─"*max(0, inner-13)) if col.on else "── KPIs & ALERTS ──")
     obar = bar_cell(col, overall, 18)
     L.append(f" OVERALL {obar}   "
              f"{col.green('✔ '+str(counts['DONE'])+' Concluídas')}   "
              f"{col.yellow('▶ '+str(counts['IN_PROGRESS'])+' Em Curso')}   "
              f"{col.grey('▢ '+str(counts['TODO'])+' Em Espera')}   "
-             f"{col.red('■ '+str(counts['BLOCKED'])+' Bloqueadas')}")
-    total_t = len(rows); faltam = total_t - counts['DONE']
+             f"{col.red('■ '+str(counts['BLOCKED'])+' Bloqueadas')}   "
+             f"{col.red('✖ '+str(counts['FAILED'])+' Falhadas')}   "
+             f"{col.grey('⊘ '+str(counts['CANCELLED'])+' Canceladas')}")
     fcol = col.green if faltam == 0 else col.yellow
     L.append(" " + col.bold(fcol(f"FALTAM {faltam}/{total_t}")) +
-             f"  pendentes: {counts['TODO']} em espera · {counts['IN_PROGRESS']} em curso · {counts['BLOCKED']} bloqueadas"
-             + ("  " + col.grey("(inclui F0 deploy GATED)") if any(r.get('gated') and r['status'] != 'DONE' for r in rows) else ""))
+             f"  ({counts['TODO']} em espera · {counts['IN_PROGRESS']} em curso · {counts['BLOCKED']} bloqueadas · {counts['FAILED']} falhadas)"
+             + ("  " + col.grey("[inclui F0 deploy GATED]") if any(r.get('gated') and r['status'] != 'DONE' for r in rows) else ""))
     if idle_pend:
-        L.append(" " + col.yellow("⚠ ALERTA DE OCIOSIDADE: agentes IDLE com tarefa pendente → " + ", ".join(idle_pend)))
+        L.append(" " + col.yellow("⚠ OCIOSIDADE: agentes IDLE com tarefa pendente → " + ", ".join(idle_pend)))
+    # 360: detalhe de pendências e ocorrências (o que falta / falhou / cancelou / travou)
+    issues = [r for r in rows if r["status"] != "DONE"]
+    if issues:
+        L.append(col.bold(" PENDÊNCIAS & OCORRÊNCIAS (360°):"))
+        for r in issues:
+            sc, sl = STATUS_DISP.get(r["status"], ("grey", r["status"]))
+            who = r["agent"] + (f' {r["pane"]}' if r["pane"] else "")
+            L.append("   " + getattr(col, sc)(f'{r["id"]:<3} {sl:<10}') + " " +
+                     clip(r["tarefa"].replace(" [GATED]",""), 38).ljust(38) + " " +
+                     col.grey(clip(who, 20).ljust(20)) + " → " + clip(r.get("motivo",""), 52))
     else:
-        L.append(" " + col.green("✔ Sem ociosidade com pendência."))
+        L.append(" " + col.green("✔ Nada pendente/falhado/cancelado — tudo concluído."))
     L.append(col.grey(f" Tech-Lead → SOMENTE {ORCH}:  --msg \"...\"  |  --status  |  --read"))
     return "\n".join(L)
 
