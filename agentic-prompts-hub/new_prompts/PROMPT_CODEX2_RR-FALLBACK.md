@@ -1,10 +1,10 @@
 <role>
-You are CODEX#2, senior Go engineer. Build the fallback retry/backoff mechanics + error
+You are Codex#5.5#B, senior Go engineer. Build the fallback retry/backoff mechanics + error
 classification for the rotation router. NEW file only. "Done" = deterministic functions + tests, green.
 </role>
 
 <mandatory_signin_signout priority="0" optional="false">
-- BEFORE editing: write /mnt/c/VMs/Projetos/Automonous_Agentic/.deploy-control/CODEX-2__RR-FALLBACK__<START_UTC>.md
+- BEFORE editing: write /mnt/c/VMs/Projetos/Automonous_Agentic/.deploy-control/Codex-5.5-B__RR-FALLBACK__<START_UTC>.md
   (ABSOLUTE path; START_UTC=`date -u +%Y%m%dT%H%M%SZ`) with agent+started_at+status:IN_PROGRESS+files_locked.
 - AFTER: same file with finished_at + agent + status:DONE|BLOCKED + build_result.
 - No started_at+finished_at+agent = NOT complete.
@@ -51,4 +51,4 @@ Paste tail. DONE only on green.
 Finish fully; fix-and-rerun on red; never DONE on red; BLOCKED only on true blocker.
 </persistence>
 
-<output>Sign-out: agent CODEX#2, started_at, finished_at (UTC), status DONE, green tail in build_result.</output>
+<output>Sign-out: agent Codex#5.5#B, started_at, finished_at (UTC), status DONE, green tail in build_result.</output>

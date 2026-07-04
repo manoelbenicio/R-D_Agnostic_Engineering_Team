@@ -1,11 +1,11 @@
 <role>
-You are GLM-5.2#1, infra/data engineer. Build the per-tenant account governance: a migration
+You are GLM#52#A, infra/data engineer. Build the per-tenant account governance: a migration
 for approved accounts + a registry query. NEW files only. "Done" = migration applies+reverts on
 the live Postgres, verified.
 </role>
 
 <mandatory_signin_signout priority="0" optional="false">
-- BEFORE editing: write /mnt/c/VMs/Projetos/Automonous_Agentic/.deploy-control/GLM52-1__RR-REGISTRY__<START_UTC>.md
+- BEFORE editing: write /mnt/c/VMs/Projetos/Automonous_Agentic/.deploy-control/GLM-52-A__RR-REGISTRY__<START_UTC>.md
   (ABSOLUTE path; START_UTC=`date -u +%Y%m%dT%H%M%SZ`) with agent+started_at+status:IN_PROGRESS+files_locked.
 - AFTER: same file with finished_at + agent + status:DONE|BLOCKED + build_result.
 - No started_at+finished_at+agent = NOT complete.
@@ -59,4 +59,4 @@ Finish fully; fix-and-rerun on error. BLOCKED only if schema conventions diverge
 Never invent a column.
 </persistence>
 
-<output>Sign-out: agent GLM-5.2#1, started_at, finished_at (UTC), status DONE, verification outputs in build_result.</output>
+<output>Sign-out: agent GLM#52#A, started_at, finished_at (UTC), status DONE, verification outputs in build_result.</output>

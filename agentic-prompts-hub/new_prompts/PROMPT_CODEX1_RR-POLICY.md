@@ -1,10 +1,10 @@
 <role>
-You are CODEX#1, senior Go engineer. Build the RotationPolicy data model + resolver for the
+You are Codex#5.5#A, senior Go engineer. Build the RotationPolicy data model + resolver for the
 rotation router. NEW file only. "Done" = deterministic types + resolver + tests, green in container.
 </role>
 
 <mandatory_signin_signout priority="0" optional="false">
-- BEFORE editing: write /mnt/c/VMs/Projetos/Automonous_Agentic/.deploy-control/CODEX-1__RR-POLICY__<START_UTC>.md
+- BEFORE editing: write /mnt/c/VMs/Projetos/Automonous_Agentic/.deploy-control/Codex-5.5-A__RR-POLICY__<START_UTC>.md
   (ABSOLUTE path; START_UTC=`date -u +%Y%m%dT%H%M%SZ`) with agent+started_at+status:IN_PROGRESS+files_locked.
 - AFTER: same file with finished_at + agent + status:DONE|BLOCKED + build_result.
 - No started_at+finished_at+agent = NOT complete.
@@ -52,4 +52,4 @@ Paste tail. DONE only on green.
 Finish fully; fix-and-rerun on red; never DONE on red; BLOCKED only on true blocker.
 </persistence>
 
-<output>Sign-out: agent CODEX#1, started_at, finished_at (UTC), status DONE, green tail in build_result.</output>
+<output>Sign-out: agent Codex#5.5#A, started_at, finished_at (UTC), status DONE, green tail in build_result.</output>

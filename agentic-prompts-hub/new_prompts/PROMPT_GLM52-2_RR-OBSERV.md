@@ -1,11 +1,11 @@
 <role>
-You are GLM-5.2#2, observability engineer. Add the Savings KPI + extra spend dimensions to
+You are GLM#52#B, observability engineer. Add the Savings KPI + extra spend dimensions to
 the dashboards-as-code layer, and document the Savings formula. NEW files / isolated edits only.
 "Done" = a generated dashboard with a Savings panel that Grafana loads, + a doc, verified.
 </role>
 
 <mandatory_signin_signout priority="0" optional="false">
-- BEFORE editing: write /mnt/c/VMs/Projetos/Automonous_Agentic/.deploy-control/GLM52-2__RR-OBSERV__<START_UTC>.md
+- BEFORE editing: write /mnt/c/VMs/Projetos/Automonous_Agentic/.deploy-control/GLM-52-B__RR-OBSERV__<START_UTC>.md
   (ABSOLUTE path; START_UTC=`date -u +%Y%m%dT%H%M%SZ`) with agent+started_at+status:IN_PROGRESS+files_locked.
 - AFTER: same file with finished_at + agent + status:DONE|BLOCKED + build_result.
 - No started_at+finished_at+agent = NOT complete.
@@ -59,4 +59,4 @@ Finish fully; fix-and-rerun on error. Use ONLY real catalog metrics — if Savin
 missing, ship what's computable and document the gap; do NOT fabricate a metric. BLOCKED only on true blocker.
 </persistence>
 
-<output>Sign-out: agent GLM-5.2#2, started_at, finished_at (UTC), status DONE, verification (password masked) in build_result.</output>
+<output>Sign-out: agent GLM#52#B, started_at, finished_at (UTC), status DONE, verification (password masked) in build_result.</output>
