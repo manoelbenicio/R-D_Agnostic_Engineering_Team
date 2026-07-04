@@ -58,3 +58,18 @@ transformaca-agente-ofertas-qualificacao-bpo.md
 # --- SAFETY (reinforced): mobile env secrets ---
 multica-auth-work/apps/mobile/.env.production
 multica-auth-work/apps/mobile/.env.staging
+
+# --- Higiene 2026-07-04 (Opus): binários/mídia/arquivos e material de referência (não são source do Multica) ---
+*.zip
+*.exe
+*.dll
+*.msi
+*.mp4
+*.mov
+/OpenSSH-Win64.zip
+/PsExec64.exe
+/HerdMaster
+docs/herdmaster-prd/
+docs/amux-reference/
+Mapeamento_New_Features/
+data_experts/

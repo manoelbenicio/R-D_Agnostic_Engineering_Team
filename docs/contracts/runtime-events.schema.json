@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://multica.local/schemas/rpp/l2/runtime-events.schema.json",
+  "title": "Rotation Parity Runtime Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "event_id",
+    "event_type",
+    "occurred_at",
+    "severity",
+    "redaction"
+  ],
+  "allOf": [
+    {
+      "$comment": "tenant_id/session_id são exigidos apenas em eventos de sessão; eventos globais (sidecar_started, sidecar_ready, policy_applied, kill_switch_applied, error) não os têm. Correção do over-constraint (Opus 4.8, 2026-07-04).",
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": [
+              "session_started",
+              "session_stopped",
+              "route_selected",
+              "affinity_bound",
+              "fallback_attempted",
+              "fallback_succeeded",
+              "fallback_failed",
+              "smart_context_shadow",
+              "smart_context_rewrite",
+              "smart_context_fallback_exact",
+              "redeem_attempted",
+              "redeem_succeeded",
+              "redeem_no_credit",
+              "redeem_rejected",
+              "quota_snapshot",
+              "gateway_request",
+              "gateway_response"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": ["tenant_id", "session_id"]
+      }
+    }
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "rpp.l2.v1"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 8
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "sidecar_started",
+        "sidecar_ready",
+        "policy_applied",
+        "account_registered",
+        "session_started",
+        "session_stopped",
+        "route_selected",
+        "affinity_bound",
+        "fallback_attempted",
+        "fallback_succeeded",
+        "fallback_failed",
+        "smart_context_shadow",
+        "smart_context_rewrite",
+        "smart_context_fallback_exact",
+        "redeem_attempted",
+        "redeem_succeeded",
+        "redeem_no_credit",
+        "redeem_rejected",
+        "quota_snapshot",
+        "gateway_request",
+        "gateway_response",
+        "guardrail_block",
+        "kill_switch_applied",
+        "error"
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workspace_id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtime_session_id": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "profile_id": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "strategy": { "type": "string" },
+        "selected_profile_id": { "type": "string" },
+        "selected_provider": { "type": "string" },
+        "reason": { "type": "string" },
+        "committed": { "type": "boolean" },
+        "continuation_bound": { "type": "boolean" }
+      }
+    },
+    "smart_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["disabled", "shadow", "canary", "live", "exact"]
+        },
+        "tokens_before": { "type": "integer", "minimum": 0 },
+        "tokens_after": { "type": "integer", "minimum": 0 },
+        "rewrite_ratio_percent": { "type": "number" },
+        "fallback_exact": { "type": "boolean" },
+        "validation_result": { "type": "string" }
+      }
+    },
+    "redeem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "attempted": { "type": "boolean" },
+        "result": {
+          "type": "string",
+          "enum": ["success", "no_credit", "rejected", "not_applicable", "error"]
+        },
+        "guard_reason": { "type": "string" }
+      }
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["debug", "info", "warn", "error", "critical"]
+    },
+    "message": {
+      "type": "string"
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["secrets_present", "scrubber_version"],
+      "properties": {
+        "secrets_present": { "const": false },
+        "scrubber_version": { "type": "string" },
+        "fields_scrubbed": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
+
