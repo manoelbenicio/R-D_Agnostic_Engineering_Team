@@ -1,3 +1,5 @@
+> **⛔ MANDATÓRIO:** leia TUDO antes de qualquer ação — em especial o **RCA dos 22 erros** (`.planning/RCA-2026-07-04-001-orchestrator-errors.md`), a **arquitetura AS-IS/TO-BE** (`docs/project/architecture_{as_is,to_be}.html` + ADR-001), e **instale/comunique via Herdr** (skill: `npx skills add ogulcancelik/herdr --skill herdr -g`; fale com o TL só via `opus-4.8-orchestrator` + `pane run`). Detalhes: `HANDOFF_APENDICE_REFERENCIA.md`.
+
 # HANDOFF — Continuação do Rotation-Parity Polyglot (para o próximo agente)
 
 > **Leia este documento inteiro antes de tocar em qualquer coisa.** Depois leia, nesta ordem:

@@ -113,3 +113,37 @@ python3 scripts/dashboard/plan_dashboard.py --once --ascii
 
 ## 10. BASES DE CONHECIMENTO (pesquisáveis, neste host)
 `rpp-projeto-diligencias` · `rpp-openspec-plano` · `rpp-gsd-planning`. (Rodam neste host; o fleet consome via repo/`git pull`.)
+
+
+## 11. ARQUITETURA — desenhos AS-IS / TO-BE
+- **Diagrama AS-IS:** `/mnt/c/VMs/Projetos/Automonous_Agentic/docs/project/architecture_as_is.html`
+- **Diagrama TO-BE:** `/mnt/c/VMs/Projetos/Automonous_Agentic/docs/project/architecture_to_be.html`
+- Outros: `docs/architecture.html` · `docs/network-architecture.html` · `docs/ARCHITECTURE_LOCAL_VS_CLOUD.md` · `docs/project/04-architecture.md`
+- **ADR-001 (decisão de arquitetura):** `docs/rotation-parity-polyglot/02_ADR-001-arquitetura.md`
+- **Textual (autoridade):** `openspec/changes/rotation-parity-polyglot/design.md` — §1 Camadas L4/L2, **§2 Horizonte AGORA (AS-IS: prodex AS-IS)**, **§3 Horizonte ALVO (TO-BE: fork Rust L2)**.
+- PRD/Plataforma: `docs/rotation-parity-polyglot/{01_PRD.md,03_PLATFORM_PLAN_360.md}`.
+
+## 12. LEITURA MANDATÓRIA — ANTES DE QUALQUER COISA
+Leia, nesta ordem, TUDO antes de agir:
+1. `Diligencias/HANDOFF_PROXIMO_AGENTE.md` + este apêndice.
+2. `Diligencias/00_LEIA_PRIMEIRO_MISSAO.md` (charter) → `00_CONTEXTO_MULTICA.md`.
+3. **`/mnt/c/VMs/Projetos/Automonous_Agentic/.planning/RCA-2026-07-04-001-orchestrator-errors.md`** — os **22 erros grotescos** cometidos (não repita nenhum).
+4. Arquitetura AS-IS/TO-BE (§11) + ADR-001 + design.md.
+5. Refs de completude: `00b`(deps) · `00c`(44 crates) · `00d`(env/segurança) · `00e`(completude).
+6. Sua fase: `Diligencias/0X_*.md` + `openspec .../tasks.md`.
+
+## 13. HERDR — comunicar com o TL + INSTALAR A SKILL (obrigatório)
+Você DEVE se comunicar com o Tech-Lead SOMENTE via Herdr, e SÓ com autorização do dono.
+**Instale a skill Herdr para você (1x no start):**
+```
+npx skills add ogulcancelik/herdr --skill herdr -g     # instala a skill
+export HERDR_ENV=1                                       # só opere Herdr com isto setado
+herdr integration install codex                          # integração nativa (se aplicável)
+```
+**Falar com o TL (submeter com Enter via pane run):**
+```
+ssh manoelneto-laptop "herdr agent list" | grep opus-4.8-orchestrator   # pega o pane
+ssh manoelneto-laptop "herdr pane run <pane> 'mensagem'"                 # envia+Enter
+ssh manoelneto-laptop "herdr pane read <pane> --source recent --lines 40"
+```
+Regra: só `opus-4.8-orchestrator`; `agent send` NÃO submete (use `pane run`).
