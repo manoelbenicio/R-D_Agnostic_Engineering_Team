@@ -67,6 +67,7 @@
 - [ ] 4.8 Inventário completo `PRODEX_*` + defaults seguros (ALLOW_UNSAFE_CHILD_ENV=off; chaves via secret-store)
 - [ ] 4.9 SEGURANÇA: Caveman/hook DESABILITADO por padrão (RCE/supply-chain); se usado, allowlist+timeout+sem marketplace externo
 
+- [ ] 4.10 SEGURANÇA: browser automation (Playwright/Chromium) do prodex — escopo/sandbox/allowlist; Mem0 memory — privacidade/redaction de PII
 ## 6. QA/conformance EXAUSTIVO — SEM BYPASS [REQ-13..18] (dep: 3,4,5)
 
 - [ ] 6.1 C1 conformance por capability (não por rótulo) — evidência container
@@ -87,6 +88,8 @@
 - [ ] 7.4 Runbook de deploy + observability/alertas
 - [ ] 7.5 GATE P7: kill-switch + rollback verdes → DEPLOY DIRETO em PROD (sem canary); sessão real via prodex
 
+- [ ] 7.6 Runbook referencia Helm (deploy/helm) + docker-compose.selfhost + observability; migrations reversíveis aplicadas
+- [ ] 7.7 CI hardening: adicionar go vet + lint (golangci) + security scan (govulncheck/gitleaks) além de go test -race
 ## 8. Ops / evidence index (contínuo, desde 0) [REQ-23]
 
 - [ ] 8.1 Status board + evidence index + open items por owner

@@ -53,6 +53,12 @@
 - **REQ-35** — Mapa dos subcomandos prodex usados pelo Multica (run/s/redeem/mcp/auth/doctor/quota/status/profile/replay-report).
 - **REQ-36** — Mapa provider(prodex: anthropic/gemini/deepseek/copilot/openai) × vendor(Multica) + declarar os 7 vendors out-of-scope.
 
+## Superfícies extras (varredura de completude — ver Diligencias/00e)
+- **REQ-37** — Browser automation (Playwright/Chromium) do prodex: escopo (on/off), **sandbox/segurança** (allowlist domínios, headless, sem exfiltração); cobrir fork-map/conformance/segurança.
+- **REQ-37b** — Memory Mem0 (`prodex-memory`/`memory_backend`): escopo, privacidade/redaction de PII em memória, contrato.
+- **REQ-38** — Hardening do CI: além de `go test -race`, adicionar `go vet` + lint (golangci) + security scan (govulncheck/gitleaks).
+- **REQ-39** — Deploy runbook (P7) referencia mecanismo real: Helm (`deploy/helm`) + `docker-compose.selfhost` + `deploy/observability`; migrations reversíveis (322 .sql) no deploy.
+
 ## Reset-claim (baixa prioridade — por último)
 - **REQ-22** — Matriz reset-claim (planning) + validação **empírica** com contas reais (guardas: idempotência, cooldown, audit); só quando o estado ocorrer.
 

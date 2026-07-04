@@ -17,6 +17,7 @@ verificação/evidência · critério de gate (DONE) · riscos**.
 - **[00b_DEPENDENCY_SOURCES.md](00b_DEPENDENCY_SOURCES.md)** — de onde baixar cada dependência (pinadas).
 - **[00c_PRODEX_CRATE_COVERAGE.md](00c_PRODEX_CRATE_COVERAGE.md)** — os 44 crates do prodex × plano (cobertura verificável).
 - **[00d_CONFIG_ENV_SECURITY.md](00d_CONFIG_ENV_SECURITY.md)** — ENV/config + segurança (Caveman/hook, ALLOW_UNSAFE_CHILD_ENV, subcomandos, providers).
+- **[00e_COMPLETENESS_REVIEW.md](00e_COMPLETENESS_REVIEW.md)** — revisão de completude (browser/Mem0/CI/deploy + o que falta varrer).
 
 ## Índice de fases (até QA)
 | # | Fase | Documento | Bloqueia |
