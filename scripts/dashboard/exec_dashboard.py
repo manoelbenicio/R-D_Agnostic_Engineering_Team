@@ -270,24 +270,42 @@ def main():
     args = ap.parse_args()
     col = C(use_color(args.ascii))
 
-    def once():
+    def build_frame():
         now = datetime.now(timezone.utc)
         manifest, checkins = snapshot(args.root, args.demo)
-        if args.json:
-            print(to_json(manifest, checkins, now)); return
-        print(render(manifest, checkins, now, col, args.ascii))
+        return render(manifest, checkins, now, col, args.ascii)
 
     if args.once or args.json:
-        once(); return
+        now = datetime.now(timezone.utc)
+        manifest, checkins = snapshot(args.root, args.demo)
+        print(to_json(manifest, checkins, now) if args.json else render(manifest, checkins, now, col, args.ascii))
+        return
+
+    # Live: atualiza NO LUGAR (alternate screen buffer). Não empilha, não rola a página.
+    tty = sys.stdout.isatty()
+    ALT_ON = "\033[?1049h\033[?25l"   # entra na tela alternativa + esconde cursor
+    ALT_OFF = "\033[?25h\033[?1049l"  # mostra cursor + restaura tela original
     try:
+        if tty:
+            sys.stdout.write(ALT_ON)
         while True:
-            sys.stdout.write("\033[2J\033[H")
-            once()
-            sys.stdout.write("\n" + col.grey(f" (atualiza a cada {args.interval:g}s — Ctrl+C p/ sair)") + "\n")
+            frame = build_frame() + "\n " + col.grey(f"(atualiza a cada {args.interval:g}s — Ctrl+C p/ sair)")
+            if tty:
+                sys.stdout.write("\033[H")                       # cursor no topo
+                for ln in frame.split("\n"):
+                    sys.stdout.write(ln + "\033[K\n")            # limpa até o fim de cada linha
+                sys.stdout.write("\033[J")                       # limpa o resto da tela
+            else:
+                sys.stdout.write("\033[2J\033[H" + frame + "\n")
             sys.stdout.flush()
             time.sleep(args.interval)
     except KeyboardInterrupt:
-        print("\nbye.")
+        pass
+    finally:
+        if tty:
+            sys.stdout.write(ALT_OFF)
+            sys.stdout.flush()
+        print("bye.")
 
 if __name__ == "__main__":
     main()
