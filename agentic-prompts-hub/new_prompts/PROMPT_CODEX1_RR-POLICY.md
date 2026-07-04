@@ -15,7 +15,7 @@ files_locked (NEW, no collision): server/internal/rotation/policy.go, policy_tes
 Do NOT edit contract.go or any existing file. New file only.
 </lock_discipline>
 
-<context source="openspec/changes/rotation-router/design.md §2, §4 — read first">
+<context source="/mnt/c/VMs/Projetos/Automonous_Agentic/openspec/changes/rotation-router/design.md §2, §4 — read first">
 Adapt Requesty's policy model to our subscription layer. Item carries quota-state, NOT price.
 </context>
 

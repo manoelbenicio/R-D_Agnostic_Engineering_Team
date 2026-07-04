@@ -19,7 +19,7 @@ Reuse the EXISTING scripts/observability/gen_dashboards.py (do NOT edit it unles
 needed; prefer a new YAML spec fed to it). Do NOT edit product Go or existing dashboards.
 </lock_discipline>
 
-<context source="openspec/changes/rotation-router/design.md §8 — invent no metric names">
+<context source="/mnt/c/VMs/Projetos/Automonous_Agentic/openspec/changes/rotation-router/design.md §8 — invent no metric names">
 gen_dashboards.py already exists and validates metric names against the real catalog
 (credential_metrics.go). Real metrics: rotation_total, all_accounts_exhausted, accounts_available,
 account_tokens_used, exhaustion_detected_total, credential_restore_total, etc.

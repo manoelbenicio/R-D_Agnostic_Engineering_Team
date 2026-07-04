@@ -15,7 +15,7 @@ files_locked (NEW): server/internal/rotation/fallback.go, fallback_test.go
 Do NOT edit detector.go/contract.go/service.go/pool.go. New file only (may READ detector.go).
 </lock_discipline>
 
-<context source="openspec/changes/rotation-router/design.md §3 — read first; real params from Requesty public doc">
+<context source="/mnt/c/VMs/Projetos/Automonous_Agentic/openspec/changes/rotation-router/design.md §3 — read first; real params from Requesty public doc">
 backoff: 500ms→1s→2s→4s (cap 4s). jitter: ±10%. retries per item: 0–10.
 RETRY on: 429 / timeout / 503 (transient). FAILOVER_NOW on: 401/400/auth (non-retryable).
 </context>

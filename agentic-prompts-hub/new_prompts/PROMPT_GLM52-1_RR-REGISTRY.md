@@ -18,7 +18,7 @@ Confirm the NEXT migration number (read server/migrations/, likely 124). Do NOT 
 existing migrations. Do NOT touch product Go.
 </lock_discipline>
 
-<context source="openspec/changes/rotation-router/design.md §9 — read 123_rotation.up.sql first, invent nothing">
+<context source="/mnt/c/VMs/Projetos/Automonous_Agentic/openspec/changes/rotation-router/design.md §9 — read 123_rotation.up.sql first, invent nothing">
 Existing schema uses uuid PKs (gen_random_uuid), timestamptz. Match conventions exactly.
 Table `accounts` already has account_id, vendor, tenant_id, priority, status, etc.
 </context>
