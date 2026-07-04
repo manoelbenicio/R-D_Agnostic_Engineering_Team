@@ -52,3 +52,4 @@ Go fails closed if:
 ## 6. Hotspot
 
 Only Codex#5.5#C may touch daemon dispatch/execenv hotspot during this stream.
+

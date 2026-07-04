@@ -25,3 +25,4 @@ Rule: use primary source for each product/vendor judgment.
 - `inferred`: derived from verified facts.
 - `not_validated`: requires live QA/PROD evidence.
 - `out_of_scope`: not in this deploy.
+

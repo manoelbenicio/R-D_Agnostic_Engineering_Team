@@ -75,3 +75,4 @@ Disable Smart Context if:
 - secret appears;
 - fallback exact fails;
 - user-visible task regression linked to rewrite.
+

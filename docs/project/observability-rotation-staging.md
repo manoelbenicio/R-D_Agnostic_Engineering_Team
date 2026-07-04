@@ -149,3 +149,4 @@ NÃO CAPTURADO
 ```
 
 Motivo: `METRICS_ADDR` estava vazio.
+

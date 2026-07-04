@@ -73,3 +73,4 @@ Forbidden:
 - at least one success or explicit not-available outcome recorded;
 - cooldown/idempotency verified;
 - owner approval recorded.
+

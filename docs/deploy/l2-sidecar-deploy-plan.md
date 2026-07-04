@@ -99,3 +99,4 @@ Deploy can start only if:
 - redaction smoke passed;
 - Postgres readiness passed;
 - sidecar readiness passed.
+

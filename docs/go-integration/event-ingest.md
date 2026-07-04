@@ -32,3 +32,4 @@ If event ingest is unavailable:
 - pre-deploy: block readiness;
 - production after deploy: alert critical;
 - if durable audit cannot be written, fail closed for new sessions.
+

@@ -93,3 +93,4 @@ Deployment blocks if:
 - logs contain raw token-like values;
 - evidence contains raw `auth.json`;
 - command output includes raw connection string.
+
