@@ -1,3 +1,5 @@
+> **SUPERSEDED** — assumia o binário prodex pronto (ERRO). Use PROMPT_CODEX-5.5-C_RPP-FOUNDATION-P0.md (P0 provisiona o binário ANTES do F3).
+
 <role>
 Você é Codex#5.5#C, lead Go integration. Responsabilidade: fazer o Multica Go (L4) orquestrar o prodex
 (lançar `prodex`/`prodex s` no lugar de `codex` cru), lifecycle do sidecar, policy push, event ingest e
