@@ -189,31 +189,57 @@ STATUS_DISP = {"DONE": ("green", "● DONE"), "IN_PROGRESS": ("yellow", "▶ WOR
 def clip(s, n):
     s = str(s or ""); return s if len(s) <= n else s[:n-1] + "…"
 
-def build_tasks(checkins, agents, now):
+def repo_root():
+    return os.environ.get("RPP_REPO_ROOT", os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")))
+
+def load_plan(root):
+    path = os.path.join(root, ".deploy-control", "dashboard", "tasks.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f).get("tasks", [])
+    except Exception:
+        return []
+
+def checkin_phase(d):
+    p = norm(d.get("phase"))
+    m = re.fullmatch(r"f(\d)\+?", p)
+    if m: return "f" + m.group(1)
+    m = re.search(r"\bf(\d)\b", (str(d.get("stream", "")) + " " + str(d.get("task", ""))).lower())
+    return "f" + m.group(1) if m else None
+
+def match_checkins(task, checkins):
+    ph = norm(task.get("phase")); aliases = [norm(a) for a in task.get("aliases", [])]
+    return [d for d in checkins if norm(d.get("stream")) in aliases or checkin_phase(d) == ph]
+
+def agg_status(matched):
+    if not matched: return "TODO"
+    sts = [derive_status(d) for d in matched]
+    if "BLOCKED" in sts: return "BLOCKED"
+    if "IN_PROGRESS" in sts: return "IN_PROGRESS"
+    return "DONE" if all(s == "DONE" for s in sts) else "IN_PROGRESS"
+
+def build_tasks(plan, checkins, agents, now):
     rows = []
-    for d in checkins:
-        status = derive_status(d)
-        prog = derive_progress(d, status, now)
-        ag = agents.get(norm(d.get("agent")))
-        vivo = (ag.get("agent_status") if ag else "unknown") or "unknown"
+    for task in plan:
+        matched = match_checkins(task, checkins)
+        status = "TODO" if (task.get("gated") and not matched) else agg_status(matched)
+        if status == "DONE": prog = 100
+        elif status == "TODO": prog = 0
+        else:
+            ps = [derive_progress(d, derive_status(d), now) for d in matched] or [0]
+            prog = int(sum(ps) / len(ps))
+        latest = max(matched, key=lambda d: d.get("_score", 0)) if matched else None
+        agent_name = (latest.get("agent") if latest else task.get("owner")) or "—"
+        ag = agents.get(norm(agent_name)) or (agents.get(norm(task.get("owner", ""))) if task.get("owner") else None)
+        vivo = (ag.get("agent_status") if ag else ("unknown" if matched else "—")) or "—"
         pane = ag.get("pane_id") if ag else ""
-        rows.append({
-            "id": (d.get("phase") or d.get("stream") or "?")[:6],
-            "pri": derive_priority(d),
-            "tarefa": d.get("task") or d.get("stream") or "—",
-            "status": status,
-            "agent": d.get("agent") or "?",
-            "pane": pane,
-            "vivo": vivo,
-            "prog": prog,
-            "eta": eta_display(d, status, prog, now),
-            "notes": (d.get("notes") or ""),
-        })
-    prio_rank = {"P0": 0, "P1": 1, "P2": 2}
-    stat_rank = {"BLOCKED": 0, "IN_PROGRESS": 1, "TODO": 2, "DONE": 3}
-    rows.sort(key=lambda r: (prio_rank.get(r["pri"], 9), stat_rank.get(r["status"], 9)))
-    for i, r in enumerate(rows):
-        r["id"] = chr(65 + i) if i < 26 else str(i + 1)
+        eta = (eta_display(latest, status, prog, now) if latest
+               else ("0m" if status == "DONE" else (fmt_h(task.get("eta_hours")) if task.get("eta_hours") else "—")))
+        rows.append({"id": task.get("phase", "?"), "pri": task.get("priority") or "P2",
+                     "tarefa": (task.get("name", "—") + (" [GATED]" if task.get("gated") else "")),
+                     "status": status, "agent": agent_name, "pane": pane, "vivo": vivo,
+                     "prog": prog, "eta": eta, "gated": task.get("gated"),
+                     "notes": (latest.get("notes") if latest else "") or ""})
     return rows
 
 def bar_cell(col, pct, width):
@@ -224,8 +250,7 @@ def bar_cell(col, pct, width):
     visible = bw + 1 + 4
     return txt + " "*max(0, width - visible)
 
-def render(host, checkins, agents, now, col, ascii_mode, err=None):
-    rows = build_tasks(checkins, agents, now)
+def render(host, rows, now, col, ascii_mode, err=None):
     W = {"id": 4, "pri": 4, "tarefa": 36, "status": 11, "agente": 22, "vivo": 9, "prog": 18, "eta": 7}
     inner = sum(W.values()) + (len(W)-1)*3
     def cell(s, w): return clip(s, w).ljust(w)
@@ -280,6 +305,11 @@ def render(host, checkins, agents, now, col, ascii_mode, err=None):
              f"{col.yellow('▶ '+str(counts['IN_PROGRESS'])+' Em Curso')}   "
              f"{col.grey('▢ '+str(counts['TODO'])+' Em Espera')}   "
              f"{col.red('■ '+str(counts['BLOCKED'])+' Bloqueadas')}")
+    total_t = len(rows); faltam = total_t - counts['DONE']
+    fcol = col.green if faltam == 0 else col.yellow
+    L.append(" " + col.bold(fcol(f"FALTAM {faltam}/{total_t}")) +
+             f"  pendentes: {counts['TODO']} em espera · {counts['IN_PROGRESS']} em curso · {counts['BLOCKED']} bloqueadas"
+             + ("  " + col.grey("(inclui F0 deploy GATED)") if any(r.get('gated') and r['status'] != 'DONE' for r in rows) else ""))
     if idle_pend:
         L.append(" " + col.yellow("⚠ ALERTA DE OCIOSIDADE: agentes IDLE com tarefa pendente → " + ", ".join(idle_pend)))
     else:
@@ -317,13 +347,17 @@ def main():
         rc, o, e = msg_orch(host, "[Tech-Lead] status geral do fleet? resumo por agente + bloqueios."); print("pedido enviado." if rc==0 else f"falhou: {e or o}")
         time.sleep(3); rc, o, e = read_orch(host); print("\n--- pane do orquestrador ---\n" + (o if rc==0 else e)); return
 
+    plan = load_plan(repo_root())
+
     def frame():
         now = datetime.now(timezone.utc)
         agents, checkins, err = snapshot(host, args.board)
+        rows = build_tasks(plan, checkins, agents, now)
         if args.json:
+            faltam = sum(1 for r in rows if r["status"] != "DONE")
             return json.dumps({"host": host, "at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                               "tasks": build_tasks(checkins, agents, now)}, ensure_ascii=False, indent=2)
-        return render(host, checkins, agents, now, col, args.ascii, err)
+                               "total": len(rows), "faltam": faltam, "tasks": rows}, ensure_ascii=False, indent=2)
+        return render(host, rows, now, col, args.ascii, err)
 
     if args.once or args.json: print(frame()); return
     tty = sys.stdout.isatty(); ALT_ON, ALT_OFF = "\033[?1049h\033[?25l", "\033[?25h\033[?1049l"
