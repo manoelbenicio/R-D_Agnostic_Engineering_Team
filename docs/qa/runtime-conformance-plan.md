@@ -167,4 +167,3 @@ Required:
 - no raw secrets;
 - owner;
 - timestamp.
-

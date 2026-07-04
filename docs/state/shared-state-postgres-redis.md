@@ -80,4 +80,3 @@ Sidecar readiness fails if:
 - configured backend is SQLite/file for shared state;
 - Redis required but unavailable;
 - kill switch state cannot be read.
-

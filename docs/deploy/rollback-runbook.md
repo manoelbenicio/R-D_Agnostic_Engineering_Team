@@ -64,4 +64,3 @@ Required:
 - health result;
 - smoke result;
 - owner notification.
-

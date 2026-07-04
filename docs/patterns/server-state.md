@@ -34,4 +34,3 @@ typed error.
 
 1. **Direct fetches to CAO endpoints are strictly forbidden** in components or other modules. You MUST use the `CaoClient` defined in `src/api/cao-client.ts`. The custom ESLint rule `agentverse/no-direct-cao-fetch` enforces this at build time.
 2. **Outbound calls to Firebase/AgentVerse platform endpoints** (which will require authentication tokens in later phases) MUST use the `appFetch` wrapper in `@/shell/app-fetch`. This serves as our single, auth-aware network boundary. Direct calls to platform routes via `fetch` are discouraged.
-

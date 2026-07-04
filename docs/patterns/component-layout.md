@@ -37,4 +37,3 @@ Internal modules SHALL NOT be re-exported.
 After bootstrap, all files under `src/design-system/` are locked. 
 Any Pull Request that modifies files in `src/design-system/` must carry the **`design-system-approved`** label. 
 Pull Requests containing design system edits without this label will automatically fail the CI gate check triggered by `scripts/check-design-system-policy.sh`.
-

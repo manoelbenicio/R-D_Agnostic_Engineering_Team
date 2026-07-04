@@ -81,4 +81,3 @@ Minimum:
 - runtime events: 30 days;
 - deploy/audit/security events: 180 days;
 - owner approval events: 1 year.
-

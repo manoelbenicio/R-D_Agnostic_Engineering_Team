@@ -35,4 +35,3 @@ ProviderCapability {
 
 Only capabilities marked `verified` or explicitly accepted as `not_validated`
 by owner may be enabled. Unknown capabilities default to disabled.
-

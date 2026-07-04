@@ -133,4 +133,3 @@ Required:
 - event stream snippet;
 - redaction smoke result;
 - kill switch smoke result.
-

@@ -24,4 +24,3 @@ Status: PRE-DEPLOY REQUIRED
 - secret leakage in evidence;
 - file lock contention if using file/SQLite state;
 - deploy without runbook approval.
-

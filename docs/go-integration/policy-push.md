@@ -39,4 +39,3 @@ Policy payload must not include:
 - rejected when shared SQLite configured;
 - rejected when kill switch service unavailable;
 - event emitted on apply.
-
