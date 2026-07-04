@@ -7,7 +7,7 @@
 - user/host: `dataops-lab@21LAPGLMVPJ4`
 - Repo (planejamento + dashboard + prompts): `/mnt/c/VMs/Projetos/Automonous_Agentic`  ← note "Proje**t**os"
 ### Host do FLEET (onde os agentes executam)
-- SSH: `ssh manoelneto-laptop`  (config: `HostName 100.98.214.121`, `User dataops-lab`, Tailscale)
+- SSH: `ssh manoelneto-laptop`  (config: `HostName 192.168.1.27` (LAN), User `dataops-lab`; alt Tailscale `100.98.214.121`
 - Teste: `ssh -o BatchMode=yes manoelneto-laptop 'echo ok'`
 - Repo fleet (clone do produto): `/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team`  ← note "Proje**c**ts"
 - Produto Multica (Go): `/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/multica-auth-work`
