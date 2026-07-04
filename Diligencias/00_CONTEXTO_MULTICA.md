@@ -58,4 +58,5 @@ troca de perfil fail-closed · sem SQLite compartilhado · **sem segredo em log*
 - **prodex** = runtime Rust (L2) open-source (`github.com/christiandoxa/prodex`) que faz o hot-path; usado AS-IS agora, fork depois.
 - **Smart Context** = token-saver via prodex (reescreve contexto preservando campos de controle; fallback exato).
 - **reset-claim** = recuperar crédito via `prodex redeem` (baixa prioridade, por último).
+- **MCP (prodex)** = o prodex fala MCP: crate `prodex-mcp-stdio` (framing stdio p/ MCP servers) + tradução/passthrough de tool-calls MCP no runtime (anthropic/gemini/deepseek). Faz parte do hot-path → coberto no contrato/fork-map/QA.
 - **Herdr** = multiplexer que roda os agentes-worker em panes (harness de execução do time).

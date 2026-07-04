@@ -11,6 +11,13 @@ The system SHALL define a versioned local contract between Multica Go (control p
 - **WHEN** Multica has policy/budgets/kill-switch and approved accounts
 - **THEN** Go SHALL push them via ApplyPolicy/RegisterAccounts and the runtime SHALL own in-flight routing
 
+### Requirement: MCP Tool-Call Coverage
+The contract SHALL cover MCP tool-calls handled by prodex (framing via `prodex-mcp-stdio`; translation across providers). RuntimeEventStream MUST surface MCP tool events and session affinity MUST preserve tool_call/continuation state across rotation.
+
+#### Scenario: MCP tool-call preserved across affinity
+- **WHEN** a session uses MCP tools and rotation occurs before commit
+- **THEN** tool_call/continuation state SHALL be preserved and events emitted for the MCP tool activity
+
 ### Requirement: Single Router Per Session
 The system SHALL guarantee exactly one router per session: Go holds desired-state, the Rust runtime performs runtime routing. Event ingest MUST NOT trigger Go-side rotation.
 

@@ -36,6 +36,9 @@
 - **REQ-20** — **Rollback em 1 comando** testado (volta a `codex` cru).
 - **REQ-21** — Deploy **direto em PROD** (sem canary/staging) atrás de REQ-19/REQ-20 verdes + QA exaustivo verde + logs scrubbed.
 
+## MCP (superfície de tool-calls via prodex)
+- **REQ-26** — Suporte a MCP do prodex mapeado e coberto: `prodex-mcp-stdio` (framing stdio) + tradução/passthrough de tool-calls MCP no runtime (anthropic/gemini/deepseek). Contrato/eventos devem cobrir tool-calls MCP; afinidade preserva estado de tool_call/continuation; conformance testa passthrough. Segurança: MCP servers stdio são superfície — declarar quais são confiáveis.
+
 ## Reset-claim (baixa prioridade — por último)
 - **REQ-22** — Matriz reset-claim (planning) + validação **empírica** com contas reais (guardas: idempotência, cooldown, audit); só quando o estado ocorrer.
 

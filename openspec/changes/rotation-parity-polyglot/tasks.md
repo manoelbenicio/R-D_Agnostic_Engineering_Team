@@ -21,14 +21,16 @@
 - [ ] 1.1 Definir contrato: HealthCheck/ApplyPolicy/RegisterAccounts/StartSession/StopSession/RouteDecisionEvent/RuntimeEventStream/KillSwitch
 - [ ] 1.2 Schema de eventos (JSON Schema Draft 2020-12) versionado
 - [ ] 1.3 Invariante roteador-único-por-sessão especificado e testável
-- [ ] 1.4 GATE P1: schema compila; contrato revisado; sem segredo
+- [ ] 1.4 MCP: contrato/eventos cobrem tool-calls MCP (RuntimeEventStream inclui eventos de tool MCP; afinidade preserva estado de tool_call/continuation)
+- [ ] 1.5 GATE P1: schema compila; contrato revisado; sem segredo
 
 ## 2. prodex fork-map / invariantes [REQ-09] (dep: 0) — análise (alvo do fork)
 
 - [ ] 2.1 Mapear crates do prodex (core/context/runtime-*/provider-core/presidio)
 - [ ] 2.2 Isolar runtime proxy/gateway/Smart Context/state/redeem; propor fork boundary
 - [ ] 2.3 Documentar invariantes preservados: hard affinity, rotate-before-commit, profile isolation
-- [ ] 2.4 GATE P2: fork-map revisado; invariantes rastreados aos crates
+- [ ] 2.4 Mapear crates MCP: prodex-mcp-stdio (framing) + tradução de tools MCP no runtime (anthropic/gemini/deepseek)
+- [ ] 2.5 GATE P2: fork-map revisado; invariantes rastreados aos crates
 
 ## 3. Integração Go — lançar prodex [REQ-05,06] (dep: 1)
 
@@ -62,7 +64,8 @@
 - [ ] 6.5 C5 Smart Context shadow→canary→live: medição antes/depois + fallback exato automático
 - [ ] 6.6 C6 tripla CODEX_HOME × prodex × Herdr coexistindo sem clobber (isolamento provado)
 - [ ] 6.7 Herdr coordination smoke (agent send/notification/events) com evidência
-- [ ] 6.8 GATE P6: TODOS C1–C6 verdes com evidência scrubbed; nenhum plan-done/dry-run marcado DONE
+- [ ] 6.8 MCP conformance: passthrough/tradução de tool-calls MCP entre providers (evidência)
+- [ ] 6.9 GATE P6: TODOS C1–C6 verdes com evidência scrubbed; nenhum plan-done/dry-run marcado DONE
 
 ## 7. DevOps / Deploy PROD [REQ-19,20,21,25] (dep: 6 verde)
 
