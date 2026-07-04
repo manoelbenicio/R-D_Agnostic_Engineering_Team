@@ -10,7 +10,8 @@ Cada fase tem um documento de diligência com: **objetivo · REQ-IDs · pré-req
 verificação/evidência · critério de gate (DONE) · riscos**.
 
 ## 🤝 CONTINUANDO O TRABALHO? Leia primeiro
-**[HANDOFF_PROXIMO_AGENTE.md](HANDOFF_PROXIMO_AGENTE.md)** — estado atual, próximos passos, riscos, mapa de docs, como verificar.
+**[HANDOFF_PROXIMO_AGENTE.md](HANDOFF_PROXIMO_AGENTE.md)** — estado, próximos passos, riscos, mapa, como verificar.
+- **[HANDOFF_APENDICE_REFERENCIA.md](HANDOFF_APENDICE_REFERENCIA.md)** — TODOS os fullpaths, git, SSH, agentes/panes, GSD, dashboard, como falar com o TL.
 
 ## 🌍 LEIA PRIMEIRO (obrigatório p/ TODOS)
 **[00_LEIA_PRIMEIRO_MISSAO.md](00_LEIA_PRIMEIRO_MISSAO.md)** — missão & mundo: o quê/por quê/como/quando/onde/quem + regras do mundo.

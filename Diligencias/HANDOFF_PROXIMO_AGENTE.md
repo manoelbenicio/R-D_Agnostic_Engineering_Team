@@ -2,7 +2,7 @@
 
 > **Leia este documento inteiro antes de tocar em qualquer coisa.** Depois leia, nesta ordem:
 > `Diligencias/00_LEIA_PRIMEIRO_MISSAO.md` (charter) → `00_CONTEXTO_MULTICA.md` → sua fase.
-> Data do handoff: 2026-07-04. Autor anterior: Opus 4.8 (Tech-Lead/orquestrador).
+> Data do handoff: 2026-07-04. **Apêndice com TODOS os fullpaths/git/SSH/agentes/comandos:** `Diligencias/HANDOFF_APENDICE_REFERENCIA.md`. Autor anterior: Opus 4.8 (Tech-Lead/orquestrador).
 > Repo: `R-D_Agnostic_Engineering_Team` (remote `rnd`), branch `main`, último commit da sessão `cf3a523`.
 
 ---
