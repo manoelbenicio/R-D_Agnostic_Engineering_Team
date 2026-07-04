@@ -14,6 +14,7 @@
 - [ ] 0.6 Confirmar `exec.LookPath` do Multica resolve o binário (teste do `prodex.go`)
 - [ ] 0.7 Confirmar Postgres :5432 + Redis :6379 alcançáveis do container do server
 - [ ] 0.8 Validar toolchain de build (docker golang:1.26-alpine) para o server Go
+- [ ] 0.8b Inventariar subcomandos prodex usados (run/s/redeem/mcp/auth/doctor/quota/status)
 - [ ] 0.9 GATE P0: `prodex --version` responde do binário pinado + Multica resolve o executável
 
 ## 1. Contrato Go↔L2 (rpp.l2.v1) [REQ-04] (dep: 0)
@@ -60,7 +61,11 @@
 - [ ] 5.1 Matriz por provider (fonte primária): Codex/Kiro/Antigravity/Cline/OpenCode — verified/inferred/not_validated
 - [ ] 5.2 DECISÃO OpenCode (arquivado → sucessor Crush): disabled / descopar / migrar — documentar
 - [ ] 5.3 owner-acceptance dos not_validated (disabled-by-default)
+- [ ] 5.3b Mapa provider(prodex)×vendor(Multica); declarar 7 vendors out-of-scope
 - [ ] 5.4 GATE P5: matriz com fontes checadas; decisão OpenCode registrada
+
+- [ ] 4.8 Inventário completo `PRODEX_*` + defaults seguros (ALLOW_UNSAFE_CHILD_ENV=off; chaves via secret-store)
+- [ ] 4.9 SEGURANÇA: Caveman/hook DESABILITADO por padrão (RCE/supply-chain); se usado, allowlist+timeout+sem marketplace externo
 
 ## 6. QA/conformance EXAUSTIVO — SEM BYPASS [REQ-13..18] (dep: 3,4,5)
 

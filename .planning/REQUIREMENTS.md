@@ -47,6 +47,12 @@
 - **REQ-31** — Quota adapters (`prodex-quota`/`runtime-quota`): ampliar quota_mode por vendor.
 - **REQ-32** — Plugin Caveman (`prodex-caveman-assets`): investigar/escopar/segurança.
 
+## Config/ENV + Segurança do prodex (varredura — ver Diligencias/00d)
+- **REQ-33** — Inventário completo dos `PRODEX_*` + defaults seguros; `PRODEX_ALLOW_UNSAFE_CHILD_ENV=off`; chaves via secret-store, nunca em log.
+- **REQ-34** — Caveman/hook (`PRODEX_CAVEMAN_HOOK_*`): **DESABILITADO por padrão** (RCE/supply-chain); se usado: allowlist+timeout+sem marketplace externo. Gate de segurança pré-deploy.
+- **REQ-35** — Mapa dos subcomandos prodex usados pelo Multica (run/s/redeem/mcp/auth/doctor/quota/status/profile/replay-report).
+- **REQ-36** — Mapa provider(prodex: anthropic/gemini/deepseek/copilot/openai) × vendor(Multica) + declarar os 7 vendors out-of-scope.
+
 ## Reset-claim (baixa prioridade — por último)
 - **REQ-22** — Matriz reset-claim (planning) + validação **empírica** com contas reais (guardas: idempotência, cooldown, audit); só quando o estado ocorrer.
 
