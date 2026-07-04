@@ -1,3 +1,5 @@
+> **CONTEXTO DO PRODUTO (leia 1º):** [Diligencias/00_CONTEXTO_MULTICA.md] — o que é o Multica (managed agents platform), o repo `multica-ai/multica`, e como o prodex/rotation-parity se encaixa. Sem isso você não entende o projeto.
+
 > **PLANO CORRIGIDO (2026-07-04) — leia antes de agir.** O plano anterior assumia o binario prodex instalado (ERRO). Correcoes herdadas:
 > - **P0 FUNDACAO e pre-requisito de TUDO**: provisionar/buildar o binario prodex (source -> ~/runtime/prodex-src; instalar Rust; `cargo build --release`; verificar pin v0.246.0/7750da9b + hash; setar `MULTICA_PRODEX_ENABLED/PATH/VERSION/COMMIT` + `PRODEX_HOME`). Ref: Diligencias/00_FUNDACAO_P0.md + openspec specs/prodex-runtime-provisioning.
 > - **Kill-switch + rollback: TESTADOS** (nao so documentados) antes do deploy.

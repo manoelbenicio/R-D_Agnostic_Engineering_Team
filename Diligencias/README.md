@@ -9,6 +9,9 @@
 Cada fase tem um documento de diligência com: **objetivo · REQ-IDs · pré-requisitos · passos concretos ·
 verificação/evidência · critério de gate (DONE) · riscos**.
 
+## Contexto do produto (leia ANTES de tudo)
+**[00_CONTEXTO_MULTICA.md](00_CONTEXTO_MULTICA.md)** — o que é o Multica, o repo, e como o prodex/rotation-parity se encaixa.
+
 ## Índice de fases (até QA)
 | # | Fase | Documento | Bloqueia |
 |---|------|-----------|----------|
