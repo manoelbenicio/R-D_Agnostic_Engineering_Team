@@ -13,7 +13,7 @@ pelo Multica. Depois, F3 (lifecycle sidecar, policy push, event ingest, kill swi
 TUDO foi replanejado (o plano anterior assumia o binário instalado — ERRO). Leia ANTES de agir:
 - OpenSpec: openspec/changes/rotation-parity-polyglot/{proposal.md,design.md §2,tasks.md §0} + specs/prodex-runtime-provisioning/spec.md
 - GSD: .planning/{PROJECT.md,REQUIREMENTS.md (REQ-01..03),ROADMAP.md (P0),STATE.md}
-- Diligência: Diligencias/00_FUNDACAO_P0.md (passo-a-passo) + Diligencias/SEV0/RISK_REGISTER.md (ISSUE-001)
+- Diligência: Diligencias/00_FUNDACAO_P0.md (passo-a-passo) + Diligencias/00b_DEPENDENCY_SOURCES.md (ORIGENS das deps: prodex git@7750da9b, crates.io via Cargo.lock, GOPROXY, caches docker, IPv6 OFF) + Diligencias/SEV0/RISK_REGISTER.md (ISSUE-001)
 </planning_source>
 
 <estado_real_verificado>

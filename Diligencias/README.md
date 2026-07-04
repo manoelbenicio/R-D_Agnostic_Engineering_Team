@@ -13,6 +13,7 @@ verificação/evidência · critério de gate (DONE) · riscos**.
 | # | Fase | Documento | Bloqueia |
 |---|------|-----------|----------|
 | P0 | **Fundação** — runtime prodex + ambiente | [00_FUNDACAO_P0.md](00_FUNDACAO_P0.md) | **tudo** |
+| P0 | **Fontes de dependência** (de onde baixar) | [00b_DEPENDENCY_SOURCES.md](00b_DEPENDENCY_SOURCES.md) | P0 |
 | P1 | Contrato Go↔L2 (`rpp.l2.v1`) | [01_CONTRATO_P1.md](01_CONTRATO_P1.md) | P3 |
 | P2 | prodex fork-map / invariantes | [02_FORKMAP_P2.md](02_FORKMAP_P2.md) | (alvo fork) |
 | P3 | Integração Go — lançar prodex | [03_INTEGRACAO_P3.md](03_INTEGRACAO_P3.md) | P6 |

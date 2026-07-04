@@ -15,6 +15,9 @@ REQ-01 (provisionar binário) · REQ-02 (ambiente) · REQ-03 (migrations revers�
 - docker v29 ✅ · Postgres :5432 ✅ · Redis :6379 ✅
 - **Faltando:** toolchain Rust/cargo; binário buildado; source em local estável (está em `/tmp`, efêmero).
 
+## Fontes de dependência (ONDE baixar)
+Ver **[00b_DEPENDENCY_SOURCES.md](00b_DEPENDENCY_SOURCES.md)** — origens explícitas: prodex=`github.com/christiandoxa/prodex@7750da9b`; crates=crates.io via `Cargo.lock` (cache `prodex-cargo`); Go=proxy.golang.org (cache `multica-gomod`); IPv6 OFF.
+
 ## Passos
 
 ### 0.1 — Estabilizar o source
