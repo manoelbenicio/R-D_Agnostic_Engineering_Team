@@ -1,0 +1,17 @@
+{
+  "project": "Rotation-Parity Polyglot",
+  "board_dir": ".deploy-control",
+  "updated": "2026-07-04",
+  "note": "Fonte canônica das tasks/streams. O dashboard cruza isto com os check-ins reais em .deploy-control/<AGENT>__<STREAM>__<UTC>.md",
+  "tasks": [
+    {"stream": "RPP-OPS",          "phase": "F8",    "name": "Ops triage / status board",                      "owner": "Gemini#Flash35",          "eta_hours": 0, "depends_on": [],                              "gated": false, "note": "contínuo"},
+    {"stream": "RPP-VENDORMATRIX", "phase": "F5",    "name": "Vendor capability matrix (fonte oficial)",        "owner": "Gemini#Pro",              "eta_hours": 6, "depends_on": [],                              "gated": false},
+    {"stream": "RPP-CONTRACT",     "phase": "F1",    "name": "Contrato Go<->L2 + invariantes + eventos",        "owner": "Codex#5.5#A",             "eta_hours": 6, "depends_on": [],                              "gated": false},
+    {"stream": "RPP-STATE",        "phase": "F4",    "name": "State/security (Postgres/Redis, redaction, audit)","owner": "GLM#52#B",                "eta_hours": 6, "depends_on": [],                              "gated": false},
+    {"stream": "RPP-FORKMAP",      "phase": "F2",    "name": "prodex fork map / runtime invariants",            "owner": "Codex#5.5#B",             "eta_hours": 8, "depends_on": [],                              "gated": false},
+    {"stream": "RPP-GO-INTEGRATE", "phase": "F3/F0", "name": "Go integration + lancar prodex (as-is)",          "owner": "Codex#5.5#C",             "eta_hours": 8, "depends_on": ["RPP-CONTRACT"],                "gated": true,  "note": "F0 deploy = gated ao runbook"},
+    {"stream": "RPP-DEVOPS",       "phase": "F7/F0", "name": "DevOps/PROD runbook + rollout",                   "owner": "Codex#5.5#D",             "eta_hours": 6, "depends_on": ["RPP-STATE", "RPP-GO-INTEGRATE"],"gated": true,  "note": "deploy real gated ao OK do dono"},
+    {"stream": "RPP-QA",           "phase": "F6",    "name": "QA/conformance + smokes",                         "owner": "GLM#52#A",                "eta_hours": 8, "depends_on": ["RPP-CONTRACT", "RPP-FORKMAP"],  "gated": false},
+    {"stream": "RPP-RESET",        "phase": "F9",    "name": "Reset-claim (empirico)",                          "owner": "Codex#5.5#B + GLM#52#A",  "eta_hours": 6, "depends_on": ["RPP-GO-INTEGRATE"],            "gated": false, "note": "prioridade BAIXA (frio/aleatorio) - por ultimo"}
+  ]
+}
