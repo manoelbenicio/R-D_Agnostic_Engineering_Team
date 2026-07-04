@@ -351,7 +351,23 @@ def render(host, rows, now, col, ascii_mode, err=None):
     return "\n".join(L)
 
 # ---------- orchestrator (SOMENTE opus-4.8-orchestrator) ----------
-def msg_orch(host, text): return ssh(host, f"herdr agent send {shlex.quote(ORCH)} {shlex.quote(text)}")
+def orch_pane(host):
+    rc, out, err = ssh(host, "herdr agent list")
+    try:
+        for a in json.loads(out).get("result", {}).get("agents", []):
+            if a.get("name") == ORCH:
+                return a.get("pane_id")
+    except Exception:
+        pass
+    return None
+
+def msg_orch(host, text):
+    # pane run = texto + Enter (submete de verdade). agent send NAO da Enter -> mensagem nao e processada.
+    pane = orch_pane(host)
+    if pane:
+        return ssh(host, "herdr pane run " + shlex.quote(pane) + " " + shlex.quote(text))
+    return ssh(host, f"herdr agent send {shlex.quote(ORCH)} {shlex.quote(text)}")
+
 def read_orch(host, n=60): return ssh(host, f"herdr agent read {shlex.quote(ORCH)} --source recent --lines {int(n)}")
 
 # ---------- main ----------
