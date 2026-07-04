@@ -7,7 +7,7 @@
 - user/host: `dataops-lab@21LAPGLMVPJ4`
 - Repo (planejamento + dashboard + prompts): `/mnt/c/VMs/Projetos/Automonous_Agentic`  ← note "Proje**t**os"
 ### Host do FLEET (onde os agentes executam)
-- SSH: `ssh manoelneto-laptop` (alias) ou `ssh dataops-lab@192.168.1.27`. Host na **LAN (mesma rede local)** — IP **`192.168.1.27`**, User `dataops-lab`, Port 22. (Sem Tailscale; se o `~/.ssh/config` tiver outro HostName, ajustar para `192.168.1.27`.)
+- SSH: `ssh manoelneto-laptop` (alias) ou `ssh dataops-lab@192.168.1.27`. Host na **LAN (mesma rede local)** — IP **`192.168.1.27`**, User `dataops-lab`, Port 22. (se o `~/.ssh/config` tiver HostName diferente, ajustar para `192.168.1.27`.)
 - **IP LAN/PROD do host:** `192.168.1.27` (confirmado por `ping -a manoelneto-laptop`).
 - Teste: `ssh -o BatchMode=yes manoelneto-laptop 'echo ok'`
 - Repo fleet (clone do produto): `/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team`  ← note "Proje**c**ts"
