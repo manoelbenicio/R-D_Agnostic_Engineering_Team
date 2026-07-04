@@ -78,7 +78,7 @@ real = os.path.join(HERE, "..", "..", "openspec", "changes", "rotation-parity-po
 rc, out, _ = run(["--tasks", real, "--ascii"])
 check("real exit 0", rc == 0)
 check("real: 51 tasks", "51 tasks" in out, "esperava 51 tasks")
-check("real: 11 fases (0..10)", out.count(" ○ ") + out.count(" ● ") + out.count(" ▶ ") >= 11)
+check("real: 11 fases (0..10)", len(re.findall(r"\b\d+/\d+\b", out)) >= 11, f'{len(re.findall(r"\\b\\d+/\\d+\\b", out))} rows')
 
 print("== 5. CLI: consistencia json x ascii (overall) ==")
 _, oj, _ = run(["--tasks", real, "--json"]); jr = json.loads(oj)
@@ -105,6 +105,19 @@ check("watch produziu frame", "OVERALL" in (watched or ""))
 for f in (mixed, nonum, empty, caps):
     try: os.unlink(f)
     except OSError: pass
+
+print("== 8. ENCODING SAFETY (o bug que quebrou na tela do usuario) ==")
+def run_enc(enc, args):
+    p = subprocess.run([sys.executable, DASH] + args, capture_output=True, text=True, timeout=15,
+                       env={**os.environ, "PYTHONIOENCODING": enc})
+    return p.returncode, p.stdout, p.stderr
+for enc in ("ascii", "latin-1", "cp1252"):
+    rc, out, er = run_enc(enc, ["--tasks", real])
+    check(f"snapshot nao crasha em {enc}", rc == 0 and "OVERALL" in out, f"rc={rc} err={er[:80]}")
+# modo --ascii deve usar glifos ascii (sem unicode)
+rc, out, _ = run(["--tasks", real, "--ascii"])
+check("--ascii sem unicode (sem box/bar unicode)", not any(c in out for c in "█●░┌┐└┘│→✔○▶▢"), "ainda tem unicode")
+check("--ascii usa glifos ascii (# e/ou [ ])", ("#" in out or "[ ]" in out or "[x]" in out))
 
 print("\n== RESUMO ==")
 passed = sum(1 for _, ok, _ in results if ok); total = len(results)
