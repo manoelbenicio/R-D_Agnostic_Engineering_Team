@@ -135,13 +135,10 @@ def derive_priority(d):
 
 def derive_status(d):
     s = (d.get("status") or "").upper()
-    b = (d.get("build_result") or "").lower()
     if any(x in s for x in ("CANCEL", "ABORT", "SUPERSED")): return "CANCELLED"
     if "FAIL" in s: return "FAILED"
     if "BLOCK" in s: return "BLOCKED"
-    if "DONE" in s or "COMPLETE" in s:
-        if any(k in b for k in ("fail", "red", "vermelho", "error", "erro")): return "FAILED"
-        return "DONE"
+    if "DONE" in s or "COMPLETE" in s: return "DONE"
     if "PROGRESS" in s or "WORKING" in s: return "IN_PROGRESS"
     return "TODO"
 
@@ -215,6 +212,8 @@ def checkin_phase(d):
 
 def match_checkins(task, checkins):
     ph = norm(task.get("phase")); aliases = [norm(a) for a in task.get("aliases", [])]
+    if task.get("gated"):  # deploy/gated: só casa por alias explícito (menção de "F0" em outro stream NÃO conta)
+        return [d for d in checkins if norm(d.get("stream")) in aliases]
     return [d for d in checkins if norm(d.get("stream")) in aliases or checkin_phase(d) == ph]
 
 def agg_status(matched):
@@ -256,7 +255,8 @@ def build_tasks(plan, checkins, agents, now):
             motivo = (latest.get("notes") if latest else "") or "cancelado/superseded"
         else:
             motivo = ""
-        rows.append({"id": task.get("phase", "?"), "pri": task.get("priority") or "P2",
+        rows.append({"num": task.get("num", 0), "kind": task.get("kind", "FASE"),
+                     "id": task.get("phase", "?"), "pri": task.get("priority") or "P2",
                      "tarefa": (task.get("name", "—") + (" [GATED]" if task.get("gated") else "")),
                      "status": status, "agent": agent_name, "pane": pane, "vivo": vivo,
                      "prog": prog, "eta": eta, "gated": task.get("gated"),
@@ -272,7 +272,7 @@ def bar_cell(col, pct, width):
     return txt + " "*max(0, width - visible)
 
 def render(host, rows, now, col, ascii_mode, err=None):
-    W = {"id": 4, "pri": 4, "tarefa": 36, "status": 11, "agente": 22, "vivo": 9, "prog": 18, "eta": 7}
+    W = {"num": 3, "id": 4, "pri": 4, "tarefa": 34, "status": 11, "agente": 20, "vivo": 8, "prog": 18, "eta": 7}
     inner = sum(W.values()) + (len(W)-1)*3
     def cell(s, w): return clip(s, w).ljust(w)
     def row(cells): return "│ " + " │ ".join(cells) + " │"
@@ -287,12 +287,16 @@ def render(host, rows, now, col, ascii_mode, err=None):
         L.append(col.cyan("│") + col.red((" ERRO: " + err.strip()[:inner-8]).ljust(inner+2)) + col.cyan("│"))
     L.append(col.cyan(rule))
     L.append(col.cyan(row([col.bold(cell(h, W[k])) for k, h in
-                            [("id","ID"),("pri","PRI"),("tarefa","TAREFA"),("status","STATUS"),
+                            [("num","#"),("id","FASE"),("pri","PRI"),("tarefa","TAREFA"),("status","STATUS"),
                              ("agente","AGENTE"),("vivo","VIVO"),("prog","PROGRESSO"),("eta","ETA")]])))
     L.append(col.cyan(rule))
     counts = {"DONE":0,"IN_PROGRESS":0,"BLOCKED":0,"FAILED":0,"CANCELLED":0,"TODO":0}
-    idle_pend = []; progs = []
+    idle_pend = []; progs = []; prev_kind = None
     for r in rows:
+        if r.get("kind") != prev_kind:
+            band = " FASES DE EXECUÇÃO (F0–F9) " if r.get("kind") == "FASE" else " GATES DE ACEITE — Definition-of-Done (G1–G10) "
+            L.append(col.cyan("│") + col.bold(col.blue(band.ljust(inner+2))) + col.cyan("│"))
+            prev_kind = r.get("kind")
         counts[r["status"]] = counts.get(r["status"],0)+1
         if r["status"] != "CANCELLED": progs.append(r["prog"])
         scolor, slabel = STATUS_DISP.get(r["status"], ("grey", r["status"]))
@@ -302,6 +306,7 @@ def render(host, rows, now, col, ascii_mode, err=None):
         vis = len(clip(f'{r["agent"]}', W["agente"]-len(r["pane"])-3)) + (len(r["pane"])+3 if r["pane"] else 0)
         agente = agente + " "*max(0, W["agente"]-vis)
         cells = [
+            col.grey(cell(str(r.get("num","")), W["num"])),
             cell(r["id"], W["id"]),
             pricol(cell(r["pri"], W["pri"])),
             cell(r["tarefa"], W["tarefa"]),
@@ -342,7 +347,7 @@ def render(host, rows, now, col, ascii_mode, err=None):
         for r in issues:
             sc, sl = STATUS_DISP.get(r["status"], ("grey", r["status"]))
             who = r["agent"] + (f' {r["pane"]}' if r["pane"] else "")
-            L.append("   " + getattr(col, sc)(f'{r["id"]:<3} {sl:<10}') + " " +
+            L.append("   " + col.grey(f'#{r.get("num",""):<2} ') + getattr(col, sc)(f'{r["id"]:<3} {sl:<10}') + " " +
                      clip(r["tarefa"].replace(" [GATED]",""), 38).ljust(38) + " " +
                      col.grey(clip(who, 20).ljust(20)) + " → " + clip(r.get("motivo",""), 52))
     else:
