@@ -9,6 +9,9 @@
 Cada fase tem um documento de diligência com: **objetivo · REQ-IDs · pré-requisitos · passos concretos ·
 verificação/evidência · critério de gate (DONE) · riscos**.
 
+## 🤝 CONTINUANDO O TRABALHO? Leia primeiro
+**[HANDOFF_PROXIMO_AGENTE.md](HANDOFF_PROXIMO_AGENTE.md)** — estado atual, próximos passos, riscos, mapa de docs, como verificar.
+
 ## 🌍 LEIA PRIMEIRO (obrigatório p/ TODOS)
 **[00_LEIA_PRIMEIRO_MISSAO.md](00_LEIA_PRIMEIRO_MISSAO.md)** — missão & mundo: o quê/por quê/como/quando/onde/quem + regras do mundo.
 
