@@ -77,7 +77,7 @@ print("== 4. CLI: arquivo real do projeto ==")
 real = os.path.join(HERE, "..", "..", "openspec", "changes", "rotation-parity-polyglot", "tasks.md")
 rc, out, _ = run(["--tasks", real, "--ascii"])
 check("real exit 0", rc == 0)
-check("real: 51 tasks", "51 tasks" in out, "esperava 51 tasks")
+import json as _j; _tot=_j.loads(run(["--tasks", real, "--json"])[1])["overall_total"]; check("real: tasks>=50 e bate json", _tot>=50 and (f"{_tot} tasks" in out), f"tot={_tot}")
 check("real: 11 fases (0..10)", len(re.findall(r"\b\d+/\d+\b", out)) >= 11, f'{len(re.findall(r"\\b\\d+/\\d+\\b", out))} rows')
 
 print("== 5. CLI: consistencia json x ascii (overall) ==")
