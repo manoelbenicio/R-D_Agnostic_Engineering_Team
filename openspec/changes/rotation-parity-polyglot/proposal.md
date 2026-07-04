@@ -22,11 +22,13 @@ tudo isso, na linguagem certa para o hot path, mantido ativamente. Decisão do d
 - Introduz **matriz de capabilities por provider** (não interface genérica).
 
 ## Scope
-- Vendors: **Codex, Kiro, Antigravity, Cline, OpenCode**.
+- **Fundação (pré-requisito, antes do F0):** provisionar o binário prodex (build do source pinado + Rust + verify). Ver capability `prodex-runtime-provisioning`.
+- Vendors: **Codex, Kiro, Antigravity, Cline, OpenCode** — **OpenCode a reavaliar** (projeto ARQUIVADO, sucessor Crush): disabled / descopar / migrar (decisão documentada no F5).
 - REUSA a fundação fria já verde (isolamento `CODEX_HOME`/`XDG`/`HOME`, detecção, Postgres, observability).
-- State compartilhado: **Postgres** (SQLite proibido).
-- Guarda-corpos em PROD (config, não fase de teste): knobs nativos do prodex (shadow/canary),
-  **kill switch**, logs scrubbed, rollback documentado.
+- State compartilhado: **Postgres** (SQLite proibido); **migrations reversíveis**.
+- Guarda-corpos em PROD **provados por teste** (não só doc): knobs nativos do prodex (shadow/canary),
+  **kill switch testado**, logs scrubbed, **rollback 1-cmd testado**.
+- **QA exaustivo em container ANTES do deploy** (nunca bypassado); deploy direto em PROD só após QA verde.
 
 ## Non-Goals
 - **Kimchi** — removido do escopo.

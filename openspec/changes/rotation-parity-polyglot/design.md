@@ -21,14 +21,21 @@ pré-commit, Smart Context, redeem). Eventos do Rust voltam ao Go **apenas** com
 ledger — nunca para redecidir request já em voo.
 
 ## 2. Horizonte AGORA — prodex AS-IS em PROD
+- **PRÉ-REQUISITO (Fundação, antes de tudo):** o binário do prodex **não existe pronto** — deve ser
+  **provisionado**: buildar do source pinado (`christiandoxa/prodex@7750da9b`, source em local estável),
+  instalar Rust, `cargo build --release`, e **só então** verificar pin+integridade (attestation).
+  Ver capability `prodex-runtime-provisioning`. Sem esse passo, NADA lança.
 - Multica lança `prodex run --profile <x>` / `prodex s` no lugar de `codex` cru (usa assinatura, não metered).
-- `prodex` **pinado** por versão+commit; instalação verificada (integridade/attestation).
+- `prodex` **pinado** por versão+commit; **binário produzido e verificado** (integridade/attestation) — não assumido.
 - Isolamento por perfil preservado (`$PRODEX_HOME/profiles/<name>`, `CODEX_HOME` por conta).
 - Features ligadas: rotação pré-commit, afinidade, **Smart Context/token-saver**, modos, reset-claim.
-- **Guarda-corpos (config nativa do prodex, não fase de teste):**
+- **Guarda-corpos (config nativa do prodex) — PROVADOS por teste, não só documentados:**
   - Smart Context em `PRODEX_SMART_CONTEXT_SHADOW=1` ou `PRODEX_SMART_CONTEXT_CANARY_PERCENT=N` no rollout inicial;
-  - **kill switch** por tenant/provider/profile;
-  - logs scrubbed; rollback documentado (voltar a `codex` cru se necessário).
+  - **kill switch** por tenant/provider/profile — **testado** (ver `deploy-rollback`);
+  - logs scrubbed; **rollback em 1 comando testado** (voltar a `codex` cru).
+- **QA exaustivo em container ANTES do deploy** (nunca bypassado); deploy direto em PROD só após QA verde
+  + kill-switch/rollback verdes. Isso resolve o nó circular: a validação roda em container/sidecar,
+  não exige o runtime já no ar em PROD.
 
 ## 3. Horizonte ALVO — Rust L2 via fork do prodex
 - Fork Apache-2.0 (com atribuição, rebrand do produto). Partes fora dos invariantes → reescritas em

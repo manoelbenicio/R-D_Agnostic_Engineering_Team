@@ -1,88 +1,89 @@
-# Tasks — Rotation-Parity Polyglot (8 agentes; prodex AS-IS → PROD; fork = alvo)
+# Tasks — Rotation-Parity Polyglot (v2.0: Fundação + Deploy Correto)
 
-> Base: proposal.md + design.md + ADR-001. Coordenador/validador: Opus 4.8 (não escreve código de
-> produto; valida cada DONE no container/PROD). Plano de execução detalhado + prompts no board:
-> `/mnt/c/VMs/Projetos/Automonous_Agentic/.deploy-control/`.
+> Formato rastreável OpenSpec (`- [ ] N.M`). Ordenado por dependência.
+> Regras: verde-em-container com evidência antes de marcar [x]; QA NUNCA bypassado; sem segredo em log.
+> REQ-IDs referenciam `.planning/REQUIREMENTS.md`.
 
-## REGRAS (inegociáveis — todos os streams)
-0. **SIGN-IN/OUT em disco (gate duro):** ANTES de tocar em qualquer arquivo, criar check-in em
-   `/mnt/c/VMs/Projetos/Automonous_Agentic/.deploy-control/<AGENT>__<STREAM>__<START_UTC>.md`
-   (CAMINHO ABSOLUTO). Front-matter: agent, stream, started_at, finished_at:, status: IN_PROGRESS,
-   files_locked, depends_on, build_result:, notes. AO TERMINAR: finished_at + status DONE|BLOCKED +
-   build_result colado.
-1. Propriedade de arquivo **disjunta**; hotspots (contrato, daemon, lifecycle) = dono único serial.
-2. **Verde no container/PROD ANTES de DONE**; Opus re-roda e valida (não confia no tail).
-3. Nada inventado (fonte primária); sem segredo em log/evidência; SQLite proibido p/ estado compartilhado.
-4. Prompts seguem template XML best-practice (Anthropic/OpenAI): role/mission/context/checkin/workflow/success/checkout.
+## 0. Fundação — runtime prodex + ambiente (BLOQUEIA TUDO) [REQ-01,02,03]
 
-## ROSTER (8 agentes — nomes atuais incrementados)
-| Agente | Papel | Não deve |
-|--------|-------|----------|
-| Codex#5.5#A | arquiteto: contrato Go↔L2, invariantes, eventos | implementar hot path Rust |
-| Codex#5.5#B | prodex/Rust L2: as-is enable + fork map + runtime proxy/gateway/Smart Context/redeem | alterar control plane Go |
-| Codex#5.5#C | Go integration: lançar prodex, lifecycle sidecar, policy push, event ingest, kill switch | reimplementar routing/Smart Context em Go |
-| Codex#5.5#D | DevOps/PROD: deploy, env, rollout, rollback, observability, logs scrubbed | mudar arquitetura sem ADR |
-| GLM#52#A | QA/conformance: smoke, replay, conformance por capability, evidência | criar features novas |
-| GLM#52#B | security/state: Postgres/Redis, redaction, audit taxonomy, secrets boundary | relaxar redaction/policy |
-| Gemini#Pro | vendor capability matrix (fonte oficial); marca verified/inferred/not-validated | implementar código |
-| Gemini#Flash35 | ops triage: status board, evidence index, open items, runbooks | decidir arquitetura |
+- [ ] 0.1 Mover source `/tmp/prodex-audit-7750da9` para local estável (fora de /tmp); confirmar commit `7750da9b`
+- [ ] 0.2 Instalar toolchain Rust/cargo (versão compatível com o workspace prodex)
+- [ ] 0.3 `cargo build --release` do prodex; produzir binário `target/release/prodex`
+- [ ] 0.4 Verificar pin: versão v0.246.0 + commit `7750da9b`; registrar hash/attestation do binário
+- [ ] 0.5 Wire no Multica: `MULTICA_PRODEX_ENABLED=1`, `MULTICA_PRODEX_PATH`, `MULTICA_PRODEX_VERSION`, `MULTICA_PRODEX_COMMIT`, `PRODEX_HOME`
+- [ ] 0.6 Confirmar `exec.LookPath` do Multica resolve o binário (teste do `prodex.go`)
+- [ ] 0.7 Confirmar Postgres :5432 + Redis :6379 alcançáveis do container do server
+- [ ] 0.8 Validar toolchain de build (docker golang:1.26-alpine) para o server Go
+- [ ] 0.9 GATE P0: `prodex --version` responde do binário pinado + Multica resolve o executável
 
-## FASES
+## 1. Contrato Go↔L2 (rpp.l2.v1) [REQ-04] (dep: 0)
 
-### [ ] F0 — Deploy prodex AS-IS em PROD (Codex#5.5#C + Codex#5.5#D, serial no daemon)
-- Multica lança `prodex`/`prodex s` (pinado) no lugar de `codex`; isolamento por perfil preservado.
-- Guarda-corpos: Smart Context em shadow/canary nativo; **kill switch**; logs scrubbed; rollback documentado.
-- **GATE:** sessão real roda via prodex em PROD; kill switch testado; rollback documentado; sem segredo em log.
-- **NOTA:** deploy PROD real só após o **runbook** ser apresentado ao dono (F0-runbook por Codex#5.5#D).
+- [ ] 1.1 Definir contrato: HealthCheck/ApplyPolicy/RegisterAccounts/StartSession/StopSession/RouteDecisionEvent/RuntimeEventStream/KillSwitch
+- [ ] 1.2 Schema de eventos (JSON Schema Draft 2020-12) versionado
+- [ ] 1.3 Invariante roteador-único-por-sessão especificado e testável
+- [ ] 1.4 GATE P1: schema compila; contrato revisado; sem segredo
 
-### [ ] F1 — Contrato Go↔L2 (Codex#5.5#A)
-- ADR já existe; produzir contrato (`HealthCheck/ApplyPolicy/RegisterAccounts/StartSession/StopSession/RouteDecisionEvent/RuntimeEventStream/KillSwitch`) + schema de eventos + invariante roteador único.
+## 2. prodex fork-map / invariantes [REQ-09] (dep: 0) — análise (alvo do fork)
 
-### [ ] F2 — prodex fork map / runtime invariants (Codex#5.5#B)
-- Auditar docs/repo oficiais do prodex; mapear crates; isolar runtime proxy/gateway/Smart Context/state/redeem; propor fork boundary; preservar hard affinity + rotate-before-commit. (Alvo do marco; não bloqueia F0.)
+- [ ] 2.1 Mapear crates do prodex (core/context/runtime-*/provider-core/presidio)
+- [ ] 2.2 Isolar runtime proxy/gateway/Smart Context/state/redeem; propor fork boundary
+- [ ] 2.3 Documentar invariantes preservados: hard affinity, rotate-before-commit, profile isolation
+- [ ] 2.4 GATE P2: fork-map revisado; invariantes rastreados aos crates
 
-### [ ] F3 — Go integration skeleton (Codex#5.5#C)
-- Lifecycle do sidecar, healthcheck local, policy push, event ingest, kill switch. Go **não** roteia request em voo.
+## 3. Integração Go — lançar prodex [REQ-05,06] (dep: 1)
 
-### [ ] F4 — State/security (GLM#52#B)
-- Postgres/Redis state backend; redaction policy; audit event taxonomy; secrets boundary. Sem SQLite compartilhado.
+- [ ] 3.1 Lifecycle do sidecar prodex (start/stop/health) via daemon
+- [ ] 3.2 Policy push (ApplyPolicy) + RegisterAccounts do Go pro L2
+- [ ] 3.3 Event ingest do L2 (RuntimeEventStream); Go NÃO roteia request em voo
+- [ ] 3.4 Validar ingest não dispara rotação no Go (teste)
+- [ ] 3.5 GATE P3: build/vet/test do server verde em container (daemon + l2runtime)
 
-### [ ] F5 — Vendor capability matrix (Gemini#Pro)
-- Fonte oficial por vendor: **Codex/Kiro/Antigravity/Cline/OpenCode** (+ prodex). Classificar verified/inferred/not-validated. **Kimchi fora.**
+## 4. State/security [REQ-10,11,12] (dep: 0)
 
-### [ ] F6 — QA/conformance + PROD validation plan (GLM#52#A)
-- Smoke, replay (long-session/tool-calls/previous_response_id/compact/SSE/WebSocket), conformance por capability, checklist de validação PROD do Smart Context (shadow→canary→live) e do redeem.
+- [ ] 4.1 Backend Postgres/Redis (gateway/ledger/approved-accounts); SQLite proibido
+- [ ] 4.2 Migrations reversíveis (up/down) versionadas
+- [ ] 4.3 Redaction policy (logs/traces/errors/audit)
+- [ ] 4.4 Taxonomia de audit: selection, redeem, fallback, continuation binding, context-rewrite
+- [ ] 4.5 GATE P4: no-SQLite verificado; migration reversível testada
 
-### [ ] F7 — DevOps/deploy/rollback (Codex#5.5#D)
-- Runbook de deploy PROD, envs, topologia, rollback, métricas/alertas, state backend. **Apresenta o runbook ao dono antes de executar deploy real.**
+## 5. Vendor capability matrix [REQ-07,08] (dep: 0)
 
-### [ ] F8 — Ops triage / evidence index (Gemini#Flash35)
-- Status board, evidence index, open items por owner. Roda desde o início.
+- [ ] 5.1 Matriz por provider (fonte primária): Codex/Kiro/Antigravity/Cline/OpenCode — verified/inferred/not_validated
+- [ ] 5.2 DECISÃO OpenCode (arquivado → sucessor Crush): disabled / descopar / migrar — documentar
+- [ ] 5.3 owner-acceptance dos not_validated (disabled-by-default)
+- [ ] 5.4 GATE P5: matriz com fontes checadas; decisão OpenCode registrada
 
-### [ ] F9 — Reset-claim (BAIXA PRIORIDADE — por último) (Codex#5.5#B + GLM#52#A)
-- Via `prodex redeem`; validação empírica com contas reais quando o estado (weekly-exhausted + crédito) ocorrer. Matriz de casos + guardas (idempotência/cooldown/audit). **Frio e aleatório → não bloqueia nada.**
+## 6. QA/conformance EXAUSTIVO — SEM BYPASS [REQ-13..18] (dep: 3,4,5)
 
-## MATRIZ DE DESPACHO (ordem recomendada)
-1. Gemini#Flash35 (F8, status board) + Gemini#Pro (F5) começam já.
-2. Codex#5.5#A (F1 contrato) + GLM#52#B (F4 state/security).
-3. Codex#5.5#B (F2 fork map) em paralelo.
-4. Codex#5.5#C (F3 + F0 integração) após contrato v0.
-5. Codex#5.5#D (F7 runbook → F0 deploy) após state v0 + integração v0.
-6. GLM#52#A (F6 QA) após fork map + contrato v0.
-7. Codex#5.5#B + GLM#52#A (F9 reset-claim) por último.
+- [ ] 6.1 C1 conformance por capability (não por rótulo) — evidência container
+- [ ] 6.2 C2 replay: long-session + tool-calls + previous_response_id
+- [ ] 6.3 C3 replay: compact + SSE + WebSocket
+- [ ] 6.4 C4 troca de perfil fail-closed provada
+- [ ] 6.5 C5 Smart Context shadow→canary→live: medição antes/depois + fallback exato automático
+- [ ] 6.6 C6 tripla CODEX_HOME × prodex × Herdr coexistindo sem clobber (isolamento provado)
+- [ ] 6.7 Herdr coordination smoke (agent send/notification/events) com evidência
+- [ ] 6.8 GATE P6: TODOS C1–C6 verdes com evidência scrubbed; nenhum plan-done/dry-run marcado DONE
 
-## GATES DE ACEITE (sem eles, nada é DONE)
-- **Tripla-interação `CODEX_HOME` × prodex × Herdr-integration codex** validada (F6): os três coexistem sem se pisar; integration por-CODEX_HOME não quebra o pool nem o isolamento.
-- **Coordenação Herdr operacional:** Opus 4.8 no pane `opus-4.8-orchestrator`; agentes com skill + identidade durável; `agent send`/`notification show`/`events.subscribe` provados num smoke.
-- Roteador único por sessão provado em teste.
-- Troca de perfil **fail-closed** (nunca reusar credencial anterior com perfil novo inválido).
-- Smart Context: shadow mede antes/depois sem alterar; canary com fallback exato automático.
-- Reset-claim: matriz empírica com evidência scrubbed.
-- Conformance por capability (não por rótulo de marketing).
-- Secrets redaction test em logs/traces/errors/audit.
-- Postgres/Redis (sem SQLite compartilhado); migrations reversíveis.
-- Container verde (Go) e sidecar saudável; kill switch e rollback funcionais.
+## 7. DevOps / Deploy PROD [REQ-19,20,21,25] (dep: 6 verde)
 
-## VALIDAÇÃO (Opus, a cada DONE)
-1. Sign-out completo. 2. Só arquivos locked tocados. 3. Re-rodar verificação no container/PROD.
-4. Confirmar invariantes preservados. Só então marcar [x].
+- [ ] 7.1 Kill-switch por tenant/provider/profile — TESTADO (real, não só documentado)
+- [ ] 7.2 Rollback em 1 comando (volta a `codex` cru) — TESTADO
+- [ ] 7.3 Logs scrubbed confirmado em PROD path
+- [ ] 7.4 Runbook de deploy + observability/alertas
+- [ ] 7.5 GATE P7: kill-switch + rollback verdes → DEPLOY DIRETO em PROD (sem canary); sessão real via prodex
+
+## 8. Ops / evidence index (contínuo, desde 0) [REQ-23]
+
+- [ ] 8.1 Status board + evidence index + open items por owner
+- [ ] 8.2 Tasks rastreáveis por fase; dependências formalizadas
+
+## 9. Reset-claim (empírico — POR ÚLTIMO, não bloqueia) [REQ-22] (dep: 3)
+
+- [ ] 9.1 Matriz de casos (sem crédito/com crédito/perto reset/weekly-exhausted/5h-only/all-exhausted/non-OpenAI)
+- [ ] 9.2 Guardas: idempotência, cooldown, audit event
+- [ ] 9.3 Validação empírica com contas reais quando o estado ocorrer (evidência scrubbed)
+
+## 10. Meta / reconciliação [REQ-24]
+
+- [ ] 10.1 Arquivar `rotation-router` (SUPERSEDED)
+- [ ] 10.2 Reconciliar docs/board; remover contradição deploy×QA
