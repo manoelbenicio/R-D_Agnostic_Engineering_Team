@@ -285,10 +285,17 @@ def build_tasks(plan, checkins, agents, now):
         pane = ag.get("pane_id") if ag else ""
         eta = (eta_display(latest, status, prog, now) if latest
                else ("0m" if status == "DONE" else (fmt_h(task.get("eta_hours")) if task.get("eta_hours") else "—")))
+        # reflete realidade: dono trabalhando AO VIVO sem check-in => WORKING (sem rastro), nao TODO
+        live_working = (str(vivo).lower() == "working")
+        if status == "TODO" and live_working and not task.get("gated"):
+            status = "IN_PROGRESS"; prog = max(prog, 5)
+            motivo_live = "agente TRABALHANDO ao vivo — sem check-in em disco ainda (cobrar rastro)"
+        else:
+            motivo_live = None
         if status == "TODO":
             motivo = "GATED — aguarda aprovação do dono + smokes verdes" if task.get("gated") else "não iniciado"
         elif status == "IN_PROGRESS":
-            motivo = (latest.get("notes") if latest else "") or f"em curso ({prog}%)"
+            motivo = motivo_live or ((latest.get("notes") if latest else "") or f"em curso ({prog}%)")
         elif status == "BLOCKED":
             motivo = ((latest.get("blockers") or latest.get("notes")) if latest else "") or "bloqueado"
         elif status == "FAILED":
