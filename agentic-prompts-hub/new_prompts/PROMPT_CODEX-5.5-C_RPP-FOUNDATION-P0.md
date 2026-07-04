@@ -38,11 +38,11 @@ Execute na ordem. Cada passo tem verificação. Se algo falhar, PARE e escale ao
   git -C "$HOME/runtime/prodex-src" rev-parse HEAD   # DEVE começar com 7750da9b
   VERIFICAÇÃO: commit == 7750da9b6a5c... ; senão PARE.
 
-**0.2 — Buildar o binário via container Rust (host não tem Rust; IPv6 OFF)**
+**0.2 — Buildar via container Rust (host não tem Rust; IPv6 OFF)** — prodex usa **edition 2024 → Rust stable ≥ 1.85**; imagem PINADA `rust:1.85-bookworm` (NÃO usar tag flutuante).
   Use imagem rust pinada; cache persistente; musl para binário portável:
   docker run --rm --sysctl net.ipv6.conf.all.disable_ipv6=1 \
     -v "$HOME/runtime/prodex-src":/src -v prodex-cargo:/usr/local/cargo/registry \
-    -w /src rust:1-bookworm bash -lc '
+    -w /src rust:1.85-bookworm bash -lc '
       set -e
       cargo build --release 2>&1 | tail -20
     '

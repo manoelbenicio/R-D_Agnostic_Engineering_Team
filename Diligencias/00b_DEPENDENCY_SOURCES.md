@@ -14,9 +14,11 @@
   ```
 - Verificar: `git rev-parse HEAD` == `7750da9b...`.
 
-## 2. Toolchain Rust
-- **NÃO instalar no host.** Usar imagem docker pinada: **`rust:1-bookworm`** (glibc).
-- Alt para binário portável (sem libc dep): target `x86_64-unknown-linux-musl` (avaliar se as deps do prodex compilam em musl).
+## 2. Toolchain Rust  (VERIFICADO no source)
+- prodex: `edition = "2024"` no Cargo.toml + CI `dtolnay/rust-toolchain@stable` + **sem** `rust-toolchain.toml`.
+- **Requisito: Rust STABLE ≥ 1.85** (edition 2024 exige 1.85+). NÃO usar tag flutuante `rust:1`.
+- **NÃO instalar no host.** Imagem docker **PINADA**: **`rust:1.85-bookworm`** (glibc) — ou stable atual ≥1.85 (registrar a tag exata usada).
+- Alt binário portável: target `x86_64-unknown-linux-musl` (avaliar se as deps compilam em musl).
 
 ## 3. Dependências Rust (crates)
 - **Registry:** crates.io padrão — índice `index.crates.io`, download `static.crates.io`.
