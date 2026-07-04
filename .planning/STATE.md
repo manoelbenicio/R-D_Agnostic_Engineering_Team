@@ -30,3 +30,9 @@
 
 ## Próximo passo
 Iniciar **P0 (Fundação)** — provisionar/buildar o binário prodex e confirmar ambiente. Só então P1→P7.
+
+## QA verificado (2026-07-04, container IPv4)
+- BUILD: verde · VET: verde · TEST internal: **24/24 pacotes OK, 0 FAIL** (execenv 77.5%, metrics 64.3%, daemon 68.3%, rotation 64.7%, l2runtime 63.1%, events 100%...).
+- Nota: falha anterior de 2 pacotes era rede IPv6, não código → resolvido com `--sysctl net.ipv6.conf.all.disable_ipv6=1`.
+- Dashboard plan_dashboard: QA 49/49 (base 29 + SEV-0 20). Encoding-safe.
+- Blockers SEV-0 abertos (produto): ISSUE-001 binário prodex (P0), ISSUE-005 91 uncommitted, ISSUE-006 gates QA sem evidência empírica.

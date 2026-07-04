@@ -1,3 +1,11 @@
+> **PLANO CORRIGIDO (2026-07-04) — leia antes de agir.** O plano anterior assumia o binario prodex instalado (ERRO). Correcoes herdadas:
+> - **P0 FUNDACAO e pre-requisito de TUDO**: provisionar/buildar o binario prodex (source -> ~/runtime/prodex-src; instalar Rust; `cargo build --release`; verificar pin v0.246.0/7750da9b + hash; setar `MULTICA_PRODEX_ENABLED/PATH/VERSION/COMMIT` + `PRODEX_HOME`). Ref: Diligencias/00_FUNDACAO_P0.md + openspec specs/prodex-runtime-provisioning.
+> - **Kill-switch + rollback: TESTADOS** (nao so documentados) antes do deploy.
+> - **QA EXAUSTIVO em container ANTES do deploy** (NUNCA bypassado); deploy direto em PROD depois.
+> - **OpenCode: ARQUIVADO** (sucessor Crush) -> disabled/descope (decisao F5).
+> - **IPv6 desabilitado** nos builds: `docker run --sysctl net.ipv6.conf.all.disable_ipv6=1 ...`.
+> Fonte de verdade: `openspec/changes/rotation-parity-polyglot/` + `.planning/` + `Diligencias/`.
+
 <role>
 Você é GLM#52#A, lead QA/conformance. Responsabilidade: planos de smoke, replay, conformance por
 capability e checklist de validação PROD (Smart Context shadow→canary→live e reset-claim). Foco em
