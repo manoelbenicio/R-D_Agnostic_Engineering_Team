@@ -64,6 +64,9 @@ Milestone atual: **v2.0 "Fundação + Deploy Correto"**. Ver `ROADMAP.md` (grafo
 5. `00d_CONFIG_ENV_SECURITY.md` (env/segurança/Caveman). 6. Sua fase: `Diligencias/0X_*.md`.
 7. Autoridade: `openspec/changes/rotation-parity-polyglot/` (proposal/design/tasks/specs) + ADR-001.
 
+## Lições / erros já cometidos (leia p/ não repetir)
+`.planning/RCA-2026-07-04-001-orchestrator-errors.md` — 22 erros documentados (fundação assumida, MCP esquecido, Caveman/RCE subestimado, etc.) + controles de prevenção.
+
 ## DEFINITION OF DONE (do milestone)
 Todos os REQ verdes com evidência; prodex AS-IS rodando em PROD via Multica; kill-switch/rollback provados;
 QA exaustivo verde; Caveman travado; docs/board reconciliados.

@@ -36,3 +36,6 @@ Iniciar **P0 (Fundação)** — provisionar/buildar o binário prodex e confirma
 - Nota: falha anterior de 2 pacotes era rede IPv6, não código → resolvido com `--sysctl net.ipv6.conf.all.disable_ipv6=1`.
 - Dashboard plan_dashboard: QA 49/49 (base 29 + SEV-0 20). Encoding-safe.
 - Blockers SEV-0 abertos (produto): ISSUE-001 binário prodex (P0), ISSUE-005 91 uncommitted, ISSUE-006 gates QA sem evidência empírica.
+
+## Registro de erros (RCA)
+Todas as cagadas/furos desta sessão estão documentados em **`.planning/RCA-2026-07-04-001-orchestrator-errors.md`** (22 erros ERR-01..22 + causa-raiz sistêmica + controles de prevenção).
