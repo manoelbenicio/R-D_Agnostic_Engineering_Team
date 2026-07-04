@@ -39,6 +39,14 @@
 ## MCP (superfície de tool-calls via prodex)
 - **REQ-26** — Suporte a MCP do prodex mapeado e coberto: `prodex-mcp-stdio` (framing stdio) + tradução/passthrough de tool-calls MCP no runtime (anthropic/gemini/deepseek). Contrato/eventos devem cobrir tool-calls MCP; afinidade preserva estado de tool_call/continuation; conformance testa passthrough. Segurança: MCP servers stdio são superfície — declarar quais são confiáveis.
 
+## Superfícies prodex adicionais (varredura dos 44 crates — ver Diligencias/00c)
+- **REQ-27** — Memory MCP backend (`prodex-memory`, Mem0-compat): escopo (on/off), contrato, privacidade.
+- **REQ-28** — Redaction real via `prodex-presidio`+`prodex-redaction`: amarrar G8/P4 ao motor nativo; testar PII.
+- **REQ-29** — Runtime broker (`prodex-runtime-broker`): health/registry/metrics → contrato L2.
+- **REQ-30** — Cookie relay (`prodex-runtime-cookies`): auditar superfície de auth/sessão.
+- **REQ-31** — Quota adapters (`prodex-quota`/`runtime-quota`): ampliar quota_mode por vendor.
+- **REQ-32** — Plugin Caveman (`prodex-caveman-assets`): investigar/escopar/segurança.
+
 ## Reset-claim (baixa prioridade — por último)
 - **REQ-22** — Matriz reset-claim (planning) + validação **empírica** com contas reais (guardas: idempotência, cooldown, audit); só quando o estado ocorrer.
 

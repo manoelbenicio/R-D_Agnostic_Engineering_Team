@@ -11,6 +11,8 @@ verificação/evidência · critério de gate (DONE) · riscos**.
 
 ## Contexto do produto (leia ANTES de tudo)
 **[00_CONTEXTO_MULTICA.md](00_CONTEXTO_MULTICA.md)** — o que é o Multica, o repo, e como o prodex/rotation-parity se encaixa.
+- **[00b_DEPENDENCY_SOURCES.md](00b_DEPENDENCY_SOURCES.md)** — de onde baixar cada dependência (pinadas).
+- **[00c_PRODEX_CRATE_COVERAGE.md](00c_PRODEX_CRATE_COVERAGE.md)** — os 44 crates do prodex × plano (cobertura verificável).
 
 ## Índice de fases (até QA)
 | # | Fase | Documento | Bloqueia |

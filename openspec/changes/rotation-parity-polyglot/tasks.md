@@ -32,6 +32,10 @@
 - [ ] 2.4 Mapear crates MCP: prodex-mcp-stdio (framing) + tradução de tools MCP no runtime (anthropic/gemini/deepseek)
 - [ ] 2.5 GATE P2: fork-map revisado; invariantes rastreados aos crates
 
+- [ ] 2.6 Enumerar TODOS os 44 crates (matriz Diligencias/00c) — nenhum "genérico"
+- [ ] 2.7 Mapear runtime-broker (health/registry/metrics) ao contrato L2
+- [ ] 2.8 Mapear prodex-memory (memory MCP), cookies, quota adapters, caveman (escopo/segurança)
+
 ## 3. Integração Go — lançar prodex [REQ-05,06] (dep: 1)
 
 - [ ] 3.1 Lifecycle do sidecar prodex (start/stop/health) via daemon
@@ -47,6 +51,9 @@
 - [ ] 4.3 Redaction policy (logs/traces/errors/audit)
 - [ ] 4.4 Taxonomia de audit: selection, redeem, fallback, continuation binding, context-rewrite
 - [ ] 4.5 GATE P4: no-SQLite verificado; migration reversível testada
+
+- [ ] 4.6 Redaction via prodex-presidio + prodex-redaction (motor nativo) — testar PII scrubbing
+- [ ] 4.7 Cookie relay (prodex-runtime-cookies): auditar superfície auth/sessão
 
 ## 5. Vendor capability matrix [REQ-07,08] (dep: 0)
 
