@@ -1,3 +1,5 @@
+> **ATUALIZAÇÃO DE ESCOPO:** mapear **provider(prodex: anthropic/gemini/deepseek/copilot/openai) × vendor(Multica)** (REQ-36) + declarar os 7 vendors out-of-scope; **quota adapters** (REQ-31); **OpenCode ARQUIVADO** (sucessor Crush) → disabled/descope (REQ-08).
+
 > **🌍 LEIA PRIMEIRO (OBRIGATÓRIO):** [Diligencias/00_LEIA_PRIMEIRO_MISSAO.md] — missão & mundo do projeto (o quê/por quê/como/quando/onde/quem + regras). DEPOIS: 00_CONTEXTO_MULTICA.md. Sem ler o TODO, não toque em nada.
 > **CONTEXTO DO PRODUTO (leia 1º):** [Diligencias/00_CONTEXTO_MULTICA.md] — o que é o Multica (managed agents platform), o repo `multica-ai/multica`, e como o prodex/rotation-parity se encaixa. Sem isso você não entende o projeto.
 

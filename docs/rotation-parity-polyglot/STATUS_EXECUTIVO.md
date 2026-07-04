@@ -57,3 +57,6 @@
 
 ## Próximo marco (gate de GA)
 Deploy prodex AS-IS em PROD (F0) **somente após**: G5 Smart Context (shadow→canary), G10 container/kill-switch/rollback, F4 redaction/no-SQLite e F6 conformance — todos **verdes com evidência** — e aprovação do dono.
+
+## Superfícies completas (varredura — 66 tasks, 39 REQs)
+Plano cobre agora: MCP (REQ-26), 44 crates (00c), env/subcomandos/providers (00d, REQ-33/35/36), Caveman OFF/RCE (REQ-34), browser Playwright (REQ-37), Mem0 (REQ-37b), redaction presidio (REQ-28), broker (REQ-29), cookies (REQ-30), quota (REQ-31), CI hardening (REQ-38), deploy Helm (REQ-39). Fonte viva: `openspec .../tasks.md` (66) via `plan_dashboard.py`. Erros passados: `.planning/RCA-2026-07-04-001`.

@@ -1,3 +1,5 @@
+> **ATUALIZAÇÃO DE ESCOPO:** além de buildar o binário — inventariar a superfície completa `PRODEX_*` (REQ-33: `ALLOW_UNSAFE_CHILD_ENV=off`, chaves via secret-store) e mapear subcomandos usados (REQ-35: run/s/redeem/mcp/auth/doctor/quota/status). Ref: Diligencias/00d.
+
 > **🌍 LEIA PRIMEIRO (OBRIGATÓRIO):** [Diligencias/00_LEIA_PRIMEIRO_MISSAO.md] — missão & mundo do projeto (o quê/por quê/como/quando/onde/quem + regras). DEPOIS: 00_CONTEXTO_MULTICA.md. Sem ler o TODO, não toque em nada.
 > **CONTEXTO DO PRODUTO (leia 1º):** [Diligencias/00_CONTEXTO_MULTICA.md] — o que é o Multica (managed agents platform), o repo `multica-ai/multica`, e como o prodex/rotation-parity se encaixa. Sem isso você não entende o projeto.
 

@@ -1,3 +1,5 @@
+> **ATUALIZAÇÃO DE ESCOPO (REQ novos):** o contrato `rpp.l2.v1` DEVE cobrir **MCP tool-calls** (REQ-26: RuntimeEventStream inclui eventos de tool MCP; afinidade preserva tool_call/continuation) e o **runtime-broker** (REQ-29: health/registry/metrics → HealthCheck/RouteDecisionEvent). Ref: Diligencias/00c, 00e.
+
 > **🌍 LEIA PRIMEIRO (OBRIGATÓRIO):** [Diligencias/00_LEIA_PRIMEIRO_MISSAO.md] — missão & mundo do projeto (o quê/por quê/como/quando/onde/quem + regras). DEPOIS: 00_CONTEXTO_MULTICA.md. Sem ler o TODO, não toque em nada.
 > **CONTEXTO DO PRODUTO (leia 1º):** [Diligencias/00_CONTEXTO_MULTICA.md] — o que é o Multica (managed agents platform), o repo `multica-ai/multica`, e como o prodex/rotation-parity se encaixa. Sem isso você não entende o projeto.
 

@@ -1,3 +1,5 @@
+> **ATUALIZAÇÃO DE ESCOPO:** deploy referencia o mecanismo REAL — **Helm** (`deploy/helm`) + `docker-compose.selfhost` + `deploy/observability`; migrations reversíveis (322 .sql) (REQ-39). **CI hardening** (REQ-38): além de `go test -race`, adicionar `go vet` + lint (golangci) + security scan (govulncheck/gitleaks). Kill-switch + rollback **TESTADOS** (REQ-19/20).
+
 > **🌍 LEIA PRIMEIRO (OBRIGATÓRIO):** [Diligencias/00_LEIA_PRIMEIRO_MISSAO.md] — missão & mundo do projeto (o quê/por quê/como/quando/onde/quem + regras). DEPOIS: 00_CONTEXTO_MULTICA.md. Sem ler o TODO, não toque em nada.
 > **CONTEXTO DO PRODUTO (leia 1º):** [Diligencias/00_CONTEXTO_MULTICA.md] — o que é o Multica (managed agents platform), o repo `multica-ai/multica`, e como o prodex/rotation-parity se encaixa. Sem isso você não entende o projeto.
 

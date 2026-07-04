@@ -1,3 +1,5 @@
+> **ATUALIZAÇÃO DE ESCOPO (QA cobre novas superfícies):** conformance de **MCP** (REQ-26 passthrough/tradução), **browser Playwright** (REQ-37 sandbox/allowlist) e **memory Mem0** (REQ-37b privacidade), além de C1–C6 + **redaction test via prodex-presidio** (REQ-28). Nada plan-only marcado DONE (evidência re-rodada).
+
 > **🌍 LEIA PRIMEIRO (OBRIGATÓRIO):** [Diligencias/00_LEIA_PRIMEIRO_MISSAO.md] — missão & mundo do projeto (o quê/por quê/como/quando/onde/quem + regras). DEPOIS: 00_CONTEXTO_MULTICA.md. Sem ler o TODO, não toque em nada.
 > **CONTEXTO DO PRODUTO (leia 1º):** [Diligencias/00_CONTEXTO_MULTICA.md] — o que é o Multica (managed agents platform), o repo `multica-ai/multica`, e como o prodex/rotation-parity se encaixa. Sem isso você não entende o projeto.
 

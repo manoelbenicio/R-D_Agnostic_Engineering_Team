@@ -1,3 +1,5 @@
+> **ATUALIZAÇÃO DE ESCOPO:** o fork-map DEVE enumerar os **44 crates** (Diligencias/00c) — incl. MCP (`prodex-mcp-stdio`+tool_mcp, REQ-26), **memory Mem0** (`prodex-memory`, REQ-27/37b), **browser Playwright/Chromium** (REQ-37), presidio/redaction (REQ-28), runtime-broker (REQ-29), cookies (REQ-30), quota (REQ-31), Caveman (REQ-34). Nenhum crate 'genérico'.
+
 > **🌍 LEIA PRIMEIRO (OBRIGATÓRIO):** [Diligencias/00_LEIA_PRIMEIRO_MISSAO.md] — missão & mundo do projeto (o quê/por quê/como/quando/onde/quem + regras). DEPOIS: 00_CONTEXTO_MULTICA.md. Sem ler o TODO, não toque em nada.
 > **CONTEXTO DO PRODUTO (leia 1º):** [Diligencias/00_CONTEXTO_MULTICA.md] — o que é o Multica (managed agents platform), o repo `multica-ai/multica`, e como o prodex/rotation-parity se encaixa. Sem isso você não entende o projeto.
 
