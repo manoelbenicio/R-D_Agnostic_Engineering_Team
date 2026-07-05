@@ -6,6 +6,9 @@
 
 ---
 
+
+> **PRE-REQUISITO SSH (senao TRAVA):** sempre use `-o BatchMode=yes -o ConnectTimeout=12` (sem isso o ssh fica esperando senha e TRAVA pra sempre). O SSH so funciona de um host que TEM a chave/config pro `manoelneto-laptop` (ex.: 21LAPGLMVPJ4). Se der `Permission denied (publickey)`, rode do host autorizado ou instale a chave. Reconfirme o nome/pane do TL com `herdr agent list` (nao hardcode).
+
 # PARTE 1 — PROMPT DE ONBOARDING (cole na IDE do novo agente)
 
 ---
@@ -36,9 +39,9 @@ export HERDR_ENV=1
 # Fleet host: LAN 192.168.1.27 (alias `manoelneto-laptop`), user dataops-lab, Port 22.
 # Falar SOMENTE com opus-4.8-orchestrator, e SÓ com autorização do dono.
 # PADRÃO (SSH pro fleet + herdr; pane_id NÃO é durável, reconfirme sempre):
-PANE=$(ssh manoelneto-laptop "herdr agent list" | python3 -c "import sys,json;print(next(a['pane_id'] for a in json.load(sys.stdin)['result']['agents'] if a['name']=='opus-4.8-orchestrator'))")
-ssh manoelneto-laptop "herdr pane run $PANE $(printf %q '[Tech-Lead] sua mensagem')"   # pane run SUBMETE (Enter). NUNCA agent send.
-ssh manoelneto-laptop "herdr pane read $PANE --source recent --lines 40"
+PANE=$(ssh -o BatchMode=yes -o ConnectTimeout=12 manoelneto-laptop "herdr agent list" | python3 -c "import sys,json;print(next(a['pane_id'] for a in json.load(sys.stdin)['result']['agents'] if a['name']=='opus-4.8-orchestrator'))")
+ssh -o BatchMode=yes -o ConnectTimeout=12 manoelneto-laptop "herdr pane run $PANE $(printf %q '[Tech-Lead] sua mensagem')"   # pane run SUBMETE (Enter). NUNCA agent send.
+ssh -o BatchMode=yes -o ConnectTimeout=12 manoelneto-laptop "herdr pane read $PANE --source recent --lines 40"
 # Regras Herdr: pane run (não agent send, que não dá Enter) · shlex/printf %q pra escapar · reconfirmar pane sempre.
 
 ## PASSO 3 — VERIFICAR O ESTADO (rode e confirme verde)
@@ -239,11 +242,11 @@ Comece pela P0. Boa sorte — e leia o RCA antes.
 `agent send` NÃO submete (não dá Enter). Para SUBMETER use `pane run`:
 ```
 # resolver o pane do orquestrador
-ssh manoelneto-laptop "herdr agent list" | grep opus-4.8-orchestrator   # pega pane_id (ex: w3:pE)
+ssh -o BatchMode=yes -o ConnectTimeout=12 manoelneto-laptop "herdr agent list" | grep opus-4.8-orchestrator   # pega pane_id (ex: w3:pE)
 # enviar E submeter (texto + Enter):
-ssh manoelneto-laptop "herdr pane run w3:pE 'sua mensagem'"
+ssh -o BatchMode=yes -o ConnectTimeout=12 manoelneto-laptop "herdr pane run w3:pE 'sua mensagem'"
 # ler resposta:
-ssh manoelneto-laptop "herdr pane read w3:pE --source recent --lines 40"
+ssh -o BatchMode=yes -o ConnectTimeout=12 manoelneto-laptop "herdr pane read w3:pE --source recent --lines 40"
 ```
 Regra: **falar SÓ com `opus-4.8-orchestrator`** entre os agentes; nunca mandar direto pros outros.
 
@@ -315,8 +318,8 @@ herdr integration install codex                          # integração nativa (
 ```
 **Falar com o TL (submeter com Enter via pane run):**
 ```
-ssh manoelneto-laptop "herdr agent list" | grep opus-4.8-orchestrator   # pega o pane
-ssh manoelneto-laptop "herdr pane run <pane> 'mensagem'"                 # envia+Enter
-ssh manoelneto-laptop "herdr pane read <pane> --source recent --lines 40"
+ssh -o BatchMode=yes -o ConnectTimeout=12 manoelneto-laptop "herdr agent list" | grep opus-4.8-orchestrator   # pega o pane
+ssh -o BatchMode=yes -o ConnectTimeout=12 manoelneto-laptop "herdr pane run <pane> 'mensagem'"                 # envia+Enter
+ssh -o BatchMode=yes -o ConnectTimeout=12 manoelneto-laptop "herdr pane read <pane> --source recent --lines 40"
 ```
 Regra: só `opus-4.8-orchestrator`; `agent send` NÃO submete (use `pane run`).
