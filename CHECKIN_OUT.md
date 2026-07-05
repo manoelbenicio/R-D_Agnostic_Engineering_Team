@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED (projeto HerdMaster, jun/2026).** Para Rotation-Parity Polyglot use `GOLDEN_RULES_E_CHECKIN.md` (raiz).
+
 # HerdMaster — Check-In / Check-Out Log
 
 > **MANDATORY.** Every agent (including the Tech Lead) MUST write a CHECK-IN entry before
