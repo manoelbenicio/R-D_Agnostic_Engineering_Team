@@ -59,6 +59,12 @@
 - **REQ-38** — Hardening do CI: além de `go test -race`, adicionar `go vet` + lint (golangci) + security scan (govulncheck/gitleaks).
 - **REQ-39** — Deploy runbook (P7) referencia mecanismo real: Helm (`deploy/helm`) + `docker-compose.selfhost` + `deploy/observability`; migrations reversíveis (322 .sql) no deploy.
 
+## Rotação antecipada (criticidade máxima corporativa)
+- **REQ-40** — **Early Rotation (warnbanner):** integrar parser de banner de pré-esgotamento (`warnbanner.go`) no loop `session.Messages` → `MessageText` (daemon.go ~l.4124); disparar rotação ANTES do hard-stop; retomada transparente sem intervenção humana. Por vendor (Codex/Kiro/Antigravity). Ref: `docs/project/07-early-rotation-critical.md`.
+
+## Invariantes operacionais POSIX
+- **REQ-41** — **POSIX FS validation:** credenciais DEVEM estar em FS POSIX real (ext4/xfs), NUNCA drvfs/9p/CIFS; validar `stat -c '%a' == 600` no deploy; abortar se FS incompatível. Board único com caminho ABSOLUTO. Ref: `03_PLATFORM_PLAN_360.md` §4.
+
 ## Reset-claim (baixa prioridade — por último)
 - **REQ-22** — Matriz reset-claim (planning) + validação **empírica** com contas reais (guardas: idempotência, cooldown, audit); só quando o estado ocorrer.
 
@@ -66,3 +72,17 @@
 - **REQ-23** — Tasks rastreáveis (o change anterior tinha 0 tasks no CLI); dependências entre fases formalizadas.
 - **REQ-24** — Arquivar `rotation-router` (SUPERSEDED) e reconciliar docs/board.
 - **REQ-25** — Reconciliar contradição "deploy direto × QA exaustivo": QA exaustivo em container ANTES; deploy direto DEPOIS.
+
+## Mapeamento de herança (PLATFORM_PLAN_360 §2 → REQs/tasks)
+
+| Item herdado | Destino |
+|---|---|
+| B5 (teste auth/switch real) | REQ-22 / task 9.3 |
+| H2 (métricas daemon reframe) | REQ-05 / task 3.3 |
+| H3 (cooldown-return) | REQ-13 / task 6.1 |
+| H4 (concorrência pool) | REQ-13 / task 6.1 |
+| H5 (robustez subswap) | REQ-13 / task 6.1 |
+| O1 (runbook deploy PROD) | REQ-21 / task 7.4 |
+| O2 (runbook enrollment) | REQ-21 / task 7.4e |
+| O4 (segredos em repouso) | REQ-10 / task 4.1 |
+| F2 (detector banner) | REQ-40 / task 3.6 |

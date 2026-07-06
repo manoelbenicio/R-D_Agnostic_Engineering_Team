@@ -56,3 +56,27 @@ Arquitetura **polyglot** (ADR-001):
 - Eficácia real de reset-claim e Smart Context sob carga PROD (validar empírico + evidência scrubbed).
 - prodex bus-factor 1; drift do Codex upstream.
 - Deploy direto sem staging → depende de kill-switch/rollback provados.
+
+## 7. Agentes e Orquestração (8 agentes + 1 TL)
+
+**Modelo:** 8 agentes independentes + 1 Tech Lead (TL) que é a interface ÚNICA.
+**Config:** mode=yolo, profile=quality, complexity=avançado(médio).
+**Comunicação:** Exclusivamente via **Herdr panel** (unix socket).
+
+| Papel | Agente | Fases |
+|-------|--------|-------|
+| **Tech Lead (TL)** | `opus-4.8-orchestrator` | TODAS — orquestra, valida, ensina, escala |
+| Executor 1 | `Codex#5.5#A` | P1 (Contrato L2) |
+| Executor 2 | `Codex#5.5#B` | P2 (Fork-map), P9 (Reset-claim) |
+| Executor 3 | `Codex#5.5#C` | P0 (Fundação), P3 (Integração) — **dono exclusivo do daemon** |
+| Executor 4 | `Codex#5.5#D` | P7 (Deploy/DevOps) |
+| Executor 5 | `GLM#52#A` | P6 (QA/Conformance) |
+| Executor 6 | `GLM#52#B` | P4 (State/Security) |
+| Executor 7 | `Gemini#PRO#31` | P5 (Vendor Matrix) |
+| Executor 8 | `Gemini#Flash35` | P8 (Ops/Evidence) |
+
+**Paralelismo:** 5 waves (serial → 5x paralelo → serial hotspot → QA → 2x paralelo → meta).
+**Ganho estimado:** ~46% redução vs execução serial (~27h vs ~50h).
+**Propriedade de arquivo:** disjunta (sem colisão). Hotspot `daemon.go` = dono único (Codex#5.5#C).
+**Protocolo completo:** `.planning/ORCHESTRATION.md`
+**Prompt do TL:** `.planning/TECH_LEAD_PROMPT.md`

@@ -1,4 +1,4 @@
-# SUPERSEDED — use scripts/dashboard/plan_dashboard.py (data-driven das 66 tasks do OpenSpec, encoding-safe, QA 49/49).
+# FLEET EXECUTIVE DASHBOARD — data-driven, live from fleet
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -26,9 +26,9 @@ Canal Tech-Lead -> SOMENTE opus-4.8-orchestrator:
 import argparse, json, os, re, shlex, subprocess, sys, time
 from datetime import datetime, timezone
 
-DEFAULT_HOST = os.environ.get("FLEET_SSH_HOST", "manoelneto-laptop")
+DEFAULT_HOST = os.environ.get("FLEET_SSH_HOST", "dataops-lab@192.168.1.27")
 DEFAULT_BOARD = os.environ.get("FLEET_BOARD", "/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/.deploy-control")
-ORCH = os.environ.get("FLEET_ORCHESTRATOR", "opus-4.8-orchestrator")
+ORCH = os.environ.get("FLEET_ORCHESTRATOR", "Gemini-PRO-31")
 SEP = "@@@BOARD@@@"
 
 def use_color(ascii_mode):
@@ -50,7 +50,8 @@ class C:
 def ssh(host, remote_cmd, timeout=15):
     try:
         p = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
-                            "-o", "StrictHostKeyChecking=accept-new", host, remote_cmd],
+                            "-o", "StrictHostKeyChecking=accept-new",
+                            "-o", "KexAlgorithms=curve25519-sha256", host, remote_cmd],
                            capture_output=True, text=True, timeout=timeout)
         return p.returncode, p.stdout, p.stderr
     except subprocess.TimeoutExpired:

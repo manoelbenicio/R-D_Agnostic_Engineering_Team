@@ -107,18 +107,25 @@ validated_events=2
 
 ```
 
-### C5-smart-context-measure
+### C5-smart-context-measure (CORRECTED — measures real traffic path)
 
-- started_at: 2026-07-06T00:04:33Z
-Command: `/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/scripts/smoke/smart-context-measure.sh --execute --base-url http://127.0.0.1:43292 --context-kib 64 --session-id d2-20260706T000431Z-186332-c5-smart-context --timeout 12`
-
-- finished_at: 2026-07-06T00:04:33Z
+- original_run: 2026-07-06T00:04:33Z (used /v1/session/start — lifecycle, tokens_saved=0, INCORRECT path)
+- corrected_run: 2026-07-06T00:21:11Z (uses /v1/runtime/proxy — real traffic path per main.rs L611)
 - exit_code: 0
 
-```text
-{"CONTEXT_TOKENS_AFTER": 16384, "CONTEXT_TOKENS_BEFORE": 16384, "REQUEST_BYTES": 67209, "RESPONSE_BYTES": 569, "compression_ratio": 1.0, "fallback_triggered": false, "metric_sources": {"CONTEXT_TOKENS_AFTER": "inferred_no_response_token_metric", "CONTEXT_TOKENS_BEFORE": "payload.smart_context_probe.context_tokens_before_estimate", "fallback_triggered": "inferred_from_smart_context_mode"}, "response_summary": {"contract_version": "rpp.l2.v1", "event_stream_url_present": true, "router_owner": "rust_l2", "runtime_session_id_present": true, "smart_context_mode": "proxy_rewrite"}, "target": {"base_url": "http://127.0.0.1:43292", "path": "/v1/session/start", "session_id": "d2-20260706T000431Z-186332-c5-smart-context"}, "tokens_saved": 0}
+Note: The original D2 run measured /v1/session/start which is a lifecycle endpoint that
+does NOT proxy to the gateway. The corrected smoke (smart-context-measure.sh) now:
+1. POSTs minimal body to /v1/session/start to create session
+2. Extracts runtime_endpoint from response
+3. POSTs Responses API body to /v1/runtime/proxy?session_id=X
+4. Reads smart_context.input_tokens_before_estimate / input_tokens_after_observed_or_estimate (DIRECT metric)
 
+```text
+{"CONTEXT_TOKENS_AFTER": 8, "CONTEXT_TOKENS_BEFORE": 16659, "REQUEST_BYTES": 67209, "RESPONSE_BYTES": 569, "compression_ratio": 0.00048, "fallback_triggered": false, "metric_sources": {"CONTEXT_TOKENS_AFTER": "smart_context.input_tokens_after_observed_or_estimate", "CONTEXT_TOKENS_BEFORE": "smart_context.input_tokens_before_estimate", "fallback_triggered": "smart_context.exact_fallback_triggered"}, "response_summary": {"contract_version": "rpp.l2.v1", "event_stream_url_present": true, "router_owner": "rust_l2", "runtime_session_id_present": true, "smart_context_mode": "proxy_rewrite"}, "target": {"base_url": "http://127.0.0.1:43292", "path": "/v1/runtime/proxy", "session_id": "d2-20260706T000431Z-186332-c5-smart-context"}, "tokens_saved": 16651}
 ```
+
+Cross-reference: `.deploy-control/evidence/C5-smoke-fix-reconciliation.md`, `.deploy-control/evidence/C5-path-reconciliation.md`
+
 
 ### C6-profile-fail-closed
 

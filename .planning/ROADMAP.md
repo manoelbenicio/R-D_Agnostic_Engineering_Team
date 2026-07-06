@@ -29,11 +29,13 @@ P9 Reset-claim (por último; não bloqueia) ── depende de P3 + estado real d
 ### P2 — prodex fork-map / invariantes  `[REQ-09]`  (dep: P0) — análise (alvo do fork)
 - Mapear crates; isolar runtime proxy/gateway/Smart Context/state/redeem; preservar hard affinity + rotate-before-commit.
 
-### P3 — Integração Go (lançar prodex)  `[REQ-05, REQ-06]`  (dep: P1)
+### P3 — Integração Go (lançar prodex)  `[REQ-05, REQ-06, REQ-40]`  (dep: P1)
 - Lifecycle sidecar, healthcheck, policy push, event ingest, kill-switch. Ingest de eventos não dispara rotação no Go.
+- **Early Rotation (REQ-40):** warnbanner.go no loop MessageText do daemon; rotação antecipada por banner; retomada transparente. CRITICIDADE MÁXIMA.
 
-### P4 — State/security  `[REQ-10, REQ-11, REQ-12]`  (dep: P0)
+### P4 — State/security  `[REQ-10, REQ-11, REQ-12, REQ-41]`  (dep: P0)
 - Postgres/Redis backend; redaction policy; audit taxonomy; secrets boundary. Sem SQLite.
+- **POSIX FS validation (REQ-41):** credenciais em ext4/xfs, NUNCA drvfs; `stat 600`; abortar se incompatível.
 
 ### P5 — Vendor capability matrix  `[REQ-07, REQ-08]`  (dep: P0)
 - Fonte primária por vendor; **decidir OpenCode (arquivado)**; classificar verified/inferred/not_validated.

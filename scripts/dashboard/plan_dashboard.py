@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-PLAN DASHBOARD — progresso REAL do plano, lendo a fonte de verdade local:
-o `tasks.md` do OpenSpec (checkboxes `- [ ]` / `- [x]`). Sem SSH, sem Herdr, sem inferência.
+PLAN DASHBOARD — progresso REAL do plano, lendo a fonte de verdade:
+o `tasks.md` do OpenSpec (checkboxes `- [ ]` / `- [x]`).
+Com --remote, faz fetch do fleet antes de cada render.
 Encoding-safe: força UTF-8 e cai para ASCII automaticamente em terminal que não suporta unicode.
 
 Uso:
-  python3 scripts/dashboard/plan_dashboard.py            # snapshot
+  python3 scripts/dashboard/plan_dashboard.py            # snapshot local
   python3 scripts/dashboard/plan_dashboard.py --watch    # atualiza a cada 5s (Ctrl+C sai)
+  python3 scripts/dashboard/plan_dashboard.py --watch --remote  # fetch do fleet a cada ciclo
   python3 scripts/dashboard/plan_dashboard.py --json | --ascii | --tasks <path>
 """
-import argparse, os, re, sys, time, json
+import argparse, os, re, sys, time, json, subprocess
 
 DEFAULT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
                        "openspec", "changes", "rotation-parity-polyglot", "tasks.md")
@@ -110,6 +112,20 @@ def render(path, col):
         L.append(" " + col.g(f"{G['check']} Todas as tasks concluidas."))
     return "\n".join(L)
 
+REMOTE_HOST = "dataops-lab@192.168.1.27"
+REMOTE_TASKS = "/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/openspec/changes/rotation-parity-polyglot/tasks.md"
+SSH_OPTS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5", "-o", "KexAlgorithms=curve25519-sha256"]
+
+def sync_remote(local_path):
+    """Fetch latest tasks.md from fleet host via SCP."""
+    try:
+        subprocess.run(
+            ["scp"] + SSH_OPTS + [f"{REMOTE_HOST}:{REMOTE_TASKS}", local_path],
+            capture_output=True, timeout=10
+        )
+    except Exception:
+        pass  # silently fall back to local copy
+
 def main():
     _harden_stdout()
     ap = argparse.ArgumentParser()
@@ -118,6 +134,7 @@ def main():
     ap.add_argument("--interval", type=float, default=5.0)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--ascii", action="store_true")
+    ap.add_argument("--remote", action="store_true", help="Fetch tasks.md from fleet before each render")
     a = ap.parse_args()
     global G
     G = GU if (_unicode_ok() and not a.ascii) else GA
@@ -131,12 +148,15 @@ def main():
         out["overall_total"] = sum(p["total"] for p in out["phases"])
         print(json.dumps(out, ensure_ascii=False, indent=2)); return
     if not a.watch:
+        if getattr(a, 'remote', False): sync_remote(a.tasks)
         print(render(a.tasks, col)); return
     tty = sys.stdout.isatty()
+    remote_label = " [REMOTE SYNC]" if getattr(a, 'remote', False) else ""
     try:
         if tty: sys.stdout.write("\033[?1049h\033[?25l")
         while True:
-            f = render(a.tasks, col) + "\n " + col.gr(f"(watch {a.interval:g}s - Ctrl+C sai)")
+            if getattr(a, 'remote', False): sync_remote(a.tasks)
+            f = render(a.tasks, col) + "\n " + col.gr(f"(watch {a.interval:g}s{remote_label} - Ctrl+C sai)")
             if tty:
                 sys.stdout.write("\033[H")
                 for ln in f.split("\n"): sys.stdout.write(ln + "\033[K\n")
