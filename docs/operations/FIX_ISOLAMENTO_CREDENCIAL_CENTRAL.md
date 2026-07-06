@@ -43,7 +43,7 @@ Persistência **PostgreSQL**. **Copiar** credencial (nunca symlink). **FAIL-CLOS
 - /mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/multica-auth-work/server/internal/daemon/execenv/codex_home.go
 - /mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/multica-auth-work/server/internal/daemon/daemon.go  (linhas 3870-3889)
 - /mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/multica-auth-work/server/migrations/123_rotation.up.sql
-- /mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/multica-auth-work/server/internal/daemon/runtime_isolation_test.go  (gate)
+- /mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/multica-auth-work/server/internal/daemon/runtime_isolation_test.go  (teste atual — NAO cobre os 6 vendors; estender)
 
 ## 4. Matriz por vendor (ATUAL → A FAZER nesta entrega)
 | Vendor | Env | Atual | A fazer |
