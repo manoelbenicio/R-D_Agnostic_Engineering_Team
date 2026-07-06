@@ -4,16 +4,15 @@
 agent: Antigravity (TL orchestrator, Gemini 3.5 Flash)
 phase: 12-prod-deploy
 milestone: v2.1
-status: BLOCKED (12.3 — auth scope mismatch)
+status: BLOCKED (12.3 — fork (a) failed, need real API key)
 started: 2026-07-06T01:51Z
 blocker: |
-  Codex OAuth token (auth_mode=chatgpt) lacks scope api.responses.write.
-  Gateway reaches api.openai.com (REAL upstream, NOT fake) but gets 401 on /v1/responses
-  and insufficient_quota on /v1/chat/completions.
-  Codex uses ChatGPT subscription billing, NOT API credits.
-  The prodex gateway cannot forward using Codex's OAuth token as a standard API key.
-  NEED: either (a) a real OPENAI_API_KEY with API credits, or (b) a way to run
-  codex CLI itself through the sidecar using its own auth flow.
+  FORK (a) INVESTIGATED AND FAILED in <5min. Root cause (JWT decoded):
+  - scp = ['openid','profile','email','offline_access'] — NO api.responses.write
+  - chatgpt_plan_type = free — no API credits
+  - aud = api.openai.com/v1 (correct endpoint) but scopes are OpenID-only (login)
+  - Gateway reaches api.openai.com REAL but gets 401 (scope) / insufficient_quota (billing)
+  CONCLUSION: the Codex OAuth token cannot be used for API calls. Need a real OPENAI_API_KEY (sk-...).
 plan_ref: .planning/phases/12-prod-deploy/PLAN.md
 method_ref: .planning/phases/12-prod-deploy/AGENTIC-REAL-SESSION.md
 evidence_contract: .planning/EVIDENCE_CONTRACT.md
