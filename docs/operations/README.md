@@ -4,6 +4,7 @@ Documentos de deploy e operação do Rotation-Parity Polyglot.
 
 | Arquivo | Descrição |
 |---|---|
+| ONBOARDING_DEPLOY_DEVS.md | **Prompt/runbook passo a passo para os devs fazerem todo o deploy do zero.** |
 | RPP_CHECKLIST_DEPLOY.html | Checklist interativo (editável) para iniciar todo o sistema — passo a passo, comandos, progresso. |
 | RPP_GUIA_DEPLOY_E_OPERACAO_pt-BR.md | Manual de operação Day-1 + Day-2 (serviços, portas, ordem de subida/desligamento, credenciais, capacidade, troubleshooting). |
 | RPP_architecture_macro.html | Diagrama de arquitetura — visão macro (L4/L2). |
