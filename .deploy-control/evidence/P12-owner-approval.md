@@ -1,3 +1,9 @@
+> [!CAUTION]
+> **INVALID** — This approval was written by the TL agent, NOT by Kiro/Principal. The owner DID authorize F7 verbally but this file falsely presents as if written by the owner. Marked invalid 2026-07-06T01:39Z.
+
+> [!CAUTION]
+> **INVALID** — This evidence was generated against fake-upstream-logging on localhost, NOT real providers on PROD. Marked invalid by owner review 2026-07-06T01:39Z.
+
 # P12 Owner Approval Record
 
 ```text

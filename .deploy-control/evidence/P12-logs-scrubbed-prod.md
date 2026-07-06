@@ -1,3 +1,6 @@
+> [!CAUTION]
+> **INVALID** — This evidence was generated against fake-upstream-logging on localhost, NOT real providers on PROD. Marked invalid by owner review 2026-07-06T01:39Z.
+
 # P12 Task 12.6 — Logs Scrubbed Evidence
 
 > Timestamp: 2026-07-06T01:37Z

@@ -1,3 +1,6 @@
+> [!CAUTION]
+> **INVALID** — This evidence was generated against fake-upstream-logging on localhost, NOT real providers on PROD. Marked invalid by owner review 2026-07-06T01:39Z.
+
 # P12 — Rollback 1-Command LIVE Evidence
 
 > Date: 2026-07-06T01:35Z
