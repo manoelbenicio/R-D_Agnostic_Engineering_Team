@@ -166,7 +166,7 @@ func cursorProjectRoot(workDir string) string {
 	}
 	fallback := dir
 	for {
-		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+		if hasCursorGitMetadata(filepath.Join(dir, ".git")) {
 			return dir
 		}
 		parent := filepath.Dir(dir)
@@ -175,6 +175,27 @@ func cursorProjectRoot(workDir string) string {
 		}
 		dir = parent
 	}
+}
+
+func hasCursorGitMetadata(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	if info.IsDir() {
+		if _, err := os.Stat(filepath.Join(path, "HEAD")); err == nil {
+			return true
+		}
+		if _, err := os.Stat(filepath.Join(path, "config")); err == nil {
+			return true
+		}
+		return false
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	return strings.HasPrefix(strings.TrimSpace(string(data)), "gitdir:")
 }
 
 func cursorSlugifyPath(path string) string {

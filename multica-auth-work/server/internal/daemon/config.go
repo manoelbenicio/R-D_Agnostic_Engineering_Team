@@ -111,6 +111,33 @@ type Config struct {
 	// command_name on PATH. nil/empty means "always resolve via PATH".
 	ProfileCommandOverrides map[string]string
 	RotationDatabaseURL     string
+	Prodex                  ProdexConfig
+	L2Runtime               L2RuntimeConfig
+}
+
+// ProdexConfig gates the near-term F0 path where Multica launches the pinned
+// prodex binary in place of raw codex while Rust/prodex remains the L2 runtime
+// authority. It is deliberately launch/lifecycle metadata only; Go does not
+// use this to route in-flight requests.
+type ProdexConfig struct {
+	Enabled             bool
+	Path                string
+	Version             string
+	Commit              string
+	SmartContextShadow  bool
+	SmartContextCanary  string
+	KillSwitchDefaultOn bool
+}
+
+// L2RuntimeConfig enables the target rpp.l2.v1 sidecar mode. It is separate
+// from ProdexConfig so the F0 prodex-as-is launch path remains unchanged
+// unless the sidecar contract is explicitly enabled.
+type L2RuntimeConfig struct {
+	Enabled     bool
+	BaseURL     string
+	BearerToken string
+	Timeout     time.Duration
+	PolicyID    string
 }
 
 // Overrides allows CLI flags to override environment variables and defaults.
@@ -307,6 +334,18 @@ func LoadConfig(overrides Overrides) (Config, error) {
 			Path:  qoderPath,
 			Model: strings.TrimSpace(os.Getenv("MULTICA_QODER_MODEL")),
 		}
+	}
+
+	prodexCfg, prodexEntry, err := loadProdexLaunchConfig()
+	if err != nil {
+		return Config{}, err
+	}
+	if prodexCfg.Enabled {
+		agents["codex"] = prodexEntry
+	}
+	l2Cfg, err := loadL2RuntimeConfig()
+	if err != nil {
+		return Config{}, err
 	}
 	if len(agents) == 0 {
 		return Config{}, fmt.Errorf("no agent CLI found: install claude, codebuddy, codex, copilot, opencode, openclaw, hermes, gemini, pi, cursor-agent, kimi, kiro-cli, agy, or qodercli and ensure it is on PATH")
@@ -533,6 +572,8 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		CodebuddyArgs:                  codebuddyArgs,
 		ProfileCommandOverrides:        profileCommandOverrides,
 		RotationDatabaseURL:            strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		Prodex:                         prodexCfg,
+		L2Runtime:                      l2Cfg,
 	}, nil
 }
 

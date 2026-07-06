@@ -45,6 +45,10 @@ type Task struct {
 	RuntimeID   string `json:"runtime_id"`
 	IssueID     string `json:"issue_id"`
 	WorkspaceID string `json:"workspace_id"`
+	// RuntimeRouterOwner is persisted by the server when an external runtime
+	// owns in-flight routing for this task/session. rust_l2 means legacy Go
+	// rotation must not switch accounts or retry the task.
+	RuntimeRouterOwner string `json:"runtime_router_owner,omitempty"`
 	// WorkspaceContext mirrors workspace.context (the per-workspace system
 	// prompt set in Settings → General). Server populates this on every claim
 	// regardless of task kind so the daemon can inject `## Workspace Context`

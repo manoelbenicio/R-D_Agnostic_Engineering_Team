@@ -1,0 +1,72 @@
+{
+  "description": "Negative rpp.l2.v1 runtime event fixtures. Each event must fail schema validation.",
+  "invalid_events": [
+    {
+      "name": "session_started missing session_id",
+      "expected_failure": "session-scoped events require session_id",
+      "event": {
+        "contract_version": "rpp.l2.v1",
+        "event_id": "evt-invalid-session-start-0001",
+        "event_type": "session_started",
+        "occurred_at": "2026-07-05T02:42:22Z",
+        "severity": "info",
+        "producer": {
+          "plane": "rust_l2",
+          "component": "runtime_proxy"
+        },
+        "redaction": {
+          "secrets_present": false,
+          "scrubber_version": "rpp-redact-v1"
+        },
+        "tenant_id": "tenant-alpha"
+      }
+    },
+    {
+      "name": "unknown event_type",
+      "expected_failure": "event_type must be one of the rpp.l2.v1 enum values",
+      "event": {
+        "contract_version": "rpp.l2.v1",
+        "event_id": "evt-invalid-unknown-0001",
+        "event_type": "unknown_runtime_event",
+        "occurred_at": "2026-07-05T02:42:23Z",
+        "severity": "info",
+        "producer": {
+          "plane": "rust_l2",
+          "component": "event_stream"
+        },
+        "redaction": {
+          "secrets_present": false,
+          "scrubber_version": "rpp-redact-v1"
+        }
+      }
+    },
+    {
+      "name": "mcp_tool_call missing tool_call_id",
+      "expected_failure": "mcp_tool_call requires tool_call_id",
+      "event": {
+        "contract_version": "rpp.l2.v1",
+        "event_id": "evt-invalid-tool-call-0001",
+        "event_type": "mcp_tool_call",
+        "occurred_at": "2026-07-05T02:42:24Z",
+        "severity": "info",
+        "producer": {
+          "plane": "rust_l2",
+          "component": "runtime_proxy"
+        },
+        "redaction": {
+          "secrets_present": false,
+          "scrubber_version": "rpp-redact-v1"
+        },
+        "tenant_id": "tenant-alpha",
+        "session_id": "session-1",
+        "runtime_request_id": "rt-request-1",
+        "tool_name": "exec_command",
+        "continuation": {
+          "binding_type": "tool_call_id",
+          "binding_profile_id": "codex-main",
+          "previous_response_id_preserved": true
+        }
+      }
+    }
+  ]
+}

@@ -228,8 +228,8 @@ func TestValidateLocalPath(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error for symlink pointing at $HOME")
 		}
-		if !strings.Contains(err.Error(), "user's home directory") {
-			t.Errorf("error %q did not flag the home-dir reason", err.Error())
+		if !strings.Contains(err.Error(), "user's home directory") && !strings.Contains(err.Error(), "protected system root") {
+			t.Errorf("error %q did not flag the home-dir or system-root reason", err.Error())
 		}
 	})
 

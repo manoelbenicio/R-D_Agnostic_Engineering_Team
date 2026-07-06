@@ -1,0 +1,82 @@
+{
+  "description": "Positive rpp.l2.v1 runtime event fixtures.",
+  "valid_events": [
+    {
+      "name": "valid session_started with tenant and session",
+      "event": {
+        "contract_version": "rpp.l2.v1",
+        "event_id": "evt-session-start-0001",
+        "event_type": "session_started",
+        "occurred_at": "2026-07-05T02:42:19Z",
+        "severity": "info",
+        "producer": {
+          "plane": "rust_l2",
+          "component": "runtime_proxy",
+          "version": "0.246.0",
+          "commit": "7750da9b6a5c91a6d429e18e6a4d422cab4bc144"
+        },
+        "redaction": {
+          "secrets_present": false,
+          "scrubber_version": "rpp-redact-v1"
+        },
+        "tenant_id": "tenant-alpha",
+        "workspace_id": "workspace-1",
+        "task_id": "task-1",
+        "session_id": "session-1",
+        "runtime_session_id": "rt-session-1"
+      }
+    },
+    {
+      "name": "valid global sidecar_started without tenant_id",
+      "event": {
+        "contract_version": "rpp.l2.v1",
+        "event_id": "evt-sidecar-start-0001",
+        "event_type": "sidecar_started",
+        "occurred_at": "2026-07-05T02:42:20Z",
+        "severity": "info",
+        "producer": {
+          "plane": "rust_l2",
+          "component": "sidecar",
+          "version": "0.246.0",
+          "commit": "7750da9b6a5c91a6d429e18e6a4d422cab4bc144"
+        },
+        "redaction": {
+          "secrets_present": false,
+          "scrubber_version": "rpp-redact-v1"
+        },
+        "message": "sidecar started"
+      }
+    },
+    {
+      "name": "valid mcp_tool_call with continuation state",
+      "event": {
+        "contract_version": "rpp.l2.v1",
+        "event_id": "evt-tool-call-0001",
+        "event_type": "mcp_tool_call",
+        "occurred_at": "2026-07-05T02:42:21Z",
+        "severity": "info",
+        "producer": {
+          "plane": "rust_l2",
+          "component": "runtime_proxy",
+          "version": "0.246.0",
+          "commit": "7750da9b6a5c91a6d429e18e6a4d422cab4bc144"
+        },
+        "redaction": {
+          "secrets_present": false,
+          "scrubber_version": "rpp-redact-v1"
+        },
+        "tenant_id": "tenant-alpha",
+        "session_id": "session-1",
+        "runtime_session_id": "rt-session-1",
+        "runtime_request_id": "rt-request-1",
+        "tool_call_id": "tool-call-1",
+        "tool_name": "exec_command",
+        "continuation": {
+          "binding_type": "tool_call_id",
+          "binding_profile_id": "codex-main",
+          "previous_response_id_preserved": true
+        }
+      }
+    }
+  ]
+}

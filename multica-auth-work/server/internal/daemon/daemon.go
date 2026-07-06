@@ -232,6 +232,12 @@ type Daemon struct {
 	warningDetector   *rotation.WarningDetector
 	usageDetector     *rotation.UsageDetector
 	credentialMetrics *obsmetrics.CredentialMetrics
+
+	l2Client     l2RuntimeClient
+	l2InitErr    error
+	l2Sidecar    *l2Sidecar
+	l2SessionsMu sync.RWMutex
+	l2Sessions   map[string]runtimeRouterOwnerRecord
 }
 
 // New creates a new Daemon instance.
@@ -262,8 +268,10 @@ func New(cfg Config, logger *slog.Logger) *Daemon {
 		warningDetector:           rotation.NewWarningDetector(),
 		usageDetector:             rotation.NewUsageDetector(0),
 		credentialMetrics:         obsmetrics.NewCredentialMetrics(),
+		l2Sessions:                make(map[string]runtimeRouterOwnerRecord),
 	}
 	d.initRotationService()
+	d.initL2RuntimeClient()
 	d.runner = taskRunnerFunc(d.runTask)
 	d.runUpdateFn = d.runUpdate
 	return d
@@ -778,6 +786,11 @@ func (d *Daemon) Run(ctx context.Context) error {
 		return err
 	}
 
+	if err := d.startL2Runtime(ctx); err != nil {
+		return err
+	}
+	defer d.stopL2Runtime()
+
 	// Bind and serve the health port before the (potentially slow) preflight,
 	// so `daemon start` and the desktop see a live "starting" daemon instead
 	// of connection-refused while preflightAuth runs. preflightAuth's initial
@@ -850,11 +863,17 @@ func (d *Daemon) deregisterRuntimes() {
 
 // resolveAuth loads the auth token from the CLI config for the active profile.
 func (d *Daemon) resolveAuth() error {
+	// Fail closed on profile switches: a daemon/client reused across profiles
+	// must not keep an earlier profile's credential if the selected profile's
+	// config is missing, malformed, or unauthenticated.
+	d.client.SetToken("")
+
 	cfg, err := cli.LoadCLIConfigForProfile(d.cfg.Profile)
 	if err != nil {
 		return fmt.Errorf("load CLI config: %w", err)
 	}
-	if cfg.Token == "" {
+	token := strings.TrimSpace(cfg.Token)
+	if token == "" {
 		loginHint := "'multica login'"
 		if d.cfg.Profile != "" {
 			loginHint = fmt.Sprintf("'multica login --profile %s'", d.cfg.Profile)
@@ -862,9 +881,9 @@ func (d *Daemon) resolveAuth() error {
 		d.logger.Warn("not authenticated — run " + loginHint + " to authenticate, then restart the daemon")
 		return fmt.Errorf("not authenticated: run %s first", loginHint)
 	}
-	d.client.SetToken(cfg.Token)
+	d.client.SetToken(token)
 	d.logger.Info("authenticated")
-	d.logger.Debug("auth token loaded", "profile", d.cfg.Profile, "token_len", len(cfg.Token))
+	d.logger.Debug("auth token loaded", "profile", d.cfg.Profile, "token_len", len(token))
 	return nil
 }
 
@@ -3190,12 +3209,19 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 		instructions = task.Agent.Instructions
 	}
 	var rotationTriggered atomic.Bool
-	if next, ok := d.maybeProactiveRotateFromLedger(ctx, task, provider, taskLog, &rotationTriggered); ok {
-		task.PriorSessionID = ""
-		task.PriorWorkDir = ""
-		taskLog.Info("starting task after proactive account rotation",
-			"provider", provider,
-			"account_id", next.AccountID,
+	if !d.cfg.L2Runtime.Enabled {
+		if next, ok := d.maybeProactiveRotateFromLedger(ctx, task, provider, taskLog, &rotationTriggered); ok {
+			task.PriorSessionID = ""
+			task.PriorWorkDir = ""
+			taskLog.Info("starting task after proactive account rotation",
+				"provider", provider,
+				"account_id", next.AccountID,
+			)
+		}
+	} else if taskLog != nil {
+		taskLog.Debug("rotation: proactive ledger skipped before L2 session start",
+			"runtime_router_owner", runtimeRouterOwnerRustL2,
+			"rotation_noop_reason", rotationNoopReasonL2RouterOwn,
 		)
 	}
 
@@ -3261,7 +3287,10 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// LocalWorkDir into execenv. handleTask already validated + locked the
 	// path; this call is a pure JSON parse over the same task payload.
 	localAssignment, _ := findLocalDirectoryAssignment(task.ProjectResources, d.cfg.DaemonID)
-	credentialAccountHome := d.credentialAccountHomeForTask(ctx, task, provider, taskLog)
+	credentialAccountHome := ""
+	if !d.cfg.L2Runtime.Enabled {
+		credentialAccountHome = d.credentialAccountHomeForTask(ctx, task, provider, taskLog)
+	}
 	rotationRetried := false
 	startedTask := false
 runAttempt:
@@ -3324,6 +3353,24 @@ runAttempt:
 	if env.RootDir != predictedRoot && env.RootDir != "" {
 		d.markActiveEnvRoot(env.RootDir)
 		defer d.unmarkActiveEnvRoot(env.RootDir)
+	}
+
+	// Two-tier model resolution: an explicit agent.model wins,
+	// then the daemon-wide MULTICA_<PROVIDER>_MODEL env var. If
+	// both are empty we deliberately pass "" through — each
+	// backend omits `--model` from the CLI invocation, so the
+	// provider picks its own default (Claude Code's shipped
+	// default, codex app-server's account-scoped default, etc.).
+	model := ""
+	if task.Agent != nil && task.Agent.Model != "" {
+		model = task.Agent.Model
+	}
+	if model == "" {
+		model = entry.Model
+	}
+
+	if _, err := d.startL2SessionForTask(ctx, &task, provider, model, env.WorkDir, taskLog); err != nil {
+		return TaskResult{}, err
 	}
 
 	// Issue #3999 race A: now that env.WorkDir is on disk, transition the
@@ -3441,6 +3488,7 @@ runAttempt:
 	if env.CodexHome != "" {
 		agentEnv["CODEX_HOME"] = env.CodexHome
 	}
+	d.applyProdexEnv(provider, env.RootDir, agentEnv)
 	// Point Kiro (Amazon Q fork) at the per-account isolated data home so it
 	// reads that account's own kiro-cli/data.sqlite3 instead of the shared
 	// user store. Empty when no per-account credential was provided.
@@ -3518,22 +3566,6 @@ runAttempt:
 	if task.Agent != nil {
 		customArgs = task.Agent.CustomArgs
 		mcpConfig = task.Agent.McpConfig
-	}
-	// Two-tier model resolution: an explicit agent.model wins,
-	// then the daemon-wide MULTICA_<PROVIDER>_MODEL env var. If
-	// both are empty we deliberately pass "" through — each
-	// backend omits `--model` from the CLI invocation, so the
-	// provider picks its own default (Claude Code's shipped
-	// default, codex app-server's account-scoped default, etc.).
-	// Baking a Go-side "recommended default" here is how the
-	// cursor regression happened — static guesses drift from
-	// whatever the upstream CLI actually accepts.
-	model := ""
-	if task.Agent != nil && task.Agent.Model != "" {
-		model = task.Agent.Model
-	}
-	if model == "" {
-		model = entry.Model
 	}
 	thinkingLevel := ""
 	if task.Agent != nil {
@@ -3639,7 +3671,7 @@ runAttempt:
 		}
 	}
 
-	if !rotationRetried {
+	if !rotationRetried && d.legacyGoRotationAllowed(task, taskLog, "retry_after_rotation") {
 		if next, ok := d.rotateTaskOnExhaustion(ctx, task, provider, result, taskLog); ok {
 			credentialAccountHome = next.HomeDir
 			task.PriorSessionID = ""
@@ -3857,7 +3889,41 @@ func (d *Daemon) credentialAccountHomeForTask(ctx context.Context, task Task, pr
 	return account.HomeDir
 }
 
+func taskRuntimeRouterOwner(task Task) string {
+	return strings.ToLower(strings.TrimSpace(task.RuntimeRouterOwner))
+}
+
+var ErrL2Owned = errors.New("l2 runtime owns session routing")
+
+func (d *Daemon) legacyGoRotationBlockError(task Task) error {
+	if d.runtimeRouterOwnerForTask(task) == runtimeRouterOwnerRustL2 {
+		return ErrL2Owned
+	}
+	return nil
+}
+
+func (d *Daemon) legacyGoRotationAllowed(task Task, taskLog *slog.Logger, path string) bool {
+	err := d.legacyGoRotationBlockError(task)
+	if err == nil {
+		return true
+	}
+	owner := d.runtimeRouterOwnerForTask(task)
+	if taskLog != nil {
+		taskLog.Debug("rotation: legacy Go rotation suppressed for L2-owned session",
+			"task_id", task.ID,
+			"runtime_router_owner", owner,
+			"rotation_noop_reason", rotationNoopReasonL2RouterOwn,
+			"error", err,
+			"path", path,
+		)
+	}
+	return false
+}
+
 func (d *Daemon) maybeProactiveRotateFromLedger(ctx context.Context, task Task, provider string, taskLog *slog.Logger, rotationTriggered *atomic.Bool) (rotation.Account, bool) {
+	if !d.legacyGoRotationAllowed(task, taskLog, "proactive_ledger") {
+		return rotation.Account{}, false
+	}
 	if d.rotationService == nil || d.rotationStore == nil || task.AgentID == "" || task.WorkspaceID == "" || provider == "" {
 		return rotation.Account{}, false
 	}
@@ -3890,6 +3956,9 @@ func (d *Daemon) maybeProactiveRotateFromLedger(ctx context.Context, task Task, 
 }
 
 func (d *Daemon) maybeProactiveRotateOnText(ctx context.Context, task Task, provider, text string, taskLog *slog.Logger, rotationTriggered *atomic.Bool) (rotation.Account, bool) {
+	if !d.legacyGoRotationAllowed(task, taskLog, "proactive_text") {
+		return rotation.Account{}, false
+	}
 	if d.rotationService == nil || task.AgentID == "" || task.WorkspaceID == "" || provider == "" || strings.TrimSpace(text) == "" {
 		return rotation.Account{}, false
 	}
@@ -3929,6 +3998,9 @@ func (d *Daemon) rotateTaskProactively(ctx context.Context, task Task, provider,
 }
 
 func (d *Daemon) rotateTaskOnExhaustion(ctx context.Context, task Task, provider string, result agent.Result, taskLog *slog.Logger) (rotation.Account, bool) {
+	if !d.legacyGoRotationAllowed(task, taskLog, "reactive_exhaustion") {
+		return rotation.Account{}, false
+	}
 	if d.rotationService == nil || d.rotationDetector == nil || task.AgentID == "" || task.WorkspaceID == "" {
 		return rotation.Account{}, false
 	}
@@ -3945,6 +4017,9 @@ func (d *Daemon) rotateTaskOnExhaustion(ctx context.Context, task Task, provider
 }
 
 func (d *Daemon) rotateTaskWithReason(ctx context.Context, task Task, provider string, reason rotation.RotationReason, taskLog *slog.Logger) (rotation.Account, bool) {
+	if !d.legacyGoRotationAllowed(task, taskLog, string(reason)) {
+		return rotation.Account{}, false
+	}
 	if d.rotationService == nil || task.AgentID == "" || task.WorkspaceID == "" {
 		return rotation.Account{}, false
 	}
@@ -4540,6 +4615,9 @@ func composeOpenclawIncludeRoots(addRoot, userValue string) (string, bool) {
 func isBlockedEnvKey(key string) bool {
 	upper := strings.ToUpper(key)
 	if strings.HasPrefix(upper, "MULTICA_") {
+		return true
+	}
+	if strings.HasPrefix(upper, "PRODEX_") {
 		return true
 	}
 	switch upper {

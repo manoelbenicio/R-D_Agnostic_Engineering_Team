@@ -1,0 +1,374 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://multica.local/schemas/rpp/l2/v1/event.json",
+  "title": "rpp.l2.v1 Runtime Event",
+  "description": "Runtime events emitted by the Rust/prodex L2 runtime and ingested by Multica Go for observability and ledger only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "event_id",
+    "event_type",
+    "occurred_at",
+    "severity",
+    "producer",
+    "redaction"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "rpp.l2.v1"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "sidecar_started",
+        "session_started",
+        "session_stopped",
+        "route_decision",
+        "policy_applied",
+        "health_status",
+        "mcp_tool_call",
+        "mcp_tool_result",
+        "kill_switch_activated"
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["debug", "info", "warn", "error", "critical"]
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["plane", "component"],
+      "properties": {
+        "plane": {
+          "const": "rust_l2"
+        },
+        "component": {
+          "type": "string",
+          "enum": ["sidecar", "runtime_proxy", "gateway", "policy", "event_stream", "mcp"]
+        },
+        "version": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "commit": {
+          "type": "string",
+          "maxLength": 80
+        }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["secrets_present", "scrubber_version"],
+      "properties": {
+        "secrets_present": {
+          "const": false
+        },
+        "scrubber_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "runtime_session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "runtime_request_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "policy_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "route_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision_phase", "selected_profile_id", "selected_provider", "committed"],
+      "properties": {
+        "decision_phase": {
+          "const": "pre_commit"
+        },
+        "selected_profile_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "selected_provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "committed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "tool_call_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "tool_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "continuation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["binding_type", "binding_profile_id", "previous_response_id_preserved"],
+      "properties": {
+        "binding_type": {
+          "type": "string",
+          "enum": ["previous_response_id", "turn_state", "session_id", "tool_call_id"]
+        },
+        "binding_profile_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "previous_response_id_preserved": {
+          "type": "boolean"
+        }
+      }
+    },
+    "kill_switch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "feature", "enabled"],
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": ["global", "tenant", "provider", "profile", "session"]
+        },
+        "feature": {
+          "type": "string",
+          "enum": ["runtime_proxy", "gateway", "smart_context", "auto_redeem", "provider_bridge"]
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 512
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": [
+              "session_started",
+              "session_stopped",
+              "route_decision",
+              "mcp_tool_call",
+              "mcp_tool_result"
+            ]
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["tenant_id", "session_id"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "route_decision"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["runtime_request_id", "route_decision"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "mcp_tool_call"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["runtime_request_id", "tool_call_id", "tool_name", "continuation"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "mcp_tool_result"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["runtime_request_id", "tool_call_id", "continuation"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "kill_switch_activated"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["kill_switch"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "policy_applied"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["tenant_id", "policy_id"]
+      }
+    }
+  ],
+  "examples": [
+    {
+      "description": "Positive global event: tenant_id and session_id are intentionally absent.",
+      "value": {
+        "contract_version": "rpp.l2.v1",
+        "event_id": "evt_sidecar_0001",
+        "event_type": "sidecar_started",
+        "occurred_at": "2026-07-05T02:00:00Z",
+        "severity": "info",
+        "producer": {
+          "plane": "rust_l2",
+          "component": "sidecar",
+          "version": "0.246.0",
+          "commit": "7750da9b6a5c91a6d429e18e6a4d422cab4bc144"
+        },
+        "redaction": {
+          "secrets_present": false,
+          "scrubber_version": "rpp-redact-v1"
+        }
+      }
+    },
+    {
+      "description": "Positive session-scoped MCP tool call event.",
+      "value": {
+        "contract_version": "rpp.l2.v1",
+        "event_id": "evt_mcp_call_0001",
+        "event_type": "mcp_tool_call",
+        "occurred_at": "2026-07-05T02:01:00Z",
+        "severity": "info",
+        "producer": {
+          "plane": "rust_l2",
+          "component": "mcp"
+        },
+        "tenant_id": "tenant-alpha",
+        "session_id": "session-abc",
+        "runtime_session_id": "rt-session-abc",
+        "runtime_request_id": "rt-req-0001",
+        "provider": "codex",
+        "profile_id": "codex-main",
+        "tool_call_id": "tool-call-1",
+        "tool_name": "shell",
+        "continuation": {
+          "binding_type": "tool_call_id",
+          "binding_profile_id": "codex-main",
+          "previous_response_id_preserved": true
+        },
+        "redaction": {
+          "secrets_present": false,
+          "scrubber_version": "rpp-redact-v1"
+        }
+      }
+    },
+    {
+      "description": "Negative session-scoped event: invalid because tenant_id and session_id are missing.",
+      "value": {
+        "contract_version": "rpp.l2.v1",
+        "event_id": "evt_bad_route_0001",
+        "event_type": "route_decision",
+        "occurred_at": "2026-07-05T02:02:00Z",
+        "severity": "info",
+        "producer": {
+          "plane": "rust_l2",
+          "component": "runtime_proxy"
+        },
+        "runtime_request_id": "rt-req-0002",
+        "route_decision": {
+          "decision_phase": "pre_commit",
+          "selected_profile_id": "codex-main",
+          "selected_provider": "codex",
+          "reason": "fresh_request",
+          "committed": false
+        },
+        "redaction": {
+          "secrets_present": false,
+          "scrubber_version": "rpp-redact-v1"
+        }
+      }
+    }
+  ]
+}

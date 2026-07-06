@@ -19,8 +19,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/multica-ai/multica/server/internal/cli"
 	"github.com/multica-ai/multica/server/internal/daemon/execenv"
 	"github.com/multica-ai/multica/server/internal/daemon/repocache"
+	"github.com/multica-ai/multica/server/internal/l2runtime"
 	"github.com/multica-ai/multica/server/internal/rotation"
 	"github.com/multica-ai/multica/server/pkg/agent"
 )
@@ -186,6 +188,73 @@ func TestTaskScopedAuthToken(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Fatalf("taskScopedAuthToken() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResolveAuthProfileSwitchFailsClosedOnInvalidOrMissingAuth(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	if err := cli.SaveCLIConfigForProfile(cli.CLIConfig{Token: " mul_valid "}, "valid"); err != nil {
+		t.Fatalf("save valid profile config: %v", err)
+	}
+
+	d := &Daemon{
+		cfg:    Config{Profile: "valid"},
+		client: NewClient("http://127.0.0.1"),
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+	if err := d.resolveAuth(); err != nil {
+		t.Fatalf("resolve valid auth: %v", err)
+	}
+	if got := d.client.Token(); got != "mul_valid" {
+		t.Fatalf("client token after valid auth = %q, want trimmed valid token", got)
+	}
+
+	malformedPath, err := cli.CLIConfigPathForProfile("malformed")
+	if err != nil {
+		t.Fatalf("resolve malformed profile path: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(malformedPath), 0o755); err != nil {
+		t.Fatalf("create malformed profile dir: %v", err)
+	}
+	if err := os.WriteFile(malformedPath, []byte(`{"token":`), 0o600); err != nil {
+		t.Fatalf("write malformed profile config: %v", err)
+	}
+
+	tests := []struct {
+		name       string
+		profile    string
+		wantErrSub string
+	}{
+		{
+			name:       "missing profile config",
+			profile:    "missing-auth",
+			wantErrSub: "not authenticated",
+		},
+		{
+			name:       "malformed profile config",
+			profile:    "malformed",
+			wantErrSub: "load CLI config",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d.client.SetToken("mul_previous_profile")
+			d.cfg.Profile = tt.profile
+
+			err := d.resolveAuth()
+			if err == nil {
+				t.Fatal("resolveAuth() error = nil, want failure for invalid new profile auth")
+			}
+			if !strings.Contains(err.Error(), tt.wantErrSub) {
+				t.Fatalf("resolveAuth() error = %q, want substring %q", err.Error(), tt.wantErrSub)
+			}
+			if got := d.client.Token(); got != "" {
+				t.Fatalf("client token after failed profile switch = %q, want empty fail-closed token", got)
 			}
 		})
 	}
@@ -994,6 +1063,104 @@ func (b textMessageBackend) Execute(_ context.Context, _ string, _ agent.ExecOpt
 	return &agent.Session{Messages: msgCh, Result: resCh}, nil
 }
 
+type daemonFakeL2RuntimeClient struct {
+	mu        sync.Mutex
+	healthErr error
+	readyErr  error
+	startErr  error
+	response  l2runtime.StartSessionResponse
+	policyN   int
+	accountsN int
+	stopN     int
+	killN     int
+	healthN   int
+	readyN    int
+	startN    int
+	lastStart l2runtime.StartSessionRequest
+}
+
+func (c *daemonFakeL2RuntimeClient) Health(context.Context) (*l2runtime.HealthResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.healthN++
+	if c.healthErr != nil {
+		return nil, c.healthErr
+	}
+	return &l2runtime.HealthResponse{
+		ContractVersion: l2runtime.ContractVersion,
+		Status:          "alive",
+		Sidecar:         l2runtime.SidecarBuild{Name: "prodex"},
+	}, nil
+}
+
+func (c *daemonFakeL2RuntimeClient) Ready(context.Context) (*l2runtime.ReadyResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.readyN++
+	if c.readyErr != nil {
+		return nil, c.readyErr
+	}
+	return &l2runtime.ReadyResponse{ContractVersion: l2runtime.ContractVersion, Status: "ready"}, nil
+}
+
+func (c *daemonFakeL2RuntimeClient) ApplyPolicy(context.Context, l2runtime.Policy) (*l2runtime.ApplyPolicyResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.policyN++
+	return &l2runtime.ApplyPolicyResponse{ContractVersion: l2runtime.ContractVersion, Applied: true}, nil
+}
+
+func (c *daemonFakeL2RuntimeClient) RegisterAccounts(context.Context, l2runtime.AccountRegistration) (*l2runtime.RegisterAccountsResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.accountsN++
+	return &l2runtime.RegisterAccountsResponse{ContractVersion: l2runtime.ContractVersion}, nil
+}
+
+func (c *daemonFakeL2RuntimeClient) StartSession(_ context.Context, req l2runtime.StartSessionRequest) (*l2runtime.StartSessionResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.startN++
+	c.lastStart = req
+	if c.startErr != nil {
+		return nil, c.startErr
+	}
+	resp := c.response
+	if resp.ContractVersion == "" {
+		resp.ContractVersion = l2runtime.ContractVersion
+	}
+	if resp.RouterOwner == "" {
+		resp.RouterOwner = runtimeRouterOwnerRustL2
+	}
+	return &resp, nil
+}
+
+func (c *daemonFakeL2RuntimeClient) StopSession(context.Context, l2runtime.StopSessionRequest) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.stopN++
+	return nil
+}
+
+func (c *daemonFakeL2RuntimeClient) ApplyKillSwitch(context.Context, l2runtime.KillSwitch) (*l2runtime.KillSwitchResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.killN++
+	return &l2runtime.KillSwitchResponse{ContractVersion: l2runtime.ContractVersion, Applied: true, EffectiveAt: "next_request"}, nil
+}
+
+func (c *daemonFakeL2RuntimeClient) counts() (int, int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.readyN, c.startN
+}
+
+func (c *daemonFakeL2RuntimeClient) startRequest() l2runtime.StartSessionRequest {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.lastStart
+}
+
 type daemonRotationCall struct {
 	agentID  string
 	vendor   string
@@ -1265,6 +1432,345 @@ func TestProactiveRotationRepeatedBannerIsIdempotent(t *testing.T) {
 
 	if got := svc.callCount(); got != 1 {
 		t.Fatalf("rotation calls = %d, want 1", got)
+	}
+}
+
+func TestStartL2SessionPersistsRouterOwnerBeforeExecution(t *testing.T) {
+	t.Parallel()
+
+	d := newTestDaemon(t)
+	d.cfg.L2Runtime = L2RuntimeConfig{Enabled: true, PolicyID: "policy-test"}
+	d.l2Client = &daemonFakeL2RuntimeClient{
+		response: l2runtime.StartSessionResponse{
+			RuntimeSessionID: "rt-session-1",
+			RouterOwner:      runtimeRouterOwnerRustL2,
+			EventStreamURL:   "http://127.0.0.1:43117/v1/events/stream?session_id=task-l2",
+			RuntimeEndpoint:  "http://127.0.0.1:43117/v1/runtime/task-l2",
+			RuntimeLogRef:    "runtime-log-1",
+		},
+	}
+	task := Task{
+		ID:             "task-l2",
+		WorkspaceID:    "tenant-1",
+		RuntimeID:      "runtime-1",
+		AgentID:        "agent-1",
+		PriorSessionID: "prior-session",
+		PriorWorkDir:   "/tmp/prior-workdir",
+	}
+
+	rec, err := d.startL2SessionForTask(context.Background(), &task, "codex", "gpt-5", "/tmp/workdir", slog.Default())
+	if err != nil {
+		t.Fatalf("startL2SessionForTask: %v", err)
+	}
+	if rec.RuntimeRouterOwner != runtimeRouterOwnerRustL2 || task.RuntimeRouterOwner != runtimeRouterOwnerRustL2 {
+		t.Fatalf("router owner rec=%q task=%q, want %q", rec.RuntimeRouterOwner, task.RuntimeRouterOwner, runtimeRouterOwnerRustL2)
+	}
+	if got := d.runtimeRouterOwnerForTask(Task{ID: "task-l2"}); got != runtimeRouterOwnerRustL2 {
+		t.Fatalf("persisted runtime_router_owner = %q, want %q", got, runtimeRouterOwnerRustL2)
+	}
+	if got := d.legacyGoRotationNoopReason(Task{ID: "task-l2"}); got != rotationNoopReasonL2RouterOwn {
+		t.Fatalf("rotation noop reason = %q, want %q", got, rotationNoopReasonL2RouterOwn)
+	}
+
+	fake := d.l2Client.(*daemonFakeL2RuntimeClient)
+	if readyN, startN := fake.counts(); readyN != 1 || startN != 1 {
+		t.Fatalf("l2 calls ready=%d start=%d, want 1/1", readyN, startN)
+	}
+	req := fake.startRequest()
+	if req.SessionID != "task-l2" || req.TaskID != "task-l2" || req.WorkspaceID != "tenant-1" || req.TenantID != "tenant-1" {
+		t.Fatalf("unexpected start request ids: %+v", req)
+	}
+	if req.PolicyID != "policy-test" || req.RequestedProvider != "codex" || req.RequestedModel != "gpt-5" || req.WorkingDirectory != "/tmp/workdir" {
+		t.Fatalf("unexpected start request routing fields: %+v", req)
+	}
+	if len(req.ProfilePool) != 1 || req.ProfilePool[0] != "runtime-1" {
+		t.Fatalf("profile pool = %#v, want runtime id", req.ProfilePool)
+	}
+	if req.Continuation["previous_response_id"] != "prior-session" || req.Continuation["session_binding_hint"] != "/tmp/prior-workdir" {
+		t.Fatalf("continuation = %#v", req.Continuation)
+	}
+}
+
+func TestStartL2SessionReadinessFailureFailsClosed(t *testing.T) {
+	t.Parallel()
+
+	d := newTestDaemon(t)
+	d.cfg.L2Runtime = L2RuntimeConfig{Enabled: true}
+	fake := &daemonFakeL2RuntimeClient{readyErr: errors.New("not ready")}
+	d.l2Client = fake
+	task := Task{ID: "task-l2", WorkspaceID: "tenant-1"}
+
+	if _, err := d.startL2SessionForTask(context.Background(), &task, "codex", "", "/tmp/workdir", slog.Default()); err == nil {
+		t.Fatal("startL2SessionForTask error = nil, want readiness failure")
+	}
+	if readyN, startN := fake.counts(); readyN != 1 || startN != 0 {
+		t.Fatalf("l2 calls ready=%d start=%d, want 1/0", readyN, startN)
+	}
+	if got := d.runtimeRouterOwnerForTask(task); got != "" {
+		t.Fatalf("runtime_router_owner = %q, want empty after readiness failure", got)
+	}
+}
+
+func TestStartL2SessionPersistenceFailureFailsClosed(t *testing.T) {
+	t.Parallel()
+
+	d := newTestDaemon(t)
+	d.cfg.L2Runtime = L2RuntimeConfig{Enabled: true}
+	d.l2Client = &daemonFakeL2RuntimeClient{
+		response: l2runtime.StartSessionResponse{
+			RouterOwner: runtimeRouterOwnerRustL2,
+		},
+	}
+	task := Task{ID: "task-l2", WorkspaceID: "tenant-1"}
+
+	if _, err := d.startL2SessionForTask(context.Background(), &task, "codex", "", "/tmp/workdir", slog.Default()); err == nil {
+		t.Fatal("startL2SessionForTask error = nil, want persistence failure for missing runtime_session_id")
+	}
+	if got := d.runtimeRouterOwnerForTask(task); got != "" {
+		t.Fatalf("runtime_router_owner = %q, want empty after persistence failure", got)
+	}
+	if task.RuntimeRouterOwner != "" {
+		t.Fatalf("task.RuntimeRouterOwner = %q, want empty after persistence failure", task.RuntimeRouterOwner)
+	}
+}
+
+func TestF0NoRouterOwnerAllowsLegacyGoRotation(t *testing.T) {
+	t.Parallel()
+
+	d := newTestDaemon(t)
+	if !d.legacyGoRotationAllowed(Task{ID: "task-1"}, slog.Default(), "f0") {
+		t.Fatal("legacy Go rotation should remain allowed when no runtime router owner is recorded")
+	}
+}
+
+func TestL2OwnedTaskSuppressesLegacyGoRotationPaths(t *testing.T) {
+	t.Parallel()
+
+	windowStart := time.Now().Add(-time.Hour)
+	d := newTestDaemon(t)
+	svc := &daemonFakeRotationService{}
+	d.rotationService = svc
+	d.rotationStore = &daemonFakeRotationStore{
+		currentAccountID: "current",
+		account: rotation.Account{
+			AccountID:    "current",
+			Vendor:       "codex",
+			TokensUsed:   95,
+			TokensPerWin: 100,
+			WindowStart:  &windowStart,
+		},
+	}
+	d.warningDetector = rotation.NewWarningDetector()
+	d.usageDetector = rotation.NewUsageDetector(0)
+	d.rotationDetector = rotation.NewExhaustionDetector()
+	task := Task{
+		ID:                 "task-1",
+		AgentID:            "agent-1",
+		WorkspaceID:        "tenant-1",
+		RuntimeRouterOwner: "rust_l2",
+	}
+	var rotationTriggered atomic.Bool
+
+	if _, ok := d.maybeProactiveRotateFromLedger(context.Background(), task, "codex", slog.Default(), &rotationTriggered); ok {
+		t.Fatal("maybeProactiveRotateFromLedger ok = true, want false for rust_l2-owned task")
+	}
+	if _, ok := d.maybeProactiveRotateOnText(context.Background(), task, "codex", "Heads up, you have less than 10% of your 5h limit left. Run /status for details.", slog.Default(), &rotationTriggered); ok {
+		t.Fatal("maybeProactiveRotateOnText ok = true, want false for rust_l2-owned task")
+	}
+	if _, ok := d.rotateTaskOnExhaustion(context.Background(), task, "codex", agent.Result{
+		Status: "failed",
+		Error:  "You've hit your usage limit. Try again at 7pm.",
+	}, slog.Default()); ok {
+		t.Fatal("rotateTaskOnExhaustion ok = true, want false for rust_l2-owned task")
+	}
+	if _, ok := d.rotateTaskWithReason(context.Background(), task, "codex", rotation.ReasonQuotaReactive, slog.Default()); ok {
+		t.Fatal("rotateTaskWithReason ok = true, want false for rust_l2-owned task")
+	}
+
+	if got := svc.callCount(); got != 0 {
+		t.Fatalf("legacy Go rotation calls = %d, want 0 for rust_l2-owned task", got)
+	}
+	if rotationTriggered.Load() {
+		t.Fatal("rotationTriggered = true, want false for rust_l2-owned task")
+	}
+}
+
+func TestExactOneRouterForL2OwnedSessionHasZeroGoRotations(t *testing.T) {
+	t.Parallel()
+
+	windowStart := time.Now().Add(-time.Hour)
+	d := newTestDaemon(t)
+	d.cfg.L2Runtime = L2RuntimeConfig{Enabled: true, PolicyID: "policy-test"}
+	d.l2Client = &daemonFakeL2RuntimeClient{
+		response: l2runtime.StartSessionResponse{
+			RuntimeSessionID: "runtime-session-1",
+			RouterOwner:      runtimeRouterOwnerRustL2,
+			EventStreamURL:   "http://127.0.0.1:43117/v1/events/stream?session_id=task-l2",
+			RuntimeEndpoint:  "http://127.0.0.1:43117/v1/runtime/task-l2",
+			RuntimeLogRef:    "runtime-log-1",
+		},
+	}
+	svc := &daemonFakeRotationService{}
+	d.rotationService = svc
+	d.rotationStore = &daemonFakeRotationStore{
+		currentAccountID: "current",
+		account: rotation.Account{
+			AccountID:    "current",
+			Vendor:       "codex",
+			TokensUsed:   99,
+			TokensPerWin: 100,
+			WindowStart:  &windowStart,
+		},
+	}
+	d.warningDetector = rotation.NewWarningDetector()
+	d.usageDetector = rotation.NewUsageDetector(0)
+	d.rotationDetector = rotation.NewExhaustionDetector()
+	task := Task{
+		ID:          "task-l2",
+		AgentID:     "agent-1",
+		WorkspaceID: "tenant-1",
+		RuntimeID:   "profile-1",
+	}
+
+	rec, err := d.startL2SessionForTask(context.Background(), &task, "codex", "gpt-5", "/tmp/workdir", slog.Default())
+	if err != nil {
+		t.Fatalf("startL2SessionForTask: %v", err)
+	}
+	if rec.RuntimeRouterOwner != runtimeRouterOwnerRustL2 || d.runtimeRouterOwnerForTask(task) != runtimeRouterOwnerRustL2 {
+		t.Fatalf("runtime router owner not persisted as %q: rec=%+v", runtimeRouterOwnerRustL2, rec)
+	}
+	event := l2runtime.RuntimeEvent{
+		ContractVersion:  l2runtime.ContractVersion,
+		EventID:          "event-0001",
+		EventType:        "selection",
+		OccurredAt:       time.Now(),
+		Severity:         "info",
+		TenantID:         "tenant-1",
+		SessionID:        "task-l2",
+		RuntimeSessionID: "runtime-session-1",
+		RuntimeRequestID: "runtime-request-1",
+		ProfileID:        "profile-1",
+		Provider:         "codex",
+		Redaction: l2runtime.EventRedaction{
+			SecretsPresent:  false,
+			ScrubberVersion: "test",
+		},
+	}
+	if err := d.ingestL2RuntimeEvent(context.Background(), event, slog.Default()); err != nil {
+		t.Fatalf("ingestL2RuntimeEvent: %v", err)
+	}
+
+	var rotationTriggered atomic.Bool
+	if _, ok := d.maybeProactiveRotateFromLedger(context.Background(), task, "codex", slog.Default(), &rotationTriggered); ok {
+		t.Fatal("maybeProactiveRotateFromLedger ok = true, want false for exact-one-router L2 session")
+	}
+	if _, ok := d.maybeProactiveRotateOnText(context.Background(), task, "codex", "less than 10% of your 5h limit left", slog.Default(), &rotationTriggered); ok {
+		t.Fatal("maybeProactiveRotateOnText ok = true, want false for exact-one-router L2 session")
+	}
+	if _, ok := d.rotateTaskOnExhaustion(context.Background(), task, "codex", agent.Result{Status: "failed", Error: "usage limit reached"}, slog.Default()); ok {
+		t.Fatal("rotateTaskOnExhaustion ok = true, want false for exact-one-router L2 session")
+	}
+	if _, ok := d.rotateTaskWithReason(context.Background(), task, "codex", rotation.ReasonQuotaReactive, slog.Default()); ok {
+		t.Fatal("rotateTaskWithReason ok = true, want false for exact-one-router L2 session")
+	}
+	if got := svc.callCount(); got != 0 {
+		t.Fatalf("Go legacy router invocation count for session_id=%s = %d, want 0", task.ID, got)
+	}
+	if rotationTriggered.Load() {
+		t.Fatal("rotationTriggered = true, want false for exact-one-router L2 session")
+	}
+}
+
+func TestL2StartSessionRouterOwnerReturnsErrL2OwnedForGoRotationPath(t *testing.T) {
+	t.Parallel()
+
+	d := newTestDaemon(t)
+	d.cfg.L2Runtime = L2RuntimeConfig{Enabled: true, PolicyID: "policy-test"}
+	d.l2Client = &daemonFakeL2RuntimeClient{
+		response: l2runtime.StartSessionResponse{
+			RuntimeSessionID: "runtime-session-err-l2-owned",
+			RouterOwner:      runtimeRouterOwnerRustL2,
+			EventStreamURL:   "http://127.0.0.1:43117/v1/events/stream?session_id=task-l2-owned",
+			RuntimeEndpoint:  "http://127.0.0.1:43117/v1/runtime/task-l2-owned",
+			RuntimeLogRef:    "runtime-log-l2-owned",
+		},
+	}
+	svc := &daemonFakeRotationService{
+		account: rotation.Account{AccountID: "should-not-rotate", Vendor: "codex", HomeDir: "/tmp/should-not-rotate"},
+	}
+	d.rotationService = svc
+	task := Task{
+		ID:          "task-l2-owned",
+		AgentID:     "agent-1",
+		WorkspaceID: "tenant-1",
+		RuntimeID:   "profile-1",
+	}
+
+	rec, err := d.startL2SessionForTask(context.Background(), &task, "codex", "gpt-5", "/tmp/workdir", slog.Default())
+	if err != nil {
+		t.Fatalf("startL2SessionForTask: %v", err)
+	}
+	if rec.RuntimeRouterOwner != runtimeRouterOwnerRustL2 || task.RuntimeRouterOwner != runtimeRouterOwnerRustL2 {
+		t.Fatalf("runtime router owner rec=%q task=%q, want %q", rec.RuntimeRouterOwner, task.RuntimeRouterOwner, runtimeRouterOwnerRustL2)
+	}
+	if err := d.legacyGoRotationBlockError(task); !errors.Is(err, ErrL2Owned) {
+		t.Fatalf("legacyGoRotationBlockError = %v, want ErrL2Owned", err)
+	}
+	if account, ok := d.rotateTaskWithReason(context.Background(), task, "codex", rotation.ReasonQuotaReactive, slog.Default()); ok || account.AccountID != "" {
+		t.Fatalf("rotateTaskWithReason account=%+v ok=%v, want blocked by ErrL2Owned", account, ok)
+	}
+	if got := svc.callCount(); got != 0 {
+		t.Fatalf("legacy Go rotation service calls = %d, want 0 for ErrL2Owned", got)
+	}
+}
+
+func TestEventIngestNonRoutingDoesNotTriggerGoRotation(t *testing.T) {
+	t.Parallel()
+
+	d := newTestDaemon(t)
+	svc := &daemonFakeRotationService{}
+	d.rotationService = svc
+	if err := d.persistRuntimeRouterOwner(runtimeRouterOwnerRecord{
+		SessionID:                   "task-l2",
+		RuntimeSessionID:            "runtime-session-1",
+		RuntimeRouterOwner:          runtimeRouterOwnerRustL2,
+		RuntimeRouterOwnerSource:    runtimeRouterOwnerSourceL2,
+		RuntimeRouterOwnerStartedAt: time.Now(),
+		EventStreamURL:              "http://127.0.0.1:43117/v1/events/stream?session_id=task-l2",
+		RuntimeEndpoint:             "http://127.0.0.1:43117/v1/runtime/task-l2",
+		RuntimeLogRef:               "runtime-log-1",
+	}); err != nil {
+		t.Fatalf("persistRuntimeRouterOwner: %v", err)
+	}
+
+	event := l2runtime.RuntimeEvent{
+		ContractVersion:  l2runtime.ContractVersion,
+		EventID:          "event-0001",
+		EventType:        "quota_snapshot",
+		OccurredAt:       time.Now(),
+		Severity:         "critical",
+		TenantID:         "tenant-1",
+		SessionID:        "task-l2",
+		RuntimeSessionID: "runtime-session-1",
+		ProfileID:        "profile-1",
+		Redaction: l2runtime.EventRedaction{
+			SecretsPresent:  false,
+			ScrubberVersion: "test",
+		},
+	}
+	if err := d.ingestL2RuntimeEvent(context.Background(), event, slog.Default()); err != nil {
+		t.Fatalf("ingestL2RuntimeEvent: %v", err)
+	}
+
+	if got := svc.callCount(); got != 0 {
+		t.Fatalf("legacy Go rotation calls = %d, want 0 for runtime event ingest", got)
+	}
+	task := Task{ID: "task-l2", AgentID: "agent-1", WorkspaceID: "tenant-1"}
+	if got := d.runtimeRouterOwnerForTask(task); got != runtimeRouterOwnerRustL2 {
+		t.Fatalf("runtime_router_owner = %q, want unchanged %q", got, runtimeRouterOwnerRustL2)
+	}
+	if got := d.legacyGoRotationNoopReason(task); got != rotationNoopReasonL2RouterOwn {
+		t.Fatalf("rotation noop reason = %q, want %q", got, rotationNoopReasonL2RouterOwn)
 	}
 }
 

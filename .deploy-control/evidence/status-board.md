@@ -1,6 +1,33 @@
 # Status Board
 
-Status: PRE-DEPLOY INITIAL
+Status: P6/P7 LOCAL GATES GREEN
+
+## Gate Classifications
+- **GREEN (empirical/local evidence):** F1, F2, F3, F5, F6, F7-local, F7-docs, F8, F9-plan, G1, G2, G5, G7, G8, G9, G10-container/local.
+- **DEFERRED/GATED:** F9 empirical reset-claim real-account validation.
+- **PROD SCOPE NOTE:** provider-backed PROD session evidence remains separate from the local `rpp.l2.v1` sidecar gate.
+
+*NOTE: Codex-D validated P6/P7 against the local `prodex-sidecar`; see `p6-p7-final-gates-20260705T062826Z.md`.*
+
+## Active Check-ins (stream/owner/status/blocker)
+
+| Stream | Owner | Status | Blocker |
+|---|---|---|---|
+| F1 Go<->L2 contract | Codex#5.5#A | DONE | None |
+| F2 prodex fork map | Codex#5.5#B | DONE | None |
+| F3 Go integration skeleton | Codex#5.5#C | DONE | StartSession/one-router VALIDATED GREEN (1 env test failure); wiring in progress |
+| F4 State/security | GLM#52#B | WORKING | None |
+| F5 Vendor capability matrix | Gemini#Pro | DONE | 8 not_validated cells (req. owner accept) |
+| F6 QA/conformance | GLM#52#A | STARTING | None |
+| F7 DevOps/PROD runbook | Codex#5.5#D | DONE | Owner approval missing |
+| F8 Ops triage | Gemini#Flash35 | WORKING | None |
+| F9 Reset-claim | Codex#5.5#B/GLM#52#A | DEFERRED/GATED | planning DONE; gated on real account state |
+
+## Standing Rules & Audits
+
+- **STANDING RULE:** Hotspot files `daemon.go`/`config.go`/`execenv.go` require explicit lock lines.
+- **AUDIT:** Ownership audit DONE (NO collisions). Codex#5.5#C files_locked STALE (C amending). Minor outliers: prodex-l2-facade.md (Codex#B), owner-acceptance-request.md (Gemini#Pro) created outside locks but self-attributed.
+- **ROSTER ACK:** 9/10 signed; GLM#52#A signing now.
 
 ## Current Verdict
 
@@ -19,13 +46,14 @@ notes:
 
 ## Open Items
 
-- F1 contract acceptance.
+- [DONE] Rust L2 facade doc.
 - F4 state/security acceptance.
 - F7 deploy runbook acceptance.
 - F6 conformance plan acceptance.
 - Kill switch smoke.
-- Redaction smoke.
+- [DONE] Redaction audit (PASS).
 - Sidecar readiness smoke.
+- [O1] (hygiene) .env.production is git-tracked despite .gitignore rule **/.env.production.
 
 
 ---

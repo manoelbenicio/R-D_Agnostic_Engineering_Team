@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://multica.local/schemas/rpp/l2/runtime-events.schema.json",
   "title": "Rotation Parity Runtime Event",
+  "description": "Runtime event stream emitted by Rust/prodex L2 and ingested by Multica Go L4 for observability and ledger only. Events must not contain secrets, bearer tokens, OAuth material, API keys, cookies, raw prompts, raw tool outputs, or full provider request/response bodies.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,40 +11,8 @@
     "event_type",
     "occurred_at",
     "severity",
+    "producer",
     "redaction"
-  ],
-  "allOf": [
-    {
-      "$comment": "tenant_id/session_id são exigidos apenas em eventos de sessão; eventos globais (sidecar_started, sidecar_ready, policy_applied, kill_switch_applied, error) não os têm. Correção do over-constraint (Opus 4.8, 2026-07-04).",
-      "if": {
-        "properties": {
-          "event_type": {
-            "enum": [
-              "session_started",
-              "session_stopped",
-              "route_selected",
-              "affinity_bound",
-              "fallback_attempted",
-              "fallback_succeeded",
-              "fallback_failed",
-              "smart_context_shadow",
-              "smart_context_rewrite",
-              "smart_context_fallback_exact",
-              "redeem_attempted",
-              "redeem_succeeded",
-              "redeem_no_credit",
-              "redeem_rejected",
-              "quota_snapshot",
-              "gateway_request",
-              "gateway_response"
-            ]
-          }
-        }
-      },
-      "then": {
-        "required": ["tenant_id", "session_id"]
-      }
-    }
   ],
   "properties": {
     "contract_version": {
@@ -51,7 +20,8 @@
     },
     "event_id": {
       "type": "string",
-      "minLength": 8
+      "minLength": 8,
+      "maxLength": 128
     },
     "event_type": {
       "type": "string",
@@ -62,22 +32,17 @@
         "account_registered",
         "session_started",
         "session_stopped",
-        "route_selected",
-        "affinity_bound",
-        "fallback_attempted",
-        "fallback_succeeded",
-        "fallback_failed",
-        "smart_context_shadow",
-        "smart_context_rewrite",
-        "smart_context_fallback_exact",
-        "redeem_attempted",
-        "redeem_succeeded",
-        "redeem_no_credit",
-        "redeem_rejected",
+        "selection",
+        "affinity",
+        "fallback",
+        "redeem_attempt",
+        "redeem_result",
+        "rewrite_decision",
+        "spend_savings",
+        "guardrail",
         "quota_snapshot",
         "gateway_request",
         "gateway_response",
-        "guardrail_block",
         "kill_switch_applied",
         "error"
       ]
@@ -86,91 +51,532 @@
       "type": "string",
       "format": "date-time"
     },
+    "severity": {
+      "type": "string",
+      "enum": ["debug", "info", "warn", "error", "critical"]
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["plane", "component"],
+      "properties": {
+        "plane": {
+          "const": "rust_l2"
+        },
+        "component": {
+          "type": "string",
+          "enum": ["sidecar", "runtime_proxy", "gateway", "smart_context", "redeem", "policy", "event_stream"]
+        },
+        "version": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "commit": {
+          "type": "string",
+          "maxLength": 80
+        }
+      }
+    },
     "tenant_id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 128
     },
     "workspace_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "task_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "session_id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 128
     },
     "runtime_session_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "runtime_request_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "policy_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "provider": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
     },
     "profile_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
     "model": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
     },
-    "route": {
+    "message": {
+      "type": "string",
+      "maxLength": 512
+    },
+    "selection": {
       "type": "object",
       "additionalProperties": false,
+      "required": ["decision_phase", "selected_profile_id", "selected_provider", "reason", "committed"],
       "properties": {
-        "strategy": { "type": "string" },
-        "selected_profile_id": { "type": "string" },
-        "selected_provider": { "type": "string" },
-        "reason": { "type": "string" },
-        "committed": { "type": "boolean" },
-        "continuation_bound": { "type": "boolean" }
+        "decision_phase": {
+          "type": "string",
+          "enum": ["pre_commit"]
+        },
+        "strategy": {
+          "type": "string",
+          "enum": ["policy_pool", "quota_aware", "provider_bridge", "gateway_route", "manual_profile", "not_applicable"]
+        },
+        "selected_profile_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "selected_provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "fresh_request",
+            "policy_preferred",
+            "quota_available",
+            "provider_requested",
+            "manual_profile_requested",
+            "fallback_recovery",
+            "not_applicable"
+          ]
+        },
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "committed": {
+          "type": "boolean"
+        }
       }
     },
-    "smart_context": {
+    "affinity": {
       "type": "object",
       "additionalProperties": false,
+      "required": ["binding_type", "binding_profile_id", "binding_source", "overrode_fresh_selection"],
       "properties": {
-        "mode": {
+        "binding_type": {
           "type": "string",
-          "enum": ["disabled", "shadow", "canary", "live", "exact"]
+          "enum": ["previous_response_id", "turn_state", "session_id"]
         },
-        "tokens_before": { "type": "integer", "minimum": 0 },
-        "tokens_after": { "type": "integer", "minimum": 0 },
-        "rewrite_ratio_percent": { "type": "number" },
-        "fallback_exact": { "type": "boolean" },
-        "validation_result": { "type": "string" }
+        "binding_profile_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "binding_provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "binding_source": {
+          "type": "string",
+          "enum": ["runtime_state", "session_start", "provider_metadata"]
+        },
+        "overrode_fresh_selection": {
+          "const": true
+        }
+      }
+    },
+    "fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "result", "from_profile_id", "reason", "committed"],
+      "properties": {
+        "phase": {
+          "type": "string",
+          "enum": ["pre_commit"]
+        },
+        "result": {
+          "type": "string",
+          "enum": ["attempted", "succeeded", "failed", "blocked"]
+        },
+        "from_profile_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "to_profile_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "quota_exhausted",
+            "rate_limited",
+            "profile_unhealthy",
+            "transport_precommit_failure",
+            "provider_capability_rejected",
+            "kill_switch",
+            "fallback_budget_exhausted"
+          ]
+        },
+        "attempt_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "committed": {
+          "const": false
+        }
       }
     },
     "redeem": {
       "type": "object",
       "additionalProperties": false,
+      "required": ["action", "profile_id", "guard_state", "result"],
       "properties": {
-        "attempted": { "type": "boolean" },
+        "action": {
+          "type": "string",
+          "enum": ["attempt", "result"]
+        },
+        "profile_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "guard_state": {
+          "type": "string",
+          "enum": [
+            "weekly_exhausted_no_other_profile",
+            "cooldown_active",
+            "reset_imminent",
+            "profile_not_exhausted",
+            "other_profile_eligible",
+            "provider_unsupported",
+            "not_applicable"
+          ]
+        },
         "result": {
           "type": "string",
-          "enum": ["success", "no_credit", "rejected", "not_applicable", "error"]
+          "enum": ["attempted", "succeeded", "no_credit", "rejected", "blocked", "error", "not_applicable"]
         },
-        "guard_reason": { "type": "string" }
+        "cooldown_seconds_remaining": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        }
       }
     },
-    "severity": {
-      "type": "string",
-      "enum": ["debug", "info", "warn", "error", "critical"]
+    "rewrite_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "decision", "fallback_exact", "validation_result"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["disabled", "shadow", "canary", "live", "exact"]
+        },
+        "decision": {
+          "type": "string",
+          "enum": ["pass_through", "shadow_only", "rewrite", "segment_rollback", "exact_fallback", "blocked"]
+        },
+        "fallback_exact": {
+          "type": "boolean"
+        },
+        "validation_result": {
+          "type": "string",
+          "enum": ["passed", "failed_protocol", "failed_continuation", "failed_tool_integrity", "failed_json_integrity", "failed_mandatory_reference", "not_applicable"]
+        },
+        "rollout_mode": {
+          "type": "string",
+          "enum": ["shadow", "canary_in", "canary_out", "live", "exact", "disabled"]
+        },
+        "rollout_canary_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "transformed_segment_categories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["protocol_exact", "continuation_exact", "critical_exact", "rehydratable_exact", "lossless_transformable", "condensable", "droppable_duplicate"]
+          }
+        }
+      }
     },
-    "message": {
-      "type": "string"
+    "spend_savings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "estimated_input_tokens_before": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimated_input_tokens_after": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimated_input_tokens_saved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rewrite_ratio_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "body_bytes_before": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "body_bytes_after": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "body_bytes_saved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimator_confidence": {
+          "type": "string",
+          "enum": ["high", "medium", "low", "unknown"]
+        },
+        "pressure_band": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical", "unknown"]
+        }
+      }
+    },
+    "guardrail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["guardrail_type", "action"],
+      "properties": {
+        "guardrail_type": {
+          "type": "string",
+          "enum": ["kill_switch", "redaction", "profile_isolation", "provider_capability", "smart_context_integrity", "redeem_guard", "state_backend", "single_router"]
+        },
+        "action": {
+          "type": "string",
+          "enum": ["allowed", "blocked", "degraded", "fallback_exact", "fail_closed"]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "effective_at": {
+          "type": "string",
+          "enum": ["immediate", "next_request", "session_restart_required", "not_applicable"]
+        }
+      }
+    },
+    "quota_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "type": "string",
+          "enum": ["available", "thin", "critical", "weekly_exhausted", "rate_limited", "unknown"]
+        },
+        "source": {
+          "type": "string",
+          "enum": ["codex_usage", "vendor_balance", "rate_limit_headers", "custom_probe", "cli_native_store", "none"]
+        },
+        "is_account_quota": {
+          "type": "boolean"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "safe_detail": {
+          "type": "string",
+          "maxLength": 512
+        }
+      }
+    },
+    "payload_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional scrubbed reference to an external ledger row or hash. Do not include raw payload content.",
+      "properties": {
+        "ledger_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
     },
     "redaction": {
       "type": "object",
       "additionalProperties": false,
       "required": ["secrets_present", "scrubber_version"],
       "properties": {
-        "secrets_present": { "const": false },
-        "scrubber_version": { "type": "string" },
+        "secrets_present": {
+          "const": false
+        },
+        "scrubber_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
         "fields_scrubbed": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string",
+            "maxLength": 128
+          }
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": [
+              "session_started",
+              "session_stopped",
+              "selection",
+              "affinity",
+              "fallback",
+              "redeem_attempt",
+              "redeem_result",
+              "rewrite_decision",
+              "spend_savings",
+              "guardrail",
+              "quota_snapshot",
+              "gateway_request",
+              "gateway_response"
+            ]
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["tenant_id", "session_id"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "selection" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["runtime_request_id", "selection"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "affinity" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["runtime_request_id", "affinity"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "fallback" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["runtime_request_id", "fallback"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": ["redeem_attempt", "redeem_result"]
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["tenant_id", "profile_id", "redeem"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "rewrite_decision" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["runtime_request_id", "rewrite_decision"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "spend_savings" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["runtime_request_id", "spend_savings"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "guardrail" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["guardrail"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "quota_snapshot" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["profile_id", "quota_snapshot"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "error" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "required": ["error"]
+      }
+    }
+  ]
 }
-
