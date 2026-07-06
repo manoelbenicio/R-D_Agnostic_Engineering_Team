@@ -1,89 +1,39 @@
-# PROJECT — Multica (Rotation-Parity Polyglot)
+# PROJECT — Rotation-Parity Polyglot (RPP)
 
-> Documento de fundação do projeto. Criado no milestone v2.0 (GSD new-milestone, 2026-07-04).
-> Fonte de verdade para escopo, arquitetura, decisões e estado verificado.
+author: Kiro/Principal (Opus 4.8)
+current_milestone: v2.1 (Vendor Validation + PROD Deploy)
 
-## 1. O que é
+## What this project is
+A polyglot LLM runtime (prodex L2 sidecar + gateway) that provides real Smart Context compaction on the
+real traffic path: `/v1/session/start` (returns runtime_endpoint) → `/v1/runtime/proxy` (real compaction).
+Compaction lives in the prodex Rust crates (tokensavior/clawcompactor/sqz/context/compact-output), NOT the
+OpenAI-compat gateway.
 
-Plataforma multi-vendor de rotação de contas para AI-CLIs (Codex, Kiro, Antigravity, Cline, OpenCode).
-Arquitetura **polyglot** (ADR-001):
+## The 4 real vendors (what our agents actually run on)
+| Vendor | Backing models / agent |
+|:--|:--|
+| OpenAI | Codex |
+| Antigravity | Opus 4.6 / Gemini 3.5 Flash / Gemini 3.1 PRO |
+| OpenCode | GLM 5.2 (IN ACTIVE USE — not archived) |
+| Kiro | Opus 4.8 |
 
-```
-  L4  Multica (Go)  — CONTROL PLANE (frio)     |   L2  prodex (Rust) — RUNTIME PLANE (quente)
-  cadastro, policy, approved-accounts,          |   request em voo: afinidade, fallback,
-  budgets, kill-switch, observability           |   Smart Context/token-saver, reset-claim
-```
+## Non-negotiables (owner)
+1. No scope reduction without owner sign-off. OpenSpec-agreed scope is the requirement.
+2. Kiro personally authors ALL GSD/planning docs on disk. Agents never author planning artifacts.
+3. Every task an agent runs MUST be a task-ID in a PLAN.md on disk, with a Golden-Rule check-in.
+4. All evidence MUST satisfy EVIDENCE_CONTRACT.md. Fabrication = rejected + INVALID + escalate.
+5. GSD planning always written to disk (never held in memory).
 
-- **Agora:** Multica Go orquestra o **prodex AS-IS** (pinado v0.246.0 / commit `7750da9b`), direto em PROD.
-- **Alvo (marco futuro):** endurecer via **fork** do prodex (Rust L2 sidecar) com contrato local estrito.
+## Roles
+- Kiro/Principal: owns/authors GSD docs; drives TL; independently verifies against disk/git; never trusts "DONE".
+- TL (w3:pW, Claude Opus 4.6): orchestrates the fleet; validates evidence; executes/coordinates.
+- Codex agents (w3:pJ/pK/p9/pM): write product code + run tasks. Only one owner per hotspot.
 
-## 2. Estado REAL verificado (2026-07-04, via inspeção das repos)
+## Source of truth
+Canonical repo: manoelneto-laptop:/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team
+(remote R-D_Agnostic_Engineering_Team.git). Orchestration host repo is SECONDARY.
 
-| Item | Estado | Evidência |
-|---|---|---|
-| Multica server (Go) | ✅ presente, `module github.com/multica-ai/multica/server`, Go 1.26.1 | repo `multica-auth-work`, HEAD 52cdd87, 91 uncommitted |
-| Integração Go↔prodex | ✅ código existe | `server/internal/daemon/prodex.go` + `_test.go`, `internal/l2runtime/` |
-| Isolamento por conta (produto) | ✅ intacto no fonte | `execenv/` (codex_home/antigravity_home/kiro_home), CODEX_HOME por tarefa + copia auth.json por conta |
-| prodex SOURCE | ✅ clonado no commit certo | `/tmp/prodex-audit-7750da9` (7750da9b), workspace Cargo `name=prodex` |
-| prodex BINÁRIO | ❌ **não buildado** | `target/release` ausente; Rust/cargo ausente |
-| Postgres / Redis | ✅ rodando (docker) | `deploy-postgres-1` pg17 healthy :5432 · `deploy-redis-1` :6379 |
-| docker | ✅ v29.6.0 | builds/QA via container |
-| Go/Rust/Node nativo | ⚠️ fora do PATH | builds via docker |
-| Contrato de launch | ⚙️ via env | `MULTICA_PRODEX_ENABLED/PATH/VERSION/COMMIT`, `PRODEX_HOME`, kill-switch default ON |
-
-## 3. Milestone atual — v2.1 "Full Vendor Validation + PROD Deploy"
-
-**Goal:** Validar COMPORTAMENTALMENTE todas as capabilities `not_validated` da matrix (Smart Context, rotation, reset_claim por vendor) pelo runtime real /v1/runtime/proxy, e deployar em PROD com sessão real provider-backed. F5=VALIDAR, F7=DEPLOY AUTORIZADO pelo dono.
-
-**Milestone anterior:** v2.0 "Fundação + Deploy Correto" — COMPLETE (commit `6ba9a70`, 78/78 tasks, Smart Context REAL tokens_saved=4139/16476/65827, D2 ALL PASS, readyz-falsification PASS).
-
-**Fases:**
-- **V1 — Validação Real das Capabilities:** Rodar cada vendor (Codex, Kiro, Antigravity, Cline) pelo runtime /v1/runtime/proxy e provar empiricamente Smart Context tokens_saved>0, rotation, reset_claim. OpenCode: ARQUIVADO → migrar p/ Crush ou documentar superseded.
-- **V2 — Deploy PROD + Teste Live:** Executar prod-rollout-runbook, subir em PROD, sessão REAL provider-backed, kill-switch + rollback LIVE, logs scrubbed.
-
-
-**Por que este milestone existe:** o plano anterior assumia o binário prodex instalado ("instalação verificada") sem tarefa de provisioná-lo, não registrava tasks rastreáveis, e tinha nós circulares (gates F0-gated). Este milestone corrige a fundação.
-
-## 4. Decisões travadas (ADR-001 + sessão)
-1. prodex **AS-IS** em PROD agora; fork/polyglot no próximo marco.
-2. **Um roteador por sessão** (Go desired-state; Rust runtime).
-3. **Postgres** para estado compartilhado (SQLite proibido).
-4. Vendors: Codex/Kiro/Antigravity/Cline/OpenCode; **Kimchi fora**. (OpenCode a reavaliar — arquivado, sucessor Crush.)
-5. Reset-claim = **baixa prioridade**, por último (eficácia empírica não verificada).
-6. **Sem staging dedicado** — deploy direto em PROD, mitigado por kill-switch + rollback **testados** + QA exaustivo em container ANTES.
-7. **Isolamento de conta é do prodex/produto** — não construir tooling paralelo (FLM descartado).
-
-## 5. Invariantes inegociáveis
-- Roteador único por sessão; hard affinity (`previous_response_id`/turn/session); **rotate-before-commit** (nunca mid-stream).
-- Troca de perfil **fail-closed**. Smart Context com **fallback exato** quando integridade estrutural é afetada.
-- **Sem segredo** em log/trace/evidência. Postgres (sem SQLite compartilhado); migrations reversíveis.
-- Verde **em container** com evidência antes de DONE (não confiar no tail). QA **nunca** bypassado.
-
-## 6. Riscos abertos
-- Eficácia real de reset-claim e Smart Context sob carga PROD (validar empírico + evidência scrubbed).
-- prodex bus-factor 1; drift do Codex upstream.
-- Deploy direto sem staging → depende de kill-switch/rollback provados.
-
-## 7. Agentes e Orquestração (8 agentes + 1 TL)
-
-**Modelo:** 8 agentes independentes + 1 Tech Lead (TL) que é a interface ÚNICA.
-**Config:** mode=yolo, profile=quality, complexity=avançado(médio).
-**Comunicação:** Exclusivamente via **Herdr panel** (unix socket).
-
-| Papel | Agente | Fases |
-|-------|--------|-------|
-| **Tech Lead (TL)** | `opus-4.8-orchestrator` | TODAS — orquestra, valida, ensina, escala |
-| Executor 1 | `Codex#5.5#A` | P1 (Contrato L2) |
-| Executor 2 | `Codex#5.5#B` | P2 (Fork-map), P9 (Reset-claim) |
-| Executor 3 | `Codex#5.5#C` | P0 (Fundação), P3 (Integração) — **dono exclusivo do daemon** |
-| Executor 4 | `Codex#5.5#D` | P7 (Deploy/DevOps) |
-| Executor 5 | `GLM#52#A` | P6 (QA/Conformance) |
-| Executor 6 | `GLM#52#B` | P4 (State/Security) |
-| Executor 7 | `Gemini#PRO#31` | P5 (Vendor Matrix) |
-| Executor 8 | `Gemini#Flash35` | P8 (Ops/Evidence) |
-
-**Paralelismo:** 5 waves (serial → 5x paralelo → serial hotspot → QA → 2x paralelo → meta).
-**Ganho estimado:** ~46% redução vs execução serial (~27h vs ~50h).
-**Propriedade de arquivo:** disjunta (sem colisão). Hotspot `daemon.go` = dono único (Codex#5.5#C).
-**Protocolo completo:** `.planning/ORCHESTRATION.md`
-**Prompt do TL:** `.planning/TECH_LEAD_PROMPT.md`
+## Artifacts index (.planning/)
+PROJECT.md · STATE.md · ROADMAP.md · EVIDENCE_CONTRACT.md · MILESTONE_v2.1.md
+phases/11-vendor-validation/{SPEC,PLAN}.md
+phases/12-prod-deploy/{SPEC,RESEARCH,PLAN,PREREQUISITES}.md

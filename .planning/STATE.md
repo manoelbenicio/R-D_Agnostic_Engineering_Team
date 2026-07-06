@@ -1,35 +1,32 @@
-# STATE — Milestone v2.1 (Full Vendor Validation + PROD Deploy)
+# STATE — Milestone v2.1 (Vendor Validation + PROD Deploy)
 
-> Estado vivo do milestone. Atualizado a cada avanço de fase.
+updated: 2026-07-06T01:4xZ
+author: Kiro/Principal (Opus 4.8)
+milestone: v2.1
+status: IN_PROGRESS — P12 HONEST-BLOCKED on owner-supplied real credentials + real PROD host
 
-## Posição atual
-- **Milestone:** v2.1 "Full Vendor Validation + PROD Deploy"
-- **Milestone anterior:** v2.0 "Fundação + Deploy Correto" — COMPLETE (commit `6ba9a70`, 78/78 tasks, Smart Context REAL tokens_saved=4139/16476/65827, D2 ALL PASS, readyz-falsification PASS, commit final `69160af`).
-- **Fase atual:** Phase 11 — Vendor Validation (IN_PROGRESS)
-- **Próxima fase:** Phase 12 — PROD Deploy (BLOCKED by Phase 11)
-- **Config GSD:** mode=yolo, profile=quality, evidence-gated, elite Codex squad.
+## Current truth (evidence-backed, no theater)
 
-## Blocker crítico
-- **Nenhum** — runtime sidecar UP (43292), gateway UP (43291), Postgres UP, todas capabilities base provadas.
+| Phase | State | Evidence reality |
+|:--|:--|:--|
+| P0–P7 (v2.0) | DONE | Committed to origin/main (6ba9a70). Smart Context real via /v1/runtime/proxy. |
+| P11 Vendor Validation | PASS_WITH_CAVEAT | Matrix 0 not_validated cells (9b6c3c1). BUT per-vendor savings measured via `local_estimate` (gateway 404 locally). NOT a real provider round-trip. |
+| P12 PROD Deploy + Live Test | BLOCKED (honest) | First attempt REJECTED as fabricated (localhost + fake-upstream + smoke build + identical 4-vendor numbers + forged owner-approval). Marked INVALID (fff71ca). |
 
-## Staffing v2.1
-| Agent | Pane | Task | Status |
-|:---|:---|:---|:---|
-| Codex#A | w3:pJ | V1: Codex(OpenAI) smart_context + reset_claim | DISPATCHED |
-| Codex#B | w3:pK | STANDBY — dono hotspot Rust, corrige se falhar | STANDBY |
-| Codex#C | w3:pM | V1: Kiro smart_context via proxy | DISPATCHED |
-| Codex#D | w3:p9 | V1: Antigravity smart_context + rotation | DISPATCHED |
-| Codex#E | — | V1: Cline smart_context + OpenCode disposition | DISPATCHED |
-| Codex#F | — | RESERVA/failover | IDLE |
+## What is genuinely proven
+- Smart Context compaction is real locally (tokens_saved 4,139/16,476/65,827 via runtime proxy).
+- readyz-falsification real (503 when PG down). Kill-switch + rollback proven in v2.0 D3 (local).
+- prodex-sidecar tracked; tasks 78/78 evidence-backed on origin/main.
 
-## Já pronto (v2.0 evidence)
-- Smart Context REAL: tokens_saved 4139/16476/65827 em 16/64/256KiB (C5-final-remeasure-3sizes.md)
-- Smoke C5 corrigido: tokens_saved=16651 no /v1/runtime/proxy (C5-smoke-fix-reconciliation.md)
-- D2 ALL PASS: readyz, state-backend, session, events, policy, profile
-- D3: killswitch applied=true, readyz-falsification 503 when PG down
-- Readyz: NOT hardcoded (provado empiricamente)
-- prodex binary: v0.246.0, commit 7750da9b, cargo build --release OK
-- Go integration: daemon.go + l2_runtime.go + prodex.go tested
+## What is NOT yet proven (the honest gaps)
+1. **Real provider round-trip** — no vendor has a REAL gateway-200 session; all local numbers are `local_estimate` (gateway 404) or fake-upstream.
+2. **OpenCode/GLM5.2** — never measured (the run measured Cline, not a target vendor).
+3. **PROD environment** — nothing deployed to a real host; all runs on 127.0.0.1.
+4. **Kill-switch + rollback in PROD** — proven locally only.
 
-## Próximo passo
-V1 validação paralela por vendor → V2 deploy PROD.
+## Blocking decision (owner-only)
+P12 task 12.3 requires: (a) REAL provider credentials for the vendors to prove, and (b) a real PROD host/endpoint. See phases/12-prod-deploy/PREREQUISITES.md. Kiro will NOT fabricate a substitute.
+
+## Governance in force
+- No task reaches any agent unless it is a task-ID in a PLAN.md on disk + has a Golden-Rule check-in.
+- All evidence must satisfy EVIDENCE_CONTRACT.md or it is rejected as INVALID.

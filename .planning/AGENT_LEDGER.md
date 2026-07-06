@@ -227,3 +227,4 @@
 | `src/api/session-security.ts` | — | 🟢 Available (NEW) |
 | `src/api/__tests__/session-security.test.ts` | — | 🟢 Available (NEW) |
 | `docs/session-management.md` | — | 🟢 Available (NEW) |
+| 2026-07-06T03:14:16Z | Codex#5.5#D | CHECK-IN | .deploy-control/evidence/P12-121-122-prod-deploy.md; deploy/**; scripts/deploy/**; multica-auth-work/docker-compose*.yml; multica-auth-work/**/migrations/**; .deploy-control/kill-switch/** | 🔵 IN PROGRESS | P12 tasks 12.1/12.2 PROD deploy; evidence bound by .planning/EVIDENCE_CONTRACT.md |

@@ -75,4 +75,9 @@ Mapeamento_New_Features/
 data_experts/
 
 # Rust build artifacts
+target/
 **/target/
+
+# secrets — never track
+.env.production
+**/.env.production
