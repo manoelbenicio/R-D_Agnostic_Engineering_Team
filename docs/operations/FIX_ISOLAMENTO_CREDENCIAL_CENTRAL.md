@@ -60,4 +60,4 @@ Persistência **PostgreSQL**. **Copiar** credencial (nunca symlink). **FAIL-CLOS
 2. Rotação automática ao esgotar a conta ativa.
 3. **Fail-closed provado**: sem atribuição → NÃO usa credencial compartilhada.
 4. Nenhum segredo em log.
-5. `runtime_isolation_test.go` verde.
+5. ESTENDER e passar o `runtime_isolation_test.go` para cobrir os 6 vendors (hoje NAO cobre todos).
