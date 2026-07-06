@@ -45,8 +45,8 @@ Fonte de verdade a portar (Fase 1 isolamento + Fase 2 rotação).
 |---|---|---|
 | `multica-auth-work/server/internal/daemon/execenv/codex_home.go` | 2026-07-06 13:07:25 | ponto cirúrgico: copy-vs-symlink do `auth.json` (fallback symlink = furo) |
 | `multica-auth-work/server/internal/daemon/daemon.go` | 2026-07-06 13:07:25 | injeção de env por task (`CODEX_HOME`/`XDG_DATA_HOME`/`HOME`/`PRODEX_HOME`) + `credentialAccountHomeForTask` (rotationStore Postgres) |
-| `multica-auth-work/server/migrations/123_rotation.up.sql` | 2026-07-06 13:07:38 | tabelas `rotation_accounts/credentials/assignments/events` (Postgres) |
-| `multica-auth-work/server/internal/daemon/runtime_isolation_test.go` | 2026-07-06 13:07:26 | teste de isolamento (gate) |
+| `multica-auth-work/server/migrations/123_rotation.up.sql` | 2026-07-06 13:07:38 | tabelas `accounts, credentials, assignments, rotation_events` (Postgres) |
+| `multica-auth-work/server/internal/daemon/runtime_isolation_test.go` | 2026-07-06 13:07:26 | teste de isolamento existente (NAO cobre/gate os 6 vendors ainda — precisa ser estendido) |
 | `docs/project/01-as-is.md` | 2026-07-06 13:06:40 | problema (auth.json global symlinkado) |
 | `docs/project/02-to-be.md` | 2026-07-06 13:06:40 | solução desenhada (env nativo por conta, copy) |
 | `.planning/RCA-2026-05-31-001.md` | 2026-07-06 13:06:33 | RCA (⚠️ é sobre falhas de API do CAO — **não** sobre isolamento de credencial) |
