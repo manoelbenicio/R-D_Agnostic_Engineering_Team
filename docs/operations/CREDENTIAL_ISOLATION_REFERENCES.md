@@ -2,6 +2,10 @@
 
 > Índice documentado de TODAS as referências da solução (isolamento + rotação de credencial).
 > Compilado por: Kiro/Principal · Gerado em: **2026-07-06 ~15:39 (UTC‑3)**.
+>
+> **ESCOPO (decisão do dono, 2026-07-06):** a correção cobre **TODOS os vendors em UMA única entrega** —
+> **Codex, Kiro, Antigravity, GLM, Cline e OpenCode**. **NÃO** há "Fase 3" nem deferimento: o framing de
+> fases do `design.md` (Fase 3 = Kimchi/OpenCode/Cline) fica **SUPERSEDED**. Tudo resolvido de uma vez.
 > Nota de timestamp: `mtime` = data de modificação do arquivo no host (fleet `manoelneto-laptop`).
 > Os arquivos do RD com mtime `2026-07-06 13:06–13:07` refletem **checkout/clone recente**, não a data de autoria;
 > para a autoria/histórico, use as **datas de commit** na seção 4.
@@ -60,14 +64,18 @@ Repo: `R-D_Agnostic_Engineering_Team`
 | `612aea4` | **não encontrado** | citado no relatório P0 como origem do `CREDENTIAL_ISOLATION.md`; **não existe neste repo** (era de outro checkout) |
 
 ## 5. Cobertura por vendor (verificada no `_vendor_env`/detector do AOP em 2026-07-06)
-| Vendor | Isolamento env | Detecção rotação |
-|---|---|---|
-| Codex | ✅ `CODEX_HOME` | ✅ |
-| Kiro | ⚠️ mapeia `KIRO_HOME` mas binário honra `XDG_DATA_HOME` | ❌ |
-| Antigravity | ⚠️ só `HOME` genérico | ✅ |
-| GLM | ❌ `{}` | ✅ |
-| Cline | ❌ `{}` | ❌ |
-| OpenCode | ❌ `{}` | ❌ |
+> **Coluna "A fazer" = nesta MESMA entrega (não em fase futura).**
+
+| Vendor | Isolamento env (hoje) | Detecção rotação (hoje) | A fazer (nesta entrega) |
+|---|---|---|---|
+| Codex | ✅ `CODEX_HOME` | ✅ | manter + fail-closed |
+| Kiro | ⚠️ mapeia `KIRO_HOME` (binário honra `XDG_DATA_HOME`) | ❌ | corrigir p/ `XDG_DATA_HOME` + add detector |
+| Antigravity | ⚠️ só `HOME` genérico | ✅ | entrada própria (`HOME`→`~/.gemini/antigravity-cli`) |
+| GLM | ❌ `{}` | ✅ | entrada própria de env |
+| Cline | ❌ `{}` | ❌ | entrada própria (data-dir) + detector |
+| OpenCode | ❌ `{}` | ❌ | entrada própria + detector |
+
+**Todos os 6 acima entram na mesma entrega. Sem Fase 3, sem adiar.**
 
 ## 6. Observações de integridade (honestas)
 - `mtime` do RD ≈ checkout recente (2026-07-06 13:0x); autoria real → seção 4 (commits).
