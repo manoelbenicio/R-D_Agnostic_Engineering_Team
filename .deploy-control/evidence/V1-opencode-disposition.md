@@ -1,49 +1,34 @@
-# V1.4 OpenCode disposition evidence
+# V1 — OpenCode Disposition (CORRECTED)
 
-- timestamp_utc: 2026-07-06T00:50:03Z
-- milestone: v2.1
-- phase: V1
-- task: V1.4 OpenCode disposition
-- disposition: `ARCHIVED / superseded by Crush`
-- secrets_present: false
+> Date: 2026-07-06T01:29Z
+> Corrected by: Owner directive (vendor-agent-mapping.md)
 
-## Check-in before
+## Previous Disposition (WRONG)
 
-- `CHECKIN_OUT.md` received a CHECK-IN entry before this documentation update.
-- `prodex-sidecar/` was not edited.
+OpenCode was marked ARCHIVED/superseded by Crush per ADR-001 decision 4.
+All not_validated cells were marked not_applicable.
 
-## Matrix update
+## Corrected Disposition
 
-Updated:
+**OpenCode is IN ACTIVE USE** in our fleet (GLM 5.2 agents). The upstream repo
+(github.com/opencode-ai/opencode) was archived by the original maintainer, but
+our team actively uses OpenCode to run GLM 5.2 models.
 
-```text
-/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/docs/vendors/vendor-capability-matrix.md
-```
+**Owner-confirmed:** `docs/vendors/vendor-agent-mapping.md`
 
-Documented OpenCode as:
+## Smart Context Validation (REAL)
 
-```text
-ARCHIVED / superseded by Crush; do not use OpenCode for new capability work.
-Future work should target Crush.
-```
+| Metric | Value |
+|:---|:---|
+| gateway_status | **200** |
+| tokens_saved | **4,109** |
+| measurement_source | **gateway_usage** (NOT local_estimate) |
+| input_tokens_before_estimate | 4,117 |
+| input_tokens_after_observed_or_estimate | 8 |
 
-The compact summary table now marks OpenCode launch disposition as:
+Evidence: `.deploy-control/evidence/V1-remeasurement-gateway-200.md`
 
-```text
-archived/superseded_by_crush
-```
+## Verdict
 
-## Source basis
-
-The matrix already cited the OpenCode repository README statement that the project is archived/moved, and now also points to the successor repository:
-
-```text
-https://github.com/charmbracelet/crush
-```
-
-## Conclusion
-
-- OpenCode is retained only as a legacy/historical matrix row.
-- OpenCode V1 adapter/capability work is superseded.
-- New capability planning should use Crush instead of OpenCode.
-- No `prodex-sidecar/` files were edited.
+OpenCode/GLM5.2 **VERIFIED** — Smart Context compaction works via prodex gateway
+with real round-trip measurement (gateway_usage, gateway_status=200).

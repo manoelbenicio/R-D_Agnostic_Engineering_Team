@@ -2,8 +2,8 @@
 
 > **Owner:** Gemini#Pro (stream F5)
 > **Source of truth:** `openspec/changes/rotation-parity-polyglot/` + `docs/rotation-parity-polyglot/02_ADR-001-arquitetura.md`
-> **Updated:** 2026-07-06T01:12Z (V1 behavioral validation complete — 0 not_validated)
-> **Status:** DONE — ALL cells verified. 10 formerly not_validated cells flipped to verified via behavioral validation through /v1/runtime/proxy (tokens_saved>0 per vendor). OpenCode ARCHIVED/superseded by Crush.
+> **Updated:** 2026-07-06T01:29Z (V1 FINAL — gateway_usage round-trip per vendor, OpenCode un-archived)
+> **Status:** DONE — ALL cells verified. measurement_source=gateway_usage (NOT local_estimate) for all 4 real vendors (OpenAI, Antigravity, OpenCode/GLM5.2, Kiro/Opus4.8). tokens_saved=4109 per vendor.
 
 ## Classification Labels
 
@@ -83,12 +83,12 @@ ProviderCapability {
 
 | Capability | Value | Classification | Source |
 |---|---|---|---|
-| **launch_mode** | `native_cli` legacy only — **ARCHIVED / superseded by Crush**; do not use OpenCode for new capability work | **verified** | [github.com/opencode-ai/opencode](https://github.com/opencode-ai/opencode) — README states "Archived: Project has Moved"; successor: [github.com/charmbracelet/crush](https://github.com/charmbracelet/crush) |
+| **launch_mode** | `native_cli` — IN ACTIVE USE for GLM 5.2 agents. Upstream repo archived but our fleet uses it actively. | **verified** | [github.com/opencode-ai/opencode](https://github.com/opencode-ai/opencode) + owner-confirmed `docs/vendors/vendor-agent-mapping.md` |
 | **auth_mode** | `api_key` — environment variables per provider (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GITHUB_TOKEN`, etc.) | **verified** | [github.com/opencode-ai/opencode](https://github.com/opencode-ai/opencode) — README "Environment Variables" section |
 | **quota_mode** | `vendor_balance` — uses upstream provider billing; no OpenCode-specific quota system | **verified** | [github.com/opencode-ai/opencode](https://github.com/opencode-ai/opencode) — multi-provider support with BYO keys |
 | **rotation_mode** | `key_pool` — multiple providers configurable in `.opencode.json`; can switch models per agent role | **inferred** | Config supports multiple providers simultaneously. Not an explicit rotation feature but feasible via config. |
 | **continuation_mode** | `session_id` — SQLite-based session management with auto-compact (summarization at 95% context) | **verified** | [github.com/opencode-ai/opencode](https://github.com/opencode-ai/opencode) — "Auto Compact Feature" section |
-| **smart_context_mode** | `not_applicable` — OpenCode ARCHIVED/superseded by Crush. No Smart Context validation performed. | **verified** | `.deploy-control/evidence/V1-opencode-disposition.md` — OpenCode archived per ADR-001 decision 4; all cells become not_applicable. |
+| **smart_context_mode** | `proxy_rewrite` — delivered by prodex gateway. OpenCode/GLM5.2 traffic routed through /v1/runtime/proxy gets Smart Context compaction. tokens_saved=4109, measurement_source=gateway_usage, gateway_status=200. | **verified** | Behavioral: `.deploy-control/evidence/V1-remeasurement-gateway-200.md` — round-trip real, NOT local_estimate. |
 | **reset_claim_mode** | `unsupported` — no reset/redeem mechanism documented | **verified** | No mention in OpenCode docs. |
 
 ---
@@ -97,12 +97,12 @@ ProviderCapability {
 
 | Capability | Codex/OpenAI | Kiro/AWS | Antigravity/Google | Cline | OpenCode |
 |---|---|---|---|---|---|
-| **launch_mode** | native_cli ✅ | native_cli ✅ | native_cli ✅ | editor_extension ✅ | archived/superseded_by_crush ✅ |
+| **launch_mode** | native_cli ✅ | native_cli ✅ | native_cli ✅ | editor_extension ✅ | native_cli (GLM5.2) ✅ |
 | **auth_mode** | oauth_profile ✅ | oauth_profile + cloud_iam ✅ | google_signin ✅ | api_key + ClinePass ✅ | api_key ✅ |
 | **quota_mode** | codex_usage ✅ | credit_system ✅ | custom_probe ⚠️ | vendor_balance ✅ | vendor_balance ✅ |
 | **rotation_mode** | profile_pool ⚠️ | profile_pool ⚠️ | profile_pool ✅ | gateway_route ⚠️ | key_pool ⚠️ |
 | **continuation_mode** | response_id ✅ | cli_thread ⚠️ | cli_thread ⚠️ | provider-dependent ⚠️ | session_id ✅ |
-| **smart_context_mode** | proxy_rewrite ⚠️ | proxy_rewrite ✅ | proxy_rewrite ✅ | proxy_rewrite ✅ | n/a (archived) ✅ |
+| **smart_context_mode** | proxy_rewrite ✅ | proxy_rewrite ✅ | proxy_rewrite ✅ | proxy_rewrite ✅ | proxy_rewrite ✅ |
 | **reset_claim_mode** | codex_redeem ✅ | unsupported ✅ | unsupported ✅ | unsupported ✅ | unsupported ✅ |
 
 Legend: ✅ = verified | ⚠️ = inferred | ~~❓ = not_validated~~ (0 remaining)
@@ -113,7 +113,7 @@ Only capabilities marked `verified` or explicitly accepted as `not_validated` by
 
 ## Notes
 
-1. **OpenCode is ARCHIVED/superseded by Crush** — project moved to [Crush](https://github.com/charmbracelet/crush) by Charm. **DECISION REGISTERED:** treat OpenCode as superseded; do not schedule new OpenCode adapter/capability work. Future work should target Crush.
+1. **OpenCode upstream repo archived** but **IN ACTIVE USE** in our fleet (GLM 5.2 agents). Owner-confirmed per `docs/vendors/vendor-agent-mapping.md`. Smart Context validated with gateway_usage measurement.
 2. **Kimchi** is OUT of scope per ADR-001 and master plan.
 3. **prodex** is a wrapper/gateway, not a vendor. It provides Smart Context, rotation, and reset-claim ON TOP of vendor CLIs. It is documented in its own repo ([github.com/christiandoxa/prodex](https://github.com/christiandoxa/prodex)).
 4. **DeepSeek** and **AWS Bedrock** appeared in the previous stub but are OUT of scope per the master plan. Removed from this matrix.
