@@ -31,9 +31,16 @@ Arquitetura **polyglot** (ADR-001):
 | Go/Rust/Node nativo | ⚠️ fora do PATH | builds via docker |
 | Contrato de launch | ⚙️ via env | `MULTICA_PRODEX_ENABLED/PATH/VERSION/COMMIT`, `PRODEX_HOME`, kill-switch default ON |
 
-## 3. Milestone atual — v2.0 "Fundação + Deploy Correto"
+## 3. Milestone atual — v2.1 "Full Vendor Validation + PROD Deploy"
 
-**Goal:** Levar o prodex AS-IS a PROD com **fundação real** (buildar/pinar o binário), **QA exaustivo sem bypass**, e o control plane Go orquestrando o L2 — **tudo documentado e rastreável**, corrigindo os furos do plano anterior (OpenSpec `rotation-parity-polyglot`).
+**Goal:** Validar COMPORTAMENTALMENTE todas as capabilities `not_validated` da matrix (Smart Context, rotation, reset_claim por vendor) pelo runtime real /v1/runtime/proxy, e deployar em PROD com sessão real provider-backed. F5=VALIDAR, F7=DEPLOY AUTORIZADO pelo dono.
+
+**Milestone anterior:** v2.0 "Fundação + Deploy Correto" — COMPLETE (commit `6ba9a70`, 78/78 tasks, Smart Context REAL tokens_saved=4139/16476/65827, D2 ALL PASS, readyz-falsification PASS).
+
+**Fases:**
+- **V1 — Validação Real das Capabilities:** Rodar cada vendor (Codex, Kiro, Antigravity, Cline) pelo runtime /v1/runtime/proxy e provar empiricamente Smart Context tokens_saved>0, rotation, reset_claim. OpenCode: ARQUIVADO → migrar p/ Crush ou documentar superseded.
+- **V2 — Deploy PROD + Teste Live:** Executar prod-rollout-runbook, subir em PROD, sessão REAL provider-backed, kill-switch + rollback LIVE, logs scrubbed.
+
 
 **Por que este milestone existe:** o plano anterior assumia o binário prodex instalado ("instalação verificada") sem tarefa de provisioná-lo, não registrava tasks rastreáveis, e tinha nós circulares (gates F0-gated). Este milestone corrige a fundação.
 
