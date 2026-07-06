@@ -50,6 +50,35 @@ class LoggingHandler(BaseHTTPRequestHandler):
             )
             return
 
+        if self.path.endswith("/v1/responses") or self.path.endswith("/responses"):
+            self._send_json(
+                200,
+                {
+                    "id": "resp-fake-smoke",
+                    "object": "response",
+                    "created_at": int(time()),
+                    "model": "fake-upstream-logging",
+                    "output": [
+                        {
+                            "type": "message",
+                            "role": "assistant",
+                            "content": [
+                                {
+                                    "type": "output_text",
+                                    "text": "ok",
+                                }
+                            ],
+                        }
+                    ],
+                    "usage": {
+                        "input_tokens": 8,
+                        "output_tokens": 1,
+                        "total_tokens": 9,
+                    },
+                },
+            )
+            return
+
         self._send_json(404, {"error": {"message": "not found"}})
 
     def log_message(self, fmt: str, *args: object) -> None:
