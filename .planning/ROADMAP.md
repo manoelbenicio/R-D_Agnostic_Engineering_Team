@@ -56,5 +56,49 @@ P9 Reset-claim (por último; não bloqueia) ── depende de P3 + estado real d
 ## Meta (transversal)  `[REQ-23, REQ-24]`
 - Tasks rastreáveis por fase; arquivar `rotation-router`; reconciliar docs/board.
 
-## Definition of Done do milestone
+## Definition of Done do milestone v2.0
 Todos os REQ verdes com evidência; prodex AS-IS rodando em PROD via Multica; kill-switch/rollback provados; QA exaustivo verde; docs/board reconciliados.
+**STATUS: COMPLETE** (commit `6ba9a70`, 78/78 tasks).
+
+---
+
+# Milestone v2.1 — Full Vendor Validation + PROD Deploy
+
+> Continua numeração de fases: P11, P12.
+
+### P11 — Vendor Validation (behavioral)  (dep: v2.0 COMPLETE)
+
+**Goal:** Validar COMPORTAMENTALMENTE todas as cells `not_validated` na vendor-capability-matrix via runtime real /v1/runtime/proxy. Capability entregue PELO prodex, não pelo vendor.
+
+**Tasks:**
+- [ ] 11.1 Smart Context per-vendor (4 shapes): Codex/OpenAI Responses API, Kiro/Anthropic Messages API, Antigravity/Gemini API, Cline/OpenRouter — tokens_saved>0 cada
+- [ ] 11.2 Rotation per-vendor: profile_pool com 2+ profiles, trigger rotation, verify session continuity
+- [ ] 11.3 Reset-claim Codex: exercise prodex redeem/--auto-redeem, prove event emitted
+- [ ] 11.4 OpenCode disposition: ARCHIVED → Crush (or documented superseded)
+- [ ] 11.5 Update vendor-capability-matrix.md: all not_validated → verified with evidence pointer
+- [ ] 11.6 GATE P11: 0 cells not_validated, all evidence-referenced. Commit + push.
+
+**Staffing:**
+- Codex#A → Codex/OpenAI (smart_context + reset_claim)
+- Codex#C → Kiro (smart_context via proxy)
+- Codex#D → Antigravity (smart_context + rotation)
+- Codex#E → Cline + OpenCode
+- Codex#B → STANDBY hotspot Rust (corrige se falhar)
+
+### P12 — PROD Deploy + Live Test  (dep: P11 GATE verde)
+
+**Goal:** Deploy em PROD com sessão real provider-backed. F7 AUTORIZADO pelo dono.
+
+**Tasks:**
+- [ ] 12.1 Pre-deploy checklist: all gates P0-P11 green
+- [ ] 12.2 Execute prod-rollout-runbook (docs/deploy/prod-rollout-runbook.md)
+- [ ] 12.3 PROD session: real provider-backed session, capture evidence
+- [ ] 12.4 PROD kill-switch: apply + verify in PROD
+- [ ] 12.5 PROD rollback: test in PROD
+- [ ] 12.6 PROD logs scrubbed: verify no secrets
+- [ ] 12.7 GATE P12: PROD evidence + kill-switch + rollback + scrubbed. Commit + push.
+
+**Staffing:** Codex#D (or first free) executes sequentially.
+
+## Definition of Done do milestone v2.1
+0 cells not_validated (all VERIFIED). PROD session real with evidence. Kill-switch + rollback tested LIVE. All commits pushed.
