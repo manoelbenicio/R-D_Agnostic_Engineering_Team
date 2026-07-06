@@ -10,3 +10,5 @@ Documentos de deploy e operação do Rotation-Parity Polyglot.
 | RPP_architecture_macro.html | Diagrama de arquitetura — visão macro (L4/L2). |
 | RPP_architecture_deep.html | Diagrama de arquitetura — componentes/portas/contrato. |
 | RPP_architecture_micro.html | Diagrama de arquitetura — ciclo de vida de uma sessão/request. |
+| FIX_ISOLAMENTO_CREDENCIAL_CENTRAL.md | **Documento central do fix de isolamento (full paths, estado atual vs alvo, bug).** |
+| CREDENTIAL_ISOLATION_REFERENCES.md | Índice de referências (datas/commits) do fix de isolamento. |
