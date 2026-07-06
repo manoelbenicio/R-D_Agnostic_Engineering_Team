@@ -1,0 +1,8 @@
+name: multica
+services:
+  backend:
+    networks: [default, obs]
+networks:
+  obs:
+    external: true
+    name: multica-observability
