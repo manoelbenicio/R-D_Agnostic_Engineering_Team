@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RPP · Arquitetura Micro</title>
+<style>
+  :root{--bg0:#05070c;--bg1:#0a0f18;--panel:rgba(20,29,43,.68);--stroke:rgba(120,150,190,.20);--text:#eaf1fb;--muted:#93a6c0;
+    --go:#22d3ee;--rust:#fb923c;--db:#a3e635;--vendor:#c084fc;--bus:#5aa8ff;--ok:#34d399;--warn:#ff5c7a;}
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);font-family:"Inter",system-ui,"Segoe UI",sans-serif;min-height:100vh;overflow-x:hidden;position:relative;
+    background:linear-gradient(125deg,var(--bg0),var(--bg1) 55%,#070b12)}
+  body::before{content:"";position:fixed;inset:-40%;z-index:0;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(192,132,252,.14),transparent 60%),radial-gradient(closest-side,rgba(52,211,153,.10),transparent 60%);
+    background-repeat:no-repeat;background-position:16% 12%,88% 70%;background-size:56% 56%,52% 52%;animation:drift 26s ease-in-out infinite alternate}
+  @keyframes drift{to{transform:translate3d(0,3%,0) scale(1.05)}}
+  header{position:relative;z-index:1;padding:32px clamp(18px,5vw,60px) 8px;text-align:center}
+  h1{margin:0;font-size:clamp(26px,5vw,48px);font-weight:800;letter-spacing:-.02em;
+    background:linear-gradient(90deg,#eaf1fb,#c084fc 45%,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);margin-top:8px;font-size:14px}
+  .stack{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:9px;justify-content:center;max-width:900px;margin:16px auto 0;padding:0 16px}
+  .chip{display:flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--stroke);border-radius:999px;background:rgba(15,22,34,.6);
+    backdrop-filter:blur(8px);font-size:12px;opacity:0;transform:translateY(8px);animation:rise .5s ease forwards}
+  .chip .v{color:var(--muted)}.dotc{width:8px;height:8px;border-radius:50%}
+  @keyframes rise{to{opacity:1;transform:none}}
+  main{position:relative;z-index:1;max-width:860px;margin:16px auto 0;padding:0 clamp(14px,4vw,40px) 60px}
+  .track{position:relative;padding-left:52px}
+  .rail{position:absolute;left:22px;top:6px;bottom:24px;width:3px;border-radius:3px;background:var(--stroke);overflow:hidden}
+  .rail::after{content:"";position:absolute;left:-3px;width:9px;height:9px;border-radius:50%;background:var(--bus);
+    box-shadow:0 0 16px 4px var(--bus);animation:run 6s cubic-bezier(.4,0,.2,1) infinite}
+  @keyframes run{0%{top:0;opacity:0}4%{opacity:1}96%{opacity:1}100%{top:100%;opacity:0}}
+  .step{position:relative;margin-bottom:16px;opacity:0;transform:translateY(18px);animation:rise .6s cubic-bezier(.2,.7,.2,1) forwards}
+  .node{position:absolute;left:-42px;top:10px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-weight:800;background:#0c1420;border:2px solid var(--bus);color:var(--bus);box-shadow:0 0 0 4px rgba(90,168,255,.08)}
+  .body{border:1px solid var(--stroke);border-radius:14px;background:var(--panel);backdrop-filter:blur(12px);padding:13px 16px;
+    box-shadow:0 18px 44px -32px rgba(0,0,0,.9);transition:.22s}
+  .body:hover{transform:translateX(4px);border-color:rgba(150,175,210,.5)}
+  .body b{font-size:14px}.body small{color:var(--muted);display:block;margin-top:4px;line-height:1.55}
+  .who{float:right;font-size:11px;color:var(--muted);border:1px solid var(--stroke);border-radius:999px;padding:2px 9px}
+  .go .node{border-color:var(--go);color:var(--go)}.rust .node{border-color:var(--rust);color:var(--rust)}
+  .vendor .node{border-color:var(--vendor);color:var(--vendor)}.ok .node{border-color:var(--ok);color:var(--ok)}
+  footer{position:relative;z-index:1;color:var(--muted);text-align:center;padding:24px;font-size:12px}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important}.step,.chip{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>RPP · Arquitetura Micro</h1>
+  <div class="sub">Ciclo de vida de uma sessão/request — do início ao fallback e rotação</div>
+  <div class="stack" id="stack"></div>
+</header>
+<main>
+  <div class="track">
+    <div class="rail"></div>
+
+    <div class="step go" style="animation-delay:.05s"><div class="node">1</div>
+      <div class="body"><span class="who">L4 Go</span><b>StartSession</b><small>Tarefa atribuída a um agente → resolve a conta (config de atribuição).</small></div></div>
+
+    <div class="step go" style="animation-delay:.13s"><div class="node">2</div>
+      <div class="body"><span class="who">execenv</span><b>Prepara credencial ISOLADA</b><small>Restaura o formato exato do vendor (auth.json/sqlite/token) no dir próprio da conta e injeta a env nativa (CODEX_HOME/XDG_DATA_HOME/HOME) no agentEnv.</small></div></div>
+
+    <div class="step rust" style="animation-delay:.21s"><div class="node">3</div>
+      <div class="body"><span class="who">L4→L2</span><b>Lança prodex‑sidecar</b><small>Backend inicia sidecar (:43117) + gateway (:43118) via rpp.l2.v1 · ApplyPolicy + RegisterAccounts.</small></div></div>
+
+    <div class="step rust" style="animation-delay:.29s"><div class="node">4</div>
+      <div class="body"><span class="who">L2 Rust</span><b>Request em voo → afinidade</b><small>O CLI lê a credencial da SUA conta; prodex mantém afinidade de sessão; rotação é pré‑commit.</small></div></div>
+
+    <div class="step rust" style="animation-delay:.37s"><div class="node">5</div>
+      <div class="body"><span class="who">Smart Context</span><b>Compactação (shadow → canary → live)</b><small>Reescreve só segmentos elegíveis; controle/continuation/tool‑call ficam exatos; mede tokens_before/after (gateway_usage).</small></div></div>
+
+    <div class="step vendor" style="animation-delay:.45s"><div class="node">6</div>
+      <div class="body"><span class="who">upstream</span><b>Gateway → Provider real (OAuth)</b><small>:43118 encaminha ao provider com a credencial OAuth isolada; resposta com uso real.</small></div></div>
+
+    <div class="step ok" style="animation-delay:.53s"><div class="node">7</div>
+      <div class="body"><span class="who">fallback</span><b>Integridade em risco? → Fallback EXATO</b><small>Se estrutura/protocolo forem afetados, envia o request original exato (sem compactar). Segurança &gt; economia.</small></div></div>
+
+    <div class="step go" style="animation-delay:.61s"><div class="node">8</div>
+      <div class="body"><span class="who">L2→L4</span><b>RuntimeEventStream → Go</b><small>selection · redeem · rewrite decision · spend/savings · guardrail. Go ingere como observabilidade — NÃO re‑roteia.</small></div></div>
+
+    <div class="step vendor" style="animation-delay:.69s"><div class="node">9</div>
+      <div class="body"><span class="who">rotação</span><b>Esgotou (~5h)? → Rotaciona conta</b><small>Lock + snapshot → próxima conta OAuth com quota (ou prodex redeem) → restaura credencial isolada → retoma do checkpoint. Kill‑switch pode desligar por escopo a qualquer momento.</small></div></div>
+  </div>
+</main>
+<footer>RPP · Arquitetura Micro · fonte: docs/project/02‑to‑be.md §3‑§4 · design.md §6‑§7 · qa-conformance C5/C6</footer>
+<script>
+  const stack=[["Go","1.26.1","#22d3ee"],["Rust","1.96.1","#fb923c"],["prodex","0.246.0","#fb923c"],
+  ["PostgreSQL","pgvector pg17","#a3e635"],["Next.js","16.2.5","#5aa8ff"],["Redis","7","#fb923c"]];
+  const el=document.getElementById("stack");
+  stack.forEach((s,i)=>{const c=document.createElement("div");c.className="chip";c.style.animationDelay=(i*55)+"ms";
+    c.innerHTML=`<span class="dotc" style="background:${s[2]};box-shadow:0 0 10px ${s[2]}"></span><b>${s[0]}</b><span class="v">${s[1]}</span>`;el.appendChild(c);});
+</script>
+</body>
+</html>

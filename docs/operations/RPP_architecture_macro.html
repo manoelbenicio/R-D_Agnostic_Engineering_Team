@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RPP · Arquitetura Macro</title>
+<style>
+  :root{
+    --bg0:#05070c;--bg1:#0a0f18;--panel:rgba(20,29,43,.66);--stroke:rgba(120,150,190,.20);
+    --text:#eaf1fb;--muted:#93a6c0;--go:#22d3ee;--rust:#fb923c;--db:#a3e635;--vendor:#c084fc;--bus:#5aa8ff;--ok:#34d399;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;color:var(--text);font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;
+    background:linear-gradient(125deg,var(--bg0),var(--bg1) 55%,#070b12);overflow-x:hidden;position:relative}
+  body::before{content:"";position:fixed;inset:-40%;z-index:0;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(90,168,255,.16),transparent 60%),radial-gradient(closest-side,rgba(251,146,60,.12),transparent 60%);
+    background-repeat:no-repeat;background-position:12% 8%,86% 22%;background-size:60% 60%,55% 55%;
+    animation:drift 22s ease-in-out infinite alternate}
+  @keyframes drift{to{transform:translate3d(0,4%,0) scale(1.06)}}
+  header{position:relative;z-index:1;padding:34px clamp(18px,5vw,60px) 10px;text-align:center}
+  h1{margin:0;font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-.02em;
+    background:linear-gradient(90deg,#eaf1fb,#5aa8ff 40%,#c084fc 70%,#fb923c);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);margin-top:8px;font-size:14px;letter-spacing:.02em}
+  /* tech stack ribbon */
+  .stack{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:1000px;margin:18px auto 0;padding:0 16px}
+  .chip{display:flex;align-items:center;gap:8px;padding:7px 13px;border:1px solid var(--stroke);border-radius:999px;
+    background:rgba(15,22,34,.6);backdrop-filter:blur(8px);font-size:12.5px;opacity:0;transform:translateY(8px);
+    animation:rise .5s ease forwards}
+  .chip .v{color:var(--muted);font-variant-numeric:tabular-nums}
+  .dotc{width:8px;height:8px;border-radius:50%}
+  @keyframes rise{to{opacity:1;transform:none}}
+  main{position:relative;z-index:1;max-width:1080px;margin:8px auto 0;padding:22px clamp(16px,4vw,48px) 60px;display:flex;flex-direction:column;align-items:center;gap:0}
+  .layer{width:100%;border:1px solid var(--stroke);border-radius:18px;background:var(--panel);backdrop-filter:blur(12px);
+    padding:20px 22px;box-shadow:0 20px 50px -30px rgba(0,0,0,.9);opacity:0;transform:translateY(22px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards;transition:transform .25s,box-shadow .25s,border-color .25s}
+  .layer:hover{transform:translateY(-3px);border-color:rgba(120,150,190,.4);box-shadow:0 30px 60px -28px rgba(0,0,0,1)}
+  .layer h2{margin:0;font-size:19px;display:flex;align-items:center;gap:10px}
+  .layer .tag{color:var(--muted);font-size:12.5px;margin-top:4px;display:block}
+  .accent{width:10px;height:10px;border-radius:50%;box-shadow:0 0 14px currentColor}
+  .boxes{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .box{flex:1;min-width:190px;border:1px solid var(--stroke);border-radius:12px;padding:12px 14px;background:rgba(10,16,26,.7);transition:.2s}
+  .box:hover{transform:translateY(-2px);border-color:rgba(160,180,210,.45)}
+  .box b{display:block;font-size:14px}.box small{color:var(--muted)}
+  .connector{height:64px;width:3px;position:relative;overflow:hidden;border-radius:3px;background:linear-gradient(var(--stroke),var(--stroke))}
+  .connector::after{content:"";position:absolute;left:-3px;width:9px;height:9px;border-radius:50%;background:var(--bus);
+    box-shadow:0 0 14px 3px var(--bus);animation:travel 2.2s linear infinite}
+  .connector.up::after{background:var(--db);box-shadow:0 0 14px 3px var(--db);animation-direction:reverse}
+  @keyframes travel{0%{top:-10px;opacity:0}12%{opacity:1}88%{opacity:1}100%{top:70px;opacity:0}}
+  .flowlbl{color:var(--muted);font-size:12px;margin:6px 0;text-align:center}
+  .dual{display:flex;gap:60px;justify-content:center;align-items:center}
+  .inv{width:100%;margin-top:20px;padding:14px 18px;border-left:3px solid var(--bus);border-radius:12px;background:rgba(10,16,26,.7);color:var(--muted);font-size:13px;
+    opacity:0;animation:rise .8s ease .3s forwards}
+  .inv b{color:var(--text)}
+  footer{position:relative;z-index:1;color:var(--muted);text-align:center;padding:26px;font-size:12px}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important}.chip,.layer,.inv{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>RPP · Arquitetura Macro</h1>
+  <div class="sub">Rotation‑Parity Polyglot — Multica (Go · L4) + prodex (Rust · L2) — visão executiva</div>
+  <div class="stack" id="stack"></div>
+</header>
+<main>
+  <section class="layer" style="animation-delay:.05s">
+    <h2><span class="accent" style="color:var(--bus)"></span>👤 Operador / UI</h2>
+    <span class="tag">acesso via navegador — 127.0.0.1</span>
+    <div class="boxes"><div class="box"><b>Frontend Web</b><small>Next.js 16.2.5 · React 19.2 · :3000</small></div></div>
+  </section>
+
+  <div class="connector"></div>
+  <div class="flowlbl">▼ desired‑state — políticas · contas aprovadas · budgets · kill‑switch</div>
+
+  <section class="layer" style="animation-delay:.15s">
+    <h2><span class="accent" style="color:var(--go)"></span>L4 — Multica <span style="color:var(--go)">(Go 1.26.1)</span> · Control Plane “frio”</h2>
+    <span class="tag">tenants · contas · políticas · kill‑switch · observabilidade · lança o runtime — NÃO roteia request em voo</span>
+    <div class="boxes">
+      <div class="box"><b>Backend / Daemon</b><small>Go · :8080</small></div>
+      <div class="box"><b>execenv</b><small>isolamento CODEX_HOME/XDG/HOME por conta</small></div>
+      <div class="box"><b>Policy / Ledger</b><small>ApplyPolicy · RegisterAccounts</small></div>
+    </div>
+  </section>
+
+  <div class="dual">
+    <div style="text-align:center"><div class="connector"></div><div class="flowlbl">▼ contrato rpp.l2.v1</div></div>
+    <div style="text-align:center"><div class="connector up"></div><div class="flowlbl">▲ eventos runtime</div></div>
+  </div>
+
+  <section class="layer" style="animation-delay:.25s">
+    <h2><span class="accent" style="color:var(--rust)"></span>L2 — prodex <span style="color:var(--rust)">(Rust 1.96.1 · v0.246.0)</span> · Runtime “quente”</h2>
+    <span class="tag">request em voo · afinidade · rotação pré‑commit · Smart Context/token‑saver · fallback exato · reset‑claim</span>
+    <div class="boxes">
+      <div class="box"><b>prodex‑sidecar</b><small>Rust · :43117</small></div>
+      <div class="box"><b>prodex gateway</b><small>OpenAI‑compat · :43118</small></div>
+      <div class="box"><b>Smart Context</b><small>shadow → canary → live</small></div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+  <div class="flowlbl">▼ sessão OAuth isolada por conta/perfil (sem API key)</div>
+
+  <section class="layer" style="animation-delay:.35s">
+    <h2><span class="accent" style="color:var(--vendor)"></span>Vendors — OAuth por perfil</h2>
+    <div class="boxes">
+      <div class="box"><b>OpenAI/Codex</b><small>CODEX_HOME</small></div>
+      <div class="box"><b>Kiro</b><small>XDG_DATA_HOME (sqlite)</small></div>
+      <div class="box"><b>Antigravity</b><small>HOME</small></div>
+      <div class="box"><b>OpenCode/GLM</b><small>perfil próprio</small></div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+
+  <section class="layer" style="animation-delay:.45s">
+    <h2><span class="accent" style="color:var(--db)"></span>Datastores</h2>
+    <div class="boxes">
+      <div class="box"><b>PostgreSQL</b><small>pgvector:pg17 · :5432 · estado (SQLite proibido)</small></div>
+      <div class="box"><b>Redis 7</b><small>:6379 · opcional</small></div>
+    </div>
+  </section>
+
+  <div class="inv"><b>Invariante central:</b> um roteador por sessão — o Go envia desired‑state; o Rust decide o request em voo; eventos voltam ao Go apenas como observabilidade (nunca re‑roteiam um request já em voo).</div>
+</main>
+<footer>RPP · Arquitetura Macro · gerado de docs/project + design.md + docker‑compose.selfhost.yml</footer>
+<script>
+  const stack=[["Next.js","16.2.5","#5aa8ff"],["React","19.2.0","#22d3ee"],["TypeScript","5.9","#5aa8ff"],
+  ["Node","24.17.0","#a3e635"],["Go","1.26.1","#22d3ee"],["Rust","1.96.1","#fb923c"],
+  ["prodex","0.246.0","#fb923c"],["PostgreSQL","pgvector pg17","#a3e635"],["Redis","7","#fb923c"],["Docker","Compose","#5aa8ff"]];
+  const el=document.getElementById("stack");
+  stack.forEach((s,i)=>{const c=document.createElement("div");c.className="chip";c.style.animationDelay=(i*60)+"ms";
+    c.innerHTML=`<span class="dotc" style="background:${s[2]};box-shadow:0 0 10px ${s[2]}"></span><b>${s[0]}</b><span class="v">${s[1]}</span>`;el.appendChild(c);});
+</script>
+</body>
+</html>

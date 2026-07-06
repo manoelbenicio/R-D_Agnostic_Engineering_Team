@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RPP · Checklist de Deploy (completo & editável)</title>
+<style>
+  :root{--bg0:#05070c;--bg1:#0a0f18;--panel:rgba(20,29,43,.68);--stroke:rgba(120,150,190,.20);--text:#eaf1fb;--muted:#93a6c0;
+    --bus:#5aa8ff;--ok:#34d399;--rust:#fb923c;--go:#22d3ee;--vendor:#c084fc;--warn:#ff5c7a;}
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);font-family:"Inter",system-ui,"Segoe UI",sans-serif;min-height:100vh;position:relative;overflow-x:hidden;
+    background:linear-gradient(125deg,var(--bg0),var(--bg1) 55%,#070b12)}
+  body::before{content:"";position:fixed;inset:-40%;z-index:0;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(90,168,255,.14),transparent 60%),radial-gradient(closest-side,rgba(52,211,153,.10),transparent 60%);
+    background-repeat:no-repeat;background-position:12% 8%,88% 30%;background-size:56% 56%,52% 52%;animation:drift 24s ease-in-out infinite alternate}
+  @keyframes drift{to{transform:translate3d(0,3%,0) scale(1.05)}}
+  .wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:28px clamp(14px,4vw,40px) 80px}
+  h1{margin:0;font-size:clamp(24px,5vw,44px);font-weight:800;letter-spacing:-.02em;
+    background:linear-gradient(90deg,#eaf1fb,#5aa8ff 45%,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);margin-top:6px;font-size:13.5px}
+  .prog{position:sticky;top:0;z-index:5;margin:16px 0 8px;padding:13px 16px;border:1px solid var(--stroke);border-radius:16px;
+    background:rgba(9,14,22,.85);backdrop-filter:blur(12px);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .ring{--p:0;width:52px;height:52px;border-radius:50%;flex:0 0 52px;background:conic-gradient(var(--ok) calc(var(--p)*1%),rgba(120,150,190,.18) 0);display:flex;align-items:center;justify-content:center;transition:.4s}
+  .ring i{width:41px;height:41px;border-radius:50%;background:#0a1018;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;font-style:normal}
+  .pbar{flex:1;min-width:180px}
+  .pbar .track{height:9px;border-radius:999px;background:rgba(120,150,190,.16);overflow:hidden}
+  .pbar .fill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--bus),var(--ok));transition:width .4s}
+  .pbar .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+  .tb{display:flex;gap:7px;flex-wrap:wrap}
+  button.act{border:1px solid var(--stroke);background:rgba(15,22,34,.7);color:var(--text);border-radius:10px;padding:7px 11px;font-size:12px;cursor:pointer;transition:.2s;white-space:nowrap}
+  button.act:hover{border-color:var(--bus);color:var(--bus)}
+  .sec{border:1px solid var(--stroke);border-radius:16px;background:var(--panel);backdrop-filter:blur(12px);margin-top:15px;overflow:hidden;box-shadow:0 20px 50px -34px rgba(0,0,0,.9)}
+  .sec>.h{padding:12px 16px;display:flex;align-items:center;gap:10px}
+  .sec .dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 12px currentColor;flex:0 0 auto;cursor:pointer}
+  .sec .stitle{font-size:16px;font-weight:700;flex:1;min-width:0}
+  .sec .cnt{font-size:12px;color:var(--muted);border:1px solid var(--stroke);border-radius:999px;padding:2px 10px}
+  .sec.collapsed .items,.sec.collapsed .addrow{display:none}
+  .item{display:flex;gap:11px;padding:11px 16px;border-top:1px solid rgba(120,150,190,.10);align-items:flex-start}
+  .item:hover{background:rgba(90,168,255,.05)}
+  .cbx input{appearance:none;width:22px;height:22px;border:2px solid var(--stroke);border-radius:7px;cursor:pointer;position:relative;transition:.2s;background:rgba(10,16,26,.7);margin-top:2px}
+  .cbx input:checked{background:var(--ok);border-color:var(--ok)}
+  .cbx input:checked::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#04120b;font-weight:900;font-size:14px}
+  .ib{flex:1;min-width:0}
+  .item.done .t{color:var(--muted);text-decoration:line-through}
+  .t{font-size:14px;font-weight:600}
+  .d{color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.5}
+  .cmd{margin-top:7px;display:flex;gap:7px}
+  .cmd code{flex:1;background:#070c14;border:1px solid var(--stroke);border-radius:9px;padding:8px 11px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#d7e6ff;overflow-x:auto;white-space:pre-wrap;min-height:20px}
+  .cmd .cp{border:1px solid var(--stroke);background:rgba(15,22,34,.7);color:var(--muted);border-radius:9px;padding:0 11px;cursor:pointer;font-size:11.5px}
+  .cmd .cp:hover{border-color:var(--ok);color:var(--ok)}
+  .exp{margin-top:5px;font-size:12px;color:var(--ok)}
+  .note{margin-top:6px;font-size:12px;color:#f8c14a;background:rgba(248,193,74,.06);border-left:3px solid #f8c14a;border-radius:6px;padding:5px 9px}
+  .note::before{content:"📝 obs: ";color:var(--muted)}
+  .stamp{font-size:11px;color:var(--muted);margin-top:3px;font-style:italic}
+  [contenteditable]{outline:none;border-radius:5px;transition:.15s}
+  [contenteditable]:hover{box-shadow:inset 0 0 0 1px rgba(120,150,190,.35)}
+  [contenteditable]:focus{box-shadow:inset 0 0 0 1px var(--bus);background:rgba(90,168,255,.08)}
+  [contenteditable]:empty::before{content:attr(data-ph);color:#5f7086}
+  .del{flex:0 0 auto;border:none;background:transparent;color:#5f7086;cursor:pointer;font-size:15px;padding:2px 6px;border-radius:6px}
+  .del:hover{color:var(--warn);background:rgba(255,92,122,.1)}
+  .addrow{padding:8px 16px 12px;display:flex;gap:8px}
+  .addrow button{border:1px dashed var(--stroke);background:transparent;color:var(--muted);border-radius:9px;padding:7px 12px;cursor:pointer;font-size:12px}
+  .addrow button:hover{border-color:var(--ok);color:var(--ok)}
+  footer{position:relative;z-index:1;text-align:center;color:var(--muted);font-size:11.5px;padding:8px 0 30px}
+  input[type=file]{display:none}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 contenteditable data-field="doctitle" data-ph="Título…">RPP · Checklist de Deploy (completo)</h1>
+  <div class="sub">Ciclo completo e editável. Clique em qualquer texto para alterar; adicione/remova tópicos, comandos e observações. Salva automático · exporte para backup.</div>
+  <div class="prog">
+    <div class="ring" id="ring"><i id="ringtxt">0%</i></div>
+    <div class="pbar"><div class="track"><div class="fill" id="fill"></div></div>
+      <div class="lbl"><span id="cnt">0 de 0</span><span id="stage">—</span></div></div>
+    <div class="tb">
+      <button class="act" id="addSec">＋ Seção</button>
+      <button class="act" id="expand">⤢ Expandir</button>
+      <button class="act" id="exp">⭳ Exportar</button>
+      <button class="act" id="impBtn">⭱ Importar</button>
+      <button class="act" id="reset">↺ Restaurar padrão</button>
+      <input type="file" id="imp" accept="application/json">
+    </div>
+  </div>
+  <div id="app"></div>
+  <footer>RPP · checklist completo & editável · fonte: Makefile · self-host-quickstart · compose · entrypoint · helm</footer>
+</div>
+<script>
+const KEY="rpp_deploy_checklist_editable_v4";
+const uid=()=>Math.random().toString(36).slice(2,9);
+const COLORS=["#5aa8ff","#22d3ee","#a3e635","#34d399","#fb923c","#ff5c7a","#c084fc"];
+const I=(t,d,cmd,exp,note)=>({id:uid(),t,d:d||"",cmd:cmd||"",exp:exp||"",note:note||"",done:false});
+const S=(title,color,items)=>({id:uid(),title,color,items});
+const DEFAULT={doctitle:"RPP · Checklist de Deploy (completo)",sections:[
+ S("1 · Pré-requisitos","#5aa8ff",[
+   I("Docker + Docker Compose","Obrigatório.","docker --version && docker compose version","versões impressas"),
+   I("Git","Para clonar.","git --version","git version …"),
+   I("make + openssl","'make selfhost' usa openssl p/ gerar segredos.","make --version && openssl version","GNU Make / OpenSSL"),
+   I("Portas livres 5432/8080/3000 (+43117/43118/6379)","Cheque conflitos antes.","for p in 5432 8080 3000 43117 43118 6379; do ss -ltn | grep -q \":$p \" && echo \"OCUPADA $p\" || echo \"livre $p\"; done","todas 'livre' (senão seção 9)"),
+   I("Filesystem ext4/WSL2 (não 9p)","PRODEX_HOME e credenciais exigem ext4; cred 0600 / dirs 0700.","","",""),
+ ]),
+ S("2 · Clonar o projeto","#22d3ee",[
+   I("Clonar repositório canônico","","git clone https://github.com/manoelbenicio/R-D_Agnostic_Engineering_Team.git","repo clonado"),
+   I("Entrar na pasta da app","","cd R-D_Agnostic_Engineering_Team/multica-auth-work","existe Makefile + docker-compose.selfhost.yml"),
+ ]),
+ S("3 · Subir a stack (comando principal)","#a3e635",[
+   I("OPÇÃO A — imagens oficiais","make selfhost: gera .env (JWT+senha PG aleatórios), faz PULL das imagens, sobe o compose, espera /health. Migrations AUTOMÁTICAS (entrypoint ./migrate up).","make selfhost","3 serviços no ar · /health OK · migrations aplicadas"),
+   I("OPÇÃO B — build do checkout","Se as imagens não estiverem publicadas.","make selfhost-build","imagens buildadas + stack no ar"),
+   I("(Equivalente manual)","Mesma coisa sem make.","cp .env.example .env\\n# editar JWT_SECRET e POSTGRES_PASSWORD\\ndocker compose -f docker-compose.selfhost.yml up -d","postgres → backend → frontend Up"),
+ ]),
+ S("4 · Segurança do .env","#c084fc",[
+   I("JWT_SECRET não é o default","'change-me-in-production' proibido em prod (make já randomiza).","grep JWT_SECRET .env","valor aleatório"),
+   I("POSTGRES_PASSWORD forte","","grep POSTGRES_PASSWORD .env","senha forte (não 'multica')"),
+   I("APP_ENV=production + código de verificação vazio","MULTICA_DEV_VERIFICATION_CODE deve ficar vazio em instância pública.","grep -E 'APP_ENV|MULTICA_DEV_VERIFICATION_CODE' .env","APP_ENV=production · code vazio"),
+   I("(Opcional) e-mail Resend OU SMTP","Sem e-mail, o código sai no log do backend.","# .env: RESEND_API_KEY / RESEND_FROM_EMAIL  (ou SMTP_HOST/PORT/USER/PASS)","",""),
+ ]),
+ S("5 · Validação (smoke)","#34d399",[
+   I("Status dos 3 serviços","postgres deve estar healthy.","docker compose -f docker-compose.selfhost.yml ps","postgres(healthy) · backend Up · frontend Up"),
+   I("Migrations aplicadas (logs)","","docker compose -f docker-compose.selfhost.yml logs backend | grep -i migrat","migrations aplicadas, sem erro"),
+   I("Backend saudável","/health (start) + /readyz (falha se DB/migration ruim).","curl -s http://localhost:8080/health && echo && curl -s http://localhost:8080/readyz","health OK · readyz OK"),
+   I("Frontend responde","","curl -s -o /dev/null -w '%{http_code}\\n' http://localhost:3000","200"),
+ ]),
+ S("6 · Primeiro login + workspace","#5aa8ff",[
+   I("Abrir a UI","","# navegador: http://localhost:3000","tela de login carrega"),
+   I("Código de verificação","Sem e-mail → sai como '[DEV] Verification code' no log do backend.","docker compose -f docker-compose.selfhost.yml logs backend | grep -i 'verification code'","código visível"),
+   I("Criar o primeiro workspace","Pela UI após login.","","workspace criado"),
+ ]),
+ S("7 · CLI + daemon (execução de agentes)","#fb923c",[
+   I("Instalar a CLI multica","Homebrew / script / PowerShell (ver cloud-quickstart).","","multica no PATH"),
+   I("Apontar a CLI ao seu servidor (mesma máquina)","'multica setup self-host' aponta p/ localhost:8080/3000, faz login no browser, guarda o PAT e INICIA o daemon automaticamente.","multica setup self-host","daemon iniciado, CLI logada"),
+   I("Reiniciar o daemon local (se preciso)","","make daemon","daemon reiniciado com a sessão salva"),
+   I("Ferramenta de código instalada (codex)","MULTICA_CODEX_PATH=codex.","command -v codex && codex --version","codex resolvível"),
+ ]),
+ S("8 · Runtime prodex (Rotation-Parity)","#fb923c",[
+   I("Binário prodex pinado presente","v0.246.0 / 7750da9b.","~/runtime/prodex-src/target/release/prodex --version","prodex 0.246.0"),
+   I("Config inicial segura (shadow)","Smart Context observando; auto-redeem off; kill-switch disponível.","PRODEX_SMART_CONTEXT_SHADOW=1 PRODEX_SMART_CONTEXT_CANARY_PERCENT=0 PRODEX_AUTO_REDEEM_ENABLED=0","shadow=1 · canary=0 · auto-redeem=0"),
+   I("Sidecar pronto (readyz)","probe real do Postgres.","curl -s http://127.0.0.1:43117/readyz","status alive · backend postgres · ok"),
+ ]),
+ S("9 · Conflito de porta","#ff5c7a",[
+   I("Descobrir quem ocupa","","sudo lsof -i :5432   # ou :8080 / :3000","processo identificado"),
+   I("Subir em portas alternativas","BACKEND_PORT/FRONTEND_PORT no .env.","BACKEND_PORT=8081 FRONTEND_PORT=3001 docker compose -f docker-compose.selfhost.yml up -d","sobe sem 'port already allocated'"),
+ ]),
+ S("10 · Acesso externo (proxy reverso) — opcional","#22d3ee",[
+   I("Subir proxy c/ TLS (Caddy) → 127.0.0.1:8080 e :3000","Compose só escuta em 127.0.0.1; use proxy p/ acesso cross-machine. Rota /ws precisa de WebSocket.","# Caddyfile: @ws path /ws /ws/*; reverse_proxy 127.0.0.1:8080 (flush -1); /api/* → :8080; resto → :3000","proxy no ar (HTTPS)"),
+   I("Ajustar FRONTEND_ORIGIN + restart","Senão o check de origem do WebSocket rejeita o browser.","# .env: FRONTEND_ORIGIN=https://seu-dominio\\ndocker compose -f docker-compose.selfhost.yml restart backend","WebSocket conecta"),
+   I("Apontar a CLI ao domínio público","","multica setup self-host --server-url https://seu-dominio --app-url https://seu-dominio","daemon remoto conecta"),
+ ]),
+ S("11 · Observabilidade","#a3e635",[
+   I("Subir Prometheus/Grafana/Alertmanager/exporter","ATENÇÃO: Grafana usa :3000 (conflita com o frontend) → remapeie (ex.: 127.0.0.1:13000:3000) antes.","docker compose -f deploy/observability/docker-compose.yml up -d","Prometheus :9090 · Grafana :13000 · Alertmanager :9093 · pg-exporter :9187"),
+   I("Habilitar métricas do backend (METRICS_ADDR)","Vazio/comentado = backend NÃO expõe /metrics → target 'credential-service' fica DOWN.","# .env: METRICS_ADDR=0.0.0.0:9090\\ndocker compose -f docker-compose.selfhost.yml up -d backend","backend serve /metrics em :9090"),
+   I("Anexar backend à rede de observabilidade (permanente)","backend(multica_default) e Prometheus(multica-observability) em redes diferentes → não resolve 'backend:9090'. Override persiste no recreate.","# docker-compose.override.yml:\\nname: multica\\nservices:\\n  backend:\\n    networks: [default, obs]\\nnetworks:\\n  obs:\\n    external: true\\n    name: multica-observability\\ndocker compose -f docker-compose.selfhost.yml -f docker-compose.override.yml up -d backend","backend nas 2 redes"),
+   I("Confirmar targets do Prometheus (UP)","O que realmente prova a coleta.","curl -s -X POST http://127.0.0.1:9090/-/reload; sleep 5; curl -s 'http://127.0.0.1:9090/api/v1/targets?state=active'","credential-service · postgres · prometheus → todos up"),
+ ]),
+ S("12 · Kubernetes / Helm — alternativa","#c084fc",[
+   I("Criar namespace + Secret","O chart NÃO templata segredos; referencia o Secret 'multica-secrets'.","kubectl create namespace multica\\nkubectl -n multica create secret generic multica-secrets --from-literal=JWT_SECRET=\"$(openssl rand -hex 32)\" --from-literal=POSTGRES_PASSWORD=\"$(openssl rand -hex 16)\"","secret criado"),
+   I("Instalar o chart","","helm install multica deploy/helm/multica -n multica","Deployments/Services/Ingress criados"),
+   I("Health via Ingress","","curl -H \"Host: api.multica.dev.lan\" http://<ingress-ip>/healthz","{\"status\":\"ok\",\"checks\":{\"db\":\"ok\",\"migrations\":\"ok\"}}"),
+   I("Atualizar imagens","","kubectl -n multica rollout restart deploy/multica-backend deploy/multica-frontend","rollout novo"),
+ ]),
+ S("13 · Upgrade","#5aa8ff",[
+   I("Puxar novas imagens e re-subir","Migrations rodam automático no restart do backend.","docker compose -f docker-compose.selfhost.yml pull && docker compose -f docker-compose.selfhost.yml up -d","novas versões no ar · migrations aplicadas"),
+ ]),
+ S("14 · Backup / Restore (Postgres)","#34d399",[
+   I("Backup do banco","","docker exec multica-postgres pg_dump -U multica multica > backup_$(date +%F).sql","arquivo .sql gerado"),
+   I("Restore do banco","","docker exec -i multica-postgres psql -U multica multica < backup.sql","dados restaurados"),
+   I("(Alternativa) backup do volume","","docker run --rm -v multica_pgdata:/v -v $PWD:/b alpine tar czf /b/pgdata.tgz -C /v .","pgdata.tgz gerado"),
+ ]),
+ S("15 · Encerramento","#ff5c7a",[
+   I("Parar a stack self-host (via make)","","make selfhost-stop","serviços parados"),
+   I("Ou derrubar (mantém dados)","Volumes persistem.","docker compose -f docker-compose.selfhost.yml down","containers removidos, volumes intactos"),
+   I("Derrubar + apagar dados (destrutivo)","","docker compose -f docker-compose.selfhost.yml down -v","volumes removidos"),
+   I("(Emergência) rollback p/ codex cru","Comando único testado (gated).","DEPLOY_OWNER_APPROVED=true SMOKE_ALLOW_EXECUTE=1 bash scripts/smoke/rollback-smoke.sh --execute","[rollback-to-raw-codex] PASS"),
+ ]),
+ S("16 · Troubleshooting (issues comuns)","#fb923c",[
+   I("Backend não sobe","Geralmente DATABASE_URL ou JWT_SECRET ruim no .env.","docker compose -f docker-compose.selfhost.yml logs backend","erro identificado nos logs"),
+   I("Código de verificação não chega","Nenhum e-mail configurado → procure [DEV] Verification code.","docker compose -f docker-compose.selfhost.yml logs backend | grep -i 'verification code'","código no log"),
+   I("WebSocket não conecta","Em deploy público defina FRONTEND_ORIGIN com o domínio real e reinicie o backend.","","WS conecta após ajustar FRONTEND_ORIGIN"),
+   I("Dashboard de Usage em zero","Rollup in-process (30s) — normalmente sem ação; ver docs.","","dashboard popula"),
+   I("readyz do sidecar = 503","Postgres inalcançável pelo sidecar.","curl -s http://127.0.0.1:43117/readyz","corrigir PG/PRODEX_PG_URL"),
+   I("Conta 'some' ao logar outra","Credenciais compartilhadas (violação de isolamento).","","garantir CODEX_HOME/XDG_DATA_HOME/HOME por conta"),
+ ]),
+]};
+
+let model=load();
+function load(){try{const m=JSON.parse(localStorage.getItem(KEY));if(m&&m.sections)return m;}catch(e){} return JSON.parse(JSON.stringify(DEFAULT));}
+function save(){localStorage.setItem(KEY,JSON.stringify(model));}
+function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+const app=document.getElementById("app");
+function render(){
+  document.querySelector('[data-field=doctitle]').textContent=model.doctitle||"";
+  app.innerHTML="";
+  model.sections.forEach(sec=>{
+    const el=document.createElement("section");el.className="sec"+(sec.collapsed?" collapsed":"");
+    el.innerHTML=`<div class="h"><span class="dot" style="color:${sec.color}" title="colapsar"></span>
+      <span class="stitle" contenteditable data-sid="${sec.id}" data-sfield="title" data-ph="Título…">${esc(sec.title)}</span>
+      <span class="cnt"></span><button class="del" data-delsec="${sec.id}" title="excluir seção">🗑</button></div>
+      <div class="items"></div><div class="addrow"><button data-additem="${sec.id}">＋ item</button></div>`;
+    const items=el.querySelector(".items");
+    sec.items.forEach(it=>items.appendChild(renderItem(sec.id,it)));
+    el.querySelector(".dot").addEventListener("click",()=>{sec.collapsed=!sec.collapsed;save();el.classList.toggle("collapsed");});
+    app.appendChild(el);
+    el._sec=sec;el._upd=()=>el.querySelector(".cnt").textContent=sec.items.filter(i=>i.done).length+"/"+sec.items.length;el._upd();
+  });
+  refresh();
+}
+function renderItem(sid,it){
+  const row=document.createElement("div");row.className="item"+(it.done?" done":"");
+  row.innerHTML=`<label class="cbx"><input type="checkbox" ${it.done?"checked":""}></label>
+    <div class="ib">
+      <div class="t" contenteditable data-iid="${it.id}" data-ifield="t" data-ph="atividade…">${esc(it.t)}</div>
+      <div class="d" contenteditable data-iid="${it.id}" data-ifield="d" data-ph="descrição…">${esc(it.d)}</div>
+      <div class="cmd"><code contenteditable data-iid="${it.id}" data-ifield="cmd" data-ph="comando…">${esc(it.cmd)}</code><button class="cp">copiar</button></div>
+      <div class="exp" contenteditable data-iid="${it.id}" data-ifield="exp" data-ph="resultado esperado…">${esc(it.exp)}</div>
+      <div class="note" contenteditable data-iid="${it.id}" data-ifield="note" data-ph="observação…">${esc(it.note)}</div>
+      <div class="stamp">${it.doneAt?("✓ "+it.doneAt):""}</div>
+    </div><button class="del" data-delitem="${it.id}" data-sid="${sid}" title="excluir item">🗑</button>`;
+  row.querySelector("input").addEventListener("change",e=>{it.done=e.target.checked;it.doneAt=it.done?new Date().toLocaleString("pt-BR"):"";save();
+    row.classList.toggle("done",it.done);row.querySelector(".stamp").textContent=it.done?("✓ "+it.doneAt):"";[...app.children].forEach(x=>x._upd&&x._upd());refresh();});
+  row.querySelector(".cp").addEventListener("click",()=>{navigator.clipboard.writeText((it.cmd||"").replace(/\\n/g,"\n"));const b=row.querySelector(".cp");b.textContent="copiado!";setTimeout(()=>b.textContent="copiar",1100);});
+  return row;
+}
+function find(iid){for(const s of model.sections){const it=s.items.find(i=>i.id===iid);if(it)return it;}return null;}
+app.addEventListener("blur",e=>{const t=e.target;
+  if(t.dataset&&t.dataset.ifield){const it=find(t.dataset.iid);if(it){it[t.dataset.ifield]=t.innerText.trim();save();}}
+  else if(t.dataset&&t.dataset.sfield){const s=model.sections.find(x=>x.id===t.dataset.sid);if(s){s[t.dataset.sfield]=t.innerText.trim();save();}}},true);
+document.querySelector('[data-field=doctitle]').addEventListener("blur",e=>{model.doctitle=e.target.innerText.trim();save();});
+app.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.additem){model.sections.find(x=>x.id===b.dataset.additem).items.push(I("Nova atividade"));save();render();}
+  else if(b.dataset.delitem){if(confirm("Excluir este item?")){const s=model.sections.find(x=>x.id===b.dataset.sid);s.items=s.items.filter(i=>i.id!==b.dataset.delitem);save();render();}}
+  else if(b.dataset.delsec){if(confirm("Excluir a seção inteira?")){model.sections=model.sections.filter(s=>s.id!==b.dataset.delsec);save();render();}}});
+document.getElementById("addSec").addEventListener("click",()=>{model.sections.push(S("Nova seção",COLORS[model.sections.length%COLORS.length],[]));save();render();});
+document.getElementById("expand").addEventListener("click",()=>{model.sections.forEach(s=>s.collapsed=false);save();render();});
+document.getElementById("reset").addEventListener("click",()=>{if(confirm("Restaurar o checklist padrão? (perde edições)")){model=JSON.parse(JSON.stringify(DEFAULT));save();render();}});
+document.getElementById("exp").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(model,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="RPP_checklist.json";a.click();});
+document.getElementById("impBtn").addEventListener("click",()=>document.getElementById("imp").click());
+document.getElementById("imp").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const m=JSON.parse(r.result);if(m.sections){model=m;save();render();}else alert("JSON inválido");}catch(x){alert("Falha ao ler JSON");}};r.readAsText(f);});
+function refresh(){let tot=0,d=0;model.sections.forEach(s=>s.items.forEach(i=>{tot++;if(i.done)d++;}));const pct=tot?Math.round(d/tot*100):0;
+  document.getElementById("fill").style.width=pct+"%";document.getElementById("ring").style.setProperty("--p",pct);
+  document.getElementById("ringtxt").textContent=pct+"%";document.getElementById("cnt").textContent=`${d} de ${tot}`;
+  document.getElementById("stage").textContent=pct===100?"🎉 completo":(pct>=60?"quase lá":(pct>0?"em progresso":"—"));
+  [...app.children].forEach(el=>el._upd&&el._upd());}
+render();
+</script>
+</body>
+</html>
