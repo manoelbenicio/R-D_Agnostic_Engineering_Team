@@ -32,3 +32,5 @@ data/**/.DS_Store
 
 expo-env.d.ts
 # @end expo-cli
+# secret — never track
+.env.production
