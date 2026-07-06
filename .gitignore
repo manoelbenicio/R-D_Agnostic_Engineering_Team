@@ -73,3 +73,6 @@ docs/herdmaster-prd/
 docs/amux-reference/
 Mapeamento_New_Features/
 data_experts/
+
+# Rust build artifacts
+**/target/
