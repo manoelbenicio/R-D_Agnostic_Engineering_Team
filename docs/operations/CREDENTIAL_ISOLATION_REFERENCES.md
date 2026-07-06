@@ -36,7 +36,7 @@ Fonte de verdade a portar (Fase 1 isolamento + Fase 2 rotação).
 | `rotation/trigger.py` | 2026-06-27 15:36:37 | gatilhos |
 | `rotation/auth.py` | 2026-06-27 15:29:10 | `DeviceLoginAuthenticator` (logout/login/wait) |
 | `rotation/pool.py` | 2026-06-27 15:23:19 | seleção por prioridade de expertise |
-| `docs/30-COMPONENTES/36-ROTACAO-CONTAS-TOKEN.md` | 2026-06-27 15:39:43 | **spec autoritativa** da rotação (algoritmo, detecção, "todas esgotadas") |
+| `/mnt/c/VMs/Projects/AOP/docs/30-COMPONENTES/36-ROTACAO-CONTAS-TOKEN.md` | 2026-06-27 15:39:43 | **spec autoritativa** da rotação (algoritmo, detecção, "todas esgotadas") |
 | ADR‑009 | **não localizado** | referenciado no `design.md`; arquivo não encontrado na busca (a confirmar) |
 
 ## 3. RD — código, plano e histórico (`/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team`)
