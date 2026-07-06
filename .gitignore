@@ -81,3 +81,4 @@ target/
 # secrets — never track
 .env.production
 **/.env.production
+multica-auth-work/apps/mobile/.env.production
