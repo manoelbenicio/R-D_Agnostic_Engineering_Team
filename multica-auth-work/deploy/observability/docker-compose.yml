@@ -67,7 +67,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT:-3000}:3000"
     secrets: [grafana_admin_password]
     depends_on: [prometheus]
     networks: [observability]
