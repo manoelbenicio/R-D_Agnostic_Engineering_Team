@@ -11,6 +11,9 @@ func TestVendorCredentialFallbackDoesNotSetIsolatedHomes(t *testing.T) {
 	}{
 		{name: "kiro", provider: "kiro"},
 		{name: "antigravity", provider: "antigravity"},
+		{name: "cline", provider: "cline"},
+		{name: "opencode", provider: "opencode"},
+		{name: "glm", provider: "glm"},
 	}
 
 	for _, tt := range tests {
@@ -57,5 +60,17 @@ func assertNoIsolatedHomes(t *testing.T, phase string, env *Environment) {
 	}
 	if env.AntigravityHome != "" {
 		t.Fatalf("%s set AntigravityHome = %q with empty CredentialAccountHome; daemon would inject HOME", phase, env.AntigravityHome)
+	}
+	if env.ClineDataDir != "" {
+		t.Fatalf("%s set ClineDataDir = %q with empty CredentialAccountHome; daemon would inject CLINE_DATA_DIR", phase, env.ClineDataDir)
+	}
+	if env.ClineSandboxDataDir != "" {
+		t.Fatalf("%s set ClineSandboxDataDir = %q with empty CredentialAccountHome; daemon would inject CLINE_SANDBOX_DATA_DIR", phase, env.ClineSandboxDataDir)
+	}
+	if env.OpenCodeDataHome != "" {
+		t.Fatalf("%s set OpenCodeDataHome = %q with empty CredentialAccountHome; daemon would inject XDG_DATA_HOME", phase, env.OpenCodeDataHome)
+	}
+	if env.OpenCodeConfigHome != "" {
+		t.Fatalf("%s set OpenCodeConfigHome = %q with empty CredentialAccountHome; daemon would inject XDG_CONFIG_HOME", phase, env.OpenCodeConfigHome)
 	}
 }

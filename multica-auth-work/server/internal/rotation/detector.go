@@ -53,8 +53,14 @@ func matchesVendorExhaustion(vendor, screenText string) bool {
 		return codexUsageLimitPattern.MatchString(screenText) && codexTryAgainPattern.MatchString(screenText)
 	case "antigravity":
 		return antigravityQuotaPattern.MatchString(screenText) && antigravityResumePattern.MatchString(screenText)
-	case "kiro", "opus":
+	case "opus":
 		return claudeLimitPattern.MatchString(screenText) && resetPattern.MatchString(screenText)
+	case "kiro":
+		return matchesKiroExhaustion(screenText)
+	case "cline":
+		return matchesClineExhaustion(screenText)
+	case "opencode":
+		return matchesOpenCodeExhaustion(screenText)
 	default:
 		return false
 	}

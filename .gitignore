@@ -44,8 +44,10 @@ pnpm-debug.log*
 # --- SAFETY: never commit real credentials ---
 **/scripts/staging/creds/
 **/multica-auth-creds/
+# i18n locale strings are NOT secrets and MUST stay tracked.
+# (git has no inline comments — keep the negation pattern on its own clean line)
 **/auth.json
-!**/packages/views/locales/**/auth.json   # i18n strings, not secrets
+!**/packages/views/locales/**/auth.json
 **/.env.production
 **/.env.staging
 **/deploy/observability/secrets/*
@@ -67,3 +69,6 @@ docs/herdmaster-prd/
 docs/amux-reference/
 Mapeamento_New_Features/
 data_experts/
+
+# Vite cache
+.vite/

@@ -15,12 +15,6 @@ var codexSymlinkedDirs = []string{
 	"sessions",
 }
 
-// Files to symlink from the shared ~/.codex/ into the per-task CODEX_HOME.
-// Symlinks share state (e.g. auth tokens) so changes propagate automatically.
-var codexSymlinkedFiles = []string{
-	"auth.json",
-}
-
 // Files to copy from the shared ~/.codex/ into the per-task CODEX_HOME.
 // Copies are isolated — changes don't affect the shared home.
 var codexCopiedFiles = []string{
@@ -43,12 +37,9 @@ type CodexHomeOptions struct {
 	GOOS string
 	// AccountHome, when non-empty, is the per-account credential source
 	// directory for this task. When set, the per-task auth.json is COPIED
-	// (isolated) from AccountHome/auth.json instead of being symlinked to the
-	// single shared ~/.codex/auth.json. This is what gives each vendor account
-	// its own credential, so logging in / refreshing one account never
-	// overwrites or contaminates another. Empty preserves the historical
-	// behavior exactly (symlink to the shared home) — full backward
-	// compatibility for every task/project/squad mode.
+	// (isolated) from AccountHome/auth.json. Empty falls back to copying from
+	// the shared ~/.codex/auth.json, never symlinking, so OAuth refreshes in the
+	// per-task home cannot clobber the shared credential file.
 	//
 	// Isolation via copy (not symlink) is deliberate: OAuth clients rewrite
 	// auth.json on token refresh; a symlink would push one account's refresh
@@ -66,8 +57,8 @@ func prepareCodexHome(codexHome string, logger *slog.Logger) error {
 }
 
 // prepareCodexHomeWithOpts creates a per-task CODEX_HOME directory and seeds
-// it with config from the shared ~/.codex/ home. Auth is symlinked (shared),
-// config files are copied (isolated). The per-task config.toml gets a
+// it with config from the shared ~/.codex/ home. Auth and config files are
+// copied (isolated). The per-task config.toml gets a
 // daemon-managed sandbox block picked by codexSandboxPolicyFor.
 func prepareCodexHomeWithOpts(codexHome string, opts CodexHomeOptions, logger *slog.Logger) error {
 	sharedHome := resolveSharedCodexHome()
@@ -85,27 +76,14 @@ func prepareCodexHomeWithOpts(codexHome string, opts CodexHomeOptions, logger *s
 		}
 	}
 
-	// Auth handling. Two modes:
-	//
-	//   - Per-account isolation (opts.AccountHome != ""): COPY auth.json from
-	//     the account's own credential dir into the per-task home. Each account
-	//     stays isolated — a token refresh on one account never touches another.
-	//   - Shared/global (opts.AccountHome == "", historical default): SYMLINK
-	//     auth.json to the single shared ~/.codex/auth.json so refreshes
-	//     propagate, exactly as before. Full backward compatibility.
+	// Always copy auth.json into the task home. A symlink would let an OAuth
+	// refresh from one task overwrite the source credential used by others.
+	authSourceHome := sharedHome
 	if opts.AccountHome != "" {
-		if err := seedAccountAuth(opts.AccountHome, codexHome, logger); err != nil {
-			logger.Warn("execenv: codex-home per-account auth seed failed", "error", err)
-		}
-	} else {
-		// Symlink shared files (auth).
-		for _, name := range codexSymlinkedFiles {
-			src := filepath.Join(sharedHome, name)
-			dst := filepath.Join(codexHome, name)
-			if err := ensureSymlink(src, dst); err != nil {
-				logger.Warn("execenv: codex-home symlink failed", "file", name, "error", err)
-			}
-		}
+		authSourceHome = opts.AccountHome
+	}
+	if err := seedAccountAuth(authSourceHome, codexHome, logger); err != nil {
+		return fmt.Errorf("execenv: codex-home auth seed failed: %w", err)
 	}
 
 	// Surface the resulting auth.json state (file kind only, never contents)
@@ -272,8 +250,7 @@ func ensureSymlink(src, dst string) error {
 // logCodexAuthState records the kind of auth.json the per-task CODEX_HOME
 // ended up with — symlink (with target), regular file (with size + mtime),
 // or missing — so an operator chasing refresh_token_reused / token_expired
-// reports can immediately tell whether the per-task home is tracking the
-// shared ~/.codex/auth.json or has drifted into a stale local copy.
+// reports can immediately tell whether the per-task home has a local auth copy.
 //
 // Never logs the file contents.
 func logCodexAuthState(authPath string, logger *slog.Logger) {
@@ -299,10 +276,10 @@ func logCodexAuthState(authPath string, logger *slog.Logger) {
 // codex_sandbox.go's ensureCodexSandboxConfig so they can be updated
 // idempotently without touching user-managed keys.)
 
-// seedAccountAuth copies auth.json from a per-account credential directory into
-// the per-task CODEX_HOME, isolated from every other account. Unlike the shared
-// symlink path, a token refresh written here stays contained to this task's
-// home and never propagates onto another account's credential.
+// seedAccountAuth copies auth.json from a credential source directory into the
+// per-task CODEX_HOME, isolated from every other account. A token refresh
+// written here stays contained to this task's home and never propagates onto
+// another account's credential.
 //
 // Semantics mirror syncCopiedFile (refresh-on-reuse):
 //   - account auth present, dst absent  -> copy
@@ -319,7 +296,6 @@ func seedAccountAuth(accountHome, codexHome string, logger *slog.Logger) error {
 	}
 	return nil
 }
-
 
 // src so the per-task copy tracks the shared source across Reuse() runs:
 //

@@ -3289,7 +3289,11 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	localAssignment, _ := findLocalDirectoryAssignment(task.ProjectResources, d.cfg.DaemonID)
 	credentialAccountHome := ""
 	if !d.cfg.L2Runtime.Enabled {
-		credentialAccountHome = d.credentialAccountHomeForTask(ctx, task, provider, taskLog)
+		var err error
+		credentialAccountHome, err = d.credentialAccountHomeForTask(ctx, task, provider, taskLog)
+		if err != nil {
+			return TaskResult{}, err
+		}
 	}
 	rotationRetried := false
 	startedTask := false
@@ -3867,26 +3871,49 @@ runAttempt:
 	}
 }
 
-func (d *Daemon) credentialAccountHomeForTask(ctx context.Context, task Task, provider string, taskLog *slog.Logger) string {
-	if d.rotationStore == nil || task.AgentID == "" || provider == "" {
-		return ""
+func (d *Daemon) credentialAccountHomeForTask(ctx context.Context, task Task, provider string, taskLog *slog.Logger) (string, error) {
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider == "" {
+		return "", errors.New("credential isolation: provider is required")
+	}
+	if !requiresCredentialIsolation(provider) {
+		return "", nil
+	}
+	if d.rotationStore == nil {
+		return "", fmt.Errorf("credential isolation required for provider %q but rotation store is unavailable", provider)
+	}
+	if task.AgentID == "" {
+		return "", fmt.Errorf("credential isolation required for provider %q but task has no agent id", provider)
 	}
 	accountID, err := d.rotationStore.CurrentAssignment(ctx, task.AgentID)
 	if err != nil {
-		if !errors.Is(err, rotation.ErrNoAssignment) {
-			taskLog.Debug("rotation: current assignment unavailable; using shared credentials", "error", err)
+		if errors.Is(err, rotation.ErrNoAssignment) {
+			return "", fmt.Errorf("credential isolation required for provider %q but no account assignment exists", provider)
 		}
-		return ""
+		taskLog.Debug("rotation: current assignment unavailable; failing closed", "error", err)
+		return "", fmt.Errorf("credential isolation required for provider %q but current assignment is unavailable: %w", provider, err)
 	}
 	account, err := d.rotationStore.GetAccount(ctx, accountID)
 	if err != nil {
-		taskLog.Debug("rotation: assigned account unavailable; using shared credentials", "error", err)
-		return ""
+		taskLog.Debug("rotation: assigned account unavailable; failing closed", "error", err)
+		return "", fmt.Errorf("credential isolation required for provider %q but assigned account is unavailable: %w", provider, err)
 	}
 	if !strings.EqualFold(account.Vendor, provider) {
-		return ""
+		return "", fmt.Errorf("credential isolation account vendor mismatch: provider=%q account_vendor=%q", provider, account.Vendor)
 	}
-	return account.HomeDir
+	if strings.TrimSpace(account.HomeDir) == "" {
+		return "", fmt.Errorf("credential isolation required for provider %q but assigned account has no home dir", provider)
+	}
+	return account.HomeDir, nil
+}
+
+func requiresCredentialIsolation(provider string) bool {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "codex", "kiro", "antigravity", "glm", "cline", "opencode":
+		return true
+	default:
+		return false
+	}
 }
 
 func taskRuntimeRouterOwner(task Task) string {
@@ -4621,7 +4648,7 @@ func isBlockedEnvKey(key string) bool {
 		return true
 	}
 	switch upper {
-	case "HOME", "PATH", "USER", "SHELL", "TERM", "CODEX_HOME", "CURSOR_DATA_DIR", "OPENCLAW_CONFIG_PATH", "OPENCLAW_INCLUDE_ROOTS":
+	case "HOME", "PATH", "USER", "SHELL", "TERM", "CODEX_HOME", "XDG_DATA_HOME", "CURSOR_DATA_DIR", "OPENCLAW_CONFIG_PATH", "OPENCLAW_INCLUDE_ROOTS":
 		return true
 	}
 	return false

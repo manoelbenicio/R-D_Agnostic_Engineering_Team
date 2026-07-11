@@ -1958,23 +1958,20 @@ func TestPrepareCodexHomeSeedsFromShared(t *testing.T) {
 		}
 	}
 
-	// auth.json should be a symlink.
+	// auth.json must be copied into the task home, never symlinked. OAuth
+	// refreshes rewrite this file; a symlink would clobber the shared credential.
 	authPath := filepath.Join(codexHome, "auth.json")
 	fi, err = os.Lstat(authPath)
 	if err != nil {
 		t.Fatalf("auth.json not found: %v", err)
 	}
-	authIsLink := fi.Mode()&os.ModeSymlink != 0
-	if !authIsLink && runtime.GOOS != "windows" {
-		t.Error("auth.json should be a symlink")
+	if fi.Mode()&os.ModeSymlink != 0 {
+		t.Error("auth.json should be a regular copy, not a symlink")
 	}
-	if authIsLink {
-		target, _ := os.Readlink(authPath)
-		if target != filepath.Join(sharedHome, "auth.json") {
-			t.Errorf("auth.json symlink target = %q, want %q", target, filepath.Join(sharedHome, "auth.json"))
-		}
+	if !fi.Mode().IsRegular() {
+		t.Errorf("auth.json mode = %v, want regular file", fi.Mode())
 	}
-	// Verify content is accessible through symlink.
+	// Verify content is copied from the shared source.
 	data, _ := os.ReadFile(authPath)
 	if string(data) != `{"token":"secret"}` {
 		t.Errorf("auth.json content = %q", data)

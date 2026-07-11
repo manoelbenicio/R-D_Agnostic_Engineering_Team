@@ -1,0 +1,64 @@
+=== RUN   TestCredentialIsolationPerVendor
+=== RUN   TestCredentialIsolationPerVendor/codex
+=== PAUSE TestCredentialIsolationPerVendor/codex
+=== RUN   TestCredentialIsolationPerVendor/kiro
+=== PAUSE TestCredentialIsolationPerVendor/kiro
+=== RUN   TestCredentialIsolationPerVendor/antigravity
+=== PAUSE TestCredentialIsolationPerVendor/antigravity
+=== RUN   TestCredentialIsolationPerVendor/glm
+=== PAUSE TestCredentialIsolationPerVendor/glm
+=== RUN   TestCredentialIsolationPerVendor/cline
+=== PAUSE TestCredentialIsolationPerVendor/cline
+=== RUN   TestCredentialIsolationPerVendor/opencode
+=== PAUSE TestCredentialIsolationPerVendor/opencode
+=== CONT  TestCredentialIsolationPerVendor/codex
+=== RUN   TestCredentialIsolationPerVendor/codex/two_accounts_coexist_without_overlap
+=== CONT  TestCredentialIsolationPerVendor/glm
+=== CONT  TestCredentialIsolationPerVendor/opencode
+=== CONT  TestCredentialIsolationPerVendor/antigravity
+=== CONT  TestCredentialIsolationPerVendor/cline
+=== RUN   TestCredentialIsolationPerVendor/opencode/two_accounts_coexist_without_overlap
+=== CONT  TestCredentialIsolationPerVendor/kiro
+=== RUN   TestCredentialIsolationPerVendor/glm/two_accounts_coexist_without_overlap
+=== RUN   TestCredentialIsolationPerVendor/cline/two_accounts_coexist_without_overlap
+=== RUN   TestCredentialIsolationPerVendor/kiro/two_accounts_coexist_without_overlap
+=== RUN   TestCredentialIsolationPerVendor/antigravity/two_accounts_coexist_without_overlap
+=== RUN   TestCredentialIsolationPerVendor/codex/fail_closed_no_assignment
+=== RUN   TestCredentialIsolationPerVendor/codex/no_secret_in_log
+=== RUN   TestCredentialIsolationPerVendor/kiro/fail_closed_no_assignment
+=== RUN   TestCredentialIsolationPerVendor/kiro/no_secret_in_log
+=== RUN   TestCredentialIsolationPerVendor/cline/fail_closed_no_assignment
+=== RUN   TestCredentialIsolationPerVendor/cline/no_secret_in_log
+=== RUN   TestCredentialIsolationPerVendor/opencode/fail_closed_no_assignment
+=== RUN   TestCredentialIsolationPerVendor/opencode/no_secret_in_log
+=== RUN   TestCredentialIsolationPerVendor/antigravity/fail_closed_no_assignment
+=== RUN   TestCredentialIsolationPerVendor/glm/fail_closed_no_assignment
+=== RUN   TestCredentialIsolationPerVendor/antigravity/no_secret_in_log
+=== RUN   TestCredentialIsolationPerVendor/glm/no_secret_in_log
+--- PASS: TestCredentialIsolationPerVendor (0.01s)
+    --- PASS: TestCredentialIsolationPerVendor/codex (0.05s)
+        --- PASS: TestCredentialIsolationPerVendor/codex/two_accounts_coexist_without_overlap (0.03s)
+        --- PASS: TestCredentialIsolationPerVendor/codex/fail_closed_no_assignment (0.00s)
+        --- PASS: TestCredentialIsolationPerVendor/codex/no_secret_in_log (0.01s)
+    --- PASS: TestCredentialIsolationPerVendor/kiro (0.05s)
+        --- PASS: TestCredentialIsolationPerVendor/kiro/two_accounts_coexist_without_overlap (0.03s)
+        --- PASS: TestCredentialIsolationPerVendor/kiro/fail_closed_no_assignment (0.00s)
+        --- PASS: TestCredentialIsolationPerVendor/kiro/no_secret_in_log (0.01s)
+    --- PASS: TestCredentialIsolationPerVendor/cline (0.05s)
+        --- PASS: TestCredentialIsolationPerVendor/cline/two_accounts_coexist_without_overlap (0.03s)
+        --- PASS: TestCredentialIsolationPerVendor/cline/fail_closed_no_assignment (0.00s)
+        --- PASS: TestCredentialIsolationPerVendor/cline/no_secret_in_log (0.01s)
+    --- PASS: TestCredentialIsolationPerVendor/antigravity (0.05s)
+        --- PASS: TestCredentialIsolationPerVendor/antigravity/two_accounts_coexist_without_overlap (0.04s)
+        --- PASS: TestCredentialIsolationPerVendor/antigravity/fail_closed_no_assignment (0.00s)
+        --- PASS: TestCredentialIsolationPerVendor/antigravity/no_secret_in_log (0.02s)
+    --- PASS: TestCredentialIsolationPerVendor/opencode (0.05s)
+        --- PASS: TestCredentialIsolationPerVendor/opencode/two_accounts_coexist_without_overlap (0.04s)
+        --- PASS: TestCredentialIsolationPerVendor/opencode/fail_closed_no_assignment (0.00s)
+        --- PASS: TestCredentialIsolationPerVendor/opencode/no_secret_in_log (0.02s)
+    --- PASS: TestCredentialIsolationPerVendor/glm (0.05s)
+        --- PASS: TestCredentialIsolationPerVendor/glm/two_accounts_coexist_without_overlap (0.04s)
+        --- PASS: TestCredentialIsolationPerVendor/glm/fail_closed_no_assignment (0.00s)
+        --- PASS: TestCredentialIsolationPerVendor/glm/no_secret_in_log (0.02s)
+PASS
+ok  	github.com/multica-ai/multica/server/internal/daemon	0.075s

@@ -66,7 +66,9 @@ type PrepareParams struct {
 	//
 	// The daemon resolves this from the agent→account assignment. Each vendor
 	// maps it onto its native isolation lever (Codex: CODEX_HOME source;
-	// Kiro: XDG_DATA_HOME / KIRO_API_KEY; Antigravity: HOME). Empty = fallback.
+	// Kiro: XDG_DATA_HOME / KIRO_API_KEY; Antigravity: HOME; Cline:
+	// CLINE_DATA_DIR; OpenCode/GLM: XDG_DATA_HOME + XDG_CONFIG_HOME).
+	// Empty = fallback.
 	CredentialAccountHome string
 	Task                  TaskContextForEnv // context data for writing files
 }
@@ -160,6 +162,22 @@ type Environment struct {
 	// The daemon exports it as HOME so the agy CLI reads the account's own
 	// ~/.gemini/antigravity-cli token dir instead of the shared user home.
 	AntigravityHome string
+	// ClineDataDir is the path to the per-task isolated CLINE_DATA_DIR (set
+	// only for the cline provider when a per-account credential is used).
+	// Cline's CLI treats this as its native data root instead of ~/.cline.
+	ClineDataDir string
+	// ClineSandboxDataDir is the per-task sandbox data dir paired with
+	// CLINE_DATA_DIR. The daemon exports it as CLINE_SANDBOX_DATA_DIR and
+	// enables CLINE_SANDBOX=1 for cline subprocesses.
+	ClineSandboxDataDir string
+	// OpenCodeDataHome is the per-task isolated XDG_DATA_HOME directory for
+	// OpenCode-compatible providers. OpenCode stores auth.json under
+	// XDG_DATA_HOME/opencode/.
+	OpenCodeDataHome string
+	// OpenCodeConfigHome is the per-task isolated XDG_CONFIG_HOME directory for
+	// OpenCode-compatible providers. OpenCode stores config under
+	// XDG_CONFIG_HOME/opencode/.
+	OpenCodeConfigHome string
 	// OpenclawConfigPath is the path to the per-task synthesized OpenClaw
 	// config (set only for openclaw provider). The daemon exports this as
 	// OPENCLAW_CONFIG_PATH on the openclaw subprocess so its native skill
@@ -283,6 +301,37 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 			return nil, fmt.Errorf("execenv: prepare antigravity-home: %w", err)
 		}
 		env.AntigravityHome = agyHome
+	}
+
+	// Cline's native CLI isolation is CLINE_DATA_DIR plus sandbox knobs. Empty
+	// CredentialAccountHome = shared/global behavior (no isolated data dir).
+	if params.Provider == "cline" && params.CredentialAccountHome != "" {
+		clineDataDir := filepath.Join(envRoot, "cline-data-dir")
+		clineSandboxDataDir := filepath.Join(envRoot, "cline-sandbox-data")
+		if err := prepareClineHome(clineDataDir, ClineHomeOptions{AccountHome: params.CredentialAccountHome}, logger); err != nil {
+			return nil, fmt.Errorf("execenv: prepare cline-data-dir: %w", err)
+		}
+		if err := os.MkdirAll(clineSandboxDataDir, 0o700); err != nil {
+			return nil, fmt.Errorf("execenv: create cline sandbox data dir: %w", err)
+		}
+		if err := os.Chmod(clineSandboxDataDir, 0o700); err != nil {
+			return nil, fmt.Errorf("execenv: chmod cline sandbox data dir: %w", err)
+		}
+		env.ClineDataDir = clineDataDir
+		env.ClineSandboxDataDir = clineSandboxDataDir
+	}
+
+	// GLM fleet agents run through the OpenCode-compatible runtime path, so
+	// both opencode and glm use OpenCode's XDG data/config isolation levers.
+	// Empty CredentialAccountHome = shared/global behavior.
+	if (params.Provider == "opencode" || params.Provider == "glm") && params.CredentialAccountHome != "" {
+		opencodeDataHome := filepath.Join(envRoot, params.Provider+"-data-home")
+		opencodeConfigHome := filepath.Join(envRoot, params.Provider+"-config-home")
+		if err := prepareOpenCodeHome(opencodeDataHome, opencodeConfigHome, OpenCodeHomeOptions{AccountHome: params.CredentialAccountHome}, logger); err != nil {
+			return nil, fmt.Errorf("execenv: prepare %s opencode home: %w", params.Provider, err)
+		}
+		env.OpenCodeDataHome = opencodeDataHome
+		env.OpenCodeConfigHome = opencodeConfigHome
 	}
 
 	// For Cursor, materialize managed MCP into project-local config and use
@@ -465,6 +514,34 @@ func Reuse(params ReuseParams, logger *slog.Logger) *Environment {
 		}
 	}
 
+	// Cline per-account isolation refreshed on reuse (mirror of Prepare).
+	if params.Provider == "cline" && params.CredentialAccountHome != "" {
+		clineDataDir := filepath.Join(env.RootDir, "cline-data-dir")
+		clineSandboxDataDir := filepath.Join(env.RootDir, "cline-sandbox-data")
+		if err := prepareClineHome(clineDataDir, ClineHomeOptions{AccountHome: params.CredentialAccountHome}, logger); err != nil {
+			logger.Warn("execenv: refresh cline-data-dir failed", "error", err)
+		} else if err := os.MkdirAll(clineSandboxDataDir, 0o700); err != nil {
+			logger.Warn("execenv: refresh cline sandbox data dir failed", "error", err)
+		} else if err := os.Chmod(clineSandboxDataDir, 0o700); err != nil {
+			logger.Warn("execenv: chmod cline sandbox data dir failed", "error", err)
+		} else {
+			env.ClineDataDir = clineDataDir
+			env.ClineSandboxDataDir = clineSandboxDataDir
+		}
+	}
+
+	// OpenCode/GLM per-account isolation refreshed on reuse (mirror of Prepare).
+	if (params.Provider == "opencode" || params.Provider == "glm") && params.CredentialAccountHome != "" {
+		opencodeDataHome := filepath.Join(env.RootDir, params.Provider+"-data-home")
+		opencodeConfigHome := filepath.Join(env.RootDir, params.Provider+"-config-home")
+		if err := prepareOpenCodeHome(opencodeDataHome, opencodeConfigHome, OpenCodeHomeOptions{AccountHome: params.CredentialAccountHome}, logger); err != nil {
+			logger.Warn("execenv: refresh opencode-compatible home failed", "provider", params.Provider, "error", err)
+		} else {
+			env.OpenCodeDataHome = opencodeDataHome
+			env.OpenCodeConfigHome = opencodeConfigHome
+		}
+	}
+
 	// Refresh Cursor's managed MCP sidecars on reuse. A newly saved agent
 	// mcp_config must replace the prior run's .cursor/mcp.json and isolated
 	// approvals before the next cursor-agent process starts.
@@ -505,6 +582,51 @@ func Reuse(params ReuseParams, logger *slog.Logger) *Environment {
 
 	logger.Info("execenv: reusing env", "workdir", params.WorkDir)
 	return env
+}
+
+// CredentialEnv returns the provider-native credential isolation environment
+// for a prepared Environment. Callers merge it into the child process env.
+func (e *Environment) CredentialEnv(provider string) map[string]string {
+	if e == nil {
+		return nil
+	}
+	switch provider {
+	case "codex":
+		if e.CodexHome != "" {
+			return map[string]string{"CODEX_HOME": e.CodexHome}
+		}
+	case "kiro":
+		if e.KiroDataHome != "" {
+			return map[string]string{"XDG_DATA_HOME": e.KiroDataHome}
+		}
+	case "antigravity":
+		if e.AntigravityHome != "" {
+			return map[string]string{"HOME": e.AntigravityHome}
+		}
+	case "cline":
+		if e.ClineDataDir != "" {
+			out := map[string]string{
+				"CLINE_DATA_DIR": e.ClineDataDir,
+				"CLINE_SANDBOX":  "1",
+			}
+			if e.ClineSandboxDataDir != "" {
+				out["CLINE_SANDBOX_DATA_DIR"] = e.ClineSandboxDataDir
+			}
+			return out
+		}
+	case "opencode", "glm":
+		if e.OpenCodeDataHome != "" || e.OpenCodeConfigHome != "" {
+			out := map[string]string{}
+			if e.OpenCodeDataHome != "" {
+				out["XDG_DATA_HOME"] = e.OpenCodeDataHome
+			}
+			if e.OpenCodeConfigHome != "" {
+				out["XDG_CONFIG_HOME"] = e.OpenCodeConfigHome
+			}
+			return out
+		}
+	}
+	return nil
 }
 
 // hydrateCodexSkills populates the per-task CODEX_HOME/skills directory with
