@@ -1,48 +1,19 @@
-# AgentVerse v1 directory ownership (master spec §14.2 / design D9).
-# These owners gate review on every PR.
+# Code ownership — R&D Agnostic Engineering Team (Multica + prodex / RPP).
+# The former AgentVerse /src/ ownership was removed with the SPA.
 
-# Supervisor — locked design system, app shell, shared cross-cutting types.
-/src/design-system/      @sup
-/src/shell/              @sup
-/src/shared/             @sup
+# The product
+/multica-auth-work/        @manoelbenicio
 
-# Canvas Dev
-/src/canvas-builder/     @cv
-/src/canvas-document/    @cv
-/src/canvas-reconciler/  @cv
-/src/canvas-templates/   @cv
+# Rust L2 data plane (built binary + sidecar)
+/bin/                      @manoelbenicio
 
-# Terminal Dev
-/src/terminal/           @tm
-/src/terminal-grid/      @tm
-/src/chat-view/          @tm
+# Planning & program docs
+/openspec/                 @manoelbenicio
+/.planning/                @manoelbenicio
+/Diligencias/              @manoelbenicio
+/.deploy-control/          @manoelbenicio
+/docs/                     @manoelbenicio
 
-# Dashboard Dev
-/src/dashboard/          @db
-/src/finops/             @db
-/src/health/             @db
-
-# Studio Dev
-/src/agent-studio/       @st
-/src/flows/              @st
-/src/memory-viewer/      @st
-
-# Voice Dev
-/src/voice/              @vx
-
-# Infra Dev
-/src/api/                @if
-/src/settings/           @if
-
-# Top-level + docs + CI under supervisor.
-/openspec/               @sup
-/docs/                   @sup
-/.github/                @sup
-/scripts/                @sup
-/eslint-rules/           @sup
-package.json             @sup
-package-lock.json        @sup
-tsconfig*.json           @sup
-vite.config.ts           @sup
-vitest.config.ts         @sup
-playwright.config.ts     @sup
+# Ops scripts (smoke / deploy / dashboard)
+/scripts/                  @manoelbenicio
+/.github/                  @manoelbenicio

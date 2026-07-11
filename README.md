@@ -1,84 +1,85 @@
-# AgentVerse
+# R&D — Agnostic Engineering Team (Multica + prodex)
 
-A multi-agent orchestration SPA on top of CAO. v1 ships the full surface
-described in `openspec/changes/milestone-1-canvas-deploy-run/`.
+Managed-agents platform. **Multica** (Go control plane / L4) launches **prodex**
+(Rust data plane / L2, pinned `v0.246.0`) on the hot path — pre-commit rotation,
+affinity, Smart Context / token-saver, reset-claim. Program name:
+**Rotation-Parity Polyglot (RPP)**.
 
-## Requirements
+> The user-facing frontend is the **Multica web app** (Next.js), lives under
+> [`multica-auth-work/`](./multica-auth-work). There is **no separate SPA** in
+> this repo — the former AgentVerse SPA was removed (it belonged to another
+> project). See `LEGACY_ARCHIVE_REFERENCE.md`.
 
-- Node ≥ 20.10
-- npm ≥ 10.2
-- A reachable CAO server (default: `http://127.0.0.1:9889`).
+## Layers
 
-## Install
-
-```bash
-npm ci
+```
+L4 (cold)  Multica — Go server (control plane, sessions/workspaces/kanban/auth)
+L2 (hot)   prodex — Rust sidecar (rotation, Smart Context, reset-claim), contract rpp.l2.v1
+Frontend   Multica web (Next.js)  ·  mobile (Expo)  ·  desktop (Electron)
+Data       Postgres (pgvector)
 ```
 
-`npm ci` (not `npm install`) so the committed `package-lock.json` is the
-source of truth.
+Authoritative sources: `openspec/changes/rotation-parity-polyglot/`,
+`.planning/`, `Diligencias/`, `docs/rotation-parity-polyglot/`.
 
-## Run
+## Components & where they run (verified local topology)
+
+| Component | Source | Local (Docker) | Health check |
+|-----------|--------|----------------|--------------|
+| Multica backend (Go, L4) | `multica-auth-work/server` | container `multica-backend-1` → `127.0.0.1:8080` | `curl 127.0.0.1:8080/health` → `{"status":"ok"}` |
+| Multica web (frontend) | `multica-auth-work/apps/web` | container `multica-frontend-1` → `127.0.0.1:3100` (internal 3000) | open http://localhost:3100 |
+| Postgres (pgvector pg17) | image | container `multica-postgres-1` | `docker inspect` → `healthy` |
+| prodex (Rust, L2) | `bin/prodex` (`multica-auth-work/prodex-sidecar`) | spawned per-session by the backend | `bin/prodex --version` → `prodex 0.246.0` |
+
+## Run the stack (Docker required)
+
+Docker **is** required — the backend, frontend, and Postgres run as containers.
 
 ```bash
-cp .env.example .env.local        # configure VITE_CAO_BASE_URL if needed
-npm run dev                       # http://localhost:5173
+cd multica-auth-work
+cp .env.example .env          # edit JWT_SECRET at minimum
+docker compose -f docker-compose.selfhost.yml up -d
 ```
 
-The dev server is fixed to port 5173 to match the documented CAO
-`CAO_CORS_ORIGINS` allow-list. See `docs/cao-cors.md`.
+Then open the **real app**: **http://localhost:3100** (not :5173 — that was the
+removed SPA).
 
-## Test
+## Verify everything is 100% up
 
 ```bash
-npm run lint              # ESLint + agentverse local rules
-npm run typecheck         # TS strict project references
-npm run format:check      # prettier
-npm test                  # vitest unit + MSW integration
-npm run test:smoke        # playwright (boots dev server)
-CAO_LIVE=1 npm run test:contract   # live CAO contract suite
+# 1) Containers up + Postgres healthy
+docker compose -f multica-auth-work/docker-compose.selfhost.yml ps
+
+# 2) Go control plane healthy
+curl -s 127.0.0.1:8080/health          # expect {"status":"ok"}
+
+# 3) Frontend serving
+curl -s -o /dev/null -w '%{http_code}\n' 127.0.0.1:3100   # expect 200
+
+# 4) Rust data plane binary present & correct pin
+bin/prodex --version                    # expect prodex 0.246.0
 ```
 
-## Build
+All four green ⇒ control plane (Go), data plane (Rust), DB, and frontend are
+healthy. Then you can create tasks on the kanban and assign agents from the
+Multica web UI.
+
+## Program state / dashboard (RPP planning)
 
 ```bash
-npm run build             # → dist/
-node scripts/check-bundle-size.mjs   # 1.5 MB gzipped budget
+openspec validate rotation-parity-polyglot
+python3 scripts/dashboard/plan_dashboard.py --once --ascii
 ```
 
 ## Layout
 
-See [`ARCHITECTURE.md`](./ARCHITECTURE.md). Capability ownership is in
-[`.github/CODEOWNERS`](./.github/CODEOWNERS).
-
 ```
-src/
-├── shell/              # SUP — routing, layout, error boundary, fetch wrapper
-├── design-system/      # SUP — locked tokens + base components
-├── shared/             # SUP — cross-cutting types, IDB infra
-├── api/                # IF  — CaoClient, KeyStore, MSW + contract tests
-├── settings/           # IF  — settings store + pages
-├── canvas-builder/     # CV
-├── canvas-document/    # CV
-├── canvas-reconciler/  # CV
-├── canvas-templates/   # CV
-├── terminal/           # TM
-├── terminal-grid/      # TM
-├── chat-view/          # TM
-├── dashboard/          # DB
-├── finops/             # DB
-├── health/             # DB
-├── agent-studio/       # ST
-├── flows/              # ST
-├── memory-viewer/      # ST
-└── voice/              # VX
+multica-auth-work/   # THE PRODUCT — Go backend, Next.js web, mobile, desktop, prodex-sidecar
+bin/prodex           # built Rust L2 binary (v0.246.0)
+openspec/changes/    # rotation-parity-polyglot, rotation-router, agent-credential-isolation
+docs/                # RPP/prodex/Multica architecture, contracts, deploy runbooks
+.planning/           # GSD planning (PROJECT/REQUIREMENTS/ROADMAP/STATE/RCA)
+Diligencias/         # charter, context, dependency/crate/env matrices, phases
+.deploy-control/     # fleet board, check-ins, evidence
+scripts/{smoke,deploy,dashboard}/  # RPP smoke tests, rollback/kill-switch, dashboards
 ```
-
-## Documentation
-
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — D1–D15 + R1–R9 summary.
-- [`docs/patterns/`](./docs/patterns/) — established conventions per topic.
-- [`docs/cao-cors.md`](./docs/cao-cors.md) — CAO env vars to allow this SPA.
-- [`docs/dev-environment.md`](./docs/dev-environment.md) — canonical Windows toolchain workflow + node_modules recovery.
-- [`docs/key-storage-v1.md`](./docs/key-storage-v1.md) — v1 BYOK threat model.
-- `openspec/changes/milestone-1-canvas-deploy-run/` — authoritative spec.
