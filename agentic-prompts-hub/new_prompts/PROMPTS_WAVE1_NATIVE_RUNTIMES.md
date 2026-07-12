@@ -25,6 +25,7 @@
 
 ## CÓDIGO DE CONDUTA (vale para TODOS os agentes)
 1. **Comunicação via Herdr, só com o orquestrador (Kiro).** Instale a skill (`npx skills add ogulcancelik/herdr --skill herdr -g`), `export HERDR_ENV=1`. Fale SÓ com o Kiro. Use `herdr pane run <pane> 'msg'` (SUBMETE com Enter); `agent send` NÃO submete. Reconfirme o pane com `herdr agent list` (pane_id não é durável). Nunca mande direto pros outros agentes.
+   - **HUB-AND-SPOKE (regra dura):** TODA comunicação passa pelo **TL (Kiro)**. **ZERO comunicação agente↔agente.** O dono também fala **apenas com o TL** quando necessário. Precisa de algo de outro agente? Peça ao TL, que roteia. (Vale igual no failover: quem estiver como TL é o único hub.)
 2. **Check-in em disco (obrigatório).** ANTES de começar: `.deploy-control/CHECKIN_<agentname>_<UTC-ISO8601>_START.md` (escopo, arquivos, deps, riscos). DEPOIS: `..._DONE.md` (o que fez, arquivos, evidência de build/test).
 3. **Verifique na FONTE, não chute.** O dono odeia gambiarra: sem hack, sem inventar flag/modelo/endpoint. Se a doc oficial do fabricante existe, consulte-a.
 4. **Verde-em-container antes de DONE.** Rode build+testes. Sem segredo em log. Commits atômicos.
