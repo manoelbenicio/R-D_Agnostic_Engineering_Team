@@ -6,6 +6,23 @@
 
 ---
 
+## ROSTER (fleet real) — atribuição por modelo/força
+| Agente | Modelo (effort) | Papel / trilha |
+|---|---|---|
+| **Kiro** | opus-4.8 | TL/Orquestrador — NÃO produz; coordena, wiring (W2), gates (W3) |
+| **codex-1** | codex 5.6 Sol (High) | **Agent-1 NIM-Core** (Go backend complexo) |
+| **codex-2** | codex 5.6 Sol (High) | **Agent-3 Cline-Core** (Go/ACP) |
+| **codex-3** | codex 5.6 Sol (High) | **Agent-4 Discovery-Fix** (Go daemon) |
+| **glm-1** | GLM 5.2 (High) | **Agent-2 NIM-Isolation** (Go: credencial/rotação) |
+| **glm-2** | GLM 5.2 (High) | **Agent-5 Frontend-Auth** (Next.js) |
+| **glm-3** | GLM 5.2 (High) | **Agent-6 Frontend-Design/QA** (Next.js) |
+| **gemini** | Gemini 3.1 Pro | **Agent-7 Reviewer + BACKUP DO KIRO** — code review + verificação independente de cada DONE; apoia os gates; assume a orquestração (failover) se o Kiro cair |
+
+> Racional: codex 5.6 Sol (High) nos 3 backends Go mais críticos; GLM 5.2 (High) no isolamento Go + 2 frontends; Gemini 3.1 Pro como revisor independente E backup do orquestrador (best practice: revisão separada de quem produz).
+> **Failover:** se o Kiro ficar indisponível, o Agent-7 lê os check-ins em `.deploy-control/`, retoma a coordenação das waves e roda os gates até o Kiro voltar.
+
+---
+
 ## CÓDIGO DE CONDUTA (vale para TODOS os agentes)
 1. **Comunicação via Herdr, só com o orquestrador (Kiro).** Instale a skill (`npx skills add ogulcancelik/herdr --skill herdr -g`), `export HERDR_ENV=1`. Fale SÓ com o Kiro. Use `herdr pane run <pane> 'msg'` (SUBMETE com Enter); `agent send` NÃO submete. Reconfirme o pane com `herdr agent list` (pane_id não é durável). Nunca mande direto pros outros agentes.
 2. **Check-in em disco (obrigatório).** ANTES de começar: `.deploy-control/CHECKIN_<agentname>_<UTC-ISO8601>_START.md` (escopo, arquivos, deps, riscos). DEPOIS: `..._DONE.md` (o que fez, arquivos, evidência de build/test).
