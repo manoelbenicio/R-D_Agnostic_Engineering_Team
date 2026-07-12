@@ -9,7 +9,10 @@ export const runtimeModelsKeys = {
 };
 
 const POLL_INTERVAL_MS = 500;
-const POLL_TIMEOUT_MS = 30_000;
+// The daemon allows slow provider CLIs up to 40s, so polling must outlive that
+// bound plus heartbeat/report latency. The server still enforces its own 60s
+// running timeout as the final escape hatch.
+const POLL_TIMEOUT_MS = 50_000;
 
 // resolveRuntimeModels initiates a list-models request against the daemon
 // (via heartbeat piggyback) and polls until the daemon reports back or

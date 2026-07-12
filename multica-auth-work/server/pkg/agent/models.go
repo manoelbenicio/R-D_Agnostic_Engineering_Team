@@ -107,7 +107,7 @@ func ListModels(ctx context.Context, providerType, executablePath string) ([]Mod
 		// agy 1.0.6 added a `--model` flag plus an `agy models` catalog
 		// command (MUL-3125). Enumerate it on demand like the other
 		// dynamic-discovery backends.
-		return cachedDiscovery(providerType, func() ([]Model, error) {
+		return cachedDiscovery(discoveryCacheKey(providerType, executablePath), func() ([]Model, error) {
 			return discoverAntigravityModels(ctx, executablePath)
 		})
 	case "cursor":
@@ -1075,10 +1075,9 @@ func acpModelLabel(name, modelID string) string {
 // "Claude Opus 4.6 (Thinking)") and silently no-ops on any value it doesn't
 // recognise — empty output, exit 0 — so a guessed static list would risk
 // offering a model the installed CLI can't honour, turning a typo into a
-// "successful" empty run. On any discovery failure we return an empty
-// catalog instead; agent.model stays unset and agy resolves its own
-// default. cachedDiscovery never caches empty results, so this retries on
-// the next request once the cause clears.
+// "successful" empty run. A missing binary is treated as unsupported, while
+// a CLI that starts and then fails, times out, or returns no models produces
+// an explicit error for the daemon/UI. Successful catalogs are cached.
 func discoverAntigravityModels(ctx context.Context, executablePath string) ([]Model, error) {
 	if executablePath == "" {
 		executablePath = "agy"
@@ -1086,17 +1085,24 @@ func discoverAntigravityModels(ctx context.Context, executablePath string) ([]Mo
 	if _, err := exec.LookPath(executablePath); err != nil {
 		return nil, nil
 	}
-	// `agy models` is a local enumeration (no network round-trip), so a
-	// short cap is plenty; keep it generous enough to absorb cold starts.
-	runCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	// Cold starts observed in the field take about 20 seconds. Keep the
+	// operation bounded, but leave enough headroom for a valid slow result.
+	runCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(runCtx, executablePath, "models")
 	hideAgentWindow(cmd)
 	out, err := cmd.Output()
-	if err != nil && len(out) == 0 {
-		return nil, nil
+	if err != nil {
+		if runCtx.Err() != nil {
+			return nil, fmt.Errorf("antigravity model discovery timed out after 30 seconds: %w", runCtx.Err())
+		}
+		return nil, fmt.Errorf("antigravity model discovery failed: %w", err)
 	}
-	return parseAntigravityModels(string(out)), nil
+	models := parseAntigravityModels(string(out))
+	if len(models) == 0 {
+		return nil, fmt.Errorf("antigravity model discovery returned no models")
+	}
+	return models, nil
 }
 
 // parseAntigravityModels turns `agy models` output — one model display name

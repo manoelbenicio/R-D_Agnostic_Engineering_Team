@@ -1985,11 +1985,13 @@ func (d *Daemon) handleHeartbeatActions(ctx context.Context, runtimeID string, r
 
 // handleModelList resolves the provider's supported models (via static
 // catalog or by shelling out to the agent CLI) and reports the result
-// back to the server. Model discovery failures are reported as empty
-// lists rather than errors so the UI can still render a creatable
-// dropdown.
+// back to the server. Discovery is bounded independently from the daemon
+// lifetime, and failures are reported explicitly so the UI can stop polling
+// and show a useful error instead of rendering a misleading empty catalog.
 func (d *Daemon) handleModelList(ctx context.Context, rt Runtime, requestID string) {
 	d.logger.Info("model list requested", "runtime_id", rt.ID, "request_id", requestID, "provider", rt.Provider)
+	discoveryCtx, cancelDiscovery := context.WithTimeout(ctx, 40*time.Second)
+	defer cancelDiscovery()
 
 	entry, ok := d.cfg.Agents[rt.Provider]
 	if !ok {
@@ -2000,8 +2002,11 @@ func (d *Daemon) handleModelList(ctx context.Context, rt Runtime, requestID stri
 		return
 	}
 
-	models, err := agent.ListModels(ctx, rt.Provider, entry.Path)
+	models, err := agent.ListModels(discoveryCtx, rt.Provider, entry.Path)
 	if err != nil {
+		if discoveryCtx.Err() != nil {
+			err = fmt.Errorf("model discovery exceeded the 40 second daemon limit: %w", discoveryCtx.Err())
+		}
 		d.reportModelListResult(ctx, rt, requestID, map[string]any{
 			"status": "failed",
 			"error":  err.Error(),

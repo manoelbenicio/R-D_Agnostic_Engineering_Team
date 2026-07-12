@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestListModelsStaticProviders(t *testing.T) {
@@ -1019,6 +1020,65 @@ func TestParseAntigravityModelsEmpty(t *testing.T) {
 	t.Parallel()
 	if got := parseAntigravityModels("   \n\t\n"); len(got) != 0 {
 		t.Errorf("expected no models for blank output, got %+v", got)
+	}
+}
+
+func TestDiscoverAntigravityModelsSurfacesCommandFailure(t *testing.T) {
+	t.Parallel()
+	fake := filepath.Join(t.TempDir(), "agy")
+	writeTestExecutable(t, fake, []byte("#!/bin/sh\necho broken >&2\nexit 7\n"))
+
+	_, err := discoverAntigravityModels(context.Background(), fake)
+	if err == nil || !strings.Contains(err.Error(), "model discovery failed") {
+		t.Fatalf("expected explicit command failure, got %v", err)
+	}
+}
+
+func TestDiscoverAntigravityModelsSurfacesTimeout(t *testing.T) {
+	t.Parallel()
+	fake := filepath.Join(t.TempDir(), "agy")
+	writeTestExecutable(t, fake, []byte("#!/bin/sh\nexec sleep 5\n"))
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	_, err := discoverAntigravityModels(ctx, fake)
+	if err == nil || !strings.Contains(err.Error(), "timed out") {
+		t.Fatalf("expected explicit timeout, got %v", err)
+	}
+}
+
+func TestListModelsAntigravityCachesPerExecutable(t *testing.T) {
+	fakeDir := t.TempDir()
+	first := filepath.Join(fakeDir, "agy-first")
+	second := filepath.Join(fakeDir, "agy-second")
+	writeTestExecutable(t, first, []byte("#!/bin/sh\necho 'First Model'\n"))
+	writeTestExecutable(t, second, []byte("#!/bin/sh\necho 'Second Model'\n"))
+
+	for _, path := range []string{first, second} {
+		key := discoveryCacheKey("antigravity", path)
+		modelCacheMu.Lock()
+		delete(modelCache, key)
+		modelCacheMu.Unlock()
+		t.Cleanup(func() {
+			modelCacheMu.Lock()
+			delete(modelCache, key)
+			modelCacheMu.Unlock()
+		})
+	}
+
+	gotFirst, err := ListModels(context.Background(), "antigravity", first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotSecond, err := ListModels(context.Background(), "antigravity", second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gotFirst) != 1 || gotFirst[0].ID != "First Model" {
+		t.Fatalf("first executable models = %+v", gotFirst)
+	}
+	if len(gotSecond) != 1 || gotSecond[0].ID != "Second Model" {
+		t.Fatalf("second executable models = %+v", gotSecond)
 	}
 }
 
