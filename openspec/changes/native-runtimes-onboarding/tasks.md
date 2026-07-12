@@ -5,7 +5,7 @@
 ## Wave 1 — paralela
 - [ ] 1.1 Agent-1: `server/pkg/agent/nim.go` — backend NIM OpenAI-compatible (SSE, loop agêntico, usageMetadata→TokenUsage) + testes
 - [ ] 1.2 Agent-2: isolamento/rotação NIM — `execenv/nim_home.go`, `rotation_detector_nim.go`, `rotation/detector_nim.go` + testes
-- [ ] 1.3 Agent-3: `server/pkg/agent/cline.go` — backend nativo via `cline --acp --json` + testes
+- [x] 1.3 Agent-3: `server/pkg/agent/cline.go` — backend nativo via `cline --acp --json` + testes
 - [ ] 1.4 Agent-4: descoberta de modelos — timeout + cache + surface de erro no fluxo model-list; UI popula
 - [ ] 1.5 Agent-5: onboarding — remover `(landing)`/sponsors/`content/use-cases` + fluxo de código por email; login no design-system
 - [ ] 1.6 Agent-6: paridade de design (cores kanban/agentes), i18n, build/test do web
