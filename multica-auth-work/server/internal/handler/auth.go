@@ -102,6 +102,59 @@ type LoginResponse struct {
 	User  UserResponse `json:"user"`
 }
 
+type PasswordLoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	var req PasswordLoginRequest
+	decoder := json.NewDecoder(io.LimitReader(r.Body, 1<<20))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if h.AuthProvider == nil {
+		writeError(w, http.StatusServiceUnavailable, "password login is not configured")
+		return
+	}
+
+	identity, err := h.AuthProvider.Login(r.Context(), req.Email, req.Password)
+	if err != nil {
+		if errors.Is(err, ErrInvalidCredentials) {
+			writeError(w, http.StatusUnauthorized, "invalid email or password")
+			return
+		}
+		slog.Warn("password auth provider failed", append(logger.RequestAttrs(r), "error", err)...)
+		writeError(w, http.StatusInternalServerError, "login failed")
+		return
+	}
+	user, err := h.Queries.GetUser(r.Context(), identity.UserID)
+	if err != nil {
+		slog.Warn("password auth identity has no local user", append(logger.RequestAttrs(r), "error", err)...)
+		writeError(w, http.StatusUnauthorized, "invalid email or password")
+		return
+	}
+
+	tokenString, err := h.issueJWT(user)
+	if err != nil {
+		slog.Warn("password login token generation failed", append(logger.RequestAttrs(r), "error", err)...)
+		writeError(w, http.StatusInternalServerError, "failed to generate token")
+		return
+	}
+	if err := auth.SetAuthCookies(w, tokenString); err != nil {
+		slog.Warn("failed to set auth cookies", "error", err)
+	}
+	if h.CFSigner != nil {
+		for _, cookie := range h.CFSigner.SignedCookies(time.Now().Add(auth.AuthTokenTTL())) {
+			http.SetCookie(w, cookie)
+		}
+	}
+	slog.Info("user logged in with password", append(logger.RequestAttrs(r), "user_id", uuidToString(user.ID))...)
+	writeJSON(w, http.StatusOK, LoginResponse{Token: tokenString, User: userToResponse(user)})
+}
+
 type SendCodeRequest struct {
 	Email string `json:"email"`
 }
@@ -640,6 +693,11 @@ func (h *Handler) IssueCliToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	if h.AuthProvider != nil {
+		if err := h.AuthProvider.Logout(r.Context()); err != nil {
+			slog.Warn("auth provider logout failed", append(logger.RequestAttrs(r), "error", err)...)
+		}
+	}
 	auth.ClearAuthCookies(w)
 	writeJSON(w, http.StatusOK, map[string]string{"message": "logged out"})
 }
