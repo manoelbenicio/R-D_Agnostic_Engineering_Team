@@ -80,7 +80,7 @@ type Config struct {
 	CLIVersion                     string                // multica CLI version (e.g. "0.1.13")
 	LaunchedBy                     string                // "desktop" when spawned by the Electron app, empty for standalone
 	Profile                        string                // profile name (empty = default)
-	Agents                         map[string]AgentEntry // keyed by provider: claude, codebuddy, codex, copilot, opencode, openclaw, hermes, gemini, pi, cursor, kimi, kiro, antigravity, qoder
+	Agents                         map[string]AgentEntry // keyed by provider: claude, codebuddy, cline, codex, copilot, nim, opencode, openclaw, hermes, gemini, pi, cursor, kimi, kiro, antigravity, qoder
 	WorkspacesRoot                 string                // base path for execution envs (default: ~/multica_workspaces)
 	KeepEnvAfterTask               bool                  // preserve env after task for debugging
 	HealthPort                     int                   // local HTTP port for health checks (default: 19514)
@@ -321,6 +321,15 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	if e, ok := probe("MULTICA_CODEBUDDY_PATH", "codebuddy", "MULTICA_CODEBUDDY_MODEL"); ok {
 		agents["codebuddy"] = e
 	}
+	if e, ok := probe("MULTICA_CLINE_PATH", "cline", "MULTICA_CLINE_MODEL"); ok {
+		agents["cline"] = e
+	}
+	// NIM is a native HTTP backend, not a CLI. Its runtime becomes available
+	// only when the operator supplies an NVIDIA API credential; it must never
+	// be gated on a fictitious `nim` executable.
+	if strings.TrimSpace(os.Getenv("NVIDIA_API_KEY")) != "" {
+		agents["nim"] = AgentEntry{Model: strings.TrimSpace(os.Getenv("MULTICA_NIM_MODEL"))}
+	}
 	// agy 1.0.6 added a `--model` flag (MUL-3125), so Antigravity now takes a
 	// model env like every other backend. MULTICA_ANTIGRAVITY_MODEL seeds the
 	// daemon-wide default; its value is the exact `agy models` display string
@@ -348,7 +357,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		return Config{}, err
 	}
 	if len(agents) == 0 {
-		return Config{}, fmt.Errorf("no agent CLI found: install claude, codebuddy, codex, copilot, opencode, openclaw, hermes, gemini, pi, cursor-agent, kimi, kiro-cli, agy, or qodercli and ensure it is on PATH")
+		return Config{}, fmt.Errorf("no agent runtime found: install claude, codebuddy, cline, codex, copilot, opencode, openclaw, hermes, gemini, pi, cursor-agent, kimi, kiro-cli, agy, or qodercli and ensure it is on PATH, or set NVIDIA_API_KEY for NIM")
 	}
 
 	claudeArgs, err := shellArgsFromEnv("MULTICA_CLAUDE_ARGS")

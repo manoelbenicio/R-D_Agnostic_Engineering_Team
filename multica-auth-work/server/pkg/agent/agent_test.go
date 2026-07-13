@@ -39,6 +39,17 @@ func TestNewReturnsCodebuddyBackend(t *testing.T) {
 	}
 }
 
+func TestNewReturnsClineBackend(t *testing.T) {
+	t.Parallel()
+	b, err := New("cline", Config{ExecutablePath: "/nonexistent/cline"})
+	if err != nil {
+		t.Fatalf("New(cline) error: %v", err)
+	}
+	if _, ok := b.(*clineBackend); !ok {
+		t.Fatalf("expected *clineBackend, got %T", b)
+	}
+}
+
 func TestNewReturnsCopilotBackend(t *testing.T) {
 	t.Parallel()
 	b, err := New("copilot", Config{ExecutablePath: "/nonexistent/copilot"})
@@ -47,6 +58,17 @@ func TestNewReturnsCopilotBackend(t *testing.T) {
 	}
 	if _, ok := b.(*copilotBackend); !ok {
 		t.Fatalf("expected *copilotBackend, got %T", b)
+	}
+}
+
+func TestNewReturnsNIMBackend(t *testing.T) {
+	t.Parallel()
+	b, err := New("nim", Config{})
+	if err != nil {
+		t.Fatalf("New(nim) error: %v", err)
+	}
+	if _, ok := b.(*nimBackend); !ok {
+		t.Fatalf("expected *nimBackend, got %T", b)
 	}
 }
 
@@ -105,8 +127,8 @@ func TestLaunchHeaderCoversAllSupportedBackends(t *testing.T) {
 	// runtime the daemon actually spawns. If a new backend is added, add an
 	// entry to launchHeaders in agent.go and extend this list.
 	supported := []string{
-		"antigravity", "claude", "codebuddy", "codex", "copilot", "cursor", "gemini",
-		"hermes", "kimi", "kiro", "openclaw", "opencode", "pi", "qoder",
+		"antigravity", "claude", "codebuddy", "cline", "codex", "copilot", "cursor", "gemini",
+		"hermes", "kimi", "kiro", "nim", "openclaw", "opencode", "pi", "qoder",
 	}
 	for _, t_ := range supported {
 		if header := LaunchHeader(t_); header == "" {

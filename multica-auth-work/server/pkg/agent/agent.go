@@ -133,19 +133,21 @@ type Config struct {
 }
 
 // New creates a Backend for the given agent type.
-// Supported types: "claude", "codebuddy", "codex", "copilot", "opencode", "openclaw", "hermes", "gemini", "pi", "cursor", "kimi", "kiro", "antigravity", "qoder".
+// Supported types: "claude", "codebuddy", "cline", "codex", "copilot", "nim", "opencode", "openclaw", "hermes", "gemini", "pi", "cursor", "kimi", "kiro", "antigravity", "qoder".
 //
 // SupportedTypes is the canonical whitelist of agent types eligible to back a
 // custom runtime profile. It MUST stay in lockstep with the
-// runtime_profile.protocol_family CHECK constraint (migration 120): a custom
+// runtime_profile.protocol_family CHECK constraint: a custom
 // runtime profile may only be based on a backend Multica officially supports.
 // (qoder is a built-in provider New can construct, but it is not offered as a
 // custom-profile base, so it is intentionally absent from this list.)
 var SupportedTypes = []string{
 	"claude",
 	"codebuddy",
+	"cline",
 	"codex",
 	"copilot",
+	"nim",
 	"opencode",
 	"openclaw",
 	"hermes",
@@ -179,10 +181,14 @@ func New(agentType string, cfg Config) (Backend, error) {
 		return &claudeBackend{cfg: cfg}, nil
 	case "codebuddy":
 		return &codebuddyBackend{cfg: cfg}, nil
+	case "cline":
+		return &clineBackend{cfg: cfg}, nil
 	case "codex":
 		return &codexBackend{cfg: cfg}, nil
 	case "copilot":
 		return &copilotBackend{cfg: cfg}, nil
+	case "nim":
+		return &nimBackend{cfg: cfg}, nil
 	case "opencode":
 		return &opencodeBackend{cfg: cfg}, nil
 	case "openclaw":
@@ -204,7 +210,7 @@ func New(agentType string, cfg Config) (Backend, error) {
 	case "qoder":
 		return &qoderBackend{cfg: cfg}, nil
 	default:
-		return nil, fmt.Errorf("unknown agent type: %q (supported: claude, codebuddy, codex, copilot, opencode, openclaw, hermes, gemini, pi, cursor, kimi, kiro, antigravity, qoder)", agentType)
+		return nil, fmt.Errorf("unknown agent type: %q (supported: claude, codebuddy, cline, codex, copilot, nim, opencode, openclaw, hermes, gemini, pi, cursor, kimi, kiro, antigravity, qoder)", agentType)
 	}
 }
 
@@ -223,6 +229,7 @@ var launchHeaders = map[string]string{
 	"antigravity": "agy -p (print mode)",
 	"claude":      "claude (stream-json)",
 	"codebuddy":   "codebuddy (stream-json)",
+	"cline":       "cline --acp --json",
 	"codex":       "codex app-server",
 	"copilot":     "copilot (json)",
 	"cursor":      "cursor-agent (stream-json)",
@@ -230,6 +237,7 @@ var launchHeaders = map[string]string{
 	"hermes":      "hermes acp",
 	"kimi":        "kimi acp",
 	"kiro":        "kiro-cli acp",
+	"nim":         "NVIDIA NIM (native HTTP)",
 	"openclaw":    "openclaw agent (json)",
 	"opencode":    "opencode run (json)",
 	"pi":          "pi (json mode)",

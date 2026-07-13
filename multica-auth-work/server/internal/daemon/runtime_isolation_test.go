@@ -492,7 +492,7 @@ func (noopWriter) Write(p []byte) (int, error) { return len(p), nil }
 
 // allIsolationVendors is the complete P0 vendor matrix. Every entry must be
 // covered by requiresCredentialIsolation in daemon.go.
-var allIsolationVendors = []string{"codex", "kiro", "antigravity", "glm", "cline", "opencode"}
+var allIsolationVendors = []string{"codex", "kiro", "antigravity", "glm", "cline", "nim", "opencode"}
 
 // isolationTestPool returns a pgxpool connected to the DATABASE_URL Postgres
 // instance, ensuring the rotation schema (migration 123) exists first. The

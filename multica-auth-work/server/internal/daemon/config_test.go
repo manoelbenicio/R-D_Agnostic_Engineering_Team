@@ -243,6 +243,41 @@ func stageFakeAgent(t *testing.T) string {
 	return binDir
 }
 
+func TestLoadConfig_ProbesClineAndNIMCredential(t *testing.T) {
+	binDir := stageFakeAgent(t)
+	clinePath := filepath.Join(binDir, "cline")
+	if err := os.WriteFile(clinePath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write fake cline: %v", err)
+	}
+	t.Setenv("MULTICA_CLINE_MODEL", "cline-model")
+	t.Setenv("NVIDIA_API_KEY", "test-nvidia-key")
+	t.Setenv("MULTICA_NIM_MODEL", "meta/test-model")
+
+	cfg, err := LoadConfig(Overrides{ServerURL: "http://localhost:8080", WorkspacesRoot: t.TempDir()})
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if got, ok := cfg.Agents["cline"]; !ok || got.Path != "cline" || got.Model != "cline-model" {
+		t.Fatalf("cline agent = %#v, want CLI path and configured model", got)
+	}
+	if got, ok := cfg.Agents["nim"]; !ok || got.Path != "" || got.Model != "meta/test-model" {
+		t.Fatalf("nim agent = %#v, want credential-gated native HTTP entry", got)
+	}
+}
+
+func TestLoadConfig_SkipsNIMWithoutCredential(t *testing.T) {
+	stageFakeAgent(t)
+	t.Setenv("NVIDIA_API_KEY", "")
+
+	cfg, err := LoadConfig(Overrides{ServerURL: "http://localhost:8080", WorkspacesRoot: t.TempDir()})
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if _, ok := cfg.Agents["nim"]; ok {
+		t.Fatalf("NIM must require NVIDIA_API_KEY, got agents=%#v", cfg.Agents)
+	}
+}
+
 // TestLoadConfig_AutoUpdateDefault_SelfHostOff is the regression guard for
 // MUL-2381: a daemon pointed at any non-cloud server URL must default
 // AutoUpdateEnabled to false, because self-host operators frequently run a

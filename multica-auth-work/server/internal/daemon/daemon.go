@@ -951,7 +951,7 @@ func (d *Daemon) registerRuntimesForWorkspace(ctx context.Context, workspaceID s
 	d.logger.Debug("registering runtimes for workspace", "workspace_id", workspaceID, "agent_count", len(d.cfg.Agents))
 	var runtimes []map[string]string
 	for name, entry := range d.cfg.Agents {
-		version, err := detectAgentVersion(ctx, entry.Path)
+		version, err := runtimeVersion(ctx, name, entry.Path)
 		if err != nil {
 			d.logger.Warn("skip registering runtime", "name", name, "error", err)
 			continue
@@ -1015,6 +1015,14 @@ func (d *Daemon) registerRuntimesForWorkspace(ctx context.Context, workspaceID s
 	}
 	d.logger.Debug("register response", "workspace_id", workspaceID, "runtimes", len(resp.Runtimes), "repos", len(resp.Repos), "repos_version", resp.ReposVersion)
 	return resp, profileSig, nil
+}
+
+// runtimeVersion avoids probing a binary for native HTTP runtimes.
+func runtimeVersion(ctx context.Context, provider, executablePath string) (string, error) {
+	if provider == "nim" {
+		return "native-http", nil
+	}
+	return detectAgentVersion(ctx, executablePath)
 }
 
 // appendProfileRuntimes fetches the workspace's enabled custom runtime
@@ -3914,7 +3922,7 @@ func (d *Daemon) credentialAccountHomeForTask(ctx context.Context, task Task, pr
 
 func requiresCredentialIsolation(provider string) bool {
 	switch strings.ToLower(strings.TrimSpace(provider)) {
-	case "codex", "kiro", "antigravity", "glm", "cline", "opencode":
+	case "codex", "kiro", "antigravity", "glm", "cline", "nim", "opencode":
 		return true
 	default:
 		return false
