@@ -492,7 +492,7 @@ func (noopWriter) Write(p []byte) (int, error) { return len(p), nil }
 
 // allIsolationVendors is the complete P0 vendor matrix. Every entry must be
 // covered by requiresCredentialIsolation in daemon.go.
-var allIsolationVendors = []string{"codex", "kiro", "antigravity", "glm", "cline", "nim", "opencode"}
+var allIsolationVendors = []string{"codex", "kiro", "antigravity", "glm", "cline", "opencode"}
 
 // isolationTestPool returns a pgxpool connected to the DATABASE_URL Postgres
 // instance, ensuring the rotation schema (migration 123) exists first. The
@@ -770,6 +770,26 @@ func TestCredentialIsolationPerVendor(t *testing.T) {
 	}
 }
 
+func TestCredentialIsolationVendorMatrixCoversExactlySixP0Vendors(t *testing.T) {
+	t.Parallel()
+
+	want := []string{"codex", "kiro", "antigravity", "glm", "cline", "opencode"}
+	if strings.Join(allIsolationVendors, ",") != strings.Join(want, ",") {
+		t.Fatalf("credential isolation vendors = %v, want exactly %v", allIsolationVendors, want)
+	}
+	for _, vendor := range want {
+		if !requiresCredentialIsolation(vendor) {
+			t.Fatalf("requiresCredentialIsolation(%q) = false", vendor)
+		}
+		if _, err := isolatedCredentialEnv(vendor, "", &execenv.Environment{}); err == nil {
+			t.Fatalf("isolatedCredentialEnv(%q) accepted an empty account home", vendor)
+		}
+		if _, err := isolatedCredentialEnv(vendor, t.TempDir(), &execenv.Environment{}); err == nil {
+			t.Fatalf("isolatedCredentialEnv(%q) accepted a missing provider-native env", vendor)
+		}
+	}
+}
+
 // testTwoAccountsCoexist verifies that two accounts of the same vendor, backed
 // by real PostgreSQL rows, resolve to non-overlapping home dirs and produce
 // isolated exec environments whose credentials do not cross-contaminate.
@@ -822,6 +842,18 @@ func testTwoAccountsCoexist(t *testing.T, pool *pgxpool.Pool, vendor string) {
 	envB := prepareIsolatedEnv(t, vendor, resolvedB, slog.New(slog.NewTextHandler(noopWriter{}, nil)))
 	defer envB.Cleanup(true)
 
+	for label, prepared := range map[string]*execenv.Environment{"A": envA, "B": envB} {
+		isolatedEnv, err := isolatedCredentialEnv(vendor, map[string]string{"A": resolvedA, "B": resolvedB}[label], prepared)
+		if err != nil {
+			t.Fatalf("vendor %s account %s: isolated credential env: %v", vendor, label, err)
+		}
+		for _, key := range requiredCredentialEnvKeys(vendor) {
+			if strings.TrimSpace(isolatedEnv[key]) == "" {
+				t.Fatalf("vendor %s account %s: required env %s is empty", vendor, label, key)
+			}
+		}
+	}
+
 	dirsA := vendorIsolatedDirs(envA, vendor)
 	dirsB := vendorIsolatedDirs(envB, vendor)
 	if len(dirsA) == 0 {
@@ -845,6 +877,15 @@ func testTwoAccountsCoexist(t *testing.T, pool *pgxpool.Pool, vendor string) {
 	}
 	if credB == "" {
 		t.Fatalf("vendor %s: credential file not found in account B's isolated env", vendor)
+	}
+	for label, credentialPath := range map[string]string{"A": credA, "B": credB} {
+		info, err := os.Lstat(credentialPath)
+		if err != nil {
+			t.Fatalf("vendor %s: lstat account %s credential: %v", vendor, label, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+			t.Fatalf("vendor %s: account %s credential mode = %s; want a regular copied file, never a symlink", vendor, label, info.Mode())
+		}
 	}
 
 	contentA, err := os.ReadFile(credA)

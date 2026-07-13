@@ -3500,24 +3500,21 @@ runAttempt:
 		binDir := filepath.Dir(selfBin)
 		agentEnv["PATH"] = binDir + string(os.PathListSeparator) + os.Getenv("PATH")
 	}
-	// Point Codex to the per-task CODEX_HOME so it discovers skills natively
-	// without polluting the system ~/.codex/skills/.
-	if env.CodexHome != "" {
-		agentEnv["CODEX_HOME"] = env.CodexHome
+	// Merge the provider-native credential environment only after verifying
+	// that every required isolation lever was prepared. This is deliberately
+	// fail-closed: a Reuse refresh error must not silently omit the isolated
+	// env and let the child inherit a shared credential from the daemon.
+	credentialEnv := env.CredentialEnv(provider)
+	if !d.cfg.L2Runtime.Enabled {
+		credentialEnv, err = isolatedCredentialEnv(provider, credentialAccountHome, env)
+		if err != nil {
+			return TaskResult{}, err
+		}
+	}
+	for key, value := range credentialEnv {
+		agentEnv[key] = value
 	}
 	d.applyProdexEnv(provider, env.RootDir, agentEnv)
-	// Point Kiro (Amazon Q fork) at the per-account isolated data home so it
-	// reads that account's own kiro-cli/data.sqlite3 instead of the shared
-	// user store. Empty when no per-account credential was provided.
-	if env.KiroDataHome != "" {
-		agentEnv["XDG_DATA_HOME"] = env.KiroDataHome
-	}
-	// Point Antigravity (agy) at the per-account isolated HOME so it reads that
-	// account's own ~/.gemini/antigravity-cli token dir. Empty when no
-	// per-account credential was provided.
-	if env.AntigravityHome != "" {
-		agentEnv["HOME"] = env.AntigravityHome
-	}
 	d.observeCredentialEnvInjection(provider, credentialAccountHome, env)
 	// Point Cursor at per-task project state when managed MCP is present.
 	// The workdir .cursor/mcp.json carries the managed server list, while
@@ -3929,6 +3926,48 @@ func requiresCredentialIsolation(provider string) bool {
 	}
 }
 
+// isolatedCredentialEnv returns the provider-native environment only when all
+// of that provider's isolation levers are present. An assigned account with a
+// partially prepared Environment is an error, never permission to inherit the
+// daemon user's shared credential paths.
+func isolatedCredentialEnv(provider, accountHome string, env *execenv.Environment) (map[string]string, error) {
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if !requiresCredentialIsolation(provider) {
+		return nil, nil
+	}
+	if strings.TrimSpace(accountHome) == "" {
+		return nil, fmt.Errorf("credential isolation required for provider %q but account home is empty", provider)
+	}
+	if env == nil {
+		return nil, fmt.Errorf("credential isolation required for provider %q but execution environment is unavailable", provider)
+	}
+
+	isolationEnv := env.CredentialEnv(provider)
+	for _, key := range requiredCredentialEnvKeys(provider) {
+		if strings.TrimSpace(isolationEnv[key]) == "" {
+			return nil, fmt.Errorf("credential isolation required for provider %q but %s was not prepared", provider, key)
+		}
+	}
+	return isolationEnv, nil
+}
+
+func requiredCredentialEnvKeys(provider string) []string {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "codex":
+		return []string{"CODEX_HOME"}
+	case "kiro":
+		return []string{"XDG_DATA_HOME"}
+	case "antigravity":
+		return []string{"HOME"}
+	case "cline":
+		return []string{"CLINE_DATA_DIR", "CLINE_SANDBOX", "CLINE_SANDBOX_DATA_DIR"}
+	case "glm", "opencode":
+		return []string{"XDG_DATA_HOME", "XDG_CONFIG_HOME"}
+	default:
+		return nil
+	}
+}
+
 func taskRuntimeRouterOwner(task Task) string {
 	return strings.ToLower(strings.TrimSpace(task.RuntimeRouterOwner))
 }
@@ -4104,19 +4143,8 @@ func (d *Daemon) observeCredentialEnvInjection(provider, accountHome string, env
 		return
 	}
 	result := "error"
-	switch provider {
-	case "codex":
-		if env.CodexHome != "" {
-			result = "ok"
-		}
-	case "kiro":
-		if env.KiroDataHome != "" {
-			result = "ok"
-		}
-	case "antigravity":
-		if env.AntigravityHome != "" {
-			result = "ok"
-		}
+	if _, err := isolatedCredentialEnv(provider, accountHome, env); err == nil {
+		result = "ok"
 	}
 	d.credentialMetrics.ObserveEnvInjection(provider, result)
 }
@@ -4661,7 +4689,10 @@ func isBlockedEnvKey(key string) bool {
 		return true
 	}
 	switch upper {
-	case "HOME", "PATH", "USER", "SHELL", "TERM", "CODEX_HOME", "XDG_DATA_HOME", "CURSOR_DATA_DIR", "OPENCLAW_CONFIG_PATH", "OPENCLAW_INCLUDE_ROOTS":
+	case "HOME", "PATH", "USER", "SHELL", "TERM",
+		"CODEX_HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME",
+		"CLINE_DATA_DIR", "CLINE_SANDBOX", "CLINE_SANDBOX_DATA_DIR",
+		"CURSOR_DATA_DIR", "OPENCLAW_CONFIG_PATH", "OPENCLAW_INCLUDE_ROOTS":
 		return true
 	}
 	return false

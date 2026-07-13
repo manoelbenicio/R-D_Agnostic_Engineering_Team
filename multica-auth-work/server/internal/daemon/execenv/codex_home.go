@@ -291,7 +291,7 @@ func logCodexAuthState(authPath string, logger *slog.Logger) {
 func seedAccountAuth(accountHome, codexHome string, logger *slog.Logger) error {
 	src := filepath.Join(accountHome, "auth.json")
 	dst := filepath.Join(codexHome, "auth.json")
-	if err := syncCopiedFile(src, dst); err != nil {
+	if err := syncCredentialFile(src, dst); err != nil {
 		return fmt.Errorf("seed per-account auth.json: %w", err)
 	}
 	return nil
