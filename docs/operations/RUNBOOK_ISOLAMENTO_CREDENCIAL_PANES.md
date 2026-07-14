@@ -116,6 +116,95 @@ multica.** O isolamento por-conta do daemon (§2a) permanece intacto.
 
 ---
 
+## 3.1 Arquitetura técnica — AS-IS vs TO-BE
+
+### AS-IS (antes) — login manual grava em diretório compartilhado
+```
+   Pane A (shell)          Pane B (shell)          Pane C (shell/agy)
+      │  HERDR_PANE_ID         │ HERDR_PANE_ID          │
+      ▼                        ▼                        ▼
+   ~/.bashrc  case "$HERDR_PANE_ID"  (só codex, IDs fixos, SEM default)
+      │ match → CODEX_HOME=~/.codex-a      │ no-match / não-codex
+      ▼                                    ▼
+   codex login ──OAuth──► ~/.codex-a    (cai no) ~/.codex  ~/.cline  ~/.gemini
+                                           ▲        ▲         ▲
+                                           └── COMPARTILHADO entre panes ──┘
+   RESULTADO: 2º login sobrescreve o 1º → agente perde sessão → cascata.
+```
+
+### TO-BE (agora) — isolamento físico por terminal (slots)
+```
+   Pane (shell init)
+      │  source scripts/ops/agent-cred-isolation.sh
+      ▼
+   [1] resolve terminal_id  ── herdr pane get $HERDR_PANE_ID ──► "herdr:<terminal_id>"
+                                (fallback sem herdr) ──────────► "tty:<sha256(tty)>:<uuid>"
+      ▼
+   [2] flock(registry.lock) → aloca/reusa slot-NN  (monotônico; terminal conhecido reusa)
+      ▼
+   [3] export de env por vendor → APONTAM para ~/.agent-cred-homes/slots/slot-NN/…
+      ▼
+   vendor CLI login ──OAuth──► grava DENTRO do slot do terminal (nunca no compartilhado)
+```
+Mapa de env exportado por slot (TO-BE):
+
+| Vendor | Env | Destino no slot |
+|---|---|---|
+| Codex | `CODEX_HOME` | `slot-NN/codex` |
+| Kiro / OpenCode / GLM | `XDG_DATA_HOME` (+ `XDG_CONFIG_HOME`) | `slot-NN/xdg-data` (+ `xdg-config`) |
+| Cline | `CLINE_DATA_DIR` (+ `CLINE_SANDBOX_DATA_DIR`) | `slot-NN/cline` (+ `cline-sandbox`) |
+| Antigravity / agy | `HOME` | `slot-NN/home` (lê `~/.gemini/antigravity-cli`) |
+
+### Componentes — quem fala com quem
+```
+ ┌─────────────┐  pane get   ┌──────────────────────┐  flock   ┌────────────────┐
+ │ Herdr daemon│────────────►│ init script (bashrc) │─────────►│ registry.json  │
+ └─────────────┘             │  agent-cred-isolation│◄─────────│ (+ registry.lock)│
+                             └───────────┬──────────┘  slot NN └────────────────┘
+                                         │ export env
+                                         ▼
+                             ┌──────────────────────┐
+                             │ slots/slot-NN/{codex, │  ◄── OAuth login do vendor CLI grava aqui
+                             │  cline, cline-sandbox,│
+                             │  home, xdg-config,    │
+                             │  xdg-data}            │
+                             └──────────────────────┘
+
+ (independente) caminho do DAEMON — sessões que o multica spawna:
+ ┌───────────────┐ requiresCredentialIsolation + credentialAccountHomeForTask (FAIL-CLOSED)
+ │ multica daemon│──────────────────────────────────────────────┐
+ └───────────────┘                                               ▼
+        Postgres (accounts/credentials/assignments) ──► execenv/*_home.go (CÓPIA, nunca symlink)
+                                                          └──► home isolado por conta/tarefa
+```
+
+## 3.2 Metodologia (regras do algoritmo)
+- **Chave de terminal (estável):** `herdr:<terminal_id>` (preferida — sobrevive à recompactação de
+  `pane_id`); fallback `tty:<sha256(tty)>:<uuid-persistido>` quando o Herdr não responde.
+- **Slot:** nome `slot-NN` (zero-padded); alocação **monotônica** via `next_slot` no registry;
+  terminal já visto **reusa** seu slot (sem relogin); slot **nunca é reusado/sobrescrito** →
+  preserva o 1º login e dá rastreabilidade.
+- **Concorrência:** toda leitura/escrita do `registry.json` é serializada por `flock` no
+  `registry.lock` (validado com 8 alocações simultâneas → slots únicos).
+- **Migração:** cópia-uma-vez idempotente, dereferenciando symlinks, **sem** sobrescrever slot já
+  inicializado; homes legados permanecem intactos (cópia, não move).
+- **Fail-safe:** terminal sem mapeamento/errо na consulta Herdr recebe **slot privado próprio**,
+  nunca o diretório compartilhado do vendor.
+
+## 3.3 Inventário de pastas (real, verificado 2026-07-14)
+Raiz de estado criada: **`~/.agent-cred-homes/`** contendo:
+- `registry.json` (v1: `next_slot`, `terminals{}`, `slots{}`), `registry.lock` (flock),
+  `slots/`, `fallback-terminals/`.
+
+**7 slots criados** (`slot-01` … `slot-07`):
+- **slots 01–05:** migrados dos homes codex legados (`.codex-a`, `.codex-b`, `.codex-c`,
+  `.codex-d`, `.codex-slotA`) — contêm subdir `codex/`.
+- **slots 06–07:** multi-vendor completos — subdirs `codex/ cline/ cline-sandbox/ home/
+  xdg-config/ xdg-data/` (slot-06 = terminal Herdr; slot-07 = fallback tty).
+- `fallback-terminals/<sha256(tty)>.uuid`: âncora persistida do modo fallback.
+- Homes legados preservados por cópia: `~/.codex`, `~/.codex-a..d`, `~/.codex-slotA`, `~/.cline`,
+  `~/.gemini` (não removidos — migração não-destrutiva).
+
 ## 4. Como aplicar o fix (passo a passo, replicável em qualquer instância Herdr)
 
 > Pré-requisitos: acesso shell ao host do Herdr; `herdr` no PATH; `flock` disponível.
@@ -247,6 +336,24 @@ Ordem exata do que foi feito até a resolução final (para replicar passo a pas
 6. **Registro e rastreabilidade:** `.deploy-control/DEPLOY_PLAN_CRED_ISOLATION.md` (14/14 tasks ✅,
    com LIVE STATUS auto-atualizado) + check-ins START/DONE dos dois codex em `.deploy-control/`
    (`CHECKIN_Codex-56-A_*` e `CHECKIN_Codex-56-B_*`).
+
+### 7.1 ANTES vs AGORA — estado real verificado (2026-07-14)
+
+| Aspecto | ANTES (problemático) | AGORA (verificado no host) |
+|---|---|---|
+| `~/.bashrc` | bloco `case "$HERDR_PANE_ID"` (codex-only, IDs velhos `w3:pJ/pM/pK/p9`, sem default) | bloco antigo **removido**; `source .../scripts/ops/agent-cred-isolation.sh` **ativo** (linha 157) |
+| Vendors não-codex | `~/.cline`, `~/.gemini` **compartilhados** (0 isolamento) | envs nativas por vendor no script (Codex/Kiro/agy/GLM/Cline/OpenCode); fail-safe default |
+| Estado do isolamento | nenhum registro; panes caíam no `~/.codex` compartilhado | `~/.agent-cred-homes/` criado: `registry.json` (7 slots, `next_slot:8`), `registry.lock` (flock), `slots/`, `fallback-terminals/`; migração por cópia rodou (legacy `.codex-a/-b/-c/-d/-slotA`→slots 1–5, terminal herdr→slot 6, fallback tty→slot 7) |
+| Daemon (sessões spawnadas) | isolava por conta, mas podia cair na credencial compartilhada sem atribuição | **fail-closed** endurecido (`a564651`); `runtime_isolation_test.go` 6 vendors verde |
+| Codex-A (incidente) | token revogado (401), no `~/.codex` default | isolado em `~/.codex-slotA` (workaround); não toca o `~/.codex-a` do Codex-B |
+
+**Caveat honesto (estado transitório das panes já abertas):** as panes que estavam rodando
+**antes** do `source` ainda usam seus `CODEX_HOME` legados (Codex-A=`~/.codex-slotA`,
+Codex-B=`~/.codex-a`, kiro=`~/.codex`) — **distintos entre si** (não há sobrescrita agora), mas
+ainda **não sob `~/.agent-cred-homes/slots/slot-NN/`**. Elas adotam o slot pleno ao **recarregar
+o shell (`source ~/.bashrc`) ou relançar o CLI**. **Panes novas já nascem isoladas** no slot, e o
+**fail-safe** impede que qualquer login novo caia no diretório compartilhado. Os diretórios
+legados permanecem porque a migração é por **cópia** (não move) — esperado e não-destrutivo.
 
 > Nota sobre §2a: nesta resolução o lado do **daemon foi adicionalmente endurecido para
 > fail-closed** (commit `a564651`) — antes ele isolava por conta mas ainda podia cair na
