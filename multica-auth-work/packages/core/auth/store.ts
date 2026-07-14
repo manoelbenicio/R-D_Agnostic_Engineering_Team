@@ -1,12 +1,14 @@
 import { create } from "zustand";
 import type { User, StorageAdapter } from "../types";
 import { identify as identifyAnalytics, resetAnalytics } from "../analytics";
-import { ApiError, type ApiClient } from "../api/client";
+import { ApiError, type ApiClient, type LoginResponse } from "../api/client";
 import { setCurrentWorkspace } from "../platform/workspace-storage";
+import { SimpleAuthService, type AuthService } from "./service";
 
 export interface AuthStoreOptions {
   api: ApiClient;
   storage: StorageAdapter;
+  authService?: AuthService;
   onLogin?: () => void;
   onLogout?: () => void;
   /** When true, rely on HttpOnly cookies instead of localStorage for auth tokens. */
@@ -18,8 +20,7 @@ export interface AuthState {
   isLoading: boolean;
 
   initialize: () => Promise<void>;
-  sendCode: (email: string) => Promise<void>;
-  verifyCode: (email: string, code: string) => Promise<User>;
+  login: (email: string, password: string) => Promise<LoginResponse>;
   loginWithGoogle: (code: string, redirectUri: string) => Promise<User>;
   loginWithToken: (token: string) => Promise<User>;
   logout: () => void;
@@ -29,6 +30,7 @@ export interface AuthState {
 
 export function createAuthStore(options: AuthStoreOptions) {
   const { api, storage, onLogin, onLogout, cookieAuth } = options;
+  const authService = options.authService ?? new SimpleAuthService(api);
 
   return create<AuthState>((set) => ({
     user: null,
@@ -74,12 +76,9 @@ export function createAuthStore(options: AuthStoreOptions) {
       }
     },
 
-    sendCode: async (email: string) => {
-      await api.sendCode(email);
-    },
-
-    verifyCode: async (email: string, code: string) => {
-      const { token, user } = await api.verifyCode(email, code);
+    login: async (email: string, password: string) => {
+      const result = await authService.login(email, password);
+      const { token, user } = result;
       if (!cookieAuth) {
         // Token mode: persist for Electron / legacy.
         storage.setItem("multica_token", token);
@@ -88,7 +87,7 @@ export function createAuthStore(options: AuthStoreOptions) {
       onLogin?.();
       identifyAnalytics(user.id, { email: user.email, name: user.name });
       set({ user });
-      return user;
+      return result;
     },
 
     loginWithGoogle: async (code: string, redirectUri: string) => {

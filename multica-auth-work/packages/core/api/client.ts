@@ -162,6 +162,7 @@ import {
   EMPTY_TIMELINE_ENTRIES,
   EMPTY_USER,
   EMPTY_LIST_WEBHOOK_DELIVERIES_RESPONSE,
+  EMPTY_LOGIN_RESPONSE,
   EMPTY_WEBHOOK_DELIVERY,
   AppConfigSchema,
   type AppConfigResponse,
@@ -169,6 +170,7 @@ import {
   ListAutopilotsResponseSchema,
   EMPTY_LIST_AUTOPILOTS_RESPONSE,
   ListIssuesResponseSchema,
+  LoginResponseSchema,
   ListWebhookDeliveriesResponseSchema,
   RuntimeHourlyActivityListSchema,
   RuntimeUsageByAgentListSchema,
@@ -390,18 +392,26 @@ export class ApiClient {
   }
 
   // Auth
-  async sendCode(email: string): Promise<void> {
-    await this.fetch("/auth/send-code", {
+  async login(email: string, password: string): Promise<LoginResponse> {
+    const raw = await this.fetch<unknown>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, password }),
     });
-  }
-
-  async verifyCode(email: string, code: string): Promise<LoginResponse> {
-    return this.fetch("/auth/verify-code", {
-      method: "POST",
-      body: JSON.stringify({ email, code }),
-    });
+    const response = parseWithFallback(
+      raw,
+      LoginResponseSchema,
+      EMPTY_LOGIN_RESPONSE,
+      { endpoint: "POST /auth/login" },
+    );
+    if (!response.token || !response.user.id) {
+      throw new ApiError(
+        "Invalid login response",
+        502,
+        "Bad Gateway",
+        raw,
+      );
+    }
+    return response;
   }
 
   async googleLogin(code: string, redirectUri: string): Promise<LoginResponse> {

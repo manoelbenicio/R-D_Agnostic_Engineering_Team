@@ -847,6 +847,16 @@ export const EMPTY_USER: User = {
   updated_at: "",
 };
 
+export const LoginResponseSchema = z.object({
+  token: z.string().min(1),
+  user: UserSchema,
+}).loose();
+
+export const EMPTY_LOGIN_RESPONSE: { token: string; user: User } = {
+  token: "",
+  user: EMPTY_USER,
+};
+
 // ---------------------------------------------------------------------------
 // Billing schemas (cloud-billing proxy surface)
 //

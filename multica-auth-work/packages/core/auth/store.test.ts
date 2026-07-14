@@ -3,6 +3,7 @@ import type { ApiClient } from "../api/client";
 import { ApiError } from "../api/client";
 import type { StorageAdapter, User } from "../types";
 import { createAuthStore } from "./store";
+import type { AuthService } from "./service";
 
 const fakeUser: User = {
   id: "u1",
@@ -89,5 +90,44 @@ describe("authStore.initialize — token mode", () => {
 
     expect(store.getState().user).toEqual(fakeUser);
     expect(storage.snapshot().multica_token).toBe("t");
+  });
+});
+
+describe("authStore.login", () => {
+  it("persists the token in token mode and updates the user", async () => {
+    const storage = makeStorage();
+    const api = makeApi(() => Promise.resolve(fakeUser));
+    const authService: AuthService = {
+      login: vi.fn().mockResolvedValue({ token: "jwt", user: fakeUser }),
+    };
+    const store = createAuthStore({ api, storage, authService });
+
+    await expect(
+      store.getState().login("alice@example.com", "password"),
+    ).resolves.toEqual({ token: "jwt", user: fakeUser });
+
+    expect(storage.snapshot().multica_token).toBe("jwt");
+    expect(api.setToken).toHaveBeenCalledWith("jwt");
+    expect(store.getState().user).toEqual(fakeUser);
+  });
+
+  it("uses the cookie session without persisting a bearer token", async () => {
+    const storage = makeStorage();
+    const api = makeApi(() => Promise.resolve(fakeUser));
+    const authService: AuthService = {
+      login: vi.fn().mockResolvedValue({ token: "jwt", user: fakeUser }),
+    };
+    const store = createAuthStore({
+      api,
+      storage,
+      authService,
+      cookieAuth: true,
+    });
+
+    await store.getState().login("alice@example.com", "password");
+
+    expect(storage.snapshot().multica_token).toBeUndefined();
+    expect(api.setToken).not.toHaveBeenCalledWith("jwt");
+    expect(store.getState().user).toEqual(fakeUser);
   });
 });

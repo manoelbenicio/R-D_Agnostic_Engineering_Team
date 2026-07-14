@@ -6,6 +6,54 @@ afterEach(() => {
 });
 
 describe("ApiClient", () => {
+  it("uses the password login contract and validates its response", async () => {
+    const response = {
+      token: "jwt",
+      user: {
+        id: "user-1",
+        name: "User",
+        email: "user@example.com",
+        avatar_url: null,
+      },
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new ApiClient("https://api.example.test");
+
+    await expect(client.login("user@example.com", "secret")).resolves.toMatchObject(response);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/auth/login",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ email: "user@example.com", password: "secret" }),
+        credentials: "include",
+      }),
+    );
+  });
+
+  it("rejects a malformed successful password login response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ token: "" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    const client = new ApiClient("https://api.example.test");
+
+    await expect(client.login("user@example.com", "secret")).rejects.toMatchObject({
+      message: "Invalid login response",
+      status: 502,
+    });
+  });
+
   it("preserves HTTP status on failed requests", async () => {
     vi.stubGlobal(
       "fetch",
