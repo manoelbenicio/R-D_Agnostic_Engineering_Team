@@ -70,11 +70,7 @@ let superProperties: Record<string, unknown> = {};
 
 export {
   captureDownloadIntent,
-  captureDownloadPageViewed,
-  captureDownloadInitiated,
   type DownloadIntentSource,
-  type DownloadDetectPayload,
-  type DownloadInitiatedPayload,
 } from "./download";
 
 export {

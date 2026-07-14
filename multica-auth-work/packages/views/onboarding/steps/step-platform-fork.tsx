@@ -19,6 +19,7 @@ import {
 import { useScrollFade } from "@multica/ui/hooks/use-scroll-fade";
 import { cn } from "@multica/ui/lib/utils";
 import type { AgentRuntime } from "@multica/core/types";
+import { DESKTOP_RELEASES_URL } from "@multica/core/paths";
 import { DragStrip } from "@multica/views/platform";
 import { StepHeader } from "../components/step-header";
 import { RuntimeAsidePanel } from "../components/runtime-aside-panel";
@@ -48,12 +49,6 @@ import { useT } from "../../i18n";
  */
 
 type DialogState = "cli" | null;
-
-// Single canonical download destination — the /download page owns
-// OS + arch detection, the All-Platforms matrix, release-note links,
-// and the CLI / Cloud alternates. Kept in sync with landing-hero.tsx
-// and landing footer nav, both of which target the same path.
-const DOWNLOAD_PAGE_URL = "/download";
 
 export function StepPlatformFork({
   wsId,
@@ -86,7 +81,7 @@ export function StepPlatformFork({
   const picker = useRuntimePicker(wsId);
 
   const pickDesktop = () => {
-    window.open(DOWNLOAD_PAGE_URL, "_blank", "noopener,noreferrer");
+    window.open(DESKTOP_RELEASES_URL, "_blank", "noopener,noreferrer");
     setDownloaded(true);
     // Step-3-scoped path selection event (kept for existing funnels);
     // `source: "step3"` future-proofs if the event is reused from
@@ -98,10 +93,7 @@ export function StepPlatformFork({
       surface: "step3",
       is_mac: isMac,
     });
-    // Cross-surface Desktop intent event — also fires from landing
-    // hero / footer / login / Welcome. Enables the top-of-funnel
-    // split without retrofitting `onboarding_runtime_path_selected`
-    // to non-onboarding contexts.
+    // Cross-step Desktop intent event shared with Welcome.
     captureDownloadIntent("step3");
   };
 

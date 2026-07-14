@@ -598,44 +598,13 @@ sent from a pre-workspace surface.
   daemons from other machines and would corrupt the
   "CLI installed locally" signal.
 
-- `download_intent_expressed` — fired whenever a user clicks a CTA
-  that points at the `/download` page. Surfaces five sources across
-  the funnel, letting the top-of-funnel entry be split cleanly.
+- `download_intent_expressed` — fired whenever a user clicks an onboarding CTA
+  that points at the public GitHub releases page. Distinguishes the two
+  onboarding entry points.
   Wrapper lives in `packages/core/analytics/download.ts`
   (`captureDownloadIntent`). Properties:
-  - `source`: `landing_hero` / `landing_footer` / `login` / `welcome`
-    / `step3`
+  - `source`: `welcome` / `step3`
   Also writes `platform_preference: "desktop"` to person properties.
-
-- `download_page_viewed` — fired once per `/download` mount after OS
-  detect resolves (`apps/web/app/(landing)/download/download-client.tsx`).
-  Properties:
-  - `detected_os`: `mac` / `windows` / `linux` / `unknown`
-  - `detected_arch`: `arm64` / `x64` / `unknown`
-  - `detect_confident`: `true` when detect used
-    `userAgentData.getHighEntropyValues` (Chromium); `false` when it
-    fell back to the UA string (Safari on Mac always lands here —
-    lets us isolate the arm64-default-for-Intel risk cohort).
-  - `version_available`: `false` when the GitHub API fetch failed
-    and the page is in the "Version unavailable" degraded state.
-  Also writes `first_detected_os` / `first_detected_arch` via
-  `$set_once` so every downstream event gains a platform dimension
-  without re-emitting.
-
-- `download_initiated` — fired when the user clicks a specific
-  installer link on `/download`. Both the hero CTA and the All
-  Platforms matrix rows emit this; split by `primary_cta`.
-  Properties:
-  - `platform`: `mac` / `windows` / `linux`
-  - `arch`: `arm64` / `x64`
-  - `format`: `dmg` / `zip` / `exe` / `appimage` / `deb` / `rpm`
-  - `version`: release tag (e.g. `v0.2.13`) — correlates adoption
-    with release cadence.
-  - `primary_cta`: `true` for the hero-recommended installer, `false`
-    for a manual pick from the All Platforms matrix.
-  - `matched_detect`: `true` when the chosen platform+arch matches
-    what the page detected. `false` lets us quantify detect misses
-    from the single event (no cross-join needed).
 - `feedback_opened` — fired when the in-app Feedback modal mounts
   (user clicked "Feedback" in the Help launcher). Paired with the
   backend's `feedback_submitted` to give a completion rate for the

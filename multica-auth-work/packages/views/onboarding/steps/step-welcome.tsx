@@ -5,6 +5,7 @@ import { ArrowRight, Download, Loader2 } from "lucide-react";
 import { Button, buttonVariants } from "@multica/ui/components/ui/button";
 import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
 import { captureDownloadIntent } from "@multica/core/analytics";
+import { DESKTOP_RELEASES_URL } from "@multica/core/paths";
 import { cn } from "@multica/ui/lib/utils";
 import { DragStrip } from "@multica/views/platform";
 import { STATUS_CONFIG } from "@multica/core/issues/config";
@@ -114,7 +115,7 @@ export function StepWelcome({
                       onboarding tab in case the desktop install
                       stalls and the user falls back here. */}
                   <a
-                    href="/download"
+                    href={DESKTOP_RELEASES_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => captureDownloadIntent("welcome")}

@@ -145,8 +145,8 @@ function LoginPageContent() {
   if (isDesktopHandoff && user) {
     if (desktopError) {
       return (
-        <div className="flex min-h-screen items-center justify-center">
-          <Card className="w-full max-w-sm">
+        <main className="flex min-h-svh items-center justify-center bg-background p-4 text-foreground">
+          <Card className="w-full max-w-sm border-border bg-card shadow-sm">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">
                 {t(($) => $.web.desktop_handoff.failed_title)}
@@ -154,12 +154,12 @@ function LoginPageContent() {
               <CardDescription>{desktopError}</CardDescription>
             </CardHeader>
           </Card>
-        </div>
+        </main>
       );
     }
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-sm">
+      <main className="flex min-h-svh items-center justify-center bg-background p-4 text-foreground">
+        <Card className="w-full max-w-sm border-border bg-card shadow-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">
               {t(($) => $.web.desktop_handoff.opening_title)}
@@ -185,7 +185,7 @@ function LoginPageContent() {
             )}
           </CardContent>
         </Card>
-      </div>
+      </main>
     );
   }
 

@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { AgentRuntime } from "@multica/core/types";
+import { DESKTOP_RELEASES_URL } from "@multica/core/paths";
 import { I18nProvider } from "@multica/core/i18n/react";
 import enCommon from "../../locales/en/common.json";
 import enOnboarding from "../../locales/en/onboarding.json";
@@ -113,17 +114,15 @@ describe("StepPlatformFork", () => {
     expect(onNext).toHaveBeenCalledWith(null);
   });
 
-  it("opens the download page and flips the card to a post-click state", async () => {
+  it("opens the public releases page and flips the card to a post-click state", async () => {
     const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
     const user = userEvent.setup();
     renderFork();
 
     await user.click(screen.getByText(/^use this computer$/i));
 
-    // Routes to the new /download page (not GitHub releases) so the
-    // user lands on the OS auto-detect surface.
     expect(openSpy).toHaveBeenCalledWith(
-      "/download",
+      DESKTOP_RELEASES_URL,
       "_blank",
       "noopener,noreferrer",
     );

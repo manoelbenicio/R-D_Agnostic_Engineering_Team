@@ -9,7 +9,9 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:onboarding-auth": "vitest run test/onboarding-auth-gate.test.ts 'app/(auth)/login/page.test.tsx' --maxWorkers=1",
+    "validate:onboarding-auth": "vitest run --maxWorkers=1 && pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

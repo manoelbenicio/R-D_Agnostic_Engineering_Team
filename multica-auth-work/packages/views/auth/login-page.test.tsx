@@ -93,6 +93,25 @@ describe("LoginPage", () => {
     expect(screen.queryByText(/code/i)).not.toBeInTheDocument();
   });
 
+  it("uses the same semantic color tokens as Kanban and Agents", () => {
+    const { container } = renderWithI18n(<LoginPage onSuccess={onSuccess} />);
+
+    expect(container.querySelector("main")).toHaveClass(
+      "bg-background",
+      "text-foreground",
+    );
+    expect(container.querySelector('[data-slot="card"]')).toHaveClass(
+      "bg-card",
+      "border-border",
+    );
+    expect(container.querySelector('[data-slot="card-description"]')).toHaveClass(
+      "text-muted-foreground",
+    );
+    expect(container.innerHTML).not.toMatch(
+      /(?:bg|text|border)-(?:white|black|slate|gray|zinc|neutral)(?:-|\b)/,
+    );
+  });
+
   it("validates required credentials before calling the auth service", () => {
     renderWithI18n(<LoginPage onSuccess={onSuccess} />);
 
