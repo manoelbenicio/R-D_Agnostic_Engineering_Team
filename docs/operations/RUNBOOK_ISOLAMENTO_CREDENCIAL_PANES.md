@@ -216,7 +216,45 @@ existente sem risco de derrubar os logins já ativos (a migração é por cópia
 
 ---
 
-## 7. Referências (fonte de verdade)
+## 7. Resolução executada neste host — registro fiel (2026-07-13)
+
+Ordem exata do que foi feito até a resolução final (para replicar passo a passo):
+
+1. **Diagnóstico na fonte (scan da frota):** confirmado o bloco `case "$HERDR_PANE_ID"`
+   codex-only/stale no `~/.bashrc`; `~/.cline` e `~/.gemini` compartilhados; `~/.codex/auth.json`
+   reescrito no próprio dia. Prova por processo (`/proc/<pid>/environ`): Codex-B em
+   `CODEX_HOME=~/.codex-a`, Codex-A no default `~/.codex`.
+2. **Incidente Codex-A:** token revogado (`401 refresh token was revoked`) — o próprio sintoma
+   do bug (concorrência/sobrescrita de credencial).
+3. **Workaround imediato (sem re-login destrutivo do B):** isolado o `CODEX_HOME` do Codex-A
+   num home dedicado exclusivo `~/.codex-slotA` (`export CODEX_HOME` no shell da pane + relaunch
+   do `codex`), garantindo que o login do A **não toca** o `~/.codex-a` do B. Verificado via
+   `/proc/<pid>/environ`. (Isolamento permanente veio depois, pelo script — passos 4–5.)
+4. **Deploy agêntico com 2 codex, arquivos disjuntos:**
+   - **Codex-56-A (Go/daemon)** → commit `a564651 fix(daemon): enforce credential isolation
+     fail-closed`: `credentialAccountHomeForTask` exige store+agentID+assignment+account+home_dir
+     (senão erro **antes** do spawn); **cópia-não-symlink** para os 6 vendors; `custom_env`
+     impedido de sobrescrever `XDG_CONFIG_HOME`/`CLINE_DATA_DIR`/`CLINE_SANDBOX*`;
+     `runtime_isolation_test.go` cobre os 6 vendors.
+   - **Codex-56-B (ops/shell)** → commit `e352985 feat(ops): isolate pane credential homes`:
+     `scripts/ops/agent-cred-isolation.sh` + harness `scripts/ops/tests/agent-cred-isolation-harness.sh`;
+     sourced no `~/.bashrc` (bloco antigo `case "$HERDR_PANE_ID"` **removido**).
+5. **Validação pelo TL na fonte (não só o DONE do agente):**
+   - Go: gate em container → `ok github.com/multica-ai/multica/server/internal/daemon`
+     (`go build ./...` + testes de isolamento verdes).
+   - Shell: harness → `PASS: 6-vendor migration, isolated dual login, Cline+agy, recompaction,
+     fail-safe, and flock allocator`.
+6. **Registro e rastreabilidade:** `.deploy-control/DEPLOY_PLAN_CRED_ISOLATION.md` (14/14 tasks ✅,
+   com LIVE STATUS auto-atualizado) + check-ins START/DONE dos dois codex em `.deploy-control/`
+   (`CHECKIN_Codex-56-A_*` e `CHECKIN_Codex-56-B_*`).
+
+> Nota sobre §2a: nesta resolução o lado do **daemon foi adicionalmente endurecido para
+> fail-closed** (commit `a564651`) — antes ele isolava por conta mas ainda podia cair na
+> credencial compartilhada sem atribuição; agora **não cai** (erra antes do spawn).
+
+---
+
+## 8. Referências (fonte de verdade)
 - `docs/operations/FIX_ISOLAMENTO_CREDENCIAL_CENTRAL.md` — fix central por-conta (daemon).
 - `openspec/changes/agent-credential-isolation/` — proposal/design/tasks/spec/auth-inventory.
 - `multica-auth-work/server/internal/daemon/execenv/*_home.go` — mapa de env por vendor.
