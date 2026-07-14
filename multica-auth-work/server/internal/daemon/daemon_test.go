@@ -131,6 +131,7 @@ func TestIsBlockedEnvKey(t *testing.T) {
 		{key: "CLINE_DATA_DIR", want: true},
 		{key: "CLINE_SANDBOX", want: true},
 		{key: "CLINE_SANDBOX_DATA_DIR", want: true},
+		{key: "NVIDIA_API_KEY", want: true},
 		{key: "CURSOR_DATA_DIR", want: true},
 		{key: "cursor_data_dir", want: true},
 		{key: "OPENCLAW_CONFIG_PATH", want: true},

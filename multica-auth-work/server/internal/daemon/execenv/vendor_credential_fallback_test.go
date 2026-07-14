@@ -14,6 +14,7 @@ func TestVendorCredentialFallbackDoesNotSetIsolatedHomes(t *testing.T) {
 		{name: "cline", provider: "cline"},
 		{name: "opencode", provider: "opencode"},
 		{name: "glm", provider: "glm"},
+		{name: "nim", provider: "nim"},
 	}
 
 	for _, tt := range tests {
@@ -72,5 +73,8 @@ func assertNoIsolatedHomes(t *testing.T, phase string, env *Environment) {
 	}
 	if env.OpenCodeConfigHome != "" {
 		t.Fatalf("%s set OpenCodeConfigHome = %q with empty CredentialAccountHome; daemon would inject XDG_CONFIG_HOME", phase, env.OpenCodeConfigHome)
+	}
+	if env.NIMCredentialPath != "" {
+		t.Fatalf("%s set NIMCredentialPath = %q with empty CredentialAccountHome; daemon would inject NVIDIA_API_KEY", phase, env.NIMCredentialPath)
 	}
 }

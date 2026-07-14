@@ -178,6 +178,9 @@ type Environment struct {
 	// OpenCode-compatible providers. OpenCode stores config under
 	// XDG_CONFIG_HOME/opencode/.
 	OpenCodeConfigHome string
+	// NIMCredentialPath is the per-task regular-file copy of the assigned
+	// account's NVIDIA_API_KEY. CredentialEnv reads only this copy.
+	NIMCredentialPath string
 	// OpenclawConfigPath is the path to the per-task synthesized OpenClaw
 	// config (set only for openclaw provider). The daemon exports this as
 	// OPENCLAW_CONFIG_PATH on the openclaw subprocess so its native skill
@@ -332,6 +335,16 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 		}
 		env.OpenCodeDataHome = opencodeDataHome
 		env.OpenCodeConfigHome = opencodeConfigHome
+	}
+
+	// NIM is a native HTTP runtime. Copy its assigned raw NVIDIA_API_KEY into
+	// the task root before exposing the value to the backend process.
+	if params.Provider == "nim" && params.CredentialAccountHome != "" {
+		nimCredentialPath, err := prepareNimHome(filepath.Join(envRoot, "nim-home"), NimHomeOptions{AccountHome: params.CredentialAccountHome}, logger)
+		if err != nil {
+			return nil, fmt.Errorf("execenv: prepare nim-home: %w", err)
+		}
+		env.NIMCredentialPath = nimCredentialPath
 	}
 
 	// For Cursor, materialize managed MCP into project-local config and use
@@ -542,6 +555,16 @@ func Reuse(params ReuseParams, logger *slog.Logger) *Environment {
 		}
 	}
 
+	// NIM per-account credential refreshed on reuse (mirror of Prepare).
+	if params.Provider == "nim" && params.CredentialAccountHome != "" {
+		nimCredentialPath, err := prepareNimHome(filepath.Join(env.RootDir, "nim-home"), NimHomeOptions{AccountHome: params.CredentialAccountHome}, logger)
+		if err != nil {
+			logger.Warn("execenv: refresh nim-home failed", "error", err)
+		} else {
+			env.NIMCredentialPath = nimCredentialPath
+		}
+	}
+
 	// Refresh Cursor's managed MCP sidecars on reuse. A newly saved agent
 	// mcp_config must replace the prior run's .cursor/mcp.json and isolated
 	// approvals before the next cursor-agent process starts.
@@ -624,6 +647,12 @@ func (e *Environment) CredentialEnv(provider string) map[string]string {
 				out["XDG_CONFIG_HOME"] = e.OpenCodeConfigHome
 			}
 			return out
+		}
+	case "nim":
+		if e.NIMCredentialPath != "" {
+			if key, err := readNIMAPIKey(e.NIMCredentialPath); err == nil {
+				return map[string]string{"NVIDIA_API_KEY": key}
+			}
 		}
 	}
 	return nil

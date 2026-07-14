@@ -4,7 +4,7 @@
 
 ## Wave 1 — paralela
 - [x] 1.1 Agent-1: `server/pkg/agent/nim.go` — backend NIM OpenAI-compatible (SSE, loop agêntico, usageMetadata→TokenUsage) + testes — VALIDADO Kiro (container `pkg/agent` verde)
-- [ ] 1.2 Agent-2: isolamento/rotação NIM — `execenv/nim_home.go`, `rotation_detector_nim.go`, `rotation/detector_nim.go` + testes
+- [x] 1.2 Agent-2: isolamento/rotação NIM — `execenv/nim_home.go`, `rotation_detector_nim.go`, `rotation/detector_nim.go` + testes
 - [x] 1.3 Agent-3: `server/pkg/agent/cline.go` — backend nativo via `cline --acp --json` + testes
 - [x] 1.4 Agent-4: descoberta de modelos — timeout + cache + surface de erro no fluxo model-list; UI popula — VALIDADO Kiro (container `pkg/agent` + `internal/daemon` verdes)
 - [ ] 1.5 Agent-5: onboarding (FRONTEND) — remover `(landing)`/`features/landing`/`content/use-cases`/sponsors + fluxo de código por email; `AuthService` interface + `SimpleAuthService`→`api.login()` (Firebase-ready) + UI login/senha no design-system; manter Google OAuth/CLI callback/desktop handoff. **A5 é o dono da remoção de marketing/landing/sponsors** (A6 NÃO remove marketing).

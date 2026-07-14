@@ -61,6 +61,8 @@ func matchesVendorExhaustion(vendor, screenText string) bool {
 		return matchesClineExhaustion(screenText)
 	case "opencode":
 		return matchesOpenCodeExhaustion(screenText)
+	case "nim":
+		return matchesNIMExhaustion(screenText)
 	default:
 		return false
 	}
@@ -113,5 +115,5 @@ var (
 	antigravityResumePattern = regexp.MustCompile(`(?i)\bresume using this model at\b`)
 	claudeLimitPattern       = regexp.MustCompile(`(?i)\b(?:usage limit reached|5-hour limit reached|hit your limit for claude)\b`)
 	resetPattern             = regexp.MustCompile(`(?i)\breset\b`)
-	resetAtPattern           = regexp.MustCompile(`(?i)\b(?:reset|resume(?:\s+using\s+this\s+model)?|try\s+again)\b[^\n.]{0,120}?\bat\s+([0-9]{1,2})(?::([0-9]{2}))?\s*([ap]\.?m\.?)\b`)
+	resetAtPattern           = regexp.MustCompile(`(?i)\b(?:resets?|resume(?:\s+using\s+this\s+model)?|try\s+again)\b[^\n.]{0,120}?\bat\s+([0-9]{1,2})(?::([0-9]{2}))?\s*([ap]\.?m\.?)\b`)
 )

@@ -3963,6 +3963,8 @@ func requiredCredentialEnvKeys(provider string) []string {
 		return []string{"CLINE_DATA_DIR", "CLINE_SANDBOX", "CLINE_SANDBOX_DATA_DIR"}
 	case "glm", "opencode":
 		return []string{"XDG_DATA_HOME", "XDG_CONFIG_HOME"}
+	case "nim":
+		return []string{"NVIDIA_API_KEY"}
 	default:
 		return nil
 	}
@@ -4692,6 +4694,7 @@ func isBlockedEnvKey(key string) bool {
 	case "HOME", "PATH", "USER", "SHELL", "TERM",
 		"CODEX_HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME",
 		"CLINE_DATA_DIR", "CLINE_SANDBOX", "CLINE_SANDBOX_DATA_DIR",
+		"NVIDIA_API_KEY",
 		"CURSOR_DATA_DIR", "OPENCLAW_CONFIG_PATH", "OPENCLAW_INCLUDE_ROOTS":
 		return true
 	}
