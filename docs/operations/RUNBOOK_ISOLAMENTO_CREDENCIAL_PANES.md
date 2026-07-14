@@ -207,46 +207,73 @@ Raiz de estado criada: **`~/.agent-cred-homes/`** contendo:
 
 ## 4. Como aplicar o fix (passo a passo, replicável em qualquer instância Herdr)
 
-> Pré-requisitos: acesso shell ao host do Herdr; `herdr` no PATH; `flock` disponível.
+> **Pré-requisitos no host da instância Herdr:** acesso shell; `herdr`, `python3`, `flock` e
+> `git` no PATH. Os artefatos ficam neste repo — versione/pull, não cole à mão.
 
-1. **Diagnosticar (confirmar que é o mesmo problema):**
-   ```bash
-   # bloco antigo (codex-only / pane_id volátil)?
-   grep -n "codex-home isolation" ~/.bashrc
-   # vendors não-codex compartilhando um único dir?
-   ls -1d ~/.codex* ~/.cline* ~/.gemini* ~/.config/opencode 2>/dev/null
-   # o default compartilhado está sendo reescrito hoje?
-   stat -c '%y %n' ~/.codex/auth.json ~/.cline 2>/dev/null
-   ```
-   Se houver bloco `case "$HERDR_PANE_ID"`, e `~/.cline`/`~/.gemini` forem únicos → é o mesmo bug.
+**Artefatos necessários (2 arquivos):**
+- `scripts/ops/agent-cred-isolation.sh` (o fix — instalar/sourcar)
+- `scripts/ops/tests/agent-cred-isolation-harness.sh` (validação)
 
-2. **Instalar o script de isolamento** (copiar `scripts/ops/agent-cred-isolation.sh` deste
-   repo para o host) e **sourcá-lo no final** do `~/.bashrc`, **removendo** o bloco antigo
-   `>>> herdr codex-home isolation >>>`:
-   ```bash
-   source /caminho/agent-cred-isolation.sh || return
-   ```
+**Passo 0 — obter os artefatos no host:**
+```bash
+# opção A: se o host tem o repo, basta atualizar
+cd <clone-do-repo> && git pull origin main
+# opção B: se não tem o repo, copiar os 2 arquivos para o host (ex.: em ~/ops/)
+#   scripts/ops/agent-cred-isolation.sh  e  scripts/ops/tests/agent-cred-isolation-harness.sh
+```
+> Nas instruções abaixo, `SCRIPT=/caminho/para/agent-cred-isolation.sh` (ajuste ao caminho real).
 
-3. **Migrar os homes atuais** rodando o modo de migração do script (copia física,
-   dereferenciando symlinks, sem sobrescrever slot já inicializado):
-   ```bash
-   /caminho/agent-cred-isolation.sh migrate
-   ```
+**Passo 1 — Diagnosticar (confirmar que é o mesmo problema):**
+```bash
+grep -n "codex-home isolation" ~/.bashrc                       # bloco antigo (pane_id volátil)?
+ls -1d ~/.codex* ~/.cline* ~/.gemini* ~/.config/opencode 2>/dev/null   # vendors não-codex num dir único?
+stat -c '%y %n' ~/.codex/auth.json ~/.cline 2>/dev/null        # default compartilhado sendo reescrito?
+```
+Se houver o bloco `case "$HERDR_PANE_ID"` e `~/.cline`/`~/.gemini` forem diretórios únicos → é o mesmo bug.
 
-4. **Recarregar os shells das panes** (novo `source ~/.bashrc` ou reabrir a pane) para que
-   cada terminal resolva seu slot e exporte as envs.
+**Passo 2 — Instalar (SOURCE no `~/.bashrc`, não "rodar uma vez"):**
+```bash
+SCRIPT=/caminho/para/agent-cred-isolation.sh
+# 2a. remover o bloco antigo, se existir (backup incluso):
+cp ~/.bashrc ~/.bashrc.bak.$(date +%s)
+sed -i '/>>> herdr codex-home isolation/,/<<< herdr codex-home isolation/d' ~/.bashrc
+# 2b. sourcar o novo script no FINAL do ~/.bashrc (idempotente: só adiciona se ainda não houver):
+grep -qF "$SCRIPT" ~/.bashrc || printf '\nsource %s\n' "$SCRIPT" >> ~/.bashrc
+```
+> Importante: é `source` (roda no init de CADA shell/pane). Executar o script "solto" isola só
+> aquele shell e não persiste.
 
-5. **Validar (aceite empírico — só considerar aplicado se passar):**
-   - Logar **2 contas do mesmo vendor** em 2 panes ao mesmo tempo → **ambas seguem válidas**;
-     nenhuma sobrescreve a outra.
-   - **Fechar/abrir panes** (forçar recompactação de `pane_id`) → cada terminal **mantém o
-     slot** e continua logado (sem relogin).
-   - Repetir para **Cline** e **agy**.
-   - `agent-cred-isolation.sh status` mostra o slot certo por pane e o estado on/off de
-     cada store nativo, sem ler nem imprimir tokens.
+**Passo 3 — Migrar os homes atuais (uma vez; cópia física, não-destrutiva):**
+```bash
+"$SCRIPT" migrate
+```
 
-6. **Rastreabilidade:** conferir `~/.agent-cred-homes/registry.json` — 1º login do dia
-   intacto; cada novo login em slot distinto.
+**Passo 4 — Fazer as panes adotarem o isolamento:**
+- **Panes NOVAS** já nascem isoladas (o `source` roda no init).
+- **Panes já abertas** (e CLIs já rodando nelas) continuam no home antigo até você
+  **recarregar o shell** (`source ~/.bashrc`) **e relançar o CLI** (`/quit` no codex → `codex`).
+
+**Passo 5 — Validar (aceite empírico — só considerar resolvido se passar):**
+```bash
+bash /caminho/para/agent-cred-isolation-harness.sh      # espera: PASS: 6-vendor ... flock allocator
+"$SCRIPT" doctor status                                  # slot certo por pane, on/off, sem tokens
+python3 -m json.tool ~/.agent-cred-homes/registry.json   # 1 slot por terminal_id; 1º login intacto
+```
+Teste manual complementar: logar 2 contas do mesmo vendor em 2 panes ao mesmo tempo → ambas
+seguem válidas; fechar/abrir panes (recompactação) → cada terminal mantém o slot sem relogin;
+repetir para Cline e agy.
+
+**Passo 6 — (SÓ se este host também roda o daemon multica) levar o fail-closed do daemon:**
+O `.sh` cobre o login manual nas panes. O outro caminho (sessões que o **daemon multica** spawna)
+depende do código Go (commit `a564651`, fail-closed). Se esta instância roda o multica:
+```bash
+cd <clone-do-repo> && git pull origin main
+cd multica-auth-work && docker compose -f docker-compose.selfhost.yml up -d --build   # rebuild backend
+```
+Se a instância é **só panes de agente** (sem daemon multica) → pule este passo; o `.sh` basta.
+
+**Passo 7 — Rastreabilidade:** `~/.agent-cred-homes/registry.json` mantém 1 slot por terminal,
+monotônico; o 1º login do dia nunca é sobrescrito.
 
 ---
 
