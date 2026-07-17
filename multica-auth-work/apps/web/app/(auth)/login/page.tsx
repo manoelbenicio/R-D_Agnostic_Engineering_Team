@@ -189,6 +189,11 @@ function LoginPageContent() {
     );
   }
 
+  // Do not flash the login form while cookie/local-bypass authentication is
+  // still being resolved. In local bypass mode this page stays blank only for
+  // the short initialization window and then redirects straight to the app.
+  if (isLoading) return null;
+
   return (
     <LoginPage
       onSuccess={handleSuccess}

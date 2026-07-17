@@ -27,6 +27,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-multica}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      # Host-side daemon needs this DB for credential assignment/rotation.
+      # Loopback-only keeps PostgreSQL off LAN/public interfaces.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     restart: unless-stopped
     healthcheck:
       test:
@@ -79,6 +83,10 @@ services:
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       APP_ENV: ${APP_ENV:-production}
       MULTICA_DEV_VERIFICATION_CODE: ${MULTICA_DEV_VERIFICATION_CODE:-}
+      # Explicit localhost-only escape hatch for single-user installations.
+      # The backend also verifies FRONTEND_ORIGIN is loopback before enabling it.
+      MULTICA_LOCAL_AUTH_BYPASS: ${MULTICA_LOCAL_AUTH_BYPASS:-false}
+      MULTICA_LOCAL_AUTH_EMAIL: ${MULTICA_LOCAL_AUTH_EMAIL:-}
       MULTICA_APP_URL: ${MULTICA_APP_URL:-http://localhost:3000}
       ALLOW_SIGNUP: ${ALLOW_SIGNUP:-true}
       ALLOWED_EMAILS: ${ALLOWED_EMAILS:-}

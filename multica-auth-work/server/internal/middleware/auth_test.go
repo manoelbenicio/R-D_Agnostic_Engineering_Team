@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/auth"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -56,6 +58,55 @@ func validClaims() jwt.MapClaims {
 		"sub":   "test-user-id",
 		"email": "test@multica.ai",
 		"exp":   time.Now().Add(time.Hour).Unix(),
+	}
+}
+
+type localAuthQueriesStub struct {
+	user      db.User
+	getErr    error
+	markCalls int
+}
+
+func (s *localAuthQueriesStub) GetUserByEmail(context.Context, string) (db.User, error) {
+	return s.user, s.getErr
+}
+
+func (s *localAuthQueriesStub) MarkUserOnboarded(context.Context, pgtype.UUID) (db.User, error) {
+	s.markCalls++
+	s.user.OnboardedAt = pgtype.Timestamptz{Time: time.Now(), Valid: true}
+	return s.user, nil
+}
+
+func TestLocalAuthBypassRequiresExplicitLoopbackConfiguration(t *testing.T) {
+	t.Setenv(localAuthBypassEnv, "true")
+	t.Setenv(localAuthBypassEmailEnv, "admin@admin.local")
+
+	t.Setenv("FRONTEND_ORIGIN", "https://multica.example.com")
+	if got := localAuthBypassEmail(); got != "" {
+		t.Fatalf("public origin must disable local bypass, got %q", got)
+	}
+
+	t.Setenv("FRONTEND_ORIGIN", "http://localhost:3100")
+	if got := localAuthBypassEmail(); got != "admin@admin.local" {
+		t.Fatalf("loopback origin should enable configured user, got %q", got)
+	}
+}
+
+func TestResolveLocalAuthUserSkipsOnboarding(t *testing.T) {
+	userID := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}
+	queries := &localAuthQueriesStub{
+		user: db.User{ID: userID, Email: "admin@admin.local"},
+	}
+
+	user, err := resolveLocalAuthUser(context.Background(), queries, "admin@admin.local")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !user.OnboardedAt.Valid {
+		t.Fatal("local bypass user must be marked onboarded")
+	}
+	if queries.markCalls != 1 {
+		t.Fatalf("expected one onboarding update, got %d", queries.markCalls)
 	}
 }
 

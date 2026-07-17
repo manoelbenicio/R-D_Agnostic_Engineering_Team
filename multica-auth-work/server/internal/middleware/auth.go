@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/url"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,6 +20,50 @@ import (
 )
 
 func uuidToString(u pgtype.UUID) string { return util.UUIDToString(u) }
+
+const (
+	localAuthBypassEnv      = "MULTICA_LOCAL_AUTH_BYPASS"
+	localAuthBypassEmailEnv = "MULTICA_LOCAL_AUTH_EMAIL"
+)
+
+type localAuthQueries interface {
+	GetUserByEmail(context.Context, string) (db.User, error)
+	MarkUserOnboarded(context.Context, pgtype.UUID) (db.User, error)
+}
+
+// localAuthBypassEmail returns the configured local user only when the
+// operator explicitly enabled the bypass and the frontend is loopback-only.
+// The second check prevents a copied production configuration from silently
+// turning a public deployment into an unauthenticated instance.
+func localAuthBypassEmail() string {
+	if !strings.EqualFold(strings.TrimSpace(os.Getenv(localAuthBypassEnv)), "true") {
+		return ""
+	}
+
+	frontendOrigin := strings.TrimSpace(os.Getenv("FRONTEND_ORIGIN"))
+	parsed, err := url.Parse(frontendOrigin)
+	if err != nil || parsed.Scheme == "" || parsed.Hostname() == "" {
+		return ""
+	}
+	host := parsed.Hostname()
+	ip := net.ParseIP(host)
+	if !strings.EqualFold(host, "localhost") && (ip == nil || !ip.IsLoopback()) {
+		return ""
+	}
+
+	return strings.TrimSpace(os.Getenv(localAuthBypassEmailEnv))
+}
+
+func resolveLocalAuthUser(ctx context.Context, queries localAuthQueries, email string) (db.User, error) {
+	user, err := queries.GetUserByEmail(ctx, email)
+	if err != nil {
+		return db.User{}, err
+	}
+	if !user.OnboardedAt.Valid {
+		return queries.MarkUserOnboarded(ctx, user.ID)
+	}
+	return user, nil
+}
 
 // Auth middleware validates JWT tokens or Personal Access Tokens.
 // Token sources (in priority order):
@@ -35,6 +83,16 @@ func uuidToString(u pgtype.UUID) string { return util.UUIDToString(u) }
 // prefix branch — we don't fall through to the mul_ / JWT paths, since
 // an mcn_ string is by construction not a valid mul_ PAT or JWT.
 func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATVerifier) func(http.Handler) http.Handler {
+	localEmail := localAuthBypassEmail()
+	var localUser struct {
+		sync.Mutex
+		loaded bool
+		user   db.User
+	}
+	if localEmail != "" {
+		slog.Warn("auth: LOCAL LOOPBACK BYPASS ENABLED", "user_email", localEmail)
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// X-Actor-Source is server-set only — any value supplied by
@@ -45,6 +103,36 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 			// to convince a downstream handler that its request came
 			// from a non-task-token path.
 			r.Header.Del("X-Actor-Source")
+
+			// Explicit local-only mode: every browser API request runs as the
+			// configured operator account, with no login or onboarding gate.
+			// DaemonAuth is separate and keeps validating daemon/task tokens.
+			if localEmail != "" {
+				if queries == nil {
+					http.Error(w, `{"error":"local auth bypass unavailable"}`, http.StatusServiceUnavailable)
+					return
+				}
+
+				localUser.Lock()
+				if !localUser.loaded {
+					user, err := resolveLocalAuthUser(r.Context(), queries, localEmail)
+					if err != nil {
+						localUser.Unlock()
+						slog.Error("auth: local bypass user unavailable", "user_email", localEmail, "error", err)
+						http.Error(w, `{"error":"local auth bypass user unavailable"}`, http.StatusServiceUnavailable)
+						return
+					}
+					localUser.user = user
+					localUser.loaded = true
+				}
+				user := localUser.user
+				localUser.Unlock()
+
+				r.Header.Set("X-User-ID", uuidToString(user.ID))
+				r.Header.Set("X-User-Email", user.Email)
+				next.ServeHTTP(w, r)
+				return
+			}
 
 			tokenString, fromCookie := extractToken(r)
 			if tokenString == "" {
