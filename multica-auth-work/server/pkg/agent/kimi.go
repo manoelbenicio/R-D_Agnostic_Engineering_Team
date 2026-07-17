@@ -63,6 +63,12 @@ func (b *kimiBackend) Execute(ctx context.Context, prompt string, opts ExecOptio
 		cmd.Dir = opts.Cwd
 	}
 	cmd.Env = buildEnv(b.cfg.Env)
+	if opts.ThinkingLevel != "" {
+		// Kimi Code documents this as the per-process override that is
+		// forwarded verbatim as thinking.effort. Append it last so the
+		// explicit per-agent value wins over any runtime-level default.
+		cmd.Env = append(cmd.Env, "KIMI_MODEL_THINKING_EFFORT="+opts.ThinkingLevel)
+	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -295,13 +301,36 @@ func (b *kimiBackend) Execute(ctx context.Context, prompt string, opts ExecOptio
 			b.cfg.Logger.Info("kimi session model set", "model", opts.Model)
 		}
 
-		// 4. Build the prompt content. If we have a system prompt, prepend it.
+		// 4. A selected effort also means Thinking must be enabled for this
+		// session. Kimi's stable ACP config dispatcher exposes the boolean
+		// switch; the exact effort is supplied process-wide through
+		// KIMI_MODEL_THINKING_EFFORT above.
+		if opts.ThinkingLevel != "" {
+			if _, err := c.request(runCtx, "session/set_config_option", map[string]any{
+				"sessionId": sessionID,
+				"configId":  "thinking",
+				"value":     "on",
+			}); err != nil {
+				finalStatus = "failed"
+				finalError = fmt.Sprintf("kimi could not enable thinking level %q: %v", opts.ThinkingLevel, err)
+				resCh <- Result{
+					Status:     finalStatus,
+					Error:      finalError,
+					DurationMs: time.Since(startTime).Milliseconds(),
+					SessionID:  sessionID,
+				}
+				return
+			}
+			b.cfg.Logger.Info("kimi session thinking set", "effort", opts.ThinkingLevel)
+		}
+
+		// 5. Build the prompt content. If we have a system prompt, prepend it.
 		userText := prompt
 		if opts.SystemPrompt != "" {
 			userText = opts.SystemPrompt + "\n\n---\n\n" + prompt
 		}
 
-		// 5. Send the prompt and wait for PromptResponse.
+		// 6. Send the prompt and wait for PromptResponse.
 		_, err = c.request(runCtx, "session/prompt", map[string]any{
 			"sessionId": sessionID,
 			"prompt": []map[string]any{

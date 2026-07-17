@@ -18,7 +18,7 @@ import (
 
 const (
 	nimDefaultBaseURL = "https://integrate.api.nvidia.com/v1"
-	nimDefaultModel   = "meta/llama-3.3-70b-instruct"
+	nimDefaultModel   = "z-ai/glm-5.2"
 	nimMaxFileBytes   = 4 << 20
 	nimDefaultTurns   = 24
 )

@@ -1,7 +1,9 @@
 package agent
 
 import (
+	"encoding/json"
 	"log/slog"
+	"os"
 	"strings"
 	"testing"
 )
@@ -165,5 +167,64 @@ func TestBuildGeminiArgsFiltersBlockedCustomArgs(t *testing.T) {
 	}
 	if args[len(args)-1] != "--sandbox" {
 		t.Fatalf("expected --sandbox to pass through, got %v", args)
+	}
+}
+
+func TestWriteGeminiThinkingOverrideUsesModelScopedSystemSettings(t *testing.T) {
+	t.Parallel()
+
+	path, cleanup, err := writeGeminiThinkingOverride("gemini-3.5-flash", "high")
+	if err != nil {
+		t.Fatalf("writeGeminiThinkingOverride: %v", err)
+	}
+	defer cleanup()
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read generated settings: %v", err)
+	}
+	var payload struct {
+		ModelConfigs struct {
+			CustomOverrides []struct {
+				Match struct {
+					Model string `json:"model"`
+				} `json:"match"`
+				ModelConfig struct {
+					GenerateContentConfig struct {
+						ThinkingConfig struct {
+							ThinkingLevel string `json:"thinkingLevel"`
+						} `json:"thinkingConfig"`
+					} `json:"generateContentConfig"`
+				} `json:"modelConfig"`
+			} `json:"customOverrides"`
+		} `json:"modelConfigs"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		t.Fatalf("decode generated settings: %v\n%s", err, raw)
+	}
+	if len(payload.ModelConfigs.CustomOverrides) != 1 {
+		t.Fatalf("customOverrides length = %d, want 1", len(payload.ModelConfigs.CustomOverrides))
+	}
+	override := payload.ModelConfigs.CustomOverrides[0]
+	if override.Match.Model != "gemini-3.5-flash" {
+		t.Fatalf("override model = %q, want gemini-3.5-flash", override.Match.Model)
+	}
+	if got := override.ModelConfig.GenerateContentConfig.ThinkingConfig.ThinkingLevel; got != "HIGH" {
+		t.Fatalf("thinkingLevel = %q, want HIGH", got)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat generated settings: %v", err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("generated settings mode = %o, want 600", info.Mode().Perm())
+	}
+}
+
+func TestWriteGeminiThinkingOverrideRequiresExplicitModel(t *testing.T) {
+	t.Parallel()
+	if _, cleanup, err := writeGeminiThinkingOverride("", "high"); err == nil {
+		cleanup()
+		t.Fatal("expected empty model to be rejected")
 	}
 }

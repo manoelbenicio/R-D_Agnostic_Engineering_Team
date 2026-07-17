@@ -493,6 +493,127 @@ func parseCodebuddyEffortHelp(helpText string) []string {
 	return out
 }
 
+// kiroModelEffortAllow mirrors the output_config.effort schemas published by
+// Kiro for models with configurable reasoning. Kiro's model-list response does
+// not currently include those schemas, so model discovery supplies the
+// account-visible model IDs and this table projects the provider-documented
+// levels onto matching entries.
+//
+// Source: https://kiro.dev/docs/cli/chat/effort/
+var kiroModelEffortAllow = map[string][]string{
+	"claude-opus-4.8":   {"low", "medium", "high", "xhigh", "max"},
+	"claude-opus-4.7":   {"low", "medium", "high", "xhigh", "max"},
+	"claude-opus-4.6":   {"low", "medium", "high", "max"},
+	"claude-sonnet-4.6": {"low", "medium", "high", "max"},
+}
+
+// annotateKiroThinking adds Kiro's per-model effort catalog to models returned
+// by the live ACP discovery. Unknown and unsupported models remain unannotated
+// so the UI never offers a level the provider has not documented for them.
+func annotateKiroThinking(models []Model) {
+	for i := range models {
+		values, ok := kiroModelEffortAllow[models[i].ID]
+		if !ok {
+			continue
+		}
+		levels := make([]ThinkingLevel, 0, len(values))
+		for _, value := range values {
+			label, ok := claudeEffortLabel[value]
+			if !ok {
+				label = strings.Title(value) //nolint:staticcheck
+			}
+			levels = append(levels, ThinkingLevel{Value: value, Label: label})
+		}
+		models[i].Thinking = &ModelThinking{SupportedLevels: levels}
+	}
+}
+
+// geminiModelThinking mirrors Google's documented thinking_level matrix for
+// Gemini 3.x. Gemini CLI accepts these through modelConfigs overrides rather
+// than a dedicated command-line flag. Keep the catalog model-specific:
+// Gemini 3.1 Pro does not accept "minimal", while Gemini 3.5 Flash does.
+//
+// Sources:
+//   - https://ai.google.dev/gemini-api/docs/gemini-3
+//   - https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.5
+var geminiModelThinking = map[string]ModelThinking{
+	"gemini-3.1-pro-preview": {
+		SupportedLevels: thinkingLevels("low", "medium", "high"),
+		DefaultLevel:    "high",
+	},
+	"gemini-3.1-flash-lite": {
+		SupportedLevels: thinkingLevels("minimal", "low", "medium", "high"),
+		DefaultLevel:    "minimal",
+	},
+	"gemini-3-flash-preview": {
+		SupportedLevels: thinkingLevels("minimal", "low", "medium", "high"),
+		DefaultLevel:    "high",
+	},
+	"gemini-3.5-flash": {
+		SupportedLevels: thinkingLevels("minimal", "low", "medium", "high"),
+		DefaultLevel:    "medium",
+	},
+}
+
+func annotateGeminiThinking(models []Model) {
+	for i := range models {
+		if thinking, ok := geminiModelThinking[models[i].ID]; ok {
+			catalog := thinking
+			catalog.SupportedLevels = append([]ThinkingLevel(nil), thinking.SupportedLevels...)
+			models[i].Thinking = &catalog
+		}
+	}
+}
+
+// Kimi Code exposes a per-process KIMI_MODEL_THINKING_EFFORT override and
+// documents the five accepted values below. The override is deliberately
+// process-scoped, so every discovered account-visible Kimi model can expose
+// the picker without mutating ~/.kimi-code/config.toml.
+//
+// Source:
+// https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/env-vars.html
+var kimiThinking = ModelThinking{
+	SupportedLevels: thinkingLevels("low", "medium", "high", "xhigh", "max"),
+}
+
+func annotateKimiThinking(models []Model) {
+	for i := range models {
+		catalog := kimiThinking
+		catalog.SupportedLevels = append([]ThinkingLevel(nil), kimiThinking.SupportedLevels...)
+		models[i].Thinking = &catalog
+	}
+}
+
+// Cline CLI 3.x owns provider-specific translation behind its --thinking
+// option and documents one fixed vocabulary for every selected model. Keep
+// these runtime-native values rather than projecting a vendor-specific enum.
+//
+// Source:
+// https://docs.cline.bot/cli/cli-reference
+var clineThinking = ModelThinking{
+	SupportedLevels: thinkingLevels("none", "low", "medium", "high", "xhigh"),
+}
+
+func annotateClineThinking(models []Model) {
+	for i := range models {
+		catalog := clineThinking
+		catalog.SupportedLevels = append([]ThinkingLevel(nil), clineThinking.SupportedLevels...)
+		models[i].Thinking = &catalog
+	}
+}
+
+func thinkingLevels(values ...string) []ThinkingLevel {
+	levels := make([]ThinkingLevel, 0, len(values))
+	for _, value := range values {
+		label := strings.Title(value) //nolint:staticcheck
+		if value == "xhigh" {
+			label = "Extra high"
+		}
+		levels = append(levels, ThinkingLevel{Value: value, Label: label})
+	}
+	return levels
+}
+
 // ── Shared validation ────────────────────────────────────────────────
 
 // ValidateThinkingLevel reports whether `value` is in the supported
@@ -605,6 +726,33 @@ var providerThinkingEnums = map[string]map[string]bool{
 		"xhigh":   true,
 	},
 	"codebuddy": {
+		"low":    true,
+		"medium": true,
+		"high":   true,
+		"xhigh":  true,
+	},
+	"kiro": {
+		"low":    true,
+		"medium": true,
+		"high":   true,
+		"xhigh":  true,
+		"max":    true,
+	},
+	"kimi": {
+		"low":    true,
+		"medium": true,
+		"high":   true,
+		"xhigh":  true,
+		"max":    true,
+	},
+	"gemini": {
+		"minimal": true,
+		"low":     true,
+		"medium":  true,
+		"high":    true,
+	},
+	"cline": {
+		"none":   true,
 		"low":    true,
 		"medium": true,
 		"high":   true,

@@ -98,6 +98,99 @@ func TestCreateAgent_ThinkingLevel_ValidationConsistency(t *testing.T) {
 	})
 }
 
+func TestCreateAgent_ThinkingLevel_Kiro(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database not available")
+	}
+
+	ctx := context.Background()
+	kiroRuntimeID := createKiroProviderRuntime(t)
+	t.Cleanup(func() {
+		testPool.Exec(ctx, `DELETE FROM agent WHERE workspace_id = $1 AND name = 'thinking-test-kiro'`, testWorkspaceID)
+	})
+
+	body := map[string]any{
+		"name":                 "thinking-test-kiro",
+		"runtime_id":           kiroRuntimeID,
+		"visibility":           "private",
+		"max_concurrent_tasks": 1,
+		"model":                "claude-opus-4.8",
+		"thinking_level":       "max",
+	}
+	w := httptest.NewRecorder()
+	testHandler.CreateAgent(w, newRequest(http.MethodPost, "/api/agents", body))
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Kiro thinking_level=max: expected 201, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp map[string]any
+	_ = json.NewDecoder(w.Body).Decode(&resp)
+	if resp["thinking_level"] != "max" {
+		t.Errorf("expected Kiro thinking_level=max in response, got %v", resp["thinking_level"])
+	}
+}
+
+func TestCreateAgent_ThinkingLevel_KimiGeminiAndCline(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database not available")
+	}
+
+	ctx := context.Background()
+	tests := []struct {
+		name     string
+		provider string
+		model    string
+		level    string
+	}{
+		{
+			name:     "kimi",
+			provider: "kimi",
+			model:    "kimi-code/kimi-for-coding",
+			level:    "max",
+		},
+		{
+			name:     "gemini",
+			provider: "gemini",
+			model:    "gemini-3.5-flash",
+			level:    "minimal",
+		},
+		{
+			name:     "cline",
+			provider: "cline",
+			model:    "cline-pass/kimi-k2.7-code",
+			level:    "xhigh",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			runtimeID := createThinkingProviderRuntime(t, tc.provider)
+			agentName := "thinking-test-" + tc.name
+			t.Cleanup(func() {
+				testPool.Exec(ctx, `DELETE FROM agent WHERE workspace_id = $1 AND name = $2`, testWorkspaceID, agentName)
+			})
+
+			body := map[string]any{
+				"name":                 agentName,
+				"runtime_id":           runtimeID,
+				"visibility":           "private",
+				"max_concurrent_tasks": 1,
+				"model":                tc.model,
+				"thinking_level":       tc.level,
+			}
+			w := httptest.NewRecorder()
+			testHandler.CreateAgent(w, newRequest(http.MethodPost, "/api/agents", body))
+			if w.Code != http.StatusCreated {
+				t.Fatalf("%s thinking_level=%s: expected 201, got %d: %s", tc.provider, tc.level, w.Code, w.Body.String())
+			}
+			var resp map[string]any
+			_ = json.NewDecoder(w.Body).Decode(&resp)
+			if resp["thinking_level"] != tc.level {
+				t.Fatalf("expected thinking_level=%s, got %v", tc.level, resp["thinking_level"])
+			}
+		})
+	}
+}
+
 // TestUpdateAgent_ThinkingLevel_TriState covers the three modes of
 // the field on PATCH:
 //   - field omitted → leave the existing value alone (the silent-clear
@@ -446,6 +539,46 @@ func createClaudeProviderRuntime(t *testing.T) string {
 	`, testWorkspaceID, "Claude Thinking Runtime", "Claude thinking-level test runtime", testUserID).Scan(&runtimeID)
 	if err != nil {
 		t.Fatalf("create claude runtime: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM agent_runtime WHERE id = $1`, runtimeID)
+	})
+	return runtimeID
+}
+
+func createKiroProviderRuntime(t *testing.T) string {
+	t.Helper()
+	var runtimeID string
+	err := testPool.QueryRow(context.Background(), `
+		INSERT INTO agent_runtime (
+			workspace_id, daemon_id, name, runtime_mode, provider, status,
+			device_info, metadata, last_seen_at, owner_id
+		)
+		VALUES ($1, NULL, $2, 'cloud', 'kiro', 'online', $3, '{}'::jsonb, now(), $4)
+		RETURNING id
+	`, testWorkspaceID, "Kiro Thinking Runtime", "Kiro thinking-level test runtime", testUserID).Scan(&runtimeID)
+	if err != nil {
+		t.Fatalf("create Kiro runtime: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM agent_runtime WHERE id = $1`, runtimeID)
+	})
+	return runtimeID
+}
+
+func createThinkingProviderRuntime(t *testing.T, provider string) string {
+	t.Helper()
+	var runtimeID string
+	err := testPool.QueryRow(context.Background(), `
+		INSERT INTO agent_runtime (
+			workspace_id, daemon_id, name, runtime_mode, provider, status,
+			device_info, metadata, last_seen_at, owner_id
+		)
+		VALUES ($1, NULL, $2, 'cloud', $3, 'online', $4, '{}'::jsonb, now(), $5)
+		RETURNING id
+	`, testWorkspaceID, provider+" Thinking Runtime", provider, provider+" thinking-level test runtime", testUserID).Scan(&runtimeID)
+	if err != nil {
+		t.Fatalf("create %s runtime: %v", provider, err)
 	}
 	t.Cleanup(func() {
 		testPool.Exec(context.Background(), `DELETE FROM agent_runtime WHERE id = $1`, runtimeID)

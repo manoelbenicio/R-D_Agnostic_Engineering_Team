@@ -298,6 +298,52 @@ func TestKiroBackendInvokesACPWithTrustAllTools(t *testing.T) {
 	}
 }
 
+func TestKiroBackendInjectsThinkingLevelAsACPEffort(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	argsFile := filepath.Join(tempDir, "argv.txt")
+	fakePath := filepath.Join(tempDir, "kiro-cli")
+	writeTestExecutable(t, fakePath, []byte(fakeKiroACPScript()))
+
+	backend, err := New("kiro", Config{
+		ExecutablePath: fakePath,
+		Logger:         slog.Default(),
+		Env:            map[string]string{"KIRO_ARGS_FILE": argsFile},
+	})
+	if err != nil {
+		t.Fatalf("new kiro backend: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	session, err := backend.Execute(ctx, "prompt-ignored", ExecOptions{
+		Model:         "bogus-model",
+		ThinkingLevel: "xhigh",
+		Timeout:       5 * time.Second,
+		CustomArgs:    []string{"--effort", "low", "--agent", "multica"},
+	})
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	go func() {
+		for range session.Messages {
+		}
+	}()
+	<-session.Result
+
+	raw, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatalf("read args file: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(raw)), "\n")
+	want := []string{"acp", "--trust-all-tools", "--effort", "xhigh", "--agent", "multica"}
+	if strings.Join(lines, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("Kiro ACP argv = %q, want %q", lines, want)
+	}
+}
+
 func TestKiroBackendUsesSessionLoadForResume(t *testing.T) {
 	t.Parallel()
 

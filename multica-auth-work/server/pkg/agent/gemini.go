@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -32,6 +33,7 @@ func (b *geminiBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 	args := buildGeminiArgs(prompt, opts, b.cfg.Logger)
 
 	cmd := exec.CommandContext(runCtx, execPath, args...)
+	cleanupThinkingOverride := func() {}
 	hideAgentWindow(cmd)
 	b.cfg.Logger.Info("agent command", "exec", execPath, "args", args)
 	cmd.WaitDelay = 10 * time.Second
@@ -39,15 +41,30 @@ func (b *geminiBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 		cmd.Dir = opts.Cwd
 	}
 	cmd.Env = buildGeminiEnv(b.cfg.Env)
+	if opts.ThinkingLevel != "" {
+		settingsPath, cleanup, err := writeGeminiThinkingOverride(opts.Model, opts.ThinkingLevel)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("gemini thinking override: %w", err)
+		}
+		cleanupThinkingOverride = cleanup
+		// Gemini CLI documents this environment variable as the per-process
+		// path for its highest-precedence system settings file. Appending it
+		// last makes the explicit per-agent choice win over runtime_config
+		// without touching the user's ~/.gemini/settings.json.
+		cmd.Env = append(cmd.Env, "GEMINI_CLI_SYSTEM_SETTINGS_PATH="+settingsPath)
+	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		cleanupThinkingOverride()
 		cancel()
 		return nil, fmt.Errorf("gemini stdout pipe: %w", err)
 	}
 	cmd.Stderr = newLogWriter(b.cfg.Logger, "[gemini:stderr] ")
 
 	if err := cmd.Start(); err != nil {
+		cleanupThinkingOverride()
 		cancel()
 		return nil, fmt.Errorf("start gemini: %w", err)
 	}
@@ -64,6 +81,7 @@ func (b *geminiBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 	}()
 
 	go func() {
+		defer cleanupThinkingOverride()
 		defer cancel()
 		defer close(msgCh)
 		defer close(resCh)
@@ -179,10 +197,10 @@ func (b *geminiBackend) accumulateUsage(usage map[string]TokenUsage, stats *gemi
 // ── Gemini stream-json event types ──
 
 type geminiStreamEvent struct {
-	Type      string          `json:"type"`
-	Timestamp string          `json:"timestamp,omitempty"`
-	SessionID string          `json:"session_id,omitempty"`
-	Model     string          `json:"model,omitempty"`
+	Type      string `json:"type"`
+	Timestamp string `json:"timestamp,omitempty"`
+	SessionID string `json:"session_id,omitempty"`
+	Model     string `json:"model,omitempty"`
 
 	// message fields
 	Role    string `json:"role,omitempty"`
@@ -213,12 +231,12 @@ type geminiStreamError struct {
 }
 
 type geminiStreamStats struct {
-	TotalTokens  int                          `json:"total_tokens"`
-	InputTokens  int                          `json:"input_tokens"`
-	OutputTokens int                          `json:"output_tokens"`
-	DurationMs   int                          `json:"duration_ms"`
-	ToolCalls    int                          `json:"tool_calls"`
-	Models       map[string]geminiModelStats  `json:"models,omitempty"`
+	TotalTokens  int                         `json:"total_tokens"`
+	InputTokens  int                         `json:"input_tokens"`
+	OutputTokens int                         `json:"output_tokens"`
+	DurationMs   int                         `json:"duration_ms"`
+	ToolCalls    int                         `json:"tool_calls"`
+	Models       map[string]geminiModelStats `json:"models,omitempty"`
 }
 
 type geminiModelStats struct {
@@ -239,6 +257,7 @@ type geminiModelStats struct {
 //	-o stream-json        streaming NDJSON output for live events
 //	-m <model>            optional model override
 //	-r <session>          resume a previous session (if provided)
+//
 // geminiBlockedArgs are flags hardcoded by the daemon that must not be
 // overridden by user-configured custom_args.
 var geminiBlockedArgs = map[string]blockedArgMode{
@@ -287,4 +306,58 @@ func buildGeminiEnv(extra map[string]string) []string {
 	}
 	merged[trustKey] = "true"
 	return buildEnv(merged)
+}
+
+// writeGeminiThinkingOverride creates an isolated, per-process system settings
+// file that applies thinkingLevel only to the explicitly selected model.
+// Gemini CLI has no --effort flag; modelConfigs.customOverrides is the
+// manufacturer-supported injection point. The caller must invoke cleanup after
+// the child process exits.
+func writeGeminiThinkingOverride(model, level string) (string, func(), error) {
+	model = strings.TrimSpace(model)
+	level = strings.TrimSpace(level)
+	if model == "" {
+		return "", func() {}, fmt.Errorf("an explicit Gemini model is required when thinking_level is set")
+	}
+	if level == "" {
+		return "", func() {}, fmt.Errorf("thinking level cannot be empty")
+	}
+
+	payload := map[string]any{
+		"modelConfigs": map[string]any{
+			"customOverrides": []any{
+				map[string]any{
+					"match": map[string]any{"model": model},
+					"modelConfig": map[string]any{
+						"generateContentConfig": map[string]any{
+							"thinkingConfig": map[string]any{
+								"thinkingLevel": strings.ToUpper(level),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	file, err := os.CreateTemp("", "multica-gemini-thinking-*.json")
+	if err != nil {
+		return "", func() {}, err
+	}
+	path := file.Name()
+	cleanup := func() { _ = os.Remove(path) }
+	if err := json.NewEncoder(file).Encode(payload); err != nil {
+		_ = file.Close()
+		cleanup()
+		return "", func() {}, err
+	}
+	if err := file.Close(); err != nil {
+		cleanup()
+		return "", func() {}, err
+	}
+	if err := os.Chmod(path, 0o600); err != nil {
+		cleanup()
+		return "", func() {}, err
+	}
+	return path, cleanup, nil
 }

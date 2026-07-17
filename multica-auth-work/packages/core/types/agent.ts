@@ -648,10 +648,10 @@ export interface RuntimeModel {
   provider?: string;
   default?: boolean;
   /**
-   * Per-model reasoning/effort catalog discovered by the daemon. Currently
-   * populated for claude, codex, and opencode runtimes; omitted (or undefined)
-   * for every other provider, which the UI treats as "no thinking-level
-   * picker for this model". See MUL-2339.
+   * Per-model reasoning/effort catalog discovered by the daemon or projected
+   * from the runtime's documented model schema. Omitted (or undefined) when a
+   * provider/model exposes no safe per-request override, which the UI treats
+   * as "no thinking-level picker for this model". See MUL-2339.
    */
   thinking?: RuntimeModelThinking;
 }

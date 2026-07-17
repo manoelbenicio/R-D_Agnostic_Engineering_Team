@@ -84,10 +84,11 @@ const modelCacheTTL = 60 * time.Second
 // openclaw) it shells out with caching and falls back to the static
 // list on failure.
 //
-// For claude, codex, and opencode, the catalog is augmented with per-model
-// thinking-level options discovered from the local CLI. Discovery failures
-// silently leave Thinking == nil on each entry, which the UI treats as
-// "no picker for this model" rather than blocking model selection.
+// For runtimes that expose reasoning controls, the catalog is augmented with
+// per-model thinking-level options discovered from the local CLI or projected
+// from the provider's documented model schema. Discovery failures silently
+// leave Thinking == nil on each entry, which the UI treats as "no picker for
+// this model" rather than blocking model selection.
 //
 // executablePath lets the caller point at a non-default binary; pass
 // "" to use the provider's default name on PATH.
@@ -101,8 +102,19 @@ func ListModels(ctx context.Context, providerType, executablePath string) ([]Mod
 		models := codexStaticModels()
 		annotateCodexThinking(ctx, models, executablePath)
 		return models, nil
+	case "cline":
+		return cachedDiscovery(discoveryCacheKey(providerType, executablePath), func() ([]Model, error) {
+			models, err := discoverClineModels(ctx, executablePath)
+			if err != nil {
+				return nil, err
+			}
+			annotateClineThinking(models)
+			return models, nil
+		})
 	case "gemini":
-		return geminiStaticModels(), nil
+		models := geminiStaticModels()
+		annotateGeminiThinking(models)
+		return models, nil
 	case "antigravity":
 		// agy 1.0.6 added a `--model` flag plus an `agy models` catalog
 		// command (MUL-3125). Enumerate it on demand like the other
@@ -124,12 +136,24 @@ func ListModels(ctx context.Context, providerType, executablePath string) ([]Mod
 		})
 	case "kimi":
 		return cachedDiscovery(providerType, func() ([]Model, error) {
-			return discoverKimiModels(ctx, executablePath)
+			models, err := discoverKimiModels(ctx, executablePath)
+			if err != nil {
+				return nil, err
+			}
+			annotateKimiThinking(models)
+			return models, nil
 		})
 	case "kiro":
 		return cachedDiscovery(providerType, func() ([]Model, error) {
-			return discoverKiroModels(ctx, executablePath)
+			models, err := discoverKiroModels(ctx, executablePath)
+			if err != nil {
+				return nil, err
+			}
+			annotateKiroThinking(models)
+			return models, nil
 		})
+	case "nim":
+		return nimStaticModels(), nil
 	case "qoder":
 		return cachedDiscovery(providerType, func() ([]Model, error) {
 			return discoverQoderModels(ctx, executablePath)
@@ -330,9 +354,33 @@ func geminiStaticModels() []Model {
 		{ID: "flash-lite", Label: "Flash Lite", Provider: "google"},
 		{ID: "gemini-3-pro-preview", Label: "Gemini 3 Pro (preview)", Provider: "google"},
 		{ID: "gemini-3-flash-preview", Label: "Gemini 3 Flash (preview)", Provider: "google"},
+		{ID: "gemini-3.1-pro-preview", Label: "Gemini 3.1 Pro (preview)", Provider: "google"},
+		{ID: "gemini-3.1-flash-lite", Label: "Gemini 3.1 Flash Lite", Provider: "google"},
+		{ID: "gemini-3.5-flash", Label: "Gemini 3.5 Flash", Provider: "google"},
 		{ID: "gemini-2.5-pro", Label: "Gemini 2.5 Pro", Provider: "google"},
 		{ID: "gemini-2.5-flash", Label: "Gemini 2.5 Flash", Provider: "google"},
 		{ID: "gemini-2.5-flash-lite", Label: "Gemini 2.5 Flash Lite", Provider: "google"},
+	}
+}
+
+// clineStaticModels is the minimum account-independent fallback for the
+// ClinePass models explicitly supported by the installed Cline CLI catalog.
+// Normal operation still uses ACP discovery so account-visible additions and
+// the runtime's actual current model take precedence.
+func clineStaticModels() []Model {
+	return []Model{
+		{ID: "cline-pass/glm-5.2", Label: "GLM-5.2", Provider: "cline-pass"},
+		{ID: "cline-pass/kimi-k2.7-code", Label: "Kimi K2.7 Code", Provider: "cline-pass"},
+	}
+}
+
+// nimStaticModels lists the NVIDIA-hosted IDs supported by Multica's
+// OpenAI-compatible NIM backend. z-ai/glm-5.2 is the requested default; the
+// previous Llama default remains selectable for existing agents.
+func nimStaticModels() []Model {
+	return []Model{
+		{ID: "z-ai/glm-5.2", Label: "GLM-5.2", Provider: "z-ai", Default: true},
+		{ID: "meta/llama-3.3-70b-instruct", Label: "Llama 3.3 70B Instruct", Provider: "meta"},
 	}
 }
 
@@ -788,6 +836,24 @@ func discoverKimiModels(ctx context.Context, executablePath string) ([]Model, er
 	})
 }
 
+// discoverClineModels reads the authenticated Cline catalog through ACP.
+// Cline 3.x treats --json as a headless prompt-output mode and rejects it when
+// combined with ACP, so discovery intentionally launches with --acp only.
+// When no account is authenticated (or the binary is unavailable), retain the
+// two ClinePass entries built into the supported CLI catalog.
+func discoverClineModels(ctx context.Context, executablePath string) ([]Model, error) {
+	models, err := discoverACPModels(ctx, executablePath, acpDiscoveryProvider{
+		defaultBin:   "cline",
+		clientName:   "multica-model-discovery",
+		tmpdirPrefix: "multica-cline-discovery-",
+		acpArgs:      []string{"--acp"},
+	})
+	if err != nil || len(models) == 0 {
+		return clineStaticModels(), nil
+	}
+	return mergeModels(models, clineStaticModels()), nil
+}
+
 // discoverKiroModels spins up a throwaway `kiro-cli acp` process and parses
 // the models block Kiro returns from session/new.
 func discoverKiroModels(ctx context.Context, executablePath string) ([]Model, error) {
@@ -1065,6 +1131,21 @@ func acpModelLabel(name, modelID string) string {
 		return modelID
 	}
 	return label
+}
+
+func mergeModels(primary, required []Model) []Model {
+	merged := append([]Model(nil), primary...)
+	seen := make(map[string]bool, len(primary)+len(required))
+	for _, model := range primary {
+		seen[model.ID] = true
+	}
+	for _, model := range required {
+		if !seen[model.ID] {
+			merged = append(merged, model)
+			seen[model.ID] = true
+		}
+	}
+	return merged
 }
 
 // discoverAntigravityModels runs `agy models` and returns the catalog the

@@ -13,15 +13,17 @@ import (
 
 // clineBlockedArgs are flags hardcoded by the daemon that must not be
 // overridden by user-configured custom_args. `--acp` enables the protocol
-// transport and `--json` keeps stdout machine-readable;
-// overriding it would break the daemon↔Cline communication contract.
+// transport; overriding it would break the daemon↔Cline communication
+// contract. Cline 3.x must not receive --json together with --acp: --json is
+// its separate headless prompt-output mode and that combination exits before
+// the ACP handshake.
 var clineBlockedArgs = map[string]blockedArgMode{
 	"--acp":      blockedStandalone,
 	"--json":     blockedStandalone,
 	"--thinking": blockedWithValue,
 }
 
-// clineBackend implements Backend by spawning `cline --acp --json` and communicating
+// clineBackend implements Backend by spawning `cline --acp` and communicating
 // via the ACP (Agent Client Protocol) JSON-RPC 2.0 over stdin/stdout.
 //
 // Cline CLI (https://github.com/cline/cline) supports ACP out of the box via
@@ -56,7 +58,7 @@ func (b *clineBackend) Execute(ctx context.Context, prompt string, opts ExecOpti
 	// ACP permission requests are approved by hermesClient using the standard
 	// session/request_permission response. The CLI's default auto-approve mode
 	// remains enabled, and protocol-critical output flags cannot be overridden.
-	clineArgs := []string{"--acp", "--json"}
+	clineArgs := []string{"--acp"}
 	if opts.ThinkingLevel != "" {
 		clineArgs = append(clineArgs, "--thinking", opts.ThinkingLevel)
 	}

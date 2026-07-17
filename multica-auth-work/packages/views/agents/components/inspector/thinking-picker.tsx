@@ -11,10 +11,10 @@ import { useT } from "../../../i18n";
 
 /**
  * Per-agent reasoning/effort picker (MUL-2339). Renders only when the
- * current model exposes a non-empty `supported_levels` set — Claude, Codex,
- * and OpenCode today; every other provider gets nothing. The catalog is daemon-
- * discovered, so the value/label pairs match each CLI's own UI (`Low`,
- * `Extra high`, …) verbatim; never normalised across providers.
+ * current model exposes a non-empty `supported_levels` set. The catalog is
+ * daemon-discovered or projected from an upstream model schema, so the
+ * value/label pairs match each runtime's own vocabulary (`Low`, `Extra high`,
+ * …) verbatim; never normalised across providers.
  *
  * Empty string is the "no override" sentinel: the backend omits the
  * effort flag entirely and the upstream CLI's own config / built-in

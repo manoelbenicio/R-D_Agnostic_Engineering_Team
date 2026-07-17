@@ -17,12 +17,14 @@ import (
 // and --trust-all-tools covers Kiro's CLI-level tool gate while
 // hermesClient handles ACP session/request_permission auto-approval. In Kiro
 // CLI 2.1.1, `-a` is short for --trust-all-tools, not --agent; --agent remains
-// allowed so users can select a custom Kiro agent.
+// allowed so users can select a custom Kiro agent. `--effort` is owned by the
+// persisted per-agent thinking_level and must not be overridden by custom args.
 var kiroBlockedArgs = map[string]blockedArgMode{
 	"acp":               blockedStandalone,
 	"-a":                blockedStandalone,
 	"--trust-all-tools": blockedStandalone,
 	"--trust-tools":     blockedWithValue,
+	"--effort":          blockedWithValue,
 }
 
 // kiroBackend implements Backend by spawning `kiro-cli acp` and communicating
@@ -56,7 +58,11 @@ func (b *kiroBackend) Execute(ctx context.Context, prompt string, opts ExecOptio
 	timeout := opts.Timeout
 	runCtx, cancel := runContext(ctx, timeout)
 
-	kiroArgs := append([]string{"acp", "--trust-all-tools"}, filterCustomArgs(opts.CustomArgs, kiroBlockedArgs, b.cfg.Logger)...)
+	kiroArgs := []string{"acp", "--trust-all-tools"}
+	if opts.ThinkingLevel != "" {
+		kiroArgs = append(kiroArgs, "--effort", opts.ThinkingLevel)
+	}
+	kiroArgs = append(kiroArgs, filterCustomArgs(opts.CustomArgs, kiroBlockedArgs, b.cfg.Logger)...)
 	cmd := exec.CommandContext(runCtx, execPath, kiroArgs...)
 	hideAgentWindow(cmd)
 	b.cfg.Logger.Info("agent command", "exec", execPath, "args", kiroArgs)

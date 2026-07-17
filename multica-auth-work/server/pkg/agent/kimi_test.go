@@ -66,7 +66,7 @@ func fakeKimiACPScript() string {
 #
 # Writes the full argv (one arg per line) to $KIMI_ARGS_FILE if that env
 # var is set, so tests can assert that the daemon invokes us with the
-# right flags (`+"`--yolo acp`"+`, not bare `+"`acp`"+`).
+# right flags (` + "`--yolo acp`" + `, not bare ` + "`acp`" + `).
 #
 # Then reads one JSON-RPC request per line from stdin, matches on the
 # method name, and writes back a canned response. Exits after set_model
@@ -286,6 +286,94 @@ func TestKimiBackendInvokesACPSubcommand(t *testing.T) {
 		switch l {
 		case "--yolo", "--auto-approve", "--yes", "-y":
 			t.Errorf("kimi acp doesn't accept %q; auto-approval is handled in hermesClient.handleAgentRequest", l)
+		}
+	}
+}
+
+func fakeKimiThinkingACPScript() string {
+	return `#!/bin/sh
+printf '%s' "$KIMI_MODEL_THINKING_EFFORT" > "$KIMI_EFFORT_FILE"
+while IFS= read -r line; do
+  id=$(printf '%s' "$line" | sed -n 's/.*"id":\([0-9]*\).*/\1/p')
+  case "$line" in
+    *'"method":"initialize"'*)
+      printf '{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":1,"agentCapabilities":{}}}\n' "$id"
+      ;;
+    *'"method":"session/new"'*)
+      printf '{"jsonrpc":"2.0","id":%s,"result":{"sessionId":"ses_thinking"}}\n' "$id"
+      ;;
+    *'"method":"session/set_config_option"'*)
+      printf '%s\n' "$line" > "$KIMI_THINKING_RPC_FILE"
+      printf '{"jsonrpc":"2.0","id":%s,"result":{"configOptions":[]}}\n' "$id"
+      ;;
+    *'"method":"session/prompt"'*)
+      printf '{"jsonrpc":"2.0","id":%s,"result":{"stopReason":"end_turn"}}\n' "$id"
+      exit 0
+      ;;
+  esac
+done
+`
+}
+
+func TestKimiBackendAppliesPerAgentThinkingEffort(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	effortFile := filepath.Join(tempDir, "effort.txt")
+	rpcFile := filepath.Join(tempDir, "thinking-rpc.json")
+	fakePath := filepath.Join(tempDir, "kimi")
+	writeTestExecutable(t, fakePath, []byte(fakeKimiThinkingACPScript()))
+
+	backend, err := New("kimi", Config{
+		ExecutablePath: fakePath,
+		Logger:         slog.Default(),
+		Env: map[string]string{
+			"KIMI_EFFORT_FILE":       effortFile,
+			"KIMI_THINKING_RPC_FILE": rpcFile,
+		},
+	})
+	if err != nil {
+		t.Fatalf("new kimi backend: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session, err := backend.Execute(ctx, "prompt", ExecOptions{
+		ThinkingLevel: "xhigh",
+		Timeout:       5 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	go func() {
+		for range session.Messages {
+		}
+	}()
+	result := <-session.Result
+	if result.Status != "completed" {
+		t.Fatalf("result status = %q, error=%q", result.Status, result.Error)
+	}
+
+	rawEffort, err := os.ReadFile(effortFile)
+	if err != nil {
+		t.Fatalf("read effort capture: %v", err)
+	}
+	if got := string(rawEffort); got != "xhigh" {
+		t.Fatalf("KIMI_MODEL_THINKING_EFFORT = %q, want xhigh", got)
+	}
+
+	rawRPC, err := os.ReadFile(rpcFile)
+	if err != nil {
+		t.Fatalf("read thinking RPC capture: %v", err)
+	}
+	frame := string(rawRPC)
+	for _, want := range []string{
+		`"method":"session/set_config_option"`,
+		`"configId":"thinking"`,
+		`"value":"on"`,
+	} {
+		if !strings.Contains(frame, want) {
+			t.Fatalf("thinking RPC missing %s: %s", want, frame)
 		}
 	}
 }

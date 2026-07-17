@@ -109,7 +109,7 @@ func TestClineBackendRunsNativeACPAndPropagatesIsolation(t *testing.T) {
 	}
 
 	args := strings.Fields(string(mustReadFile(t, argsFile)))
-	wantArgs := []string{"--acp", "--json", "--thinking", "high", "--verbose"}
+	wantArgs := []string{"--acp", "--thinking", "high", "--verbose"}
 	if strings.Join(args, "|") != strings.Join(wantArgs, "|") {
 		t.Fatalf("argv = %q, want %q", args, wantArgs)
 	}

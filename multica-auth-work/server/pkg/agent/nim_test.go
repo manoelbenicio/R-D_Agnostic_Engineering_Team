@@ -30,6 +30,9 @@ func TestNIMExecuteStreamsToolsAndUsage(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			t.Fatal(err)
 		}
+		if request.Model != "test/model" {
+			t.Errorf("model = %q, want test/model", request.Model)
+		}
 		w.Header().Set("Content-Type", "text/event-stream")
 		if requests.Add(1) == 1 {
 			fmt.Fprintln(w, `data: {"model":"test/model","choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"write_file","arguments":"{\"path\":\"nested/"}}]}}]}`)
@@ -66,6 +69,39 @@ func TestNIMExecuteStreamsToolsAndUsage(t *testing.T) {
 	}
 	if len(messages) != 3 || messages[0].Type != MessageToolUse || messages[1].Type != MessageToolResult || messages[2].Content != "Finished" {
 		t.Fatalf("messages = %#v", messages)
+	}
+}
+
+func TestNIMUsesGLM52AsRuntimeDefault(t *testing.T) {
+	root := t.TempDir()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request nimRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Fatal(err)
+		}
+		if request.Model != "z-ai/glm-5.2" {
+			t.Errorf("model = %q, want z-ai/glm-5.2", request.Model)
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprintln(w, `data: {"model":"z-ai/glm-5.2","choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}]}`)
+		fmt.Fprintln(w, "data: [DONE]")
+	}))
+	defer server.Close()
+
+	backend := &nimBackend{
+		cfg:     Config{Env: map[string]string{"NVIDIA_API_KEY": "test-key"}},
+		client:  server.Client(),
+		baseURL: server.URL,
+	}
+	session, err := backend.Execute(context.Background(), "test", ExecOptions{Cwd: root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range session.Messages {
+	}
+	result := <-session.Result
+	if result.Status != "completed" || result.Output != "ok" {
+		t.Fatalf("result = %+v", result)
 	}
 }
 

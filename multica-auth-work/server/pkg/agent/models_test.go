@@ -3,7 +3,9 @@ package agent
 import (
 	"context"
 	"path/filepath"
+	"reflect"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -95,6 +97,7 @@ func TestGeminiStaticModelsExposesAliasesAndGemini3(t *testing.T) {
 		"auto", "auto-gemini-2.5",
 		"pro", "flash", "flash-lite",
 		"gemini-3-pro-preview", "gemini-3-flash-preview",
+		"gemini-3.1-pro-preview", "gemini-3.1-flash-lite", "gemini-3.5-flash",
 		"gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite",
 	} {
 		if _, ok := ids[want]; !ok {
@@ -110,6 +113,95 @@ func TestGeminiStaticModelsExposesAliasesAndGemini3(t *testing.T) {
 			t.Errorf("all Gemini entries must carry Provider=google, got %+v", m)
 		}
 	}
+}
+
+func TestAnnotateGeminiThinkingUsesOfficialPerModelLevels(t *testing.T) {
+	t.Parallel()
+	models := []Model{
+		{ID: "gemini-3.1-pro-preview"},
+		{ID: "gemini-3.5-flash"},
+		{ID: "gemini-2.5-pro"},
+	}
+	annotateGeminiThinking(models)
+
+	if got := thinkingValues(models[0].Thinking); !reflect.DeepEqual(got, []string{"low", "medium", "high"}) {
+		t.Fatalf("Gemini 3.1 Pro levels = %v, want low/medium/high", got)
+	}
+	if models[0].Thinking.DefaultLevel != "high" {
+		t.Fatalf("Gemini 3.1 Pro default = %q, want high", models[0].Thinking.DefaultLevel)
+	}
+	if got := thinkingValues(models[1].Thinking); !reflect.DeepEqual(got, []string{"minimal", "low", "medium", "high"}) {
+		t.Fatalf("Gemini 3.5 Flash levels = %v, want minimal/low/medium/high", got)
+	}
+	if models[1].Thinking.DefaultLevel != "medium" {
+		t.Fatalf("Gemini 3.5 Flash default = %q, want medium", models[1].Thinking.DefaultLevel)
+	}
+	if models[2].Thinking != nil {
+		t.Fatalf("Gemini 2.5 Pro must remain unannotated; it uses thinkingBudget, got %+v", models[2].Thinking)
+	}
+}
+
+func TestAnnotateKimiThinkingExposesProcessEffortLevels(t *testing.T) {
+	t.Parallel()
+	models := []Model{{ID: "kimi-code/kimi-for-coding"}}
+	annotateKimiThinking(models)
+	want := []string{"low", "medium", "high", "xhigh", "max"}
+	if got := thinkingValues(models[0].Thinking); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Kimi levels = %v, want %v", got, want)
+	}
+}
+
+func TestClineStaticModelsExposeRequestedClinePassModels(t *testing.T) {
+	t.Parallel()
+	models := clineStaticModels()
+	ids := map[string]Model{}
+	for _, model := range models {
+		ids[model.ID] = model
+	}
+	for _, want := range []string{"cline-pass/kimi-k2.7-code", "cline-pass/glm-5.2"} {
+		if _, ok := ids[want]; !ok {
+			t.Errorf("missing requested ClinePass model %q in %+v", want, models)
+		}
+	}
+}
+
+func TestListModelsClineFallsBackAndAnnotatesThinking(t *testing.T) {
+	ctx := context.Background()
+	got, err := ListModels(ctx, "cline", "/nonexistent/cline-cli")
+	if err != nil {
+		t.Fatalf("ListModels(cline) error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("Cline fallback models = %+v, want exactly two", got)
+	}
+	wantLevels := []string{"none", "low", "medium", "high", "xhigh"}
+	for _, model := range got {
+		if levels := thinkingValues(model.Thinking); !reflect.DeepEqual(levels, wantLevels) {
+			t.Errorf("%s thinking levels = %v, want %v", model.ID, levels, wantLevels)
+		}
+	}
+}
+
+func TestNIMStaticModelsDefaultsToGLM52(t *testing.T) {
+	t.Parallel()
+	models := nimStaticModels()
+	if len(models) < 1 || models[0].ID != "z-ai/glm-5.2" || !models[0].Default {
+		t.Fatalf("NIM catalog must default to z-ai/glm-5.2, got %+v", models)
+	}
+	if models[0].Thinking != nil {
+		t.Fatalf("NVIDIA GLM-5.2 endpoint does not publish a per-request effort parameter; got %+v", models[0].Thinking)
+	}
+}
+
+func thinkingValues(thinking *ModelThinking) []string {
+	if thinking == nil {
+		return nil
+	}
+	values := make([]string, 0, len(thinking.SupportedLevels))
+	for _, level := range thinking.SupportedLevels {
+		values = append(values, level.Value)
+	}
+	return values
 }
 
 func TestCodexStaticModelsExposesGPT55(t *testing.T) {
@@ -329,6 +421,42 @@ func TestListModelsKiroWithoutBinary(t *testing.T) {
 	}
 	if got == nil {
 		t.Error("expected non-nil slice even when binary is missing")
+	}
+}
+
+func TestAnnotateKiroThinkingUsesDocumentedPerModelLevels(t *testing.T) {
+	t.Parallel()
+
+	models := []Model{
+		{ID: "claude-opus-4.8", Label: "Claude Opus 4.8"},
+		{ID: "claude-opus-4.6", Label: "Claude Opus 4.6"},
+		{ID: "claude-sonnet-4.6", Label: "Claude Sonnet 4.6"},
+		{ID: "gpt-5.6-sol", Label: "GPT 5.6 Sol"},
+	}
+	annotateKiroThinking(models)
+
+	values := func(model Model) []string {
+		if model.Thinking == nil {
+			return nil
+		}
+		out := make([]string, 0, len(model.Thinking.SupportedLevels))
+		for _, level := range model.Thinking.SupportedLevels {
+			out = append(out, level.Value)
+		}
+		return out
+	}
+
+	if got, want := values(models[0]), []string{"low", "medium", "high", "xhigh", "max"}; !slices.Equal(got, want) {
+		t.Errorf("Opus 4.8 levels = %v, want %v", got, want)
+	}
+	if got, want := values(models[1]), []string{"low", "medium", "high", "max"}; !slices.Equal(got, want) {
+		t.Errorf("Opus 4.6 levels = %v, want %v", got, want)
+	}
+	if got, want := values(models[2]), []string{"low", "medium", "high", "max"}; !slices.Equal(got, want) {
+		t.Errorf("Sonnet 4.6 levels = %v, want %v", got, want)
+	}
+	if models[3].Thinking != nil {
+		t.Errorf("undocumented Kiro effort model should stay unannotated: %+v", models[3].Thinking)
 	}
 }
 

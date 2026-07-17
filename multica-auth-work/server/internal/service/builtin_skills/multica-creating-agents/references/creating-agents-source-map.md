@@ -91,6 +91,20 @@ only.
 | Built-ins appended | 1116 | `skills = append(skills, h.TaskService.BuiltinSkills()...)` |
 | Runtime payload | 1130–1143 | `TaskAgentData` carries `Instructions`, `Skills`, `CustomEnv`, `CustomArgs`, `Model`, `ThinkingLevel`, `McpConfig` (1130–1131, 1140) — confirms these are runtime-consumed; `description`, `visibility`, and `max_concurrent_tasks` are absent (not runtime-prompt fields) |
 
+## Provider reasoning integration — `server/pkg/agent`
+
+| Contract | File:line | Behavior |
+|---|---|---|
+| Model catalog annotation | `models.go:95–155` | Claude, Codex, Cline, Gemini, Kimi, and Kiro model results are decorated with provider/model-specific effort catalogs before they reach the UI |
+| Gemini 3.x schemas | `thinking.go:531–566` | Gemini 3.1 Pro exposes `low\|medium\|high`; Gemini 3.5 Flash exposes `minimal\|low\|medium\|high`; defaults match Google's published model matrix |
+| Kimi effort schema | `thinking.go:568–585` | Account-visible Kimi ACP models expose the documented process-level `low\|medium\|high\|xhigh\|max` vocabulary |
+| Cline model + effort schema | `models.go`, `thinking.go`, `cline.go` | ACP catalog discovery with built-in ClinePass fallbacks `cline-pass/glm-5.2` and `cline-pass/kimi-k2.7-code`; native `--thinking none\|low\|medium\|high\|xhigh`; ACP launches without the incompatible `--json` flag |
+| NVIDIA NIM catalog | `models.go`, `nim.go` | `z-ai/glm-5.2` is the default NIM model; no thinking selector is advertised because NVIDIA's model-specific API contract currently exposes no per-request effort property |
+| Provider enum gate | `thinking.go:694–736` | Server accepts only each provider's known token universe; model-specific validation remains claim-time |
+| Kiro ACP argv | `kiro.go:15–27,61–65` | `thinking_level` is injected as `kiro-cli acp --effort <level>`; `custom_args --effort` is filtered so it cannot override the persisted field |
+| Kimi process + ACP injection | `kimi.go:65–70,304–325` | Exact effort is injected through `KIMI_MODEL_THINKING_EFFORT`; `session/set_config_option` enables Thinking before the prompt; either failure fails closed |
+| Gemini isolated override | `gemini.go:43–56,311–363` | Creates a mode-0600, model-scoped `modelConfigs.customOverrides` file, points `GEMINI_CLI_SYSTEM_SETTINGS_PATH` at it for one process, and removes it after exit |
+
 ## Skill loading — `server/internal/service/task.go`
 
 | Contract | Line | Behavior |

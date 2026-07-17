@@ -97,10 +97,22 @@ Set it from the CLI with `--thinking-level` on `agent create` and `agent
 update`, mirroring `--model`: the flag is a thin pass-through to the top-level
 `thinking_level` field, and on update an empty string (`--thinking-level ""`)
 clears it back to the runtime default. The CLI deliberately does not enumerate
-the valid levels — they are runtime/model-specific (Claude
-`low|medium|high|xhigh|max`, Codex `none|minimal|low|medium|high|xhigh`, and
-others), so it forwards whatever you pass and lets the server's provider
-catalog accept or reject it. A runtime whose provider has no thinking concept
+the valid levels — they are runtime/model-specific: Claude, Kiro, and Kimi use
+subsets of `low|medium|high|xhigh|max`; Codex uses
+`none|minimal|low|medium|high|xhigh`; Gemini 3.x uses model-specific subsets of
+`minimal|low|medium|high`. Cline exposes
+`none|low|medium|high|xhigh` and applies the selected value with its native
+`--thinking` flag. The server's provider catalog accepts or rejects the
+literal, and the daemon performs the per-model check. Runtime injection is also
+provider-native: Kiro launches ACP with `--effort`; Kimi uses the process-scoped
+`KIMI_MODEL_THINKING_EFFORT` plus ACP Thinking enablement; Gemini uses an
+isolated `modelConfigs.customOverrides` system-settings file with
+`thinkingConfig.thinkingLevel`; Codex and Claude use their native configuration
+and CLI effort controls. NVIDIA NIM exposes `z-ai/glm-5.2` as Multica's
+default NIM model, but its model-specific NVIDIA API schema currently publishes
+no per-request effort field, so Multica leaves that model at its native
+reasoning behavior instead of sending an undocumented request property. A
+runtime whose provider has no thinking concept
 rejects any non-empty value with a 400.
 
 ### model vs custom_args
