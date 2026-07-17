@@ -23,6 +23,7 @@ export interface CliVersionCheck {
 }
 
 const SEMVER_RE = /v?(\d+)\.(\d+)\.(\d+)/;
+const RELEASE_SEMVER_RE = /^v?(\d+)\.(\d+)\.(\d+)$/;
 
 // Matches the `git describe --tags --always --dirty` output for a build past
 // the latest tag, e.g. `v0.2.15-235-gdaf0e935` or `v0.2.15-235-gdaf0e935-dirty`.
@@ -31,6 +32,7 @@ const SEMVER_RE = /v?(\d+)\.(\d+)\.(\d+)/;
 // is what keeps `pnpm dev:desktop` + `make daemon` unblocked without weakening
 // the gate for staging or production users running stale stable releases.
 const DEV_DESCRIBE_RE = /^v?\d+\.\d+\.\d+-\d+-g[0-9a-fA-F]+/;
+const DEV_BUILD_RE = /^dev(?:-|$)/i;
 
 function parseSemver(raw: string): [number, number, number] | null {
   const m = SEMVER_RE.exec(raw.trim());
@@ -42,6 +44,30 @@ function lessThan(a: [number, number, number], b: [number, number, number]) {
   if (a[0] !== b[0]) return a[0] < b[0];
   if (a[1] !== b[1]) return a[1] < b[1];
   return a[2] < b[2];
+}
+
+function parseReleaseSemver(raw: string): [number, number, number] | null {
+  const m = RELEASE_SEMVER_RE.exec(raw.trim());
+  if (!m) return null;
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
+/**
+ * Compare two published CLI releases.
+ *
+ * Source builds (`dev-*` and git-describe versions) are intentionally not
+ * comparable with GitHub releases: the commit may be ahead of, behind, or
+ * unrelated to the latest tag. Showing "update available" for those builds
+ * is misleading and can make the badge oscillate as runtimes reconnect.
+ */
+export function isNewerCliRelease(latest: string, current: string): boolean {
+  if (DEV_BUILD_RE.test(current.trim()) || DEV_DESCRIBE_RE.test(current.trim())) {
+    return false;
+  }
+  const latestRelease = parseReleaseSemver(latest);
+  const currentRelease = parseReleaseSemver(current);
+  if (!latestRelease || !currentRelease) return false;
+  return lessThan(currentRelease, latestRelease);
 }
 
 /**
