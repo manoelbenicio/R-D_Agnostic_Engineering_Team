@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Directories to symlink from the shared ~/.codex/ into the per-task CODEX_HOME.
@@ -35,25 +36,69 @@ type CodexHomeOptions struct {
 	// Empty means use runtime.GOOS. Primarily exists so tests can exercise
 	// both macOS and Linux paths deterministically.
 	GOOS string
-	// AccountHome, when non-empty, is the per-account credential source
-	// directory for this task. When set, the per-task auth.json is COPIED
-	// (isolated) from AccountHome/auth.json. Empty falls back to copying from
-	// the shared ~/.codex/auth.json, never symlinking, so OAuth refreshes in the
-	// per-task home cannot clobber the shared credential file.
+	// AccountHome is the per-account credential source directory for this
+	// task. Credential-bearing preparation requires it by default, and the
+	// per-task auth.json is COPIED (isolated) from AccountHome/auth.json.
 	//
 	// Isolation via copy (not symlink) is deliberate: OAuth clients rewrite
 	// auth.json on token refresh; a symlink would push one account's refresh
 	// onto the shared file and clobber the others. A copy keeps each account's
 	// refresh contained to its own per-task home.
 	AccountHome string
+	// AllowLegacySharedAuthSeed is the narrow legacy/admin compatibility
+	// escape hatch for callers that explicitly need the historical shared
+	// auth source. Gateway-required preparation never sets this option and
+	// uses prepareCredentiallessCodexHome instead.
+	AllowLegacySharedAuthSeed bool
 }
 
-// prepareCodexHome is a thin wrapper around prepareCodexHomeWithOpts kept for
-// tests that don't care about platform-aware sandbox configuration. It
-// assumes a Linux-like environment where workspace-write + network_access
-// works correctly.
-func prepareCodexHome(codexHome string, logger *slog.Logger) error {
-	return prepareCodexHomeWithOpts(codexHome, CodexHomeOptions{GOOS: "linux"}, logger)
+// prepareLegacySharedCodexHome is an explicitly named compatibility helper
+// for legacy/admin callers that still seed from the shared Codex home. New
+// credential-bearing callers must provide AccountHome; gateway-required
+// callers must use prepareCredentiallessCodexHome.
+func prepareLegacySharedCodexHome(codexHome string, logger *slog.Logger) error {
+	return prepareCodexHomeWithOpts(codexHome, CodexHomeOptions{
+		GOOS:                      "linux",
+		AllowLegacySharedAuthSeed: true,
+	}, logger)
+}
+
+// prepareCredentiallessCodexHome creates only task-local directories. It does
+// not resolve a shared Codex home, inspect provider auth, copy configuration,
+// or expose shared sessions. The controlled OmniRoute config is written later
+// by WriteCredentiallessCodexConfig after route admission.
+func prepareCredentiallessCodexHome(codexHome string) error {
+	if strings.TrimSpace(codexHome) == "" || !filepath.IsAbs(codexHome) || filepath.Clean(codexHome) == string(filepath.Separator) {
+		return fmt.Errorf("credentialless codex-home must be an absolute non-root path")
+	}
+	for _, dir := range []string{codexHome, filepath.Join(codexHome, "sessions"), filepath.Join(codexHome, "skills")} {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			return fmt.Errorf("create credentialless codex-home directory: %w", err)
+		}
+		if err := os.Chmod(dir, 0o700); err != nil {
+			return fmt.Errorf("restrict credentialless codex-home directory: %w", err)
+		}
+	}
+	return nil
+}
+
+// WriteCredentiallessCodexConfig installs non-secret configuration generated
+// by runtimeenv. The caller must validate the contract before invoking it.
+func WriteCredentiallessCodexConfig(codexHome string, raw []byte) error {
+	if strings.TrimSpace(codexHome) == "" || !filepath.IsAbs(codexHome) || filepath.Clean(codexHome) == string(filepath.Separator) {
+		return fmt.Errorf("credentialless codex-home must be an absolute non-root path")
+	}
+	if len(raw) == 0 || len(raw) > 64<<10 {
+		return fmt.Errorf("credentialless Codex configuration is empty or too large")
+	}
+	if err := prepareCredentiallessCodexHome(codexHome); err != nil {
+		return err
+	}
+	path := filepath.Join(codexHome, "config.toml")
+	if err := os.WriteFile(path, append([]byte(nil), raw...), 0o600); err != nil {
+		return fmt.Errorf("write credentialless Codex configuration: %w", err)
+	}
+	return os.Chmod(path, 0o600)
 }
 
 // prepareCodexHomeWithOpts creates a per-task CODEX_HOME directory and seeds
@@ -61,7 +106,15 @@ func prepareCodexHome(codexHome string, logger *slog.Logger) error {
 // copied (isolated). The per-task config.toml gets a
 // daemon-managed sandbox block picked by codexSandboxPolicyFor.
 func prepareCodexHomeWithOpts(codexHome string, opts CodexHomeOptions, logger *slog.Logger) error {
+	authSourceHome := strings.TrimSpace(opts.AccountHome)
+	if authSourceHome == "" && !opts.AllowLegacySharedAuthSeed {
+		return fmt.Errorf("credential-bearing Codex preparation requires an isolated account home")
+	}
+
 	sharedHome := resolveSharedCodexHome()
+	if authSourceHome == "" {
+		authSourceHome = sharedHome
+	}
 
 	if err := os.MkdirAll(codexHome, 0o755); err != nil {
 		return fmt.Errorf("create codex-home dir: %w", err)
@@ -78,10 +131,6 @@ func prepareCodexHomeWithOpts(codexHome string, opts CodexHomeOptions, logger *s
 
 	// Always copy auth.json into the task home. A symlink would let an OAuth
 	// refresh from one task overwrite the source credential used by others.
-	authSourceHome := sharedHome
-	if opts.AccountHome != "" {
-		authSourceHome = opts.AccountHome
-	}
 	if err := seedAccountAuth(authSourceHome, codexHome, logger); err != nil {
 		return fmt.Errorf("execenv: codex-home auth seed failed: %w", err)
 	}

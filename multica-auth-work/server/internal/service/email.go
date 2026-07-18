@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html"
+	"log/slog"
 	"mime"
 	"mime/quotedprintable"
 	"net"
@@ -336,7 +337,7 @@ func (s *EmailService) SendVerificationCode(to, code string) error {
 		return s.sendSMTP(to, "Your Multica verification code", body)
 	}
 	if s.client == nil {
-		fmt.Printf("[DEV] Verification code for %s: %s\n", to, code)
+		slog.Info("[DEV] Verification email generated", "to", to, "code", "[REDACTED CREDENTIAL]")
 		return nil
 	}
 	params := &resend.SendEmailRequest{
@@ -363,7 +364,7 @@ func (s *EmailService) SendInvitationEmail(to, inviterName, workspaceName, invit
 		return s.sendSMTP(to, params.Subject, params.Html)
 	}
 	if s.client == nil {
-		fmt.Printf("[DEV] Invitation email to %s: %s invited you to %s — %s\n", to, inviterName, workspaceName, inviteURL)
+		slog.Info("[DEV] Invitation email generated", "to", to, "inviter", inviterName, "workspace", workspaceName, "invite_url", "[REDACTED CREDENTIAL]")
 		return nil
 	}
 	params := buildInvitationParams(s.fromEmail, to, inviterName, workspaceName, inviteURL)

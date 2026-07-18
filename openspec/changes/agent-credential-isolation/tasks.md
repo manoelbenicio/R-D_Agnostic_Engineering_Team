@@ -4,7 +4,7 @@
 - [ ] 0.1 Mapear `PROVIDERS` de `infra/cao/auth_routes.py` (config_dirs, credential_names, env).
 - [ ] 0.2 Mapear `resolveSessionEnv` em `src/canvas-reconciler/reconciler.ts`.
 - [ ] 0.3 Mapear o contrato de `src/api/session-discovery.ts` e `session-store.ts`.
-- [ ] 0.4 Confirmar como a versão pura (execenv) monta hoje o home de credencial.
+- [x] 0.4 Confirmar como a versão pura (execenv) monta hoje o home de credencial.
 
 ## 1. Config dir por conta (paridade com o modelo)
 - [ ] 1.1 Layout de config dir por conta, por provedor.
@@ -22,13 +22,13 @@
 - [ ] 3.3 Cobrir os runtimes: codex, claude, gemini/agy, kiro (glm quando aplicável).
 
 ## 4. Fase 2 — Rotação automática (incluída agora)
-- [ ] 4.1 Detectar sessão esgotada/`expired` (status + expires_at do discovery).
-- [ ] 4.2 Selecionar próxima conta disponível do mesmo provedor.
+- [x] 4.1 Detectar sessão esgotada/`expired` (status + expires_at do discovery).
+- [x] 4.2 Selecionar próxima conta disponível do mesmo provedor.
 - [ ] 4.3 Reatribuir o agente à nova conta sem intervenção manual.
 - [ ] 4.4 Registrar/alertar a troca (aproveitar useSessionMonitor/isExpiringSoon).
 
 ## 5. Verificação
 - [ ] 5.1 Build + testes (frontend e backend).
-- [ ] 5.2 Teste: 2 contas do mesmo provedor coexistem sem sobreposição.
+- [x] 5.2 Teste: 2 contas do mesmo provedor coexistem sem sobreposição.
 - [ ] 5.3 Teste: rotação automática ao esgotar a conta ativa.
 - [ ] 5.4 Confirmar que nenhum segredo aparece em logs (sanitizeForLog).

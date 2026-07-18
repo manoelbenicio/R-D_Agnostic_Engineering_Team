@@ -1,0 +1,32 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "databricks/system.ai.glm-5-2",
+  "provider": {
+    "databricks": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Databricks AI Gateway",
+      "options": {
+        "baseURL": "https://dbc-b3714b0f-db02.cloud.databricks.com/ai-gateway/mlflow/v1",
+        "apiKey": "{file:/home/dataops-lab/.agent-cred-homes/slots/slot-13/home/.config/opencode/secrets/databricks-token}"
+      },
+      "models": {
+        "system.ai.glm-5-2": {
+          "name": "GLM 5.2 via Databricks"
+        }
+      }
+    },
+    "databricks-account2": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Databricks — databricks-account2",
+      "options": {
+        "baseURL": "https://dbc-62c326f9-60a6.cloud.databricks.com/ai-gateway/mlflow/v1",
+        "apiKey": "{file:/home/dataops-lab/.agent-cred-homes/slots/slot-13/xdg-config/opencode/secrets/databricks/account2.token}"
+      },
+      "models": {
+        "system.ai.glm-5-2": {
+          "name": "system.ai.glm-5-2 via databricks-account2"
+        }
+      }
+    }
+  }
+}

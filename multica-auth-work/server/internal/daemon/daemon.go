@@ -21,8 +21,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/multica-ai/multica/server/internal/cli"
+	"github.com/multica-ai/multica/server/internal/daemon/brain"
 	"github.com/multica-ai/multica/server/internal/daemon/execenv"
 	"github.com/multica-ai/multica/server/internal/daemon/repocache"
+	"github.com/multica-ai/multica/server/internal/l2runtime"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	"github.com/multica-ai/multica/server/internal/rotation"
 	"github.com/multica-ai/multica/server/pkg/agent"
@@ -232,16 +234,40 @@ type Daemon struct {
 	warningDetector   *rotation.WarningDetector
 	usageDetector     *rotation.UsageDetector
 	credentialMetrics *obsmetrics.CredentialMetrics
+	agentBrain        *agentBrainRuntime
+	agentBrainInitErr error
 
-	l2Client     l2RuntimeClient
-	l2InitErr    error
-	l2Sidecar    *l2Sidecar
-	l2SessionsMu sync.RWMutex
-	l2Sessions   map[string]runtimeRouterOwnerRecord
+	l2Client             l2RuntimeClient
+	l2InitErr            error
+	l2Sidecar            *l2Sidecar
+	l2SessionsMu         sync.RWMutex
+	l2Sessions           map[string]runtimeRouterOwnerRecord
+	l2ProfilesMu         sync.RWMutex
+	reconciledL2Profiles []l2runtime.AccountProfile
+	l2ProfileByHome      map[string]string
 }
 
 // New creates a new Daemon instance.
 func New(cfg Config, logger *slog.Logger) *Daemon {
+	return newDaemon(cfg, logger, AgentBrainDependencies{})
+}
+
+// NewWithAgentBrainDependencies is restricted to the default-off development
+// slice and synthetic tests. Production entrypoints intentionally call New
+// without a credential source while PD-08 remains in force.
+func NewWithAgentBrainDependencies(cfg Config, logger *slog.Logger, dependencies AgentBrainDependencies) *Daemon {
+	return newDaemon(cfg, logger, dependencies)
+}
+
+func newDaemon(cfg Config, logger *slog.Logger, dependencies AgentBrainDependencies) *Daemon {
+	if cfg.AgentBrain.DevelopmentEnabled && cfg.AgentBrain.Neutral.Gateway.Required {
+		// The G3 development slice is a single-router daemon mode. Defensively
+		// erase legacy startup configuration even for programmatic callers that
+		// bypass LoadConfig.
+		cfg.RotationDatabaseURL = ""
+		cfg.Prodex = ProdexConfig{}
+		cfg.L2Runtime = L2RuntimeConfig{}
+	}
 	cacheRoot := filepath.Join(cfg.WorkspacesRoot, ".repos")
 	client := NewClient(cfg.ServerBaseURL)
 	// Tag every daemon HTTP request with the daemon's CLI version so the
@@ -269,9 +295,13 @@ func New(cfg Config, logger *slog.Logger) *Daemon {
 		usageDetector:             rotation.NewUsageDetector(0),
 		credentialMetrics:         obsmetrics.NewCredentialMetrics(),
 		l2Sessions:                make(map[string]runtimeRouterOwnerRecord),
+		l2ProfileByHome:           make(map[string]string),
 	}
-	d.initRotationService()
-	d.initL2RuntimeClient()
+	d.agentBrain, d.agentBrainInitErr = newAgentBrainRuntime(cfg.AgentBrain, dependencies, logger)
+	if !(cfg.AgentBrain.DevelopmentEnabled && cfg.AgentBrain.Neutral.Gateway.Required) {
+		d.initRotationService()
+		d.initL2RuntimeClient()
+	}
 	d.runner = taskRunnerFunc(d.runTask)
 	d.runUpdateFn = d.runUpdate
 	return d
@@ -947,6 +977,24 @@ func (d *Daemon) customCommandPathForRuntime(runtimeID string) (string, bool) {
 	return path, true
 }
 
+func (d *Daemon) agentBrainGatewayRequired() bool {
+	return d != nil && d.cfg.AgentBrain.DevelopmentEnabled &&
+		d.cfg.AgentBrain.Neutral.Gateway.Required && !d.cfg.AgentBrain.Neutral.LegacyExecution
+}
+
+// runtimeIsCustom identifies workspace-profile runtimes without consulting or
+// returning their executable paths. Gateway-required tasks reject this state
+// before admission can acquire the stable gateway credential.
+func (d *Daemon) runtimeIsCustom(runtimeID string) bool {
+	if d == nil || runtimeID == "" {
+		return false
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	runtime, ok := d.runtimeIndex[runtimeID]
+	return ok && runtime.ProfileID != ""
+}
+
 func (d *Daemon) registerRuntimesForWorkspace(ctx context.Context, workspaceID string) (*RegisterResponse, string, error) {
 	d.logger.Debug("registering runtimes for workspace", "workspace_id", workspaceID, "agent_count", len(d.cfg.Agents))
 	var runtimes []map[string]string
@@ -1050,6 +1098,11 @@ func runtimeVersion(ctx context.Context, provider, executablePath string) (strin
 // (otherwise a transient 5xx would silently flip the daemon into thinking the
 // workspace has zero profiles).
 func (d *Daemon) appendProfileRuntimes(ctx context.Context, workspaceID string, runtimes *[]map[string]string) string {
+	if d.agentBrainGatewayRequired() {
+		// Gateway-required mode exposes only the frozen built-in CLIKind runtime.
+		// Do not fetch, resolve, register, or remember workspace executable paths.
+		return profileSetSignature(nil)
+	}
 	resp, err := d.client.GetRuntimeProfiles(ctx, workspaceID)
 	if err != nil {
 		// Best-effort: never fail registration because profiles couldn't be
@@ -1406,6 +1459,9 @@ func (d *Daemon) refreshWorkspaceRepos(ctx context.Context, workspaceID string) 
 // The workspaceState pointer is never replaced (matches the invariant
 // documented on syncWorkspacesFromAPI and reregisterWorkspaceAfterRuntimeGone).
 func (d *Daemon) refreshWorkspaceRuntimeProfiles(ctx context.Context, workspaceID string) error {
+	if d.agentBrainGatewayRequired() {
+		return nil
+	}
 	refreshCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -3174,7 +3230,49 @@ func gateResumeToReusedWorkdir(task *Task, taskCtx *execenv.TaskContextForEnv, e
 	return reused
 }
 
-func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot int, taskLog *slog.Logger) (TaskResult, error) {
+// resolveTaskAgentEntry applies the last central launch-identity gate. The
+// gateway path accepts no untrusted argv and resolves provider/executable only
+// through the frozen built-in CLIKind mapping. All checks occur before gateway
+// admission can access the injected credential source.
+func (d *Daemon) resolveTaskAgentEntry(task Task, claimedProvider string) (AgentEntry, string, error) {
+	if d.agentBrainGatewayRequired() {
+		if d.runtimeIsCustom(task.RuntimeID) {
+			return AgentEntry{}, "", &agentBrainAdmissionError{class: "custom_runtime_not_allowed"}
+		}
+		if len(d.cfg.ClaudeArgs) != 0 || len(d.cfg.CodexArgs) != 0 || len(d.cfg.CodebuddyArgs) != 0 ||
+			(task.Agent != nil && len(task.Agent.CustomArgs) != 0) {
+			return AgentEntry{}, "", &agentBrainAdmissionError{class: "custom_args_not_allowed"}
+		}
+		builtIn, err := agentBrainBuiltInCLIFor(d.cfg.AgentBrain.CLIKind)
+		if err != nil {
+			return AgentEntry{}, "", &agentBrainAdmissionError{class: "builtin_runtime_mapping_unavailable"}
+		}
+		if claimedProvider != builtIn.Provider {
+			return AgentEntry{}, "", &agentBrainAdmissionError{class: "builtin_runtime_provider_mismatch"}
+		}
+		entry, ok := d.cfg.Agents[builtIn.Provider]
+		if !ok || strings.TrimSpace(entry.Path) == "" {
+			return AgentEntry{}, "", &agentBrainAdmissionError{class: "builtin_runtime_unavailable"}
+		}
+		return entry, builtIn.Provider, nil
+	}
+
+	entry, ok := d.cfg.Agents[claimedProvider]
+	// Legacy migration retains workspace custom-runtime behavior unchanged.
+	if customPath, isCustom := d.customCommandPathForRuntime(task.RuntimeID); isCustom {
+		entry.Path = customPath
+		ok = true
+		d.logger.Info("task uses custom runtime profile command",
+			"task_id", task.ID, "runtime_id", task.RuntimeID,
+			"provider", claimedProvider, "command_path", customPath)
+	}
+	if !ok {
+		return AgentEntry{}, "", fmt.Errorf("no agent configured for provider %q", claimedProvider)
+	}
+	return entry, claimedProvider, nil
+}
+
+func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot int, taskLog *slog.Logger) (taskResult TaskResult, runErr error) {
 	// Refuse to spawn an agent without a workspace. An empty workspace_id
 	// here would make MULTICA_WORKSPACE_ID empty in the agent env, and the
 	// CLI would otherwise silently fall back to the user-global config — a
@@ -3182,6 +3280,10 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// multiple workspaces share a host.
 	if task.WorkspaceID == "" {
 		return TaskResult{}, fmt.Errorf("refusing to spawn agent: task has no workspace_id (task_id=%s)", task.ID)
+	}
+	entry, provider, err := d.resolveTaskAgentEntry(task, provider)
+	if err != nil {
+		return TaskResult{}, err
 	}
 
 	// task.Repos is the authoritative repo list for this task — when the
@@ -3192,23 +3294,23 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// bound at the workspace level.
 	d.registerTaskRepos(task.WorkspaceID, task.Repos)
 
-	entry, ok := d.cfg.Agents[provider]
-	// A custom runtime profile (MUL-3284) overrides the executable path: the
-	// runtime's protocol_family is the provider (so agent.New still selects
-	// the right backend), but the actual binary on PATH is the profile's
-	// command_name, resolved at registration time and keyed by RuntimeID here.
-	// Critically, a custom runtime can live on a host that has NO built-in
-	// agent of the same provider installed, so when the runtime is custom we
-	// synthesize an AgentEntry instead of hard-failing on the !ok lookup.
-	if customPath, isCustom := d.customCommandPathForRuntime(task.RuntimeID); isCustom {
-		entry.Path = customPath
-		ok = true
-		d.logger.Info("task uses custom runtime profile command",
-			"task_id", task.ID, "runtime_id", task.RuntimeID,
-			"provider", provider, "command_path", customPath)
+	legacyModel := entry.Model
+	if task.Agent != nil && strings.TrimSpace(task.Agent.Model) != "" {
+		legacyModel = task.Agent.Model
 	}
-	if !ok {
-		return TaskResult{}, fmt.Errorf("no agent configured for provider %q", provider)
+	if d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required && d.agentBrainInitErr != nil {
+		return TaskResult{}, &agentBrainAdmissionError{class: "integration_initialization_failed"}
+	}
+	agentBrainPlan, err := d.agentBrain.admitTask(ctx, task, provider, legacyModel)
+	if err != nil {
+		return TaskResult{}, err
+	}
+	if agentBrainPlan != nil {
+		task.RuntimeRouterOwner = string(brain.RouterOwnerOmniRoute)
+		entry.Model = string(agentBrainPlan.Task.Request.RouteModel)
+		defer func() {
+			d.agentBrain.recordTerminal(ctx, agentBrainPlan, taskResult.Status, runErr)
+		}()
 	}
 
 	agentName := "agent"
@@ -3222,7 +3324,14 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 		instructions = task.Agent.Instructions
 	}
 	var rotationTriggered atomic.Bool
-	if !d.cfg.L2Runtime.Enabled {
+	if agentBrainPlan != nil {
+		if taskLog != nil {
+			taskLog.Debug("rotation: legacy proactive path disabled",
+				"router_owner", brain.RouterOwnerOmniRoute,
+				"request_id", agentBrainPlan.Task.Request.Correlation.RequestID,
+			)
+		}
+	} else if !d.cfg.L2Runtime.Enabled {
 		if next, ok := d.maybeProactiveRotateFromLedger(ctx, task, provider, taskLog, &rotationTriggered); ok {
 			task.PriorSessionID = ""
 			task.PriorWorkDir = ""
@@ -3301,8 +3410,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// path; this call is a pure JSON parse over the same task payload.
 	localAssignment, _ := findLocalDirectoryAssignment(task.ProjectResources, d.cfg.DaemonID)
 	credentialAccountHome := ""
-	if !d.cfg.L2Runtime.Enabled {
-		var err error
+	if agentBrainPlan == nil {
 		credentialAccountHome, err = d.credentialAccountHomeForTask(ctx, task, provider, taskLog)
 		if err != nil {
 			return TaskResult{}, err
@@ -3328,7 +3436,7 @@ runAttempt:
 	if task.Agent != nil && provider == "openclaw" {
 		openclawMode, openclawGateway = decodeOpenclawRuntimeConfig(task.Agent.RuntimeConfig, d.logger)
 	}
-	if task.PriorWorkDir != "" && localAssignment == nil {
+	if agentBrainPlan == nil && task.PriorWorkDir != "" && localAssignment == nil {
 		env = execenv.Reuse(execenv.ReuseParams{
 			WorkDir:               task.PriorWorkDir,
 			Provider:              provider,
@@ -3337,6 +3445,7 @@ runAttempt:
 			McpConfig:             agentMcpConfig,
 			OpenclawGateway:       openclawGateway,
 			CredentialAccountHome: credentialAccountHome,
+			CredentiallessGateway: agentBrainPlan != nil,
 			Task:                  taskCtx,
 		}, d.logger)
 	}
@@ -3353,6 +3462,7 @@ runAttempt:
 			McpConfig:             agentMcpConfig,
 			OpenclawGateway:       openclawGateway,
 			CredentialAccountHome: credentialAccountHome,
+			CredentiallessGateway: agentBrainPlan != nil,
 			Task:                  taskCtx,
 		}
 		if localAssignment != nil {
@@ -3385,9 +3495,14 @@ runAttempt:
 	if model == "" {
 		model = entry.Model
 	}
+	if agentBrainPlan != nil {
+		model = string(agentBrainPlan.Task.Request.RouteModel)
+	}
 
-	if _, err := d.startL2SessionForTask(ctx, &task, provider, model, env.WorkDir, taskLog); err != nil {
-		return TaskResult{}, err
+	if agentBrainPlan == nil {
+		if _, err := d.startL2SessionForTaskWithCredentialHome(ctx, &task, provider, model, env.WorkDir, credentialAccountHome, taskLog); err != nil {
+			return TaskResult{}, err
+		}
 	}
 
 	// Issue #3999 race A: now that env.WorkDir is on disk, transition the
@@ -3502,20 +3617,16 @@ runAttempt:
 	}
 	// Merge the provider-native credential environment only after verifying
 	// that every required isolation lever was prepared. This is deliberately
-	// fail-closed: a Reuse refresh error must not silently omit the isolated
-	// env and let the child inherit a shared credential from the daemon.
-	credentialEnv := env.CredentialEnv(provider)
-	if !d.cfg.L2Runtime.Enabled {
-		credentialEnv, err = isolatedCredentialEnv(provider, credentialAccountHome, env)
-		if err != nil {
+	// fail-closed for every local launch, including the L2-owned path: a Reuse
+	// refresh error must not silently omit the isolated env and let the child
+	// inherit a shared provider root from the daemon.
+	if agentBrainPlan == nil {
+		if err := d.injectIsolatedCredentialEnvForLocalLaunch(provider, credentialAccountHome, env, agentEnv); err != nil {
 			return TaskResult{}, err
 		}
+		d.applyProdexEnv(provider, env.RootDir, agentEnv)
+		d.observeCredentialEnvInjection(provider, credentialAccountHome, env)
 	}
-	for key, value := range credentialEnv {
-		agentEnv[key] = value
-	}
-	d.applyProdexEnv(provider, env.RootDir, agentEnv)
-	d.observeCredentialEnvInjection(provider, credentialAccountHome, env)
 	// Point Cursor at per-task project state when managed MCP is present.
 	// The workdir .cursor/mcp.json carries the managed server list, while
 	// CURSOR_DATA_DIR isolates the matching project approvals from the user's
@@ -3544,7 +3655,9 @@ runAttempt:
 	// Bedrock). These are set per-agent via the agent settings UI.
 	// Critical internal variables are blocklisted to prevent accidental or
 	// malicious override of daemon-set values.
-	if task.Agent != nil {
+	var customEnvironment map[string]string
+	var exactAgentEnvironment []string
+	if task.Agent != nil && agentBrainPlan == nil {
 		for k, v := range task.Agent.CustomEnv {
 			if isBlockedEnvKey(k) {
 				d.logger.Warn("custom_env: blocked key skipped", "key", k)
@@ -3552,10 +3665,27 @@ runAttempt:
 			}
 			agentEnv[k] = v
 		}
+	} else if task.Agent != nil {
+		customEnvironment = task.Agent.CustomEnv
+	}
+	if agentBrainPlan != nil {
+		if task.Agent != nil && len(task.Agent.McpConfig) > 0 {
+			return TaskResult{}, &agentBrainAdmissionError{class: "managed_mcp_not_accepted_in_g3_slice"}
+		}
+		launch, launchErr := d.agentBrain.buildLaunch(ctx, agentBrainPlan, env, agentEnv, customEnvironment)
+		if launchErr != nil {
+			return TaskResult{}, launchErr
+		}
+		agentEnv, err = childEnvironmentMap(launch.Environment)
+		if err != nil {
+			return TaskResult{}, err
+		}
+		exactAgentEnvironment = launch.Environment.Exec()
 	}
 	backend, err := agent.New(provider, agent.Config{
 		ExecutablePath: entry.Path,
 		Env:            agentEnv,
+		ExactEnv:       exactAgentEnvironment,
 		Logger:         d.logger,
 	})
 	if err != nil {
@@ -3595,7 +3725,11 @@ runAttempt:
 	// provider's default model internally so default-model tasks aren't
 	// misjudged. Discovery errors fail open: if we can't list models, we
 	// keep the persisted level and let the CLI surface any objection.
-	if thinkingLevel != "" {
+	if agentBrainPlan != nil {
+		if err := d.agentBrain.validateThinking(agentBrainPlan, thinkingLevel); err != nil {
+			return TaskResult{}, &agentBrainAdmissionError{class: "thinking_not_approved"}
+		}
+	} else if thinkingLevel != "" {
 		ok, err := agent.ValidateThinkingLevel(ctx, provider, entry.Path, model, thinkingLevel)
 		if err != nil {
 			taskLog.Warn("thinking_level: catalog lookup failed; passing through",
@@ -3662,6 +3796,11 @@ runAttempt:
 		"resume_session", execOpts.ResumeSessionID != "",
 		"timeout", execOpts.Timeout,
 	)
+	if agentBrainPlan != nil {
+		// Count a start only at the final execution boundary, after all
+		// fail-closed launch/config/model validation has passed.
+		d.agentBrain.recordLaunch(agentBrainPlan)
+	}
 
 	result, tools, err := d.executeAndDrainForTask(ctx, backend, prompt, execOpts, taskLog, task.ID, task, provider, &rotationTriggered)
 	if err != nil {
@@ -3671,7 +3810,7 @@ runAttempt:
 	// Fallback: if session resume failed before establishing a session, retry
 	// with a fresh session. We check SessionID == "" to distinguish a resume
 	// failure (no session established) from a failure during actual execution.
-	if result.Status == "failed" && task.PriorSessionID != "" && result.SessionID == "" {
+	if agentBrainPlan == nil && result.Status == "failed" && task.PriorSessionID != "" && result.SessionID == "" {
 		firstUsage := result.Usage
 		taskLog.Warn("session resume failed, retrying with fresh session", "error", result.Error)
 		execOpts.ResumeSessionID = ""
@@ -3685,7 +3824,7 @@ runAttempt:
 		}
 	}
 
-	if !rotationRetried && d.legacyGoRotationAllowed(task, taskLog, "retry_after_rotation") {
+	if agentBrainPlan == nil && !rotationRetried && d.legacyGoRotationAllowed(task, taskLog, "retry_after_rotation") {
 		if next, ok := d.rotateTaskOnExhaustion(ctx, task, provider, result, taskLog); ok {
 			credentialAccountHome = next.HomeDir
 			task.PriorSessionID = ""
@@ -3951,6 +4090,27 @@ func isolatedCredentialEnv(provider, accountHome string, env *execenv.Environmen
 	return isolationEnv, nil
 }
 
+// injectIsolatedCredentialEnvForLocalLaunch is the final provider-root gate
+// before agent.New constructs a local backend. L2 ownership is deliberately
+// not an exemption: every credential-bearing local launch must replace all
+// provider-native roots with a complete task-isolated set or fail closed.
+func (d *Daemon) injectIsolatedCredentialEnvForLocalLaunch(provider, accountHome string, env *execenv.Environment, childEnv map[string]string) error {
+	if childEnv == nil {
+		return fmt.Errorf("credential isolation: child environment is unavailable")
+	}
+	for _, key := range requiredCredentialEnvKeys(provider) {
+		delete(childEnv, key)
+	}
+	isolationEnv, err := isolatedCredentialEnv(provider, accountHome, env)
+	if err != nil {
+		return err
+	}
+	for key, value := range isolationEnv {
+		childEnv[key] = value
+	}
+	return nil
+}
+
 func requiredCredentialEnvKeys(provider string) []string {
 	switch strings.ToLower(strings.TrimSpace(provider)) {
 	case "codex":
@@ -3974,11 +4134,17 @@ func taskRuntimeRouterOwner(task Task) string {
 	return strings.ToLower(strings.TrimSpace(task.RuntimeRouterOwner))
 }
 
-var ErrL2Owned = errors.New("l2 runtime owns session routing")
+var (
+	ErrL2Owned        = errors.New("l2 runtime owns session routing")
+	ErrOmniRouteOwned = errors.New("OmniRoute owns session routing")
+)
 
 func (d *Daemon) legacyGoRotationBlockError(task Task) error {
-	if d.runtimeRouterOwnerForTask(task) == runtimeRouterOwnerRustL2 {
+	switch d.runtimeRouterOwnerForTask(task) {
+	case runtimeRouterOwnerRustL2:
 		return ErrL2Owned
+	case string(brain.RouterOwnerOmniRoute):
+		return ErrOmniRouteOwned
 	}
 	return nil
 }
@@ -3989,11 +4155,12 @@ func (d *Daemon) legacyGoRotationAllowed(task Task, taskLog *slog.Logger, path s
 		return true
 	}
 	owner := d.runtimeRouterOwnerForTask(task)
+	noopReason := d.legacyGoRotationNoopReason(task)
 	if taskLog != nil {
-		taskLog.Debug("rotation: legacy Go rotation suppressed for L2-owned session",
+		taskLog.Debug("rotation: legacy Go rotation suppressed for externally owned session",
 			"task_id", task.ID,
 			"runtime_router_owner", owner,
-			"rotation_noop_reason", rotationNoopReasonL2RouterOwn,
+			"rotation_noop_reason", noopReason,
 			"error", err,
 			"path", path,
 		)

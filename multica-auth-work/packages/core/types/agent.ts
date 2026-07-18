@@ -58,8 +58,10 @@ export type AgentRuntime = RuntimeDevice;
 export const RUNTIME_PROFILE_PROTOCOL_FAMILIES = [
   "claude",
   "codebuddy",
+  "cline",
   "codex",
   "copilot",
+  "nim",
   "opencode",
   "openclaw",
   "hermes",

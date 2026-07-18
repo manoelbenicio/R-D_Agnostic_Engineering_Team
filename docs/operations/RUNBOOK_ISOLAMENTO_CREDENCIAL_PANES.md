@@ -110,9 +110,48 @@ Componentes da solução:
 6. **Doctor/status:** `status` mostra `pane → terminal → slot → vendor → conta → on/off`
    (o "quem está realmente on/off").
 
+### Regra dura de lifecycle do Codex (independente do Herdr)
+
+- Todo `codex login` cria obrigatoriamente um diretório físico novo em
+  `~/.agent-cred-homes/codex-logins/login-<timestamp>-<UUID>/`.
+- O diretório novo começa sem `auth.json`; credenciais nunca são copiadas nem
+  linkadas entre logins.
+- Um `codex` normal só reutiliza o diretório pertencente ao mesmo processo de
+  shell. Shell nova ou ambiente herdado recebe diretório novo.
+- A validação e a criação não consultam `HERDR_PANE_ID`, `terminal_id`, daemon ou
+  registry. Se o Herdr estiver indisponível, a regra permanece ativa.
+- Diretórios `login-*` sem uso por mais de 120 horas (5 dias) são apenas
+  classificados como stale para relatório. A remoção automática está desativada
+  até existir um helper descriptor-relative auditado; nenhum caminho Bash pode
+  apagar, mover ou substituir candidatos. O shell dono mantém o lease aberto
+  durante todo o login; morte do processo libera-o automaticamente. Diretórios
+  legados, sem lease, corrompidos, bloqueados ou symlinks são preservados
+  indefinidamente (fail-safe).
+- Se um diretório privado não puder ser criado ou validado, o Codex não inicia
+  (`fail closed`).
+
 Implementação: um script sourced no `~/.bashrc` (ex.: `scripts/ops/agent-cred-isolation.sh`)
 que substitui o bloco frágil. **É config de ambiente/frota — não altera código de produto do
 multica.** O isolamento por-conta do daemon (§2a) permanece intacto.
+
+### Perfis GROK A–D
+
+- Os únicos nomes válidos são `A`, `B`, `C` e `D`, vinculados fisicamente a
+  `grok/profiles/grok-a` … `grok-d` sob a raiz gerenciada e exportados por
+  `GROK_HOME`.
+- `agent_cred_isolation_grok_profile_init A` cria o perfil vazio (`0700`), sem
+  copiar ou migrar token, sessão, cookie ou estado de autenticação.
+- `agent_cred_isolation_grok_attach A` vincula o terminal atual e mantém um
+  `flock` exclusivo de escritor durante o lifecycle do shell. A liberação fecha
+  apenas o FD atual; nunca executa `flock -u` em descritor herdado.
+- `agent_cred_isolation_grok_device_login A` é a única passagem de device login
+  e só roda quando invocada explicitamente. Autostart e testes normais nunca
+  iniciam login ou rede.
+- `agent_cred_isolation_grok_status A` relata apenas nome, caminho físico e
+  estado do lease; não procura nem lê nomes, conteúdo ou metadata de arquivos
+  de token/autenticação.
+- O cleanup GROK, assim como o cleanup Codex aceito, é somente relatório:
+  jamais apaga, move, coloca em quarentena ou aprova remoção de perfil/login.
 
 ---
 

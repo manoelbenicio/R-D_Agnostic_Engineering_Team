@@ -1331,15 +1331,24 @@ export class ApiClient {
     return this.fetch(`/api/runtimes/${runtimeId}/update/${updateId}`);
   }
 
-  async initiateListModels(runtimeId: string): Promise<RuntimeModelListRequest> {
-    return this.fetch(`/api/runtimes/${runtimeId}/models`, { method: "POST" });
+  async initiateListModels(
+    runtimeId: string,
+    signal?: AbortSignal,
+  ): Promise<RuntimeModelListRequest> {
+    return this.fetch(`/api/runtimes/${runtimeId}/models`, {
+      method: "POST",
+      signal,
+    });
   }
 
   async getListModelsResult(
     runtimeId: string,
     requestId: string,
+    signal?: AbortSignal,
   ): Promise<RuntimeModelListRequest> {
-    return this.fetch(`/api/runtimes/${runtimeId}/models/${requestId}`);
+    return this.fetch(`/api/runtimes/${runtimeId}/models/${requestId}`, {
+      signal,
+    });
   }
 
   async initiateListLocalSkills(

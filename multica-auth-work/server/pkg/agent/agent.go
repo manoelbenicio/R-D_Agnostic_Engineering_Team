@@ -129,7 +129,13 @@ type Result struct {
 type Config struct {
 	ExecutablePath string            // path to CLI binary (claude, codebuddy, codex, copilot, opencode, openclaw, hermes, gemini, pi, cursor, kimi, kiro-cli, agy, qodercli)
 	Env            map[string]string // extra environment variables
-	Logger         *slog.Logger
+	// ExactEnv is the complete process environment for credentialless Agent
+	// Brain launches. nil preserves the legacy merge-with-parent behavior;
+	// non-nil is authoritative and must never be combined with os.Environ.
+	// The caller is responsible for constructing it through the runtimeenv
+	// policy and pre-launch assertion before selecting this mode.
+	ExactEnv []string
+	Logger   *slog.Logger
 }
 
 // New creates a Backend for the given agent type.

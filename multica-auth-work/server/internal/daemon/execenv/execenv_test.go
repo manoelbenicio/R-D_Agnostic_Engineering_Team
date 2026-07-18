@@ -1933,7 +1933,7 @@ func TestPrepareCodexHomeSeedsFromShared(t *testing.T) {
 	t.Setenv("CODEX_HOME", sharedHome)
 
 	codexHome := filepath.Join(t.TempDir(), "codex-home")
-	if err := prepareCodexHome(codexHome, testLogger()); err != nil {
+	if err := prepareLegacySharedCodexHome(codexHome, testLogger()); err != nil {
 		t.Fatalf("prepareCodexHome failed: %v", err)
 	}
 
@@ -2046,7 +2046,7 @@ model = "o3"
 	t.Setenv("CODEX_HOME", sharedHome)
 
 	codexHome := filepath.Join(t.TempDir(), "codex-home")
-	if err := prepareCodexHome(codexHome, testLogger()); err != nil {
+	if err := prepareLegacySharedCodexHome(codexHome, testLogger()); err != nil {
 		t.Fatalf("prepareCodexHome failed: %v", err)
 	}
 
@@ -2077,7 +2077,7 @@ func TestPrepareCodexHomeSkipsMissingFiles(t *testing.T) {
 	t.Setenv("CODEX_HOME", sharedHome)
 
 	codexHome := filepath.Join(t.TempDir(), "codex-home")
-	if err := prepareCodexHome(codexHome, testLogger()); err != nil {
+	if err := prepareLegacySharedCodexHome(codexHome, testLogger()); err != nil {
 		t.Fatalf("prepareCodexHome failed: %v", err)
 	}
 
@@ -2148,7 +2148,7 @@ func TestPrepareCodexHome_RefreshesStaleAuthCopyOnReuse(t *testing.T) {
 	// Shared source rotates to v2 while the per-task copy is still stuck on v0.
 	os.WriteFile(filepath.Join(sharedHome, "auth.json"), []byte(`{"refresh_token":"v2"}`), 0o644)
 
-	if err := prepareCodexHome(codexHome, testLogger()); err != nil {
+	if err := prepareLegacySharedCodexHome(codexHome, testLogger()); err != nil {
 		t.Fatalf("prepareCodexHome failed: %v", err)
 	}
 
@@ -2194,7 +2194,7 @@ env_key = "OLD_API_KEY"
 	t.Setenv("CODEX_HOME", sharedHome)
 
 	codexHome := filepath.Join(t.TempDir(), "codex-home")
-	if err := prepareCodexHome(codexHome, testLogger()); err != nil {
+	if err := prepareLegacySharedCodexHome(codexHome, testLogger()); err != nil {
 		t.Fatalf("first prepareCodexHome: %v", err)
 	}
 
@@ -2217,7 +2217,7 @@ env_key = "NEW_API_KEY"
 	}
 
 	// Resume path: same per-task codex-home, re-prepared.
-	if err := prepareCodexHome(codexHome, testLogger()); err != nil {
+	if err := prepareLegacySharedCodexHome(codexHome, testLogger()); err != nil {
 		t.Fatalf("second prepareCodexHome (resume): %v", err)
 	}
 
@@ -2301,7 +2301,7 @@ env_key = "OLD_API_KEY"
 	t.Setenv("CODEX_HOME", sharedHome)
 
 	codexHome := filepath.Join(t.TempDir(), "codex-home")
-	if err := prepareCodexHome(codexHome, testLogger()); err != nil {
+	if err := prepareLegacySharedCodexHome(codexHome, testLogger()); err != nil {
 		t.Fatalf("first prepareCodexHome: %v", err)
 	}
 
@@ -2320,7 +2320,7 @@ env_key = "OLD_API_KEY"
 	}
 
 	// Resume path: same per-task codex-home, re-prepared.
-	if err := prepareCodexHome(codexHome, testLogger()); err != nil {
+	if err := prepareLegacySharedCodexHome(codexHome, testLogger()); err != nil {
 		t.Fatalf("second prepareCodexHome (resume): %v", err)
 	}
 
@@ -2636,8 +2636,8 @@ func TestPrepareCodexHomeEnsuresNetworkAccess(t *testing.T) {
 	t.Setenv("CODEX_HOME", sharedHome)
 
 	codexHome := filepath.Join(t.TempDir(), "codex-home")
-	// Default prepareCodexHome assumes linux-like behavior.
-	if err := prepareCodexHome(codexHome, testLogger()); err != nil {
+	// The explicit legacy helper assumes linux-like behavior.
+	if err := prepareLegacySharedCodexHome(codexHome, testLogger()); err != nil {
 		t.Fatalf("prepareCodexHome failed: %v", err)
 	}
 
@@ -2665,12 +2665,13 @@ func TestReuseRestoresCodexHome(t *testing.T) {
 
 	// First, Prepare a codex env.
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: workspacesRoot,
-		WorkspaceID:    "ws-codex-reuse",
-		TaskID:         "e5f6a7b8-c9d0-1234-efab-567890123456",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
-		Task:           TaskContextForEnv{IssueID: "reuse-test"},
+		WorkspacesRoot:        workspacesRoot,
+		WorkspaceID:           "ws-codex-reuse",
+		TaskID:                "e5f6a7b8-c9d0-1234-efab-567890123456",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
+		Task:                  TaskContextForEnv{IssueID: "reuse-test"},
 	}, testLogger())
 	if err != nil {
 		t.Fatalf("Prepare failed: %v", err)
@@ -2682,7 +2683,7 @@ func TestReuseRestoresCodexHome(t *testing.T) {
 	}
 
 	// Reuse should restore CodexHome.
-	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", Task: TaskContextForEnv{IssueID: "reuse-test"}}, testLogger())
+	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", CredentialAccountHome: sharedHome, Task: TaskContextForEnv{IssueID: "reuse-test"}}, testLogger())
 	if reused == nil {
 		t.Fatal("Reuse returned nil")
 	}
@@ -2716,12 +2717,13 @@ func TestReuseRestoresCodexPluginCache(t *testing.T) {
 
 	workspacesRoot := t.TempDir()
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: workspacesRoot,
-		WorkspaceID:    "ws-codex-plugin-reuse",
-		TaskID:         "a5f6a7b8-c9d0-1234-efab-567890123456",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
-		Task:           TaskContextForEnv{IssueID: "reuse-plugin-test"},
+		WorkspacesRoot:        workspacesRoot,
+		WorkspaceID:           "ws-codex-plugin-reuse",
+		TaskID:                "a5f6a7b8-c9d0-1234-efab-567890123456",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
+		Task:                  TaskContextForEnv{IssueID: "reuse-plugin-test"},
 	}, testLogger())
 	if err != nil {
 		t.Fatalf("Prepare failed: %v", err)
@@ -2732,7 +2734,7 @@ func TestReuseRestoresCodexPluginCache(t *testing.T) {
 		t.Fatalf("remove codex plugins dir: %v", err)
 	}
 
-	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", Task: TaskContextForEnv{IssueID: "reuse-plugin-test"}}, testLogger())
+	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", CredentialAccountHome: sharedHome, Task: TaskContextForEnv{IssueID: "reuse-plugin-test"}}, testLogger())
 	if reused == nil {
 		t.Fatal("Reuse returned nil")
 	}
@@ -2754,12 +2756,13 @@ func TestReuseWritesMissingCodexWorkspaceSkills(t *testing.T) {
 
 	workspacesRoot := t.TempDir()
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: workspacesRoot,
-		WorkspaceID:    "ws-codex-skill-reuse",
-		TaskID:         "b5f6a7b8-c9d0-1234-efab-567890123456",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
-		Task:           TaskContextForEnv{IssueID: "reuse-skill-test"},
+		WorkspacesRoot:        workspacesRoot,
+		WorkspaceID:           "ws-codex-skill-reuse",
+		TaskID:                "b5f6a7b8-c9d0-1234-efab-567890123456",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
+		Task:                  TaskContextForEnv{IssueID: "reuse-skill-test"},
 	}, testLogger())
 	if err != nil {
 		t.Fatalf("Prepare failed: %v", err)
@@ -2770,7 +2773,7 @@ func TestReuseWritesMissingCodexWorkspaceSkills(t *testing.T) {
 		t.Fatalf("remove codex skills dir: %v", err)
 	}
 
-	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", Task: TaskContextForEnv{
+	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", CredentialAccountHome: sharedHome, Task: TaskContextForEnv{
 		IssueID: "reuse-skill-test",
 		AgentSkills: []SkillContextForEnv{
 			{
@@ -2808,11 +2811,12 @@ func TestReuseUpdatesCodexWorkspaceSkills(t *testing.T) {
 
 	workspacesRoot := t.TempDir()
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: workspacesRoot,
-		WorkspaceID:    "ws-codex-skill-update",
-		TaskID:         "c5f6a7b8-c9d0-1234-efab-567890123456",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
+		WorkspacesRoot:        workspacesRoot,
+		WorkspaceID:           "ws-codex-skill-update",
+		TaskID:                "c5f6a7b8-c9d0-1234-efab-567890123456",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
 		Task: TaskContextForEnv{
 			IssueID: "reuse-skill-update-test",
 			AgentSkills: []SkillContextForEnv{
@@ -2829,7 +2833,7 @@ func TestReuseUpdatesCodexWorkspaceSkills(t *testing.T) {
 	}
 	defer env.Cleanup(true)
 
-	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", Task: TaskContextForEnv{
+	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", CredentialAccountHome: sharedHome, Task: TaskContextForEnv{
 		IssueID: "reuse-skill-update-test",
 		AgentSkills: []SkillContextForEnv{
 			{
@@ -2892,12 +2896,13 @@ func TestPrepareCodexSeedsUserSkills(t *testing.T) {
 	}
 
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: t.TempDir(),
-		WorkspaceID:    "ws-user-skills",
-		TaskID:         "d6f7a8b9-c0d1-2345-efab-678901234567",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
-		Task:           TaskContextForEnv{IssueID: "user-skills-test"},
+		WorkspacesRoot:        t.TempDir(),
+		WorkspaceID:           "ws-user-skills",
+		TaskID:                "d6f7a8b9-c0d1-2345-efab-678901234567",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
+		Task:                  TaskContextForEnv{IssueID: "user-skills-test"},
 	}, testLogger())
 	if err != nil {
 		t.Fatalf("Prepare failed: %v", err)
@@ -2946,11 +2951,12 @@ func TestPrepareCodexWorkspaceSkillBeatsUserSkillOnConflict(t *testing.T) {
 	}
 
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: t.TempDir(),
-		WorkspaceID:    "ws-skill-conflict",
-		TaskID:         "e7f8a9b0-c1d2-3456-efab-789012345678",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
+		WorkspacesRoot:        t.TempDir(),
+		WorkspaceID:           "ws-skill-conflict",
+		TaskID:                "e7f8a9b0-c1d2-3456-efab-789012345678",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
 		Task: TaskContextForEnv{
 			IssueID: "skill-conflict-test",
 			AgentSkills: []SkillContextForEnv{
@@ -2987,12 +2993,13 @@ func TestPrepareCodexNoUserSkillsDir(t *testing.T) {
 	t.Setenv("CODEX_HOME", sharedHome)
 
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: t.TempDir(),
-		WorkspaceID:    "ws-no-user-skills",
-		TaskID:         "f8a9b0c1-d2e3-4567-fabc-890123456789",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
-		Task:           TaskContextForEnv{IssueID: "no-user-skills-test"},
+		WorkspacesRoot:        t.TempDir(),
+		WorkspaceID:           "ws-no-user-skills",
+		TaskID:                "f8a9b0c1-d2e3-4567-fabc-890123456789",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
+		Task:                  TaskContextForEnv{IssueID: "no-user-skills-test"},
 	}, testLogger())
 	if err != nil {
 		t.Fatalf("Prepare failed: %v", err)
@@ -3033,12 +3040,13 @@ func TestPrepareCodexResolvesUserSkillSymlinks(t *testing.T) {
 	}
 
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: t.TempDir(),
-		WorkspaceID:    "ws-symlinked-skills",
-		TaskID:         "a9b0c1d2-e3f4-5678-abcd-901234567890",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
-		Task:           TaskContextForEnv{IssueID: "symlinked-skills-test"},
+		WorkspacesRoot:        t.TempDir(),
+		WorkspaceID:           "ws-symlinked-skills",
+		TaskID:                "a9b0c1d2-e3f4-5678-abcd-901234567890",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
+		Task:                  TaskContextForEnv{IssueID: "symlinked-skills-test"},
 	}, testLogger())
 	if err != nil {
 		t.Fatalf("Prepare failed: %v", err)
@@ -3080,12 +3088,13 @@ func TestReuseSeedsUserSkillUpdates(t *testing.T) {
 
 	workspacesRoot := t.TempDir()
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: workspacesRoot,
-		WorkspaceID:    "ws-user-skill-reuse",
-		TaskID:         "b0c1d2e3-f4a5-6789-abcd-012345678901",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
-		Task:           TaskContextForEnv{IssueID: "user-skill-reuse-test"},
+		WorkspacesRoot:        workspacesRoot,
+		WorkspaceID:           "ws-user-skill-reuse",
+		TaskID:                "b0c1d2e3-f4a5-6789-abcd-012345678901",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
+		Task:                  TaskContextForEnv{IssueID: "user-skill-reuse-test"},
 	}, testLogger())
 	if err != nil {
 		t.Fatalf("Prepare failed: %v", err)
@@ -3096,7 +3105,7 @@ func TestReuseSeedsUserSkillUpdates(t *testing.T) {
 		t.Fatalf("update user SKILL.md: %v", err)
 	}
 
-	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", Task: TaskContextForEnv{
+	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", CredentialAccountHome: sharedHome, Task: TaskContextForEnv{
 		IssueID: "user-skill-reuse-test",
 	}}, testLogger())
 	if reused == nil {
@@ -3134,12 +3143,13 @@ func TestReuseClearsUserSkillResidueOnWorkspaceConflict(t *testing.T) {
 	}
 
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: t.TempDir(),
-		WorkspaceID:    "ws-reuse-conflict",
-		TaskID:         "c1d2e3f4-a5b6-7890-abcd-123456789012",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
-		Task:           TaskContextForEnv{IssueID: "reuse-conflict-test"},
+		WorkspacesRoot:        t.TempDir(),
+		WorkspaceID:           "ws-reuse-conflict",
+		TaskID:                "c1d2e3f4-a5b6-7890-abcd-123456789012",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
+		Task:                  TaskContextForEnv{IssueID: "reuse-conflict-test"},
 	}, testLogger())
 	if err != nil {
 		t.Fatalf("Prepare failed: %v", err)
@@ -3151,7 +3161,7 @@ func TestReuseClearsUserSkillResidueOnWorkspaceConflict(t *testing.T) {
 		t.Fatalf("user support file should be seeded in round 1: %v", err)
 	}
 
-	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", Task: TaskContextForEnv{
+	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", CredentialAccountHome: sharedHome, Task: TaskContextForEnv{
 		IssueID: "reuse-conflict-test",
 		AgentSkills: []SkillContextForEnv{
 			{Name: "Writing", Content: "workspace writing"},
@@ -3192,12 +3202,13 @@ func TestReuseClearsRemovedUserSkill(t *testing.T) {
 	}
 
 	env, err := Prepare(PrepareParams{
-		WorkspacesRoot: t.TempDir(),
-		WorkspaceID:    "ws-reuse-remove",
-		TaskID:         "d2e3f4a5-b6c7-8901-abcd-234567890123",
-		AgentName:      "Codex Agent",
-		Provider:       "codex",
-		Task:           TaskContextForEnv{IssueID: "reuse-remove-test"},
+		WorkspacesRoot:        t.TempDir(),
+		WorkspaceID:           "ws-reuse-remove",
+		TaskID:                "d2e3f4a5-b6c7-8901-abcd-234567890123",
+		AgentName:             "Codex Agent",
+		Provider:              "codex",
+		CredentialAccountHome: sharedHome,
+		Task:                  TaskContextForEnv{IssueID: "reuse-remove-test"},
 	}, testLogger())
 	if err != nil {
 		t.Fatalf("Prepare failed: %v", err)
@@ -3213,7 +3224,7 @@ func TestReuseClearsRemovedUserSkill(t *testing.T) {
 		t.Fatalf("remove user skill: %v", err)
 	}
 
-	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", Task: TaskContextForEnv{
+	reused := Reuse(ReuseParams{WorkDir: env.WorkDir, Provider: "codex", CredentialAccountHome: sharedHome, Task: TaskContextForEnv{
 		IssueID: "reuse-remove-test",
 	}}, testLogger())
 	if reused == nil {

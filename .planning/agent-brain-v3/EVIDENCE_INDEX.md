@@ -1,0 +1,141 @@
+# EVIDENCE_INDEX — Agent Brain v3 (índice imutável de evidência)
+
+> Toda evidence = `EV-<fase>-<nn>` ligado a AB-REQ + acceptance. PLANNED = ainda não produzida (impl não autorizada). Implementação não começa até §7.1 = AUTORIZADO.
+
+## G0 — Governança/rebaseline
+| ID | AB-REQ/acceptance | Status | Local | Descritor |
+|---|---|---|---|---|
+| EV-G0-01 | task 0.1 (owner approve hierarchy/roadmap/ETA/preservation) | PARTIAL | DECISIONS §7.1; STATE | PROVEN: implementation authorization for Waves 0–3 / tier 20 (§7.1 = AUTORIZADO — retained, not revoked). PENDING (task 0.1, OPEN): explicit owner confirmation of the OpenSpec/GSD source hierarchy, G0–G8 roadmap, total ETA range, and RPP/Prodex v2.1 preservation as historical evidence |
+| EV-G0-07 | task 0.7 (owner approve GSD v3 baseline) | PENDING (owner, OPEN) | — | GSD v3 baseline approval still required; the Waves 0–3/tier-20 implementation-authorization portion is already granted via §7.1 and remains in force |
+| EV-G0-02 | task 0.2 (autoria .planning) | DONE / SUPERSEDED BY D-V3-13 | DECISIONS | owner atual = Kiro/Opus-4.8 + Codex#56#A co-lead |
+| EV-G0-03 | tasks 0.3-0.6 (GSD v3 + registros) | DONE (doc) | .planning/agent-brain-v3/** | GSD v3 + 14 registros criados |
+| EV-G0-04 | task 0.6 (orphan audit) | DONE (doc; worktree órfão = PD-01) | TRACEABILITY §C | 85 tasks × specs × P01-P34/SC01-SC10 cruzados |
+| EV-G0-05 | task 0.5 (disposição changes) | DONE (doc) | MASTER_PLANNING §4; DECISIONS | 6 changes dispostos |
+
+## G1 — Freeze
+| ID | acceptance | Status | Local | Descritor |
+|---|---|---|---|---|
+| EV-G1-01 | task 1.1/2.1 neutral contracts | DONE | `internal/daemon/brain`; `evidence/g1-codex1-contract-freeze.md` | neutral contract freeze |
+| EV-G1-02 | CLIKind/RouteModel/RouterOwner; neutral model map | DONE | `evidence/g1-codex1-contract-freeze.md` | build-only dev candidate; admission evidence-gated; same-model/pre-commit fallback |
+| EV-G1-03 | task 2.2 neutral config + aliases + gateway-required + secret ref + tier schema | DONE | `internal/daemon/brain`; `evidence/g1-codex1-contract-freeze.md` | frozen contract + tests |
+| EV-G1-04 | task 2.3 compatibility facade | DONE | `internal/daemon/brain`; `evidence/g1-codex1-contract-freeze.md` | frozen, unwired facade + redaction tests |
+| EV-G1-05 | task 1.2 worktree dirty + exclusive ownership | DONE | `evidence/g1-codex1-contract-freeze.md` | 16-task reconciliation; full Go/Rust/harness verification passed |
+| EV-G1-MODELMATRIX | task 1.3/1.5 matrix de rotas por modelo | DONE (G1 documentary scope) | `.planning/agent-brain-v3/evidence/g1-model-route-matrix.md` | CONFIRMED/EXPECTED/PENDING/UNDECLARED explícitos; fail-closed; sem segredo |
+| EV-G1-ADAPTERPREP | task 1.5 input + 5.x prep (read-only) | DONE (G1 documentary scope) | `.planning/agent-brain-v3/evidence/g1-runtime-adapter-prep.md` | contract draft accepted as G1 input only; no native-route acceptance |
+| EV-G1-OPS-PREP | task 1.3 checklist + 1.4 parity + 6.x prep | DONE (documentary; TL verified 2026-07-18; live acceptance gated) | `.planning/agent-brain-v3/evidence/g1-omniroute-checklist.md`; `.planning/agent-brain-v3/evidence/g1-prodex-parity-matrix.md` | 116 checklist items + P01-P34 + SC01-SC10; restricted secret reference and endpoint topology; no secret values |
+| EV-G1-TRANSPORT | Codex#56#A relay | DONE (historical transport) | AGENT_LEDGER row | prompts relayed; later execution completed in isolated panes |
+
+> **TL verification (2026-07-17):** EV-G1-01..05 ACCEPTED as DONE = freeze/contract deliverable,
+> each traceable to `evidence/g1-codex1-contract-freeze.md` (7.2KB) + the `internal/daemon/brain`
+> package (contracts.go / identity.go / compatibility.go / config.go, ~822 LoC, dual-router
+> fail-closed coded @contracts.go:63 + @compatibility.go:132 + @config.go:174, secret = ref-only,
+> tier 20 development validation / 50·100 evidence-gated, initial set = single build-only agy candidate,
+> same-model/pre-commit fallback, cross-model empty). No-secret confirmed (no credential value).
+> The initial sandboxed Go run was listener-blocked; the approved local-listener rerun passed
+> the full suite. Rust 4 tests and the credential-isolation harness also passed. EV-G1-05
+> 16-task reconciliation = 8 IMPLEMENTED / 2 PARTIAL / 6 INCOMPLETE (change honestly labeled
+> incomplete & superseded; OpenSpec checkboxes unchanged — consistent with PD-01 preservation).
+> **TL verification (2026-07-18):** EV-G1-MODELMATRIX and EV-G1-ADAPTERPREP accepted as DONE
+> for their G1 documentary scope; EV-G1-OPS-PREP accepted as DONE (documentary). All contain
+> no secret values, assign explicit owners/dispositions, and honestly classify gaps. Live
+> protocol/failure/security/capacity acceptance, signed waivers, and cutover remain gated.
+
+## G2 — Four streams — COMPLETE in authorized no-secret scope
+EV-G2A-01..05: DONE — `internal/daemon/brain/**`; `evidence/g2a-brain-core.md`.
+EV-G2B-01..07: DONE — `internal/daemon/gateway/**`; `evidence/g2b-gateway-package.md`.
+EV-G2C-01..05,09,10: DONE; EV-G2C-06..08: DONE as fail-closed no-secret contracts only —
+`internal/daemon/runtimeenv/**`; `evidence/g2c-runtimeenv-package.md`. Native-route acceptance remains G4.
+EV-G2D-01 (restricted secret reference): DONE — `internal/daemon/deploy/secret_reference.go`; reference-only, metadata validation, no read/copy/value/hash.
+EV-G2D-02 (endpoint topology/start-recreate): DONE — `internal/daemon/deploy/topology.go`; host loopback current, container DNS future-only.
+EV-G2D-03 (redacted event/metric schema): DONE — `internal/daemon/observability/schema.go`; schema v1, content-off, no account identity.
+EV-G2D-04 (dashboard/alert specification): DONE — `internal/daemon/observability/dashboards.go`; threshold references remain G4 evidence-gated.
+EV-G2D-05 (capacity/failure harness specification): DONE — `internal/daemon/observability/harness.go`; 20/50/100 profiles non-runnable in G2D, tier 20 first.
+EV-G2D-06 (operations runbooks): DONE — `internal/daemon/deploy/runbooks.go`; backup/restore, hot-change, rotation, upgrade/rollback, incidents/escalation.
+EV-G2D-07 (flags/cohort/rollback): DONE — `internal/daemon/deploy/rollout.go`; every protocol/provider/capacity gate default-off with evidence and trigger.
+
+G2D narrative summary: `evidence/g2d-ops-package.md`.
+
+EV-TL-HANDOVER: DONE — Kiro/Opus-4.8 read-only reconciliation + Codex#56#A live Herdr/disk
+verification; leadership and current phase corrected without credential/auth access.
+
+## G3 — Integração
+EV-G3-WIRE (7.1-7.9); EV-G3-04 readiness gate; EV-G3-05 fail-closed cred; EV-G3-06 Claude adapter; EV-G3-07 vertical slice (7.10).
+
+## G4 — Protocolo/falhas/segurança/tier 20
+
+| ID | Acceptance | Status | Local | Descritor |
+|---|---|---|---|---|
+| EV-G4-01 | protocol conformance + health/readiness (P27) | PARTIAL (offline gateway portion independently rerun; no provider acceptance) | `evidence/g4-gateway-tests.md`; `evidence/g4-evidence-automation.md` | 16 synthetic G4 tests including 6 property-style tests pass; live/model-route and runtime combination remain gated |
+| EV-G4-02 | provider paths | PARTIAL (synthetic Claude/Codex runtime portion independently rerun) | `evidence/g4-runtime-isolation.md`; `evidence/g4-evidence-automation.md` | no installed/live path; native Kimi/GLM/NVIDIA/NIM/Agy remain fail-closed/unaccepted |
+| EV-G4-03 | credentialless child isolation | PARTIAL (synthetic test-owned process boundary independently rerun) | `evidence/g4-runtime-isolation.md`; `evidence/g4-evidence-automation.md` | no live daemon/CLI/provider process or service security acceptance |
+| EV-G4-04 | strict RR + affinity | PARTIAL (offline gateway portion independently rerun) | `evidence/g4-gateway-tests.md`; `evidence/g4-evidence-automation.md` | exact synthetic cycle/affinity passes; no OmniRoute eligibility-duration proof |
+| EV-G4-05 | expiry/quota/error/circuit handling | PARTIAL (offline gateway portion independently rerun) | `evidence/g4-gateway-tests.md`; `evidence/g4-evidence-automation.md` | classifier/scope cases pass; no live lifecycle/circuit transition |
+| EV-G4-06 | no replay + cancel release | PARTIAL (offline gateway portion independently rerun) | `evidence/g4-gateway-tests.md`; `evidence/g4-evidence-automation.md` | gateway boundary passes; runtime/upstream capacity release remains gated |
+| EV-G4-07 | account registry/hot-change (P24) + lifecycle/restart | PARTIAL (offline gateway portion independently rerun) | `evidence/g4-gateway-tests.md`; `evidence/g4-evidence-automation.md` | in-memory lifecycle passes; no service/persisted-state operation |
+| EV-G4-08 | all 116 checklist + P01-P34/SC01-SC10 records | PARTIAL; documentary task 8.8 COMPLETE; G3 correction prerequisite SATISFIED (`REVIEW-G3-02` ACCEPT) | `evidence/g4-consolidated-matrix.md`; `evidence/g4-evidence-automation.md`; `evidence/g4-provenance-manifest.md`; `internal/daemon/observability/evidence.go` | 116 AC + 44 parity rows preserved at 8/84/24 and 0/39/5 Supported/Partial/Not-supported; no waivers; accepted gateway set remains `3a32c737…7497` with 16/6/59 tests and 82.5% coverage; independent RSS lifecycle review ACCEPT at collector-set SHA-256 `53f25cf1…94c8`; live/provider/host-resource blockers remain |
+| EV-G4-CAP | approved 20-task tier report | PARTIAL (deterministic development model only; G3 prerequisite satisfied) | `evidence/g4-synthetic-capacity-phase1.md`; `evidence/g4-provenance-manifest.md`; `internal/daemon/observability/synthetic.go` | virtual latency/queue/fairness and modeled resources; **9.1 STOPPED/not ready** (recommend BLOCK); no tier acceptance or enablement |
+| EV-G4-COD | Codex controlled gateway contract | PARTIAL (synthetic contract) | `evidence/g4-runtime-isolation.md` | Responses HTTP/SSE contract passes; no installed/live Codex acceptance |
+| EV-G4-ADP | adapter paths | PARTIAL | `evidence/g4-runtime-isolation.md` | Claude/Codex synthetic paths pass; native Kimi/GLM/NVIDIA paths remain unaccepted |
+| EV-G4-NIM | native NIM path | NOT-SUPPORTED (fail-closed proof only) | `evidence/g4-runtime-isolation.md` | deterministic gate produces no child environment; native acceptance forbidden/open |
+| EV-G4-AGY | native Antigravity path | NOT-SUPPORTED (fail-closed proof only) | `evidence/g4-runtime-isolation.md` | deterministic gate and non-automatic fallback candidates only; native acceptance forbidden/open |
+| EV-G4-EXACTENV | R22 mitigation + physical containment (ExactEnv) | ACCEPTED point-in-time contract (residual same-UID TOCTOU → OS isolation; **R22 MITIGATED, not closed**) | `evidence/g4-exactenv-containment.md` (sha256 `7c452e787e672a6e4d36db1955678f04723e1c32c94f577468a0c12871d32201`) | Final Kiro re-review ACCEPT on pinned go1.26.4 (`GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off`, synthetic temp only): genuine focused ×20 (representative `=== RUN` parent-count = 20), race clean, full pkg `ok 0.087s`, Windows vet+build clean, gofmt/vet clean, all 13 source SHA256 match. Transparently records the original zero-test `\|`-escaped-regex defect + fabricated timings, now corrected & reproduced. **Complements EV-G4-03 (PARTIAL, unchanged/not re-graded).** |
+| EV-G4-RUNTIME-PROJ | gateway RouteModel projection warm-cache cancellation + p9 runtime discovery / Windows hardening | ACCEPTED (corrected) | `evidence/g4-runtime-projection-hardening.md` (sha256 `64b591a74bb67316961d95cde00d0997c2d80dab17be1ac78a3bf39f9b13e2db`) | Re-reviewed and executed on pinned go1.26.4 (`GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off`): projection warm-cache cancellation (gate before/after snapshot without fetching), R24 (Windows fail-closed before cmd.Start; Unix atomic pgid containment), R25 (cache keyed by provider+executable). 20x race clean, Windows cross-compiled successfully. Residual: R24 Windows runtime unexecuted (only compile-verified) on Linux host. Orthogonal 40s timeout claim removed. No credentials. |
+
+> Mechanical ExactEnv reconciliation (2026-07-18): corrected the artifact's internal ID from `EV-G4-03` to `EV-G4-EXACTENV` and repinned its documentation-only SHA-256 from `1db8062371e39ed54c661cead8bda84ba6d63dae5a8882448d2716807b692526` to `7c452e787e672a6e4d36db1955678f04723e1c32c94f577468a0c12871d32201`. Grade, residual, counts, and gates are unchanged.
+
+The `Not-supported` rows above are actual blocker/fail-closed records and the
+Partial rows are synthetic package results, not live/provider acceptance claims.
+
+## G5 — Paridade/Smart Context
+EV-G5-SC (SC01-SC10 or waiver); EV-G5-RR (reset/redeem); EV-G5-PAR (matriz P01-P34 assinada).
+
+## G6 — Cutover/removal
+EV-G6-01 default cutover+drain; EV-G6-02 rollback proven; EV-G6-03 Prodex/L2/Go rotation/cred homes deleted after zero-use.
+
+## G7 — Tiers 50/100
+EV-G7-50; EV-G7-100; EV-G7-state (single-node vs compartilhado).
+
+## G8 — Debrand
+EV-G8-01 inventory; EV-G8-02 final names + consumers migrated; EV-G8-03 final sign-off (no Multica/Prodex runtime dep).
+
+STATUS GLOBAL: G0/G1/G2 complete in their authorized scopes (owner baseline confirmations for tasks 0.1/0.7 remain OPEN — see EV-G0-01 PARTIAL / EV-G0-07 PENDING; the Waves 0–3/tier-20 §7.1 implementation authorization is retained). Both G3 security-correction
+artifacts are present and `REVIEW-G3-02` independently records ACCEPT, satisfying the G3
+correction prerequisite. G4 synthetic evidence remains PARTIAL. Reconciliation 2026-07-18 (latest):
+ACCEPTED — I1/I2 + I3–I5 contracts; gateway core runtime; aggregate `SteadyStateFacts`; gateway
+I3/I4/I5 producers; cleanup report-only/no-delete (pB + Gemini); **pD L2 + AccountHome isolation
+(formal pB ACCEPT)**; **Grok A–D physical-profile isolation (formal Kiro ACCEPT — bash -n + synthetic
+harness; PD-08 preserved)**; **ExactEnv physical containment (ACCEPT — residual hostile same-UID TOCTOU
+requires OS-level isolation; R22 MITIGATED, not open)**; **gateway RouteModel projection warm-cache
+pre-cancel/deadline cancellation (ACCEPT)**; **p9 runtime discovery + Windows fail-closed hardening
+(ACCEPT — R24/R25 closed)**; **RSS Linux lifecycle fix (ACCEPT — but task 9.1 remains STOPPED;
+thresholds PENDING owner + independent pB)**; **MCP protected-agent command guard (ACCEPT — mitigates
+R23)**; **R26 route preservation (`REVIEW-R26-ACCEPT`, ledger review row; no new EV ID)**. R26 review confirmed compatible-CLI-only
+preservation, fail-closed or atomic exact slash reselection, empty/native downgrade rejection,
+empty-prior handling, and runtime/model compare-and-swap. Offline Go 1.26.4 verification passed:
+pure route test ×20, brain package ×20, pure route race, handler+brain vet, gofmt and diff checks. DB-backed
+runtime-switch/concurrency tests compiled under normal/race builds but did not execute because the
+existing localhost PostgreSQL rejected the default test login; no credentials or service state were
+used. The residual ExactEnv same-UID TOCTOU remains tracked for OS-level isolation (does not reopen
+R22). Documentary provenance was reconciled at `2026-07-18T13:41:33Z`; task 8.8 documentary completion is preserved and its accepted RSS lifecycle source set is freshly pinned.
+**OpenSpec is 51/85 (governance 0.2–0.6 + task 8.8 documentary closure — EV-G4-08); task 8.2 REOPENED by independent adjudication (native-vendor accepted-paths unverified); task 8.1 remains OPEN, task 9.1 STOPPED, 0.1/0.7 OPEN. Sibling native-runtimes-onboarding now 9/17 (tasks 1.5/1.6 REOPENED; task 1.7 auth backend ACCEPTED+CHECKED).**
+No additional task is closed here; G4/tier acceptance, production admission, cutover, Prodex removal,
+native adapter acceptance, tier 20 enablement, and tiers 50/100 remain gated.
+
+## Sibling OpenSpec evidence
+
+| ID | Acceptance | Status | Local | Descriptor |
+|---|---|---|---|---|
+| EV-CHAT-1.1 | chat-orchestration-standard task 1.1 | ACCEPT | `evidence/chat-orchestration-1.1-1.4.md` | Exact TL/Manager marker and clarify→OpenSpec→plan→delegate→synthesize sequence. Artifact SHA-256 `c7064375c36e797e6989231b532441af6fbd47371420e6f22612f403a945d473`; 24 production-constant AST assertions + daemon ×20/race executed. Handler compiled only: DB-gated `TestMain` exited before handler tests. |
+| EV-CHAT-1.4 | chat-orchestration-standard task 1.4 | ACCEPT | `evidence/chat-orchestration-1.1-1.4.md` | Delegation-only, no production/false production claim, escalation, and synthesis allowed. Same artifact/hash and execution boundary. Tasks 1.2/1.3 and smokes 2.1–2.3 are not accepted. |
+| EV-CREDISO-4.1 | agent-credential-isolation task 4.1 | ACCEPT | AGENT_LEDGER row | Detect exhausted/`expired` session via discovery status + `expires_at`; focused ×20/race/vet/gofmt/diff evidence. |
+| EV-CREDISO-5.2 | agent-credential-isolation task 5.2 | ACCEPT (KEEP-CHECKED) | `evidence/credential-isolation-two-account-coexistence.md` | Two-account same-provider coexistence with distinct task-local paths/sentinels; final launch gate strips inherited provider keys then injects isolated set; no-assignment fallback invents no homes. Artifact SHA-256 `97aeac65709a9a59483819dca8633590d2a0fc5a368309a46a19902874ccbe0a`; independently reproduced: 13 execenv + 3 daemon named synthetic tests ×20 + race + vet, all 16 source SHA-256 match. DB-backed `TestCredentialIsolationPerVendor` (DATABASE_URL-gated) explicitly EXCLUDED/not run; no-secret scope. |
+| EV-NATIVE-OFFLINE | native-runtimes-onboarding tasks 1.1–1.4, 2.1–2.3 | ACCEPT (offline source/synthetic only) | `evidence/native-runtime-offline-acceptance.md` | NIM/Cline backends, NIM isolation+rotation, bounded/cached model discovery + daemon reporting, config probes, `agent.New`/`SupportedTypes`, NIM `requiresCredentialIsolation` wiring. Artifact SHA-256 `10351b86ef7f62a2f72ce6a7ccb584f7f9b3e61d4369d37e8449c8e8d7e66d93`; embedded independent-reviewer ACCEPT with 25-file SHA-256 manifest all matching, recorded x20 + race + Linux/Windows vet + Windows `-c` compile reproduced (go1.26.4, offline). **Non-claims preserved:** tasks 2.4–3.4 and all live/UI/build/smoke/UAT/provider lanes excluded. native-runtimes-onboarding grade now 9/17 (tasks 1.5/1.6 REOPENED, task 1.7 auth backend CHECKED, by later adjudication; this artifact's accepted 1.1–1.4/2.1–2.3 scope is unaffected). |
+| EV-AUTH-1.7 | native-runtimes-onboarding task 1.7 (auth backend) | ACCEPT → CHECKED | `evidence/native-auth-password-provisioning.md` | `/auth/login` + bcrypt/argon2 credential store behind `AuthProvider`; `/auth/send-code`+`/auth/verify-code` removed; `/auth/google`+`/auth/logout` kept. Artifact SHA-256 `2a5f7368a63202f5decb27bd562589e1cc9ad406499b29a14a471f1c1425c095`; reviewer ACCEPT reproduced (17-file hashes, focused auth tests + race ×25 named, vet, production JWT-missing fail-closed startup exit 1 before DB). Residuals (CLI first-password bootstrap, mobile legacy migration, distributed limiter, token revocation) tracked as follow-ons, outside 1.7 backend scope. |
+| EV-CREDISO-4.2 | agent-credential-isolation task 4.2 | ACCEPT (evidence-index gap CLOSED) | `evidence/credential-isolation-next-account-selection.md` | Same-provider next-account selection. Artifact SHA-256 `d5a8022873bd5ae359e7d9cb1fda09563d909e3a753fff8f69c8e50ab60f804f`; artifact was self-declared NOT-SELF-ACCEPTED → TL independently reproduced `internal/rotation` ×20 (12 named) + `internal/daemon` ×20 (13 named) + race, all exit 0 (go1.26.4, offline, synthetic). Closes the prior 4.2 gap; 4.2 stays CHECKED. |
+| EV-CREDISO-4.3-INTERIM | agent-credential-isolation task 4.3 | PRODUCED / NOT ACCEPTED (task UNCHECKED) | `evidence/credential-isolation-auto-reassignment.md` | Bounded synthetic auto-reassignment slice (`CredentialSessionDiscoveryProducer.Produce`). Artifact SHA-256 `ffb36da990b2349f01e8d5acb5bc064d6b3466e68bc61579d846271f6d910d08`; artifact **explicitly not complete/not accepted** — 4.3 remains OPEN. Production blockers documented; no acceptance. |
+| EV-CREDISO-5.4-EMAIL | agent-credential-isolation task 5.4 (email log-safety slice) | ACCEPT (slice); task 5.4 OPEN | `evidence/credential-isolation-email-log-safety-review.md` | email.go dev-mode verification-code + invite-URL redacted via `slog` `[REDACTED CREDENTIAL]`; TL independently reproduced (focused ×20 / race / vet, static scan; producer could not run tests). Review SHA-256 `3a3018b407097ebd658af6271bce39cbd51c9cf478b89516b87861b6fc4b5529`; email.go `43f36afd…d4c3`. **5.4 NOT checked:** `pkg/redact.SanitizeForLog` is RED (`TestSanitizeForLog` secret bypass) — out of scope, not accepted. |
+| EV-CHAT-1.2-1.3-REOPENED | chat-orchestration-standard tasks 1.2 & 1.3 | PROCESS EXCEPTION — REOPENED / UNACCEPTED | (interim artifact pending) | Gemini edited-before-claim then self-checked 1.2 (squad TL/Manager default) & 1.3 (default chat routing / `@agente` escape hatch) without executable non-DB evidence (DB-gated handler tests did not run). Checkboxes REOPENED; Gemini frozen to interim artifact. Independent reviewer must produce a **pure non-DB executable routing proof** (`internal/handler/workspace.go`, `agent.go`, `chat.go`, `chat_test.go`) before reclosure. No invented acceptance. |
+
+Sibling OpenSpec disk recount (2026-07-18, post-adjudication): **chat-orchestration-standard 4/10** (0.2, 0.3, accepted 1.1, accepted 1.4; **1.2/1.3 self-checked by Gemini then REOPENED — process exception, unaccepted**); **agent-credential-isolation 4/21**; **native-runtimes-onboarding 9/17** (tasks 1.5/1.6 REOPENED; task 1.7 auth backend ACCEPTED+CHECKED). build-omniroute-agent-brain now **51/85** (task 8.2 REOPENED). This indexing changed no checkbox; a later independent adjudication reopened 8.2/1.5/1.6. 0.1/0.7/8.1 OPEN; 9.1 STOPPED; PD-01/PD-08 preserved; no production/cutover claim.
+
+Evidence-index gap — agent-credential-isolation **4.2** — **CLOSED 2026-07-18 by EV-CREDISO-4.2** (TL independently reproduced rotation ×20 + daemon ×20 + race). Original gap: (`internal/daemon/daemon.go:4278` handles `rotation.ErrNoAccountAvailable`; `daemon.go:4190-4196` `NewProactiveDetector().ShouldRotate`; `internal/metrics/credential_metrics.go` `accounts_available`; `observability/schema.go:205` `omniroute_selection_seconds`), but **no dedicated acceptance test/artifact is indexed** for the selection step (EV-CREDISO-4.1 covers detection only). Gap noted; **no acceptance invented**.

@@ -287,6 +287,41 @@ func ensureCodexMcpConfig(configPath string, mcpConfig json.RawMessage, logger *
 	return nil
 }
 
+func normalizedCodexMCPCommandBasename(command string) string {
+	command = strings.TrimSpace(command)
+	command = strings.ReplaceAll(command, `\`, "/")
+	if separator := strings.LastIndexByte(command, '/'); separator >= 0 {
+		command = command[separator+1:]
+	}
+
+	// Windows resolves executable names case-insensitively and commonly
+	// accepts commands through PATHEXT or script hosts. Strip recognized
+	// executable/script suffixes repeatedly so forms such as codex.cmd.exe
+	// cannot evade the protected-agent check. Windows also ignores trailing
+	// spaces and periods in ordinary file names.
+	basename := strings.TrimRight(strings.ToLower(strings.TrimSpace(command)), ". ")
+	for {
+		extension := strings.ToLower(filepath.Ext(basename))
+		switch extension {
+		case ".exe", ".com", ".cmd", ".bat", ".ps1", ".psm1",
+			".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh", ".msc":
+			basename = strings.TrimRight(strings.TrimSuffix(basename, extension), ". ")
+		default:
+			return basename
+		}
+	}
+}
+
+func isProtectedCodexMCPCommand(command string) bool {
+	switch normalizedCodexMCPCommandBasename(command) {
+	case "codex", "claude", "kiro", "multica", "multica-cli", "herdr",
+		"prodex", "opencode", "agy", "antigravity":
+		return true
+	default:
+		return false
+	}
+}
+
 // renderCodexMcpServersBlock renders the agent's mcp_config JSON
 // (Claude-style `{"mcpServers": {...}}`) as a TOML block of
 // `[mcp_servers.<name>]` tables wrapped in BEGIN/END markers. Returns
@@ -330,6 +365,16 @@ func renderCodexMcpServersBlock(raw json.RawMessage) (string, bool, error) {
 		}
 		if serverVal == nil {
 			return "", false, fmt.Errorf("mcp_servers.%s must be a JSON object", name)
+		}
+		command, ok := serverVal["command"].(string)
+		if !ok {
+			return "", false, fmt.Errorf("mcp_servers.%s.command must be a string", name)
+		}
+		if strings.TrimSpace(command) == "" || normalizedCodexMCPCommandBasename(command) == "" {
+			return "", false, fmt.Errorf("mcp_servers.%s.command must be non-empty", name)
+		}
+		if isProtectedCodexMCPCommand(command) {
+			return "", false, fmt.Errorf("mcp_servers.%s.command must not launch a protected agent executable", name)
 		}
 		if i > 0 {
 			sb.WriteString("\n")
@@ -500,12 +545,17 @@ func isCodexBareTomlKey(s string) bool {
 }
 
 func (b *codexBackend) Execute(ctx context.Context, prompt string, opts ExecOptions) (*Session, error) {
-	execPath := b.cfg.ExecutablePath
-	if execPath == "" {
-		execPath = "codex"
+	processEnv, err := processEnvironment(b.cfg)
+	if err != nil {
+		return nil, fmt.Errorf("codex process environment: %w", err)
 	}
-	if _, err := exec.LookPath(execPath); err != nil {
-		return nil, fmt.Errorf("codex executable not found at %q: %w", execPath, err)
+	execPath, err := resolveProcessExecutable(b.cfg, "codex", processEnv)
+	if err != nil {
+		candidate := b.cfg.ExecutablePath
+		if candidate == "" {
+			candidate = "codex"
+		}
+		return nil, fmt.Errorf("codex executable not found at %q: %w", candidate, err)
 	}
 
 	timeout := opts.Timeout
@@ -520,11 +570,11 @@ func (b *codexBackend) Execute(ctx context.Context, prompt string, opts ExecOpti
 	// `mcp_servers.<id>.env` is allowed to carry secrets (Codex docs:
 	// https://developers.openai.com/codex/mcp#configure-with-configtoml)
 	// and our UI already treats mcp_config as a redacted-for-non-admins
-	// field. Process argv ends up in OS-level `ps` listings and is also
-	// echoed into the daemon's `agent command` log line below, so any
-	// inline env-bearing TOML would defeat the redaction. Writing through
-	// config.toml at 0o600 keeps the secret values out of argv and logs.
-	if codexHome := strings.TrimSpace(b.cfg.Env["CODEX_HOME"]); codexHome != "" {
+	// field. Process argv ends up in OS-level `ps` listings; the adapter's
+	// command log now uses a redacted projection, but argv must still remain
+	// free of inline env-bearing TOML. Writing through config.toml at 0o600
+	// keeps those values out of argv as well as logs.
+	if codexHome := strings.TrimSpace(processEnvironmentValue(b.cfg, "CODEX_HOME")); codexHome != "" {
 		if err := ensureCodexMcpConfig(filepath.Join(codexHome, "config.toml"), opts.McpConfig, b.cfg.Logger); err != nil {
 			// Fail closed when we can't materialise the managed config.
 			// Warning-and-launching would silently fall back to the
@@ -551,11 +601,11 @@ func (b *codexBackend) Execute(ctx context.Context, prompt string, opts ExecOpti
 	// open pipe held by a grandchild) can't hang cmd.Wait() forever. Matches
 	// the other long-lived backends (claude, copilot, cursor, …).
 	cmd.WaitDelay = 10 * time.Second
-	b.cfg.Logger.Info("agent command", "exec", execPath, "args", codexArgs)
+	logAgentCommand(b.cfg.Logger, execPath, codexArgs)
 	if opts.Cwd != "" {
 		cmd.Dir = opts.Cwd
 	}
-	cmd.Env = buildEnv(b.cfg.Env)
+	cmd.Env = processEnv
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -895,7 +945,7 @@ func (b *codexBackend) Execute(ctx context.Context, prompt string, opts ExecOpti
 		// Fallback: if no usage from JSON-RPC, scan Codex session JSONL logs.
 		// Codex writes token_count events to ~/.codex/sessions/YYYY/MM/DD/*.jsonl.
 		if u.InputTokens == 0 && u.OutputTokens == 0 {
-			if scanned := scanCodexSessionUsage(startTime); scanned != nil {
+			if scanned := scanCodexSessionUsage(startTime, b.cfg); scanned != nil {
 				u = scanned.usage
 				if scanned.model != "" && opts.Model == "" {
 					opts.Model = scanned.model
@@ -1871,8 +1921,8 @@ type codexSessionUsage struct {
 // scanCodexSessionUsage scans Codex session JSONL files written after startTime
 // to extract token usage. Codex writes token_count events to
 // ~/.codex/sessions/YYYY/MM/DD/*.jsonl.
-func scanCodexSessionUsage(startTime time.Time) *codexSessionUsage {
-	root := codexSessionRoot()
+func scanCodexSessionUsage(startTime time.Time, config Config) *codexSessionUsage {
+	root := codexSessionRoot(config)
 	if root == "" {
 		return nil
 	}
@@ -1908,8 +1958,26 @@ func scanCodexSessionUsage(startTime time.Time) *codexSessionUsage {
 	return &result
 }
 
-// codexSessionRoot returns the Codex sessions directory.
-func codexSessionRoot() string {
+// codexSessionRoot returns the Codex sessions directory. ExactEnv launches use
+// only their validated, task-local CODEX_HOME. The daemon process environment
+// and user home remain legacy-only fallbacks when ExactEnv is nil.
+func codexSessionRoot(config Config) string {
+	if config.ExactEnv != nil {
+		exactEnvironment, err := processEnvironment(config)
+		if err != nil {
+			return ""
+		}
+		codexHome := environmentSliceValue(exactEnvironment, "CODEX_HOME")
+		if codexHome == "" || !filepath.IsAbs(codexHome) || filepath.Clean(codexHome) != codexHome {
+			return ""
+		}
+		dir := filepath.Join(codexHome, "sessions")
+		if info, err := os.Stat(dir); err == nil && info.IsDir() {
+			return dir
+		}
+		return ""
+	}
+
 	if codexHome := os.Getenv("CODEX_HOME"); codexHome != "" {
 		dir := filepath.Join(codexHome, "sessions")
 		if info, err := os.Stat(dir); err == nil && info.IsDir() {

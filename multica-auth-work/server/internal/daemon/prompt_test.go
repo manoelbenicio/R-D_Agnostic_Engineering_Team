@@ -425,6 +425,50 @@ func TestBuildPromptNonSquadLeaderNoRule(t *testing.T) {
 	}
 }
 
+// TestSquadLeaderMarkerDetectionExact is the task-1.1 marker-detection
+// contract run end-to-end through the prompt builder: an agent whose
+// instructions contain the exact "## Squad Operating Protocol" heading is
+// detected as a squad leader (the no_action rule is injected), and an
+// agent without the marker is treated as a regular direct-addressed agent
+// and escapes the squad-leader prompt path. This preserves the
+// direct-agent escape hatch — a user @mentioning a specific non-leader
+// agent runs it directly, with no squad-leader briefing or no_action rule.
+func TestSquadLeaderMarkerDetectionExact(t *testing.T) {
+	t.Parallel()
+
+	leaderTask := Task{
+		IssueID:               "issue-marker-1",
+		TriggerCommentID:      "comment-1",
+		TriggerCommentContent: "progress update",
+		TriggerAuthorType:     "member",
+		TriggerAuthorName:     "Reporter",
+		Agent: &AgentData{
+			Name:         "Leader",
+			Instructions: "## Squad Operating Protocol\n\nYou are the LEADER.",
+		},
+	}
+	leaderPrompt := BuildPrompt(leaderTask, "claude")
+	if !strings.Contains(leaderPrompt, "Squad leader no_action rule") {
+		t.Errorf("agent with the ## Squad Operating Protocol marker MUST be detected as squad leader (no_action rule injected); got:\n%s", leaderPrompt)
+	}
+
+	directTask := Task{
+		IssueID:               "issue-marker-2",
+		TriggerCommentID:      "comment-2",
+		TriggerCommentContent: "do this one-off thing",
+		TriggerAuthorType:     "member",
+		TriggerAuthorName:     "Reporter",
+		Agent: &AgentData{
+			Name:         "Worker",
+			Instructions: "You are a regular worker agent.",
+		},
+	}
+	directPrompt := BuildPrompt(directTask, "claude")
+	if strings.Contains(directPrompt, "Squad leader no_action rule") {
+		t.Errorf("agent WITHOUT the marker must NOT get squad-leader prompt (direct-agent escape preserved); got:\n%s", directPrompt)
+	}
+}
+
 // TestBuildPromptNewCommentsHint pins that a comment-triggered task whose agent
 // ran before on this issue (NewCommentsSince set, NewCommentCount > 0) gets the
 // since-delta hint with the ISSUE-WIDE new-comment count, but is steered to read
