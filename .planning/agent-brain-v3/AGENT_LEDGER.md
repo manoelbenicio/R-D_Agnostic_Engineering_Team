@@ -663,3 +663,22 @@
 > path once Wave C is reauthorized. **G4/G4-OBS acceptance remains required before capacity/cutover
 > (D-V3-17); D-V3-20 preserved.** Holds intact: 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/
 > canary/soak/tier 50/100.
+
+---
+
+> **D-V3-23 — PROMETHEUS EXPORTER ARCHITECTURE FROZEN / Priority 2 DEFERRED (Owner decision, Kiro-TL recorded, 2026-07-19).**
+> Golden-Rule CHECK-IN/OUT: docs-only decision record; no product/test/product-git/credential/network action; no dispatch; **no zero-overlap proof run** (deferred to reassignment).
+> Span→Prometheus exporter architecture APPROVED and FROZEN: exclusive tree
+> `internal/daemon/observability/promexport/**`; **NOT a ninth concurrent lane** — an existing Priority-2
+> lane is **reassigned** to it later. **W5** = canonical span contract; **W4** = dashboards/rules (consumers);
+> **W1 serial** = registry anchor (Wave C). **Bounded metric contract (canonical):** `obs_hop_latency_seconds`,
+> `obs_hop_errors_total`, `obs_hop_drops_total`, `obs_trace_gaps_total`, `obs_trace_continuous_ratio`,
+> `obs_leak_scan_failures_total`, `g4_obs_prerequisites_met`. **Prohibited metric labels:** IDs, pseudonyms,
+> free-form, high-cardinality (pseudonyms trace-only). Numeric latency SLOs remain measure-first /
+> owner-ratify before 9.1. **Priority 2 / DEFERRED — no implementation dispatch until P0 Main Brain
+> complete/integrated/tested/running or explicit owner reauth.** **Fresh EV-ZERO-OVERLAP (file-glob +
+> Go-package/TestMain) + both OpenSpec strict validations REQUIRED before any future dispatch**, at
+> reassignment, on the then-current HEAD. This exporter is the prerequisite that makes OBS-11 acceptable
+> (W4 `47c693c` is PRODUCED-NOT-ACCEPTED precisely because no accepted exporter emits these metrics).
+> G4-OBS acceptance remains required before capacity/cutover (D-V3-17); D-V3-20 preserved. Holds intact:
+> 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.

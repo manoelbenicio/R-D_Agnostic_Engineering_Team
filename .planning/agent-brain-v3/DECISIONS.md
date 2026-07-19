@@ -208,6 +208,33 @@
 - STATUS: **CONGELADA (arquitetura) / DEFERRED (implementação, Priority 2)**. Holds preservados:
   9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
 
+### D-V3-23 — Arquitetura do exporter Prometheus CONGELADA (span→Prometheus), Priority 2 / DEFERRED; SEM nona lane concorrente
+- Decisão do dono 2026-07-19. Arquitetura do exporter span→Prometheus **APROVADA e CONGELADA**:
+  - **Árvore exclusiva** `internal/daemon/observability/promexport/**` (novo tree do exporter).
+  - **NÃO é uma nona lane concorrente:** uma lane P2 existente será **reatribuída** a este tree mais tarde
+    (não abrir W-OBS-EXP como 9ª lane simultânea). **Nenhuma prova EV-ZERO-OVERLAP é rodada agora** — a
+    **prova fresca de overlap (file-glob + Go-package/TestMain) e ambas validações OpenSpec strict são
+    OBRIGATÓRIAS antes de qualquer dispatch futuro**, no momento da reatribuição, sobre o HEAD de então.
+  - **W5** = contrato canônico de span (fonte da verdade dos nomes/labels); **W4** = dashboards/rules que
+    CONSOMEM os nomes de métrica como contrato; **W1 serial** = âncora de registry (registrar o exporter no
+    ponto único de runtime-authority, Wave C).
+  - **Contrato de métrica bounded EXATO (canônico):** `obs_hop_latency_seconds`, `obs_hop_errors_total`,
+    `obs_hop_drops_total`, `obs_trace_gaps_total`, `obs_trace_continuous_ratio`,
+    `obs_leak_scan_failures_total`, `g4_obs_prerequisites_met`.
+  - **Proibido em labels de métrica:** IDs, pseudônimos, free-form e qualquer label de alta cardinalidade
+    (pseudônimos principal/account/connection permanecem trace-only, nunca viram label de métrica — evita
+    exatamente o defeito de cardinalidade que rejeitou W4 `e96343f`/`06031b2`).
+  - **SLOs de latência numéricos permanecem measure-first / owner-ratify antes de 9.1** (D-V3 ballot item 7):
+    o exporter expõe `obs_hop_latency_seconds` mas nenhum threshold numérico é travado aqui.
+- **Prioridade:** **Priority 2 / DEFERRED.** NENHUM dispatch de implementação até o **P0 Main Brain estar
+  funcionalmente completo, integrado, testado e rodando corretamente**, OU reautorização explícita do dono.
+- **Gates preservados:** este exporter é o pré-requisito que torna **OBS-11 aceitável** (W4 `47c693c` é
+  PRODUCED-NOT-ACCEPTED justamente porque nenhum exporter aceito emite as métricas). Aceitação **G4-OBS**
+  (OBS-1..OBS-11, D-V3-17) permanece exigida ANTES de capacidade/cutover; D-V3-20 preservado.
+- STATUS: **CONGELADA (arquitetura) / DEFERRED (implementação, Priority 2); reserved path, sem lane
+  concorrente; prova fresca exigida antes de dispatch.** Holds preservados:
+  9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
+
 ### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
 - Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o
   ESCOPO de D-V3-17 — não o enfraquece. D-V3-17 sempre bloqueou a **validade de alegações de

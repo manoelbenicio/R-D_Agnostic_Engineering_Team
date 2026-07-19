@@ -152,3 +152,18 @@ server-relative (`multica-auth-work/server/…`) EXCEPT W4's stack path, which i
 3. **W6 test dispatch may be PREPARED only after the fresh EV-ZERO-OVERLAP PASS** (recorded), because W6's source (`obs_ingress.go`/`obs_delivery.go`) already exists at `a715b0a`. **PRIORITY (Owner, 2026-07-19, D-V3-21):** even prepared, W6/W7 observability *implementation* is **Priority 2 / DEFERRED** and must NOT consume Priority-0 Main Brain capacity until P0 is functionally complete/integrated/tested/running OR explicitly reauthorized.
 4. **W7 implementation remains HELD** until its source helper contract (`obs_queue.go`/`obs_persist.go`, zero-schema deterministic IDs — D-V3-19 item 2 / D-V3-21 accepted architecture) exists and is frozen; the W7 test paths are owned but not authored until then, and W7 dispatch is additionally **DEFERRED behind Priority-0 Main Brain** (D-V3-21).
 5. No shared anchor is transferred; call-site insertions that invoke the span helpers remain exclusively W1 during Wave C serial integration.
+
+
+## RESERVED FUTURE EXCLUSIVE PATH — D-V3-23 (promexport; NOT a concurrent lane)
+
+> `internal/daemon/observability/promexport/**` (span→Prometheus exporter) is a **frozen, reserved
+> exclusive tree** per D-V3-23. It is **NOT an active/9th concurrent lane** — an existing Priority-2 lane
+> will be **reassigned** to it later. **No EV-ZERO-OVERLAP proof is run for it now.** Before ANY future
+> dispatch: run a **fresh EV-ZERO-OVERLAP (file-glob + Go-package/TestMain) + both OpenSpec strict
+> validations** on the then-current HEAD, and add its ownership row at reassignment time.
+> Ownership at reassignment: this tree is exclusive to the reassigned lane; **W5** owns the canonical span
+> contract, **W4** owns dashboards/rules (consumers), **W1 serial** owns the registry anchor (Wave C).
+> Bounded metric contract: `obs_hop_latency_seconds`, `obs_hop_errors_total`, `obs_hop_drops_total`,
+> `obs_trace_gaps_total`, `obs_trace_continuous_ratio`, `obs_leak_scan_failures_total`,
+> `g4_obs_prerequisites_met`. **Prohibited metric labels:** IDs, pseudonyms, free-form, any high-cardinality
+> label (pseudonyms stay trace-only). Priority 2 / DEFERRED behind P0 Main Brain. Holds intact.
