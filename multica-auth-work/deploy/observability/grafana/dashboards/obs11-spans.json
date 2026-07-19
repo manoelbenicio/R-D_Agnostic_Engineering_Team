@@ -1,0 +1,56 @@
+{
+  "title": "OBS-11: Per-hop Span Latency, Errors, Drops, and Gaps",
+  "uid": "obs11-spans",
+  "panels": [
+    {
+      "title": "Hop Latency (R30 overhead)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (hop, le) (rate(obs_hop_latency_seconds_bucket[5m])))",
+          "legendFormat": "{{hop}} p95"
+        }
+      ]
+    },
+    {
+      "title": "Hop Errors",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (hop, reason) (rate(obs_hop_errors_total[5m]))",
+          "legendFormat": "{{hop}} - {{reason}}"
+        }
+      ]
+    },
+    {
+      "title": "Hop Drops",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (hop) (rate(obs_hop_drops_total[5m]))",
+          "legendFormat": "{{hop}}"
+        }
+      ]
+    },
+    {
+      "title": "Trace Gaps (Continuous Trace per Synthetic Task)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(obs_trace_gaps_total[5m]))",
+          "legendFormat": "Global Trace Gaps"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 16,
+  "version": 2
+}

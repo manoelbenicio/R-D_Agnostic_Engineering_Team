@@ -84,6 +84,7 @@ func DefaultRolloutPlan() RolloutPlan {
 			{"RBK-RATE", "provider-or-route", "provider-global 429, circuit-open ratio, or retry amplification exceeds the approved gate", "stop expansion and apply scoped cooldown/hold", RunbookIncident, "EV-G4-05"},
 			{"RBK-CAPACITY", "capacity", "queue, latency, error, CPU, memory, sockets, or cancellation reconciliation breaches the approved profile", "cap admission at the last accepted tier or hold", RunbookRollback, "EV-G4-CAP"},
 			{"RBK-STATE", "global", "state consistency, backup/restore, or restart recovery fails", "hold admissions and restore last accepted revision", RunbookBackupRestore, "EV-G4-07"},
+			{"RBK-ESCALATION", "global", "unresolved incident or sustained impact requires product/security escalation", "escalate to specific incident commander or product owner", RunbookEscalation, "EV-G4-ESC"},
 		},
 	}
 }
