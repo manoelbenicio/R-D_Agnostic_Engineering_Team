@@ -5,12 +5,12 @@ import "sort"
 // Trace is the assembled end-to-end view of a single task: one span per emitting
 // hop, joined by the documented correlation relationships.
 type Trace struct {
-	TaskID      string                `json:"task_id"`
-	Hops        map[HopKind]Span      `json:"-"`
-	Present     []HopKind             `json:"present"`
-	Missing     []HopKind             `json:"missing"`
-	Continuous  bool                  `json:"continuous"`
-	Anchor      Correlation           `json:"anchor"`
+	TaskID     string           `json:"task_id"`
+	Hops       map[HopKind]Span `json:"-"`
+	Present    []HopKind        `json:"present"`
+	Missing    []HopKind        `json:"missing"`
+	Continuous bool             `json:"continuous"`
+	Anchor     Correlation      `json:"anchor"`
 }
 
 // OrphanSpan is a span that could not be joined into any complete trace.
