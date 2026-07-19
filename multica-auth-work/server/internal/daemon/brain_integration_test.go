@@ -175,6 +175,108 @@ func TestAgentBrainFailsClosedWhenGatewayNotReady(t *testing.T) {
 	}
 }
 
+func TestAgentBrainUsesInstalledOmniRouteHealthContract(t *testing.T) {
+	type recordedRequest struct {
+		path          string
+		authenticated bool
+	}
+	var requests []recordedRequest
+	available := true
+	enabled := true
+	gatewayServer := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		requests = append(requests, recordedRequest{
+			path: request.URL.Path, authenticated: request.Header.Get("Authorization") != "",
+		})
+		switch request.URL.Path {
+		case "/api/health/ping":
+			if request.Header.Get("Authorization") != "" {
+				response.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			response.WriteHeader(http.StatusOK)
+		case "/v1/models":
+			if request.Header.Get("Authorization") != "Bearer "+syntheticReferenceSecret {
+				response.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			writeSyntheticModels(response, available, enabled)
+		case "/api/monitoring/health":
+			response.WriteHeader(http.StatusOK)
+			_, _ = response.Write([]byte(`{"status":"degraded"}`))
+		default:
+			response.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer gatewayServer.Close()
+
+	config := syntheticAgentBrainConfig(t, gatewayServer.URL)
+	runtime, err := newAgentBrainRuntime(config, AgentBrainDependencies{
+		CredentialSource: syntheticCredentialSource{}, HTTPClient: gatewayServer.Client(),
+	}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatalf("newAgentBrainRuntime: %v", err)
+	}
+	plan, err := runtime.admitTask(context.Background(), syntheticGatewayTask(), "claude", string(config.RouteModel))
+	if err != nil || plan == nil {
+		t.Fatal("installed OmniRoute health contract did not admit the synthetic task")
+	}
+	if runtime.config.Neutral.Gateway.BaseURL != gatewayServer.URL {
+		t.Fatal("gateway root BaseURL changed while constructing health endpoints")
+	}
+	want := []recordedRequest{
+		{path: "/api/health/ping", authenticated: false},
+		{path: "/v1/models", authenticated: true},
+		{path: "/v1/models", authenticated: true},
+	}
+	if len(requests) != len(want) {
+		t.Fatalf("gateway request count=%d, want %d", len(requests), len(want))
+	}
+	for index := range want {
+		if requests[index] != want[index] {
+			t.Fatalf("gateway request %d did not match the bounded health contract", index)
+		}
+	}
+}
+
+func TestAgentBrainDegradedPingFailsClosedBeforeAuthenticatedReadiness(t *testing.T) {
+	var paths []string
+	gatewayServer := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		paths = append(paths, request.URL.Path)
+		switch request.URL.Path {
+		case "/api/health/ping":
+			response.WriteHeader(http.StatusServiceUnavailable)
+		case "/api/monitoring/health":
+			response.WriteHeader(http.StatusOK)
+			_, _ = response.Write([]byte(`{"status":"degraded"}`))
+		case "/v1/models":
+			response.WriteHeader(http.StatusOK)
+		default:
+			response.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer gatewayServer.Close()
+
+	credential := &countingSyntheticCredentialSource{}
+	runtime, err := newAgentBrainRuntime(syntheticAgentBrainConfig(t, gatewayServer.URL), AgentBrainDependencies{
+		CredentialSource: credential, HTTPClient: gatewayServer.Client(),
+	}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatalf("newAgentBrainRuntime: %v", err)
+	}
+	if _, err := runtime.admitTask(context.Background(), syntheticGatewayTask(), "claude", string(runtime.config.RouteModel)); err == nil {
+		t.Fatal("degraded OmniRoute liveness was admitted")
+	}
+	if credential.calls != 0 {
+		t.Fatal("degraded liveness reached the authenticated readiness credential source")
+	}
+	if len(paths) != 1 || paths[0] != "/api/health/ping" {
+		t.Fatal("degraded liveness did not fail closed at the public ping endpoint")
+	}
+	if snapshot := runtime.snapshot(); snapshot.Readiness == brain.GatewayReadinessReady {
+		t.Fatal("degraded liveness reported ready")
+	}
+}
+
 func TestAgentBrainCentralCapacityReconcilesOverloadAndCancellation(t *testing.T) {
 	gatewayServer := newSyntheticGateway(t, true)
 	defer gatewayServer.Close()
@@ -592,10 +694,14 @@ func newSyntheticGateway(t *testing.T, ready bool) *httptest.Server {
 	enabled := true
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
-		case "/health/live":
-			response.WriteHeader(http.StatusNoContent)
+		case "/api/health/ping":
+			if !ready {
+				response.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			response.WriteHeader(http.StatusOK)
 			return
-		case "/health/ready", "/v1/models":
+		case "/v1/models":
 			if request.Header.Get("Authorization") != "Bearer "+syntheticReferenceSecret {
 				response.WriteHeader(http.StatusUnauthorized)
 				return
@@ -608,22 +714,22 @@ func newSyntheticGateway(t *testing.T, ready bool) *httptest.Server {
 			response.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if request.URL.Path == "/health/ready" {
-			response.WriteHeader(http.StatusNoContent)
-			return
-		}
-		response.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(response).Encode(gateway.ModelsDocument{
-			Object: "list", RegistryVersion: "synthetic-v1",
-			Models: []gateway.ModelDocument{{
-				ID: "agy/claude-opus-4-6-thinking", Protocol: string(brain.ProtocolAnthropicMessages),
-				Streaming: &enabled, Tools: &enabled, Reasoning: &enabled, StructuredOutput: &enabled,
-				ContextLimit: 1000, AccountPool: "synthetic-pool", Rotation: string(gateway.RotationStrictIndependentRequest),
-				Affinity: string(gateway.AffinityOriginAccount), Available: &available,
-			}},
-		})
+		writeSyntheticModels(response, available, enabled)
 	}))
 	return server
+}
+
+func writeSyntheticModels(response http.ResponseWriter, available, enabled bool) {
+	response.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(response).Encode(gateway.ModelsDocument{
+		Object: "list", RegistryVersion: "synthetic-v1",
+		Models: []gateway.ModelDocument{{
+			ID: "agy/claude-opus-4-6-thinking", Protocol: string(brain.ProtocolAnthropicMessages),
+			Streaming: &enabled, Tools: &enabled, Reasoning: &enabled, StructuredOutput: &enabled,
+			ContextLimit: 1000, AccountPool: "synthetic-pool", Rotation: string(gateway.RotationStrictIndependentRequest),
+			Affinity: string(gateway.AffinityOriginAccount), Available: &available,
+		}},
+	})
 }
 
 func containsString(values []string, target string) bool {
