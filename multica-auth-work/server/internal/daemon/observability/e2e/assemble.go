@@ -20,13 +20,31 @@ type OrphanSpan struct {
 	Reason      string      `json:"reason"`
 }
 
+type AssemblyAnomalyKind string
+
+const (
+	AnomalyDuplicateSpan   AssemblyAnomalyKind = "duplicate_span"
+	AnomalyConflictingJoin AssemblyAnomalyKind = "conflicting_join"
+)
+
+// AssemblyAnomaly records a structurally classified duplicate or conflicting
+// join. Reason is a fixed metadata-only code; identifiers remain solely in the
+// structured Correlation field.
+type AssemblyAnomaly struct {
+	Kind        AssemblyAnomalyKind `json:"kind"`
+	Hop         HopKind             `json:"hop"`
+	Correlation Correlation         `json:"correlation"`
+	Reason      string              `json:"reason"`
+}
+
 // AssemblyReport is the OBS-9 result: one Trace per synthetic task plus any
 // orphan/gap findings. AllContinuous is true only when every discovered task
-// has all seven emitting hops joined with zero orphans.
+// has all seven emitting hops joined with zero orphans or anomalies.
 type AssemblyReport struct {
-	Traces        []Trace      `json:"traces"`
-	Orphans       []OrphanSpan `json:"orphans"`
-	AllContinuous bool         `json:"all_continuous"`
+	Traces        []Trace           `json:"traces"`
+	Orphans       []OrphanSpan      `json:"orphans"`
+	Anomalies     []AssemblyAnomaly `json:"anomalies"`
+	AllContinuous bool              `json:"all_continuous"`
 }
 
 // Assemble joins spans into per-task traces following the documented join
@@ -63,6 +81,9 @@ func Assemble(spans []Span) AssemblyReport {
 	requestToTask := map[string]string{} // request_id -> task_id (from ingress)
 	launchToTask := map[string]string{}  // launch_id  -> task_id (from admission)
 	sessionToTask := map[string]string{} // session_id -> task_id (from admission)
+	conflictingRequests := map[string]struct{}{}
+	conflictingLaunches := map[string]struct{}{}
+	conflictingSessions := map[string]struct{}{}
 	taskAnchor := map[string]Correlation{}
 	taskSet := map[string]struct{}{}
 
@@ -71,18 +92,68 @@ func Assemble(spans []Span) AssemblyReport {
 			taskSet[id] = struct{}{}
 		}
 	}
+	registerResolver := func(
+		resolver map[string]string,
+		conflicts map[string]struct{},
+		key, task string,
+		hop HopKind,
+		correlation Correlation,
+		reason string,
+	) {
+		if _, conflicted := conflicts[key]; conflicted {
+			report.Anomalies = append(report.Anomalies, AssemblyAnomaly{
+				Kind: AnomalyConflictingJoin, Hop: hop, Correlation: correlation, Reason: reason,
+			})
+			return
+		}
+		if existing, exists := resolver[key]; exists && existing != task {
+			delete(resolver, key)
+			conflicts[key] = struct{}{}
+			report.Anomalies = append(report.Anomalies, AssemblyAnomaly{
+				Kind: AnomalyConflictingJoin, Hop: hop, Correlation: correlation, Reason: reason,
+			})
+			return
+		}
+		resolver[key] = task
+	}
 	for _, s := range byHop[HopIngress] {
 		registerTask(s.Correlation.TaskID)
-		requestToTask[s.Correlation.RequestID] = s.Correlation.TaskID
+		registerResolver(
+			requestToTask,
+			conflictingRequests,
+			s.Correlation.RequestID,
+			s.Correlation.TaskID,
+			HopIngress,
+			s.Correlation,
+			"request_id_conflicting_tasks",
+		)
 	}
 	for _, s := range byHop[HopQueue] {
 		registerTask(s.Correlation.TaskID)
 	}
 	for _, s := range byHop[HopAdmission] {
 		registerTask(s.Correlation.TaskID)
-		launchToTask[s.Correlation.LaunchID] = s.Correlation.TaskID
-		sessionToTask[s.Correlation.SessionID] = s.Correlation.TaskID
-		taskAnchor[s.Correlation.TaskID] = s.Correlation
+		registerResolver(
+			launchToTask,
+			conflictingLaunches,
+			s.Correlation.LaunchID,
+			s.Correlation.TaskID,
+			HopAdmission,
+			s.Correlation,
+			"launch_id_conflicting_tasks",
+		)
+		registerResolver(
+			sessionToTask,
+			conflictingSessions,
+			s.Correlation.SessionID,
+			s.Correlation.TaskID,
+			HopAdmission,
+			s.Correlation,
+			"session_id_conflicting_tasks",
+		)
+		if _, exists := taskAnchor[s.Correlation.TaskID]; !exists {
+			taskAnchor[s.Correlation.TaskID] = s.Correlation
+		}
 	}
 	for _, s := range byHop[HopPersist] {
 		registerTask(s.Correlation.TaskID)
@@ -96,6 +167,19 @@ func Assemble(spans []Span) AssemblyReport {
 		}
 		return traceHops[task]
 	}
+	place := func(task string, hop HopKind, span Span) {
+		hops := ensure(task)
+		if _, exists := hops[hop]; exists {
+			report.Anomalies = append(report.Anomalies, AssemblyAnomaly{
+				Kind:        AnomalyDuplicateSpan,
+				Hop:         hop,
+				Correlation: span.Correlation,
+				Reason:      "duplicate_task_hop",
+			})
+			return
+		}
+		hops[hop] = cloneSpan(span)
+	}
 	assignDirect := func(hop HopKind) {
 		for _, s := range byHop[hop] {
 			task := s.Correlation.TaskID
@@ -103,17 +187,28 @@ func Assemble(spans []Span) AssemblyReport {
 				report.Orphans = append(report.Orphans, OrphanSpan{hop, s.Correlation, "task_id not anchored"})
 				continue
 			}
-			ensure(task)[hop] = s
+			place(task, hop, s)
 		}
 	}
-	assignVia := func(hop HopKind, resolve map[string]string, key func(Correlation) string, reason string) {
+	assignVia := func(
+		hop HopKind,
+		resolve map[string]string,
+		conflicts map[string]struct{},
+		key func(Correlation) string,
+		missingReason, conflictReason string,
+	) {
 		for _, s := range byHop[hop] {
-			task, ok := resolve[key(s.Correlation)]
-			if !ok || task == "" {
-				report.Orphans = append(report.Orphans, OrphanSpan{hop, s.Correlation, reason})
+			joinKey := key(s.Correlation)
+			if _, conflicted := conflicts[joinKey]; conflicted {
+				report.Orphans = append(report.Orphans, OrphanSpan{hop, s.Correlation, conflictReason})
 				continue
 			}
-			ensure(task)[hop] = s
+			task, ok := resolve[joinKey]
+			if !ok || task == "" {
+				report.Orphans = append(report.Orphans, OrphanSpan{hop, s.Correlation, missingReason})
+				continue
+			}
+			place(task, hop, s)
 		}
 	}
 
@@ -121,9 +216,30 @@ func Assemble(spans []Span) AssemblyReport {
 	assignDirect(HopQueue)
 	assignDirect(HopAdmission)
 	assignDirect(HopPersist)
-	assignVia(HopCLI, launchToTask, func(c Correlation) string { return c.LaunchID }, "launch_id resolves to no admitted task")
-	assignVia(HopRoute, requestToTask, func(c Correlation) string { return c.RequestID }, "request_id resolves to no ingress task")
-	assignVia(HopDelivery, sessionToTask, func(c Correlation) string { return c.SessionID }, "session_id resolves to no admitted task")
+	assignVia(
+		HopCLI,
+		launchToTask,
+		conflictingLaunches,
+		func(c Correlation) string { return c.LaunchID },
+		"launch_id_unresolved",
+		"launch_id_conflicting_tasks",
+	)
+	assignVia(
+		HopRoute,
+		requestToTask,
+		conflictingRequests,
+		func(c Correlation) string { return c.RequestID },
+		"request_id_unresolved",
+		"request_id_conflicting_tasks",
+	)
+	assignVia(
+		HopDelivery,
+		sessionToTask,
+		conflictingSessions,
+		func(c Correlation) string { return c.SessionID },
+		"session_id_unresolved",
+		"session_id_conflicting_tasks",
+	)
 
 	// Materialize traces deterministically.
 	tasks := make([]string, 0, len(taskSet))
@@ -149,7 +265,7 @@ func Assemble(spans []Span) AssemblyReport {
 		}
 		report.Traces = append(report.Traces, tr)
 	}
-	if len(report.Orphans) > 0 {
+	if len(report.Orphans) > 0 || len(report.Anomalies) > 0 {
 		allContinuous = false
 	}
 	report.AllContinuous = allContinuous
