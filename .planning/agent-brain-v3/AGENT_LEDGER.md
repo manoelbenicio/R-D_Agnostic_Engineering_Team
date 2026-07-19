@@ -804,3 +804,20 @@
 > (Cline→Kimi-K2.7, Cline→GLM52, NVIDIA=GLM52 fallback, Antigravity revalidate). **No OBS implementation until
 > functional P0** (D-V3-21/22/23 P2); **no capacity/9.1/Prodex/cutover/production**. Live-first (D-V3-28): no
 > duplicate pre-test campaign; unit/property/race/vet = fast regression only. Holds intact.
+
+---
+
+> **AUTHORITY + REPORTING RULE (Owner, Kiro-TL recorded 2026-07-19; status recorder, NO veto).** Docs-only; no product code; no dispatch.
+> **Authority rule:** agents/TL report **factual pass/fail** and topic SHAs/task status only. **Only the Owner
+> may decline/stop/defer** acceptance. TL = status recorder, **no veto**. This SUPERSEDES prior ledger framing
+> where internal/independent review could WITHHOLD acceptance (producer≠reviewer≠adjudicator gating) — evidence
+> provenance is still recorded factually, but it does not block Owner-decided acceptance.
+> **Reporting rule:** authoritative Main Brain = **build-omniroute N/96 ONLY.** Do NOT sum siblings
+> (credential-isolation 21 / native 17 / chat 10 / persist-prodex 16 — separate streams, deferred/superseded);
+> the **160 aggregate and any 68/160 headline are INVALID.** Only scope growth was 85→96 (approved OBS-1..11).
+> **Count now: 53/96** (after 0.1/0.7 owner-approved closure; was 51/96). Open **43** = P0 11 · OBS/P2 11 ·
+> post-gate 21. Siblings/deferred reported SEPARATELY, never summed. History preserved; no deletion.
+> **Tracked topics (status only, Owner decides acceptance):** W3 — close direct NIM default/provider-key path;
+> add Cline 3.0.44 OmniRoute config (Kimi-K2.7 + GLM52, NVIDIA fallback OmniRoute-owned); agy 1.1.4 IPv4
+> resolver regression. W4 — pin OmniRoute image digest (PD-02). No credential handling; OBS/capacity/Prodex/
+> siblings remain STOPPED.

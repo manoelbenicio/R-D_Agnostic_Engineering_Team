@@ -213,3 +213,11 @@ Evidence-index gap — agent-credential-isolation **4.2** — **CLOSED 2026-07-1
 | ID | Lane / commit | Status | Verified basis |
 |---|---|---|---|
 | EV-OBS-04 (W1 9745eaf) | W1 `work/agent-brain-w1` @ `9745eaf` (origin tip — Kiro-TL confirmed local=origin=`9745eaf`) | PRODUCED — **corrective commits reviewed PASS**; technical-integration status, NOT final acceptance; OBS-4 OPEN | Corrective chain `2a0dd32`→`c7a8d92` (observe launch-identity rejections)→**`9745eaf`** (observe missing-workspace rejection) — addresses the OBS-4 review point (rejected admissions derive launch without request-id but have no CLI hop). **Independent Gemini static review PASS; Principal/Codex full daemon test+vet PASS; origin tip clean.** Kiro-TL independently verified: `9745eaf` footprint is W1-owned only (`brain/admission_observability.go`, `daemon.go` +1, new `daemon_obs4_test.go`) — **no cross-lane files**; on origin/w1 as the clean tip. **This is NOT G4/OpenSpec acceptance** — G4-OBS acceptance (OBS-1..OBS-11, D-V3-17) still required; OBS-4 stays OPEN. |
+
+## G0 owner-approval reconciliation — 0.1 / 0.7 CLOSED (Kiro-TL status recorder, 2026-07-19)
+
+> Owner reconciled tasks **0.1** (approve OpenSpec/GSD hierarchy, G0–G8 roadmap, total ETA range, RPP/Prodex
+> v2.1 preservation) and **0.7** (approve GSD v3 baseline + Waves 0–3 implementation authorization) as
+> **OWNER-APPROVED** from the explicit owner directions (D-V3-16..28, full implementation authorization,
+> owner plan/governance approvals). Both `[ ]`→`[x]`. **EV-G0-01 → ACCEPT/CHECKED; EV-G0-07 → ACCEPT/CHECKED.**
+> build-omniroute **51/96 → 53/96**. No other checkbox changed; no inflation. OBS/capacity/Prodex/siblings remain stopped.
