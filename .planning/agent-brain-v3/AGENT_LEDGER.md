@@ -554,3 +554,15 @@
 > keys not closed. **OBS-1/OBS-9/OBS-10 remain OPEN.** Consequence: the correlation API contract is
 > NOT yet published, so OBS callers (W1/W2/W3/W6) stay dependency-blocked on W5. Holds intact:
 > capacity/9.1/PD-08/keys/Prodex/cutover/production.
+
+---
+
+> **C1 — W5 CORRECTED-BASELINE SYNC (Kiro-TL/Opus-4.8, 2026-07-19; authorized by Codex56-Principal-TL).**
+> Golden-Rule CHECK-IN/OUT: docs-only planning sync; no product/test/product-git/credential/network action.
+> W5 OBS-1/9/10 baseline moved from `70c34d3` → **`fd4aa4d`** (via hardening `6f25815`). `70c34d3` recorded
+> **superseded** (was PRODUCED-NOT-ACCEPTED with 4 blockers: shallow map/slice aliasing; pattern-only leak
+> scan; carrier `contract_version` unenforced; open counter keys). `fd4aa4d` = **TECHNICAL INTEGRATION
+> BASELINE** (Principal gofmt/test/race/vet PASS + independent Gemini structural PASS; Gemini env test-run
+> blocked, Principal evidence covers). **This is NOT final OpenSpec/G4-OBS acceptance — OBS-1/9/10 stay OPEN.**
+> Kiro-TL independently verified all SHAs/subjects and `origin/work/agent-brain-w5` clean tip = `fd4aa4d`.
+> build-omniroute unchanged 51/96; no OBS checkbox closed. Holds intact: 9.1/capacity/PD-08/keys/Prodex/cutover/production.

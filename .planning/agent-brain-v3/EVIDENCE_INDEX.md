@@ -170,3 +170,14 @@ Evidence-index gap — agent-credential-isolation **4.2** — **CLOSED 2026-07-1
 > Wave A note (2026-07-19): all G4-OBS evidence is PLANNED — the OBS-* tasks are newly ADDED and
 > OPEN. No OBS evidence is produced yet; no completion is claimed; build-omniroute count stays 51/96.
 > G4-OBS is a BLOCKING gate before capacity (§9) and cutover (§10) per D-V3-17.
+
+## Wave B lane status — C1: W5 corrected baseline (Kiro-TL/Opus-4.8, 2026-07-19; authorized by Codex56-Principal-TL)
+
+> Append-only sync. SUPERSEDES the stale `EV-OBS-01/09/10 (W5 70c34d3)` row above **for baseline
+> purposes only** (history preserved, not rewritten). Technical/integration status — **NOT** final
+> OpenSpec/G4-OBS acceptance. OBS-1/9/10 remain OPEN; build-omniroute stays **51/96**; no OBS checkbox
+> closed. Holds intact: 9.1/capacity/PD-08/keys/Prodex/cutover/production.
+
+| ID | Lane / commit | Status | Verified basis |
+|---|---|---|---|
+| EV-OBS-01/09/10 (W5 fd4aa4d) | W5 `work/agent-brain-w5` @ `fd4aa4d` (origin-clean; supersedes `70c34d3`) | PRODUCED — **TECHNICAL INTEGRATION BASELINE**; NOT final acceptance; OBS-1/9/10 OPEN | `70c34d3` blockers corrected via `6f25815` (deep clones; carrier `contract_version` fail-closed at parse/use boundary; closed per-hop counter keys; strict `principal_`/`acct_`/`conn_` pseudonyms; safe slash-qualified models; closed Event schema; all non-empty free-form logs rejected; redacted diagnostics), then `fd4aa4d` (OBS-9 ambiguity fixed: explicit anomalies for duplicate direct/via spans + request/launch/session conflicts, `AllContinuous=false`, deep-cloned `Trace.Hops`, regressions). Principal ran gofmt/test/race/vet = PASS; independent Gemini structural review PASS (its env test-run blocked — Principal test evidence covers it). **Kiro-TL independently verified:** all cited SHAs resolve with matching subjects; `origin/work/agent-brain-w5` clean tip = `fd4aa4d`. Principal declared this the technical integration baseline so callers may cherry-pick the exact chain — **this is NOT OpenSpec/G4 acceptance.** |
