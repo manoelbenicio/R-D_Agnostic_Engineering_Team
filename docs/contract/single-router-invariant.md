@@ -104,3 +104,25 @@ Positive and negative event examples are in `docs/contract/fixtures/`.
 - [x] Unit and integration test approaches are documented.
 - [x] Go pushes desired-state only; Rust routes in-flight requests.
 - [x] Go NEVER rotates mid-flight after output begins.
+
+## Recovery-mode addendum (2026-07-19, D-V3-16 / AB-REQ-41)
+
+The single-router invariant holds unchanged under the platform cold recovery mode. Recovery mode
+does not create a second concurrent router; it is a session-boundary state transition of the sole
+runtime authority (`health.go:177-184` single-select `omniroute → rust_l2 → native_cli`).
+
+- **Default state (NORMAL):** `router_owner = omniroute`. Prodex (`rust_l2`) is OFF (code present,
+  not started). Never both hot.
+- **DEGRADED:** when OmniRoute is not ready, the platform fails closed (queue/reject). It does
+  **not** auto-promote Prodex. `router_owner` for new model work is none until an authority is
+  available.
+- **RECOVERY:** entered only by an explicit, authorized operator action that first quiesces
+  OmniRoute; then `router_owner = rust_l2` (Prodex cold). Mutually exclusive with OmniRoute.
+- **RESTORE:** returns to NORMAL only after Prodex is drained.
+- Transitions occur only at session boundaries, never mid-flight; no transition mutates
+  credentials (PD-08); each transition emits a metadata-only observability event.
+
+Testable property (extends the properties above): across any transition sequence, for every
+session there is at most one hot `router_owner`, and no session ever observes two owners. A
+counterexample (OmniRoute and Prodex both hot for one session, or Prodex hot without a prior
+OmniRoute quiesce) is a P1 contract failure.

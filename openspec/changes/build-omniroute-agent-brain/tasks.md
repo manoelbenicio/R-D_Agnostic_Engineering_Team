@@ -94,7 +94,29 @@
 - [ ] 8.7 [Codex 2 + Codex 4] Demonstrate account add/remove/quarantine/re-entry and OmniRoute restart/config rollback during active load.
 - [x] 8.8 [Codex 4] Record evidence against every OmniRoute checklist and Prodex parity ID; stop the cutover for unsupported blocker rows without an approved waiver.
 
+## 8-OBS. Wave 3-OBS — End-to-End Observability Stop-Gate (G4-OBS)
+
+> BLOCKING GATE (owner decision D-V3-17). Metadata-only across all eight hops; independent
+> reviewer ≠ producer ≠ adjudicator. G4-OBS must PASS before any capacity tier (§9) or cutover
+> (§10). No secrets, prompts, tool payloads, repository content, opaque reasoning, cookies, keys,
+> account emails, or connection strings in any span/label/log. Owning lanes per FILE_OWNERSHIP
+> (W1–W8). Traces to AB-REQ-39/40/41 and the `end-to-end-observability` spec.
+
+- [ ] OBS-1 [W5] Freeze the eight-hop correlation ID schema and propagation contract (metadata-only): `request_id`, `queue_msg_id`, `task_id`, `session_id`, `launch_id`, `proc_id`, `omni_request_id`, `result_id`, `delivery_id`; join keys, header/metadata carriers, `contract_version`, and the `secrets_present=false` invariant. Evidence `EV-OBS-01`.
+- [ ] OBS-2 [W6] Emit the ingress-API span (hop 1): control-API request received with method/route, pseudonymous principal, status, latency; `request_id → task_id`; no request/response bodies. Evidence `EV-OBS-02`.
+- [ ] OBS-3 [W7] Emit the DB-queue span (hop 2): enqueue/dequeue timestamps, queue depth, wait time; `queue_msg_id ↔ task_id`; no task payload content. Evidence `EV-OBS-03`.
+- [ ] OBS-4 [W1] Emit the daemon admission/lifecycle span (hop 3): admission decision, readiness-gate result, `CLIKind`/`RouteModel` labels, fail-closed classification; `task_id`/`session_id`/`launch_id`. Evidence `EV-OBS-04`.
+- [ ] OBS-5 [W3] Emit the CLI-process span (hop 4): launch/exit, exit code, cancellation, structurally-redacted argv shape (never values); `launch_id`/`proc_id`; reuses R21 structural argv redaction. Evidence `EV-OBS-05`.
+- [ ] OBS-6 [W2] Emit the OmniRoute/provider span (hop 5) from safe telemetry only (extends task 4.6): actual route/model, pseudonymous account/connection, selection reason, retries/fallback, quota/circuit state, safe usage; `request_id ↔ omni_request_id`. Evidence `EV-OBS-06`.
+- [ ] OBS-7 [W7] Emit the terminal-persistence span (hop 6): persist latency, byte/token counts, terminal status; `task_id`/`result_id`; no result content. Evidence `EV-OBS-07`.
+- [ ] OBS-8 [W6] Emit the WS/UI-delivery span (hop 7): delivery latency, backpressure/drops, reconnects; `session_id`/`delivery_id`; no delivered payload content. Evidence `EV-OBS-08`.
+- [ ] OBS-9 [W5] Assemble the end-to-end trace (hop 8): join every hop on correlation IDs, detect gaps/orphans, and prove one continuous trace per synthetic task across all eight hops. Evidence `EV-OBS-09`.
+- [ ] OBS-10 [W5 + W4] Run the structural (not pattern-only) secret/content leakage scan across every span, label and log for all hops and prove leak-clean; any leak = STOP. Evidence `EV-OBS-10`.
+- [ ] OBS-11 [W4] Deliver dashboards + alerts (per-hop latency, error classification, drop/gap) and the consolidated G4-OBS acceptance bundle with independent-review sign-off; declare G4-OBS PASS only when OBS-1..OBS-10 are each accepted, OBS-9 shows a continuous trace for every synthetic task, and OBS-10 is clean. Evidence `EV-OBS-11`.
+
 ## 9. Wave 4 — Capacity Tiers and Operational Readiness
+
+> Entry gate: G4-OBS (OBS-1..OBS-11) PASS is mandatory before 9.1 runs (D-V3-17).
 
 - [ ] 9.1 [Codex 4] Run and report the approved 20-task model/stream/tool profile with latency, errors, queue, selection fairness, CPU, memory, sockets, retries and fallback.
 - [ ] 9.2 [Codex 1] Enable the 20-task tier only if its acceptance thresholds pass and admission/overload/cancellation counters reconcile.
@@ -109,7 +131,7 @@
 - [ ] 10.1 [Codex 1] Enable gateway-required mode by default for new tasks after protocol, security, failure and launch-capacity gates pass.
 - [ ] 10.2 [Codex 4] Observe controlled/default development cohorts for the approved period and confirm no direct-provider traffic, dual router ownership or secret-policy violation; do not claim production readiness.
 - [ ] 10.3 [Codex 1] Drain or stop legacy tasks and remove the temporary legacy execution flag after rollback no longer requires it.
-- [ ] 10.4 [Codex 1] Delete Prodex/L2 startup/facade/profile/filesystem code and remove its build/runtime dependency after signed parity approval.
+- [ ] 10.4 [Codex 1 / W1] Reconcile Prodex/L2 to a default-OFF, mutually-exclusive, operator-gated **cold platform recovery mode** in the final Kanban lane (do NOT delete): keep startup/facade/profile/filesystem code present but disabled by default; guarantee it is never per-request, never automatic, and never simultaneously hot with OmniRoute; wire it to the platform recovery-mode state machine (AB-REQ-41) at the single runtime-authority select point. Deletion is explicitly out of scope per D-V3-16.
 - [ ] 10.5 [Codex 1] Delete legacy Go rotation state/retry/account-selection code and provider-auth home preparation after zero-use evidence.
 - [ ] 10.6 [Codex 3] Delete obsolete provider credential copy/restore implementations and direct NIM/provider-key paths; retain only credentialless state isolation.
 - [ ] 10.7 [Codex 4] Reconcile documentation, deployment, threat model, runbooks and evidence after removal and prove rollback uses only accepted Agent Brain/OmniRoute versions.

@@ -36,3 +36,24 @@ until Codex1 finishes G3 wiring and development isolation evidence.
 - ALLOW/TRUSTED (applied last): ANTHROPIC_BASE_URL=OmniRoute root, ANTHROPIC_AUTH_TOKEN=OmniRoute key, ANTHROPIC_BASE_URL/Claude markers controlados, OmniRoute provider p/ Codex.
 ## Headers de correlação
 - X-Session-Id, X-Request-Id, task/session/request IDs (Brain cria); OmniRoute retorna request ID + actual model/route + pseudonymous account + selection reason + retries/fallback + quota/circuit safe.
+
+## Correlação E2E de 8 hops (Wave A, D-V3-17 / AB-REQ-39/40)
+Schema versionado metadata-only; `secrets_present=false`; sem prompts/tool payloads/repo content/reasoning/secrets/cookies/account emails/connection strings.
+
+| Hop | Span | IDs (join keys) | Campos metadata-only | Owner |
+|---|---|---|---|---|
+| 1 ingress API | `ingress` | `request_id`→`task_id` | método/rota, principal pseudônimo, status, latência | W6 |
+| 2 DB queue | `queue` | `queue_msg_id`↔`task_id` | enqueue/dequeue ts, depth, wait ms | W7 |
+| 3 daemon admission | `admission` | `task_id`,`session_id`,`launch_id` | decisão admissão, readiness, CLIKind/RouteModel labels, fail-closed class | W1 |
+| 4 CLI process | `cli` | `launch_id`,`proc_id` | launch/exit, exit code, cancel, argv redigido estruturalmente | W3 |
+| 5 OmniRoute/provider | `route` | `request_id`↔`omni_request_id` | route/model real, account/connection pseudônimo, selection reason, retries/fallback, quota/circuit, usage safe | W2 |
+| 6 terminal persistence | `persist` | `task_id`,`result_id` | persist latency, byte/token counts, status | W7 |
+| 7 WS/UI delivery | `delivery` | `session_id`,`delivery_id` | delivery latency, backpressure/drops, reconnects | W6 |
+| 8 trace assembly | `trace` | todos acima | gap/orphan detection, hop-completeness, um trace por task | W5 |
+
+Carriers: headers/metadata internos (alinhados a task 4.6 + AB-REQ-21). Lib: `observability/e2e` (W5), chamada pelos donos de cada hop. Gate: G4-OBS bloqueante (OBS-1..OBS-11).
+
+## Interface: máquina de estados de recovery da plataforma (Wave A, D-V3-16 / AB-REQ-41)
+- Estados: `NORMAL` (router_owner=omniroute; Prodex OFF), `DEGRADED` (OmniRoute not ready → fail-closed queue/reject; router=none; NUNCA auto-promove Prodex), `RECOVERY` (router_owner=rust_l2 Prodex cold; OmniRoute quiesced; mutuamente exclusivo).
+- Transições (só em session boundary, nunca mid-flight): `NORMAL→DEGRADED` em OmniRoute-not-ready; `DEGRADED→RECOVERY` só via `ENABLE_RECOVERY` explícito+autorizado, exige OmniRoute quiesced; `RECOVERY→NORMAL` via `RESTORE`, exige Prodex drained.
+- Invariante: exatamente um router owner por sessão; default OFF; sem mutação de credencial nas transições (PD-08); cada transição emite evento OBS metadata. Wire no único select `health.go:177-184`. Owner: W1.

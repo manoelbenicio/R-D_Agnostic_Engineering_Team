@@ -38,10 +38,14 @@
 | central daemon wiring (config/aliases through entrypoints) | 04,06,22 | ABR; ORR; CLE | 7.1-7.9 | G3 | Codex1 | EV-G3-WIRE | PLANNED |
 | first vertical slice (one approved route) | 31,04 | BCO(first slice) | 7.10 | G3 | Codex1 | EV-G3-07 | PLANNED |
 | protocol/failure acceptance | 33 | BCO(protocol gate) | 8.1-8.7 | G4 | Codex2/3/4 | EV-G4-08 | PLANNED |
-| capacity tiers 20/50/100 run | 23,28,29 | PAC; checklist §9 | 9.1-9.6 | G4/G7 | Codex4/1 | EV-G4-CAP | PLANNED |
+| E2E correlation schema + trace assembly | 39 | EOO(correlation/trace) | OBS-1,OBS-9 | G4-OBS | W5 | EV-OBS-01/09 | PLANNED (gate) |
+| per-hop spans (ingress/queue/daemon/CLI/route/persist/WS) | 39,40 | EOO(per-hop spans); ORR(correlation); CLE(metadata-only) | OBS-2..OBS-8 | G4-OBS | W6/W7/W1/W3/W2 | EV-OBS-02..08 | PLANNED (gate) |
+| structural leak-scan + dashboards + G4-OBS acceptance | 40 | EOO(leak-clean/dashboards/stop-gate) | OBS-10,OBS-11 | G4-OBS | W5/W4 | EV-OBS-10/11 | PLANNED (blocking gate before §9/§10) |
+| platform recovery-mode state machine (Prodex retain, default-OFF) | 41 | BCO(cold recovery mode) | 10.4 (retain-as-recovery),7.8 | G6 | Codex1/W1 | EV-REC-MODE | PLANNED |
+| capacity tiers 20/50/100 run | 23,28,29 | PAC; checklist §9 | 9.1-9.6 | G4/G7 | Codex4/1 | EV-G4-CAP | PLANNED (após G4-OBS PASS) |
 | ops sign-off | 38 | BCO(handover) | 9.7 | G4/G7 | Codex4 | EV-G4-07 | PLANNED |
 | default cutover + drain | 35,37 | BCO(legacy removal) | 10.1-10.3 | G6 | Codex1/4 | EV-G6-01 | PLANNED |
-| delete Prodex/L2/Go rotation/creds | 37 | BCO(removal gate) | 10.4-10.6 | G6 | Codex1/3 | EV-G6-03 | PLANNED |
+| Prodex→recovery quiesce (retain); delete Go rotation/creds only | 37,41 | BCO(removal gate/cold recovery mode) | 10.4 (retain-as-recovery),10.5,10.6 | G6 | Codex1/3 | EV-REC-MODE/EV-G6-03 | PLANNED |
 | reconcile docs/rollback after removal | 36 | BCO(safe rollback) | 10.7 | G6 | Codex4 | EV-G6-02 | PLANNED |
 | inventory remaining Multica/Prodex names | — | BCO(debrand) | 11.1 | G8 | Codex1 | EV-G8-01 | PLANNED |
 | final names (binary/module/config) | — | BCO; design §1 | 11.2-11.6 | G8 | Codex1/2/3/4 | EV-G8-02 | PLANNED |
@@ -67,7 +71,7 @@
 
 ## C. Auditoria de órfãos (G0)
 
-- [x] Requisitos specs ↔ AB-REQs: 38 AB-REQs cobrem todos os 5 specs + paridade.
+- [x] Requisitos specs ↔ AB-REQs: 41 AB-REQs cobrem os 6 specs (incl. `end-to-end-observability`) + paridade.
 - [x] Tasks OpenSpec (85) ↔ fases GSD: mapa criado em phases/G0../PLAN.md.*;
 - [x] Worktree: PD-01 resolved by preservation and exclusive Codex1 ownership.
 - [x] G2 phase-end orphan reconciliation completed during TL handover; G3 links remain planned.

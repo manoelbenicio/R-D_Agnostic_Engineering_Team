@@ -63,3 +63,10 @@ For routes where credit/reset consumption is supported and required for Prodex p
 - **WHEN** the selected account is exhausted but another eligible account has quota
 - **THEN** OmniRoute rotates to the eligible account and does not consume reset credit
 
+### Requirement: End-to-end request correlation
+Each CLI adapter SHALL propagate the platform correlation identifiers (`request_id`, `task_id`, `session_id`, `launch_id`, `proc_id`) on every model request and SHALL surface OmniRoute's `omni_request_id`, actual route/model and pseudonymous account/connection so the request can be joined into a single end-to-end trace. Correlation data MUST be metadata only and MUST NOT carry prompts, tool payloads, repository content, reasoning, secrets, cookies, or account emails.
+
+#### Scenario: Request is traced across hops
+- **WHEN** a task's model request flows from the daemon through the CLI adapter to OmniRoute and back
+- **THEN** the adapter emits the inbound correlation IDs and the returned `omni_request_id`/route/model/pseudonymous-connection so downstream observability can assemble one continuous trace without any request content
+

@@ -72,8 +72,16 @@
 | AB-REQ-34 | Environment-specific endpoint: host/WSL usa `127.0.0.1:20128`; containeriza usa DNS/gateway host | BCO | Host daemon launches Codex | 4.1, 6.2 | G2B/G2D | Codex2/4 | EV-G2D-02 |
 | AB-REQ-35 | Atomic staged cutover: readiness→protocol→model→capacity→default-on→drain→delete com gates/triggers | BCO | Canary error threshold is exceeded | 10.x, 6.7 | G6 | Codex1/4 | EV-G6-01 |
 | AB-REQ-36 | Safe rollback: restaura Agent Brain/OmniRoute aceito, **nunca** provider keys/dual router | BCO | OmniRoute release must be rolled back | 6.6, 10.7 | G6 | Codex4 | EV-G6-02 |
-| AB-REQ-37 | Legacy removal gate: Prodex/L2/Go rotation/credential homes/aliases só após zero-use e rollback independente | BCO | Compatibility alias is still in use | 10.4, 10.5, 10.6, 11.x | G6 | Codex1/3 | EV-G6-03 |
+| AB-REQ-37 | Legacy removal gate: Go rotation/credential homes/aliases só após zero-use e rollback independente. **Prodex/L2 EXENTO de deleção — retido como cold recovery mode default-OFF (D-V3-16)** | BCO | Compatibility alias is still in use | 10.4 (retain-as-recovery), 10.5, 10.6, 11.x | G6 | Codex1/3 | EV-G6-03 |
 | AB-REQ-38 | Operational handover: owners nomeados, dashboards/alerts, backup/restore, rotation, upgrade/rollback, escalo | BCO | Provider-wide throttling occurs | 6.3, 6.4, 6.6, 9.7 | G2D/G4 | Codex4 | EV-G4-07 |
+
+## AB-REQs — Observabilidade E2E & recovery mode (EOO/BCO)
+
+| ID | Requisito | Origem | Spec scenario | OpenSpec tasks | Fase | Owner | Evidence |
+|---|---|---|---|---|---|---|---|
+| AB-REQ-39 | Correlação E2E metadata-only nos 8 hops (request_id/queue_msg_id/task_id/session_id/launch_id/proc_id/omni_request_id/result_id/delivery_id); schema versionado; secrets_present=false | EOO + ORR | Eight-hop correlation schema / Request is traced across hops | OBS-1..OBS-9 | G4-OBS | W5/W6/W7/W1/W2/W3 | EV-OBS-01..09 |
+| AB-REQ-40 | Spans per-hop metadata-only + redação estrutural de argv; scan estrutural leak-clean; dashboards/alerts; gate G4-OBS bloqueante antes de capacidade/cutover | EOO + CLE | Per-hop metadata-only spans / Structural leakage-clean acceptance / Blocking G4-OBS stop-gate | OBS-2..OBS-11 | G4-OBS | W4/W5 | EV-OBS-02..11 |
+| AB-REQ-41 | Máquina de estados de recovery da plataforma: NORMAL/DEGRADED/RECOVERY; Prodex default-OFF, mutuamente exclusivo, operator-gated; um único router owner; transições só em session boundary; DEGRADED fail-closed (nunca auto-promove Prodex) | BCO | Cold platform recovery mode / OmniRoute is unavailable and an operator considers recovery | 10.4 (retain-as-recovery), 7.8 | G6 | Codex1/W1 | EV-REC-MODE |
 
 ## Notas de reconciliação
 

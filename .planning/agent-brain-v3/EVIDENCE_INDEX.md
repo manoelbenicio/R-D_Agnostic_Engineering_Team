@@ -90,7 +90,7 @@ Partial rows are synthetic package results, not live/provider acceptance claims.
 EV-G5-SC (SC01-SC10 or waiver); EV-G5-RR (reset/redeem); EV-G5-PAR (matriz P01-P34 assinada).
 
 ## G6 — Cutover/removal
-EV-G6-01 default cutover+drain; EV-G6-02 rollback proven; EV-G6-03 Prodex/L2/Go rotation/cred homes deleted after zero-use.
+EV-G6-01 default cutover+drain; EV-G6-02 rollback proven; EV-G6-03 legacy Go rotation/cred homes deleted after zero-use; **Prodex/L2 quiesced to cold recovery mode default-OFF (retain, not deleted — D-V3-16; see EV-REC-MODE)**.
 
 ## G7 — Tiers 50/100
 EV-G7-50; EV-G7-100; EV-G7-state (single-node vs compartilhado).
@@ -146,3 +146,24 @@ native adapter acceptance, tier 20 enablement, and tiers 50/100 remain gated.
 Sibling OpenSpec disk recount (2026-07-18, post-adjudication): **chat-orchestration-standard 4/10** (0.2, 0.3, accepted 1.1, accepted 1.4; **1.2/1.3 self-checked by Gemini then REOPENED — process exception, unaccepted**); **agent-credential-isolation 4/21**; **native-runtimes-onboarding 9/17** (tasks 1.5/1.6 REOPENED; task 1.7 auth backend ACCEPTED+CHECKED). build-omniroute-agent-brain now **51/85** (task 8.2 REOPENED). This indexing changed no checkbox; a later independent adjudication reopened 8.2/1.5/1.6. 0.1/0.7/8.1 OPEN; 9.1 STOPPED; PD-01/PD-08 preserved; no production/cutover claim.
 
 Evidence-index gap — agent-credential-isolation **4.2** — **CLOSED 2026-07-18 by EV-CREDISO-4.2** (TL independently reproduced rotation ×20 + daemon ×20 + race). Original gap: (`internal/daemon/daemon.go:4278` handles `rotation.ErrNoAccountAvailable`; `daemon.go:4190-4196` `NewProactiveDetector().ShouldRotate`; `internal/metrics/credential_metrics.go` `accounts_available`; `observability/schema.go:205` `omniroute_selection_seconds`), but **no dedicated acceptance test/artifact is indexed** for the selection step (EV-CREDISO-4.1 covers detection only). Gap noted; **no acceptance invented**.
+
+## G4-OBS — End-to-end observability stop-gate (D-V3-17; ADDED Wave A 2026-07-19)
+| ID | AB-REQ/acceptance | Status | Local (planned) | Descritor |
+|---|---|---|---|---|
+| EV-OBS-01 | OBS-1 / AB-REQ-39 | PLANNED | `observability/e2e/**` | Correlation ID schema + propagation contract (8 IDs, join keys, carriers, `contract_version`, `secrets_present=false`) |
+| EV-OBS-02 | OBS-2 / AB-REQ-39,40 | PLANNED | ingress middleware span | Hop 1 ingress-API span (method/route, pseudonymous principal, status, latency); `request_id→task_id`; no bodies |
+| EV-OBS-03 | OBS-3 / AB-REQ-39,40 | PLANNED | queue repo span | Hop 2 DB-queue span (enqueue/dequeue ts, depth, wait); `queue_msg_id↔task_id`; no payload |
+| EV-OBS-04 | OBS-4 / AB-REQ-39,40 | PLANNED | daemon admission span | Hop 3 admission/lifecycle span (decision, readiness, CLIKind/RouteModel labels, fail-closed class) |
+| EV-OBS-05 | OBS-5 / AB-REQ-40 | PLANNED | CLI process span | Hop 4 CLI-process span (launch/exit, exit code, cancel, structural argv redaction — never values) |
+| EV-OBS-06 | OBS-6 / AB-REQ-39,40 | PLANNED | gateway telemetry span | Hop 5 OmniRoute/provider span (route/model, pseudonymous account/connection, retries/fallback, quota/circuit, safe usage); extends task 4.6 |
+| EV-OBS-07 | OBS-7 / AB-REQ-39,40 | PLANNED | persistence repo span | Hop 6 terminal-persistence span (persist latency, byte/token counts, terminal status); no content |
+| EV-OBS-08 | OBS-8 / AB-REQ-39,40 | PLANNED | WS transport span | Hop 7 WS/UI-delivery span (delivery latency, backpressure/drops, reconnects); no payload |
+| EV-OBS-09 | OBS-9 / AB-REQ-39 | PLANNED | trace assembler | Hop 8 continuous trace assembly; join-integrity; gap/orphan detection; one trace per synthetic task |
+| EV-OBS-10 | OBS-10 / AB-REQ-40 | PLANNED | leak-scan harness | Structural (not pattern-only) secret/content leak scan across all spans/labels/logs = clean; any leak STOPs |
+| EV-OBS-11 | OBS-11 / AB-REQ-40 | PLANNED | dashboards + acceptance bundle | Per-hop latency/error/drop/gap dashboards+alerts; consolidated G4-OBS acceptance + independent-review sign-off |
+| EV-ZERO-OVERLAP | D-V3-18 / 8-lane topology | PLANNED | Codex#56#A verification | Glob-intersection proof: every owned path matches exactly one lane (W1–W8); no concurrent hotspot edits |
+| EV-REC-MODE | AB-REQ-41 / task 10.4 | PLANNED | recovery-mode state machine | Platform recovery-mode NORMAL/DEGRADED/RECOVERY; Prodex default-OFF, mutually exclusive, operator-gated; single router owner; session-boundary transitions; DEGRADED fail-closed (no auto-Prodex) |
+
+> Wave A note (2026-07-19): all G4-OBS evidence is PLANNED — the OBS-* tasks are newly ADDED and
+> OPEN. No OBS evidence is produced yet; no completion is claimed; build-omniroute count stays 51/85.
+> G4-OBS is a BLOCKING gate before capacity (§9) and cutover (§10) per D-V3-17.

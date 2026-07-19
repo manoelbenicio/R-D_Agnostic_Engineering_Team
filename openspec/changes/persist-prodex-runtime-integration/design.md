@@ -1,3 +1,10 @@
+> **DISPOSITION (Wave A, D-V3-16): default-OFF cold platform recovery mode.** The durable
+> startup, required-mode enforcement, and rollback contract described below apply ONLY when an
+> operator explicitly enables recovery mode. The target-path default is OmniRoute-primary with
+> Prodex OFF and mutually exclusive; recovery mode is gated by the platform recovery-mode state
+> machine (AB-REQ-41) and preserves the single-router invariant. This change is retained (not
+> deleted) and relocated to the final Kanban lane.
+
 ## Context
 
 The approved architecture has two distinct Rust executables:

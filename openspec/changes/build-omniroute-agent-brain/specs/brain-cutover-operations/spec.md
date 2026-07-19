@@ -50,7 +50,7 @@ Rollback SHALL restore the last accepted Agent Brain/OmniRoute configuration and
 - **THEN** deployment selects the prior accepted OmniRoute version/config and holds new tasks as necessary rather than reactivating Prodex or provider keys in Agent Brain
 
 ### Requirement: Legacy removal gate
-Prodex/L2 code, legacy Go rotation, credential account homes, provider-auth copying, and Multica-branded compatibility aliases SHALL be removed only after usage telemetry confirms no active consumer and rollback no longer depends on them.
+Legacy Go rotation, credential account homes, provider-auth copying, and Multica-branded compatibility aliases SHALL be removed only after usage telemetry confirms no active consumer and rollback no longer depends on them. Prodex/L2 code is EXEMPT from deletion: it is retained as a default-OFF, mutually-exclusive, operator-gated cold platform recovery mode (see "Cold platform recovery mode") rather than removed.
 
 #### Scenario: Compatibility alias is still in use
 - **WHEN** telemetry identifies an active legacy API, environment, CLI, or stored-config consumer
@@ -62,3 +62,17 @@ Production cutover SHALL include named owners, dashboards/alerts, account and ro
 #### Scenario: Provider-wide throttling occurs
 - **WHEN** OmniRoute detects a provider-global 429 incident
 - **THEN** operators can identify affected routes, circuit state, fallback policy, queued workload, safe retry time, and escalation owner without inspecting secrets or raw prompts
+
+### Requirement: Cold platform recovery mode
+Prodex/L2 SHALL be retained only as a default-OFF, mutually-exclusive, operator-gated cold platform recovery mode in the final Kanban lane. It MUST NOT be a per-request router, MUST NOT be an automatic fallback, and MUST NOT be hot simultaneously with OmniRoute. Enabling recovery mode SHALL require OmniRoute to be quiesced first; restoring OmniRoute SHALL require Prodex to be drained first; transitions SHALL occur only at session boundaries. At all times exactly one hot router owns a session.
+
+#### Scenario: OmniRoute is unavailable and an operator considers recovery
+- **WHEN** OmniRoute is not ready
+- **THEN** the platform enters a fail-closed DEGRADED state that queues or rejects new model work and NEVER auto-promotes Prodex; Prodex becomes hot only through an explicit, authorized operator transition that first quiesces OmniRoute, preserving a single router owner
+
+### Requirement: End-to-end observability gate
+Before any capacity tier or default cutover, the deployment SHALL pass a blocking end-to-end observability gate (G4-OBS) that produces one metadata-only correlated trace across all eight request hops and a structural leak-clean acceptance. A missing hop, a broken trace join, or any detected secret/content leakage SHALL block capacity and cutover.
+
+#### Scenario: A capacity tier is proposed before observability passes
+- **WHEN** a 20/50/100-task tier or default gateway-required cutover is proposed while G4-OBS has not passed
+- **THEN** the stage is blocked until OBS-1..OBS-11 are accepted with a continuous synthetic trace and a clean structural leak scan

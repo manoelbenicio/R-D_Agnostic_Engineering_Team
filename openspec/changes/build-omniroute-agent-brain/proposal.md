@@ -11,8 +11,9 @@ The current daemon mixes Multica-specific branding, provider credential preparat
 - Support configurable capacity tiers of at least 20, 50, and 100 simultaneous tasks; strict round-robin selection policy is independent from concurrency limits.
 - Extract reusable orchestration behavior from the current daemon into new brand-neutral packages and commands, retaining a temporary compatibility adapter while consumers migrate.
 - Add health gating, telemetry, secure secret injection, deployment, rollback, and migration controls for the host daemon and containerized OmniRoute topology.
+- Add a mandatory, blocking end-to-end metadata-only observability stop-gate (G4-OBS, OBS-1..OBS-11) that must pass before any capacity tier or cutover: a single correlated trace across all eight hops (ingress API → DB queue → daemon → CLI → OmniRoute/provider → terminal persistence → WS/UI delivery) with per-hop redaction, dashboards/alerts, continuous synthetic trace assembly and a leak-clean acceptance. (Owner decision D-V3-17.)
 - Establish dual OpenSpec/GSD governance with bidirectional requirement, component, interface, task, owner, evidence, and removal traceability before implementation begins.
-- Supersede the planned Prodex runtime integration: Prodex and its Rust sidecar are not part of the target request path.
+- Supersede Prodex **as a request-path router**: Prodex is never a per-request or automatic hot fallback and is never simultaneously hot with OmniRoute. Prodex and its Rust sidecar are **retained** — not deleted — solely as a default-OFF, mutually-exclusive, operator-gated **cold platform recovery mode** relocated to the final Kanban lane. (Owner decision D-V3-16.)
 - **BREAKING** Remove provider-account assignment and native provider-key injection from the new Agent Brain execution contract.
 - **BREAKING** Deprecate Multica-branded daemon configuration, environment variables, and APIs after a bounded compatibility period.
 
@@ -25,10 +26,11 @@ The current daemon mixes Multica-specific branding, provider credential preparat
 - `credentialless-agent-execution`: Single-secret injection, provider-key exclusion, task isolation, and secret-safe observability.
 - `parallel-agent-capacity`: Capacity tiers, admission control, concurrency behavior, failure isolation, and measurable performance targets.
 - `brain-cutover-operations`: Deployment, migration, compatibility, rollback, and removal of Multica/Prodex runtime dependencies.
+- `end-to-end-observability`: Mandatory blocking G4-OBS stop-gate — full eight-hop metadata-only correlation, per-hop redaction, continuous synthetic trace assembly, leak-clean acceptance, and dashboards/alerts across the whole request path.
 
 ### Modified Capabilities
 
-No mainline OpenSpec capabilities exist yet. The historical change artifacts remain evidence inputs; `persist-prodex-runtime-integration` is superseded rather than promoted into the new target design.
+No mainline OpenSpec capabilities exist yet. The historical change artifacts remain evidence inputs; `persist-prodex-runtime-integration` is **deferred and re-scoped to cold-recovery-only** (default-OFF, mutually-exclusive, operator-gated) rather than promoted into the target request path or deleted. See D-V3-16.
 
 ## Impact
 

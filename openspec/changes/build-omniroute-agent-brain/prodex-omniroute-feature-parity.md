@@ -91,12 +91,17 @@ These Prodex-adjacent responsibilities are not valid reasons to put provider cre
 
 ## Features requiring explicit retirement approval
 
+> Note (D-V3-16, 2026-07-19): the Prodex/RPP L2 **sidecar contract and binary (R04)** is
+> **RETAINED** as a default-OFF, mutually-exclusive cold recovery mode — not retired. R01–R03 and
+> R05 below are distinct sub-features/legacy paths not required by the cold recovery router and may
+> still be retired by decision; none of them makes Prodex a hot or per-request router.
+
 | ID | Feature | Default disposition | Required decision |
 |---|---|---|---|
 | R01 | Prodex Caveman/plugin hook assets | RETIRE BY DECISION | Remain disabled because arbitrary hooks create an RCE boundary; any future plugin system needs a separate sandboxed design |
 | R02 | Prodex-owned terminal rendering | RETIRE BY DECISION | Coding-agent CLIs and the product UI own presentation; confirm no required operator workflow is lost |
 | R03 | Prodex-specific file/SQLite state | RETIRE BY DECISION | OmniRoute’s supported state backend becomes authoritative; no shared Prodex state survives |
-| R04 | Prodex/RPP L2 sidecar contract and binary | RETIRE BY DECISION after parity | Remove only after OmniRoute contract, evidence ingestion and rollback are operational |
+| R04 | Prodex/RPP L2 sidecar contract and binary | RETAIN-AS-RECOVERY (D-V3-16) | Retained as a default-OFF, mutually-exclusive cold recovery mode after parity; taken off the hot path but NOT deleted; wired to the recovery-mode state machine (AB-REQ-41) |
 | R05 | Legacy Go credential rotation/provider homes | RETIRE BY DECISION after cutover | Delete after gateway-required mode proves no direct-provider fallback and legacy tasks are drained |
 
 ## Crate/source coverage cross-check

@@ -67,9 +67,11 @@ Alternative considered: retain the existing `provider` enum as the primary key. 
 
 Agent Brain sends model intent and correlation only. OmniRoute owns provider credentials, account pools, rotation, continuation affinity, token refresh, quota/subscription state, 429/circuit behavior, bounded pre-commit retry/fallback, protocol translation, Smart Context/token saving, reset/redeem where retained, and hot-path evidence.
 
-Legacy Go rotation, credential account selection, provider-home auth copying and Prodex/L2 routing are disabled for gateway-required tasks and deleted only after drain/parity gates.
+Legacy Go rotation, credential account selection and provider-home auth copying are disabled for gateway-required tasks and deleted only after drain/parity gates. Prodex/L2 routing is disabled for gateway-required tasks and quiesced to a default-OFF, mutually-exclusive cold recovery mode (retained, not deleted — D-V3-16).
 
 Alternative considered: keep Prodex or Go rotation as fallback. Rejected because dual ownership can select different accounts, reintroduce credential overwrites, duplicate retry, and make failures non-deterministic.
+
+**Addendum (Wave A, 2026-07-19, D-V3-16) — Prodex cold recovery mode.** Prodex is *not* deleted and is *not* an automatic or per-request fallback. It is retained only as a default-OFF, mutually-exclusive, operator-gated **cold platform recovery mode** in the final Kanban lane. There is always exactly one hot router owner: enabling recovery mode requires OmniRoute to be quiesced first, and restoring OmniRoute requires Prodex to be drained first. Transitions occur only at session boundaries, never mid-flight, preserving the `rpp.l2.v1` single-router invariant. OmniRoute unavailability produces a fail-closed DEGRADED state (queue/reject), never an auto-promotion of Prodex. See the platform recovery-mode state machine (AB-REQ-41) and `docs/contract/single-router-invariant.md` recovery-mode addendum.
 
 ### 4. Use protocol-specific adapters
 
@@ -134,6 +136,8 @@ Agent Brain creates task/session/request IDs. Adapters pass them through accepte
 
 Readiness gates required model/protocol capability. Health and metrics distinguish authentication, no eligible account, quota, 429/circuit, upstream failures, protocol errors, cancellation and local overload.
 
+**Addendum (Wave A, 2026-07-19, D-V3-17) — full eight-hop E2E correlation and the G4-OBS stop-gate.** The correlation above is extended from Brain↔OmniRoute to a single metadata-only trace spanning eight hops: (1) ingress control API `request_id`; (2) DB queue `queue_msg_id`; (3) daemon admission/lifecycle `task_id`/`session_id`/`launch_id`; (4) CLI process `proc_id`; (5) OmniRoute/provider `omni_request_id` + actual route/model + pseudonymous account/connection; (6) terminal persistence `result_id`; (7) WS/UI delivery `delivery_id`; (8) assembled trace. Every hop carries the join keys and emits labels/counters only — no bodies, prompts, tool payloads, repository content, reasoning, cookies, keys, account emails or connection strings — under a versioned schema with the `secrets_present=false` invariant. A blocking **G4-OBS** stop-gate (tasks OBS-1..OBS-11, capability `end-to-end-observability`) requires a continuous synthetic trace per task and a structural leak-clean scan, and must pass before any capacity tier (§9) or cutover (§10).
+
 ### 11. Four-agent implementation topology
 
 Implementation proceeds in dependency-aware waves. Parallel work reduces effort substantially, but the shared daemon integration and live acceptance remain serial critical paths.
@@ -146,6 +150,21 @@ Implementation proceeds in dependency-aware waves. Parallel work reduces effort 
 | Codex 4 — Operations/parity | Deployment/secret handling, dashboards/alerts, capacity/failure harness, migration/rollback and evidence matrices | Deploy/operations/observability/evidence files and tools | Daemon, gateway and runtime adapter implementation |
 
 Wave 0 (30–45 minutes) freezes interfaces, file ownership and acceptance IDs. Wave 1 runs the four streams in parallel. Wave 2 lets the lead integrator wire completed modules through the sole shared hotspot. Wave 3 performs provider/protocol canaries and 20-task acceptance; higher tiers and full parity follow based on OmniRoute evidence. No agent edits the same central file concurrently.
+
+**Addendum (Wave A, 2026-07-19, D-V3-18) — eight-lane zero-overlap topology.** For the remaining program (G4 acceptance, G4-OBS, capacity, recovery-mode disposition, sibling closure) the four streams are expanded to eight lanes with pairwise-disjoint ownership. Owner/co-lead sit above the lanes: Kiro/Opus-4.8 = planning/adjudication; Codex#56#A = transport/independent verification (no product edits).
+
+| Lane | Role | Exclusive ownership (globs) | Must-not-touch |
+|---|---|---|---|
+| W1 | Lead Integrator (central wiring, recovery-mode state machine, OBS-4) | `internal/daemon/{daemon,config,health,cmd_daemon}.go`, `go.mod`, `execenv/**`, `pkg/agent/models.go`, `prodex*.go`, `l2_runtime.go`, `brain/**` | any other lane's new package |
+| W2 | OmniRoute Gateway (8.1/8.4/8.5/8.6/8.7 gateway side, OBS-6) | `internal/daemon/gateway/**` | central hotspots, other packages |
+| W3 | Runtime/CLI Security (8.2/8.3, child-env isolation, OBS-5; 5.6–5.8 stay fail-closed) | `internal/daemon/runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` (coordinated) | central hotspots, gateway |
+| W4 | Ops/Capacity/Evidence (8.8, 9.x harness, OBS-11 dashboards/bundle) | `internal/daemon/deploy/**`, `internal/daemon/observability/dashboards/**`, harness specs, runbooks, `EVIDENCE_INDEX.md` | daemon/gateway/runtime impl |
+| W5 | E2E Correlation library + leak-scan (OBS-1/OBS-9/OBS-10) | `internal/daemon/observability/e2e/**` (new lib) | callers' own files |
+| W6 | Ingress + WS/UI delivery instrumentation (OBS-2, OBS-8) | frozen HTTP ingress middleware file(s) + WS transport file(s) | `squad_briefing*.go`, daemon hotspots |
+| W7 | Queue + terminal-persistence instrumentation (OBS-3, OBS-7) | frozen task-queue repo file(s) + terminal-result store file(s) | daemon hotspots, handler |
+| W8 | Governance + Prodex cold-recovery disposition + sibling closure drafting | OpenSpec change docs, parity/removal drafts, sibling reopened-task evidence | product-code hotspots; GSD authored by Kiro |
+
+Zero-overlap proof: (1) W1–W5 own pairwise-disjoint package globs (∩ = ∅ by construction); (2) cross-cutting spans are added by each file's owner **calling** the W5 `observability/e2e` library, never co-editing it; (3) W6/W7 own specific frozen files removed from every other glob; (4) any file two lanes would need is escalated to W1 and serialized across waves, never concurrent; (5) before dispatch the planning owner publishes the ownership matrix and Codex#56#A runs a glob-intersection check (each path matches exactly one lane) recorded as `EV-ZERO-OVERLAP`.
 
 ### 12. OpenSpec and GSD have separate mandatory roles
 
@@ -180,7 +199,7 @@ The current governance says only Kiro/Principal authors `.planning/`. Kiro must 
 7. Run failure cases for expiry, revoked auth, quota, 429 scopes, 5xx, timeout, cancellation, broken stream, account changes and restart.
 8. Run the 20-task profile; then 50 and 100. Enable only the highest accepted tier and preserve reports.
 9. Make gateway-required mode default for new tasks; drain legacy tasks; monitor direct-route/compatibility usage and parity evidence.
-10. Remove Prodex/L2, legacy Go rotation, credential-home auth copying and provider-key configuration after the removal gates pass.
+10. Quiesce Prodex/L2 to a default-OFF, mutually-exclusive cold recovery mode (retain, do NOT delete — D-V3-16); remove legacy Go rotation, credential-home auth copying and provider-key configuration after the removal gates pass.
 11. Migrate control API, CLI, configuration, paths, metrics and UI to neutral branding; remove compatibility aliases only when usage is zero and rollback no longer depends on them.
 
 Rollback never restores provider keys or dual routing in Agent Brain. It selects the previous accepted Agent Brain/OmniRoute release/config, reduces or stops new admission, and drains/stops affected tasks according to policy.

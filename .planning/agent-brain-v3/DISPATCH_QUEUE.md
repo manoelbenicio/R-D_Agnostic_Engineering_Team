@@ -187,3 +187,79 @@ Update OpenSpec tasks 7.1–7.10 only when their acceptance is actually met. Pro
 
 Dispatch status: DISPATCHED ONCE to `w3:pD` at 2026-07-18T02:00:41Z after Kiro/Opus-4.8
 returned APPROVE. Do not replay. Next action is status-only monitoring and evidence validation.
+
+---
+
+# WAVE B — Parallel foundation (READY; NOT DISPATCHED — awaiting owner Wave B authorization)
+
+> Authored by Kiro/Opus-4.8 (planning owner) during the Wave A governance freeze on branch
+> `planning/agent-brain-observability-freeze` (recovery SHA `da42282`). Wave A authorized
+> planning/governance ONLY. These prompts are **READY** verbatim strings for the 8-lane topology
+> (D-V3-18) but MUST NOT be dispatched until the owner authorizes Wave B implementation. Transport
+> by Codex#56#A (verbatim, no product edits). Standing STOPs apply to every lane: PD-08 (no
+> credential/auth read/copy/rewrite/rotation/mutation; never print secret values); no production /
+> canary / soak / cutover; no tiers 50/100; no dual router (R5); preserve the PD-01 baseline (no
+> reset/stash/revert/discard); Prodex stays default-OFF recovery-only (D-V3-16, never hot); all
+> observability is metadata-only with structural argv redaction (AB-REQ-40); check in/out in
+> `AGENT_LEDGER.md` with exact files locked; producer ≠ reviewer ≠ adjudicator. Wiring into the
+> central daemon path is W1-only (Wave C). Preserve build-omniroute count 51/85 — OBS-* are new/OPEN.
+
+## Wave B.0 — Freeze (TL + Codex#56#A, before any lane edits)
+- TL freezes the exact file paths W6 owns (ingress HTTP middleware + WS transport) and W7 owns
+  (task-queue repo + terminal-result store), publishes them into `FILE_OWNERSHIP.md`, and removes
+  them from every other lane glob.
+- Codex#56#A runs the glob-intersection check (each owned path matches exactly one lane) and records
+  `EV-ZERO-OVERLAP`. No lane starts until `EV-ZERO-OVERLAP` is recorded.
+
+## Entry W1 — Lead Integrator (pane `codex1-brain`)
+**Task-IDs:** OBS-4 (span hooks in central path, calling W5 lib); recovery-mode state-machine design stub (AB-REQ-41, default-OFF, not enabled); prep for Wave C wiring. **Evidence:** EV-OBS-04, EV-REC-MODE (design only).
+```
+You are W1 — Lead Integrator for Agent Brain v3, sole editor of the central daemon hotspots. Authorization: Wave B foundation only; no cutover, no tier 50/100, no production. Do NOT wire the new execution path yet (central wiring is Wave C). In your exclusive hotspots only (daemon.go, config.go, health.go, cmd_daemon.go, go.mod, execenv/**, pkg/agent/models.go, prodex*.go, l2_runtime.go, brain/**): (1) add the daemon admission/lifecycle observability span (OBS-4) by CALLING the W5 observability/e2e library — emit task_id/session_id/launch_id, admission decision, readiness-gate result, CLIKind/RouteModel labels and fail-closed classification, metadata-only; (2) author the platform recovery-mode state-machine DESIGN and default-OFF scaffolding at the single runtime-authority select point (health.go:177-184) per AB-REQ-41 — states NORMAL/DEGRADED/RECOVERY, Prodex default-OFF, mutually exclusive, operator-gated, single router owner, session-boundary transitions, DEGRADED fail-closed and NEVER auto-promoting Prodex; do NOT enable recovery mode and do NOT make Prodex hot. Preserve the PD-01 baseline (no reset/stash/revert). PD-08 STOP: no credential/auth read/copy/rewrite/rotation; never print secret values. Prodex is retained as default-OFF cold recovery mode only (D-V3-16) — never delete, never hot. Run focused package tests + vet; keep tests passing. Check in/out to AGENT_LEDGER.md with exact files locked. Evidence: EV-OBS-04 (span) and EV-REC-MODE (state-machine design/scaffold only). Never print secrets, keys, tokens, cookies, prompts, repo content, or tool payloads.
+```
+
+## Entry W2 — OmniRoute Gateway (pane `codex2-gateway`)
+**Task-IDs:** 8.1, 8.4, 8.5, 8.6, 8.7 (gateway side); OBS-6. **Files:** `gateway/**`. **Evidence:** EV-G4-01/04/05, EV-OBS-06.
+```
+You are W2 — OmniRoute Gateway for Agent Brain v3. Authorization: Wave B foundation only; no cutover/tiers/production. In gateway/** only (do NOT edit central entrypoints, coordinator, runtimeenv, deploy, observability/e2e): advance the protocol/failure acceptance from the gateway side — 8.1 authenticated models/capabilities + one non-streaming and one streaming completion per approved protocol family; 8.4 strict concurrent round-robin for independent requests + affinity for Responses continuation/prompt-cache/tool turns; 8.5 expired/revoked/quota/401/403/account-scoped 429/provider-global 429/5xx/timeout/malformed handling; 8.6 pre-commit safe retry, no replay after partial output/tool action, dedup, cancellation slot release; 8.7 account add/remove/quarantine/re-entry + OmniRoute restart/config rollback under load. Then implement OBS-6: the OmniRoute/provider span from SAFE telemetry only (extends task 4.6) — actual route/model, pseudonymous account/connection, selection reason, retries/fallback, quota/circuit state, safe usage, joined on request_id↔omni_request_id — by CALLING the W5 observability/e2e library; metadata-only, no content or secrets. Use synthetic/reference credentials only; PD-08 STOP; never make Prodex hot. Run gateway tests + vet. Check in/out to AGENT_LEDGER.md. Evidence: EV-G4-01/04/05 and EV-OBS-06. Never print secrets, keys, tokens, cookies, prompts, repo content, or tool payloads.
+```
+
+## Entry W3 — Runtime/CLI Security (pane `codex3-runtime`)
+**Task-IDs:** 8.2, 8.3 (accepted-path + child-env isolation); OBS-5; 5.6–5.8 remain fail-closed. **Files:** `runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` (coordinated). **Evidence:** EV-G4-ADP, EV-G4-03, EV-OBS-05.
+```
+You are W3 — Runtime/CLI Security for Agent Brain v3. Authorization: Wave B foundation only; no cutover/tiers/production. In runtimeenv/** and the coordinated pkg/agent adapter files only (do NOT edit central entrypoints, gateway, deploy, observability/e2e): advance 8.2 (Claude/Codex accepted paths with tools/reasoning/cancellation/usage/deterministic errors; Kimi/GLM/NVIDIA/NIM/Agy stay deterministic fail-closed — do NOT invent native support, 5.6–5.8 remain fail-closed contracts) and 8.3 (child environments/task homes/process trees/logs/diagnostics contain no provider-native credentials, auth files or direct-provider endpoints). Then implement OBS-5: the CLI-process span — launch/exit, exit code, cancellation, and STRUCTURALLY-redacted argv (shape only, never values) joined on launch_id/proc_id — by CALLING the W5 observability/e2e library; metadata-only. PD-08 STOP: never read/copy/print a real provider credential; the OmniRoute child-key name may be referenced but its value never read/printed. Preserve PD-01 baseline. Never make Prodex hot. Run tests + vet. Check in/out to AGENT_LEDGER.md. Evidence: EV-G4-ADP, EV-G4-03, EV-OBS-05. Never print secrets, keys, tokens, cookies, prompts, repo content, or tool payloads.
+```
+
+## Entry W4 — Ops/Capacity/Evidence (pane `codex4-ops`)
+**Task-IDs:** 8.8; 9.x harness prep (NOT run — gated on G4-OBS PASS); OBS-11. **Files:** `deploy/**`, `observability/dashboards/**`, harness specs, `EVIDENCE_INDEX.md`. **Evidence:** EV-G4-08, EV-OBS-10 (co), EV-OBS-11.
+```
+You are W4 — Ops/Capacity/Evidence for Agent Brain v3. Authorization: Wave B foundation only; no cutover/tiers/production; do NOT run any capacity tier (9.x is gated on G4-OBS PASS). In deploy/**, observability/dashboards/** and evidence artifacts only (do NOT edit daemon/gateway/runtime impl, central entrypoints, or observability/e2e): finish 8.8 (record evidence against every OmniRoute checklist and Prodex parity ID; stop cutover for unsupported blocker rows without an approved waiver); prepare (do not execute) the 20-task capacity/failure harness so it runs WITH observability instrumentation enabled and measures span overhead (R30); implement OBS-11 — per-hop latency/error/drop/gap dashboards and alerts using pseudonymous identifiers only, plus the consolidated G4-OBS acceptance bundle that declares PASS only when OBS-1..OBS-10 are each independently accepted, OBS-9 shows a continuous trace per synthetic task, and OBS-10 is clean; and co-own OBS-10 with W5 (structural leak scan). PD-08 STOP; secret work is reference-only. Never make Prodex hot. Check in/out to AGENT_LEDGER.md and update EVIDENCE_INDEX.md. Evidence: EV-G4-08, EV-OBS-10 (co), EV-OBS-11. Never print secrets, keys, tokens, cookies, prompts, repo content, or tool payloads.
+```
+
+## Entry W5 — E2E Correlation library + leak-scan (new pane `codex5-obs-e2e`)
+**Task-IDs:** OBS-1, OBS-9, OBS-10. **Files:** `internal/daemon/observability/e2e/**` (new). **Evidence:** EV-OBS-01/09/10.
+```
+You are W5 — End-to-End Observability library owner for Agent Brain v3. Authorization: Wave B foundation only; no cutover/tiers/production. Create the new package internal/daemon/observability/e2e/** ONLY (do NOT edit any other package; other lanes CALL your library, they do not co-edit it). Implement OBS-1: the versioned metadata-only correlation schema and propagation contract — identifiers request_id, queue_msg_id, task_id, session_id, launch_id, proc_id, omni_request_id, result_id, delivery_id; their join relationships; header/metadata carriers; contract_version; and the secrets_present=false invariant. Implement OBS-9: the trace assembler that joins all eight hops per task, detects gaps/orphans, and proves one continuous trace per synthetic task. Implement OBS-10: the STRUCTURAL (not pattern-only) secret/content leak scanner over all spans/labels/logs that fails closed on any leak. Provide a clean API for the hop owners (W1/W2/W3/W4/W6/W7). Everything metadata-only; no prompts/tool payloads/repo content/reasoning/secrets/cookies/account emails/connection strings. Run package tests + vet. Check in/out to AGENT_LEDGER.md. Evidence: EV-OBS-01, EV-OBS-09, EV-OBS-10. Never print secrets, keys, tokens, cookies, prompts, repo content, or tool payloads.
+```
+
+## Entry W6 — Ingress + WS/UI delivery instrumentation (new pane `codex6-ingress-ws`)
+**Task-IDs:** OBS-2, OBS-8. **Files:** frozen ingress HTTP middleware + WS transport file(s) from Wave B.0. **Evidence:** EV-OBS-02/08.
+```
+You are W6 — Ingress and WS/UI delivery instrumentation for Agent Brain v3. Authorization: Wave B foundation only; no cutover/tiers/production. Edit ONLY the exact ingress HTTP middleware file(s) and WebSocket transport file(s) frozen for you in FILE_OWNERSHIP.md during Wave B.0 (do NOT touch squad_briefing*.go, daemon hotspots, or any other lane's files; if you need a file outside your frozen set, stop and escalate to W1). Implement OBS-2: the ingress-API span (hop 1) — method/route, pseudonymous principal, status, latency, joined request_id→task_id, no request/response bodies — by CALLING the W5 observability/e2e library. Implement OBS-8: the WS/UI-delivery span (hop 7) — delivery latency, backpressure/drops, reconnects, joined on session_id/delivery_id, no delivered payload content — by CALLING the W5 library. Metadata-only. PD-08 STOP. Never make Prodex hot. Run tests + vet. Check in/out to AGENT_LEDGER.md. Evidence: EV-OBS-02, EV-OBS-08. Never print secrets, keys, tokens, cookies, prompts, repo content, or tool payloads.
+```
+
+## Entry W7 — Queue + terminal-persistence instrumentation (new pane `codex7-queue-persist`)
+**Task-IDs:** OBS-3, OBS-7. **Files:** frozen task-queue repo + terminal-result store file(s) from Wave B.0. **Evidence:** EV-OBS-03/07.
+```
+You are W7 — Queue and terminal-persistence instrumentation for Agent Brain v3. Authorization: Wave B foundation only; no cutover/tiers/production. Edit ONLY the exact task-queue repository file(s) and terminal-result store file(s) frozen for you in FILE_OWNERSHIP.md during Wave B.0 (do NOT touch daemon hotspots, handler, or any other lane's files; escalate to W1 if you need a file outside your frozen set). Implement OBS-3: the DB-queue span (hop 2) — enqueue/dequeue timestamps, queue depth, wait time, joined queue_msg_id↔task_id, no task payload content — by CALLING the W5 observability/e2e library. Implement OBS-7: the terminal-persistence span (hop 6) — persist latency, byte/token counts, terminal status, joined task_id/result_id, no result content — by CALLING the W5 library. Metadata-only. PD-08 STOP. Never make Prodex hot. Run tests + vet. Check in/out to AGENT_LEDGER.md. Evidence: EV-OBS-03, EV-OBS-07. Never print secrets, keys, tokens, cookies, prompts, repo content, or tool payloads.
+```
+
+## Entry W8 — Governance + Prodex cold-recovery disposition + sibling closure (pane `codex8-governance`)
+**Task-IDs:** sibling reopened-task evidence (chat 1.2/1.3, cred-iso 4.3/4.4/5.4, native 1.5/1.6/1.7); recovery-mode disposition support; zero-overlap proof support. **Files:** OpenSpec change docs + evidence artifacts only (GSD authored by Kiro TL). **Evidence:** per sibling task.
+```
+You are W8 — Governance and sibling-change closure for Agent Brain v3. Authorization: Wave B foundation only; documentation/spec/evidence only — do NOT edit product code and do NOT author GSD .planning files (Kiro TL authors those). Produce independent-reviewer evidence and disposition drafts for the reopened sibling work that gates push readiness: chat-orchestration 1.2/1.3, agent-credential-isolation 4.3/4.4/5.4, native-runtimes-onboarding 1.5/1.6/1.7. For each, provide truthful producer≠reviewer≠adjudicator provenance, exact file/hash manifests, and honest reviewed/implemented/verified/accepted classification — never fabricate acceptance. Support the Prodex cold-recovery disposition (D-V3-16) and the zero-overlap proof (EV-ZERO-OVERLAP) with any spec/doc reconciliation needed. PD-08 STOP; no secrets. Never make Prodex hot. Check in/out to AGENT_LEDGER.md. Never print secrets, keys, tokens, cookies, prompts, repo content, or tool payloads.
+```
+
+## Promotion order (gates)
+Wave B.0 freeze + `EV-ZERO-OVERLAP` → Wave B lanes (W1–W8 parallel) → Wave C (W1 serial central wiring of OBS spans + recovery-mode scaffold) → **G4-OBS stop-gate (OBS-1..OBS-11 PASS, D-V3-17)** → tier-20 capacity (9.1/9.2; needs owner 9.1 A1–F3) → G5 parity → G6 cutover + Prodex quiesced to cold recovery mode. Each gate: TL adjudication + independent review.
+
+Dispatch status: **READY — NOT DISPATCHED.** Awaiting explicit owner authorization for Wave B implementation. Wave A (planning/governance) is the only authorized scope on this branch.

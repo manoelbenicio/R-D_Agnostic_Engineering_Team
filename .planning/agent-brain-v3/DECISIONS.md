@@ -49,7 +49,11 @@
 
 ### D-V3-05 — Prodex removal e gateway-required default NÃO autorizados no escopo inicial
 - Só após paridade assinada (G5) + cutover gate (G6) + zero-use.
-- STATUS: APROVADO (handover §8.10).
+- **End-state atualizado por D-V3-16 (2026-07-19):** Prodex NÃO é deletado. Após os gates, é
+  *quiesced* para um **cold platform recovery mode default-OFF, mutuamente exclusivo e
+  operator-gated** na última raia do Kanban — nunca per-request, nunca fallback automático,
+  nunca hot simultâneo com OmniRoute.
+- STATUS: APROVADO (handover §8.10); end-state emendado por D-V3-16.
 
 ### D-V3-06 — Rotation unit = request lógico independente
 - Não avança por SSE/retry/tool/limite. Strict round-robin ≠ limite global 1-at-a-time.
@@ -103,6 +107,40 @@
 - MUL-2..MUL-25 já existem; não criar duplicatas. MUL-11/12/15 conflitam com OmniRoute como
   owner exclusivo de credentials/accounts/rotation e devem ser reescopados ou superseded.
 - O daemon Multica atual não deve despachar Codex antes de G3 credentialless wiring + isolation smoke.
+- STATUS: APROVADO / ATIVO.
+
+### D-V3-16 — Prodex retido como cold platform recovery mode (default-OFF, mutuamente exclusivo)
+- Decisão final do dono 2026-07-19. Agent Brain + OmniRoute são o caminho primário e terminam
+  primeiro. Prodex NÃO é deletado e NÃO é o target router: é **retido** apenas como um
+  **cold platform recovery mode default-OFF, mutuamente exclusivo, operator-gated**, na última
+  raia do Kanban. Nunca per-request, nunca fallback automático, nunca hot simultâneo com OmniRoute.
+- **How to apply:** emenda OpenSpec task **10.4** (retain-as-recovery, não delete) e **AB-REQ-37**
+  (removal→retention); re-escopo do change `persist-prodex-runtime-integration` para
+  cold-recovery-only (`MULTICA_PRODEX_REQUIRED` default `0`); wire à máquina de estados de
+  recovery (AB-REQ-41) no ponto único de runtime-authority select (`health.go:177-184`);
+  `REMOVAL_REGISTER` muda Prodex/L2 de RETIRE para RETAIN-AS-RECOVERY.
+- **Resolve** o `persist-prodex-vs-omniroute-reconciliation-audit.md` como variante da Opção C
+  (continuidade mínima reversível) e levanta o PROGRAM HOLD, mantendo 0/16 e sem mudar produto.
+- STATUS: APROVADO / ATIVO. Não reabrir.
+
+### D-V3-17 — G4-OBS: stop-gate de observabilidade E2E antes de capacidade/cutover
+- Decisão final do dono 2026-07-19. Observabilidade metadata-only end-to-end é **gate
+  bloqueante** antes de qualquer tier de capacidade (§9) ou cutover (§10).
+- Escopo: 8 hops (ingress API → DB queue → daemon → CLI → OmniRoute/provider → terminal
+  persistence → WS/UI delivery → trace assembly), correlação metadata-only, redação estrutural,
+  trace sintético contínuo, aceitação leak-clean, dashboards/alerts.
+- **How to apply:** nova capability OpenSpec `end-to-end-observability`; seção de tasks
+  **8-OBS OBS-1..OBS-11** com evidence `EV-OBS-01..11`; gate G4-OBS no ROADMAP entre G4 e G5;
+  novos requisitos AB-REQ-39/40; `EVIDENCE_CONTRACT`/`EVIDENCE_INDEX` definem a evidência OBS.
+- STATUS: APROVADO / ATIVO.
+
+### D-V3-18 — Topologia de 8 lanes com prova de zero-overlap
+- Decisão final do dono 2026-07-19. Expande a topologia de 4 para **8 lanes** (W1–W8) com
+  ownership de arquivos disjunto par-a-par, integrador único dos hotspots (W1) e biblioteca de
+  correlação (W5) chamada — nunca co-editada.
+- **How to apply:** `design.md §11` e `FILE_OWNERSHIP.md` expandidos; `DISPATCH_QUEUE.md` recebe
+  as entradas da Wave B; Codex#56#A roda a checagem de interseção de globs e registra
+  `EV-ZERO-OVERLAP`; novo requisito AB-REQ-41 (recovery-mode) e risco R29 (contenção de merge).
 - STATUS: APROVADO / ATIVO.
 
 ## Decisões resolvidas pelo dono

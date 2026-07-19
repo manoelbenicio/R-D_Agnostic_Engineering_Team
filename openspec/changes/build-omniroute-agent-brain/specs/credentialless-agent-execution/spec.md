@@ -49,3 +49,10 @@ The runtime SHALL NOT offer a direct-provider fallback when OmniRoute authentica
 - **WHEN** OmniRoute rejects the stable key
 - **THEN** the task fails or waits with a gateway-authentication error and no provider-native login or credential discovery is attempted
 
+### Requirement: Metadata-only end-to-end spans
+Every span emitted across the eight-hop request path (ingress API, DB queue, daemon, CLI, OmniRoute/provider, terminal persistence, WS/UI delivery, and trace assembly) SHALL contain only correlation identifiers, classifications, counters, and latencies. It MUST NOT contain the stable OmniRoute secret, provider secrets, authorization headers, cookies, raw prompts, raw tool payloads, repository content, opaque reasoning, account emails, or connection strings. CLI argv MUST be redacted structurally (shape only, never values).
+
+#### Scenario: A hop span is emitted for a task carrying sensitive content
+- **WHEN** any hop emits a span for a task whose request or result contains credential-like or content fields
+- **THEN** the span records only metadata and correlation identifiers, argv is redacted structurally, and a structural leak scan across all spans/labels/logs finds no secret or content value
+

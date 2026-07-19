@@ -64,3 +64,31 @@ Bounded grant for the vendor/model visibility UI correction; NOT a general front
 Boundary: Codex4 remains owner of server-side observability attribution (`deploy/**`, `observability/**`).
 Codex3's grant is limited to the bounded files above for this round only; no other frontend files,
 no server/daemon/credential/active-path changes. Formal Packet-B acceptance trails EV-G4-03 acceptance.
+
+## Expansão 8 lanes (Wave A, D-V3-18) — zero-overlap
+
+> Substitui a topologia de 4 streams para o restante do programa (G4 acceptance, G4-OBS,
+> capacidade, disposição recovery-mode, sibling closure). Kiro/Opus-4.8 = planning/adjudication;
+> Codex#56#A = transport/verification (não edita produto). W1 permanece o único editor dos
+> hotspots centrais.
+
+| Lane | Papel | Ownership exclusivo (globs) | Não-tocar |
+|---|---|---|---|
+| W1 | Lead Integrator (wiring central, máquina de estados recovery, OBS-4) | `internal/daemon/{daemon,config,health,cmd_daemon}.go`, `go.mod`, `execenv/**`, `pkg/agent/models.go`, `prodex*.go`, `l2_runtime.go`, `brain/**` | pacotes novos de outras lanes |
+| W2 | OmniRoute Gateway (8.1/8.4/8.5/8.6/8.7 gateway, OBS-6) | `internal/daemon/gateway/**` | hotspots centrais, outros pacotes |
+| W3 | Runtime/CLI Security (8.2/8.3, isolamento env, OBS-5; 5.6–5.8 fail-closed) | `internal/daemon/runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` (coordenado) | hotspots centrais, gateway |
+| W4 | Ops/Capacity/Evidence (8.8, 9.x harness, OBS-11) | `internal/daemon/deploy/**`, `internal/daemon/observability/dashboards/**`, harness specs, runbooks, `EVIDENCE_INDEX.md` | daemon/gateway/runtime impl |
+| W5 | Lib de correlação E2E + leak-scan (OBS-1/OBS-9/OBS-10) | `internal/daemon/observability/e2e/**` (nova lib) | arquivos dos chamadores |
+| W6 | Instrumentação ingress + WS/UI delivery (OBS-2, OBS-8) | arquivo(s) de middleware HTTP de ingress + transporte WS (nomeados no freeze) | `squad_briefing*.go`, hotspots daemon |
+| W7 | Instrumentação queue + terminal persistence (OBS-3, OBS-7) | arquivo(s) de repo da task-queue + store de resultado terminal (nomeados no freeze) | hotspots daemon, handler |
+| W8 | Governança + disposição Prodex cold-recovery + sibling closure (drafts) | docs de change OpenSpec, drafts parity/removal, evidence de sibling reopened | hotspots de produto; GSD autorado por Kiro |
+
+Regra de arbitragem de arquivo compartilhado: qualquer arquivo que duas lanes precisariam editar
+é escalado a W1 e serializado entre waves — nunca concorrente. Spans cross-cutting são adicionados
+pelo dono do arquivo **chamando** a lib W5 `observability/e2e`, nunca co-editando-a.
+
+Prova de zero-overlap (registrar como `EV-ZERO-OVERLAP` antes do dispatch da Wave B): (1) W1–W5
+possuem globs de pacote disjuntos par-a-par (∩ = ∅ por construção); (2) spans cross-cutting via
+chamada à lib W5; (3) W6/W7 possuem arquivos específicos congelados, removidos de todo outro glob;
+(4) arquivo disputado → escala a W1 + serializa; (5) Codex#56#A roda a checagem de interseção de
+globs (cada path casa exatamente uma lane) e registra a prova. Locks em `AGENT_LEDGER.md`.

@@ -4,7 +4,7 @@
 
 Implementação das Waves 0–3 e do canary tier 20 foi **AUTORIZADA** pelo dono em 2026-07-17 na Seção 7.1 de `OMNIROUTE_ARCHITECT_RESPONSE.md`.
 
-Nenhuma Wave, teste, canary, mudança de produção, remoção de Prodex ou alteração de configuração é iniciada por este documento.
+Nenhuma Wave, teste, canary, mudança de produção, quiescência/ativação do cold recovery mode do Prodex ou alteração de configuração é iniciada por este documento.
 
 **Estado de liderança vigente (2026-07-18):** Kiro/Opus-4.8 é planning/adjudication owner e
 Codex#56#A é operational co-lead/Herdr transport/independent verifier. O owner encerrou o pane
@@ -59,13 +59,13 @@ Nenhum change anterior será apagado silenciosamente. Cada um recebe uma disposi
 | `native-runtimes-onboarding` | **DEPENDÊNCIA A INCORPORAR** | CLI adapters NIM/Cline, model discovery e onboarding útil | Credencial NIM/provider nativa e rotação local; devem virar gateway-only |
 | `chat-orchestration-standard` | **DEPENDÊNCIA A PRESERVAR** | TL/Manager, delegação, escape hatch e protocolo de orquestração | Qualquer acoplamento com nomes/contratos Multica que impeça o Brain neutro |
 | `agent-credential-isolation` | **OBJETIVO DE SEGURANÇA ABSORVIDO** | Isolamento de processo/home e prevenção de overwrite | Per-provider credential homes, login/rotação dentro do Brain; OmniRoute passa a possuir as contas |
-| `persist-prodex-runtime-integration` | **BASELINE DE SEGURANÇA ATIVO (PD-01)** | Fail-closed, readiness, reconciliação, isolamento e prevenção de overwrite/fallback; completar sob lock Codex1 | Nenhuma expansão funcional além das 16 tasks; retirada Prodex somente após gate G6 |
+| `persist-prodex-runtime-integration` | **DEFERIDO — COLD-RECOVERY-ONLY (D-V3-16)** | Fail-closed, readiness, reconciliação, isolamento e prevenção de overwrite/fallback como recovery mode default-OFF; completar sob lock Codex1 | Nenhuma expansão funcional além das 16 tasks; `MULTICA_PRODEX_REQUIRED` default 0; Prodex nunca hot/per-request/automático; NÃO deletado (quiesce em G6) |
 | `rotation-parity-polyglot` | **HISTÓRICO/BASE DE PARIDADE** | Invariantes, Smart Context, affinity, pre-commit, evidence e segurança | Prodex como target hot path |
 | `rotation-router` | **SUPERSEDED/VAZIO** | Nenhum artefato ativo; apenas registro histórico | Criar um segundo router concorrente |
 
 Gate obrigatório: `persist-prodex-runtime-integration` só pode ser executado pelo Codex1 sob
 lock exclusivo, como requisito transitório de segurança. `rotation-router` não executa como
-plano concorrente. Caminhos Prodex só podem ser retirados após replacement/evidence/rollback G6.
+plano concorrente. Por D-V3-16, os caminhos Prodex NÃO são deletados: são quiesced para um cold recovery mode default-OFF, mutuamente exclusivo e operator-gated (após replacement/evidence/rollback G6).
 
 ## 5. Situação do GSD atual
 
@@ -124,7 +124,7 @@ G4 Protocolos + falhas + segurança + canary tier 20
                                     │
                       ┌─────────────┴─────────────┐
                       ▼                           ▼
-G5 Paridade Prodex/Smart Context       G6 Cutover + retirada Prodex
+G5 Paridade Prodex/Smart Context       G6 Cutover + Prodex→cold recovery (quiesce, não deletar)
                                                   │
                                       ┌───────────┴───────────┐
                                       ▼                       ▼
@@ -181,13 +181,13 @@ G5 Paridade Prodex/Smart Context       G6 Cutover + retirada Prodex
 
 **Gate:** matriz de paridade assinada; nenhum feature hot-path sem replacement/disposição.
 
-### G6 — Cutover e retirada Prodex
+### G6 — Cutover e Prodex→cold recovery mode (quiesce, não deletar)
 
 - Gateway-required default para novas tarefas.
-- Drenar legado, observar, retirar Prodex/L2 e Go rotation somente após zero-use.
+- Drenar legado, observar; **quiescer Prodex/L2 para cold recovery mode default-OFF (retido, não deletado — D-V3-16)**; remover apenas Go rotation após zero-use.
 - Rollback volta para versão anterior Agent Brain/OmniRoute, nunca para credenciais diretas/dual router.
 
-**Gate:** Prodex removível sem perda funcional, operacional ou de rollback.
+**Gate:** Prodex fora do hot path sem perda funcional/operacional/rollback; retido como recovery mode default-OFF, mutuamente exclusivo.
 
 ### G7 — Capacidade 50/100
 
@@ -245,7 +245,7 @@ As estimativas abaixo são tempo corrido com quatro agentes bem coordenados. Des
 | G4 — Protocolos/falhas/segurança/tier 20 | 4–8 horas |
 | **Primeiro canary 20 aceito** | **1–2 dias úteis** |
 | G5 — Paridade/Smart Context | 2–5 dias úteis, conforme gaps |
-| G6 — Cutover e retirada Prodex | 1–2 dias úteis |
+| G6 — Cutover + Prodex→cold recovery quiesce | 1–2 dias úteis |
 | G7 — Tiers 50/100 + state decision | 1–3 dias úteis |
 | G8 — Debrand completo | 2–4 dias úteis |
 
