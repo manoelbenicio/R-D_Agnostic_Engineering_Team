@@ -682,3 +682,28 @@
 > (W4 `47c693c` is PRODUCED-NOT-ACCEPTED precisely because no accepted exporter emits these metrics).
 > G4-OBS acceptance remains required before capacity/cutover (D-V3-17); D-V3-20 preserved. Holds intact:
 > 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.
+
+---
+
+> **ROUTINE P0 COORDINATION (Kiro-TL/Opus-4.8, 2026-07-19).** Golden-Rule CHECK-IN/OUT: docs-only; no
+> product/test/product-git/credential/network action; no dispatch; no OBS implementation.
+> **(1) W1 OBS-4 status corrected → `9745eaf`:** corrective chain `2a0dd32`→`c7a8d92`→`9745eaf` (observe
+> launch-identity + missing-workspace rejections — the OBS-4 review point). Independent Gemini static PASS;
+> Principal/Codex full daemon test+vet PASS; origin tip clean. Kiro-TL verified footprint = W1-owned only
+> (`brain/admission_observability.go`, `daemon.go`+1, new `daemon_obs4_test.go`), **no cross-lane files**.
+> Recorded as technical-integration status — **NOT G4/OpenSpec acceptance; OBS-4 OPEN.** build-omniroute
+> stays 51/96.
+> **(2) Current P0 dispatch review (all within frozen lanes; D-V3-20 functional tests permitted pre-OBS):**
+> W2 offline tests IN PROGRESS (`gateway/**` — W2 owned); W1 offline credential-isolation test IN PROGRESS
+> (W1 owned — **must stay synthetic/no-secret; PD-08 forbids any real credential read/copy/rotation**);
+> W4 rollout-trigger/runbook consistency test IN PROGRESS (`deploy/**` — W4 owned — **must not fire a real
+> rollout/production trigger; no real secret in `*.example`**); Opus B smoke-runner **design**; Opus C
+> **live-readiness PLAN**; Opus D integration **synthesis**.
+> **(3) Governance/zero-overlap flags:** No zero-overlap violation observed — W1/W2/W4 test work is each
+> within its own frozen lane (disjoint by D-V3-18/Wave B.0); `9745eaf` confirmed cross-lane-clean. **FLAG
+> (Opus C live-readiness):** must remain **PLAN/design only** — NO readiness claim, NO live provider, NO
+> production/canary/soak, NO capacity/9.1 claim (D-V3-17 + holds; readiness is gated behind accepted G4-OBS).
+> **FLAG (integration, Opus D):** synthesis only — W5 canonical, W1 sole serial integrator, disposable
+> dry-run first, NO direct main merge until independent evidence/adjudication (ballot item 9). **Stale-status
+> fix:** the C2 "W1 review in progress" row is superseded by the `9745eaf` corrective row above.
+> Holds intact: 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.
