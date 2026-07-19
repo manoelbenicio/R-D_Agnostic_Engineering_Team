@@ -566,3 +566,16 @@
 > blocked, Principal evidence covers). **This is NOT final OpenSpec/G4-OBS acceptance — OBS-1/9/10 stay OPEN.**
 > Kiro-TL independently verified all SHAs/subjects and `origin/work/agent-brain-w5` clean tip = `fd4aa4d`.
 > build-omniroute unchanged 51/96; no OBS checkbox closed. Holds intact: 9.1/capacity/PD-08/keys/Prodex/cutover/production.
+
+---
+
+> **C2 — W1 OBS-4 + W2 OBS-6 STATUS (Kiro-TL/Opus-4.8, 2026-07-19; authorized by Codex56-Principal-TL).**
+> Golden-Rule CHECK-IN/OUT: docs-only; no product/test/product-git/credential/network action.
+> **W1 `2a0dd32` (OBS-4) = PRODUCED / INDEPENDENT REVIEW IN PROGRESS** — not accepted. Adds
+> `brain/admission_observability.go(+test)` + guarded `daemon.go` admission; metadata-only; recovery
+> scaffold `5a53c2b` preserved (no automatic Prodex); W5 subtree byte-equiv to `fd4aa4d`. Principal
+> brain/e2e + offline full daemon + vet + diff = PASS; Codex independent review running (RequestID on
+> successful vs rejected admissions is the live review point). **W2 `7a2a808` (OBS-6) = PRODUCED /
+> INDEPENDENT REVIEW PASS** — technical-integration-ready, NOT final acceptance; `gateway/obs_span.go(+test)`,
+> Principal test/race/vet PASS + Gemini review PASS. Kiro-TL independently verified both SHAs/subjects +
+> origin-clean tips. build-omniroute unchanged 51/96; no OBS checkbox closed. Holds intact.
