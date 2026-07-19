@@ -253,6 +253,25 @@
 - STATUS: **ACEITA (Decision 5, emenda estrita).** Holds preservados:
   9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
 
+### D-V3-25 — OWNER DECISION 6: remediação PD-08 APROVADA mas DEFERRED para Priority 2; chaves controladas pelo dono
+- Decisão do dono 2026-07-19. Remediação PD-08 **APROVADA**, porém o trabalho de engenharia é **DEFERRED
+  para Priority 2** (não é prioridade máxima). O **dono controla pessoalmente todas as chaves** e pode
+  invalidar a chave exposta diretamente na UI do provider. Separação registrada:
+  - **(A)** Nenhum agente faz handling de chave / exibição de valor / execução de rotação. (reafirma
+    delegation-only; TL/agentes nunca leem/imprimem/copiam/movem/reescrevem valor de credencial.)
+  - **(B)** A chave exposta antiga **permanece PROIBIDA** e os **testes com live-provider permanecem
+    SECURITY-STOPPED** até o dono confirmar a invalidação/revogação na UI.
+  - **(C)** Testes P0 **offline/sintéticos continuam** (consistente com D-V3-20; ex.: o teste de
+    credential-isolation do W1 é sintético/no-secret).
+  - **(D)** A remediação/boundary PD-08 completa **OmniRoute-only** (credential boundary + scans) executa
+    em **P2** com os safeguards declarados.
+  - **Proibido:** auth bypass, reescrita de histórico, `git gc`/`prune` (commit forense de 13-jul
+    permanece retido).
+- **Relação:** resolve a direção de **PD-08** (antes PENDENTE do dono) para APROVADA-mas-P2-DEFERRED; o
+  STOP operacional segue vigente até confirmação de revogação (B). Não altera D-V3-16/17/18/20/21/22/23/24.
+- STATUS: **ACEITA (Decision 6).** Holds preservados: 9.1/capacidade/PD-08(exec)/keys/Prodex/cutover/
+  produção/canary/soak/tier 50/100.
+
 ### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
 - Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o
   ESCOPO de D-V3-17 — não o enfraquece. D-V3-17 sempre bloqueou a **validade de alegações de

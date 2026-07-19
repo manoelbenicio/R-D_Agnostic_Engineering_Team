@@ -723,3 +723,19 @@
 > cutover, or production.** Reinforces D-V3-20 evidence firewall + D-V3-17 gate. Observability implementation
 > remains Priority 2 unless expressly authorized (D-V3-21/22/23). Holds intact:
 > 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.
+
+---
+
+> **D-V3-25 — OWNER DECISION 6: PD-08 remediation APPROVED but Priority 2 DEFERRED; owner-controlled keys (Kiro-TL recorded, 2026-07-19).**
+> Golden-Rule CHECK-IN/OUT: docs-only decision record; no product/test/product-git/credential/network action; no key handling; no dispatch.
+> PD-08 remediation APPROVED; engineering work DEFERRED to Priority 2 (not top priority). Owner personally
+> controls all keys and can invalidate the exposed key directly in the provider UI. Separation recorded:
+> **(A)** no agent key handling / value display / rotation execution (delegation-only reaffirmed);
+> **(B)** old exposed key remains FORBIDDEN and live-provider tests remain SECURITY-STOPPED until the owner
+> confirms UI invalidation/revocation; **(C)** offline/synthetic P0 tests continue (consistent with D-V3-20;
+> e.g. W1 credential-isolation test is synthetic/no-secret); **(D)** full PD-08 OmniRoute-only credential
+> boundary/remediation + scans execute in P2 with stated safeguards. **Prohibited:** auth bypass, history
+> rewrite, `git gc`/`prune` (13-Jul forensic unreachable commit retained). Resolves the PD-08 owner-pending
+> direction to APPROVED-but-P2-DEFERRED; operational STOP stays in force until revocation confirmed (B).
+> Does not alter D-V3-16/17/18/20/21/22/23/24. All other holds intact:
+> 9.1/capacity/Prodex activation/cutover/production/canary/soak/tier 50/100.
