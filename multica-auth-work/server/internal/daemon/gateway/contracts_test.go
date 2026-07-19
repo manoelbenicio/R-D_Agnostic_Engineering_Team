@@ -146,7 +146,9 @@ func TestTelemetryHeaderParsingAllowlistAndPseudonymization(t *testing.T) {
 	header.Set(HeaderOmniRouteRequestID, "omni-request-synthetic")
 	header.Set(HeaderActualModel, "agy/claude-opus-4-6-thinking")
 	header.Set(HeaderActualRoute, "route-synthetic")
+	header.Set(HeaderAccountID, "source-account-identity")
 	header.Set(HeaderConnectionID, "source-connection-identity")
+	header.Set(HeaderSelectionReason, string(SelectionIndependentRotation))
 	header.Set(HeaderRetryCount, "2")
 	header.Set(HeaderFallbackUsed, "true")
 	header.Set(HeaderQuotaState, string(QuotaLimited))
@@ -164,24 +166,34 @@ func TestTelemetryHeaderParsingAllowlistAndPseudonymization(t *testing.T) {
 	if telemetry.PseudonymousConnection == "source-connection-identity" || !strings.HasPrefix(telemetry.PseudonymousConnection, "conn_") {
 		t.Fatalf("connection was not pseudonymized: %q", telemetry.PseudonymousConnection)
 	}
+	if telemetry.PseudonymousAccount == "source-account-identity" || !strings.HasPrefix(telemetry.PseudonymousAccount, "acct_") {
+		t.Fatalf("account was not pseudonymized: %q", telemetry.PseudonymousAccount)
+	}
+	if telemetry.SelectionReason != SelectionIndependentRotation {
+		t.Fatalf("unexpected selection reason: %q", telemetry.SelectionReason)
+	}
 	encoded, err := json.Marshal(telemetry)
 	if err != nil {
 		t.Fatalf("Marshal telemetry: %v", err)
 	}
-	if bytes.Contains(encoded, []byte("source-connection-identity")) || bytes.Contains(encoded, []byte("synthetic value ignored")) || bytes.Contains(encoded, []byte("must be ignored")) {
+	if bytes.Contains(encoded, []byte("source-account-identity")) || bytes.Contains(encoded, []byte("source-connection-identity")) || bytes.Contains(encoded, []byte("synthetic value ignored")) || bytes.Contains(encoded, []byte("must be ignored")) {
 		t.Fatal("telemetry included disallowed fields")
 	}
 }
 
 func TestTelemetryEventRejectsUnknownContentFields(t *testing.T) {
-	valid := `{"request_id":"request-synthetic","actual_model":"synthetic/model","actual_route":"route-synthetic","connection_id":"connection-synthetic","retry_count":0,"fallback_used":false,"quota_state":"available","circuit_state":"closed","usage":{"input":1,"output":1,"cache":0,"reasoning":0,"total":2}}`
+	valid := `{"request_id":"request-synthetic","actual_model":"synthetic/model","actual_route":"route-synthetic","account_id":"account-synthetic","connection_id":"connection-synthetic","selection_reason":"tool-turn-affinity","retry_count":0,"fallback_used":false,"quota_state":"available","circuit_state":"closed","usage":{"input":1,"output":1,"cache":0,"reasoning":0,"total":2}}`
 	telemetry, err := ParseTelemetryEvent(strings.NewReader(valid), 4096)
-	if err != nil || telemetry.ActualModel != "synthetic/model" {
+	if err != nil || telemetry.ActualModel != "synthetic/model" || telemetry.SelectionReason != SelectionToolTurn {
 		t.Fatalf("valid telemetry rejected: %+v %v", telemetry, err)
 	}
 	unsafe := `{"request_id":"request-synthetic","content":"synthetic content must not be parsed"}`
 	if _, err := ParseTelemetryEvent(strings.NewReader(unsafe), 4096); !IsErrorClass(err, ErrorProtocol) {
 		t.Fatalf("unsafe telemetry field accepted: %v", err)
+	}
+	unknownReason := `{"request_id":"request-synthetic","selection_reason":"unbounded-upstream-value"}`
+	if _, err := ParseTelemetryEvent(strings.NewReader(unknownReason), 4096); !IsErrorClass(err, ErrorProtocol) {
+		t.Fatalf("unknown selection reason accepted: %v", err)
 	}
 }
 
