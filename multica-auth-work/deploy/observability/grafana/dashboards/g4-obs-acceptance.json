@@ -7,6 +7,7 @@
       "title": "G4-OBS Bundle Status",
       "type": "stat",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "min(g4_obs_prerequisites_met) == 1 and max(obs_trace_gaps_total) == 0 and max(obs_leak_scan_failures) == 0",
@@ -16,5 +17,5 @@
     }
   ],
   "schemaVersion": 16,
-  "version": 1
+  "version": 2
 }

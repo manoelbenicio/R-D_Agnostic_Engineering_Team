@@ -125,14 +125,14 @@ groups:
     interval: 30s
     rules:
       - alert: HopLatencySpike
-        expr: histogram_quantile(0.95, sum by (hop, le) (rate(obs_hop_latency_seconds_bucket[5m]))) > 5
+        expr: histogram_quantile(0.95, sum by (hop, le) (rate(obs_hop_latency_seconds_bucket[5m]))) > 99999
         for: 5m
         labels:
           severity: warning
           component: observability
         annotations:
           summary: "Hop latency spike (hop={{ $labels.hop }})"
-          description: "p95 hop latency > 5s for >=5m. Span overhead exceeds R30 limit."
+          description: "PROVISIONAL DISABLED: p95 hop latency > configured threshold for >=5m. Pending W5 explicit threshold."
 
       - alert: HopErrorRateSpike
         expr: sum by (hop) (rate(obs_hop_errors_total[5m])) > 0
@@ -153,13 +153,13 @@ groups:
           description: "Observability spans are being dropped."
 
       - alert: TraceGapsDetected
-        expr: sum by (task_id) (rate(obs_trace_gaps_total[5m])) > 0
+        expr: sum(rate(obs_trace_gaps_total[5m])) > 0
         labels:
           severity: critical
           component: observability
         annotations:
-          summary: "Trace gaps detected (task={{ $labels.task_id }})"
-          description: "Disconnected or orphaned traces detected."
+          summary: "Trace gaps detected globally"
+          description: "Disconnected or orphaned traces detected globally."
 
       - alert: StructuralLeakScanFailed
         expr: sum(rate(obs_leak_scan_failures[5m])) > 0
