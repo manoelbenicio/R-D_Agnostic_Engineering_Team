@@ -504,3 +504,18 @@
 ---
 
 > **PROGRAM GOVERNANCE RESOLUTION (Kiro/Opus-4.8 planning owner, 2026-07-19T13:00Z — supersedes the 2026-07-18 PROGRAM HOLD above; history preserved, not rewritten): persist-prodex-runtime-integration = DEFERRED — COLD-RECOVERY-ONLY.** Final owner decision **D-V3-16** resolves the reconciliation audit `evidence/persist-prodex-vs-omniroute-reconciliation-audit.md` (sha256 `e1a654162c57e3e2ea7a8330007105c6647d4adfd4a1b0c4132fe57ee28c7504`) as an **Option-C variant**: Prodex is **retained** (never deleted) and re-scoped to a **default-OFF, mutually-exclusive, operator-gated cold platform recovery mode** in the final Kanban lane — never per-request, never automatic fallback, never simultaneously hot with OmniRoute. The prior HOLD's two conflicts are now reconciled: (1) OmniRoute task 0.5 no longer contradicts, because persist is not executed as a concurrent superseded plan but re-scoped as recovery-only under D-V3-16; (2) the "required + restart-durable" posture is retired — `MULTICA_PRODEX_REQUIRED` defaults to `0` and is an operator recovery toggle, reconciled with task 7.8 default-off/drain. Artifacts updated (planning/spec/docs only, no product code): OpenSpec `build-omniroute` task 10.4 (retain-as-recovery) + AB-REQ-37 + new AB-REQ-41 recovery-mode state machine; `persist-prodex` proposal/design/tasks re-scoped; DECISIONS D-V3-16/17/18; ROADMAP G6 quiesce; REMOVAL_REGISTER/COMPONENT_REGISTER RETAIN-AS-RECOVERY; single-router-invariant recovery addendum. Checkbox states preserved: persist **0/16**, build-omniroute **51/85** (OBS-* newly ADDED/OPEN). PD-01/PD-08 preserved. Also authorized in the same session: **D-V3-17** (blocking G4-OBS observability stop-gate, OBS-1..OBS-11) and **D-V3-18** (8-lane zero-overlap topology). Authored in isolated worktree `planning/agent-brain-observability-freeze` off recovery SHA `da42282`; no worker restart, no credential access.
+
+---
+
+> **WAVE B DISPATCH + START ACKS (Kiro-TL monitoring, 2026-07-19).** Dispatched under
+> EV-ZERO-OVERLAP ACCEPTED (@4c67ae0), NO-SECRET foundation, frozen ownership. Lanes on per-lane
+> worktree `/tmp/agent-brain-lanes-4c67ae0/w<N>` branch `work/agent-brain-w<N>` off `4c67ae0`.
+> START acks: **W1 w7:p1 (codex) WORKING** — confirmed on `work/agent-brain-w1`@`4c67ae0`, searching
+> AB-REQ-41/recovery-mode + brain (OBS-4 + recovery scaffold). **W2 w7:p2 (codex) WORKING.**
+> **W3 w4:p1 (agy) WORKING. W4 w4:p2 (agy) WORKING. W5 w6:p1 (kiro) BLOCKED** on interactive
+> shell-approval prompt (git worktree/`4c67ae0` verification) — contract-first lane STALLED pending
+> approval. **W6 w6:p2 (kiro) BLOCKED** on read-approval after confirming ancestry + reading
+> FILE_OWNERSHIP/DISPATCH_QUEUE Entry W6 (verbatim source honored). W7/W8 HELD as branch/gate
+> monitors (OpenCode panes terminated on exposed-key stop; replacements require auth; no auth bypass).
+> FLAG: W5 (contract-first) + W6 need approval to proceed; no ownership/security violation observed;
+> no adverse duplicate-dispatch effect seen (lanes on-task). Holds intact: 9.1/PD-08/keys/Prodex/cutover/production.
