@@ -821,3 +821,15 @@
 > add Cline 3.0.44 OmniRoute config (Kimi-K2.7 + GLM52, NVIDIA fallback OmniRoute-owned); agy 1.1.4 IPv4
 > resolver regression. W4 — pin OmniRoute image digest (PD-02). No credential handling; OBS/capacity/Prodex/
 > siblings remain STOPPED.
+
+---
+
+> **OWNER GOLDEN RULE — session/auth authority (Kiro-TL recorded 2026-07-19; status recorder).** Docs-only; no runtime action; no product code; no dispatch.
+> **Only the Owner may authorize** any agent **login / logout / model switch / account change / CLI
+> replacement / session restart.** On **token/credit/quota limit**: **PRESERVE the session and report the exact
+> condition — NO runtime action** (no reauth, no redeem, no switch, no restart) by TL or any agent. This is a
+> standing operational rule (complements PD-08 no-credential-action + the reset/redeem owner-gate).
+> **Pane observations (factual, untouched):** `w4:p2` = **QUOTA-LIMITED** — session preserved, condition
+> reported, no action taken. `w7:p2` transcript shows a **post-limit device-auth login** — **MUST REMAIN
+> UNTOUCHED pending Owner direction** (flagged as potential golden-rule/PD-08-adjacent event; TL takes no
+> action, reads/prints no credential value). OBS/capacity/Prodex/siblings remain STOPPED; Main Brain only.
