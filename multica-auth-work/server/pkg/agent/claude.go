@@ -3,6 +3,8 @@ package agent
 import (
 	"bufio"
 	"context"
+	"github.com/google/uuid"
+	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -212,6 +214,9 @@ func (b *claudeBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 		return nil, fmt.Errorf("start claude: %w", err)
 	}
 
+	launchID := uuid.New().String()
+	endSpan := e2e.StartCLIProcessSpan(ctx, launchID, cmd.Process.Pid, safeAgentArgvForLog(args))
+
 	b.cfg.Logger.Info("claude started", "pid", cmd.Process.Pid, "cwd", opts.Cwd, "model", opts.Model)
 
 	// cmd.Start() succeeded — transfer temp file ownership to the goroutine.
@@ -323,6 +328,17 @@ func (b *claudeBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 
 		// Wait for process exit
 		exitErr := cmd.Wait()
+
+		cancelled := runCtx.Err() == context.DeadlineExceeded || runCtx.Err() == context.Canceled
+		exitCode := -1
+		if exitErr != nil {
+			if exitError, ok := exitErr.(*exec.ExitError); ok {
+				exitCode = exitError.ExitCode()
+			}
+		} else if cmd.ProcessState != nil {
+			exitCode = cmd.ProcessState.ExitCode()
+		}
+		endSpan(exitCode, cancelled)
 		duration := time.Since(startTime)
 		// writeDone is buffered (cap 1) and the writer always sends — by the
 		// time cmd has exited, the prompt write has either succeeded, hit a
