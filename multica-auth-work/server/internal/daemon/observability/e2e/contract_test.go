@@ -62,9 +62,42 @@ func TestCarrierRoundTrip(t *testing.T) {
 	if carrier[HeaderContractVersion] != ContractVersion {
 		t.Fatalf("carrier missing contract version")
 	}
-	back := CorrelationFromCarrier(carrier)
+	back, err := CorrelationFromCarrier(carrier)
+	if err != nil {
+		t.Fatalf("carrier rejected: %v", err)
+	}
 	if back != corr {
 		t.Fatalf("carrier round-trip mismatch:\n got=%+v\nwant=%+v", back, corr)
+	}
+}
+
+func TestCarrierVersionAndIdentifiersFailClosed(t *testing.T) {
+	valid := fullCorrelation().ToCarrier()
+	tests := []struct {
+		name   string
+		mutate func(map[string]string)
+	}{
+		{name: "missing version", mutate: func(carrier map[string]string) {
+			delete(carrier, HeaderContractVersion)
+		}},
+		{name: "unsupported version", mutate: func(carrier map[string]string) {
+			carrier[HeaderContractVersion] = "agent-brain.e2e.v999"
+		}},
+		{name: "unsafe identifier", mutate: func(carrier map[string]string) {
+			carrier[HeaderRequestID] = "not safe content"
+		}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			carrier := make(map[string]string, len(valid))
+			for key, value := range valid {
+				carrier[key] = value
+			}
+			test.mutate(carrier)
+			if _, err := CorrelationFromCarrier(carrier); err == nil {
+				t.Fatal("unsafe carrier accepted")
+			}
+		})
 	}
 }
 
@@ -131,6 +164,70 @@ func TestLabelValueLeakRejected(t *testing.T) {
 			WithLabel("route_model", val).WithOutcome("ok", "").Finish()
 		if err := s.Validate(); err == nil {
 			t.Fatalf("case %q: expected leak value %q to be rejected", name, val)
+		}
+	}
+}
+
+func TestRouteModelAndPseudonymLabels(t *testing.T) {
+	valid := NewSpan(HopRoute, Correlation{RequestID: "req-1", OmniRequestID: "omni-1"}).
+		WithLabel("route_model", "agy/claude-opus-4-6-thinking").
+		WithLabel("account_pseudonym", "acct_0123456789abcdef").
+		WithLabel("connection_pseudonym", "conn_fedcba9876543210").
+		WithOutcome("ok", "").
+		Finish()
+	if err := valid.Validate(); err != nil {
+		t.Fatalf("safe route metadata rejected: %v", err)
+	}
+	principal := NewSpan(HopIngress, Correlation{RequestID: "req-1", TaskID: "task-1"}).
+		WithLabel("principal_pseudonym", "principal_0123456789abcdef").
+		WithOutcome("accepted", "").
+		Finish()
+	if err := principal.Validate(); err != nil {
+		t.Fatalf("safe principal pseudonym rejected: %v", err)
+	}
+
+	invalid := []struct {
+		key   string
+		value string
+	}{
+		{key: "route_model", value: "https://provider.invalid/model"},
+		{key: "route_model", value: "/provider/model"},
+		{key: "route_model", value: "provider//model"},
+		{key: "route_model", value: "provider/model with content"},
+		{key: "account_pseudonym", value: "raw-account-name"},
+		{key: "account_pseudonym", value: "acct_not-a-hex-digest"},
+		{key: "connection_pseudonym", value: "conn_0123"},
+		{key: "connection_pseudonym", value: "conn_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0"},
+		{key: "principal_pseudonym", value: "user@example.com"},
+	}
+	for _, test := range invalid {
+		span := NewSpan(HopRoute, Correlation{RequestID: "req-1", OmniRequestID: "omni-1"}).
+			WithLabel(test.key, test.value).
+			WithOutcome("ok", "").
+			Finish()
+		if err := span.Validate(); err == nil {
+			t.Fatalf("unsafe %s accepted", test.key)
+		}
+	}
+}
+
+func TestCountersAreClosedPerHop(t *testing.T) {
+	valid := NewSpan(HopRoute, Correlation{RequestID: "req-1", OmniRequestID: "omni-1"}).
+		WithCounter("retry_count", 1).
+		WithCounter("total_tokens", 42).
+		WithOutcome("ok", "").
+		Finish()
+	if err := valid.Validate(); err != nil {
+		t.Fatalf("approved route counters rejected: %v", err)
+	}
+
+	for _, key := range []string{"arbitrary_count", "queue_depth", "trace_count"} {
+		span := NewSpan(HopRoute, Correlation{RequestID: "req-1", OmniRequestID: "omni-1"}).
+			WithCounter(key, 1).
+			WithOutcome("ok", "").
+			Finish()
+		if err := span.Validate(); err == nil {
+			t.Fatalf("route accepted unapproved counter %q", key)
 		}
 	}
 }
