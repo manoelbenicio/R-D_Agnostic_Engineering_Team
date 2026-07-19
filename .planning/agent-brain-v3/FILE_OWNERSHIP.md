@@ -110,6 +110,12 @@ globs (cada path casa exatamente uma lane) e registra a prova. Locks em `AGENT_L
 | W7 | `internal/service/obs_queue.go` (OBS-3 DB-queue span), `internal/service/obs_persist.go` (OBS-7 terminal-persistence span) | **NEW** |
 | W8 | `openspec/changes/**` docs + `.planning/agent-brain-v3/evidence/**` sibling evidence (no product code) | docs only |
 
+> **Evidence-path clarification (2026-07-19, from W3↔W8 overlap adjudication):** each lane writes ONLY
+> its own EV-id-namespaced artifact under `.planning/agent-brain-v3/evidence/` (e.g., W3 → `EV-OBS-05`
+> file, W4 → `EV-OBS-11` file). **W8's evidence scope is limited to sibling-change reopened-task
+> evidence** (chat-orchestration / agent-credential-isolation / native-runtimes-onboarding) — it does
+> NOT own other lanes' OBS evidence. No lane writes into another lane's EV artifact.
+
 **Shared anchor files — Wave C, W1-serial only (NOT in W6/W7 static ownership):** the call-site
 insertions that invoke the W6/W7 span helpers live in shared files and are inserted exclusively by
 W1 during Wave C serial integration: `internal/metrics/http.go` (or router chain) → registers

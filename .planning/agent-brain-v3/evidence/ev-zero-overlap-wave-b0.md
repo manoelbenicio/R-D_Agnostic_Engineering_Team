@@ -125,3 +125,15 @@ new stack files added to W4 = 20 (disjoint tree: multica-auth-work/deploy/ is a 
 **re-acceptance by Codex56-Principal-TL**. Until the amended proof is accepted, **W4 MUST NOT edit
 the real stack `multica-auth-work/deploy/observability/**` and MUST NOT claim OBS-11.** Commit
 `2c5f4d4` is recorded **PRODUCED-NOT-ACCEPTED** (not done).
+
+## RE-ACCEPTANCE 2026-07-19 — amended EV-ZERO-OVERLAP ACCEPTED @ fbabd9c
+
+Codex56-Principal-TL independently RE-ACCEPTED the amended proof: matched remote HEAD `fbabd9c`,
+hashes `a4a147…` and `2f345e…`, 20 real-stack files, W1/W2/W3/W4 counts 69/25/19/46, all pairwise
+intersections zero, both OpenSpec changes strict-valid. **W4 hold is LIFTED** — W4 may now edit the
+real stack `multica-auth-work/deploy/observability/**` and pursue OBS-11 within its frozen scope
+(no real secret values in `secrets/*.example`).
+
+Related adjudications (produced-not-accepted): W4 `2c5f4d4` (omitted real stack) and W3 `2a64fc6`
+(guessed nonexistent W5 API; no compile; premature DONE; wrote into W8 evidence path). Each must be
+redone truthfully within frozen scope; W3 must compile against W5's PUBLISHED contract.

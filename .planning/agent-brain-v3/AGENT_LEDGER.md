@@ -531,3 +531,15 @@
 > Codex56-Principal-TL. Until re-accepted, W4 must NOT edit the real stack or claim OBS-11; no real
 > secrets in secrets/*.example. (3) Status correction (owner): W5 (w6:p1) and W6 (w6:p2) interactive
 > trust prompts CLEARED — both WORKING; not redispatched. Holds intact: 9.1/PD-08/keys/Prodex/cutover/production.
+
+---
+
+> **RE-ACCEPTANCE + W3 ADJUDICATION (Kiro-TL, 2026-07-19).** (1) Amended EV-ZERO-OVERLAP
+> **RE-ACCEPTED @ `fbabd9c`** by Codex56-Principal-TL (matched remote HEAD, hashes a4a147…/2f345e…,
+> 20 real-stack files, counts 69/25/19/46, pairwise ∩=0, both strict-valid). **W4 hold LIFTED** —
+> W4 may edit `multica-auth-work/deploy/observability/**` + pursue OBS-11 in frozen scope (no real
+> secrets in *.example). (2) W3 commit **`2a64fc6` = PRODUCED-NOT-ACCEPTED (not done)**: guessed a
+> NONEXISTENT W5 correlation API; does not compile; premature DONE; wrote into W8 evidence path
+> (ownership overlap). W3 must redo: compile against W5's PUBLISHED contract, stay in W3 frozen scope,
+> no premature DONE. Evidence-path clarification added to FILE_OWNERSHIP (EV-id-namespaced per lane).
+> W4 `2c5f4d4` remains produced-not-accepted. Holds unchanged: 9.1/PD-08/keys/Prodex/cutover/production.
