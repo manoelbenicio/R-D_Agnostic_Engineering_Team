@@ -579,3 +579,21 @@
 > INDEPENDENT REVIEW PASS** — technical-integration-ready, NOT final acceptance; `gateway/obs_span.go(+test)`,
 > Principal test/race/vet PASS + Gemini review PASS. Kiro-TL independently verified both SHAs/subjects +
 > origin-clean tips. build-omniroute unchanged 51/96; no OBS checkbox closed. Holds intact.
+
+---
+
+> **C3 — W4/W6/W3/W7/W8 STATUS (Kiro-TL/Opus-4.8, 2026-07-19; authorized by Codex56-Principal-TL).**
+> Golden-Rule CHECK-IN/OUT: docs-only; no product/test/product-git/credential/network action.
+> **W4 `47c693c` (OBS-11) = PRODUCED-NOT-ACCEPTED** — promtool 14-rule PASS + Codex review PASS, but no
+> accepted exporter emits the 6 named obs_* metrics; no G4 PASS. Kiro-TL confirmed `47c693c` = `origin/w4`
+> tip and touches only `deploy/observability/alerts.yml` (HopLatencySpike removal). **W6 `a715b0a`
+> (OBS-2/8) = PRODUCED-NOT-ACCEPTED** — `da5c924` failed review (nil panic; negative counters; missing
+> ingress metadata); `a715b0a` corrections Principal test/race/vet PASS, but frozen ownership omitted the
+> two `*_test.go` and green suites don't exercise the helpers → needs D-V3-19 + owned repo tests; shared
+> `request_logger.go`/`hub.go` stay W1 Wave C. **W3 (OBS-5) = BLOCKED** on W1 Wave C launch_id/recorder
+> propagation; head `0ba88da`, 5 ahead of origin, clean; no OBS-5 commit; do not invent IDs/wrappers.
+> **W7 (OBS-3/7) = PREFLIGHT** — branch `4c67ae0` clean, absent from origin, no product; zero-schema design
+> (deterministic IDs from stable task metadata; no DB columns) pending council; `task.go` has no
+> queue_msg_id/result_id/queue_depth surface (Kiro-TL confirmed). **W8 `6aa1e50` = independently verified**
+> (four evidence drafts; 70/70 hashes PASS; classifications truthful) — adjudication PENDING. build-omniroute
+> unchanged 51/96; no OBS checkbox closed. Holds intact: 9.1/capacity/PD-08/keys/Prodex/cutover/production.
