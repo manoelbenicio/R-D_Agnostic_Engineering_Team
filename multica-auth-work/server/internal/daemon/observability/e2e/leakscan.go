@@ -23,8 +23,11 @@ type ScanReport struct {
 // secrets_present invariant. It returns findings; empty means clean.
 func scanSpan(s Span) []LeakFinding {
 	var f []LeakFinding
-	loc := func(field string) string { return fmt.Sprintf("span[%s].%s", s.Hop, field) }
+	loc := func(field string) string { return "span." + field }
 
+	if err := s.Validate(); err != nil {
+		f = append(f, LeakFinding{loc("structure"), "span failed closed structural validation"})
+	}
 	if s.ContractVersion != ContractVersion {
 		f = append(f, LeakFinding{loc("contract_version"), "unsupported contract version"})
 	}
@@ -62,23 +65,18 @@ func scanSpan(s Span) []LeakFinding {
 
 	// Labels: closed key set + key-aware value structural check.
 	for k, v := range s.Labels {
-		kind, ok := allowedLabelKeys[k]
-		if !ok {
-			f = append(f, LeakFinding{loc("labels." + k), "label key not in approved metadata set"})
-			continue
-		}
-		if leak, reason := detectInlineSecret(v, kind); leak {
-			f = append(f, LeakFinding{loc("labels." + k), reason})
+		if err := validateLabel(k, v); err != nil {
+			f = append(f, LeakFinding{loc("labels"), "label failed closed structural validation"})
 		}
 	}
 
-	// Counters: numeric only, safe keys.
+	// Counters: closed per-hop key set and non-negative numeric values.
 	for k, v := range s.Counters {
-		if !safeCode(k, maxCodeLen) {
-			f = append(f, LeakFinding{loc("counters." + k), "counter key is not a safe code"})
+		if !counterAllowed(s.Hop, k) {
+			f = append(f, LeakFinding{loc("counters"), "counter key not approved for hop"})
 		}
 		if v < 0 {
-			f = append(f, LeakFinding{loc("counters." + k), "counter is negative"})
+			f = append(f, LeakFinding{loc("counters"), "counter is negative"})
 		}
 	}
 
@@ -105,24 +103,118 @@ func ScanSpans(spans []Span) ScanReport {
 	return report
 }
 
-// ScanLogLines applies the marker/structure leak check to free-form log or
-// alert-annotation strings captured elsewhere. Log lines may legitimately
-// contain spaces and 'key=value' fragments, so the identifier charset is NOT
-// enforced; instead each line is checked for secret markers (URLs, emails,
-// bearer/JWT/API-key/connection-string shapes) and control characters. Any line
-// that could carry a secret fails closed. Reasons never echo the value.
+// EventKind is the closed vocabulary for metadata-only structured events.
+type EventKind string
+
+const (
+	EventHop         EventKind = "hop"
+	EventTraceGap    EventKind = "trace_gap"
+	EventTraceOrphan EventKind = "trace_orphan"
+	EventLeakRefused EventKind = "leak_refused"
+)
+
+// Event is the only accepted log/event shape. It deliberately has no message,
+// body, error text, or other free-form content field. Labels remain span/event
+// metadata and MUST NOT be promoted into Prometheus dimensions.
+type Event struct {
+	ContractVersion string            `json:"contract_version"`
+	Kind            EventKind         `json:"kind"`
+	Hop             HopKind           `json:"hop"`
+	Correlation     Correlation       `json:"correlation"`
+	Outcome         string            `json:"outcome"`
+	ReasonCode      string            `json:"reason_code,omitempty"`
+	Labels          map[string]string `json:"labels,omitempty"`
+	Counters        map[string]int64  `json:"counters,omitempty"`
+	SecretsPresent  bool              `json:"secrets_present"`
+}
+
+func (e Event) validate() error {
+	if !SupportedContractVersion(e.ContractVersion) {
+		return fmt.Errorf("unsupported event contract version")
+	}
+	switch e.Kind {
+	case EventHop, EventTraceGap, EventTraceOrphan, EventLeakRefused:
+	default:
+		return fmt.Errorf("event kind is not approved")
+	}
+	if !isEmittingHop(e.Hop) && e.Hop != HopTrace {
+		return fmt.Errorf("event hop is not approved")
+	}
+	if e.SecretsPresent {
+		return fmt.Errorf("event secrets_present invariant violated")
+	}
+	if err := e.Correlation.Validate(); err != nil {
+		return err
+	}
+	if isEmittingHop(e.Hop) {
+		for _, required := range RequiredIDs(e.Hop) {
+			if e.Correlation.Get(required) == "" {
+				return fmt.Errorf("event missing required correlation")
+			}
+		}
+	}
+	if !safeCode(e.Outcome, maxCodeLen) {
+		return fmt.Errorf("event outcome is not a safe code")
+	}
+	if e.ReasonCode != "" && !safeCode(e.ReasonCode, maxCodeLen) {
+		return fmt.Errorf("event reason is not a safe code")
+	}
+	if len(e.Labels) > maxLabels || len(e.Counters) > maxCounters {
+		return fmt.Errorf("event metadata budget exceeded")
+	}
+	for key, value := range e.Labels {
+		if err := validateLabel(key, value); err != nil {
+			return fmt.Errorf("event label rejected")
+		}
+	}
+	for key, value := range e.Counters {
+		if value < 0 {
+			return fmt.Errorf("event counter is negative")
+		}
+		if e.Hop == HopTrace {
+			switch key {
+			case "gap_count", "orphan_count", "hop_count", "trace_count":
+			default:
+				return fmt.Errorf("trace event counter is not approved")
+			}
+		} else if !counterAllowed(e.Hop, key) {
+			return fmt.Errorf("event counter is not approved for hop")
+		}
+	}
+	return nil
+}
+
+// ScanEvents structurally validates closed metadata-only events. No
+// pattern-based content acceptance is involved because Event has no free-form
+// content field.
+func ScanEvents(events []Event) ScanReport {
+	report := ScanReport{Scanned: len(events), Clean: true}
+	for index, event := range events {
+		if err := event.validate(); err != nil {
+			report.Clean = false
+			report.Findings = append(report.Findings, LeakFinding{
+				Location: fmt.Sprintf("event[%d]", index),
+				Reason:   "event failed closed structural validation",
+			})
+		}
+	}
+	return report
+}
+
+// ScanLogLines rejects every non-empty free-form log line. Pattern scans cannot
+// prove that arbitrary text is metadata-only; producers must emit Event values
+// and use ScanEvents instead.
 func ScanLogLines(lines []string) ScanReport {
 	report := ScanReport{Scanned: len(lines), Clean: true}
 	for i, line := range lines {
 		if line == "" {
 			continue
 		}
-		if leak, reason := detectSecretMarkers(line, 4096); leak {
-			report.Clean = false
-			report.Findings = append(report.Findings, LeakFinding{
-				Location: fmt.Sprintf("log[%d]", i), Reason: reason,
-			})
-		}
+		report.Clean = false
+		report.Findings = append(report.Findings, LeakFinding{
+			Location: fmt.Sprintf("log[%d]", i),
+			Reason:   "free-form log line is not structurally metadata-only",
+		})
 	}
 	return report
 }
