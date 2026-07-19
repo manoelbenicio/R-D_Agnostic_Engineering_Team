@@ -543,3 +543,14 @@
 > (ownership overlap). W3 must redo: compile against W5's PUBLISHED contract, stay in W3 frozen scope,
 > no premature DONE. Evidence-path clarification added to FILE_OWNERSHIP (EV-id-namespaced per lane).
 > W4 `2c5f4d4` remains produced-not-accepted. Holds unchanged: 9.1/PD-08/keys/Prodex/cutover/production.
+
+---
+
+> **W5 ADJUDICATION (Kiro-TL record, 2026-07-19).** W5 branch `work/agent-brain-w5` @ `70c34d3`:
+> independently verified ownership-clean, remote-synced, gofmt clean, package test+vet PASS — but
+> **PRODUCED-NOT-ACCEPTED (not done)**. Blockers returned to W5 by Codex56-Principal-TL: (1) shallow
+> map/slice aliasing after validation; (2) log scan pattern-only, not structurally closed (OBS-10 must
+> be structural); (3) carrier `contract_version` not enforced at the parse/use boundary; (4) counter
+> keys not closed. **OBS-1/OBS-9/OBS-10 remain OPEN.** Consequence: the correlation API contract is
+> NOT yet published, so OBS callers (W1/W2/W3/W6) stay dependency-blocked on W5. Holds intact:
+> capacity/9.1/PD-08/keys/Prodex/cutover/production.
