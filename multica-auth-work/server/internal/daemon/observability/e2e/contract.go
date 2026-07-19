@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 )
@@ -49,15 +48,15 @@ func isEmittingHop(h HopKind) bool {
 type IDField string
 
 const (
-	IDRequest    IDField = "request_id"
-	IDQueueMsg   IDField = "queue_msg_id"
-	IDTask       IDField = "task_id"
-	IDSession    IDField = "session_id"
-	IDLaunch     IDField = "launch_id"
-	IDProc       IDField = "proc_id"
-	IDOmniReq    IDField = "omni_request_id"
-	IDResult     IDField = "result_id"
-	IDDelivery   IDField = "delivery_id"
+	IDRequest  IDField = "request_id"
+	IDQueueMsg IDField = "queue_msg_id"
+	IDTask     IDField = "task_id"
+	IDSession  IDField = "session_id"
+	IDLaunch   IDField = "launch_id"
+	IDProc     IDField = "proc_id"
+	IDOmniReq  IDField = "omni_request_id"
+	IDResult   IDField = "result_id"
+	IDDelivery IDField = "delivery_id"
 )
 
 // Correlation carries the nine metadata-only identifiers that stitch the eight
@@ -217,12 +216,12 @@ func (c Correlation) Validate() error {
 }
 
 const (
-	maxIDLen        = 128
-	maxCodeLen      = 96
-	maxLabelValLen  = 128
-	maxLabels       = 32
-	maxCounters     = 32
-	maxArgvTokens   = 64
+	maxIDLen       = 128
+	maxCodeLen     = 96
+	maxLabelValLen = 128
+	maxLabels      = 32
+	maxCounters    = 32
+	maxArgvTokens  = 64
 )
 
 // Span is a single metadata-only observability record for one hop. It contains
@@ -332,11 +331,11 @@ var allowedLabelKeys = map[string]labelKind{
 // allowedArgvShapeTokens is the closed vocabulary for structural argv redaction.
 // A shape describes the SHAPE of an argument, never its value.
 var allowedArgvShapeTokens = map[string]struct{}{
-	"subcommand":     {},
-	"flag":           {},
-	"flag=<redacted>": {},
-	"arg=<redacted>":  {},
-	"path=<redacted>": {},
+	"subcommand":       {},
+	"flag":             {},
+	"flag=<redacted>":  {},
+	"arg=<redacted>":   {},
+	"path=<redacted>":  {},
 	"value=<redacted>": {},
 }
 
@@ -443,29 +442,23 @@ var suspiciousSubstrings = []string{
 	"cookie", "set-cookie", "\n", "\r", "\t",
 }
 
-// detectInlineSecret performs a STRUCTURAL leak check on a single value: charset
-// enforcement first (rejects most secret encodings by shape), then explicit
-// suspicious-marker and length checks. It fails closed. The kind selects the
-// charset: kindCode is a strict safe identifier; kindPath additionally allows
-// '/', '{', '}' for route templates while still rejecting URLs ("://") and
-// emails ("@").
-func detectInlineSecret(value string, kind labelKind) (bool, string) {
+// detectSecretMarkers performs the marker/structure portion of the structural
+// leak check: length bound, control characters, explicit secret markers
+// (URLs, emails, bearer/JWT/API-key/connection-string shapes). It does NOT
+// enforce the identifier charset, so it is suitable for scanning free-form log
+// lines that may legitimately contain spaces or 'key=value' fragments. It fails
+// closed.
+func detectSecretMarkers(value string, max int) (bool, string) {
 	if value == "" {
 		return false, ""
 	}
-	if len(value) > maxLabelValLen {
-		return true, "value exceeds metadata length budget"
+	if len(value) > max {
+		return true, "value exceeds length budget"
 	}
 	for _, r := range value {
-		if r == '\n' || r == '\r' || r == '\t' {
-			return true, "value contains control/whitespace (possible free-form content)"
-		}
 		if r < 0x20 || r == 0x7f {
 			return true, "value contains control character"
 		}
-	}
-	if strings.ContainsAny(value, " ") {
-		return true, "value contains whitespace (possible free-form content)"
 	}
 	lower := strings.ToLower(value)
 	for _, marker := range suspiciousSubstrings {
@@ -474,16 +467,36 @@ func detectInlineSecret(value string, kind labelKind) (bool, string) {
 		}
 	}
 	// JWT-like structure: three dot-separated long segments.
-	if segs := strings.Split(value, "."); len(segs) == 3 {
-		long := 0
-		for _, s := range segs {
-			if len(s) >= 16 {
-				long++
+	for _, field := range strings.Fields(value) {
+		if segs := strings.Split(field, "."); len(segs) == 3 {
+			long := 0
+			for _, s := range segs {
+				if len(s) >= 16 {
+					long++
+				}
+			}
+			if long >= 2 {
+				return true, "value has JWT-like structure"
 			}
 		}
-		if long >= 2 {
-			return true, "value has JWT-like structure"
-		}
+	}
+	return false, ""
+}
+
+// detectInlineSecret performs a STRUCTURAL leak check on a single span value:
+// marker/structure checks first, then whitespace and charset enforcement. It
+// fails closed. The kind selects the charset: kindCode is a strict safe
+// identifier; kindPath additionally allows '/', '{', '}' for route templates
+// while still rejecting URLs ("://") and emails ("@").
+func detectInlineSecret(value string, kind labelKind) (bool, string) {
+	if value == "" {
+		return false, ""
+	}
+	if leak, reason := detectSecretMarkers(value, maxLabelValLen); leak {
+		return true, reason
+	}
+	if strings.ContainsAny(value, " ") {
+		return true, "value contains whitespace (possible free-form content)"
 	}
 	if !safeLabelCharset(value, kind, maxLabelValLen) {
 		return true, "value is outside the safe metadata charset"
@@ -513,12 +526,12 @@ func safeLabelCharset(value string, kind labelKind, max int) bool {
 // ContractDescriptor is a serializable summary of the OBS-1 contract, suitable
 // for evidence artifacts and independent review.
 type ContractDescriptor struct {
-	ContractVersion string             `json:"contract_version"`
-	Hops            []HopKind          `json:"hops"`
-	Identifiers     []IDField          `json:"identifiers"`
-	Joins           []JoinRelationship `json:"joins"`
-	Carriers        map[string]string  `json:"carriers"`
-	SecretsInvariant string            `json:"secrets_invariant"`
+	ContractVersion  string             `json:"contract_version"`
+	Hops             []HopKind          `json:"hops"`
+	Identifiers      []IDField          `json:"identifiers"`
+	Joins            []JoinRelationship `json:"joins"`
+	Carriers         map[string]string  `json:"carriers"`
+	SecretsInvariant string             `json:"secrets_invariant"`
 }
 
 // Descriptor returns the machine-readable OBS-1 contract descriptor.
@@ -543,14 +556,4 @@ func Descriptor() ContractDescriptor {
 		Carriers:         carriers,
 		SecretsInvariant: "secrets_present==false; metadata-only; argv shape-only",
 	}
-}
-
-// sortedKeys is a small helper for deterministic iteration in reports.
-func sortedKeys[V any](m map[string]V) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }
