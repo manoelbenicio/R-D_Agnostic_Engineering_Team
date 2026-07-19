@@ -236,6 +236,7 @@ type Daemon struct {
 	credentialMetrics *obsmetrics.CredentialMetrics
 	agentBrain        *agentBrainRuntime
 	agentBrainInitErr error
+	agentBrainOBS     *brain.AdmissionObserver
 
 	l2Client             l2RuntimeClient
 	l2InitErr            error
@@ -294,6 +295,7 @@ func newDaemon(cfg Config, logger *slog.Logger, dependencies AgentBrainDependenc
 		warningDetector:           rotation.NewWarningDetector(),
 		usageDetector:             rotation.NewUsageDetector(0),
 		credentialMetrics:         obsmetrics.NewCredentialMetrics(),
+		agentBrainOBS:             brain.NewAdmissionObserver(brain.NewAdmissionLogSink(logger)),
 		l2Sessions:                make(map[string]runtimeRouterOwnerRecord),
 		l2ProfileByHome:           make(map[string]string),
 	}
@@ -3298,14 +3300,23 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	if task.Agent != nil && strings.TrimSpace(task.Agent.Model) != "" {
 		legacyModel = task.Agent.Model
 	}
+	admissionStarted := time.Now()
 	if d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required && d.agentBrainInitErr != nil {
+		d.observeAgentBrainAdmission(task, nil, "integration_initialization_failed", admissionStarted)
 		return TaskResult{}, &agentBrainAdmissionError{class: "integration_initialization_failed"}
 	}
 	agentBrainPlan, err := d.agentBrain.admitTask(ctx, task, provider, legacyModel)
 	if err != nil {
+		class := "readiness_cancelled"
+		var admissionErr *agentBrainAdmissionError
+		if errors.As(err, &admissionErr) && admissionErr.class != "" {
+			class = admissionErr.class
+		}
+		d.observeAgentBrainAdmission(task, nil, class, admissionStarted)
 		return TaskResult{}, err
 	}
 	if agentBrainPlan != nil {
+		d.observeAgentBrainAdmission(task, agentBrainPlan, "admitted", admissionStarted)
 		task.RuntimeRouterOwner = string(brain.RouterOwnerOmniRoute)
 		entry.Model = string(agentBrainPlan.Task.Request.RouteModel)
 		defer func() {
@@ -4017,6 +4028,28 @@ runAttempt:
 			Usage:         usageEntries,
 			FailureReason: failureReason,
 		}, nil
+	}
+}
+
+func (d *Daemon) observeAgentBrainAdmission(task Task, plan *agentBrainTaskPlan, class string, startedAt time.Time) {
+	if !d.agentBrainGatewayRequired() || d.agentBrainOBS == nil {
+		return
+	}
+	correlation := brain.AdmissionCorrelation(task.ID, firstConfigured(task.ChatSessionID, task.PriorSessionID, task.ID))
+	if plan != nil {
+		correlation = plan.Task.Request.Correlation
+	}
+	decision, readiness, failClosedClass := brain.AdmissionClassification(class)
+	if err := d.agentBrainOBS.Emit(brain.AdmissionObservation{
+		Correlation:     correlation,
+		CLIKind:         d.cfg.AgentBrain.CLIKind,
+		RouteModel:      d.cfg.AgentBrain.RouteModel,
+		Decision:        decision,
+		Readiness:       readiness,
+		FailClosedClass: failClosedClass,
+		StartedAt:       startedAt,
+	}); err != nil && d.logger != nil {
+		d.logger.Warn("agent brain admission span refused", "error_class", "invalid_metadata")
 	}
 }
 
