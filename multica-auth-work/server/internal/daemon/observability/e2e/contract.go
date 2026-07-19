@@ -10,6 +10,11 @@ import (
 // span. Consumers MUST reject spans whose ContractVersion they do not support.
 const ContractVersion = "agent-brain.e2e.v1"
 
+// SupportedContractVersion reports whether v is an accepted contract version.
+func SupportedContractVersion(v string) bool {
+	return v == ContractVersion
+}
+
 // HopKind identifies one of the eight end-to-end hops. Hops 1..7 are emitted by
 // their owning lane; HopTrace (8) is synthesized by the W5 assembler.
 type HopKind string
@@ -176,11 +181,15 @@ func (c Correlation) ToCarrier() map[string]string {
 	return out
 }
 
-// CorrelationFromCarrier reconstructs a Correlation from a propagation carrier.
-// Unknown keys are ignored. The result is not validated here; callers pass it
-// through Span validation before use.
-func CorrelationFromCarrier(carrier map[string]string) Correlation {
-	return Correlation{
+// CorrelationFromCarrier reconstructs and validates a Correlation from a
+// propagation carrier. The declared contract version is checked before any
+// identifier is trusted. Unknown keys are ignored because carriers may contain
+// transport metadata owned by another layer.
+func CorrelationFromCarrier(carrier map[string]string) (Correlation, error) {
+	if !SupportedContractVersion(carrier[HeaderContractVersion]) {
+		return Correlation{}, fmt.Errorf("unsupported or missing carrier contract version")
+	}
+	correlation := Correlation{
 		RequestID:     carrier[HeaderRequestID],
 		QueueMsgID:    carrier[HeaderQueueMsgID],
 		TaskID:        carrier[HeaderTaskID],
@@ -191,6 +200,10 @@ func CorrelationFromCarrier(carrier map[string]string) Correlation {
 		ResultID:      carrier[HeaderResultID],
 		DeliveryID:    carrier[HeaderDeliveryID],
 	}
+	if err := correlation.Validate(); err != nil {
+		return Correlation{}, fmt.Errorf("invalid carrier correlation: %w", err)
+	}
+	return correlation, nil
 }
 
 // Validate enforces that every present identifier is a safe correlation token.
@@ -225,7 +238,8 @@ const (
 )
 
 // Span is a single metadata-only observability record for one hop. It contains
-// no free-form content field by construction.
+// no free-form content field by construction. Labels are trace-span metadata;
+// exporters MUST NOT promote pseudonym labels into Prometheus label dimensions.
 type Span struct {
 	ContractVersion string            `json:"contract_version"`
 	Hop             HopKind           `json:"hop"`
@@ -311,21 +325,64 @@ func (s *Span) DurationMs() int64 {
 type labelKind int
 
 const (
-	kindCode labelKind = iota // strict safe identifier charset
-	kindPath                  // route-template charset: adds '/', '{', '}'
+	kindCode       labelKind = iota // strict safe identifier charset
+	kindPath                        // route-template charset: adds '/', '{', '}'
+	kindRouteModel                  // model-id charset: adds '/' (slash-qualified), never braces/URL
+	kindPseudonym                   // bounded one-way pseudonym; never raw identity/email
 )
+
+// maxPseudonymLen bounds pseudonym label values. Pseudonyms are span metadata,
+// not Prometheus metric labels, so their cardinality does not imply a
+// high-cardinality metric series; the bound simply rejects oversized/free-form
+// values.
+const maxPseudonymLen = 80
 
 // allowedLabelKeys is the closed set of safe classification label keys mapped to
 // the value kind each accepts. Any other key is rejected as potentially
 // content-bearing.
 var allowedLabelKeys = map[string]labelKind{
-	"route_model": kindCode, "protocol": kindCode, "cli_kind": kindCode, "router_owner": kindCode,
+	"route_model": kindRouteModel, "protocol": kindCode, "cli_kind": kindCode, "router_owner": kindCode,
 	"status_class": kindCode, "selection_reason": kindCode, "affinity_reason": kindCode,
 	"quota_state": kindCode, "circuit_state": kindCode, "capacity_tier": kindCode, "cohort": kindCode,
 	"admission_decision": kindCode, "readiness_result": kindCode, "fail_closed_class": kindCode,
 	"terminal_status": kindCode, "exit_code_class": kindCode, "principal_class": kindCode,
 	"method": kindCode, "route_template": kindPath, "route": kindPath, "token_class": kindCode,
 	"backpressure_state": kindCode, "gap_reason": kindCode, "orphan_reason": kindCode,
+	// Pseudonymous identity labels (OBS-2 principal / OBS-6 account+connection).
+	// Values MUST be one-way pseudonyms — never raw account identity, email, or
+	// connection string. The charset check rejects '@' and URL shapes.
+	"principal_pseudonym":  kindPseudonym,
+	"account_pseudonym":    kindPseudonym,
+	"connection_pseudonym": kindPseudonym,
+}
+
+// allowedCounterKeys is closed per emitting hop for OBS-2..OBS-8. A counter
+// valid for one hop is rejected at every other hop, preventing arbitrary data
+// from being smuggled through a generically named numeric field.
+var allowedCounterKeys = map[HopKind]map[string]struct{}{
+	HopIngress: {
+		"latency_ms": {},
+	},
+	HopQueue: {
+		"wait_ms": {}, "queue_depth": {}, "enqueue_unix_ms": {}, "dequeue_unix_ms": {},
+	},
+	HopAdmission: {
+		"latency_ms": {},
+	},
+	HopCLI: {
+		"latency_ms": {}, "cpu_ms": {}, "rss_bytes": {},
+	},
+	HopRoute: {
+		"latency_ms": {}, "retry_count": {}, "fallback_count": {}, "ttft_ms": {},
+		"input_tokens": {}, "output_tokens": {}, "cache_tokens": {},
+		"reasoning_tokens": {}, "total_tokens": {},
+	},
+	HopPersist: {
+		"persist_latency_ms": {}, "byte_count": {}, "token_count": {},
+	},
+	HopDelivery: {
+		"delivery_latency_ms": {}, "drop_count": {}, "reconnect_count": {}, "backpressure_count": {},
+	},
 }
 
 // allowedArgvShapeTokens is the closed vocabulary for structural argv redaction.
@@ -343,13 +400,13 @@ var allowedArgvShapeTokens = map[string]struct{}{
 // metadata-only / secrets_present invariant and per-hop required identifiers.
 func (s *Span) Validate() error {
 	if s.ContractVersion != ContractVersion {
-		return fmt.Errorf("unsupported e2e contract version %q", s.ContractVersion)
+		return fmt.Errorf("unsupported e2e contract version")
 	}
 	if !isEmittingHop(s.Hop) {
-		return fmt.Errorf("hop %q is not an emitting hop", s.Hop)
+		return fmt.Errorf("span hop is not an emitting hop")
 	}
 	if s.SecretsPresent {
-		return fmt.Errorf("secrets_present invariant violated for hop %q", s.Hop)
+		return fmt.Errorf("secrets_present invariant violated")
 	}
 	if err := s.Correlation.Validate(); err != nil {
 		return err
@@ -378,23 +435,19 @@ func (s *Span) Validate() error {
 		return fmt.Errorf("hop %q exceeds label budget", s.Hop)
 	}
 	for k, v := range s.Labels {
-		kind, ok := allowedLabelKeys[k]
-		if !ok {
-			return fmt.Errorf("hop %q uses unapproved label key %q", s.Hop, k)
-		}
-		if leak, reason := detectInlineSecret(v, kind); leak {
-			return fmt.Errorf("hop %q label %q rejected: %s", s.Hop, k, reason)
+		if err := validateLabel(k, v); err != nil {
+			return fmt.Errorf("span label rejected: %w", err)
 		}
 	}
 	if len(s.Counters) > maxCounters {
 		return fmt.Errorf("hop %q exceeds counter budget", s.Hop)
 	}
 	for k, v := range s.Counters {
-		if !safeCode(k, maxCodeLen) {
-			return fmt.Errorf("hop %q counter key %q is not a safe code", s.Hop, k)
+		if !counterAllowed(s.Hop, k) {
+			return fmt.Errorf("span uses an unapproved counter key")
 		}
 		if v < 0 {
-			return fmt.Errorf("hop %q counter %q must not be negative", s.Hop, k)
+			return fmt.Errorf("span counter must not be negative")
 		}
 	}
 	if len(s.ArgvShape) > maxArgvTokens {
@@ -402,7 +455,7 @@ func (s *Span) Validate() error {
 	}
 	for _, tok := range s.ArgvShape {
 		if _, ok := allowedArgvShapeTokens[tok]; !ok {
-			return fmt.Errorf("hop %q argv shape token %q is not a redacted shape", s.Hop, tok)
+			return fmt.Errorf("span argv contains an unapproved shape token")
 		}
 	}
 	return nil
@@ -445,9 +498,8 @@ var suspiciousSubstrings = []string{
 // detectSecretMarkers performs the marker/structure portion of the structural
 // leak check: length bound, control characters, explicit secret markers
 // (URLs, emails, bearer/JWT/API-key/connection-string shapes). It does NOT
-// enforce the identifier charset, so it is suitable for scanning free-form log
-// lines that may legitimately contain spaces or 'key=value' fragments. It fails
-// closed.
+// enforce the identifier charset. It is defense-in-depth for already bounded
+// structured values; free-form logs are never accepted by this contract.
 func detectSecretMarkers(value string, max int) (bool, string) {
 	if value == "" {
 		return false, ""
@@ -504,6 +556,67 @@ func detectInlineSecret(value string, kind labelKind) (bool, string) {
 	return false, ""
 }
 
+func validateLabel(key, value string) error {
+	kind, ok := allowedLabelKeys[key]
+	if !ok {
+		return fmt.Errorf("key is not in approved metadata set")
+	}
+	if leak, reason := detectInlineSecret(value, kind); leak {
+		return fmt.Errorf("%s", reason)
+	}
+	if kind == kindRouteModel && !validRouteModel(value) {
+		return fmt.Errorf("value is not a safe route model identifier")
+	}
+	if kind == kindPseudonym && !validPseudonym(key, value) {
+		return fmt.Errorf("value is not a bounded one-way pseudonym")
+	}
+	return nil
+}
+
+func validRouteModel(value string) bool {
+	if strings.HasPrefix(value, "/") || strings.HasSuffix(value, "/") || strings.Contains(value, "//") {
+		return false
+	}
+	for _, r := range value {
+		switch {
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9':
+		case r == '-' || r == '_' || r == '.' || r == '/':
+		default:
+			return false
+		}
+	}
+	return value != ""
+}
+
+func validPseudonym(key, value string) bool {
+	prefix := ""
+	switch key {
+	case "principal_pseudonym":
+		prefix = "principal_"
+	case "account_pseudonym":
+		prefix = "acct_"
+	case "connection_pseudonym":
+		prefix = "conn_"
+	default:
+		return false
+	}
+	if len(value) > maxPseudonymLen || !strings.HasPrefix(value, prefix) {
+		return false
+	}
+	digest := strings.TrimPrefix(value, prefix)
+	if len(digest) < 16 || len(digest) > 64 {
+		return false
+	}
+	for _, r := range digest {
+		if !(r >= '0' && r <= '9' || r >= 'a' && r <= 'f') {
+			return false
+		}
+	}
+	return true
+}
+
 // safeLabelCharset enforces the charset for a label value according to its kind.
 func safeLabelCharset(value string, kind labelKind, max int) bool {
 	if value == "" || len(value) > max {
@@ -516,11 +629,21 @@ func safeLabelCharset(value string, kind labelKind, max int) bool {
 		case r >= '0' && r <= '9':
 		case r == '-' || r == '_' || r == '.' || r == ':':
 		case kind == kindPath && (r == '/' || r == '{' || r == '}'):
+		case kind == kindRouteModel && r == '/':
 		default:
 			return false
 		}
 	}
 	return true
+}
+
+func counterAllowed(hop HopKind, key string) bool {
+	keys, ok := allowedCounterKeys[hop]
+	if !ok {
+		return false
+	}
+	_, ok = keys[key]
+	return ok
 }
 
 // ContractDescriptor is a serializable summary of the OBS-1 contract, suitable

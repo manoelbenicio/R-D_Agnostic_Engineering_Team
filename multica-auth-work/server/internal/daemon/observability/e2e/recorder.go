@@ -37,10 +37,13 @@ func (r *Recorder) Emit(s *Span) error {
 	if s == nil {
 		return fmt.Errorf("nil span")
 	}
-	if err := s.Validate(); err != nil {
+	snapshot := cloneSpan(*s)
+	if err := snapshot.Validate(); err != nil {
 		return fmt.Errorf("span refused (invalid): %w", err)
 	}
-	return r.sink.Record(*s)
+	// The sink receives its own copy. A sink that retains or mutates reference
+	// fields cannot alias the caller's Span or the validated snapshot.
+	return r.sink.Record(cloneSpan(snapshot))
 }
 
 type discardSink struct{}
@@ -61,16 +64,18 @@ func NewMemorySink() *MemorySink { return &MemorySink{} }
 func (m *MemorySink) Record(s Span) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.spans = append(m.spans, s)
+	m.spans = append(m.spans, cloneSpan(s))
 	return nil
 }
 
-// Spans returns a copy of the recorded spans.
+// Spans returns a deep copy of the recorded spans.
 func (m *MemorySink) Spans() []Span {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	out := make([]Span, len(m.spans))
-	copy(out, m.spans)
+	for i, span := range m.spans {
+		out[i] = cloneSpan(span)
+	}
 	return out
 }
 
@@ -79,4 +84,24 @@ func (m *MemorySink) Len() int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return len(m.spans)
+}
+
+func cloneSpan(source Span) Span {
+	cloned := source
+	if source.Labels != nil {
+		cloned.Labels = make(map[string]string, len(source.Labels))
+		for key, value := range source.Labels {
+			cloned.Labels[key] = value
+		}
+	}
+	if source.Counters != nil {
+		cloned.Counters = make(map[string]int64, len(source.Counters))
+		for key, value := range source.Counters {
+			cloned.Counters[key] = value
+		}
+	}
+	if source.ArgvShape != nil {
+		cloned.ArgvShape = append([]string(nil), source.ArgvShape...)
+	}
+	return cloned
 }
