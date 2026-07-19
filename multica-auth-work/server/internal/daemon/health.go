@@ -175,6 +175,17 @@ func (d *Daemon) healthHandler(startedAt time.Time) http.HandlerFunc {
 }
 
 func runtimeAuthority(cfg Config) string {
+	// Wave B installs only the AB-REQ-41 selection scaffold. A nil recovery
+	// mode keeps it default-OFF and preserves the active runtime path; Wave C
+	// may supply platform state here only after its separately authorized
+	// operator/session-boundary wiring is accepted.
+	return runtimeAuthorityWithRecovery(cfg, nil)
+}
+
+func runtimeAuthorityWithRecovery(cfg Config, recovery *brain.RecoveryMode) string {
+	if recovery != nil {
+		return string(recovery.RouterOwner())
+	}
 	if cfg.AgentBrain.DevelopmentEnabled && cfg.AgentBrain.Neutral.Gateway.Required {
 		return "omniroute"
 	}
