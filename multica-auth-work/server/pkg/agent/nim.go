@@ -17,7 +17,11 @@ import (
 )
 
 const (
-	nimDefaultBaseURL = "https://integrate.api.nvidia.com/v1"
+	// nimDefaultBaseURL is intentionally empty. NIM targets OmniRoute
+	// exclusively; the OmniRoute gateway URL MUST be injected via
+	// Config.Env["OMNIROUTE_BASE_URL"] or the OMNIROUTE_BASE_URL env var.
+	// A hardcoded direct-provider URL would bypass the gateway contract.
+	nimDefaultBaseURL = ""
 	nimDefaultModel   = "z-ai/glm-5.2"
 	nimMaxFileBytes   = 4 << 20
 	nimDefaultTurns   = 24
@@ -101,9 +105,11 @@ type nimTurn struct {
 }
 
 func (b *nimBackend) Execute(ctx context.Context, prompt string, opts ExecOptions) (*Session, error) {
-	apiKey := b.env("NVIDIA_API_KEY")
+	// OmniRoute credential contract: NIM never reads NVIDIA_API_KEY.
+	// The daemon injects the gateway credential as OMNIROUTE_API_KEY.
+	apiKey := b.env("OMNIROUTE_API_KEY")
 	if apiKey == "" {
-		return nil, errors.New("NVIDIA_API_KEY is required for the NIM backend")
+		return nil, errors.New("OMNIROUTE_API_KEY is required for the NIM backend (gateway-routed execution)")
 	}
 	if strings.TrimSpace(prompt) == "" {
 		return nil, errors.New("NIM prompt must not be empty")
@@ -118,6 +124,9 @@ func (b *nimBackend) Execute(ctx context.Context, prompt string, opts ExecOption
 	info, err := os.Stat(root)
 	if err != nil || !info.IsDir() {
 		return nil, fmt.Errorf("NIM workspace is not a directory: %s", root)
+	}
+	if b.endpoint() == "" {
+		return nil, errors.New("OMNIROUTE_BASE_URL is required for the NIM backend (no direct-provider fallback)")
 	}
 
 	runCtx, cancel := runContext(ctx, opts.Timeout)
@@ -272,7 +281,7 @@ func (b *nimBackend) endpoint() string {
 	if b.baseURL != "" {
 		return b.baseURL
 	}
-	if value := b.env("NIM_BASE_URL"); value != "" {
+	if value := b.env("OMNIROUTE_BASE_URL"); value != "" {
 		return value
 	}
 	return nimDefaultBaseURL

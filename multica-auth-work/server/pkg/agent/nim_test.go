@@ -48,7 +48,7 @@ func TestNIMExecuteStreamsToolsAndUsage(t *testing.T) {
 	}))
 	defer server.Close()
 
-	backend := &nimBackend{cfg: Config{Env: map[string]string{"NVIDIA_API_KEY": "test-key"}}, client: server.Client(), baseURL: server.URL + "/v1"}
+	backend := &nimBackend{cfg: Config{Env: map[string]string{"OMNIROUTE_API_KEY": "test-key"}}, client: server.Client(), baseURL: server.URL + "/v1"}
 	session, err := backend.Execute(context.Background(), "create the file", ExecOptions{Cwd: root, Model: "test/model"})
 	if err != nil {
 		t.Fatal(err)
@@ -89,7 +89,7 @@ func TestNIMUsesGLM52AsRuntimeDefault(t *testing.T) {
 	defer server.Close()
 
 	backend := &nimBackend{
-		cfg:     Config{Env: map[string]string{"NVIDIA_API_KEY": "test-key"}},
+		cfg:     Config{Env: map[string]string{"OMNIROUTE_API_KEY": "test-key"}},
 		client:  server.Client(),
 		baseURL: server.URL,
 	}
@@ -105,15 +105,73 @@ func TestNIMUsesGLM52AsRuntimeDefault(t *testing.T) {
 	}
 }
 
-func TestNIMExecuteRequiresCredentialAndWorkspace(t *testing.T) {
-	backend := &nimBackend{cfg: Config{Env: map[string]string{"NVIDIA_API_KEY": ""}}}
-	t.Setenv("NVIDIA_API_KEY", "")
-	if _, err := backend.Execute(context.Background(), "prompt", ExecOptions{Cwd: t.TempDir()}); err == nil || !strings.Contains(err.Error(), "NVIDIA_API_KEY") {
+func TestNIMExecuteRequiresOmniRouteCredentialAndWorkspace(t *testing.T) {
+	backend := &nimBackend{cfg: Config{Env: map[string]string{"OMNIROUTE_API_KEY": ""}}}
+	t.Setenv("OMNIROUTE_API_KEY", "")
+	if _, err := backend.Execute(context.Background(), "prompt", ExecOptions{Cwd: t.TempDir()}); err == nil || !strings.Contains(err.Error(), "OMNIROUTE_API_KEY") {
 		t.Fatalf("credential error = %v", err)
 	}
-	backend.cfg.Env["NVIDIA_API_KEY"] = "key"
+	backend.cfg.Env["OMNIROUTE_API_KEY"] = "key"
+	// With credential but missing endpoint (nimDefaultBaseURL is empty):
+	// the fail-closed endpoint guard triggers before the workspace check
+	// only if Cwd is set; test workspace-missing first with baseURL injected.
+	backend.baseURL = "http://gateway.test"
 	if _, err := backend.Execute(context.Background(), "prompt", ExecOptions{}); err == nil || !strings.Contains(err.Error(), "workspace") {
 		t.Fatalf("workspace error = %v", err)
+	}
+}
+
+func TestNIMExecuteRejectsNvidiaAPIKey(t *testing.T) {
+	// NIM must NEVER read NVIDIA_API_KEY. Even if it is set, the adapter
+	// must require OMNIROUTE_API_KEY and fail closed without it.
+	backend := &nimBackend{cfg: Config{Env: map[string]string{"NVIDIA_API_KEY": "leaked-key"}}}
+	t.Setenv("NVIDIA_API_KEY", "leaked-key")
+	t.Setenv("OMNIROUTE_API_KEY", "")
+	_, err := backend.Execute(context.Background(), "prompt", ExecOptions{Cwd: t.TempDir()})
+	if err == nil {
+		t.Fatal("expected error when only NVIDIA_API_KEY is set, got nil")
+	}
+	if !strings.Contains(err.Error(), "OMNIROUTE_API_KEY") {
+		t.Fatalf("error should mention OMNIROUTE_API_KEY, got: %v", err)
+	}
+}
+
+func TestNIMExecuteFailsClosedWithoutOmniRouteBaseURL(t *testing.T) {
+	// When no OmniRoute base URL is configured (no struct field, no env var),
+	// Execute must fail closed — no silent fallback to a direct provider.
+	backend := &nimBackend{cfg: Config{Env: map[string]string{"OMNIROUTE_API_KEY": "key"}}}
+	t.Setenv("OMNIROUTE_BASE_URL", "")
+	_, err := backend.Execute(context.Background(), "prompt", ExecOptions{Cwd: t.TempDir()})
+	if err == nil {
+		t.Fatal("expected error when OMNIROUTE_BASE_URL is empty, got nil")
+	}
+	if !strings.Contains(err.Error(), "OMNIROUTE_BASE_URL") {
+		t.Fatalf("error should mention OMNIROUTE_BASE_URL, got: %v", err)
+	}
+}
+
+func TestNIMEndpointResolvesOmniRouteBaseURL(t *testing.T) {
+	// 1. Struct field takes priority.
+	b := &nimBackend{baseURL: "http://struct.test/v1"}
+	if got := b.endpoint(); got != "http://struct.test/v1" {
+		t.Errorf("struct baseURL: got %q", got)
+	}
+	// 2. OMNIROUTE_BASE_URL env var via Config.Env.
+	b = &nimBackend{cfg: Config{Env: map[string]string{"OMNIROUTE_BASE_URL": "http://envmap.test/v1"}}}
+	if got := b.endpoint(); got != "http://envmap.test/v1" {
+		t.Errorf("Config.Env OMNIROUTE_BASE_URL: got %q", got)
+	}
+	// 3. OMNIROUTE_BASE_URL from os.Getenv.
+	t.Setenv("OMNIROUTE_BASE_URL", "http://osenv.test/v1")
+	b = &nimBackend{}
+	if got := b.endpoint(); got != "http://osenv.test/v1" {
+		t.Errorf("os.Getenv OMNIROUTE_BASE_URL: got %q", got)
+	}
+	// 4. Empty when nothing is configured (no direct-provider default).
+	t.Setenv("OMNIROUTE_BASE_URL", "")
+	b = &nimBackend{}
+	if got := b.endpoint(); got != "" {
+		t.Errorf("expected empty endpoint when unconfigured, got %q", got)
 	}
 }
 
@@ -149,7 +207,7 @@ func TestNIMAPIErrorsAreReturnedWithoutLeakingKey(t *testing.T) {
 		http.Error(w, `{"detail":"bad model"}`, http.StatusUnprocessableEntity)
 	}))
 	defer server.Close()
-	backend := &nimBackend{cfg: Config{Env: map[string]string{"NVIDIA_API_KEY": "secret-key"}}, client: server.Client(), baseURL: server.URL}
+	backend := &nimBackend{cfg: Config{Env: map[string]string{"OMNIROUTE_API_KEY": "secret-key"}}, client: server.Client(), baseURL: server.URL}
 	session, err := backend.Execute(context.Background(), "prompt", ExecOptions{Cwd: t.TempDir()})
 	if err != nil {
 		t.Fatal(err)
