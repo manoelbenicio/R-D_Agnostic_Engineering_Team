@@ -161,7 +161,7 @@ Evidence-index gap — agent-credential-isolation **4.2** — **CLOSED 2026-07-1
 | EV-OBS-09 | OBS-9 / AB-REQ-39 | PLANNED | trace assembler | Hop 8 continuous trace assembly; join-integrity; gap/orphan detection; one trace per synthetic task |
 | EV-OBS-10 | OBS-10 / AB-REQ-40 | PLANNED | leak-scan harness | Structural (not pattern-only) secret/content leak scan across all spans/labels/logs = clean; any leak STOPs |
 | EV-OBS-11 | OBS-11 / AB-REQ-40 | PLANNED | dashboards + acceptance bundle | Per-hop latency/error/drop/gap dashboards+alerts; consolidated G4-OBS acceptance + independent-review sign-off |
-| EV-ZERO-OVERLAP | D-V3-18 / 8-lane topology | PLANNED | Codex#56#A verification | Glob-intersection proof: every owned path matches exactly one lane (W1–W8); no concurrent hotspot edits |
+| EV-ZERO-OVERLAP | D-V3-18 / 8-lane topology | **ACCEPTED** (Codex56-Principal-TL, 2026-07-19; reproduced @ `4c67ae0`, EV hash `de83dc1b…b8e`, FILE_OWNERSHIP `763094f4…210`; strict-valid; branch clean 0/0; ancestry incl. `da42282`) | `evidence/ev-zero-overlap-wave-b0.md` | Glob-intersection proof: W1–W4 139 files, pairwise ∩ = 0; new W5/W6/W7 paths absent; W4↔W5 e2e carve-out; shared anchors W1-serial. Wave B NO-SECRET foundation authorized |
 | EV-REC-MODE | AB-REQ-41 / task 10.4 | PLANNED | recovery-mode state machine | Platform recovery-mode NORMAL/DEGRADED/RECOVERY; Prodex default-OFF, mutually exclusive, operator-gated; single router owner; session-boundary transitions; DEGRADED fail-closed (no auto-Prodex) |
 
 > Wave A note (2026-07-19): all G4-OBS evidence is PLANNED — the OBS-* tasks are newly ADDED and

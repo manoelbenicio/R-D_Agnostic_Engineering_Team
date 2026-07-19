@@ -190,7 +190,23 @@ returned APPROVE. Do not replay. Next action is status-only monitoring and evide
 
 ---
 
-# WAVE B — Parallel foundation (READY; NOT DISPATCHED — awaiting owner Wave B authorization)
+# WAVE B — Parallel foundation (AUTHORIZED — NO-SECRET foundation only; EV-ZERO-OVERLAP ACCEPTED)
+
+> **Wave B authorized 2026-07-19** by Council+Owner and **EV-ZERO-OVERLAP ACCEPTED by
+> Codex56-Principal-TL** (independently reproduced at remote-synced commit `4c67ae0`: EV hash
+> `de83dc1b…b8e`, FILE_OWNERSHIP hash `763094f4…210`; both changes strict-valid; branch clean 0/0;
+> ancestry includes `da42282`). Scope = **NO-SECRET foundation work only** under the frozen Wave B.0
+> ownership. HELD: 9.1, PD-08 credential work, key handling/rotation, Prodex activation, cutover,
+> production.
+>
+> **Execution hardening (Codex56-Principal-TL directives):**
+> - **One branch + worktree per lane** (created by Codex56-Principal-TL); lanes work isolated.
+> - **W5 publishes the correlation API contract FIRST**; dependent OBS callers (W1 OBS-4, W2 OBS-6,
+>   W3 OBS-5, W6 OBS-2/8, W7 OBS-3/7) must not finalize against it until published. Other lanes may
+>   begin independent acceptance/audit work in the meantime.
+> - **OpenCode worker panes (W7 `w5:p1`, W8 `w5:p2`) are WITHHELD / to be replaced** until the
+>   exposed `opencode.json` key safety is assured (ties to the held key-rotation work). Reassign W7/W8
+>   to safe panes before dispatch; do not run them on OpenCode until cleared.
 
 > Authored by Kiro/Opus-4.8 (planning owner) during the Wave A governance freeze on branch
 > `planning/agent-brain-observability-freeze` (recovery SHA `da42282`). Wave A authorized
@@ -262,4 +278,4 @@ You are W8 — Governance and sibling-change closure for Agent Brain v3. Authori
 ## Promotion order (gates)
 Wave B.0 freeze + `EV-ZERO-OVERLAP` → Wave B lanes (W1–W8 parallel) → Wave C (W1 serial central wiring of OBS spans + recovery-mode scaffold) → **G4-OBS stop-gate (OBS-1..OBS-11 PASS, D-V3-17)** → tier-20 capacity (9.1/9.2; needs owner 9.1 A1–F3) → G5 parity → G6 cutover + Prodex quiesced to cold recovery mode. Each gate: TL adjudication + independent review.
 
-Dispatch status: **READY — NOT DISPATCHED.** Awaiting explicit owner authorization for Wave B implementation. Wave A (planning/governance) is the only authorized scope on this branch.
+Dispatch status: **AUTHORIZED — NO-SECRET foundation only (EV-ZERO-OVERLAP ACCEPTED @ 4c67ae0).** Order: W5 publishes the correlation API contract first; all other lanes may start independent acceptance/audit immediately; OBS callers finalize against the W5 contract once published. Central wiring of spans + recovery-mode scaffold remain Wave C (W1 serial). W7/W8 held off OpenCode panes pending key safety. Still HELD: 9.1, PD-08, key rotation, Prodex activation, cutover, production.
