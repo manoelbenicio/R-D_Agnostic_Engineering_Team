@@ -118,13 +118,13 @@ func TestUnapprovedLabelKeyFails(t *testing.T) {
 
 func TestLabelValueLeakRejected(t *testing.T) {
 	cases := map[string]string{
-		"email":       "user@example.com",
-		"bearer":      "Bearer abc123",
-		"url":         "https://host/x",
-		"jwt":         "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.sig",
-		"whitespace":  "hello world",
-		"apikey":      "sk-livesecretvalue",
-		"conn":        "postgres://u:p@h:5432/db",
+		"email":      "user@example.com",
+		"bearer":     "Bearer abc123",
+		"url":        "https://host/x",
+		"jwt":        "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.sig",
+		"whitespace": "hello world",
+		"apikey":     "sk-livesecretvalue",
+		"conn":       "postgres://u:p@h:5432/db",
 	}
 	for name, val := range cases {
 		s := NewSpan(HopRoute, Correlation{RequestID: "req-1", OmniRequestID: "omni-1"}).
