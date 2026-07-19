@@ -294,6 +294,33 @@
 - STATUS: **ACEITA (Decision 7); fila escrita PREPARADA, integração NÃO despachada.** Holds preservados:
   9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
 
+### D-V3-27 — OWNER DECISION 8: matriz de rotas autoritativa CONGELADA (live non-prod acceptance obrigatória p/ P0)
+- Decisão do dono 2026-07-19 (council-unânime). Substitui o texto genérico de "cinco vendors" pela matriz
+  autoritativa. Aceitação **live non-prod** do OmniRoute permanece **OBRIGATÓRIA para a conclusão do P0
+  Main Brain**. Nenhuma task é aceita apenas por prosa. Matriz congelada (detalhe + evidências em
+  `evidence/authoritative-route-matrix-D-V3-27.md`):
+  1. **Antigravity** — já totalmente testado com OmniRoute → **tratar como FULLY OPERATIONAL**, sujeito a
+     **revalidação de provenance/evidence/hashes**, não reimplementação redundante.
+  2. **Claude** = rota aceita. 3. **Codex** = rota aceita.
+  4. **Kimi** como modelo via **Cline** como provider/runtime principal: **Cline → Kimi-K2.7**.
+  5. **Cline** também serve **GLM52**.
+  6. **NVIDIA = fallback do GLM52**, com seleção/fallback **exclusivamente OmniRoute-owned e bounded** —
+     Agent Brain **nunca** possui creds de provider nem toma decisão de fallback.
+  7. **Kiro** = **Opus48 da AWS**.
+- **Evidência exigida por rota aplicável:** protocol/tools/reasoning/usage/cancel/error; **mais evidência
+  explícita de primary/fallback para GLM52→NVIDIA**. **Sem dual router; sem credenciais nativas diretas.**
+- **Não marcar aceito por prosa:** revalidar hashes/evidence existentes do Antigravity; testar as rotas
+  restantes independentemente (producer ≠ reviewer ≠ adjudicador).
+- **Dependência:** por D-V3-25(B), testes live-provider ficam **SECURITY-STOPPED** até o dono confirmar a
+  revogação da chave exposta na UI → aceitação live desta matriz **BLOQUEADA até revogação confirmada**;
+  trabalho offline/sintético e a revalidação de provenance do Antigravity podem prosseguir.
+- **Conflito OpenSpec REPORTADO (não editado aqui):** `specs/omniroute-agent-routing/spec.md:4` usa o texto
+  genérico "Kimi/GLM/NVIDIA/Antigravity frontends", que não captura Cline→Kimi-K2.7, Cline→GLM52,
+  NVIDIA-fallback, Antigravity-operacional, nem Kiro=Opus48/AWS; checklist/design/tasks carregam o mesmo
+  enquadramento genérico. **Correção de spec exige processo de council/W8** — flagged, não alterado.
+- STATUS: **ACEITA (Decision 8); matriz CONGELADA; aceitação live gated por D-V3-25(B); conflito OpenSpec
+  reportado p/ correção de council.** Sem capacidade/Prodex/cutover/produção. Holds preservados.
+
 ### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
 - Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o
   ESCOPO de D-V3-17 — não o enfraquece. D-V3-17 sempre bloqueou a **validade de alegações de

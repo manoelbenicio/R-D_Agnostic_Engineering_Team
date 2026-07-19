@@ -756,3 +756,22 @@
 > await independent review → **integration HELD** per the owner gate; the queue integrates the latest
 > INDEPENDENTLY-REVIEWED commit per lane, not the raw tip. **PREPARED / NOT DISPATCHED.** Holds intact:
 > 9.1/capacity/PD-08/keys/Prodex/cutover/production/canary/soak/tier 50/100.
+
+---
+
+> **D-V3-27 — OWNER DECISION 8: authoritative route matrix FROZEN (Kiro-TL recorded, 2026-07-19; council-unanimous).**
+> Golden-Rule CHECK-IN/OUT: docs-only; no product/test/product-git/credential/network action; no OpenSpec spec edit.
+> Frozen matrix (full detail: `evidence/authoritative-route-matrix-D-V3-27.md`): (1) Antigravity already
+> fully tested → FULLY OPERATIONAL, revalidate provenance/hashes (not reimplement); (2) Claude accepted;
+> (3) Codex accepted; (4) Kimi via **Cline→Kimi-K2.7**; (5) Cline also serves **GLM52**; (6) **NVIDIA =
+> GLM52 fallback**, selection/fallback OmniRoute-owned & bounded — Agent Brain never holds creds or makes
+> fallback decisions; (7) **Kiro = Opus48 from AWS**. Evidence per route: protocol/tools/reasoning/usage/
+> cancel/error + explicit primary/fallback for GLM52→NVIDIA. No dual router; no direct native creds; no task
+> accepted from prose (revalidate Antigravity, independently test the rest). Live non-prod OmniRoute
+> acceptance remains MANDATORY for P0 completion but is **BLOCKED by D-V3-25(B)** (live-provider tests
+> security-stopped until key revocation confirmed); offline/synthetic + Antigravity provenance revalidation
+> may proceed. **OpenSpec CONFLICT REPORTED for council correction (NOT edited):** `specs/omniroute-agent-
+> routing/spec.md:4` generic "Kimi/GLM/NVIDIA/Antigravity frontends" wording does not capture Cline→Kimi-K2.7,
+> Cline→GLM52, NVIDIA-fallback, Antigravity-operational, Kiro=Opus48/AWS; acceptance-checklist/design/tasks
+> share the same generic framing — spec correction needs the council/W8 change process. No capacity/Prodex/
+> cutover/production. Holds intact.
