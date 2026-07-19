@@ -92,3 +92,31 @@ possuem globs de pacote disjuntos par-a-par (∩ = ∅ por construção); (2) sp
 chamada à lib W5; (3) W6/W7 possuem arquivos específicos congelados, removidos de todo outro glob;
 (4) arquivo disputado → escala a W1 + serializa; (5) Codex#56#A roda a checagem de interseção de
 globs (cada path casa exatamente uma lane) e registra a prova. Locks em `AGENT_LEDGER.md`.
+
+## Wave B.0 FROZEN — exact instrumentation paths (Council+Owner approved 2026-07-19; D-V3-18)
+
+> Frozen by Kiro-TL; EV-ZERO-OVERLAP recorded (`evidence/ev-zero-overlap-wave-b0.md`).
+> Lanes must NOT be dispatched until Codex56-Principal-TL ACCEPTS EV-ZERO-OVERLAP.
+> Paths are relative to `multica-auth-work/server/`.
+
+| Lane | Exclusive paths (FROZEN) | New? |
+|---|---|---|
+| W1 | `internal/daemon/{daemon,config,health}.go`, `cmd/multica/cmd_daemon.go`, `go.mod`, `internal/daemon/execenv/**`, `pkg/agent/models.go`, `internal/daemon/{prodex.go,prodex_fs_linux.go,prodex_fs_other.go,prodex_profiles.go,l2_runtime.go}`, `internal/daemon/brain/**` | existing |
+| W2 | `internal/daemon/gateway/**` | existing |
+| W3 | `internal/daemon/runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` | existing |
+| W4 | `internal/daemon/deploy/**`, `internal/daemon/observability/**` **EXCEPT `internal/daemon/observability/e2e/**`** | existing (carve-out) |
+| W5 | `internal/daemon/observability/e2e/**` | **NEW** |
+| W6 | `internal/middleware/obs_ingress.go` (OBS-2 ingress span), `internal/daemonws/obs_delivery.go` (OBS-8 WS/UI delivery span) | **NEW** |
+| W7 | `internal/service/obs_queue.go` (OBS-3 DB-queue span), `internal/service/obs_persist.go` (OBS-7 terminal-persistence span) | **NEW** |
+| W8 | `openspec/changes/**` docs + `.planning/agent-brain-v3/evidence/**` sibling evidence (no product code) | docs only |
+
+**Shared anchor files — Wave C, W1-serial only (NOT in W6/W7 static ownership):** the call-site
+insertions that invoke the W6/W7 span helpers live in shared files and are inserted exclusively by
+W1 during Wave C serial integration: `internal/metrics/http.go` (or router chain) → registers
+`obs_ingress`; `internal/daemonws/hub.go` broadcast → calls `obs_delivery`; `internal/service/task.go`
+enqueue/dequeue + terminal-result sites → call `obs_queue`/`obs_persist`. W6/W7 own only their new
+span-emitter files and call the W5 `observability/e2e` library; they do NOT edit the shared anchors.
+
+**Zero-overlap result (see EV-ZERO-OVERLAP):** existing lanes W1–W4 = 139 tracked files, all
+pairwise intersections = 0; W5/W6/W7 target paths confirmed absent (no collision); shared anchors
+reserved to W1-serial. No file is claimed by two lanes.
