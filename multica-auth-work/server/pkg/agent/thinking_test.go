@@ -7,7 +7,11 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 // ── Claude help parsing ──────────────────────────────────────────────
@@ -406,17 +410,17 @@ func TestValidateThinkingLevel_OpenCodeEmptyModelUsesAdvertisedVariants(t *testi
 		t.Skip("shell-script fake binary requires a POSIX shell")
 	}
 
+	dir := t.TempDir()
+	fake := filepath.Join(dir, "opencode")
+	key := discoveryCacheKey("opencode", fake)
 	modelCacheMu.Lock()
-	delete(modelCache, "opencode")
+	delete(modelCache, key)
 	modelCacheMu.Unlock()
 	defer func() {
 		modelCacheMu.Lock()
-		delete(modelCache, "opencode")
+		delete(modelCache, key)
 		modelCacheMu.Unlock()
 	}()
-
-	dir := t.TempDir()
-	fake := filepath.Join(dir, "opencode")
 	script := `#!/bin/sh
 if [ "$1" = "models" ]; then
   cat <<'EOF'
@@ -499,6 +503,248 @@ func TestThinkingCacheKeyDistinct(t *testing.T) {
 	}
 	if got, _ := thinkingCacheGet(c); got["x"].DefaultLevel != "c" {
 		t.Errorf("cache key C: got %q, want c", got["x"].DefaultLevel)
+	}
+}
+
+func TestThinkingCacheBoundedAndDeletesExpiredEntries(t *testing.T) {
+	resetThinkingCacheForTests()
+	t.Cleanup(resetThinkingCacheForTests)
+
+	for i := 0; i <= thinkingCacheMaxEntries; i++ {
+		key := thinkingCacheKey{
+			provider:       "provider-" + strconv.Itoa(i),
+			executablePath: "/bin/agent-" + strconv.Itoa(i),
+			cliVersion:     strconv.Itoa(i),
+		}
+		thinkingCachePut(key, map[string]*ModelThinking{
+			"model": {DefaultLevel: strconv.Itoa(i)},
+		})
+	}
+
+	thinkingCacheMu.Lock()
+	if len(thinkingCache) != thinkingCacheMaxEntries {
+		t.Fatalf("thinking cache size = %d, want %d", len(thinkingCache), thinkingCacheMaxEntries)
+	}
+	oldest := thinkingCacheKey{provider: "provider-0", executablePath: "/bin/agent-0", cliVersion: "0"}
+	if _, ok := thinkingCache[oldest]; ok {
+		t.Fatal("oldest thinking cache entry was not evicted")
+	}
+	expiredKey := thinkingCacheKey{
+		provider:       "provider-" + strconv.Itoa(thinkingCacheMaxEntries),
+		executablePath: "/bin/agent-" + strconv.Itoa(thinkingCacheMaxEntries),
+		cliVersion:     strconv.Itoa(thinkingCacheMaxEntries),
+	}
+	expired := thinkingCache[expiredKey]
+	expired.expiresAt = time.Now().Add(-time.Second)
+	thinkingCache[expiredKey] = expired
+	thinkingCacheMu.Unlock()
+
+	if _, ok := thinkingCacheGet(expiredKey); ok {
+		t.Fatal("expired thinking cache entry returned a hit")
+	}
+	thinkingCacheMu.Lock()
+	_, stillPresent := thinkingCache[expiredKey]
+	thinkingCacheMu.Unlock()
+	if stillPresent {
+		t.Fatal("expired thinking cache entry was not deleted")
+	}
+}
+
+func TestThinkingCacheCapsModelsPerEntryDeterministically(t *testing.T) {
+	resetThinkingCacheForTests()
+	t.Cleanup(resetThinkingCacheForTests)
+	key := thinkingCacheKey{provider: "bounded-models"}
+	models := make(map[string]*ModelThinking)
+	for i := 0; i < thinkingCacheMaxModelsPerEntry+10; i++ {
+		modelID := "model-" + strconv.Itoa(1000+i)
+		models[modelID] = &ModelThinking{DefaultLevel: modelID}
+	}
+	thinkingCachePut(key, models)
+
+	got, ok := thinkingCacheGet(key)
+	if !ok {
+		t.Fatal("bounded thinking cache entry missing")
+	}
+	if len(got) != thinkingCacheMaxModelsPerEntry {
+		t.Fatalf("thinking models = %d, want %d", len(got), thinkingCacheMaxModelsPerEntry)
+	}
+	if _, ok := got["model-1000"]; !ok {
+		t.Fatal("deterministic sorted prefix was not retained")
+	}
+	if _, ok := got["model-1265"]; ok {
+		t.Fatal("model beyond deterministic cap was retained")
+	}
+}
+
+func TestCodebuddyHelpCacheBoundedNegativeAndExpiryDeletion(t *testing.T) {
+	codebuddyHelpMu.Lock()
+	codebuddyHelpStore = map[string]codebuddyHelpEntry{}
+	codebuddyHelpFlights = map[string]*codebuddyHelpFlight{}
+	codebuddyHelpSequence = 0
+	for i := 0; i <= codebuddyHelpMaxEntries; i++ {
+		key := "codebuddy-" + strconv.Itoa(i)
+		putCodebuddyHelpLocked(key, "help", time.Now().Add(codebuddyHelpTTL))
+	}
+	if len(codebuddyHelpStore) != codebuddyHelpMaxEntries {
+		codebuddyHelpMu.Unlock()
+		t.Fatalf("codebuddy help cache size = %d, want %d", len(codebuddyHelpStore), codebuddyHelpMaxEntries)
+	}
+	if _, ok := codebuddyHelpStore["codebuddy-0"]; ok {
+		codebuddyHelpMu.Unlock()
+		t.Fatal("oldest codebuddy help entry was not evicted")
+	}
+	negativeKey := "negative-help"
+	putCodebuddyHelpLocked(negativeKey, "", time.Now().Add(codebuddyHelpNegativeTTL))
+	negative := codebuddyHelpStore[negativeKey]
+	if negative.output != "" || time.Until(negative.expiresAt) > codebuddyHelpNegativeTTL {
+		codebuddyHelpMu.Unlock()
+		t.Fatalf("invalid negative cache entry: %+v", negative)
+	}
+	negative.expiresAt = time.Now().Add(-time.Second)
+	codebuddyHelpStore[negativeKey] = negative
+	oversizedKey := "oversized-help"
+	putCodebuddyHelpLocked(
+		oversizedKey,
+		strings.Repeat("x", codebuddyHelpMaxBytes+10),
+		time.Now().Add(codebuddyHelpTTL),
+	)
+	if got := len(codebuddyHelpStore[oversizedKey].output); got != codebuddyHelpMaxBytes {
+		codebuddyHelpMu.Unlock()
+		t.Fatalf("codebuddy help bytes = %d, want %d", got, codebuddyHelpMaxBytes)
+	}
+	pruneExpiredCodebuddyHelpLocked(time.Now())
+	_, stillPresent := codebuddyHelpStore[negativeKey]
+	codebuddyHelpMu.Unlock()
+	if stillPresent {
+		t.Fatal("expired codebuddy help entry was not deleted")
+	}
+	t.Cleanup(func() {
+		codebuddyHelpMu.Lock()
+		codebuddyHelpStore = map[string]codebuddyHelpEntry{}
+		codebuddyHelpFlights = map[string]*codebuddyHelpFlight{}
+		codebuddyHelpSequence = 0
+		codebuddyHelpMu.Unlock()
+	})
+}
+
+func TestCodebuddyHelpOutputNegativeCachesEmptyResult(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell fixture is Unix-only")
+	}
+	codebuddyHelpMu.Lock()
+	codebuddyHelpStore = map[string]codebuddyHelpEntry{}
+	codebuddyHelpFlights = map[string]*codebuddyHelpFlight{}
+	codebuddyHelpSequence = 0
+	codebuddyHelpMu.Unlock()
+	t.Cleanup(func() {
+		codebuddyHelpMu.Lock()
+		codebuddyHelpStore = map[string]codebuddyHelpEntry{}
+		codebuddyHelpFlights = map[string]*codebuddyHelpFlight{}
+		codebuddyHelpSequence = 0
+		codebuddyHelpMu.Unlock()
+	})
+
+	dir := t.TempDir()
+	counter := filepath.Join(dir, "calls")
+	fake := filepath.Join(dir, "codebuddy")
+	script := "#!/bin/sh\nprintf 'x\\n' >> " + strconv.Quote(counter) + "\n"
+	writeTestExecutable(t, fake, []byte(script))
+
+	if got := codebuddyHelpOutput(context.Background(), fake); got != "" {
+		t.Fatalf("first empty help output = %q", got)
+	}
+	if got := codebuddyHelpOutput(context.Background(), fake); got != "" {
+		t.Fatalf("negative-cached help output = %q", got)
+	}
+	raw, err := os.ReadFile(counter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls := strings.Count(string(raw), "x\n"); calls != 1 {
+		t.Fatalf("codebuddy help executions = %d, want 1", calls)
+	}
+}
+
+func TestCodebuddyHelpOutputSingleFlight(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell fixture is Unix-only")
+	}
+	codebuddyHelpMu.Lock()
+	codebuddyHelpStore = map[string]codebuddyHelpEntry{}
+	codebuddyHelpFlights = map[string]*codebuddyHelpFlight{}
+	codebuddyHelpSequence = 0
+	codebuddyHelpMu.Unlock()
+	t.Cleanup(func() {
+		codebuddyHelpMu.Lock()
+		codebuddyHelpStore = map[string]codebuddyHelpEntry{}
+		codebuddyHelpFlights = map[string]*codebuddyHelpFlight{}
+		codebuddyHelpSequence = 0
+		codebuddyHelpMu.Unlock()
+	})
+
+	dir := t.TempDir()
+	counter := filepath.Join(dir, "calls")
+	fake := filepath.Join(dir, "codebuddy")
+	script := "#!/bin/sh\nprintf 'x\\n' >> " + strconv.Quote(counter) + "\nsleep 0.1\nprintf 'Usage: codebuddy\\n'\n"
+	writeTestExecutable(t, fake, []byte(script))
+
+	const callers = 8
+	results := make(chan string, callers)
+	var wg sync.WaitGroup
+	for i := 0; i < callers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			results <- codebuddyHelpOutput(context.Background(), fake)
+		}()
+	}
+	wg.Wait()
+	close(results)
+	for output := range results {
+		if output != "Usage: codebuddy\n" {
+			t.Fatalf("codebuddy help output = %q", output)
+		}
+	}
+	raw, err := os.ReadFile(counter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls := strings.Count(string(raw), "x\n"); calls != 1 {
+		t.Fatalf("codebuddy help executions = %d, want 1", calls)
+	}
+}
+
+func TestCodebuddyHelpCacheIsolatedByExecutable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
+	codebuddyHelpMu.Lock()
+	codebuddyHelpStore = map[string]codebuddyHelpEntry{}
+	codebuddyHelpFlights = map[string]*codebuddyHelpFlight{}
+	codebuddyHelpSequence = 0
+	codebuddyHelpMu.Unlock()
+	t.Cleanup(func() {
+		codebuddyHelpMu.Lock()
+		codebuddyHelpStore = map[string]codebuddyHelpEntry{}
+		codebuddyHelpFlights = map[string]*codebuddyHelpFlight{}
+		codebuddyHelpSequence = 0
+		codebuddyHelpMu.Unlock()
+	})
+
+	dir := t.TempDir()
+	first := filepath.Join(dir, "codebuddy-first")
+	second := filepath.Join(dir, "codebuddy-second")
+	writeTestExecutable(t, first, []byte("#!/bin/sh\nprintf 'first executable help\\n'\n"))
+	writeTestExecutable(t, second, []byte("#!/bin/sh\nprintf 'second executable help\\n'\n"))
+
+	if got := codebuddyHelpOutput(context.Background(), first); got != "first executable help\n" {
+		t.Fatalf("first executable help = %q", got)
+	}
+	if got := codebuddyHelpOutput(context.Background(), second); got != "second executable help\n" {
+		t.Fatalf("second executable help = %q", got)
+	}
+	if got := codebuddyHelpOutput(context.Background(), first); got != "first executable help\n" {
+		t.Fatalf("second executable contaminated first help cache: %q", got)
 	}
 }
 

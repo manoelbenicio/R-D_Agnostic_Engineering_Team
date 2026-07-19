@@ -1,0 +1,5 @@
+{
+  "model": "synthetic/responses-model",
+  "stream": true,
+  "input": "synthetic request"
+}

@@ -114,6 +114,9 @@ type RouterOptions struct {
 	// AuthProvider overrides the local password provider (for example, with
 	// Firebase) without changing handlers, routes, or session issuance.
 	AuthProvider handler.AuthProvider
+	// PasswordProvisioner overrides local password persistence independently
+	// from login verification so a future Firebase adapter can own either side.
+	PasswordProvisioner handler.PasswordCredentialProvisioner
 }
 
 // NewRouterWithOptions builds the fully-configured Chi router and
@@ -158,10 +161,16 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 		AttachmentDownloadURLTTL: envDuration("ATTACHMENT_DOWNLOAD_URL_TTL", 30*time.Minute),
 	}
 	h := handler.New(queries, pool, hub, bus, emailSvc, store, cfSigner, analyticsClient, signupConfig, daemonHub)
+	passwordStore := handler.NewPostgresPasswordCredentialStore(pool)
 	if opts.AuthProvider != nil {
 		h.AuthProvider = opts.AuthProvider
 	} else {
-		h.AuthProvider = handler.NewPasswordAuthProvider(handler.NewPostgresPasswordCredentialStore(pool))
+		h.AuthProvider = handler.NewPasswordAuthProvider(passwordStore)
+	}
+	if opts.PasswordProvisioner != nil {
+		h.PasswordProvisioner = opts.PasswordProvisioner
+	} else {
+		h.PasswordProvisioner = passwordStore
 	}
 	h.Metrics = opts.BusinessMetrics
 	h.TaskService.Metrics = opts.BusinessMetrics
@@ -470,7 +479,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 
 	// Auth (public) — per-IP rate limiting.
 	if rdb == nil {
-		slog.Warn("rate limiting disabled: REDIS_URL not configured")
+		slog.Warn("Redis rate limiting unavailable; bounded local fallback enabled")
 	}
 	trustedProxies := middleware.ParseTrustedProxies(os.Getenv("RATE_LIMIT_TRUSTED_PROXIES"))
 	authRL := middleware.RateLimit(rdb, envPositiveInt("RATE_LIMIT_AUTH", 5), time.Minute, trustedProxies)
@@ -542,6 +551,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 		// --- User-scoped routes (no workspace context required) ---
 		r.Get("/api/me", h.GetMe)
 		r.Patch("/api/me", h.UpdateMe)
+		r.With(handler.RequireHumanActor).Put("/api/me/password", h.UpdatePassword)
 		r.Patch("/api/me/onboarding", h.PatchOnboarding)
 		r.Post("/api/me/onboarding/complete", h.CompleteOnboarding)
 		r.Post("/api/me/onboarding/cloud-waitlist", h.JoinCloudWaitlist)

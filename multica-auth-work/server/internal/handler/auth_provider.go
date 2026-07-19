@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -11,6 +12,18 @@ import (
 )
 
 var ErrInvalidCredentials = errors.New("invalid credentials")
+
+var (
+	ErrPasswordRequired        = errors.New("password is required")
+	ErrPasswordTooShort        = errors.New("password must contain at least 12 characters")
+	ErrPasswordTooLong         = errors.New("password exceeds bcrypt's 72-byte limit")
+	ErrPasswordInvalidEncoding = errors.New("password must be valid UTF-8")
+)
+
+const (
+	PasswordMinCharacters = 12
+	PasswordMaxBytes      = 72
+)
 
 // dummyPasswordHash keeps the missing-user path on the same expensive bcrypt
 // code path as a wrong password, reducing account-enumeration timing signals.
@@ -40,6 +53,24 @@ func NewPostgresPasswordCredentialStore(db dbExecutor) *PostgresPasswordCredenti
 	return &PostgresPasswordCredentialStore{db: db}
 }
 
+// ValidatePassword applies the server-authoritative local password policy.
+// It intentionally avoids composition rules so long passphrases remain valid.
+func ValidatePassword(password string) error {
+	if password == "" {
+		return ErrPasswordRequired
+	}
+	if !utf8.ValidString(password) {
+		return ErrPasswordInvalidEncoding
+	}
+	if utf8.RuneCountInString(password) < PasswordMinCharacters {
+		return ErrPasswordTooShort
+	}
+	if len(password) > PasswordMaxBytes {
+		return ErrPasswordTooLong
+	}
+	return nil
+}
+
 func (s *PostgresPasswordCredentialStore) FindByEmail(ctx context.Context, email string) (pgtype.UUID, string, error) {
 	const query = `
 		SELECT c.user_id, c.password_hash
@@ -51,6 +82,26 @@ func (s *PostgresPasswordCredentialStore) FindByEmail(ctx context.Context, email
 	var passwordHash string
 	err := s.db.QueryRow(ctx, query, email).Scan(&userID, &passwordHash)
 	return userID, passwordHash, err
+}
+
+func (s *PostgresPasswordCredentialStore) ProvisionPassword(ctx context.Context, userID pgtype.UUID, password string) error {
+	if err := ValidatePassword(password); err != nil {
+		return err
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	const query = `
+		INSERT INTO user_password_credential (user_id, password_hash)
+		VALUES ($1, $2)
+		ON CONFLICT (user_id) DO UPDATE
+		SET password_hash = EXCLUDED.password_hash,
+			updated_at = now()
+	`
+	_, err = s.db.Exec(ctx, query, userID, string(passwordHash))
+	return err
 }
 
 type PasswordAuthProvider struct {
@@ -84,9 +135,8 @@ func (p *PasswordAuthProvider) Login(ctx context.Context, email, password string
 // cookies. Firebase can revoke provider-side state in its implementation.
 func (p *PasswordAuthProvider) Logout(context.Context) error { return nil }
 
-// TODO(native-runtimes-onboarding/1.7): implement credential provisioning only
-// after the owner selects the operator seed/signup policy. Login must never
-// create a credential or claim an existing account.
 type PasswordCredentialProvisioner interface {
 	ProvisionPassword(ctx context.Context, userID pgtype.UUID, password string) error
 }
+
+var _ PasswordCredentialProvisioner = (*PostgresPasswordCredentialStore)(nil)

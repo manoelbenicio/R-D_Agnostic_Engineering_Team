@@ -22,7 +22,7 @@ Cada agente escreve em `.deploy-control/`:
 ```
 Agent-1 NIM-Core      -> server/pkg/agent/nim.go (+test): OpenAI-compat, SSE, loop agêntico, usageMetadata
 Agent-2 NIM-Isolation -> execenv/nim_home.go, rotation_detector_nim.go, rotation/detector_nim.go (+tests)
-Agent-3 Cline-Core    -> server/pkg/agent/cline.go (+test) via `cline --acp --json`
+Agent-3 Cline-Core    -> server/pkg/agent/cline.go (+test) via `cline --acp` (ACP JSON-RPC por stdin/stdout)
 Agent-4 Discovery-Fix -> internal/daemon (model-list flow) + models.go discovery: timeout/cache/erro
 Agent-5 Frontend-Auth -> apps/web/app/(auth), packages/views/auth; remover (landing)/sponsors/use-cases/email-code
 Agent-6 Frontend-QA   -> design-system (paridade de cores kanban/agentes), i18n, build/test web
@@ -45,5 +45,10 @@ Agent-6 Frontend-QA   -> design-system (paridade de cores kanban/agentes), i18n,
 ## Decisões / riscos
 - **Auth do onboarding**: decisão do dono PENDENTE (login/senha vs sem-fricção) — bloqueia Agent-5.
 - **NIM auth**: validar credencial/fluxo do gateway antes de codar o loop; documentar fonte.
+- **Compatibilidade Cline 3.x**: usar somente `cline --acp` para o transporte ACP. Apesar de
+  as mensagens ACP serem JSON-RPC 2.0, o flag CLI `--json` seleciona outro modo headless e
+  encerra antes do handshake quando combinado com `--acp`. O teste direto do backend fornece
+  `--json` como argumento customizado hostil e confirma que o argv final o remove, preservando
+  `--acp` e a sessão ACP por stdin/stdout.
 - `agy models` lento → item 3 precisa timeout+cache.
 - Shared files → só Kiro edita (Wave 2).

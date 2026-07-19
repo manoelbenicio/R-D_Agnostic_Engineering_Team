@@ -5,11 +5,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -64,19 +67,41 @@ type ThinkingLevel struct {
 	Description string `json:"description,omitempty"`
 }
 
-// modelCache memoizes dynamic discovery calls so repeated UI loads
-// don't re-shell the agent CLI. Entries expire after cacheTTL.
+// modelCache memoizes dynamic discovery calls so repeated UI loads do not
+// re-shell the agent CLI. Positive entries use two retention bounds: after
+// refreshAfter they are refreshed through the single-flight path, while the
+// last-known catalog remains eligible as a failure fallback until
+// hardExpiresAt. Empty results use only the short negative-cache window.
 type modelCacheEntry struct {
+	models        []Model
+	refreshAfter  time.Time
+	hardExpiresAt time.Time
+	recency       uint64
+}
+
+type modelDiscoveryFlight struct {
+	done      chan struct{}
 	models    []Model
-	expiresAt time.Time
+	err       error
+	cancelled bool
 }
 
 var (
-	modelCacheMu sync.Mutex
-	modelCache   = map[string]modelCacheEntry{}
+	modelCacheMu       sync.Mutex
+	modelCache         = map[string]modelCacheEntry{}
+	modelCacheFlights  = map[string]*modelDiscoveryFlight{}
+	modelCacheSequence uint64
 )
 
-const modelCacheTTL = 60 * time.Second
+const (
+	modelCacheTTL         = 60 * time.Second
+	modelCacheHardTTL     = 10 * time.Minute
+	modelNegativeCacheTTL = 5 * time.Second
+	modelCacheMaxEntries  = 64
+	modelCacheMaxModels   = 2048
+)
+
+var errDiscoveryProcessContainmentUnavailable = errors.New("catalog discovery requires atomic whole-process-tree containment")
 
 // ListModels returns the models supported by the given agent provider.
 // For providers with a known static catalog it returns the baked-in
@@ -93,18 +118,26 @@ const modelCacheTTL = 60 * time.Second
 // executablePath lets the caller point at a non-default binary; pass
 // "" to use the provider's default name on PATH.
 func ListModels(ctx context.Context, providerType, executablePath string) ([]Model, error) {
+	discoveryExecutablePath := normalizedDiscoveryExecutablePath(providerType, executablePath)
 	switch providerType {
 	case "claude":
 		models := claudeStaticModels()
-		annotateClaudeThinking(ctx, models, executablePath)
+		if requireDiscoveryProcessContainment() == nil {
+			annotateClaudeThinking(ctx, models, discoveryExecutablePath)
+		}
 		return models, nil
 	case "codex":
 		models := codexStaticModels()
-		annotateCodexThinking(ctx, models, executablePath)
+		if requireDiscoveryProcessContainment() == nil {
+			annotateCodexThinking(ctx, models, discoveryExecutablePath)
+		}
 		return models, nil
 	case "cline":
-		return cachedDiscovery(discoveryCacheKey(providerType, executablePath), func() ([]Model, error) {
-			models, err := discoverClineModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			models, err := discoverClineModels(ctx, discoveryExecutablePath)
 			if err != nil {
 				return nil, err
 			}
@@ -119,24 +152,39 @@ func ListModels(ctx context.Context, providerType, executablePath string) ([]Mod
 		// agy 1.0.6 added a `--model` flag plus an `agy models` catalog
 		// command (MUL-3125). Enumerate it on demand like the other
 		// dynamic-discovery backends.
-		return cachedDiscovery(discoveryCacheKey(providerType, executablePath), func() ([]Model, error) {
-			return discoverAntigravityModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			return discoverAntigravityModels(ctx, discoveryExecutablePath)
 		})
 	case "cursor":
-		return cachedDiscovery(providerType, func() ([]Model, error) {
-			return discoverCursorModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			return discoverCursorModels(ctx, discoveryExecutablePath)
 		})
 	case "copilot":
-		return cachedDiscovery(providerType, func() ([]Model, error) {
-			return discoverCopilotModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			return discoverCopilotModels(ctx, discoveryExecutablePath)
 		})
 	case "hermes":
-		return cachedDiscovery(providerType, func() ([]Model, error) {
-			return discoverHermesModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			return discoverHermesModels(ctx, discoveryExecutablePath)
 		})
 	case "kimi":
-		return cachedDiscovery(providerType, func() ([]Model, error) {
-			models, err := discoverKimiModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			models, err := discoverKimiModels(ctx, discoveryExecutablePath)
 			if err != nil {
 				return nil, err
 			}
@@ -144,8 +192,11 @@ func ListModels(ctx context.Context, providerType, executablePath string) ([]Mod
 			return models, nil
 		})
 	case "kiro":
-		return cachedDiscovery(providerType, func() ([]Model, error) {
-			models, err := discoverKiroModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			models, err := discoverKiroModels(ctx, discoveryExecutablePath)
 			if err != nil {
 				return nil, err
 			}
@@ -155,28 +206,43 @@ func ListModels(ctx context.Context, providerType, executablePath string) ([]Mod
 	case "nim":
 		return nimStaticModels(), nil
 	case "qoder":
-		return cachedDiscovery(providerType, func() ([]Model, error) {
-			return discoverQoderModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			return discoverQoderModels(ctx, discoveryExecutablePath)
 		})
 	case "opencode":
-		return cachedDiscovery(discoveryCacheKey(providerType, executablePath), func() ([]Model, error) {
-			return discoverOpenCodeModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			return discoverOpenCodeModels(ctx, discoveryExecutablePath)
 		})
 	case "pi":
-		return cachedDiscovery(providerType, func() ([]Model, error) {
-			return discoverPiModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			return discoverPiModels(ctx, discoveryExecutablePath)
 		})
 	case "openclaw":
-		return cachedDiscovery(providerType, func() ([]Model, error) {
-			return discoverOpenclawAgents(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			return discoverOpenclawAgents(ctx, discoveryExecutablePath)
 		})
 	case "codebuddy":
-		return cachedDiscovery(providerType, func() ([]Model, error) {
-			models, err := discoverCodebuddyModels(ctx, executablePath)
+		if err := requireDiscoveryProcessContainment(); err != nil {
+			return nil, err
+		}
+		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
+			models, err := discoverCodebuddyModels(ctx, discoveryExecutablePath)
 			if err != nil {
 				return nil, err
 			}
-			annotateCodebuddyThinking(ctx, models, executablePath)
+			annotateCodebuddyThinking(ctx, models, discoveryExecutablePath)
 			return models, nil
 		})
 	default:
@@ -261,44 +327,168 @@ func modelHasKnownPrefix(model string) bool {
 		isOpenAIReasoningSeriesID(model)
 }
 
-// cachedDiscovery invokes fn and caches the result for modelCacheTTL.
-// The cache is keyed on providerType only; callers that need to
-// distinguish discovery by host/user should include that in the key
-// if we ever introduce such a mode.
-func cachedDiscovery(key string, fn func() ([]Model, error)) ([]Model, error) {
-	modelCacheMu.Lock()
-	if entry, ok := modelCache[key]; ok && time.Now().Before(entry.expiresAt) {
-		out := entry.models
+// cachedDiscovery coalesces one in-flight discovery per key and caches both
+// successful catalogs and short negative results. Cancellation is never
+// cached: a waiter with a live context retries leadership after a cancelled
+// leader, while a cancelled waiter returns immediately. Expired entries are
+// deleted eagerly and deterministic recency eviction bounds path churn.
+func cachedDiscovery(ctx context.Context, key string, fn func() ([]Model, error)) ([]Model, error) {
+	for {
+		now := time.Now()
+		modelCacheMu.Lock()
+		pruneHardExpiredModelCacheLocked(now)
+		entry, hasLastKnown := modelCache[key]
+		if hasLastKnown && now.Before(entry.refreshAfter) {
+			modelCacheSequence++
+			entry.recency = modelCacheSequence
+			modelCache[key] = entry
+			out := cloneModels(entry.models)
+			modelCacheMu.Unlock()
+			return out, nil
+		}
+		if flight, ok := modelCacheFlights[key]; ok {
+			done := flight.done
+			modelCacheMu.Unlock()
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-done:
+				if flight.cancelled {
+					continue
+				}
+				return cloneModels(flight.models), flight.err
+			}
+		}
+
+		flight := &modelDiscoveryFlight{done: make(chan struct{})}
+		modelCacheFlights[key] = flight
 		modelCacheMu.Unlock()
-		return out, nil
-	}
-	modelCacheMu.Unlock()
 
-	models, err := fn()
-	if err != nil {
-		return nil, err
-	}
+		models, err := fn()
+		if len(models) > modelCacheMaxModels {
+			models = models[:modelCacheMaxModels]
+		}
+		cancelled := ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
+		if cancelled && err == nil {
+			err = ctx.Err()
+		}
 
-	// Don't cache an empty result. Zero models is almost always a transient
-	// failure (discovery CLI timeout, not-logged-in, network blip) rather than
-	// a runtime that genuinely has no models; caching it would keep the picker
-	// blank for the full TTL even after the cause clears. Skipping the cache
-	// lets the next request retry immediately. See #3729.
-	if len(models) == 0 {
-		return models, nil
+		modelCacheMu.Lock()
+		if !cancelled {
+			now = time.Now()
+			if err == nil && len(models) > 0 {
+				putModelCacheLocked(key, models, now.Add(modelCacheTTL), now.Add(modelCacheHardTTL))
+			} else if hasLastKnown && len(entry.models) > 0 && now.Before(entry.hardExpiresAt) {
+				// A transient error or blank refresh must not erase the last-known
+				// catalog. Delay the next refresh briefly to avoid a retry storm,
+				// but never extend the original hard retention deadline.
+				entry.refreshAfter = now.Add(modelNegativeCacheTTL)
+				modelCacheSequence++
+				entry.recency = modelCacheSequence
+				modelCache[key] = entry
+				models = cloneModels(entry.models)
+				err = nil
+			} else if err == nil {
+				// Empty catalogs have no last-known value to preserve. Cache the
+				// negative result only briefly, with no separate stale tier.
+				expiresAt := now.Add(modelNegativeCacheTTL)
+				putModelCacheLocked(key, models, expiresAt, expiresAt)
+			}
+		}
+		flight.models = cloneModels(models)
+		flight.err = err
+		flight.cancelled = cancelled
+		delete(modelCacheFlights, key)
+		close(flight.done)
+		modelCacheMu.Unlock()
+		return cloneModels(models), err
 	}
+}
 
-	modelCacheMu.Lock()
-	modelCache[key] = modelCacheEntry{models: models, expiresAt: time.Now().Add(modelCacheTTL)}
-	modelCacheMu.Unlock()
-	return models, nil
+func pruneHardExpiredModelCacheLocked(now time.Time) {
+	for key, entry := range modelCache {
+		if !now.Before(entry.hardExpiresAt) {
+			delete(modelCache, key)
+		}
+	}
+}
+
+func putModelCacheLocked(key string, models []Model, refreshAfter, hardExpiresAt time.Time) {
+	modelCacheSequence++
+	modelCache[key] = modelCacheEntry{
+		models:        cloneModels(models),
+		refreshAfter:  refreshAfter,
+		hardExpiresAt: hardExpiresAt,
+		recency:       modelCacheSequence,
+	}
+	for len(modelCache) > modelCacheMaxEntries {
+		var oldestKey string
+		var oldestRecency uint64
+		first := true
+		for candidate, entry := range modelCache {
+			if first || entry.recency < oldestRecency || (entry.recency == oldestRecency && candidate < oldestKey) {
+				oldestKey = candidate
+				oldestRecency = entry.recency
+				first = false
+			}
+		}
+		delete(modelCache, oldestKey)
+	}
+}
+
+func cloneModels(models []Model) []Model {
+	if models == nil {
+		return nil
+	}
+	cloned := make([]Model, len(models))
+	copy(cloned, models)
+	return cloned
 }
 
 func discoveryCacheKey(providerType, executablePath string) string {
-	if executablePath == "" {
-		return providerType
+	providerType = strings.ToLower(strings.TrimSpace(providerType))
+	return providerType + "\x00" + normalizedDiscoveryExecutablePath(providerType, executablePath)
+}
+
+// normalizedDiscoveryExecutablePath binds every positive, negative, stale and
+// in-flight catalog entry to the exact executable identity used by that
+// runtime. LookPath validates PATH-backed names; absolute cleaning and
+// best-effort symlink resolution collapse equivalent custom paths without
+// allowing two distinct executables to share discovery state.
+func normalizedDiscoveryExecutablePath(providerType, executablePath string) string {
+	candidate := strings.TrimSpace(executablePath)
+	if candidate == "" {
+		candidate = defaultDiscoveryExecutable(providerType)
 	}
-	return providerType + ":" + executablePath
+	if resolved, err := exec.LookPath(candidate); err == nil {
+		candidate = resolved
+	}
+	if absolute, err := filepath.Abs(candidate); err == nil {
+		candidate = absolute
+	}
+	candidate = filepath.Clean(candidate)
+	if resolved, err := filepath.EvalSymlinks(candidate); err == nil {
+		candidate = filepath.Clean(resolved)
+	}
+	if runtime.GOOS == "windows" {
+		candidate = strings.ToLower(candidate)
+	}
+	return candidate
+}
+
+func defaultDiscoveryExecutable(providerType string) string {
+	switch strings.ToLower(strings.TrimSpace(providerType)) {
+	case "antigravity":
+		return "agy"
+	case "cursor":
+		return "cursor-agent"
+	case "kiro":
+		return "kiro-cli"
+	case "qoder":
+		return "qodercli"
+	default:
+		return strings.ToLower(strings.TrimSpace(providerType))
+	}
 }
 
 // ── Static catalogs ──
@@ -480,6 +670,9 @@ func isOpenAIReasoningSeriesID(id string) bool {
 // On any failure (CLI missing, parse error, timeout) we fall back to
 // an empty list so the creatable UI still works.
 func discoverOpenCodeModels(ctx context.Context, executablePath string) ([]Model, error) {
+	if err := requireDiscoveryProcessContainment(); err != nil {
+		return nil, err
+	}
 	if executablePath == "" {
 		executablePath = "opencode"
 	}
@@ -691,6 +884,9 @@ func openCodeThinkingLevelsFromVariants(variants map[string]opencodeModelVariant
 // Older pi versions print the list to stderr; newer versions use
 // stdout. We capture both and parse whichever is non-empty.
 func discoverPiModels(ctx context.Context, executablePath string) ([]Model, error) {
+	if err := requireDiscoveryProcessContainment(); err != nil {
+		return nil, err
+	}
 	if executablePath == "" {
 		executablePath = "pi"
 	}
@@ -935,6 +1131,9 @@ type acpDiscoveryProvider struct {
 // `models.availableModels` / `models.currentModelId`. Provider-specific
 // `launchArgs` select ACP mode (e.g. `acp` vs `--acp`).
 func discoverACPModels(ctx context.Context, executablePath string, p acpDiscoveryProvider) ([]Model, error) {
+	if err := requireDiscoveryProcessContainment(); err != nil {
+		return nil, err
+	}
 	if executablePath == "" {
 		executablePath = p.defaultBin
 	}
@@ -948,32 +1147,46 @@ func discoverACPModels(ctx context.Context, executablePath string, p acpDiscover
 	if len(cmdArgs) == 0 {
 		cmdArgs = []string{"acp"}
 	}
-	cmd := exec.CommandContext(runCtx, executablePath, cmdArgs...)
-	hideAgentWindow(cmd)
+	// Do not use exec.CommandContext here: its default cancellation path kills
+	// only the immediate process. ACP discovery can spawn descendants, so the
+	// OS-specific process-tree helper owns termination and reaping.
+	cmd := exec.Command(executablePath, cmdArgs...)
+	processTree, err := configureDiscoveryProcessTree(cmd)
+	if err != nil {
+		return []Model{}, nil
+	}
 	if len(p.extraEnv) > 0 {
 		cmd.Env = append(os.Environ(), p.extraEnv...)
 	}
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
+		_ = processTree.close()
 		return []Model{}, nil
 	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		stdin.Close()
+		_ = processTree.close()
 		return []Model{}, nil
 	}
 	// Discard stderr; noisy logs here don't help us and we don't
 	// want them bleeding into the daemon log every 60s.
 	cmd.Stderr = io.Discard
 	if err := cmd.Start(); err != nil {
+		_ = processTree.close()
 		return []Model{}, nil
 	}
-	// Ensure the child process is always reaped.
-	defer func() {
+	if err := processTree.attach(cmd); err != nil {
 		_ = stdin.Close()
-		_ = cmd.Process.Kill()
-		_, _ = cmd.Process.Wait()
-	}()
+		_ = terminateUnattachedDiscoveryProcess(cmd)
+		_ = cmd.Wait()
+		_ = processTree.close()
+		return []Model{}, nil
+	}
+	// EOF is the protocol-supported graceful shutdown signal. There is no ACP
+	// session/destroy or shutdown RPC. Wait briefly for the child to exit, then
+	// terminate any remaining process group/job descendants and reap the parent.
+	defer finishACPDiscoveryProcess(cmd, stdin, processTree)
 
 	writeACP := func(id int, method string, params map[string]any) error {
 		msg := map[string]any{
@@ -1054,6 +1267,27 @@ func discoverACPModels(ctx context.Context, executablePath string, p acpDiscover
 	case <-runCtx.Done():
 		return []Model{}, nil
 	}
+}
+
+const acpDiscoveryShutdownGrace = 500 * time.Millisecond
+
+func finishACPDiscoveryProcess(cmd *exec.Cmd, stdin io.Closer, processTree *discoveryProcessTree) {
+	_ = stdin.Close()
+	waited := make(chan struct{})
+	go func() {
+		_ = cmd.Wait()
+		close(waited)
+	}()
+
+	select {
+	case <-waited:
+		// The parent honored EOF. Still terminate the group/job below because a
+		// misbehaving descendant may have outlived it.
+	case <-time.After(acpDiscoveryShutdownGrace):
+	}
+	_ = processTree.terminate()
+	<-waited
+	_ = processTree.close()
 }
 
 // parseACPSessionNewModels extracts the model catalog from an ACP
@@ -1160,6 +1394,9 @@ func mergeModels(primary, required []Model) []Model {
 // a CLI that starts and then fails, times out, or returns no models produces
 // an explicit error for the daemon/UI. Successful catalogs are cached.
 func discoverAntigravityModels(ctx context.Context, executablePath string) ([]Model, error) {
+	if err := requireDiscoveryProcessContainment(); err != nil {
+		return nil, err
+	}
 	if executablePath == "" {
 		executablePath = "agy"
 	}
@@ -1217,6 +1454,9 @@ func parseAntigravityModels(output string) []Model {
 // failure we fall back to the minimal static catalog so the UI
 // stays usable when cursor-agent isn't installed on the daemon host.
 func discoverCursorModels(ctx context.Context, executablePath string) ([]Model, error) {
+	if err := requireDiscoveryProcessContainment(); err != nil {
+		return nil, err
+	}
 	if executablePath == "" {
 		executablePath = "cursor-agent"
 	}
@@ -1309,6 +1549,9 @@ func parseCursorModels(output string) []Model {
 // creatable dropdown handle manual entry — a silently-wrong
 // enumeration would be worse than none.
 func discoverOpenclawAgents(ctx context.Context, executablePath string) ([]Model, error) {
+	if err := requireDiscoveryProcessContainment(); err != nil {
+		return nil, err
+	}
 	if executablePath == "" {
 		executablePath = "openclaw"
 	}
@@ -1492,6 +1735,9 @@ var codebuddyModelRe = regexp.MustCompile(`--model\s*<[^>]+>\s*.*?Currently supp
 // supported model list from its output. Falls back to a static list
 // when the binary is missing or the output cannot be parsed.
 func discoverCodebuddyModels(ctx context.Context, executablePath string) ([]Model, error) {
+	if err := requireDiscoveryProcessContainment(); err != nil {
+		return nil, err
+	}
 	if executablePath == "" {
 		executablePath = "codebuddy"
 	}
