@@ -788,3 +788,19 @@
 > G4-OBS (ordinary live functional concurrency/failure OK; capacity cert NOT). OBS impl stays P2; G4-OBS gate
 > (D-V3-17/24) unchanged. Reconciles D-V3-25(B): old key forbidden, live loop uses fresh Owner-injected key.
 > Prerequisites (no values): `evidence/live-first-omniroute-prerequisites-D-V3-28.md`. Holds intact.
+
+---
+
+> **EXECUTION TL — integration/agent-brain-p0 @ `29056e5` verified; lane recycle (Kiro-TL, 2026-07-19).** Docs-only; no product/test/git-product/credential/network action.
+> **Integration composition verified (Kiro-TL, via fetch):** `origin/integration/agent-brain-p0` = `29056e5`;
+> order **W5 `fd4aa4d` → W1 `3711eb4` → W2 `528d1bb` → W3 `1716186` → W4 `0a291d9`** (matches D-V3-26 order:
+> foundation→W1→W2→W3→W4; W1 sole serial integrator). **main `b657129` UNTOUCHED** (no merge). Contains
+> fd4aa4d/9745eaf/3711eb4. Exact image reported built.
+> **W1 startup/live-smoke = ADJUDICATION PENDING** — will adjudicate on landing against written evidence
+> (producer≠reviewer≠adjudicator; no acceptance from prose; live non-prod per D-V3-28). Live route exercise
+> gated by HD1 (Owner fresh-key injection into OmniRoute; old key forbidden — D-V3-25B/28).
+> **Lane recycle dispatched (frozen ownership, P0 priority):** W2 → 8.1/8.4/8.5/8.6/8.7 (gateway); W3 →
+> 8.2/8.3 + **5.6–5.8** native adapters as **credentialless live routes via OmniRoute** per D-V3-27
+> (Cline→Kimi-K2.7, Cline→GLM52, NVIDIA=GLM52 fallback, Antigravity revalidate). **No OBS implementation until
+> functional P0** (D-V3-21/22/23 P2); **no capacity/9.1/Prodex/cutover/production**. Live-first (D-V3-28): no
+> duplicate pre-test campaign; unit/property/race/vet = fast regression only. Holds intact.

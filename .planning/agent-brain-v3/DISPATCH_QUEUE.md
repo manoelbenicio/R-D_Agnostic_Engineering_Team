@@ -366,3 +366,26 @@ NOT DISPATCHED.
 **PREPARED / NOT DISPATCHED.** Branch `integration/agent-brain-p0` NOT yet created. Authoritative
 integration begins only after the active W1 (`3711eb4`)/W3 (`1716186`)/W4 (`0a291d9`) commits finish and
 their independent reviews pass, then TL/Principal adjudication.
+
+
+---
+
+# P0 LANE RECYCLE — execution (2026-07-19; integration @ 29056e5)
+
+> Integration `origin/integration/agent-brain-p0` @ `29056e5` live (W5→W1→W2→W3→W4; main untouched; image
+> built). Recycle lanes under **frozen ownership**; **live-first (D-V3-28)** — no duplicate pre-test campaign;
+> unit/property/race/vet = fast regression only. **No OBS implementation until functional P0** (P2 defer
+> D-V3-21/22/23); **no capacity/9.1/Prodex/cutover/production.** producer ≠ reviewer ≠ adjudicator; written
+> evidence per slice.
+
+| Lane | Frozen ownership | P0 priority tasks | Live-acceptance basis |
+|---|---|---|---|
+| W1 | central hotspots, brain/**, Wave C wiring | startup + live-smoke; Wave C launch-anchor propagation | adjudicate on landing (pending) |
+| W2 | `gateway/**` | **8.1, 8.4, 8.5, 8.6, 8.7** | live protocol/RR/affinity/failure/lifecycle via OmniRoute |
+| W3 | `runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` | **8.2, 8.3 + 5.6–5.8** (credentialless live routes) | live per D-V3-27: Cline→Kimi-K2.7, Cline→GLM52, NVIDIA fallback, Antigravity revalidate |
+| W4 | `deploy/**`, observability dashboards | rollout/runbook functional (ops) | functional live; OBS-11 stays gated (promexport D-V3-23) |
+
+**Gate:** live route exercise (W2 8.x, W3 5.6–5.8) requires **HD1** — Owner injects fresh key into OmniRoute;
+exposed/old key forbidden (D-V3-25B/28). Credentialless adapter implementation + offline fast-regression may
+proceed now; live acceptance evidence captured once the key is injected. **W6/W7/promexport EXCLUDED (P2).**
+Evidence per route: protocol/tools/reasoning/usage/cancel/error + explicit GLM52→NVIDIA primary/fallback.
