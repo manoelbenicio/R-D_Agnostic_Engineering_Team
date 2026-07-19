@@ -69,6 +69,26 @@ func TestRunTaskObservesLaunchIdentityRejectionsExactlyOnce(t *testing.T) {
 	}
 }
 
+func TestRunTaskObservesMissingWorkspaceRejectionExactlyOnce(t *testing.T) {
+	daemon, credential, launchMarker := newAgentBrainSecurityTestDaemon(t, false)
+	sink := e2e.NewMemorySink()
+	daemon.agentBrainOBS = brain.NewAdmissionObserver(sink)
+	task := syntheticGatewayTask()
+	task.WorkspaceID = ""
+
+	_, err := daemon.runTask(context.Background(), task, "claude", 0, daemon.logger)
+	if err == nil || err.Error() != "refusing to spawn agent: task has no workspace_id (task_id=synthetic-task)" {
+		t.Fatalf("missing-workspace error=%v", err)
+	}
+	if credential.calls != 0 {
+		t.Fatalf("credential source called %d times before missing-workspace rejection", credential.calls)
+	}
+	if _, statErr := os.Stat(launchMarker); !os.IsNotExist(statErr) {
+		t.Fatal("synthetic executable ran after missing-workspace rejection")
+	}
+	assertSingleCleanAdmissionSpan(t, sink, "workspace_required", brain.AdmissionRoutePolicyRejected, brain.GatewayReadinessNotRequired)
+}
+
 func TestRunTaskDoesNotDuplicateLaterAdmissionRejectionSpan(t *testing.T) {
 	daemon, credential, launchMarker := newAgentBrainSecurityTestDaemon(t, false)
 	sink := e2e.NewMemorySink()

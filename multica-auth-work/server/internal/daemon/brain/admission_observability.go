@@ -112,7 +112,7 @@ func AdmissionClassification(class string) (AdmissionState, GatewayReadinessStat
 		return AdmissionCapabilityRejected, GatewayReadinessSelectedModel, class
 	case "model_registry_invalid", "model_registry_unavailable":
 		return AdmissionCapabilityRejected, GatewayReadinessModelRegistry, class
-	case "legacy_contract_rejected", "route_policy_rejected", "custom_runtime_not_allowed",
+	case "legacy_contract_rejected", "route_policy_rejected", "workspace_required", "custom_runtime_not_allowed",
 		"custom_args_not_allowed", "builtin_runtime_provider_mismatch":
 		return AdmissionRoutePolicyRejected, GatewayReadinessNotRequired, class
 	case "credential_source_unavailable", "gateway_authentication_failed":

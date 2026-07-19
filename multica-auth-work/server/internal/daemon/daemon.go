@@ -3282,6 +3282,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// path that can leak operations into an unrelated workspace when
 	// multiple workspaces share a host.
 	if task.WorkspaceID == "" {
+		d.observeAgentBrainAdmission(task, nil, "workspace_required", admissionStarted)
 		return TaskResult{}, fmt.Errorf("refusing to spawn agent: task has no workspace_id (task_id=%s)", task.ID)
 	}
 	entry, provider, err := d.resolveTaskAgentEntry(task, provider)
