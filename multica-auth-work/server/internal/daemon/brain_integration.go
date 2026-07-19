@@ -207,7 +207,7 @@ func (r *agentBrainRuntime) admitTask(ctx context.Context, task Task, provider, 
 	}
 	client, err := gateway.NewClient(gateway.ClientOptions{
 		Gateway:    r.config.Neutral.Gateway,
-		Endpoints:  gateway.EndpointSet{Liveness: "/health/live", Readiness: "/health/ready"},
+		Endpoints:  gateway.EndpointSet{Liveness: "/api/health/ping", Readiness: "/v1/models"},
 		Credential: r.dependencies.CredentialSource, HTTPClient: r.dependencies.HTTPClient,
 	})
 	if err != nil {
