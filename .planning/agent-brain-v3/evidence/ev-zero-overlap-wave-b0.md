@@ -89,3 +89,39 @@ Coordinators (excluded from the 8 workers): `w3:pW` = Kiro-TL-Orchestrator (plan
 > Pane ids re-read live from `herdr pane list` at dispatch time (ids compact on close). This mapping
 > is a PROPOSAL for Codex56-Principal-TL; verbatim lane prompts are in DISPATCH_QUEUE.md (Wave B),
 > and remain NOT DISPATCHED until EV-ZERO-OVERLAP is ACCEPTED. Prodex/9.1/PD-08/keys/cutover HELD.
+
+---
+
+## AMENDMENT 2026-07-19 — W4 real observability stack included (re-acceptance pending)
+
+**Trigger:** W4 commit `2c5f4d4` rejected as insufficient for OBS-11. Root cause: the original W4
+freeze covered `internal/daemon/deploy/**` + `internal/daemon/observability/**` (server-relative)
+but OMITTED the actual tracked Grafana/Prometheus/Alertmanager stack at
+`multica-auth-work/deploy/observability/**` (repo-root-relative). This amendment assigns that exact
+existing path **exclusively to W4**. Planning-only; no product edits.
+
+**Amended W4 ownership adds (20 tracked files):** `multica-auth-work/deploy/observability/` —
+`docker-compose.yml`, `prometheus.yml`, `alertmanager.yml`, `alerts.yml`,
+`grafana/dashboards/*.json`, `grafana/provisioning/**`, `pg-exporter-entrypoint.sh`,
+`README.md`, `.env.example`, `.gitignore`, `secrets/*.example` (example templates only — NO real
+secret values may be introduced; NO-SECRET hold applies).
+
+**Re-run proof (repo-root-relative):**
+```
+counts: W1=69 W2=25 W3=19 W4=46   (W4 = 26 server + 20 real stack); total = 159
+W1 ∩ W2 = 0
+W1 ∩ W3 = 0
+W1 ∩ W4 = 0
+W2 ∩ W3 = 0
+W2 ∩ W4 = 0
+W3 ∩ W4 = 0
+TOTAL overlaps = 0
+new stack files added to W4 = 20 (disjoint tree: multica-auth-work/deploy/ is a sibling of server/)
+```
+
+**Verdict: PASS (amended)** — the real stack is exclusively W4 and disjoint from all lanes.
+
+**Governance:** the base EV-ZERO-OVERLAP was ACCEPTED @ `4c67ae0`; this amendment RE-OPENS it for
+**re-acceptance by Codex56-Principal-TL**. Until the amended proof is accepted, **W4 MUST NOT edit
+the real stack `multica-auth-work/deploy/observability/**` and MUST NOT claim OBS-11.** Commit
+`2c5f4d4` is recorded **PRODUCED-NOT-ACCEPTED** (not done).

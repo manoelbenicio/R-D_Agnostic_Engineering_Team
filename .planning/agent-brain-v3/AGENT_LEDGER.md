@@ -519,3 +519,15 @@
 > monitors (OpenCode panes terminated on exposed-key stop; replacements require auth; no auth bypass).
 > FLAG: W5 (contract-first) + W6 need approval to proceed; no ownership/security violation observed;
 > no adverse duplicate-dispatch effect seen (lanes on-task). Holds intact: 9.1/PD-08/keys/Prodex/cutover/production.
+
+---
+
+> **WAVE B.0 AMENDMENT + W4 ADJUDICATION (Kiro-TL, 2026-07-19).** (1) W4 commit `2c5f4d4` =
+> **PRODUCED-NOT-ACCEPTED (not done)** for OBS-11 — it omitted the real Grafana/Prometheus/Alertmanager
+> stack `multica-auth-work/deploy/observability/**` (was outside the frozen W4 ownership). (2) Planning-only
+> Wave B.0 amendment: that exact existing path assigned EXCLUSIVELY to W4; EV-ZERO-OVERLAP re-run
+> including it = PASS (W1 69, W2 25, W3 19, W4 46 [26 server + 20 stack]; total 159; all pairwise ∩ = 0).
+> FILE_OWNERSHIP/EVIDENCE_INDEX/DISPATCH_QUEUE updated; EV-ZERO-OVERLAP RE-OPENED for re-acceptance by
+> Codex56-Principal-TL. Until re-accepted, W4 must NOT edit the real stack or claim OBS-11; no real
+> secrets in secrets/*.example. (3) Status correction (owner): W5 (w6:p1) and W6 (w6:p2) interactive
+> trust prompts CLEARED — both WORKING; not redispatched. Holds intact: 9.1/PD-08/keys/Prodex/cutover/production.

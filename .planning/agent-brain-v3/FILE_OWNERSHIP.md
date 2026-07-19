@@ -104,7 +104,7 @@ globs (cada path casa exatamente uma lane) e registra a prova. Locks em `AGENT_L
 | W1 | `internal/daemon/{daemon,config,health}.go`, `cmd/multica/cmd_daemon.go`, `go.mod`, `internal/daemon/execenv/**`, `pkg/agent/models.go`, `internal/daemon/{prodex.go,prodex_fs_linux.go,prodex_fs_other.go,prodex_profiles.go,l2_runtime.go}`, `internal/daemon/brain/**` | existing |
 | W2 | `internal/daemon/gateway/**` | existing |
 | W3 | `internal/daemon/runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` | existing |
-| W4 | `internal/daemon/deploy/**`, `internal/daemon/observability/**` **EXCEPT `internal/daemon/observability/e2e/**`** | existing (carve-out) |
+| W4 | `internal/daemon/deploy/**`, `internal/daemon/observability/**` **EXCEPT `internal/daemon/observability/e2e/**`**, **PLUS the real stack `multica-auth-work/deploy/observability/**` (repo-root-relative — Grafana/Prometheus/Alertmanager: docker-compose.yml, prometheus.yml, alertmanager.yml, alerts.yml, grafana/**)** | existing (carve-out; amended 2026-07-19) | 
 | W5 | `internal/daemon/observability/e2e/**` | **NEW** |
 | W6 | `internal/middleware/obs_ingress.go` (OBS-2 ingress span), `internal/daemonws/obs_delivery.go` (OBS-8 WS/UI delivery span) | **NEW** |
 | W7 | `internal/service/obs_queue.go` (OBS-3 DB-queue span), `internal/service/obs_persist.go` (OBS-7 terminal-persistence span) | **NEW** |
@@ -117,6 +117,9 @@ W1 during Wave C serial integration: `internal/metrics/http.go` (or router chain
 enqueue/dequeue + terminal-result sites → call `obs_queue`/`obs_persist`. W6/W7 own only their new
 span-emitter files and call the W5 `observability/e2e` library; they do NOT edit the shared anchors.
 
-**Zero-overlap result (see EV-ZERO-OVERLAP):** existing lanes W1–W4 = 139 tracked files, all
-pairwise intersections = 0; W5/W6/W7 target paths confirmed absent (no collision); shared anchors
-reserved to W1-serial. No file is claimed by two lanes.
+**Zero-overlap result (see EV-ZERO-OVERLAP + 2026-07-19 amendment):** existing lanes W1–W4 =
+**159 tracked files after amendment** (W1 69, W2 25, W3 19, W4 46 = 26 server + 20 real stack),
+all pairwise intersections = 0; W5/W6/W7 target paths absent; shared anchors reserved to W1-serial.
+No file is claimed by two lanes. **OBS-11 (dashboards/alerts) acceptance requires the real stack
+`multica-auth-work/deploy/observability/**`, now exclusively W4.** Note: all lane globs are
+server-relative (`multica-auth-work/server/…`) EXCEPT W4's stack path, which is repo-root-relative.
