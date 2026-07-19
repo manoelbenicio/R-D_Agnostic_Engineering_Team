@@ -597,3 +597,15 @@
 > queue_msg_id/result_id/queue_depth surface (Kiro-TL confirmed). **W8 `6aa1e50` = independently verified**
 > (four evidence drafts; 70/70 hashes PASS; classifications truthful) — adjudication PENDING. build-omniroute
 > unchanged 51/96; no OBS checkbox closed. Holds intact: 9.1/capacity/PD-08/keys/Prodex/cutover/production.
+
+---
+
+> **C5 — D-V3-20 RECORDED (Kiro-TL/Opus-4.8, 2026-07-19; owner-directed, Principal-recommended, Kiro-endorsed).**
+> Golden-Rule CHECK-IN/OUT: docs-only decision record; no product/test/product-git/credential/network action.
+> D-V3-20 = **ACCEPTED** into DECISIONS.md: Main Brain functional/unit/integration/protocol/failure/retry/
+> affinity/cancellation/parity tests may **RUN** in parallel BEFORE G4-OBS (execution-permitted); **D-V3-17
+> remains the ACCEPTANCE stop-gate** for task 9.1/capacity certification, cutover, production, readiness.
+> **Evidence firewall mandatory** — unobserved functional greens are correctness evidence only, never
+> capacity/cutover/readiness evidence. ETA excluding observability = 24–48h nominal / 72h conservative
+> (functional track completion only; NOT an ETA to G4-OBS/capacity/cutover). Does not alter OBS-lane
+> dispatch gating and does not touch D-V3-19. Holds preserved: 9.1/capacity/PD-08/keys/Prodex/cutover/production/tier 50/100.

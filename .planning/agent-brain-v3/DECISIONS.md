@@ -143,6 +143,29 @@
   `EV-ZERO-OVERLAP`; novo requisito AB-REQ-41 (recovery-mode) e risco R29 (contenção de merge).
 - STATUS: APROVADO / ATIVO.
 
+### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
+- Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o
+  ESCOPO de D-V3-17 — não o enfraquece. D-V3-17 sempre bloqueou a **validade de alegações de
+  capacidade/cutover**, nunca a **execução de testes de correção funcional**.
+- **EXECUÇÃO — permitida agora, em paralelo, ANTES do G4-OBS:** testes de Main Brain
+  **funcional / unit / integração / protocolo / falha / retry / afinidade / cancelamento / paridade**
+  podem rodar imediatamente e concorrentemente com as lanes OBS. Rodá-los NÃO consome, satisfaz ou
+  contorna o gate G4-OBS.
+- **ACEITAÇÃO — permanece bloqueada por D-V3-17 (OBS-1..OBS-11 aceitos):** nenhuma **certificação de
+  capacidade tier-20 / task 9.1**, **cutover**, **produção** ou **alegação de readiness** pode ser
+  afirmada até o G4-OBS ser aceito. D-V3-17 permanece inalterada como gate de ACEITAÇÃO.
+- **Firewall de evidência (guarda obrigatória):** execuções de teste funcional não-observadas são
+  **evidência de correção apenas**. NÃO podem ser rotuladas, agregadas ou promovidas a evidência de
+  **capacidade / cutover / readiness**. Verdes funcionais não substituem exporters de observabilidade
+  aceitos + sinal E2E ao vivo e não podem ser citados como tal.
+- **Escopo:** D-V3-20 governa a trilha de teste funcional do Main Brain; NÃO altera o gating de dispatch
+  das lanes OBS (ainda pendente de aceitação EV-ZERO-OVERLAP / council) e NÃO toca D-V3-19.
+- **ETA (registrada, com ressalva):** excluindo observabilidade, **24–48h nominal, 72h conservador**
+  (estimativa do Principal) para COMPLETAR a trilha funcional. NÃO é ETA para aceitação G4-OBS,
+  certificação de capacidade, cutover ou readiness — esses permanecem gated e sem cronograma.
+- STATUS: **ACEITA** (owner-dirigida + Principal-recomendada + Kiro-TL-endossada; quorum de council para
+  decisão CRÍTICA). Holds preservados: 9.1/capacidade/PD-08/keys/Prodex/cutover/produção/tier 50/100.
+
 ## Decisões resolvidas pelo dono
 
 - **PD-01 — RESOLVIDA (2026-07-17):** preservar e incorporar a worktree existente de
