@@ -166,9 +166,28 @@
   `a4a147…`/`2f345e…`, que são de commit anterior — hashes atuais do HEAD `b77bbba`:
   `FILE_OWNERSHIP.md`=`1af3c37c…`, `ev-zero-overlap-wave-b0.md`=`36267dc2…`), strict-validar OpenSpec, e
   obter sign-off de council (owner + Kiro + Principal).
-- STATUS: **RECOMENDAÇÃO PENDENTE de ratificação do Owner + council.** NÃO implementar a emenda, NÃO
-  adicionar linhas de ownership, NÃO despachar trabalho de test-path W6/W7 até ratificação explícita do
-  Owner + revalidação de zero-overlap no HEAD atual. Holds preservados.
+- STATUS: **APROVADA / ACEITA** (ratificação do Owner 2026-07-19; council unânime Owner + Kiro-TL +
+  Codex56-Principal-TL) com os safeguards declarados. Emenda planning-only EXECUTADA: 4 caminhos de teste
+  NOVOS adicionados a `FILE_OWNERSHIP.md` (sem transferência de source/schema/migração/shared-anchor);
+  safeguards de acoplamento TestMain/pacote registrados; EV-ZERO-OVERLAP re-rodado no HEAD atual em nível
+  file-glob E Go-package/TestMain = PASS; ambas validações OpenSpec strict = valid. **Dispatch de teste W6
+  pode ser PREPARADO após PASS; implementação W6/W7 fica sob D-V3-21 (Priority 2 / DEFERRED atrás do P0).**
+  Holds preservados.
+
+### D-V3-21 — Design zero-schema W7 ACEITO como arquitetura, mas Priority 2 / DEFERRED atrás do P0 Main Brain
+- Decisão do dono 2026-07-19. O design **zero-schema** do W7 (IDs determinísticos de queue/result derivados
+  de metadata estável — `task_id` + attempt/kind/timestamp/status; nunca conteúdo/segredo; span de
+  queue/persist autoritativo único por tarefa sintética bem-sucedida; falhas/cancelamentos classificados
+  separadamente) é **ACEITO como arquitetura**.
+- **Prioridade:** **Priority 2 / DEFERRED.** NÃO despachar a implementação de observabilidade W7
+  (queue/persist) — nem consumir capacidade de **Priority-0 Main Brain** com implementação W6/W7 de
+  observabilidade — até o **P0 Main Brain estar funcionalmente completo, integrado, testado e rodando
+  corretamente**, OU reautorização explícita do dono.
+- **Permitido agora:** a prova planning-only do D-V3-19 (ownership de teste + EV-ZERO-OVERLAP + validação)
+  pode completar; **D-V3-20 permanece** (testes funcionais/unit/integração/protocolo/falha/retry/afinidade/
+  cancelamento/paridade prosseguem pré-G4-OBS). Coordenação foca lacunas **não-observabilidade** do Main Brain.
+- STATUS: **ACEITA (arquitetura) / DEFERRED (implementação, Priority 2)**. Firewall de evidência do D-V3-20
+  e todos os holds preservados: 9.1/capacidade/PD-08/keys/Prodex/cutover/produção/tier 50/100.
 
 ### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
 - Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o

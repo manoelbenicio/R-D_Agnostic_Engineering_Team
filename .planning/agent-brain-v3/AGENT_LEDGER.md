@@ -625,3 +625,25 @@
 > (NOT the fbabd9c hashes `a4a147…`/`2f345e…`; current HEAD `b77bbba` = FILE_OWNERSHIP `1af3c37c…`,
 > ev-zero-overlap `36267dc2…`) + strict OpenSpec + owner+Kiro+Principal sign-off. **NOT implemented.**
 > Holds intact: 9.1/capacity/PD-08/keys/Prodex/cutover/production/tier 50/100.
+
+---
+
+> **D-V3-19 EXECUTED + D-V3-21 OWNER PRIORITY AMENDMENT (Kiro-TL/Opus-4.8, 2026-07-19; council unanimous
+> Owner + Kiro-TL + Codex56-Principal-TL).** Golden-Rule CHECK-IN/OUT: docs-only planning amendment; no
+> product/test/product-git/credential/network action; no lane dispatch.
+> **D-V3-19 planning-only amendment EXECUTED:** four NEW `*_test.go` paths added to FILE_OWNERSHIP (W6
+> `middleware/obs_ingress_test.go` + `daemonws/obs_delivery_test.go`; W7 `service/obs_queue_test.go` +
+> `obs_persist_test.go`) — **no source/schema/migration/generated/shared-anchor transfer**; W1 retains
+> `task.go`/`http.go`/`hub.go`/`request_logger.go` + Wave C wiring. TestMain/package coupling safeguards
+> recorded (no package declares TestMain today; new files add none; middleware clean; daemonws/service
+> package-coupled to W1 anchors hub.go/task.go → W1-serial).
+> **EV-ZERO-OVERLAP re-run at CURRENT HEAD `3763f16` = PASS at both levels:** file-glob (W1/W2/W3/W4 =
+> 69/25/19/46, all pairwise ∩=0; four new paths absent + single-lane; distinct) + Go-package/TestMain
+> coupling (identified + safeguarded). **Both OpenSpec strict validations PASS** (build-omniroute-agent-brain
+> valid; persist-prodex-runtime-integration valid; openspec 1.4.1).
+> **D-V3-21 (Owner):** zero-schema W7 design ACCEPTED as architecture but **Priority 2 / DEFERRED** — W6/W7
+> observability implementation must NOT consume Priority-0 Main Brain capacity until P0 is functionally
+> complete/integrated/tested/running OR explicitly reauthorized. **W6 test dispatch = PREPARE-ONLY; W7
+> implementation = HELD** (source helper not yet frozen + P0 defer). **D-V3-20 remains** (functional tests
+> proceed pre-G4-OBS). Coordination focus = non-observability Main Brain gaps.
+> Holds intact: 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.

@@ -286,3 +286,39 @@ You are W8 — Governance and sibling-change closure for Agent Brain v3. Authori
 Wave B.0 freeze + `EV-ZERO-OVERLAP` → Wave B lanes (W1–W8 parallel) → Wave C (W1 serial central wiring of OBS spans + recovery-mode scaffold) → **G4-OBS stop-gate (OBS-1..OBS-11 PASS, D-V3-17)** → tier-20 capacity (9.1/9.2; needs owner 9.1 A1–F3) → G5 parity → G6 cutover + Prodex quiesced to cold recovery mode. Each gate: TL adjudication + independent review.
 
 Dispatch status: **AUTHORIZED — NO-SECRET foundation only (EV-ZERO-OVERLAP ACCEPTED @ 4c67ae0).** Order: W5 publishes the correlation API contract first; all other lanes may start independent acceptance/audit immediately; OBS callers finalize against the W5 contract once published. Central wiring of spans + recovery-mode scaffold remain Wave C (W1 serial). W7/W8 held off OpenCode panes pending key safety. Still HELD: 9.1, PD-08, key rotation, Prodex activation, cutover, production.
+
+
+---
+
+# WAVE B.1 — D-V3-19 minimal TEST-ownership (Council-unanimous 2026-07-19) + Owner P0 priority amendment (D-V3-21)
+
+> Planning-only ownership amendment EXECUTED and PASS (see `evidence/ev-zero-overlap-wave-b0.md` Wave B.1
+> section + `FILE_OWNERSHIP.md` Wave B.1 amendment). Four NEW `*_test.go` paths added to W6/W7; no
+> source/schema/migration/shared-anchor transfer. **Owner priority (D-V3-21):** W6/W7 observability
+> implementation is **Priority 2 / DEFERRED** — must NOT consume Priority-0 Main Brain capacity until P0 is
+> functionally complete/integrated/tested/running OR explicitly reauthorized. Holds intact.
+
+## Entry W6.T — Ingress/Delivery span TESTS (PREP-ONLY; deferred behind P0)
+**Target lane:** W6 (`codex6-ingress-ws`). **NEW owned files:** `internal/middleware/obs_ingress_test.go`,
+`internal/daemonws/obs_delivery_test.go`. **Covers:** `obs_ingress.go`/`obs_delivery.go` (`a715b0a`).
+**Status:** **PREPARE-ONLY.** May be prepared now that EV-ZERO-OVERLAP PASSED; **DO NOT dispatch/implement**
+against Priority-0 Main Brain capacity until P0 complete or explicit reauth (D-V3-21). Safeguards: no
+`TestMain`/no side-effecting `init()`; `obs_delivery_test.go` is package-coupled to W1 anchor `hub.go`
+(Wave C) → must not edit/force-change `hub.go`; target the frozen span-helper contract only. Producer ≠
+reviewer ≠ adjudicator. NOT DISPATCHED.
+
+## Entry W7.T — Queue/Persist span TESTS (HELD; design accepted, deferred behind P0)
+**Target lane:** W7 (`codex7-queue-persist`). **NEW owned files:** `internal/service/obs_queue_test.go`,
+`internal/service/obs_persist_test.go`. **Covers:** `obs_queue.go`/`obs_persist.go` (**not yet produced**).
+**Status:** **HELD.** Zero-schema W7 design ACCEPTED as architecture (D-V3-21) but implementation is
+**Priority 2 / DEFERRED behind P0 Main Brain**. Test authoring blocked until the source helper contract
+exists and is frozen AND P0 reauthorization. Package-coupled to W1 anchor `task.go` (Wave C) → subordinate
+to W1 serial integration; no `TestMain`/no side-effecting `init()`; target frozen helper contract only.
+NOT DISPATCHED.
+
+## Wave B.1 sign-off
+- EV-ZERO-OVERLAP re-run at CURRENT planning HEAD: file-glob PASS (∩=0, 4 paths absent + single-lane) +
+  Go-package/TestMain coupling identified/safeguarded (W1-serial). Both OpenSpec changes strict-valid.
+- **Coordination focus per Owner: non-observability Main Brain gaps (Priority 0).** D-V3-20 functional
+  tests proceed pre-G4-OBS.
+- Holds intact: 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.
