@@ -18,9 +18,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/google/uuid"
-	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
 )
 
 // codexBlockedArgs are flags hardcoded by the daemon that must not be
@@ -629,8 +626,7 @@ func (b *codexBackend) Execute(ctx context.Context, prompt string, opts ExecOpti
 		return nil, fmt.Errorf("start codex: %w", err)
 	}
 
-	launchID := uuid.New().String()
-	endSpan := e2e.StartCLIProcessSpan(ctx, launchID, cmd.Process.Pid, safeAgentArgvForLog(codexArgs))
+	// TODO(W3): implement OBS-5 CLI-process span here once W5 observability/e2e contract is published
 
 	b.cfg.Logger.Info("codex started app-server", "pid", cmd.Process.Pid, "cwd", opts.Cwd)
 
@@ -706,13 +702,6 @@ func (b *codexBackend) Execute(ctx context.Context, prompt string, opts ExecOpti
 		waitOnce.Do(func() {
 			stdin.Close()
 			_ = cmd.Wait()
-
-			cancelled := runCtx.Err() == context.Canceled || runCtx.Err() == context.DeadlineExceeded
-			exitCode := -1
-			if cmd.ProcessState != nil {
-				exitCode = cmd.ProcessState.ExitCode()
-			}
-			endSpan(exitCode, cancelled)
 		})
 	}
 
