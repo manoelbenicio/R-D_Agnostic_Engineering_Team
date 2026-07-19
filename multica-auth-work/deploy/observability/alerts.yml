@@ -120,3 +120,53 @@ groups:
         annotations:
           summary: "Postgres exporter down"
           description: 'up{job="postgres"} == 0 for >=1m -- postgres-exporter is not being scraped. Check the multica-postgres-exporter container (port 9187).'
+
+  - name: obs-11-spans
+    interval: 30s
+    rules:
+      - alert: HopLatencySpike
+        expr: histogram_quantile(0.95, sum by (hop, le) (rate(obs_hop_latency_seconds_bucket[5m]))) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: observability
+        annotations:
+          summary: "Hop latency spike (hop={{ $labels.hop }})"
+          description: "p95 hop latency > 5s for >=5m. Span overhead exceeds R30 limit."
+
+      - alert: HopErrorRateSpike
+        expr: sum by (hop) (rate(obs_hop_errors_total[5m])) > 0
+        labels:
+          severity: critical
+          component: observability
+        annotations:
+          summary: "Hop errors detected (hop={{ $labels.hop }})"
+          description: "Observability span errors are occurring."
+
+      - alert: HopDropsDetected
+        expr: sum by (hop) (rate(obs_hop_drops_total[5m])) > 0
+        labels:
+          severity: critical
+          component: observability
+        annotations:
+          summary: "Hop drops detected (hop={{ $labels.hop }})"
+          description: "Observability spans are being dropped."
+
+      - alert: TraceGapsDetected
+        expr: sum by (task_id) (rate(obs_trace_gaps_total[5m])) > 0
+        labels:
+          severity: critical
+          component: observability
+        annotations:
+          summary: "Trace gaps detected (task={{ $labels.task_id }})"
+          description: "Disconnected or orphaned traces detected."
+
+      - alert: StructuralLeakScanFailed
+        expr: sum(rate(obs_leak_scan_failures[5m])) > 0
+        labels:
+          severity: critical
+          component: observability
+        annotations:
+          summary: "OBS-10 Structural Leak Scan Failed"
+          description: "A leak was detected across spans/labels/logs. ANY leak STOPs."
+
