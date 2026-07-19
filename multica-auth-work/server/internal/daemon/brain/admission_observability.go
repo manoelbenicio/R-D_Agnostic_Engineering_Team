@@ -106,11 +106,14 @@ func AdmissionClassification(class string) (AdmissionState, GatewayReadinessStat
 		return AdmissionOverloaded, GatewayReadinessNotRequired, class
 	case "adapter_fail_closed", "trusted_profile_unavailable", "selected_protocol_unavailable":
 		return AdmissionCapabilityRejected, GatewayReadinessSelectedProtocol, class
+	case "builtin_runtime_mapping_unavailable", "builtin_runtime_unavailable":
+		return AdmissionCapabilityRejected, GatewayReadinessSelectedProtocol, class
 	case "route_model_not_approved", "capability_rejected", "capability_unavailable", "selected_model_unavailable":
 		return AdmissionCapabilityRejected, GatewayReadinessSelectedModel, class
 	case "model_registry_invalid", "model_registry_unavailable":
 		return AdmissionCapabilityRejected, GatewayReadinessModelRegistry, class
-	case "legacy_contract_rejected", "route_policy_rejected":
+	case "legacy_contract_rejected", "route_policy_rejected", "custom_runtime_not_allowed",
+		"custom_args_not_allowed", "builtin_runtime_provider_mismatch":
 		return AdmissionRoutePolicyRejected, GatewayReadinessNotRequired, class
 	case "credential_source_unavailable", "gateway_authentication_failed":
 		return AdmissionGatewayAuthFailed, GatewayReadinessAuthentication, class

@@ -3275,6 +3275,7 @@ func (d *Daemon) resolveTaskAgentEntry(task Task, claimedProvider string) (Agent
 }
 
 func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot int, taskLog *slog.Logger) (taskResult TaskResult, runErr error) {
+	admissionStarted := time.Now()
 	// Refuse to spawn an agent without a workspace. An empty workspace_id
 	// here would make MULTICA_WORKSPACE_ID empty in the agent env, and the
 	// CLI would otherwise silently fall back to the user-global config — a
@@ -3285,6 +3286,9 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	}
 	entry, provider, err := d.resolveTaskAgentEntry(task, provider)
 	if err != nil {
+		if class, ok := launchIdentityAdmissionClass(err); ok {
+			d.observeAgentBrainAdmission(task, nil, class, admissionStarted)
+		}
 		return TaskResult{}, err
 	}
 
@@ -3300,7 +3304,6 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	if task.Agent != nil && strings.TrimSpace(task.Agent.Model) != "" {
 		legacyModel = task.Agent.Model
 	}
-	admissionStarted := time.Now()
 	if d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required && d.agentBrainInitErr != nil {
 		d.observeAgentBrainAdmission(task, nil, "integration_initialization_failed", admissionStarted)
 		return TaskResult{}, &agentBrainAdmissionError{class: "integration_initialization_failed"}
@@ -4028,6 +4031,27 @@ runAttempt:
 			Usage:         usageEntries,
 			FailureReason: failureReason,
 		}, nil
+	}
+}
+
+// launchIdentityAdmissionClass returns only the bounded failure classes that
+// resolveTaskAgentEntry can produce before normal Agent Brain admission. The
+// static switch prevents arbitrary error text or unrecognized classifications
+// from entering observability metadata.
+func launchIdentityAdmissionClass(err error) (string, bool) {
+	var admissionErr *agentBrainAdmissionError
+	if !errors.As(err, &admissionErr) {
+		return "", false
+	}
+	switch admissionErr.class {
+	case "custom_runtime_not_allowed",
+		"custom_args_not_allowed",
+		"builtin_runtime_mapping_unavailable",
+		"builtin_runtime_provider_mismatch",
+		"builtin_runtime_unavailable":
+		return admissionErr.class, true
+	default:
+		return "", false
 	}
 }
 
