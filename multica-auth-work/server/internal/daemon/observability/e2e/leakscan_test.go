@@ -62,13 +62,60 @@ func TestScanDetectsRawArgv(t *testing.T) {
 }
 
 func TestScanLogLines(t *testing.T) {
-	clean := ScanLogLines([]string{"hop=cli", "outcome=exited", "code_0"})
-	if !clean.Clean {
-		t.Fatalf("expected clean log lines, got %+v", clean.Findings)
+	if report := ScanLogLines([]string{"hop=cli outcome=exited code_0"}); report.Clean {
+		t.Fatal("free-form log line must fail closed even without a known secret marker")
 	}
-	dirty := ScanLogLines([]string{"authorization: Bearer abc", "user@example.com"})
-	if dirty.Clean {
-		t.Fatalf("expected dirty log lines to fail closed")
+	if report := ScanLogLines([]string{""}); !report.Clean {
+		t.Fatalf("empty log entry carries no content: %+v", report.Findings)
+	}
+}
+
+func TestScanEventsUsesClosedStructuralShape(t *testing.T) {
+	valid := Event{
+		ContractVersion: ContractVersion,
+		Kind:            EventHop,
+		Hop:             HopRoute,
+		Correlation:     Correlation{RequestID: "req-1", OmniRequestID: "omni-1"},
+		Outcome:         "ok",
+		Labels: map[string]string{
+			"route_model":          "agy/claude-opus-4-6-thinking",
+			"account_pseudonym":    "acct_0123456789abcdef",
+			"connection_pseudonym": "conn_fedcba9876543210",
+		},
+		Counters:       map[string]int64{"retry_count": 1},
+		SecretsPresent: false,
+	}
+	if report := ScanEvents([]Event{valid}); !report.Clean {
+		t.Fatalf("valid event rejected: %+v", report.Findings)
+	}
+
+	tests := []struct {
+		name   string
+		mutate func(*Event)
+	}{
+		{name: "unknown event kind", mutate: func(event *Event) { event.Kind = "free_form" }},
+		{name: "unsupported version", mutate: func(event *Event) { event.ContractVersion = "v999" }},
+		{name: "unknown label", mutate: func(event *Event) { event.Labels["message"] = "looks-safe" }},
+		{name: "raw account", mutate: func(event *Event) { event.Labels["account_pseudonym"] = "raw-account" }},
+		{name: "wrong-hop counter", mutate: func(event *Event) { event.Counters["queue_depth"] = 1 }},
+		{name: "secret invariant", mutate: func(event *Event) { event.SecretsPresent = true }},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			event := valid
+			event.Labels = make(map[string]string, len(valid.Labels))
+			for key, value := range valid.Labels {
+				event.Labels[key] = value
+			}
+			event.Counters = make(map[string]int64, len(valid.Counters))
+			for key, value := range valid.Counters {
+				event.Counters[key] = value
+			}
+			test.mutate(&event)
+			if report := ScanEvents([]Event{event}); report.Clean {
+				t.Fatal("structurally unsafe event accepted")
+			}
+		})
 	}
 }
 
@@ -91,5 +138,13 @@ func TestScanNegativeCounter(t *testing.T) {
 	spans[0].Counters["latency_ms"] = -1
 	if ScanSpans(spans).Clean {
 		t.Fatalf("expected negative counter to fail")
+	}
+}
+
+func TestScanRejectsCounterOutsideHopContract(t *testing.T) {
+	spans := SyntheticTraceSpans("t1")
+	spans[4].Counters["queue_depth"] = 1
+	if ScanSpans(spans).Clean {
+		t.Fatal("route span accepted queue-only counter")
 	}
 }

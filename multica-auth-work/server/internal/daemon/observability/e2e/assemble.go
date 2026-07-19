@@ -52,7 +52,7 @@ func Assemble(spans []Span) AssemblyReport {
 	for _, s := range spans {
 		if err := s.Validate(); err != nil {
 			report.Orphans = append(report.Orphans, OrphanSpan{
-				Hop: s.Hop, Correlation: s.Correlation, Reason: "invalid span: " + err.Error(),
+				Hop: s.Hop, Correlation: s.Correlation, Reason: "invalid span",
 			})
 			continue
 		}
