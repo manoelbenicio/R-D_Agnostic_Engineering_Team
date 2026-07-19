@@ -647,3 +647,19 @@
 > implementation = HELD** (source helper not yet frozen + P0 defer). **D-V3-20 remains** (functional tests
 > proceed pre-G4-OBS). Coordination focus = non-observability Main Brain gaps.
 > Holds intact: 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.
+
+---
+
+> **D-V3-22 — CONTEXT-CARRIER ARCHITECTURE FROZEN / Priority 2 DEFERRED (Owner decision, Kiro-TL recorded, 2026-07-19).**
+> Golden-Rule CHECK-IN/OUT: docs-only decision record; no product/test/product-git/credential/network action; no dispatch.
+> Architecture APPROVED and FROZEN: **W5** owns the metadata-only context API under
+> `internal/daemon/observability/e2e/**` (called, never co-edited); **W1 serial** owns the launch-anchor
+> injection (Wave C call-site); **W3** reads the carrier in its owned adapters (`runtimeenv/**` +
+> coordinated `pkg/agent/*.go`) — read-only, no edit to the W5 lib or W1 anchors. **No ExecOptions/schema/
+> global/credential transfer**; metadata-only; `secrets_present=false`; `contract_version` fail-closed at
+> parse/use. **Missing/invalid telemetry NEVER breaks execution** (execution path fail-open; observability
+> acceptance fail-closed). **Priority 2 / DEFERRED — no implementation dispatch until P0 Main Brain is
+> functionally complete/integrated/tested/running OR explicit owner reauth.** This is the W3/OBS-5 unblock
+> path once Wave C is reauthorized. **G4/G4-OBS acceptance remains required before capacity/cutover
+> (D-V3-17); D-V3-20 preserved.** Holds intact: 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/
+> canary/soak/tier 50/100.

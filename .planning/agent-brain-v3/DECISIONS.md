@@ -189,6 +189,25 @@
 - STATUS: **ACEITA (arquitetura) / DEFERRED (implementação, Priority 2)**. Firewall de evidência do D-V3-20
   e todos os holds preservados: 9.1/capacidade/PD-08/keys/Prodex/cutover/produção/tier 50/100.
 
+### D-V3-22 — Arquitetura do context-carrier CONGELADA (metadata-only), mas Priority 2 / DEFERRED atrás do P0
+- Decisão do dono 2026-07-19. Arquitetura do carrier de contexto **APROVADA e CONGELADA**:
+  - **W5** possui a **API de contexto metadata-only** sob `internal/daemon/observability/e2e/**` (a lib é
+    CHAMADA pelas lanes, nunca co-editada — consistente com D-V3-18).
+  - **W1 (serial)** possui a **injeção do launch-anchor** (call-site na Wave C central).
+  - **W3** **lê** o carrier nos seus adapters owned (`runtimeenv/**` + `pkg/agent/{claude,codex,kimi,nim,
+    antigravity}.go` coordenados) — leitura apenas, sem editar a lib W5 nem os anchors W1.
+  - **Sem transferência de ExecOptions/schema/global/credencial.** Metadata-only; `secrets_present=false`;
+    `contract_version` fail-closed no boundary de parse/uso.
+  - **Telemetria ausente/inválida NUNCA quebra a execução** (fail-open para o caminho de execução;
+    fail-closed apenas para aceitação de observabilidade). Correção funcional é independente do carrier.
+- **Prioridade:** **Priority 2 / DEFERRED.** NENHUM dispatch de implementação até o **P0 Main Brain estar
+  funcionalmente completo, integrado, testado e rodando corretamente**, OU reautorização explícita do dono.
+- **Gates preservados:** aceitação **G4/G4-OBS** permanece exigida ANTES de capacidade/cutover (D-V3-17);
+  D-V3-20 (testes funcionais pré-OBS) permanece; unblock de W3/OBS-5 depende desta propagação via Wave C
+  quando reautorizada.
+- STATUS: **CONGELADA (arquitetura) / DEFERRED (implementação, Priority 2)**. Holds preservados:
+  9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
+
 ### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
 - Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o
   ESCOPO de D-V3-17 — não o enfraquece. D-V3-17 sempre bloqueou a **validade de alegações de
