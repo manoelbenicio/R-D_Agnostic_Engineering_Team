@@ -321,6 +321,32 @@
 - STATUS: **ACEITA (Decision 8); matriz CONGELADA; aceitação live gated por D-V3-25(B); conflito OpenSpec
   reportado p/ correção de council.** Sem capacidade/Prodex/cutover/produção. Holds preservados.
 
+### D-V3-28 — OWNER DIRECTIVE: execução LIVE-FIRST do P0, sem fase de pré-teste duplicativa (emenda D-V3-20 + Decision 8)
+- Direção do dono 2026-07-19. Regra governante de execução P0: como o sistema é **não-produção**, **cada
+  slice funcional pendente é validado LIVE no ambiente de integração non-prod à medida que é construído**.
+- **Unit/property/race/vet permanecem checks de regressão rápida OBRIGATÓRIOS**, mas **NÃO são uma fase de
+  pré-aceitação separada** e **não devem atrasar/repetir** o mesmo trabalho de aceitação posterior.
+- **Um único loop contínuo:** implementar → integrar → exercitar live non-prod → capturar evidência de
+  aceitação → corrigir imediatamente. Aplica-se a **todos os itens pendentes**.
+- **Evidência synthetic-only NUNCA fecha um requisito live**; **não** agendar uma segunda campanha redundante
+  quando o teste live está disponível.
+- **Parar** trabalho de planning que exista apenas para desenhar testes futuros; **refocar as lanes em
+  integração/aceitação live executável.** (Ex.: converter Opus B smoke-runner *design* e Opus C
+  live-readiness *plan* em trabalho live executável; sem readiness/produção claim.)
+- **Emenda:** D-V3-20 (testes funcionais agora **live-first**, não uma fase sintética pré-aceitação separada)
+  e Decision 8/D-V3-27 (aceitação de rota é **live**).
+- **Fronteiras de segurança preservadas (apenas as genuínas):** sem uso de chave exposta/revogada e sem
+  exibição de segredo; **o dono injeta as chaves diretamente no OmniRoute**; sem produção/cutover/Prodex;
+  **sem classificação de capacidade tier-20 antes do G4-OBS** (testes live de concorrência/falha funcional
+  ordinários são permitidos; certificação de capacidade NÃO).
+- **Escopo/limites:** aplica-se aos slices funcionais **P0 Main Brain**. Implementação de observabilidade
+  permanece **P2** (D-V3-21/22/23); o gate **G4-OBS** e o escopo final não-negociável (D-V3-17/24) seguem
+  inalterados. Reconciliação com D-V3-25(B): a chave **antiga/exposta continua proibida**; o loop live usa
+  **chave nova injetada pelo dono no OmniRoute** — portanto o teste live pode prosseguir com chave nova sem
+  usar a chave revogada. Pré-requisitos exatos (sem valores): `evidence/live-first-omniroute-prerequisites-D-V3-28.md`.
+- STATUS: **ACEITA (diretiva governante de execução P0).** Holds preservados:
+  9.1/capacidade/PD-08(chave-exposta)/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
+
 ### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
 - Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o
   ESCOPO de D-V3-17 — não o enfraquece. D-V3-17 sempre bloqueou a **validade de alegações de

@@ -775,3 +775,16 @@
 > Cline→GLM52, NVIDIA-fallback, Antigravity-operational, Kiro=Opus48/AWS; acceptance-checklist/design/tasks
 > share the same generic framing — spec correction needs the council/W8 change process. No capacity/Prodex/
 > cutover/production. Holds intact.
+
+---
+
+> **D-V3-28 — OWNER DIRECTIVE: LIVE-FIRST P0 execution (Kiro-TL recorded, 2026-07-19).** Docs-only; no product/test/git-product/credential/network action.
+> Governing P0 rule: every pending functional slice validated LIVE in non-prod as built; unit/property/race/vet
+> = fast regression only, NOT a separate pre-acceptance phase; one loop implement→integrate→live exercise→
+> capture acceptance evidence→fix; synthetic-only never closes a live requirement; no redundant second campaign.
+> Amends D-V3-20 + Decision 8/D-V3-27 (route acceptance is live). Stop planning-only "design later tests";
+> refocus lanes on executable live integration/acceptance. Boundaries: no exposed/revoked key or secret display
+> (Owner injects keys into OmniRoute); no production/cutover/Prodex; NO tier-20 capacity classification before
+> G4-OBS (ordinary live functional concurrency/failure OK; capacity cert NOT). OBS impl stays P2; G4-OBS gate
+> (D-V3-17/24) unchanged. Reconciles D-V3-25(B): old key forbidden, live loop uses fresh Owner-injected key.
+> Prerequisites (no values): `evidence/live-first-omniroute-prerequisites-D-V3-28.md`. Holds intact.
