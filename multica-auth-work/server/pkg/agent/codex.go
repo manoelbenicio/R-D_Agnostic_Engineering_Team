@@ -625,6 +625,8 @@ func (b *codexBackend) Execute(ctx context.Context, prompt string, opts ExecOpti
 		return nil, fmt.Errorf("start codex: %w", err)
 	}
 
+	// TODO(W3): implement OBS-5 CLI-process span here once W5 observability/e2e contract is published
+
 	b.cfg.Logger.Info("codex started app-server", "pid", cmd.Process.Pid, "cwd", opts.Cwd)
 
 	msgCh := make(chan Message, 256)

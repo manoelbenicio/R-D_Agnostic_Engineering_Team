@@ -212,6 +212,7 @@ func (b *claudeBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 		return nil, fmt.Errorf("start claude: %w", err)
 	}
 
+	// TODO(W3): implement OBS-5 CLI-process span here once W5 observability/e2e contract is published
 	b.cfg.Logger.Info("claude started", "pid", cmd.Process.Pid, "cwd", opts.Cwd, "model", opts.Model)
 
 	// cmd.Start() succeeded — transfer temp file ownership to the goroutine.
@@ -323,6 +324,7 @@ func (b *claudeBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 
 		// Wait for process exit
 		exitErr := cmd.Wait()
+
 		duration := time.Since(startTime)
 		// writeDone is buffered (cap 1) and the writer always sends — by the
 		// time cmd has exited, the prompt write has either succeeded, hit a
