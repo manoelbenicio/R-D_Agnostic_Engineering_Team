@@ -202,7 +202,7 @@ returned APPROVE. Do not replay. Next action is status-only monitoring and evide
 > reset/stash/revert/discard); Prodex stays default-OFF recovery-only (D-V3-16, never hot); all
 > observability is metadata-only with structural argv redaction (AB-REQ-40); check in/out in
 > `AGENT_LEDGER.md` with exact files locked; producer ≠ reviewer ≠ adjudicator. Wiring into the
-> central daemon path is W1-only (Wave C). Preserve build-omniroute count 51/85 — OBS-* are new/OPEN.
+> central daemon path is W1-only (Wave C). Preserve build-omniroute completed count (51 done) — OBS-* are new/OPEN; total is now 96 (85 base + 11 OBS).
 
 ## Wave B.0 — Freeze (TL + Codex#56#A, before any lane edits)
 - TL freezes the exact file paths W6 owns (ingress HTTP middleware + WS transport) and W7 owns
