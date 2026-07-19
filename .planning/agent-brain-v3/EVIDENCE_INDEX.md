@@ -160,7 +160,7 @@ Evidence-index gap — agent-credential-isolation **4.2** — **CLOSED 2026-07-1
 | EV-OBS-08 | OBS-8 / AB-REQ-39,40 | PLANNED | WS transport span | Hop 7 WS/UI-delivery span (delivery latency, backpressure/drops, reconnects); no payload |
 | EV-OBS-09 | OBS-9 / AB-REQ-39 | PLANNED | trace assembler | Hop 8 continuous trace assembly; join-integrity; gap/orphan detection; one trace per synthetic task |
 | EV-OBS-10 | OBS-10 / AB-REQ-40 | PLANNED (co-owned, awaiting W5 API) | `observability/e2e/**` | Structural (not pattern-only) secret/content leak scan across all spans/labels/logs = clean; any leak STOPs |
-| EV-OBS-11 | OBS-11 / AB-REQ-40 | PRODUCED | `observability/dashboards/obs11.go` | Per-hop latency/error/drop/gap dashboards+alerts; consolidated G4-OBS acceptance + independent-review sign-off |
+| EV-OBS-11 | OBS-11 / AB-REQ-40 | PRODUCED-NOT-ACCEPTED | `multica-auth-work/deploy/observability/**` | Per-hop latency/error/drop/gap dashboards+alerts; consolidated G4-OBS acceptance + independent-review sign-off (awaiting W5 schema) |
 | EV-ZERO-OVERLAP | D-V3-18 / 8-lane topology | PLANNED | Codex#56#A verification | Glob-intersection proof: every owned path matches exactly one lane (W1–W8); no concurrent hotspot edits |
 | EV-REC-MODE | AB-REQ-41 / task 10.4 | PLANNED | recovery-mode state machine | Platform recovery-mode NORMAL/DEGRADED/RECOVERY; Prodex default-OFF, mutually exclusive, operator-gated; single router owner; session-boundary transitions; DEGRADED fail-closed (no auto-Prodex) |
 
