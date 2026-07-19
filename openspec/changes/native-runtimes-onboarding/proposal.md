@@ -6,7 +6,9 @@ modelos que não popula na UI, e trocar o onboarding (landing de patrocinadores 
 código de email) por um login limpo no mesmo design do app.
 
 - **NVIDIA NIM**: runtime nativo **do zero** (OpenAI-compatible), NÃO via opencode.
-- **Cline**: backend nativo (`cline --acp`) — hoje `pkg/agent/cline.go` não existe.
+- **Cline**: backend nativo Cline 3.x via `cline --acp`, falando ACP JSON-RPC 2.0
+  por stdin/stdout. O flag `--json` pertence ao modo headless separado de saída de prompt e
+  é incompatível com o handshake ACP quando combinado com `--acp`.
 - **Descoberta de modelos**: o fluxo assíncrono trava/lento (`agy models` ~20s) e a UI fica vazia ("nada do CLI").
 - **Onboarding**: remover marketing/patrocinadores + fluxo de código por email; login no design do kanban/agentes.
 

@@ -82,6 +82,9 @@ func (d *Daemon) startL2Runtime(ctx context.Context) error {
 	if d.l2Sidecar == nil {
 		d.l2Sidecar = &l2Sidecar{daemon: d}
 	}
+	if err := d.reconcileProdexProfiles(ctx); err != nil {
+		return err
+	}
 	if err := d.l2Sidecar.Start(ctx); err != nil {
 		return err
 	}
@@ -127,7 +130,7 @@ func (s *l2Sidecar) Start(ctx context.Context) error {
 		return fmt.Errorf("l2 sidecar is not configured")
 	}
 	d := s.daemon
-	args, err := l2SidecarArgs(d.cfg.Prodex.Path)
+	args, err := l2SidecarArgs()
 	if err != nil {
 		return err
 	}
@@ -204,8 +207,8 @@ func (s *l2Sidecar) runLoop(ctx context.Context, args []string) {
 		if ctx.Err() != nil {
 			return
 		}
-		cmd := exec.CommandContext(ctx, s.daemon.cfg.Prodex.Path, args...)
-		cmd.Env = prodexSidecarEnv()
+		cmd := exec.CommandContext(ctx, s.daemon.cfg.L2Runtime.SidecarPath, args...)
+		cmd.Env = prodexSidecarEnv(s.daemon.cfg)
 		cmd.Stdout = io.Discard
 		cmd.Stderr = io.Discard
 
@@ -224,7 +227,7 @@ func (s *l2Sidecar) runLoop(ctx context.Context, args []string) {
 			}
 		} else {
 			if s.daemon.logger != nil {
-				s.daemon.logger.Info("l2 sidecar started", "path", s.daemon.cfg.Prodex.Path, "subcommand", l2SidecarSubcommand(args))
+				s.daemon.logger.Info("l2 sidecar started", "path", s.daemon.cfg.L2Runtime.SidecarPath, "argument", l2SidecarSubcommand(args))
 			}
 			err = cmd.Wait()
 		}
@@ -254,26 +257,34 @@ func (s *l2Sidecar) runLoop(ctx context.Context, args []string) {
 	}
 }
 
-func l2SidecarArgs(prodexPath string) ([]string, error) {
+func l2SidecarArgs(legacyProdexPath ...string) ([]string, error) {
 	raw := strings.TrimSpace(os.Getenv("MULTICA_L2_SIDECAR_ARGS"))
 	if raw == "" {
-		return nil, nil
+		if len(legacyProdexPath) > 0 {
+			return nil, nil
+		}
+		return []string{"127.0.0.1:43117"}, nil
 	}
 	args, err := shellwords.Parse(raw)
 	if err != nil {
 		return nil, fmt.Errorf("parse MULTICA_L2_SIDECAR_ARGS: %w", err)
 	}
-	args, err = normalizeL2SidecarArgs(prodexPath, args)
-	if err != nil {
-		return nil, err
+	if len(args) == 0 {
+		return nil, fmt.Errorf("MULTICA_L2_SIDECAR_ARGS is empty")
+	}
+	if len(legacyProdexPath) > 0 {
+		return normalizeLegacyL2SidecarArgs(legacyProdexPath[0], args)
+	}
+	if strings.TrimSpace(args[0]) == "" {
+		return nil, fmt.Errorf("MULTICA_L2_SIDECAR_ARGS contains an empty first argument")
+	}
+	if strings.ContainsRune(args[0], os.PathSeparator) {
+		return nil, fmt.Errorf("MULTICA_L2_SIDECAR_ARGS must contain adapter arguments, not an executable path")
 	}
 	return args, nil
 }
 
-func normalizeL2SidecarArgs(prodexPath string, args []string) ([]string, error) {
-	if len(args) == 0 {
-		return args, nil
-	}
+func normalizeLegacyL2SidecarArgs(prodexPath string, args []string) ([]string, error) {
 	first := strings.TrimSpace(args[0])
 	if first == "" {
 		return nil, fmt.Errorf("MULTICA_L2_SIDECAR_ARGS contains an empty first argument")
@@ -281,7 +292,7 @@ func normalizeL2SidecarArgs(prodexPath string, args []string) ([]string, error) 
 	if isProdexExecutableToken(prodexPath, first) {
 		args = args[1:]
 		if len(args) == 0 {
-			return nil, fmt.Errorf("MULTICA_L2_SIDECAR_ARGS must include a prodex subcommand such as run or app-server-broker")
+			return nil, fmt.Errorf("MULTICA_L2_SIDECAR_ARGS must include a prodex subcommand")
 		}
 		first = strings.TrimSpace(args[0])
 	}
@@ -293,10 +304,7 @@ func normalizeL2SidecarArgs(prodexPath string, args []string) ([]string, error) 
 
 func isProdexExecutableToken(prodexPath, token string) bool {
 	token = strings.TrimSpace(token)
-	if token == "" {
-		return false
-	}
-	if filepath.Base(token) != "prodex" {
+	if token == "" || filepath.Base(token) != "prodex" {
 		return false
 	}
 	if prodexPath == "" || token == "prodex" {
@@ -323,7 +331,7 @@ func (d *Daemon) pushL2DesiredState(ctx context.Context) error {
 	if !d.cfg.L2Runtime.Enabled || d.l2Client == nil {
 		return nil
 	}
-	tenantID := "default"
+	tenantID := d.cfg.L2Runtime.TenantID
 	policy := l2runtime.Policy{
 		ControlEnvelope: l2runtime.ControlEnvelope{
 			RequestID: fmt.Sprintf("l2_policy_%d", time.Now().UnixNano()),
@@ -426,6 +434,9 @@ func (d *Daemon) l2ApprovedProfileIDs() []string {
 }
 
 func (d *Daemon) l2ApprovedAccountProfiles() []l2runtime.AccountProfile {
+	if profiles := d.reconciledProdexProfiles(); len(profiles) > 0 {
+		return profiles
+	}
 	names := csvEnv("MULTICA_L2_APPROVED_PROFILES")
 	if len(names) == 0 {
 		names = prodexProfileDirs()
@@ -488,11 +499,18 @@ func prodexProfileDirs() []string {
 }
 
 func (d *Daemon) startL2SessionForTask(ctx context.Context, task *Task, provider, model, workDir string, taskLog *slog.Logger) (*runtimeRouterOwnerRecord, error) {
+	return d.startL2SessionForTaskWithCredentialHome(ctx, task, provider, model, workDir, "", taskLog)
+}
+
+func (d *Daemon) startL2SessionForTaskWithCredentialHome(ctx context.Context, task *Task, provider, model, workDir, credentialHome string, taskLog *slog.Logger) (*runtimeRouterOwnerRecord, error) {
 	if !d.cfg.L2Runtime.Enabled {
 		return nil, nil
 	}
 	if task == nil {
 		return nil, fmt.Errorf("l2 start session failed closed: task is nil")
+	}
+	if d.cfg.Prodex.Required && task.WorkspaceID != d.cfg.L2Runtime.TenantID {
+		return nil, fmt.Errorf("l2 start session failed closed: task tenant does not match configured credential inventory")
 	}
 	if d.l2InitErr != nil {
 		return nil, fmt.Errorf("l2 runtime client unavailable: %w", d.l2InitErr)
@@ -504,6 +522,10 @@ func (d *Daemon) startL2SessionForTask(ctx context.Context, task *Task, provider
 		return nil, fmt.Errorf("l2 readiness failed closed: %w", err)
 	}
 
+	profilePool, err := d.l2ProfilePoolForTask(*task, provider, credentialHome)
+	if err != nil {
+		return nil, fmt.Errorf("l2 profile selection failed closed: %w", err)
+	}
 	req := l2runtime.StartSessionRequest{
 		ControlEnvelope: l2runtime.ControlEnvelope{
 			RequestID: fmt.Sprintf("l2_start_%s_%d", shortID(task.ID), time.Now().UnixNano()),
@@ -516,7 +538,7 @@ func (d *Daemon) startL2SessionForTask(ctx context.Context, task *Task, provider
 		RequestedProvider: provider,
 		RequestedModel:    model,
 		WorkingDirectory:  workDir,
-		ProfilePool:       l2ProfilePoolForTask(*task, provider),
+		ProfilePool:       profilePool,
 		Continuation:      l2ContinuationForTask(*task),
 	}
 	resp, err := d.l2Client.StartSession(ctx, req)
@@ -612,8 +634,11 @@ func (d *Daemon) runtimeRouterOwnerForTask(task Task) string {
 }
 
 func (d *Daemon) legacyGoRotationNoopReason(task Task) string {
-	if d.runtimeRouterOwnerForTask(task) == runtimeRouterOwnerRustL2 {
+	switch d.runtimeRouterOwnerForTask(task) {
+	case runtimeRouterOwnerRustL2:
 		return rotationNoopReasonL2RouterOwn
+	case "omniroute":
+		return "omniroute_router_owns"
 	}
 	return ""
 }
@@ -628,17 +653,25 @@ func (d *Daemon) l2PolicyID(task *Task) string {
 	return "default"
 }
 
-func l2ProfilePoolForTask(task Task, provider string) []string {
+func (d *Daemon) l2ProfilePoolForTask(task Task, provider, credentialHome string) ([]string, error) {
+	if strings.EqualFold(strings.TrimSpace(provider), "codex") && strings.TrimSpace(credentialHome) != "" {
+		if profile, ok := d.prodexProfileForCredentialHome(credentialHome); ok {
+			return []string{profile}, nil
+		}
+		if d.cfg.Prodex.Required {
+			return nil, fmt.Errorf("assigned Codex credential home is not an approved Prodex profile")
+		}
+	}
 	if task.RuntimeID != "" {
-		return []string{task.RuntimeID}
+		return []string{task.RuntimeID}, nil
 	}
 	if task.AgentID != "" {
-		return []string{task.AgentID}
+		return []string{task.AgentID}, nil
 	}
 	if provider != "" {
-		return []string{provider}
+		return []string{provider}, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func l2ContinuationForTask(task Task) map[string]string {

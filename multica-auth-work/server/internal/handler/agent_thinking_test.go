@@ -3,9 +3,14 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
 // TestCreateAgent_ThinkingLevel_ValidationConsistency exercises the
@@ -392,8 +397,8 @@ func TestUpdateAgent_RuntimeSwitch_PreservesValidValueRejectsInvalid(t *testing.
 // runtime/model persistence bug from MUL-3341: a runtime_id-only PATCH used
 // to preserve a provider-native model string, so switching a Claude Code
 // agent to Codex could leave agent.model = "claude-..." and fail at task
-// execution. Unknown custom models are intentionally preserved because the
-// API supports manual entries and cannot prove they are invalid.
+// execution. Gateway RouteModels are different: omission preserves an exact
+// route only for the same CLI and otherwise requires atomic reselection.
 func TestUpdateAgent_RuntimeSwitch_ClearsKnownIncompatibleModel(t *testing.T) {
 	if testHandler == nil {
 		t.Skip("database not available")
@@ -401,6 +406,7 @@ func TestUpdateAgent_RuntimeSwitch_ClearsKnownIncompatibleModel(t *testing.T) {
 
 	ctx := context.Background()
 	claudeRuntimeID := createClaudeProviderRuntime(t)
+	secondClaudeRuntimeID := createClaudeProviderRuntime(t)
 	codexRuntimeID := createCodexProviderRuntime(t)
 
 	t.Cleanup(func() {
@@ -425,7 +431,7 @@ func TestUpdateAgent_RuntimeSwitch_ClearsKnownIncompatibleModel(t *testing.T) {
 		}
 	})
 
-	t.Run("runtime-only switch clears provider-prefixed model not accepted by target", func(t *testing.T) {
+	t.Run("runtime-only switch rejects slash route on incompatible CLI", func(t *testing.T) {
 		agentID := createAgentOnRuntimeWithModel(t, "runtime-model-switch-prefixed", claudeRuntimeID, "openai/gpt-4o")
 		body := map[string]any{
 			"runtime_id": codexRuntimeID,
@@ -433,13 +439,32 @@ func TestUpdateAgent_RuntimeSwitch_ClearsKnownIncompatibleModel(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := withURLParam(newRequest(http.MethodPatch, "/api/agents/"+agentID, body), "id", agentID)
 		testHandler.UpdateAgent(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 requiring atomic route reselection, got %d: %s", w.Code, w.Body.String())
+		}
+		persisted, err := testHandler.Queries.GetAgent(ctx, parseUUID(agentID))
+		if err != nil {
+			t.Fatalf("reload rejected agent update: %v", err)
+		}
+		if persisted.Model.String != "openai/gpt-4o" || uuidToString(persisted.RuntimeID) != claudeRuntimeID {
+			t.Fatalf("rejected update was not atomic: runtime=%s model=%q", uuidToString(persisted.RuntimeID), persisted.Model.String)
+		}
+	})
+
+	t.Run("runtime-only switch preserves slash route for compatible CLI", func(t *testing.T) {
+		agentID := createAgentOnRuntimeWithModel(t, "runtime-model-switch-route-preserve", claudeRuntimeID, "agy/claude-opus-4-6-thinking")
+		w := httptest.NewRecorder()
+		req := withURLParam(newRequest(http.MethodPatch, "/api/agents/"+agentID, map[string]any{
+			"runtime_id": secondClaudeRuntimeID,
+		}), "id", agentID)
+		testHandler.UpdateAgent(w, req)
 		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 switching runtime with provider-prefixed model, got %d: %s", w.Code, w.Body.String())
+			t.Fatalf("expected 200 preserving compatible route, got %d: %s", w.Code, w.Body.String())
 		}
 		var resp map[string]any
 		_ = json.NewDecoder(w.Body).Decode(&resp)
-		if resp["model"] != "" {
-			t.Errorf("expected provider-prefixed model cleared across runtime switch, got %v", resp["model"])
+		if resp["model"] != "agy/claude-opus-4-6-thinking" {
+			t.Fatalf("compatible runtime update changed route: %v", resp["model"])
 		}
 	})
 
@@ -462,10 +487,10 @@ func TestUpdateAgent_RuntimeSwitch_ClearsKnownIncompatibleModel(t *testing.T) {
 	})
 
 	t.Run("explicit replacement model wins during switch", func(t *testing.T) {
-		agentID := createAgentOnRuntimeWithModel(t, "runtime-model-switch-replace", claudeRuntimeID, "claude-sonnet-4-6")
+		agentID := createAgentOnRuntimeWithModel(t, "runtime-model-switch-replace", claudeRuntimeID, "agy/claude-opus-4-6-thinking")
 		body := map[string]any{
 			"runtime_id": codexRuntimeID,
-			"model":      "gpt-5.5",
+			"model":      "openai/gpt-5.5",
 		}
 		w := httptest.NewRecorder()
 		req := withURLParam(newRequest(http.MethodPatch, "/api/agents/"+agentID, body), "id", agentID)
@@ -475,7 +500,7 @@ func TestUpdateAgent_RuntimeSwitch_ClearsKnownIncompatibleModel(t *testing.T) {
 		}
 		var resp map[string]any
 		_ = json.NewDecoder(w.Body).Decode(&resp)
-		if resp["model"] != "gpt-5.5" {
+		if resp["model"] != "openai/gpt-5.5" {
 			t.Errorf("expected explicit model to be persisted, got %v", resp["model"])
 		}
 	})
@@ -497,6 +522,44 @@ func TestUpdateAgent_RuntimeSwitch_ClearsKnownIncompatibleModel(t *testing.T) {
 			t.Errorf("expected unknown custom model preserved, got %v", resp["model"])
 		}
 	})
+}
+
+func TestUpdateAgentRouteSelectionRejectsStaleConcurrentSnapshot(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database not available")
+	}
+
+	ctx := context.Background()
+	runtimeID := createClaudeProviderRuntime(t)
+	agentID := createAgentOnRuntimeWithModel(t, "runtime-model-switch-cas", runtimeID, "agy/route-v1")
+	existing, err := testHandler.Queries.GetAgent(ctx, parseUUID(agentID))
+	if err != nil {
+		t.Fatalf("load agent snapshot: %v", err)
+	}
+
+	first := db.UpdateAgentParams{
+		ID: existing.ID, ExpectedRuntimeID: existing.RuntimeID, ExpectedModel: existing.Model,
+		Model: pgtype.Text{String: "agy/route-v2", Valid: true},
+	}
+	if _, err := testHandler.Queries.UpdateAgent(ctx, first); err != nil {
+		t.Fatalf("commit first route update: %v", err)
+	}
+
+	stale := db.UpdateAgentParams{
+		ID: existing.ID, ExpectedRuntimeID: existing.RuntimeID, ExpectedModel: existing.Model,
+		Name: pgtype.Text{String: "stale-route-writer", Valid: true},
+	}
+	if _, err := testHandler.Queries.UpdateAgent(ctx, stale); !errors.Is(err, pgx.ErrNoRows) {
+		t.Fatalf("stale route snapshot error = %v, want pgx.ErrNoRows", err)
+	}
+
+	persisted, err := testHandler.Queries.GetAgent(ctx, existing.ID)
+	if err != nil {
+		t.Fatalf("reload agent after stale update: %v", err)
+	}
+	if persisted.Model.String != "agy/route-v2" || persisted.Name == "stale-route-writer" {
+		t.Fatalf("stale update mutated atomic selection: name=%q model=%q", persisted.Name, persisted.Model.String)
+	}
 }
 
 // createCodexProviderRuntime mirrors createClaudeProviderRuntime but for

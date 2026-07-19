@@ -1,12 +1,24 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
-import { runtimeModelsOptions } from "@multica/core/runtimes";
+import {
+  filterRuntimeModelGroups,
+  groupRuntimeModelsByProvider,
+  runtimeKeys,
+  runtimeListSnapshotFromCache,
+  runtimeModelSearchMatchesProvider,
+  runtimeModelsOptions,
+  useLastKnownRuntimeModels,
+  useRuntimeModelsLifecycle,
+  useRuntimeProviderIdentity,
+} from "@multica/core/runtimes";
+import { useWorkspaceId } from "@multica/core/hooks";
 import { Input } from "@multica/ui/components/ui/input";
 import {
   PickerItem,
+  PickerSection,
   PropertyPicker,
 } from "../../../issues/components/pickers";
 import { CHIP_CLASS } from "./chip";
@@ -31,6 +43,7 @@ export function ModelPicker({
   value,
   canEdit = true,
   onChange,
+  runtimeProvider,
 }: {
   runtimeId: string | null;
   runtimeOnline: boolean;
@@ -38,37 +51,67 @@ export function ModelPicker({
   /** When false, render a static read-only display and skip the popover. */
   canEdit?: boolean;
   onChange: (next: string) => Promise<void> | void;
+  /** Optional authoritative fallback for catalog rows missing provider. */
+  runtimeProvider?: string;
 }) {
   const { t } = useT("agents");
+  const wsId = useWorkspaceId();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const modelsQuery = useQuery(
-    runtimeModelsOptions(runtimeOnline ? runtimeId : null),
+  const runtimeSnapshot = runtimeListSnapshotFromCache(
+    queryClient,
+    runtimeId,
+    runtimeKeys.list(wsId),
   );
-  const supported = modelsQuery.data?.supported ?? true;
+  const discoveryEnabled = useRuntimeModelsLifecycle(
+    runtimeId,
+    runtimeOnline,
+    runtimeSnapshot.generation,
+  );
+  const modelsQuery = useQuery(
+    runtimeModelsOptions(runtimeId, discoveryEnabled),
+  );
+  const catalog = useLastKnownRuntimeModels(
+    runtimeId,
+    modelsQuery.data,
+    modelsQuery.dataUpdatedAt,
+  );
+  const supported = catalog?.supported ?? true;
   // Memoise the model list so every downstream useMemo gets a stable
   // reference; `?? []` would mint a fresh array on every render and
   // invalidate filters needlessly.
   const models = useMemo(
-    () => modelsQuery.data?.models ?? [],
-    [modelsQuery.data],
+    () => catalog?.models ?? [],
+    [catalog],
   );
 
-  const filtered = useMemo(() => {
-    const s = search.trim().toLowerCase();
-    if (!s) return models;
-    return models.filter(
-      (m) =>
-        m.id.toLowerCase().includes(s) || m.label.toLowerCase().includes(s),
-    );
-  }, [models, search]);
+  const fallbackProvider = useRuntimeProviderIdentity(
+    runtimeId,
+    runtimeProvider,
+    runtimeSnapshot.provider,
+  );
+  const grouped = useMemo(
+    () => groupRuntimeModelsByProvider(models, fallbackProvider),
+    [models, fallbackProvider],
+  );
+  const normalizedModels = useMemo(
+    () => grouped.flatMap((group) => group.models),
+    [grouped],
+  );
+  const filtered = useMemo(
+    () => filterRuntimeModelGroups(grouped, search),
+    [grouped, search],
+  );
 
   const trimmedSearch = search.trim();
-  const exactMatch = models.some(
+  const exactMatch = normalizedModels.some(
     (m) => m.id === trimmedSearch || m.label === trimmedSearch,
   );
-  const canCreate = trimmedSearch.length > 0 && !exactMatch;
+  const providerMatch = runtimeModelSearchMatchesProvider(grouped, search);
+  const canCreate =
+    trimmedSearch.length > 0 && !exactMatch && !providerMatch;
 
   const triggerLabel = value || t(($) => $.pickers.model_default);
   const triggerTitle = t(($) => $.pickers.model_tooltip, { value: triggerLabel });
@@ -137,33 +180,45 @@ export function ModelPicker({
       )}
 
       {!modelsQuery.isLoading &&
-        filtered.map((m) => (
-          <PickerItem
-            key={m.id}
-            selected={m.id === value}
-            onClick={() => void select(m.id)}
-            // Tooltip carries the canonical model id even when the chip
-            // shows the friendlier label, so users can always see what
-            // string actually ships to the agent.
-            tooltip={m.label !== m.id ? `${m.label} · ${m.id}` : m.id}
-          >
-            {/* PickerItem wraps children in a flex `<span>`. Putting a
-                `<div>` inside that <span> is block-in-inline (invalid
-                HTML5) and triggers the browser-default centering quirk
-                that pushes descendants off-axis (model IDs floated to the
-                center instead of left-aligning under their labels). Use
-                `<span block text-left>` to keep layout deterministic —
-                matches the fix already applied in thinking-picker.tsx. */}
-            <span className="block min-w-0 flex-1 text-left">
-              <span className="block truncate text-[13px] font-medium">{m.label}</span>
-              {m.label !== m.id && (
-                <span className="mt-0.5 block truncate font-mono text-[10px] leading-snug text-muted-foreground">
-                  {m.id}
+        filtered.map(({ provider, models: providerModels }) => {
+          const items = providerModels.map((m) => (
+            <PickerItem
+              key={m.id}
+              selected={m.id === value}
+              onClick={() => void select(m.id)}
+              // Tooltip carries the canonical model id even when the chip
+              // shows the friendlier label, so users can always see what
+              // string actually ships to the agent.
+              tooltip={m.label !== m.id ? `${m.label} · ${m.id}` : m.id}
+            >
+              {/* PickerItem wraps children in a flex `<span>`. Putting a
+                  `<div>` inside that <span> is block-in-inline (invalid
+                  HTML5) and triggers the browser-default centering quirk
+                  that pushes descendants off-axis (model IDs floated to the
+                  center instead of left-aligning under their labels). Use
+                  `<span block text-left>` to keep layout deterministic —
+                  matches the fix already applied in thinking-picker.tsx. */}
+              <span className="block min-w-0 flex-1 text-left">
+                <span className="block truncate text-[13px] font-medium">
+                  {m.label}
                 </span>
-              )}
-            </span>
-          </PickerItem>
-        ))}
+                {m.label !== m.id && (
+                  <span className="mt-0.5 block truncate font-mono text-[10px] leading-snug text-muted-foreground">
+                    {m.id}
+                  </span>
+                )}
+              </span>
+            </PickerItem>
+          ));
+
+          return provider ? (
+            <PickerSection key={provider} label={provider}>
+              {items}
+            </PickerSection>
+          ) : (
+            <div key="unassigned-provider">{items}</div>
+          );
+        })}
 
       {!modelsQuery.isLoading && filtered.length === 0 && !canCreate && (
         <p className="px-3 py-3 text-center text-xs text-muted-foreground">

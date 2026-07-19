@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/multica-ai/multica/server/internal/daemon/brain"
 	"github.com/multica-ai/multica/server/internal/daemon/repocache"
 )
 
@@ -33,6 +34,38 @@ type HealthResponse struct {
 	ActiveTaskCount int64             `json:"active_task_count"`
 	Agents          []string          `json:"agents"`
 	Workspaces      []healthWorkspace `json:"workspaces"`
+	Prodex          healthProdex      `json:"prodex"`
+	AgentBrain      healthAgentBrain  `json:"agent_brain"`
+}
+
+type healthAgentBrain struct {
+	DevelopmentEnabled        bool                   `json:"development_enabled"`
+	GatewayRequired           bool                   `json:"gateway_required"`
+	LegacyExecutionEnabled    bool                   `json:"legacy_execution_enabled"`
+	SecretReferenceConfigured bool                   `json:"secret_reference_configured"`
+	AdmissionLimit            int                    `json:"admission_limit"`
+	State                     string                 `json:"state"`
+	Readiness                 string                 `json:"readiness"`
+	CLIKind                   string                 `json:"cli_kind,omitempty"`
+	RouteModel                string                 `json:"route_model,omitempty"`
+	RouterOwner               string                 `json:"router_owner,omitempty"`
+	Protocol                  string                 `json:"protocol,omitempty"`
+	TrustedProfile            string                 `json:"trusted_profile,omitempty"`
+	LastOutcome               string                 `json:"last_outcome,omitempty"`
+	LegacyUseCount            uint64                 `json:"legacy_use_count"`
+	Capacity                  brain.CapacityCounters `json:"capacity"`
+}
+
+type healthProdex struct {
+	Enabled          bool   `json:"enabled"`
+	Required         bool   `json:"required"`
+	Version          string `json:"version,omitempty"`
+	Commit           string `json:"commit,omitempty"`
+	ConfigSource     string `json:"config_source,omitempty"`
+	L2Enabled        bool   `json:"l2_enabled"`
+	AdapterReady     bool   `json:"adapter_ready"`
+	RuntimeAuthority string `json:"runtime_authority"`
+	ApprovedProfiles int    `json:"approved_profiles"`
 }
 
 type healthWorkspace struct {
@@ -103,11 +136,52 @@ func (d *Daemon) healthHandler(startedAt time.Time) http.HandlerFunc {
 			ActiveTaskCount: d.activeTasks.Load(),
 			Agents:          agents,
 			Workspaces:      wsList,
+			Prodex: healthProdex{
+				Enabled:          d.cfg.Prodex.Enabled,
+				Required:         d.cfg.Prodex.Required,
+				Version:          d.cfg.Prodex.Version,
+				Commit:           d.cfg.Prodex.Commit,
+				ConfigSource:     d.cfg.Prodex.ConfigSource,
+				L2Enabled:        d.cfg.L2Runtime.Enabled,
+				AdapterReady:     d.cfg.L2Runtime.Enabled && d.l2Client != nil && d.l2InitErr == nil,
+				RuntimeAuthority: runtimeAuthority(d.cfg),
+				ApprovedProfiles: len(d.l2ApprovedProfileIDs()),
+			},
+		}
+		diagnostics := d.agentBrain.snapshot()
+		if d.agentBrainInitErr != nil {
+			diagnostics.State = "configuration-error"
+		}
+		admissionLimit := 0
+		if d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required {
+			admissionLimit = agentBrainDevelopmentMaxTasks
+		}
+		resp.AgentBrain = healthAgentBrain{
+			DevelopmentEnabled:        d.cfg.AgentBrain.DevelopmentEnabled,
+			GatewayRequired:           d.cfg.AgentBrain.Neutral.Gateway.Required,
+			LegacyExecutionEnabled:    d.cfg.AgentBrain.Neutral.LegacyExecution,
+			SecretReferenceConfigured: d.cfg.AgentBrain.Neutral.Gateway.SecretFile.Path != "",
+			AdmissionLimit:            admissionLimit,
+			State:                     diagnostics.State, Readiness: string(diagnostics.Readiness),
+			CLIKind: string(diagnostics.CLIKind), RouteModel: string(diagnostics.RouteModel),
+			RouterOwner: string(diagnostics.RouterOwner), Protocol: string(diagnostics.Protocol),
+			TrustedProfile: string(diagnostics.Profile), LastOutcome: diagnostics.LastOutcome,
+			LegacyUseCount: diagnostics.LegacyUseCount, Capacity: diagnostics.Capacity,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}
+}
+
+func runtimeAuthority(cfg Config) string {
+	if cfg.AgentBrain.DevelopmentEnabled && cfg.AgentBrain.Neutral.Gateway.Required {
+		return "omniroute"
+	}
+	if cfg.Prodex.Enabled && cfg.L2Runtime.Enabled {
+		return runtimeRouterOwnerRustL2
+	}
+	return "native_cli"
 }
 
 // shutdownHandler triggers a graceful daemon shutdown by cancelling the

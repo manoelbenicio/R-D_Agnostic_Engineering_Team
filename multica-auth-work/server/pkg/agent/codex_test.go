@@ -702,6 +702,57 @@ func TestParseCodexSessionFileSubtractsCachedInput(t *testing.T) {
 	}
 }
 
+func TestScanCodexSessionUsageExactEnvironmentNeverReadsParentRoot(t *testing.T) {
+	parentRoot := t.TempDir()
+	exactRoot := t.TempDir()
+	startTime := time.Now().Add(-time.Second)
+	t.Setenv("CODEX_HOME", parentRoot)
+	t.Setenv("HOME", parentRoot)
+
+	writeSession := func(root, name, model string, input, cached, output int64) {
+		t.Helper()
+		dateDirectory := filepath.Join(root, "sessions",
+			fmt.Sprintf("%04d", startTime.Year()),
+			fmt.Sprintf("%02d", int(startTime.Month())),
+			fmt.Sprintf("%02d", startTime.Day()),
+		)
+		if err := os.MkdirAll(dateDirectory, 0o700); err != nil {
+			t.Fatalf("create synthetic session directory: %v", err)
+		}
+		content := fmt.Sprintf(
+			`{"timestamp":"2026-07-18T00:00:00Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":%d,"cached_input_tokens":%d,"output_tokens":%d,"reasoning_output_tokens":0,"total_tokens":%d},"model":%q}}}`+"\n",
+			input, cached, output, input+output, model,
+		)
+		if err := os.WriteFile(filepath.Join(dateDirectory, name+".jsonl"), []byte(content), 0o600); err != nil {
+			t.Fatalf("write synthetic session fixture: %v", err)
+		}
+	}
+
+	writeSession(parentRoot, "parent-sentinel", "parent/sentinel", 910, 110, 37)
+	exactConfig := Config{ExactEnv: []string{
+		"PATH=" + exactRoot,
+		"HOME=" + exactRoot,
+		"CODEX_HOME=" + exactRoot,
+	}}
+	if got := scanCodexSessionUsage(startTime, exactConfig); got != nil {
+		t.Fatalf("exact-environment scanner read parent sentinel: %+v", got)
+	}
+
+	legacy := scanCodexSessionUsage(startTime, Config{})
+	if legacy == nil || legacy.model != "parent/sentinel" || legacy.usage.InputTokens != 800 {
+		t.Fatalf("legacy parent-root scanner result = %+v", legacy)
+	}
+
+	writeSession(exactRoot, "exact-session", "exact/controlled", 230, 30, 19)
+	got := scanCodexSessionUsage(startTime, exactConfig)
+	if got == nil {
+		t.Fatal("exact-environment scanner did not read its controlled session root")
+	}
+	if got.model != "exact/controlled" || got.usage.InputTokens != 200 || got.usage.CacheReadTokens != 30 || got.usage.OutputTokens != 19 {
+		t.Fatalf("exact-environment scanner result = %+v", got)
+	}
+}
+
 func TestCodexRawItemCommandExecution(t *testing.T) {
 	t.Parallel()
 
@@ -1875,6 +1926,58 @@ func TestBuildCodexArgsExtraArgsBeforeCustomArgsAndFiltersBoth(t *testing.T) {
 	}
 }
 
+func TestCodexCommandLoggingRedactsSensitiveArgv(t *testing.T) {
+	var output bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&output, nil))
+	args := []string{
+		"app-server",
+		"--listen", "stdio://",
+		"-c", `model_provider="synthetic-provider"`,
+		"--config=/synthetic/private/config.toml",
+		"--model=synthetic/model",
+		"--provider", "synthetic-routing-provider",
+		"--base-url", "https://api.provider.invalid/v1",
+		"--api-key=synthetic-api-value",
+		"--auth-file", "/synthetic/private/auth-source.json",
+		"--key-file=/synthetic/private/key-source",
+		"--settings-sources", "synthetic-settings-source",
+		"--resume", "synthetic-thread-identifier",
+		"--env=OPENAI_API_KEY=synthetic-inline-value",
+		"--sandbox", "workspace-write",
+		"--verbose",
+	}
+
+	logAgentCommand(logger, "/synthetic/private/home/bin/codex", args)
+	logged := output.String()
+	for _, forbidden := range []string{
+		"synthetic-provider",
+		"/synthetic/private/config.toml",
+		"synthetic/model",
+		"synthetic-routing-provider",
+		"https://api.provider.invalid/v1",
+		"synthetic-api-value",
+		"/synthetic/private/auth-source.json",
+		"/synthetic/private/key-source",
+		"synthetic-settings-source",
+		"synthetic-thread-identifier",
+		"synthetic-inline-value",
+		"/synthetic/private/home/bin/codex",
+	} {
+		if strings.Contains(logged, forbidden) {
+			t.Fatal("Codex command log exposed a synthetic sensitive argument")
+		}
+	}
+	for _, useful := range []string{
+		"agent command", "exec=codex", "app-server", "--listen", "--sandbox",
+		"--auth-file", "--key-file", "--settings-sources", "workspace-write", "--verbose",
+		redactedAgentArgValue, "arg_count=",
+	} {
+		if !strings.Contains(logged, useful) {
+			t.Fatalf("Codex command log lost safe diagnostic marker %q", useful)
+		}
+	}
+}
+
 func TestBuildCodexArgsDoesNotLeakMcpToArgv(t *testing.T) {
 	t.Parallel()
 
@@ -2170,6 +2273,123 @@ func TestEnsureCodexMcpConfigWritesManagedBlock(t *testing.T) {
 	}
 	if mode := fi.Mode().Perm(); mode != 0o600 {
 		t.Fatalf("expected mode 0o600 for secret-bearing config, got %o", mode)
+	}
+}
+
+func TestRenderCodexMcpServersBlockRejectsProtectedAgentCommands(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		command string
+	}{
+		{name: "bare codex", command: "codex"},
+		{name: "relative claude path", command: "./claude"},
+		{name: "absolute Unix kiro path", command: "/usr/local/bin/kiro"},
+		{name: "Windows multica executable case insensitive", command: `C:\Tools\MULTICA.EXE`},
+		{name: "Windows multica-cli script with slash separators", command: `C:/Tools/multica-cli.CmD`},
+		{name: "Windows herdr path with spaces and outer whitespace", command: " \t C:\\Program Files\\Herdr\\HERDR.BAT  \n"},
+		{name: "repeated Windows extensions", command: "/opt/bin/prodex.cmd.exe"},
+		{name: "Windows opencode COM executable", command: `C:\bin\OpenCode.CoM`},
+		{name: "Windows agy PowerShell script", command: `C:\scripts\AGY.PS1`},
+		{name: "Windows antigravity script-host suffix", command: `C:\scripts\Antigravity.VbS`},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			raw, err := json.Marshal(map[string]any{
+				"mcpServers": map[string]any{
+					"test": map[string]any{"command": tc.command},
+				},
+			})
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+
+			if _, _, err := renderCodexMcpServersBlock(raw); err == nil {
+				t.Fatalf("renderCodexMcpServersBlock accepted protected command %q", tc.command)
+			} else if !strings.Contains(err.Error(), "protected agent executable") {
+				t.Fatalf("unexpected error for protected command %q: %v", tc.command, err)
+			}
+		})
+	}
+}
+
+func TestRenderCodexMcpServersBlockAllowsNonAgentCommands(t *testing.T) {
+	t.Parallel()
+
+	commands := []string{
+		"npx",
+		"uvx",
+		"/usr/bin/node",
+		`C:\Python312\python.EXE`,
+		`C:\Program Files\PowerShell\pwsh.exe`,
+		"python3",
+		"codex-helper",
+		"my-claude-proxy.cmd",
+	}
+	for _, command := range commands {
+		command := command
+		t.Run(command, func(t *testing.T) {
+			t.Parallel()
+			raw, err := json.Marshal(map[string]any{
+				"mcpServers": map[string]any{
+					"test": map[string]any{"command": command},
+				},
+			})
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+
+			block, hasServers, err := renderCodexMcpServersBlock(raw)
+			if err != nil {
+				t.Fatalf("renderCodexMcpServersBlock rejected allowed command %q: %v", command, err)
+			}
+			if !hasServers || !strings.Contains(block, codexTOMLBasicString(command)) {
+				t.Fatalf("rendered block did not preserve allowed command %q: %q", command, block)
+			}
+		})
+	}
+}
+
+func TestRenderCodexMcpServersBlockRequiresNonEmptyStringCommand(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		server  map[string]any
+		wantErr string
+	}{
+		{name: "missing", server: map[string]any{}, wantErr: "must be a string"},
+		{name: "null", server: map[string]any{"command": nil}, wantErr: "must be a string"},
+		{name: "number", server: map[string]any{"command": 7}, wantErr: "must be a string"},
+		{name: "boolean", server: map[string]any{"command": true}, wantErr: "must be a string"},
+		{name: "array", server: map[string]any{"command": []any{"npx"}}, wantErr: "must be a string"},
+		{name: "object", server: map[string]any{"command": map[string]any{"name": "npx"}}, wantErr: "must be a string"},
+		{name: "empty", server: map[string]any{"command": ""}, wantErr: "must be non-empty"},
+		{name: "multiple whitespace", server: map[string]any{"command": " \t  \r\n "}, wantErr: "must be non-empty"},
+		{name: "separator only", server: map[string]any{"command": `C:\`}, wantErr: "must be non-empty"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			raw, err := json.Marshal(map[string]any{
+				"mcpServers": map[string]any{"test": tc.server},
+			})
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+
+			if _, _, err := renderCodexMcpServersBlock(raw); err == nil {
+				t.Fatalf("renderCodexMcpServersBlock accepted invalid command: %#v", tc.server["command"])
+			} else if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("error %q does not contain %q", err, tc.wantErr)
+			}
+		})
 	}
 }
 

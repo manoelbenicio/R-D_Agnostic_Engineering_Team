@@ -31,6 +31,158 @@ func TestSquadOperatingProtocolWarnsAgainstDualTrigger(t *testing.T) {
 	}
 }
 
+// TestSquadOperatingProtocolMarkerExact is the task-1.1 marker contract:
+// the protocol constant MUST begin with the exact "## Squad Operating
+// Protocol" heading on its own line. daemon.go sets
+// IsSquadLeader = strings.Contains(instructions, "## Squad Operating
+// Protocol") and prompt.go gates the squad-leader no_action rule on the
+// same check. If the marker is reworded or shifted, leader detection
+// silently breaks and the squad leader gets the regular agent prompt
+// instead of the briefing — so the marker is load-bearing and must stay
+// exact.
+func TestSquadOperatingProtocolMarkerExact(t *testing.T) {
+	const want = "## Squad Operating Protocol\n"
+	if !strings.HasPrefix(squadOperatingProtocol, want) {
+		first := squadOperatingProtocol
+		if i := strings.IndexByte(squadOperatingProtocol, '\n'); i >= 0 {
+			first = squadOperatingProtocol[:i]
+		}
+		t.Fatalf("protocol must begin with %q (standalone heading); first line = %q", want, first)
+	}
+}
+
+// TestSquadOperatingProtocolMandatoryOpenSpecGate locks in the task-1.1
+// hard gate: the protocol MUST tell the leader that from-scratch work
+// without OpenSpec documentation cannot proceed — the leader initiates the
+// OpenSpec documentation first, or the work does not happen. This is the
+// "no OpenSpec = no work" gate from the chat-orchestration-standard spec
+// (Requirement: OpenSpec documentation is mandatory).
+func TestSquadOperatingProtocolMandatoryOpenSpecGate(t *testing.T) {
+	compact := strings.Join(strings.Fields(squadOperatingProtocol), " ")
+	for _, want := range []string{
+		"from-scratch work",
+		"initiate the OpenSpec documentation",
+		"Work SHALL NOT proceed",
+		"no OpenSpec = no work",
+	} {
+		if !strings.Contains(compact, want) {
+			t.Errorf("protocol must contain OpenSpec hard-gate clause %q\n--- protocol ---\n%s", want, squadOperatingProtocol)
+		}
+	}
+}
+
+// TestSquadOperatingProtocolDelegationSequence locks in the task-1.1
+// protocol ordering: clarify → OpenSpec (document) → plan → delegate →
+// synthesize. Each step must appear, and in this exact order. If a step is
+// dropped or reordered the leader would skip clarification, skip docs,
+// skip planning, or skip synthesis — all failure modes the protocol exists
+// to prevent.
+func TestSquadOperatingProtocolDelegationSequence(t *testing.T) {
+	compact := strings.Join(strings.Fields(squadOperatingProtocol), " ")
+	steps := []struct {
+		name string
+		want string
+	}{
+		{"clarify", "**Clarify unresolved questions.**"},
+		{"openspec", "**OpenSpec documentation gate"},
+		{"plan", "**Plan.**"},
+		{"delegate", "**Delegate by @mention.**"},
+		{"synthesize", "**Synthesize the result.**"},
+	}
+	pos := 0
+	for _, s := range steps {
+		idx := strings.Index(compact, s.want)
+		if idx < 0 {
+			t.Errorf("protocol missing required step %q (%s)\n--- protocol ---\n%s", s.want, s.name, squadOperatingProtocol)
+			continue
+		}
+		if idx < pos {
+			t.Errorf("step %q (%s) at byte %d appears BEFORE the previous step (expected after byte %d) — sequence broken\n--- protocol ---\n%s",
+				s.want, s.name, idx, pos, squadOperatingProtocol)
+		}
+		pos = idx
+	}
+}
+
+// TestSquadOperatingProtocolNoRegression verifies the task-1.1 restructure
+// did NOT drop any of the pre-existing load-bearing rules: the TL/Manager
+// delegation-only stance, the @mention dispatch syntax, the
+// stop-after-dispatch contract, the evaluation recording, the
+// dual-trigger warning, and the be-terse rule. These predate task 1.1 and
+// must survive the clarify→openspec→plan→delegate→synthesize insertion.
+func TestSquadOperatingProtocolNoRegression(t *testing.T) {
+	compact := strings.Join(strings.Fields(squadOperatingProtocol), " ")
+	for _, want := range []string{
+		"Your job is to **coordinate**, not to execute the work yourself",
+		"[@Name](mention://<type>/<UUID>)",
+		"Stop after dispatching",
+		"Re-evaluate on each trigger",
+		"Record your evaluation",
+		"multica squad activity",
+		"no_action",
+		"--status todo` and an agent assignee already fires that agent automatically",
+		"Never both for the same work.",
+		"Be terse.",
+		"Do NOT do the implementation work yourself",
+	} {
+		if !strings.Contains(compact, want) {
+			t.Errorf("protocol regression: missing pre-existing clause %q\n--- protocol ---\n%s", want, squadOperatingProtocol)
+		}
+	}
+}
+
+// TestSquadOperatingProtocolDelegationOnlyInvariant is the task-1.4
+// contract: the protocol MUST enforce that the TL/Manager is
+// delegation-only — it never performs production work and never claims to
+// have done so. The pre-1.4 wording had an escape hatch ("unless the squad
+// has no other suitable members") that allowed the leader to do the work
+// itself when no member was suitable; task 1.4 removes that escape and
+// requires escalation to the human reporter instead. This test locks the
+// invariant and the removal of the escape hatch.
+func TestSquadOperatingProtocolDelegationOnlyInvariant(t *testing.T) {
+	compact := strings.Join(strings.Fields(squadOperatingProtocol), " ")
+	for _, want := range []string{
+		"You are delegation-only",
+		"you do NOT produce",
+		"NEVER perform production work",
+		"NEVER claim to a reporter that you did production work yourself",
+		"If no suitable member exists, escalate to the human reporter",
+	} {
+		if !strings.Contains(compact, want) {
+			t.Errorf("protocol must contain delegation-only clause %q\n--- protocol ---\n%s", want, squadOperatingProtocol)
+		}
+	}
+	for _, mustNot := range []string{
+		// The pre-1.4 escape hatch that allowed the leader to do the work
+		// itself must be gone — it contradicts delegation-only.
+		"unless the squad has no other suitable members",
+		"The squad exists so work is split — bypassing it defeats the point",
+	} {
+		if strings.Contains(compact, mustNot) {
+			t.Errorf("protocol must NOT contain pre-1.4 escape-hatch clause %q (delegation-only must be absolute)\n--- protocol ---\n%s", mustNot, squadOperatingProtocol)
+		}
+	}
+}
+
+// TestSquadOperatingProtocolSynthesisAllowed proves task 1.4 does NOT
+// forbid synthesis — synthesis is the leader's job and is explicitly
+// distinguished from production. The delegation-only invariant forbids
+// producing; it must NOT forbid synthesizing. This guards against an
+// over-strict reading of 1.4 that would block the leader from delivering
+// the consolidated result.
+func TestSquadOperatingProtocolSynthesisAllowed(t *testing.T) {
+	compact := strings.Join(strings.Fields(squadOperatingProtocol), " ")
+	for _, want := range []string{
+		"**Synthesize the result.**",
+		"synthesize their results",
+		"Synthesis is your job; production is not",
+	} {
+		if !strings.Contains(compact, want) {
+			t.Errorf("protocol must allow/mandate synthesis %q\n--- protocol ---\n%s", want, squadOperatingProtocol)
+		}
+	}
+}
+
 // seedSquadForBriefing creates a squad with the seeded test agent as
 // leader. Returns the loaded db.Squad and a cleanup-registered ID.
 func seedSquadForBriefing(t *testing.T, leaderID string, name, instructions string) db.Squad {

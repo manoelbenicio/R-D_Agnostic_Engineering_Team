@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/multica-ai/multica/server/internal/rotation"
 	"github.com/multica-ai/multica/server/pkg/protocol"
 )
 
@@ -271,6 +272,21 @@ func (d *Daemon) readTaskWakeupMessages(conn *websocket.Conn, taskWakeups chan<-
 			d.logger.Debug("task wakeup websocket invalid message", "error", err)
 			continue
 		}
+		if msg.Type == eventDaemonCredentialSessionDiscovery {
+			// Reassignment may include bounded vendor authentication, so never
+			// block heartbeat/task-wakeup reads on it. Copy the payload because
+			// the WebSocket frame buffer is reused by the read loop.
+			payload := append(json.RawMessage(nil), msg.Payload...)
+			go func() {
+				ctx, cancel := context.WithTimeout(d.recoveryContext(), 2*time.Minute)
+				defer cancel()
+				d.dispatchAndReportCredentialSessionDiscoveryEvent(ctx, protocol.Message{
+					Type:    eventDaemonCredentialSessionDiscovery,
+					Payload: payload,
+				}, time.Now())
+			}()
+			continue
+		}
 		switch msg.Type {
 		case protocol.EventDaemonTaskAvailable:
 			var payload protocol.TaskAvailablePayload
@@ -303,6 +319,60 @@ func (d *Daemon) readTaskWakeupMessages(conn *websocket.Conn, taskWakeups chan<-
 			}
 			d.handleWSHeartbeatAck(context.Background(), &ack)
 		}
+	}
+}
+
+// dispatchAndReportCredentialSessionDiscoveryEvent makes the asynchronous
+// reassignment result visible to operators. A successful service call has
+// already persisted its rotation event before this method logs completion.
+// Only assignment metadata is logged; credential homes, config paths, session
+// identifiers, error strings, and credential material are deliberately absent.
+func (d *Daemon) dispatchAndReportCredentialSessionDiscoveryEvent(ctx context.Context, message protocol.Message, now time.Time) {
+	outcome, err := d.dispatchCredentialSessionDiscoveryEventWithOutcome(ctx, message, now)
+	if !outcome.Handled || d == nil || d.logger == nil {
+		return
+	}
+
+	attrs := []any{
+		"agent_id", outcome.AgentID,
+		"provider", outcome.Provider,
+		"tenant_id", outcome.TenantID,
+		"previous_account_id", outcome.PreviousAccountID,
+	}
+	if err != nil {
+		class := credentialSessionReassignmentErrorClass(err)
+		attrs = append(attrs, "alert", class)
+		if errors.Is(err, rotation.ErrNoAccountAvailable) {
+			d.logger.Warn("rotation: automatic credential account reassignment unavailable", attrs...)
+			return
+		}
+		d.logger.Error("rotation: automatic credential account reassignment failed", attrs...)
+		return
+	}
+	if !outcome.Reassigned {
+		d.logger.Debug("rotation: credential session discovery produced no reassignment", attrs...)
+		return
+	}
+
+	attrs = append(attrs,
+		"next_account_id", outcome.NextAccountID,
+		"reason", string(rotation.ReasonQuotaReactive),
+	)
+	d.logger.Warn("rotation: automatic credential account reassignment completed", attrs...)
+}
+
+func credentialSessionReassignmentErrorClass(err error) string {
+	switch {
+	case errors.Is(err, rotation.ErrNoAccountAvailable):
+		return "no_account_available"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "deadline_exceeded"
+	case errors.Is(err, context.Canceled):
+		return "canceled"
+	case errors.Is(err, errDiscoveryReassignmentUnavailable):
+		return "service_unavailable"
+	default:
+		return "reassignment_failed"
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/multica-ai/multica/server/internal/analytics"
+	"github.com/multica-ai/multica/server/internal/auth"
 	"github.com/multica-ai/multica/server/internal/daemonws"
 	"github.com/multica-ai/multica/server/internal/events"
 	"github.com/multica-ai/multica/server/internal/handler"
@@ -121,9 +122,9 @@ func envDuration(name string, def time.Duration) time.Duration {
 func main() {
 	logger.Init()
 
-	// Warn about missing configuration
-	if os.Getenv("JWT_SECRET") == "" {
-		slog.Warn("JWT_SECRET is not set — using insecure default. Set JWT_SECRET for production use.")
+	if err := auth.ValidateJWTConfiguration(os.Getenv("APP_ENV"), os.Getenv("JWT_SECRET")); err != nil {
+		slog.Error("refusing to start with insecure JWT configuration", "error", err)
+		os.Exit(1)
 	}
 	if os.Getenv("RESEND_API_KEY") == "" && strings.TrimSpace(os.Getenv("SMTP_HOST")) == "" {
 		slog.Warn("no email backend configured (RESEND_API_KEY and SMTP_HOST both empty) — verification codes will be printed to the log instead of emailed.")

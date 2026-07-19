@@ -43,6 +43,8 @@ UPDATE agent SET
     thinking_level = COALESCE(sqlc.narg('thinking_level'), thinking_level),
     updated_at = now()
 WHERE id = $1
+  AND runtime_id IS NOT DISTINCT FROM sqlc.arg('expected_runtime_id')::uuid
+  AND model IS NOT DISTINCT FROM sqlc.narg('expected_model')::text
 RETURNING *;
 
 -- name: ClearAgentThinkingLevel :one

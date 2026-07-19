@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,8 +14,12 @@ import (
 )
 
 func loadProdexLaunchConfig() (ProdexConfig, AgentEntry, error) {
+	required := envBool("MULTICA_PRODEX_REQUIRED")
 	enabled := envBool("MULTICA_PRODEX_ENABLED")
 	if !enabled {
+		if required {
+			return ProdexConfig{}, AgentEntry{}, fmt.Errorf("prodex is required but MULTICA_PRODEX_ENABLED is disabled")
+		}
 		return ProdexConfig{}, AgentEntry{}, nil
 	}
 
@@ -34,9 +40,11 @@ func loadProdexLaunchConfig() (ProdexConfig, AgentEntry, error) {
 
 	cfg := ProdexConfig{
 		Enabled:             true,
+		Required:            required,
 		Path:                resolved,
 		Version:             version,
 		Commit:              commit,
+		ConfigSource:        envOrDefault("MULTICA_PRODEX_CONFIG_SOURCE", "process_env"),
 		SmartContextShadow:  envBoolDefault("MULTICA_PRODEX_SMART_CONTEXT_SHADOW", true),
 		SmartContextCanary:  strings.TrimSpace(os.Getenv("MULTICA_PRODEX_SMART_CONTEXT_CANARY_PERCENT")),
 		KillSwitchDefaultOn: envBoolDefault("MULTICA_PRODEX_KILL_SWITCH_DEFAULT_ON", true),
@@ -63,20 +71,51 @@ func loadL2RuntimeConfig() (L2RuntimeConfig, error) {
 	}
 	baseURL := strings.TrimSpace(os.Getenv("MULTICA_L2_BASE_URL"))
 	token := strings.TrimSpace(os.Getenv("MULTICA_L2_BEARER_TOKEN"))
+	if token == "" {
+		token, err = generateEphemeralL2Token()
+		if err != nil {
+			return L2RuntimeConfig{}, fmt.Errorf("generate ephemeral l2 bearer token: %w", err)
+		}
+	}
 	if _, err := l2runtime.NewClient(baseURL, token, timeout); err != nil {
 		return L2RuntimeConfig{}, fmt.Errorf("l2 runtime enabled but config is invalid: %w", err)
+	}
+	sidecarPath := strings.TrimSpace(os.Getenv("MULTICA_L2_SIDECAR_PATH"))
+	if sidecarPath == "" {
+		return L2RuntimeConfig{}, fmt.Errorf("l2 runtime enabled but MULTICA_L2_SIDECAR_PATH is required")
+	}
+	resolvedSidecar, err := exec.LookPath(sidecarPath)
+	if err != nil {
+		return L2RuntimeConfig{}, fmt.Errorf("l2 runtime enabled but adapter executable %q was not found: %w", sidecarPath, err)
 	}
 	policyID := strings.TrimSpace(os.Getenv("MULTICA_L2_POLICY_ID"))
 	if policyID == "" {
 		policyID = "default"
 	}
+	tenantID := strings.TrimSpace(os.Getenv("MULTICA_L2_TENANT_ID"))
+	if tenantID == "" {
+		if envBool("MULTICA_PRODEX_REQUIRED") {
+			return L2RuntimeConfig{}, fmt.Errorf("l2 runtime enabled in required mode but MULTICA_L2_TENANT_ID is missing")
+		}
+		tenantID = "default"
+	}
 	return L2RuntimeConfig{
 		Enabled:     true,
+		SidecarPath: resolvedSidecar,
 		BaseURL:     baseURL,
 		BearerToken: token,
 		Timeout:     timeout,
 		PolicyID:    policyID,
+		TenantID:    tenantID,
 	}, nil
+}
+
+func generateEphemeralL2Token() (string, error) {
+	var raw [32]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(raw[:]), nil
 }
 
 func (d *Daemon) applyProdexEnv(provider string, envRoot string, agentEnv map[string]string) {
@@ -104,8 +143,16 @@ func (d *Daemon) applyProdexEnv(provider string, envRoot string, agentEnv map[st
 	}
 }
 
-func prodexSidecarEnv() []string {
+func prodexSidecarEnv(configs ...Config) []string {
 	env := envMap(os.Environ())
+	if len(configs) > 0 {
+		cfg := configs[0]
+		env["MULTICA_PRODEX_PATH"] = cfg.Prodex.Path
+		env["MULTICA_L2_BEARER_TOKEN"] = cfg.L2Runtime.BearerToken
+		if strings.TrimSpace(env["PRODEX_PG_URL"]) == "" && strings.TrimSpace(cfg.RotationDatabaseURL) != "" {
+			env["PRODEX_PG_URL"] = cfg.RotationDatabaseURL
+		}
+	}
 	env["PRODEX_ALLOW_UNSAFE_CHILD_ENV"] = "off"
 	env["NO_PROXY"] = appendNoProxyLoopback(env["NO_PROXY"])
 	env["no_proxy"] = appendNoProxyLoopback(env["no_proxy"])
