@@ -1,10 +1,13 @@
 package daemonws
 
 import (
+	"errors"
 	"time"
 
 	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
 )
+
+var errInvalidDeliveryInput = errors.New("invalid delivery span input")
 
 // EmitDeliverySpan emits OBS-8 (Hop 7) metrics: delivery latency, backpressure/drops,
 // reconnects, joined on session_id/delivery_id. No delivered payload content.
@@ -19,6 +22,16 @@ func EmitDeliverySpan(
 	backpressureCount int64,
 	backpressureState string,
 ) error {
+	if recorder == nil {
+		return errInvalidDeliveryInput
+	}
+	if startedAt.IsZero() {
+		return errInvalidDeliveryInput
+	}
+	if deliveryLatencyMs < 0 || dropCount < 0 || reconnectCount < 0 || backpressureCount < 0 {
+		return errInvalidDeliveryInput
+	}
+
 	span := e2e.NewSpan(e2e.HopDelivery, e2e.Correlation{
 		SessionID:  sessionID,
 		DeliveryID: deliveryID,
