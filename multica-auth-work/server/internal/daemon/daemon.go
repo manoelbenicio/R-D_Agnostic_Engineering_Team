@@ -236,6 +236,7 @@ type Daemon struct {
 	credentialMetrics *obsmetrics.CredentialMetrics
 	agentBrain        *agentBrainRuntime
 	agentBrainInitErr error
+	agentBrainOBS     *brain.AdmissionObserver
 
 	l2Client             l2RuntimeClient
 	l2InitErr            error
@@ -294,6 +295,7 @@ func newDaemon(cfg Config, logger *slog.Logger, dependencies AgentBrainDependenc
 		warningDetector:           rotation.NewWarningDetector(),
 		usageDetector:             rotation.NewUsageDetector(0),
 		credentialMetrics:         obsmetrics.NewCredentialMetrics(),
+		agentBrainOBS:             brain.NewAdmissionObserver(brain.NewAdmissionLogSink(logger)),
 		l2Sessions:                make(map[string]runtimeRouterOwnerRecord),
 		l2ProfileByHome:           make(map[string]string),
 	}
@@ -3273,16 +3275,21 @@ func (d *Daemon) resolveTaskAgentEntry(task Task, claimedProvider string) (Agent
 }
 
 func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot int, taskLog *slog.Logger) (taskResult TaskResult, runErr error) {
+	admissionStarted := time.Now()
 	// Refuse to spawn an agent without a workspace. An empty workspace_id
 	// here would make MULTICA_WORKSPACE_ID empty in the agent env, and the
 	// CLI would otherwise silently fall back to the user-global config — a
 	// path that can leak operations into an unrelated workspace when
 	// multiple workspaces share a host.
 	if task.WorkspaceID == "" {
+		d.observeAgentBrainAdmission(task, nil, "workspace_required", admissionStarted)
 		return TaskResult{}, fmt.Errorf("refusing to spawn agent: task has no workspace_id (task_id=%s)", task.ID)
 	}
 	entry, provider, err := d.resolveTaskAgentEntry(task, provider)
 	if err != nil {
+		if class, ok := launchIdentityAdmissionClass(err); ok {
+			d.observeAgentBrainAdmission(task, nil, class, admissionStarted)
+		}
 		return TaskResult{}, err
 	}
 
@@ -3299,13 +3306,21 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 		legacyModel = task.Agent.Model
 	}
 	if d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required && d.agentBrainInitErr != nil {
+		d.observeAgentBrainAdmission(task, nil, "integration_initialization_failed", admissionStarted)
 		return TaskResult{}, &agentBrainAdmissionError{class: "integration_initialization_failed"}
 	}
 	agentBrainPlan, err := d.agentBrain.admitTask(ctx, task, provider, legacyModel)
 	if err != nil {
+		class := "readiness_cancelled"
+		var admissionErr *agentBrainAdmissionError
+		if errors.As(err, &admissionErr) && admissionErr.class != "" {
+			class = admissionErr.class
+		}
+		d.observeAgentBrainAdmission(task, nil, class, admissionStarted)
 		return TaskResult{}, err
 	}
 	if agentBrainPlan != nil {
+		d.observeAgentBrainAdmission(task, agentBrainPlan, "admitted", admissionStarted)
 		task.RuntimeRouterOwner = string(brain.RouterOwnerOmniRoute)
 		entry.Model = string(agentBrainPlan.Task.Request.RouteModel)
 		defer func() {
@@ -4017,6 +4032,49 @@ runAttempt:
 			Usage:         usageEntries,
 			FailureReason: failureReason,
 		}, nil
+	}
+}
+
+// launchIdentityAdmissionClass returns only the bounded failure classes that
+// resolveTaskAgentEntry can produce before normal Agent Brain admission. The
+// static switch prevents arbitrary error text or unrecognized classifications
+// from entering observability metadata.
+func launchIdentityAdmissionClass(err error) (string, bool) {
+	var admissionErr *agentBrainAdmissionError
+	if !errors.As(err, &admissionErr) {
+		return "", false
+	}
+	switch admissionErr.class {
+	case "custom_runtime_not_allowed",
+		"custom_args_not_allowed",
+		"builtin_runtime_mapping_unavailable",
+		"builtin_runtime_provider_mismatch",
+		"builtin_runtime_unavailable":
+		return admissionErr.class, true
+	default:
+		return "", false
+	}
+}
+
+func (d *Daemon) observeAgentBrainAdmission(task Task, plan *agentBrainTaskPlan, class string, startedAt time.Time) {
+	if !d.agentBrainGatewayRequired() || d.agentBrainOBS == nil {
+		return
+	}
+	correlation := brain.AdmissionCorrelation(task.ID, firstConfigured(task.ChatSessionID, task.PriorSessionID, task.ID))
+	if plan != nil {
+		correlation = plan.Task.Request.Correlation
+	}
+	decision, readiness, failClosedClass := brain.AdmissionClassification(class)
+	if err := d.agentBrainOBS.Emit(brain.AdmissionObservation{
+		Correlation:     correlation,
+		CLIKind:         d.cfg.AgentBrain.CLIKind,
+		RouteModel:      d.cfg.AgentBrain.RouteModel,
+		Decision:        decision,
+		Readiness:       readiness,
+		FailClosedClass: failClosedClass,
+		StartedAt:       startedAt,
+	}); err != nil && d.logger != nil {
+		d.logger.Warn("agent brain admission span refused", "error_class", "invalid_metadata")
 	}
 }
 
