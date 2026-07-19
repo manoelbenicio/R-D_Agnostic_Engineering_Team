@@ -707,3 +707,19 @@
 > dry-run first, NO direct main merge until independent evidence/adjudication (ballot item 9). **Stale-status
 > fix:** the C2 "W1 review in progress" row is superseded by the `9745eaf` corrective row above.
 > Holds intact: 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.
+
+---
+
+> **D-V3-24 — OWNER DECISION 5: reduced-hop = PARTIAL-HOP DIAGNOSTIC (zero acceptance credit); full final scope NON-NEGOTIABLE (Kiro-TL recorded, 2026-07-19).**
+> Golden-Rule CHECK-IN/OUT: docs-only decision record; no product/test/product-git/credential/network action; no dispatch.
+> Decision 5 APPROVED WITH STRICT AMENDMENT: reduced-hop diagnostics permitted ONLY as temporary diagnostics
+> during Main Brain implementation; **ZERO final acceptance credit; MUST be labeled `PARTIAL-HOP DIAGNOSTIC —
+> NOT G4 ACCEPTANCE`.** After Main Brain completion the final OBS scope is **NON-NEGOTIABLE** (no reduction
+> for small/medium/complex): full fine-grained E2E observability across every required hop AND every
+> functional/performance/network/resource/failure/retry/affinity/cancellation/recovery scenario; Prometheus
+> metrics; Grafana deep drilldowns; Alertmanager firing/recovery; correlation to safe detailed traces/logs;
+> bottleneck/performance/network diagnosis; 100% successful synthetic trace continuity; zero gaps/orphans/leaks;
+> bounded labels; independent evidence. **No partial checkpoint can close OBS/G4, authorize 9.1/capacity,
+> cutover, or production.** Reinforces D-V3-20 evidence firewall + D-V3-17 gate. Observability implementation
+> remains Priority 2 unless expressly authorized (D-V3-21/22/23). Holds intact:
+> 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.

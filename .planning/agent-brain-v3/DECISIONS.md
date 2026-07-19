@@ -235,6 +235,24 @@
   concorrente; prova fresca exigida antes de dispatch.** Holds preservados:
   9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
 
+### D-V3-24 — Checkpoints de OBS reduced-hop = DIAGNÓSTICO TEMPORÁRIO (zero crédito de aceitação); escopo final NÃO-NEGOCIÁVEL
+- Decisão do dono 2026-07-19 (Decision 5, APROVADA COM EMENDA ESTRITA). Registro em substância:
+- **Reduced-hop diagnostics são permitidos APENAS como diagnóstico temporário durante a implementação do
+  Main Brain.** Conferem **ZERO crédito de aceitação final** e **DEVEM ser rotulados
+  `PARTIAL-HOP DIAGNOSTIC — NOT G4 ACCEPTANCE`.**
+- **Após a conclusão do Main Brain, o escopo final é NÃO-NEGOCIÁVEL** e não pode ser reduzido para cenários
+  small/medium/complex: observabilidade E2E fina em **cada hop exigido** E em cada cenário
+  **funcional/performance/rede/recurso/falha/retry/afinidade/cancelamento/recovery**; métricas Prometheus;
+  drilldowns profundos no Grafana; Alertmanager firing/recovery; correlação a traces/logs detalhados e
+  seguros; diagnóstico de bottleneck/performance/rede; **100% de continuidade de trace sintético
+  bem-sucedido; zero gaps/orphans/leaks; labels bounded; evidência independente**.
+- **Nenhum checkpoint parcial pode fechar OBS/G4, nem autorizar 9.1/capacidade, cutover ou produção.**
+- **Consistência com decisões vigentes:** reforça o firewall de evidência do D-V3-20 (verdes não-observados
+  = evidência de correção apenas) e o gate D-V3-17 (G4-OBS aceito antes de capacidade/cutover). Implementação
+  de observabilidade permanece **Priority 2** salvo autorização expressa (D-V3-21/22/23).
+- STATUS: **ACEITA (Decision 5, emenda estrita).** Holds preservados:
+  9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
+
 ### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
 - Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o
   ESCOPO de D-V3-17 — não o enfraquece. D-V3-17 sempre bloqueou a **validade de alegações de
