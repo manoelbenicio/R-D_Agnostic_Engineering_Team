@@ -1,0 +1,309 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "OpenSpec Delivery 360 Status",
+    "description": "Principal-level AS-IS versus TO-BE delivery, validation, and repository-risk assessment as of July 19, 2026.",
+    "blocks": [
+      {
+        "id": "title",
+        "type": "markdown",
+        "layout": "full",
+        "body": "# OpenSpec Delivery 360 Status"
+      },
+      {
+        "id": "executive_summary",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Executive Summary\n\n- **The program is not at 100% delivery.** Across all six OpenSpec changes, 146 of 227 tasks are checked complete (64.3%). Excluding the completed 78-task legacy Rotation-Parity program, active delivery is 68 of 149 tasks (45.6%).\n- **The architecture has advanced, but the system is still hybrid.** Neutral Agent Brain contracts, gateway foundations, security controls, NIM/Cline runtimes, and password-auth backend work are materially present. Provider-path acceptance, capacity tiers, default cutover, legacy removal, orchestration routing, onboarding completion, and credential-rotation closure remain open.\n- **Current WIP is at material loss and integration risk.** `main` matches the locally cached `origin/main` with no commits ahead. The audit found 469 dirty entries: 92 modified, 5 added, 1 deleted, and 371 untracked; 11 frontend paths are staged but explicitly excluded from push. Existing governance evidence says no current atomic group is fully push-authorized.\n- **Fresh verification is mixed.** TypeScript type-checking passed all six executed workspace tasks and Rust passed 4/4 tests. The TypeScript unit run failed after 569 passing tests because eight Vitest workers timed out. Go could not be rerun because the Go toolchain is absent in this shell."
+      },
+      {
+        "id": "headline_metrics",
+        "type": "metric-strip",
+        "layout": "full",
+        "cardIds": ["overall_completion", "active_completion", "open_tasks", "remote_protection"]
+      },
+      {
+        "id": "asis_tobe_heading",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## The TO-BE is only partly realized\n\n**The original AS-IS problem was a Multica host daemon mixing task control, provider-native credentials, legacy Go rotation, per-task credential homes, and partial Prodex hooks while OmniRoute was not enforced as the sole request path.** The target is a brand-neutral Agent Brain cold control plane with credentialless CLI launches and OmniRoute as the exclusive hot routing, credential, rotation, retry, and quota plane. Today, the repository sits between those states: the neutral/gateway foundation exists, but broad acceptance, capacity proof, cutover, and removal gates have not closed."
+      },
+      {
+        "id": "asis_tobe_table",
+        "type": "table",
+        "layout": "full",
+        "tableId": "architecture_state"
+      },
+      {
+        "id": "portfolio_heading",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "openspec_tasks",
+        "body": "## Legacy completion masks the active delivery gap\n\n**The 64.3% portfolio headline includes 78 completed legacy tasks.** The five incomplete changes contain 81 open tasks, and their combined completion is 45.6%. Agent Brain is the largest active stream at 51/85; Persist-Prodex is intentionally frozen at 0/16 because it conflicts with the approved OmniRoute target. The chart compares exact checked and open task counts from the current task manifests."
+      },
+      {
+        "id": "portfolio_chart",
+        "type": "chart",
+        "layout": "full",
+        "chartId": "portfolio_status"
+      },
+      {
+        "id": "portfolio_table_block",
+        "type": "table",
+        "layout": "full",
+        "tableId": "portfolio_detail"
+      },
+      {
+        "id": "completed_heading",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## What is genuinely completed\n\n- **Rotation-Parity Polyglot is task-list complete:** 78/78 tasks are checked, with local Smart Context, readiness falsification, kill-switch, rollback, observability, contract, and provider-matrix evidence. Its historical PROD claim is not equivalent to a real provider-backed production deployment.\n- **Agent Brain G0-G3 are closed in their accepted scopes:** governance/traceability, neutral contracts, gateway core, security corrections, environment containment, route preservation, runtime discovery, and several observability controls are accepted.\n- **Native runtime foundations are present:** NIM, Cline ACP, model discovery, wiring, and password-auth backend tasks are checked complete.\n- **Credential isolation has bounded successes:** current execenv behavior, exhaustion detection, next-account selection, and two-account coexistence tests are checked complete.\n- **Chat orchestration has its policy layer:** leader exploration threshold, default routing decision, leader identity/protocol, and delegation-only behavior are checked complete."
+      },
+      {
+        "id": "pending_heading",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## The remaining work is concentrated in acceptance and cutover\n\n- **Agent Brain (34 open):** owner approvals 0.1/0.7; checklist/parity closure; Kimi/GLM/NVIDIA/Agy adapters; authenticated provider-path testing; rotation/failure/retry/restart proof; 20/50/100 capacity tiers; default gateway cutover; legacy removal; final renaming and sign-off.\n- **Credential isolation (17 open):** source mapping, provider config-dir/env contracts, session APIs, end-to-end session assignment, automated reassignment/alerts, full build, rotation tests, and complete log-secret assurance.\n- **Native onboarding (8 open):** frontend login/onboarding, design/i18n QA, rebuild/restart, local web validation, container test gate, runtime smokes, UAT, and final evidence.\n- **Chat orchestration (6 open):** squad creation, default/explicit routing implementation, both routing smokes, and final check-in evidence.\n- **Persist-Prodex (16 open):** all tasks remain unchecked under an owner-decision program hold; they should not execute until the target-architecture contradiction is explicitly resolved."
+      },
+      {
+        "id": "failures_heading",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Failed, rejected, reopened, and blocked activity\n\n**No OpenSpec task is formally marked `FAILED`; that does not mean there are no failures.** The evidence trail records these non-success outcomes:\n\n- Agent Brain task 8.2 was reopened because five-vendor accepted-path evidence was not met; several paths were synthetic-only or fail-closed, with no live end-to-end proof.\n- Native onboarding tasks 1.5 and 1.6 were reopened because frontend/build/QA evidence was incomplete and jsdom workers could not execute reliably on the mounted filesystem.\n- Credential isolation task 4.3's design was rejected as implementation-ready; 5.4 remains partial/open because log coverage is not exhaustive and one accepted Claude-stderr hunk is co-mingled with unrelated changes.\n- Persist-Prodex is on program hold because its required/restart-durable Prodex behavior conflicts with the OmniRoute-only target and planned Prodex removal.\n- The earlier P12 production attempt was invalidated for fabricated or non-production evidence. Real provider-backed production deployment, live kill-switch, and live rollback are still not proven.\n- The fresh TypeScript unit command failed due to eight Vitest worker-start timeouts, despite 569 completed passing assertions."
+      },
+      {
+        "id": "verification_heading",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Current verification is not release-grade\n\n**Static type safety and the Rust sidecar are green, but the full release gate is not.** The test run is incomplete because Go is unavailable and the JavaScript unit suite terminated with worker errors. This is sufficient to classify the checkout as unverified for push-to-main or release, even though many focused historical checks are green."
+      },
+      {
+        "id": "verification_table_block",
+        "type": "table",
+        "layout": "full",
+        "tableId": "verification_status"
+      },
+      {
+        "id": "repository_risk",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "git_snapshot",
+        "body": "## The most urgent risk is recoverability, not raw coding velocity\n\n**The remote branch protects none of the current uncommitted WIP.** `HEAD` is not ahead of the locally cached `origin/main`. The audit found 469 dirty entries: 92 modified, 5 added, 1 deleted, and 371 untracked. Eleven frontend paths are staged but explicitly excluded by the latest ownership review. The work spans multiple OpenSpec changes and includes known ownership conflicts, reopened tasks, a program hold, and generated or junk-looking paths such as `NUL`/`nul`. A single bulk commit would preserve bytes but destroy atomic reviewability and could merge rejected or conflicting work.\n\n**A local snapshot exists but is not disaster recovery.** Branch `backup/wip-snapshot-20260718T202300Z` points to commit `5106de35` and captures an earlier WIP state, but no remote branch contains that commit. Work created after the snapshot remains protected only by the live worktree.\n\n**Management implication:** establish remote recoverability first with an inventory and scoped recovery refs/commits, then promote only independently accepted atoms. Do not interpret staging as acceptance and do not push the entire worktree directly to `main`."
+      },
+      {
+        "id": "recommendations",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Recommended control plan to reach 100%\n\n1. **Protect the work immediately:** freeze new cross-cutting edits, capture a complete path/hash/ownership inventory, remove or quarantine junk artifacts, and create recoverable scoped WIP commits on dedicated backup branches without merging them to `main`.\n2. **Resolve the architecture contradiction:** the owner must choose the Persist-Prodex disposition. Until then, keep its 16 tasks frozen and exclude its code from promotion.\n3. **Create an atomic promotion matrix:** map every changed path to one OpenSpec task, evidence record, producer, independent reviewer, and exact test command. Split mixed files before any mainline push.\n4. **Repair the validation environment:** run JS/jsdom on a Linux-native filesystem, provide the pinned Go toolchain, start the required isolated PostgreSQL service, then execute typecheck, unit, race, vet, Rust, web build, and bounded integration gates.\n5. **Close active product slices in dependency order:** native onboarding 1.5/1.6 and chat routing; credential 4.3/4.4/5.3/5.4; Agent Brain provider acceptance and task 9.1 thresholds; then capacity, cutover, removal, and naming.\n6. **Push accepted atoms continuously:** after independent acceptance, push small conventional commits to a recovery/integration branch and open reviewable PRs. Keep blocked, partial, unknown-owner, and program-hold files out of those commits.\n7. **Require a final 100% gate:** all 227 tasks reconciled or formally superseded with owner-approved disposition; zero unexplained unchecked items; full test matrix green; clean worktree; remote recovery proven; and signed architecture/security/capacity/operations acceptance."
+      },
+      {
+        "id": "further_questions",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Decisions still required\n\n- Does the owner confirm the OmniRoute-only TO-BE and formally defer/retire Persist-Prodex, or authorize a bounded transitional Prodex path with a sunset date?\n- May the orchestration team create and push dedicated backup branches for unaccepted WIP, distinct from mainline promotion branches?\n- What are the explicit pass thresholds for the 20-task capacity gate and the required duration of controlled development-cohort observation?\n- Which installed provider credentials and live endpoints may be used for the remaining acceptance tests without violating the credential-mutation stop?"
+      },
+      {
+        "id": "caveats",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Caveats and assumptions\n\nTask completion is counted strictly from current OpenSpec checkboxes; a checked task may still have qualified, historical, local-only, or superseded evidence. Failure counts are not available as a task field, so this report lists rejected, invalidated, reopened, blocked, and freshly failing validations separately. Git counts include generated and untracked files and therefore describe recoverability exposure, not accepted product scope. The independent review was performed by an internal read-only sub-agent named `kiro_audit`; it was not the existing visible Kiro/Herdr TL session, and no confirmation from that session is claimed. No commit, push, deployment, credential mutation, or Herdr action was performed for this report."
+      }
+    ],
+    "cards": [
+      {
+        "id": "overall_completion",
+        "dataset": "headline",
+        "sourceId": "openspec_tasks",
+        "description": "All six OpenSpec changes, including completed legacy work.",
+        "metrics": [{"field": "overall_rate", "label": "All OpenSpec tasks complete", "format": "percent"}]
+      },
+      {
+        "id": "active_completion",
+        "dataset": "headline",
+        "sourceId": "openspec_tasks",
+        "description": "Five incomplete changes, excluding Rotation-Parity Polyglot.",
+        "metrics": [{"field": "active_rate", "label": "Active-program completion", "format": "percent"}]
+      },
+      {
+        "id": "open_tasks",
+        "dataset": "headline",
+        "sourceId": "openspec_tasks",
+        "description": "Unchecked tasks remaining across the portfolio.",
+        "metrics": [{"field": "open_tasks", "label": "Open tasks", "format": "number"}]
+      },
+      {
+        "id": "remote_protection",
+        "dataset": "headline",
+        "sourceId": "git_snapshot",
+          "description": "Local commits ahead of the cached origin/main; the local snapshot is not present on a remote branch.",
+        "metrics": [{"field": "ahead_commits", "label": "Commits ahead of remote", "format": "number"}]
+      }
+    ],
+    "charts": [
+      {
+        "id": "portfolio_status",
+        "title": "OpenSpec task status by change",
+        "subtitle": "Checked and unchecked tasks as of July 19, 2026; exact counts are shown in the following table.",
+        "type": "stackedBar",
+        "intent": "composition",
+        "dataset": "portfolio",
+        "sourceId": "openspec_tasks",
+        "encodings": {
+          "x": {"field": "change", "type": "nominal", "label": "OpenSpec change"},
+          "y": {"fields": ["completed", "open"], "type": "quantitative", "label": "Tasks", "format": "number"}
+        },
+        "palette": {"kind": "categorical", "name": "blue-orange"},
+        "settings": {"groupMode": "stacked", "orientation": "vertical", "sort": "none", "showValues": true, "categoryLabelPolicy": "wrap"},
+        "labels": {"values": "all"},
+        "surface": {"surface": "card", "viewMode": "both"},
+        "layout": "full"
+      }
+    ],
+    "tables": [
+      {
+        "id": "architecture_state",
+        "dataset": "architecture",
+        "sourceId": "architecture_source",
+        "density": "dense",
+        "title": "Current actual versus target gap",
+        "description": "The AS-IS baseline is defined in the preceding narrative; this table shows the current state and remaining TO-BE gate.",
+        "columns": [
+          {"field": "dimension", "label": "Dimension"},
+          {"field": "current", "label": "Current actual"},
+          {"field": "gap", "label": "Remaining TO-BE gate"},
+          {"field": "status", "label": "Status"}
+        ],
+        "defaultSort": {"field": "dimension", "direction": "asc"}
+      },
+      {
+        "id": "portfolio_detail",
+        "dataset": "portfolio",
+        "sourceId": "openspec_tasks",
+        "density": "dense",
+        "title": "OpenSpec delivery register",
+        "description": "Exact task counts and current controlling disposition for every active or historical change.",
+        "columns": [
+          {"field": "change", "label": "Change"},
+          {"field": "completed", "label": "Completed", "format": "number"},
+          {"field": "open", "label": "Open", "format": "number"},
+          {"field": "completion_rate", "label": "Completion", "format": "percent"},
+          {"field": "disposition", "label": "Disposition"}
+        ],
+        "defaultSort": {"field": "open", "direction": "desc"}
+      },
+      {
+        "id": "verification_status",
+        "dataset": "verification",
+        "sourceId": "fresh_verification",
+        "density": "dense",
+        "title": "Fresh verification snapshot",
+        "description": "Commands executed from the shared checkout on July 19, 2026; historical agent evidence is not substituted for missing current runs.",
+        "columns": [
+          {"field": "check", "label": "Check"},
+          {"field": "result", "label": "Result"},
+          {"field": "evidence", "label": "Evidence and implication"}
+        ],
+        "defaultSort": {"field": "check", "direction": "asc"}
+      }
+    ],
+    "sources": [
+      {
+        "id": "openspec_tasks",
+        "label": "Current OpenSpec task manifests",
+        "path": "reports/status-360-2026-07-19/source-notes.md",
+        "description": "Reproducible checkbox counts and the exact six OpenSpec task manifests used for the portfolio datasets.",
+        "query": {
+          "engine": "PostgreSQL-compatible VALUES",
+          "language": "sql",
+          "executed_at": "2026-07-19T14:25:00-03:00",
+          "description": "Materializes the reviewed checkbox counts and derives totals and completion rates used by the report.",
+          "sql": "WITH task_counts(change, completed, open_tasks, is_legacy) AS (\n  VALUES\n    ('Agent Brain / OmniRoute', 51, 34, false),\n    ('Credential isolation', 4, 17, false),\n    ('Persist Prodex runtime', 0, 16, false),\n    ('Native runtimes/onboarding', 9, 8, false),\n    ('Chat orchestration', 4, 6, false),\n    ('Rotation-Parity Polyglot', 78, 0, true)\n)\nSELECT\n  change,\n  completed,\n  open_tasks AS open,\n  completed + open_tasks AS total,\n  completed::numeric / NULLIF(completed + open_tasks, 0) AS completion_rate,\n  SUM(completed) OVER ()::numeric\n    / SUM(completed + open_tasks) OVER () AS overall_rate,\n  SUM(completed) FILTER (WHERE NOT is_legacy) OVER ()::numeric\n    / SUM(completed + open_tasks) FILTER (WHERE NOT is_legacy) OVER () AS active_rate,\n  SUM(open_tasks) OVER () AS portfolio_open_tasks\nFROM task_counts;",
+          "tables_used": ["openspec/changes/*/tasks.md"],
+          "filters": ["Markdown checkbox lines only", "No inferred completion"]
+        }
+      },
+      {
+        "id": "architecture_source",
+        "label": "Agent Brain architecture and live planning state",
+        "path": "reports/status-360-2026-07-19/source-notes.md",
+        "description": "AS-IS/TO-BE reconciliation inputs and the governing Agent Brain state and evidence documents.",
+        "query": {
+          "engine": "PostgreSQL-compatible VALUES",
+          "language": "sql",
+          "executed_at": "2026-07-19T14:25:00-03:00",
+          "description": "Materializes the reviewed qualitative architecture reconciliation recorded in the report artifact and source notes.",
+          "sql": "SELECT *\nFROM (\n  VALUES\n    ('Control plane', 'Partial'),\n    ('Hot routing', 'Partial'),\n    ('Credentials', 'Partial / gated'),\n    ('Provider coverage', 'Incomplete'),\n    ('Capacity', 'Not proven'),\n    ('Legacy removal', 'Blocked by decision'),\n    ('Product workflows', 'Partial'),\n    ('Remote protection', 'High risk')\n) AS architecture_state(dimension, status);",
+          "tables_used": ["openspec/changes/build-omniroute-agent-brain/architecture.md", ".planning/agent-brain-v3/STATE.md", ".planning/agent-brain-v3/EVIDENCE_INDEX.md"]
+        }
+      },
+      {
+        "id": "git_snapshot",
+        "label": "Git working-tree and remote snapshot",
+        "path": "reports/status-360-2026-07-19/source-notes.md",
+        "description": "Read-only git commands, dirty-entry counts, local snapshot identity, and remote-protection limitations.",
+        "query": {
+          "engine": "PostgreSQL-compatible VALUES",
+          "language": "sql",
+          "executed_at": "2026-07-19T14:30:00-03:00",
+          "description": "Materializes the reviewed read-only Git snapshot used by metric cards and recoverability narrative.",
+          "sql": "SELECT\n  0 AS ahead_commits,\n  469 AS dirty_entries,\n  92 AS modified_entries,\n  5 AS added_entries,\n  1 AS deleted_entries,\n  371 AS untracked_entries,\n  11 AS staged_paths,\n  '5106de35' AS local_snapshot_commit,\n  false AS snapshot_on_remote;",
+          "tables_used": ["git status --porcelain", "git diff", "git diff --cached", "git ls-files --others", "origin/main...HEAD"],
+          "filters": ["Current shared checkout", "No fetch or mutation"]
+        }
+      },
+      {
+        "id": "fresh_verification",
+        "label": "Fresh local verification commands",
+        "path": "reports/status-360-2026-07-19/source-notes.md",
+        "description": "Commands, exit results, and limitations for the fresh TypeScript, Rust, and Go verification attempts.",
+        "query": {
+          "engine": "PostgreSQL-compatible VALUES",
+          "language": "sql",
+          "executed_at": "2026-07-19T14:41:00-03:00",
+          "description": "Materializes the reviewed command outcomes shown in the fresh verification table.",
+          "sql": "SELECT *\nFROM (\n  VALUES\n    ('TypeScript typecheck', 'PASS', '6 successful Turbo tasks in 7m14s'),\n    ('TypeScript unit tests', 'FAIL', '569 passed; 8 worker-start timeouts; exit 1'),\n    ('Rust sidecar tests', 'PASS', '4 passed, 0 failed'),\n    ('Go tests', 'NOT RUN', 'go: command not found'),\n    ('Integration / DB-backed tests', 'NOT RUN', 'No isolated PostgreSQL or full check pipeline used')\n) AS verification(check_name, result, evidence);",
+          "tables_used": ["multica-auth-work/package.json", "multica-auth-work/Makefile", "multica-auth-work/prodex-sidecar/Cargo.toml"],
+          "filters": ["Current uncommitted checkout", "No network install", "No database mutation"]
+        }
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "status": "ready",
+    "datasets": {
+      "headline": [
+        {"overall_rate": 0.643, "active_rate": 0.456, "open_tasks": 81, "ahead_commits": 0}
+      ],
+      "portfolio": [
+        {"change": "Agent Brain", "completed": 51, "open": 34, "total": 85, "completion_rate": 0.6, "disposition": "G4 in progress", "primary_gap": "Provider acceptance, capacity, cutover, legacy removal, renaming"},
+        {"change": "Credential isolation", "completed": 4, "open": 17, "total": 21, "completion_rate": 0.19, "disposition": "In progress with STOP gates", "primary_gap": "Session APIs, assignment, rotation, exhaustive secret assurance"},
+        {"change": "Persist Prodex", "completed": 0, "open": 16, "total": 16, "completion_rate": 0.0, "disposition": "Program hold", "primary_gap": "Owner decision on conflict with OmniRoute-only target"},
+        {"change": "Native/onboarding", "completed": 9, "open": 8, "total": 17, "completion_rate": 0.529, "disposition": "Backend accepted; frontend reopened", "primary_gap": "Frontend, QA, build, runtime smokes, UAT"},
+        {"change": "Chat orchestration", "completed": 4, "open": 6, "total": 10, "completion_rate": 0.4, "disposition": "Policy accepted; routing incomplete", "primary_gap": "Default squad/routing implementation and smoke tests"},
+        {"change": "Legacy RPP", "completed": 78, "open": 0, "total": 78, "completion_rate": 1.0, "disposition": "Historical task-list complete", "primary_gap": "Real provider-backed PROD evidence remains historically qualified"}
+      ],
+      "architecture": [
+        {"dimension": "Control plane", "current": "Neutral brain contracts exist; compatibility daemon remains", "gap": "Complete brand-neutral cutover", "status": "Partial"},
+        {"dimension": "Hot routing", "current": "Gateway slice exists; broad accepted paths are open", "gap": "Make OmniRoute the sole hot-path owner", "status": "Partial"},
+        {"dimension": "Credentials", "current": "Containment accepted; isolation program is 4/21", "gap": "Credentialless execution across every path", "status": "Partial / gated"},
+        {"dimension": "Provider coverage", "current": "Claude/Codex foundations; five-vendor proof open", "gap": "Verify all approved routes and failures", "status": "Incomplete"},
+        {"dimension": "Capacity", "current": "Harness specified; task 9.1 stopped", "gap": "Pass 20/50/100 task tiers", "status": "Not proven"},
+        {"dimension": "Legacy removal", "current": "Removal plan conflicts with Persist-Prodex WIP", "gap": "Owner disposition and signed parity", "status": "Blocked"},
+        {"dimension": "Product workflows", "current": "Leader policy and auth backend accepted", "gap": "Routing, frontend, smokes, and UAT", "status": "Partial"},
+        {"dimension": "Remote protection", "current": "Local snapshot only; 469 dirty entries", "gap": "Push scoped recovery and promotion branches", "status": "High risk"}
+      ],
+      "verification": [
+        {"check": "TypeScript typecheck", "result": "PASS", "evidence": "6 Turbo tasks passed in 7m14s; checked packages are type-safe"},
+        {"check": "TypeScript unit tests", "result": "FAIL", "evidence": "569 passed, but 8 workers timed out; the full JS gate is red"},
+        {"check": "Rust sidecar tests", "result": "PASS", "evidence": "4 passed, 0 failed; current sidecar unit suite is green"},
+        {"check": "Go tests", "result": "NOT RUN", "evidence": "Go binary absent; backend is not freshly verified"},
+        {"check": "Integration / DB-backed tests", "result": "NOT RUN", "evidence": "No isolated PostgreSQL/full pipeline; runtime acceptance remains open"}
+      ]
+    },
+    "accessIssues": []
+  },
+  "sources": []
+}

@@ -88,10 +88,29 @@ func (s *Service) OnExhaustion(ctx context.Context, agentID, vendor, tenantID st
 	lock.Lock()
 	defer lock.Unlock()
 
+	return s.onExhaustionLocked(ctx, agentID, vendor, tenantID, reason, now)
+}
+
+// onExhaustionLocked performs one rotation while the caller holds the agent's
+// service lock. It selects a replacement before logging out so an exhausted
+// pool cannot disturb the current assignment or authenticated session.
+func (s *Service) onExhaustionLocked(ctx context.Context, agentID, vendor, tenantID string, reason RotationReason, now time.Time) (Account, error) {
 	fromAccountID, err := s.store.CurrentAssignment(ctx, agentID)
 	if err != nil {
 		return Account{}, err
 	}
+
+	skip := map[string]struct{}{}
+	if fromAccountID != "" {
+		skip[fromAccountID] = struct{}{}
+	}
+
+	next, err := s.pool.selectNext(withSelectionAgentID(ctx, agentID), vendor, tenantID, now, skip)
+	if err != nil {
+		return Account{}, err
+	}
+	skip[next.AccountID] = struct{}{}
+
 	if fromAccountID != "" {
 		current, err := s.store.GetAccount(ctx, fromAccountID)
 		if err != nil {
@@ -102,18 +121,15 @@ func (s *Service) OnExhaustion(ctx context.Context, agentID, vendor, tenantID st
 		}
 	}
 
-	skip := map[string]struct{}{}
-	if fromAccountID != "" {
-		skip[fromAccountID] = struct{}{}
-	}
-
 	var lastLoginErr error
 	for attempts := 0; attempts < s.maxAttempts; attempts++ {
-		next, err := s.pool.selectNext(withSelectionAgentID(ctx, agentID), vendor, tenantID, now, skip)
-		if err != nil {
-			return Account{}, err
+		if attempts > 0 {
+			next, err = s.pool.selectNext(withSelectionAgentID(ctx, agentID), vendor, tenantID, now, skip)
+			if err != nil {
+				return Account{}, err
+			}
+			skip[next.AccountID] = struct{}{}
 		}
-		skip[next.AccountID] = struct{}{}
 
 		sessionID, err := s.auth.Login(ctx, next)
 		if err == nil {
@@ -132,6 +148,9 @@ func (s *Service) OnExhaustion(ctx context.Context, agentID, vendor, tenantID st
 		}
 
 		if err := s.store.Assign(ctx, agentID, next.AccountID); err != nil {
+			if cleanupErr := s.auth.Logout(ctx, next); cleanupErr != nil {
+				return Account{}, errors.Join(err, cleanupErr)
+			}
 			return Account{}, err
 		}
 		if err := s.store.RecordRotation(ctx, agentID, fromAccountID, next.AccountID, reason, now); err != nil {

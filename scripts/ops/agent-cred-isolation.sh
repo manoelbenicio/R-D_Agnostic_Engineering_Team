@@ -2,9 +2,10 @@
 # Source this file from ~/.bashrc. It assigns one credential slot to each
 # stable Herdr terminal and never falls back to shared vendor homes.
 
-if [[ -n "${AGENT_CRED_ISOLATION_SCRIPT_LOADED:-}" ]]; then
-  return 0 2>/dev/null || exit 0
-fi
+# Do not short-circuit when AGENT_CRED_ISOLATION_SCRIPT_LOADED is inherited.
+# Herdr creates a new terminal from an existing pane environment, so a child
+# shell can inherit the parent's slot variables even though it has a different
+# terminal_id. Bootstrap is idempotent and must run in every interactive shell.
 
 agent_cred_isolation_now() {
   date -u +%Y-%m-%dT%H:%M:%SZ
@@ -301,6 +302,343 @@ agent_cred_isolation_bootstrap() {
   exec {lock_fd}>&-
 }
 
+agent_cred_isolation_new_codex_login_home() {
+  local login_root login_id login_home
+
+  agent_cred_isolation_require || return 1
+  agent_cred_isolation_init_paths
+  agent_cred_isolation_release_codex_lease
+  agent_cred_isolation_cleanup_codex_logins || return 1
+  login_root="${AGENT_CRED_ISOLATION_ROOT}/codex-logins"
+  login_id="login-$(date -u +%Y%m%dT%H%M%SZ)-$(python3 -c 'import uuid; print(uuid.uuid4())')"
+  login_home="${login_root}/${login_id}"
+
+  mkdir -p "${login_root}" || return 1
+  chmod 700 "${AGENT_CRED_ISOLATION_ROOT}" "${login_root}" || return 1
+  (umask 077; mkdir "${login_home}") || return 1
+
+  # The lease is held by this shell for its whole login lifecycle.  flock is
+  # owner-death safe; cleanup can therefore remove only an aged, unlocked
+  # directory with a valid lease marker.
+  local lease_path lease_fd
+  lease_path="${login_home}/.lease"
+  printf 'agent-cred-login-lease-v1\n' >"${lease_path}" || {
+    rm -rf -- "${login_home}"
+    return 1
+  }
+  chmod 600 "${lease_path}" || {
+    rm -rf -- "${login_home}"
+    return 1
+  }
+  exec {lease_fd}<>"${lease_path}" || {
+    rm -rf -- "${login_home}"
+    return 1
+  }
+  if ! flock -x "${lease_fd}"; then
+    exec {lease_fd}>&-
+    rm -rf -- "${login_home}"
+    return 1
+  fi
+  AGENT_CRED_CODEX_LEASE_FD="${lease_fd}"
+  AGENT_CRED_CODEX_LEASE_PATH="${lease_path}"
+  AGENT_CRED_CODEX_LEASE_OWNER_BASHPID="${BASHPID}"
+
+  # A login lifecycle starts without auth.json by definition. Configuration
+  # may be copied, but credentials are never copied, linked, or shared.
+  if [[ -f "${AGENT_CRED_ISOLATION_HOST_HOME}/.codex/config.toml" ]]; then
+    cp -p -- "${AGENT_CRED_ISOLATION_HOST_HOME}/.codex/config.toml" \
+      "${login_home}/config.toml" || {
+      rm -rf -- "${login_home}"
+      return 1
+    }
+    chmod 600 "${login_home}/config.toml" 2>/dev/null || true
+  fi
+
+  export CODEX_HOME="${login_home}"
+  export AGENT_CRED_CODEX_LOGIN_ID="${login_id}"
+  export AGENT_CRED_CODEX_LEASE_SHELL_PID="$$"
+}
+
+agent_cred_isolation_release_codex_lease() {
+  if [[ "${AGENT_CRED_CODEX_LEASE_FD:-}" =~ ^[0-9]+$ ]]; then
+    # Never unlock an inherited open-file description; close only this FD.
+    eval "exec ${AGENT_CRED_CODEX_LEASE_FD}>&-" 2>/dev/null || true
+  fi
+  unset AGENT_CRED_CODEX_LEASE_FD AGENT_CRED_CODEX_LEASE_PATH AGENT_CRED_CODEX_LEASE_OWNER_BASHPID
+}
+
+agent_cred_isolation_cleanup_codex_logins() {
+  local login_root stale_count
+
+  agent_cred_isolation_init_paths
+  login_root="${AGENT_CRED_ISOLATION_ROOT}/codex-logins"
+  [[ -d "${login_root}" ]] || return 0
+  # Automatic deletion is disabled. The 120-hour threshold is report-only
+  # guidance until a separately audited descriptor-relative helper exists.
+  # Do not inspect lease contents and do not delete any candidate.
+  stale_count="$(find "${login_root}" -mindepth 1 -maxdepth 1 -type d \
+    -name 'login-*' -mmin +7200 -print 2>/dev/null | wc -l)"
+  : "${stale_count}"
+  return 0
+}
+
+agent_cred_isolation_codex_binding_owned_by_shell() {
+  [[ -n "${AGENT_CRED_ISOLATION_ROOT:-}" ]] || return 1
+  [[ "${AGENT_CRED_CODEX_LEASE_SHELL_PID:-}" == "$$" ]] || return 1
+  [[ "${CODEX_HOME:-}" == "${AGENT_CRED_ISOLATION_ROOT}/codex-logins/login-"* ]] || return 1
+  [[ -d "${CODEX_HOME}" && ! -L "${CODEX_HOME}" ]] || return 1
+  [[ ! -L "${CODEX_HOME}/auth.json" ]] || return 1
+}
+
+agent_cred_isolation_assert_codex_binding() {
+  if ! agent_cred_isolation_codex_binding_owned_by_shell; then
+    agent_cred_isolation_die "unsafe Codex binding: this shell does not own a private login folder"
+    return 1
+  fi
+}
+
+codex_recover() {
+  local account="${1:-}" source_slot source_home
+
+  account="${account^^}"
+  case "${account}" in
+    A) source_slot='slot-01' ;;
+    B) source_slot='slot-02' ;;
+    C) source_slot='slot-03' ;;
+    D) source_slot='slot-04' ;;
+    E) source_slot='slot-05' ;;
+    F) source_slot='slot-13' ;;
+    *)
+      agent_cred_isolation_die 'usage: codex_recover A|B|C|D|E|F'
+      return 2
+      ;;
+  esac
+
+  agent_cred_isolation_init_paths
+  source_home="${AGENT_CRED_ISOLATION_ROOT}/slots/${source_slot}/codex"
+  if [[ ! -f "${source_home}/auth.json" || -L "${source_home}/auth.json" ]]; then
+    agent_cred_isolation_die "saved account ${account} is unavailable or unsafe"
+    return 1
+  fi
+  agent_cred_isolation_new_codex_login_home || return 1
+  cp -p -- "${source_home}/auth.json" "${CODEX_HOME}/auth.json" || return 1
+  chmod 600 "${CODEX_HOME}/auth.json" 2>/dev/null || true
+  if [[ -f "${source_home}/config.toml" ]]; then
+    cp -p -- "${source_home}/config.toml" "${CODEX_HOME}/config.toml" || return 1
+    chmod 600 "${CODEX_HOME}/config.toml" 2>/dev/null || true
+  fi
+  agent_cred_isolation_assert_codex_binding
+}
+
+agent_cred_isolation_run_codex() {
+  local argument force_new=0
+
+  # The safety boundary is entirely local. Herdr identity, availability, and
+  # registry state are deliberately not consulted here.
+  agent_cred_isolation_require || return 70
+  agent_cred_isolation_init_paths
+  for argument in "$@"; do
+    if [[ "${argument}" == "login" ]]; then
+      force_new=1
+      break
+    fi
+  done
+
+  if (( force_new )) || ! agent_cred_isolation_codex_binding_owned_by_shell; then
+    if ! agent_cred_isolation_new_codex_login_home; then
+      agent_cred_isolation_die "refusing to start Codex because a new private login folder could not be created"
+      return 70
+    fi
+  fi
+  if ! agent_cred_isolation_assert_codex_binding; then
+    agent_cred_isolation_die "refusing to start Codex with an unverified credential home"
+    return 70
+  fi
+  touch "${CODEX_HOME}" || return 70
+  command codex "$@"
+}
+
+# Hard local lifecycle guard for manual Codex launches. Every explicit login
+# gets a fresh physical folder. A new shell also gets a fresh folder on its
+# first Codex launch, so inherited environments cannot share credentials.
+# `command codex` above bypasses this function and resolves the real CLI.
+codex() {
+  agent_cred_isolation_run_codex "$@"
+}
+
+agent_cred_isolation_grok_profile_name() {
+  case "${1:-}" in
+    A|B|C|D) printf '%s\n' "$1" ;;
+    *) agent_cred_isolation_die 'GROK profile must be exactly A, B, C, or D'; return 2 ;;
+  esac
+}
+
+agent_cred_isolation_grok_init_paths() {
+  local path
+  agent_cred_isolation_init_paths
+  for path in "${AGENT_CRED_ISOLATION_ROOT}" \
+    "${AGENT_CRED_ISOLATION_ROOT}/grok" \
+    "${AGENT_CRED_ISOLATION_ROOT}/grok/profiles" \
+    "${AGENT_CRED_ISOLATION_ROOT}/grok/terminal-bindings"; do
+    [[ ! -L "${path}" ]] || { agent_cred_isolation_die "unsafe GROK symlink path"; return 1; }
+    mkdir -p -- "${path}" || return 1
+    chmod 700 "${path}" || return 1
+  done
+}
+
+agent_cred_isolation_grok_profile_path() {
+  local profile
+  profile="$(agent_cred_isolation_grok_profile_name "${1:-}")" || return
+  printf '%s/grok/profiles/grok-%s\n' "${AGENT_CRED_ISOLATION_ROOT}" "${profile,,}"
+}
+
+agent_cred_isolation_validate_grok_profile() {
+  local profile="$1" candidate="$2" expected profiles_real candidate_real
+  profile="$(agent_cred_isolation_grok_profile_name "${profile}")" || return
+  expected="$(agent_cred_isolation_grok_profile_path "${profile}")" || return
+  [[ "${candidate}" == "${expected}" && -d "${candidate}" && ! -L "${candidate}" ]] || return 1
+  [[ ! -L "${AGENT_CRED_ISOLATION_ROOT}/grok" && ! -L "${AGENT_CRED_ISOLATION_ROOT}/grok/profiles" ]] || return 1
+  profiles_real="$(readlink -f -- "${AGENT_CRED_ISOLATION_ROOT}/grok/profiles")" || return 1
+  candidate_real="$(readlink -f -- "${candidate}")" || return 1
+  [[ "${candidate_real}" == "${profiles_real}/grok-${profile,,}" ]]
+}
+
+agent_cred_isolation_grok_profile_init() {
+  local profile profile_path
+  profile="$(agent_cred_isolation_grok_profile_name "${1:-}")" || return
+  agent_cred_isolation_grok_init_paths || return 1
+  profile_path="$(agent_cred_isolation_grok_profile_path "${profile}")" || return
+  if [[ -e "${profile_path}" || -L "${profile_path}" ]]; then
+    agent_cred_isolation_validate_grok_profile "${profile}" "${profile_path}" || {
+      agent_cred_isolation_die 'existing GROK profile is not a safe physical directory'
+      return 1
+    }
+    return 0
+  fi
+  (umask 077; mkdir -- "${profile_path}") || return 1
+  chmod 700 "${profile_path}" || return 1
+  agent_cred_isolation_validate_grok_profile "${profile}" "${profile_path}"
+}
+
+agent_cred_isolation_grok_release_lease() {
+  if [[ "${AGENT_CRED_GROK_LEASE_FD:-}" =~ ^[0-9]+$ ]]; then
+    # Close only. Never explicitly unlock an inherited open-file description.
+    eval "exec ${AGENT_CRED_GROK_LEASE_FD}>&-" 2>/dev/null || true
+  fi
+  unset AGENT_CRED_GROK_LEASE_FD AGENT_CRED_GROK_LEASE_OWNER_BASHPID
+}
+
+agent_cred_isolation_grok_acquire_lease() {
+  local profile="$1" profile_path lease_path lease_fd
+  profile_path="$(agent_cred_isolation_grok_profile_path "${profile}")" || return
+  agent_cred_isolation_validate_grok_profile "${profile}" "${profile_path}" || return 1
+  lease_path="${profile_path}/.writer.lease"
+  [[ ! -L "${lease_path}" ]] || return 1
+  if [[ ! -e "${lease_path}" ]]; then
+    (umask 077; : >"${lease_path}") || return 1
+    chmod 600 "${lease_path}" || return 1
+  fi
+  [[ -f "${lease_path}" && ! -L "${lease_path}" ]] || return 1
+  exec {lease_fd}<>"${lease_path}" || return 1
+  if ! flock -n -x "${lease_fd}"; then
+    exec {lease_fd}>&-
+    agent_cred_isolation_die "GROK profile ${profile} already has a writer"
+    return 1
+  fi
+  AGENT_CRED_GROK_LEASE_FD="${lease_fd}"
+  AGENT_CRED_GROK_LEASE_OWNER_BASHPID="${BASHPID}"
+}
+
+agent_cred_isolation_grok_terminal_binding_locked() {
+  local terminal_id="$1" profile="${2:-}" binding_hash binding_path binding_tmp
+  binding_hash="$(printf '%s' "${terminal_id}" | sha256sum | awk '{print $1}')" || return 1
+  binding_path="${AGENT_CRED_ISOLATION_ROOT}/grok/terminal-bindings/${binding_hash}"
+  if [[ -n "${profile}" ]]; then
+    binding_tmp="${binding_path}.tmp.${BASHPID}"
+    (umask 077; printf '%s\n' "${profile}" >"${binding_tmp}") || return 1
+    chmod 600 "${binding_tmp}" || return 1
+    mv -- "${binding_tmp}" "${binding_path}" || return 1
+  else
+    [[ -f "${binding_path}" && ! -L "${binding_path}" ]] || return 1
+    <"${binding_path}" read -r profile || return 1
+    agent_cred_isolation_grok_profile_name "${profile}" >/dev/null || return 1
+    printf '%s\n' "${profile}"
+  fi
+}
+
+agent_cred_isolation_grok_attach() {
+  local profile profile_path lock_fd terminal_id
+  profile="$(agent_cred_isolation_grok_profile_name "${1:-}")" || return
+  agent_cred_isolation_grok_profile_init "${profile}" || return 1
+  agent_cred_isolation_grok_release_lease
+  exec {lock_fd}>"${AGENT_CRED_ISOLATION_LOCK}" || return 1
+  flock -x "${lock_fd}" || { exec {lock_fd}>&-; return 1; }
+  terminal_id="$(agent_cred_isolation_terminal_id_locked)" || { exec {lock_fd}>&-; return 1; }
+  agent_cred_isolation_grok_terminal_binding_locked "${terminal_id}" "${profile}" || { exec {lock_fd}>&-; return 1; }
+  exec {lock_fd}>&-
+  agent_cred_isolation_grok_acquire_lease "${profile}" || return 1
+  profile_path="$(agent_cred_isolation_grok_profile_path "${profile}")" || return
+  export GROK_HOME="${profile_path}"
+  export AGENT_CRED_GROK_PROFILE="${profile}"
+  export AGENT_CRED_GROK_TERMINAL_ID="${terminal_id}"
+}
+
+agent_cred_isolation_grok_assert_binding() {
+  local profile profile_path lock_fd terminal_id bound
+  profile="$(agent_cred_isolation_grok_profile_name "${AGENT_CRED_GROK_PROFILE:-}")" || return 1
+  [[ "${AGENT_CRED_GROK_LEASE_OWNER_BASHPID:-}" == "${BASHPID}" ]] || return 1
+  [[ "${AGENT_CRED_GROK_LEASE_FD:-}" =~ ^[0-9]+$ ]] || return 1
+  profile_path="$(agent_cred_isolation_grok_profile_path "${profile}")" || return
+  [[ "${GROK_HOME:-}" == "${profile_path}" ]] || return 1
+  agent_cred_isolation_validate_grok_profile "${profile}" "${profile_path}" || return 1
+  exec {lock_fd}>"${AGENT_CRED_ISOLATION_LOCK}" || return 1
+  flock -x "${lock_fd}" || { exec {lock_fd}>&-; return 1; }
+  terminal_id="$(agent_cred_isolation_terminal_id_locked)" || { exec {lock_fd}>&-; return 1; }
+  bound="$(agent_cred_isolation_grok_terminal_binding_locked "${terminal_id}")" || { exec {lock_fd}>&-; return 1; }
+  exec {lock_fd}>&-
+  [[ "${terminal_id}" == "${AGENT_CRED_GROK_TERMINAL_ID:-}" && "${bound}" == "${profile}" ]]
+}
+
+agent_cred_isolation_grok_status() {
+  local profile profile_path lease_path lease_fd state='available'
+  profile="$(agent_cred_isolation_grok_profile_name "${1:-${AGENT_CRED_GROK_PROFILE:-}}")" || return
+  agent_cred_isolation_grok_init_paths || return 1
+  profile_path="$(agent_cred_isolation_grok_profile_path "${profile}")" || return
+  if ! agent_cred_isolation_validate_grok_profile "${profile}" "${profile_path}"; then
+    printf 'grok_profile=%s state=missing-or-unsafe\n' "${profile}"
+    return 0
+  fi
+  lease_path="${profile_path}/.writer.lease"
+  if [[ -f "${lease_path}" && ! -L "${lease_path}" ]]; then
+    exec {lease_fd}<>"${lease_path}" || return 1
+    if flock -n -x "${lease_fd}"; then
+      state='available'
+    else
+      state='busy'
+    fi
+    exec {lease_fd}>&-
+  fi
+  if agent_cred_isolation_grok_assert_binding 2>/dev/null; then state='owned'; fi
+  printf 'grok_profile=%s state=%s path=%s\n' "${profile}" "${state}" "${profile_path}"
+}
+
+agent_cred_isolation_grok_device_login() {
+  local profile
+  profile="$(agent_cred_isolation_grok_profile_name "${1:-}")" || return
+  agent_cred_isolation_grok_attach "${profile}" || return 1
+  agent_cred_isolation_grok_assert_binding || {
+    agent_cred_isolation_die 'unsafe GROK binding; device login refused'
+    return 70
+  }
+  command grok device-login
+}
+
+agent_cred_isolation_cleanup_grok_logins() {
+  # Report-only policy: no GROK profile or login candidate is ever deleted,
+  # moved, quarantined, or approved for deletion by this script.
+  return 0
+}
+
 agent_cred_isolation_vendor_state() {
   local vendor="$1"
   local path="$2"
@@ -340,6 +678,11 @@ Usage:
   scripts/ops/agent-cred-isolation.sh migrate
   scripts/ops/agent-cred-isolation.sh status
   scripts/ops/agent-cred-isolation.sh doctor status
+  source scripts/ops/agent-cred-isolation.sh
+  agent_cred_isolation_grok_profile_init A|B|C|D
+  agent_cred_isolation_grok_attach A|B|C|D
+  agent_cred_isolation_grok_status A|B|C|D
+  agent_cred_isolation_grok_device_login A|B|C|D
 
 The sourceable form allocates a stable Herdr terminal slot and exports:
 CODEX_HOME; XDG_DATA_HOME/XDG_CONFIG_HOME (Kiro, OpenCode, GLM);
@@ -351,6 +694,9 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   case "${1:-status}" in
     migrate) agent_cred_isolation_bootstrap ;;
     status) agent_cred_isolation_status ;;
+    grok-profile-init) agent_cred_isolation_grok_profile_init "${2:-}" ;;
+    grok-profile-status) agent_cred_isolation_grok_status "${2:-}" ;;
+    grok-device-login) agent_cred_isolation_grok_device_login "${2:-}" ;;
     doctor)
       [[ "${2:-status}" == "status" ]] || { agent_cred_isolation_usage; exit 2; }
       agent_cred_isolation_status
@@ -359,10 +705,13 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     *) agent_cred_isolation_usage; exit 2 ;;
   esac
 elif [[ "$-" == *i* || "${AGENT_CRED_ISOLATION_AUTOSTART:-0}" == "1" ]]; then
-  if agent_cred_isolation_bootstrap; then
-    AGENT_CRED_ISOLATION_SCRIPT_LOADED=1
-  else
-    unset AGENT_CRED_ISOLATION_SCRIPT_LOADED
-    return 1
+  # Codex lifecycle protection is local and loads immediately. The legacy
+  # multi-vendor/Herdr slot bootstrap is opt-in so shell startup never waits
+  # for Herdr or performs a credential-tree migration.
+  agent_cred_isolation_require || return 1
+  agent_cred_isolation_init_paths
+  if [[ "${AGENT_CRED_ISOLATION_ENABLE_VENDOR_SLOTS:-0}" == "1" ]]; then
+    agent_cred_isolation_bootstrap || return 1
   fi
+  AGENT_CRED_ISOLATION_SCRIPT_LOADED=1
 fi

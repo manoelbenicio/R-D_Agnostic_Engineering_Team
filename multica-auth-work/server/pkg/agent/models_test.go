@@ -2,19 +2,26 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
 
 func TestListModelsStaticProviders(t *testing.T) {
 	ctx := context.Background()
-	for _, provider := range []string{"claude", "codex", "gemini", "cursor"} {
+	providers := []string{"claude", "codex", "gemini"}
+	if runtime.GOOS != "windows" {
+		providers = append(providers, "cursor")
+	}
+	for _, provider := range providers {
 		got, err := ListModels(ctx, provider, "")
 		if err != nil {
 			t.Fatalf("ListModels(%q) error: %v", provider, err)
@@ -34,14 +41,18 @@ func TestListModelsStaticProviders(t *testing.T) {
 }
 
 func TestListModelsCopilotFallsBackToStatic(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
 	// Copilot uses dynamic ACP discovery, but with no `copilot`
 	// binary on PATH (the discovery LookPath fails) it must fall
 	// back to copilotStaticModels() so the UI dropdown stays
 	// populated. This is the "binary missing on the daemon host"
 	// path we care about for self-hosted runtimes.
 	ctx := context.Background()
+	key := discoveryCacheKey("copilot", "/nonexistent/copilot-cli")
 	modelCacheMu.Lock()
-	delete(modelCache, "copilot")
+	delete(modelCache, key)
 	modelCacheMu.Unlock()
 
 	got, err := ListModels(ctx, "copilot", "/nonexistent/copilot-cli")
@@ -166,6 +177,9 @@ func TestClineStaticModelsExposeRequestedClinePassModels(t *testing.T) {
 }
 
 func TestListModelsClineFallsBackAndAnnotatesThinking(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
 	ctx := context.Background()
 	got, err := ListModels(ctx, "cline", "/nonexistent/cline-cli")
 	if err != nil {
@@ -390,14 +404,18 @@ func TestCopilotStaticModelsExposesFullCatalog(t *testing.T) {
 }
 
 func TestListModelsHermesWithoutBinary(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
 	// With no `hermes` binary on PATH the discovery fast-paths to
 	// an empty list (the UI then falls back to creatable manual
 	// entry). This test only verifies the fast-path; an actual
 	// ACP session is exercised in integration.
 	ctx := context.Background()
 	// Prime the cache miss so we hit the live discovery function.
+	key := discoveryCacheKey("hermes", "/nonexistent/hermes")
 	modelCacheMu.Lock()
-	delete(modelCache, "hermes")
+	delete(modelCache, key)
 	modelCacheMu.Unlock()
 
 	got, err := ListModels(ctx, "hermes", "/nonexistent/hermes")
@@ -410,9 +428,13 @@ func TestListModelsHermesWithoutBinary(t *testing.T) {
 }
 
 func TestListModelsKiroWithoutBinary(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
 	ctx := context.Background()
+	key := discoveryCacheKey("kiro", "/nonexistent/kiro-cli")
 	modelCacheMu.Lock()
-	delete(modelCache, "kiro")
+	delete(modelCache, key)
 	modelCacheMu.Unlock()
 
 	got, err := ListModels(ctx, "kiro", "/nonexistent/kiro-cli")
@@ -461,9 +483,13 @@ func TestAnnotateKiroThinkingUsesDocumentedPerModelLevels(t *testing.T) {
 }
 
 func TestListModelsQoderWithoutBinary(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
 	ctx := context.Background()
+	key := discoveryCacheKey("qoder", "/nonexistent/qodercli")
 	modelCacheMu.Lock()
-	delete(modelCache, "qoder")
+	delete(modelCache, key)
 	modelCacheMu.Unlock()
 
 	got, err := ListModels(ctx, "qoder", "/nonexistent/qodercli")
@@ -646,11 +672,10 @@ exit 1
 	}
 }
 
-// TestCachedDiscoveryDoesNotCacheEmpty verifies that an empty discovery result
-// is not cached, so a transient failure (e.g. a `pi --list-models` timeout)
-// doesn't keep the model picker blank for the full TTL. A non-empty result is
-// still cached. See #3729.
-func TestCachedDiscoveryDoesNotCacheEmpty(t *testing.T) {
+// TestCachedDiscoveryNegativeCache verifies that an empty discovery result is
+// cached only for the short negative TTL. This prevents retry storms without
+// holding a transient blank catalog for the normal positive TTL.
+func TestCachedDiscoveryNegativeCache(t *testing.T) {
 	const emptyKey, nonEmptyKey = "test-cache-empty", "test-cache-nonempty"
 	// modelCache is a package-level global; clear our keys up front and on
 	// cleanup so the test stays hermetic under `go test -count=N` (a leftover
@@ -659,6 +684,8 @@ func TestCachedDiscoveryDoesNotCacheEmpty(t *testing.T) {
 		modelCacheMu.Lock()
 		delete(modelCache, emptyKey)
 		delete(modelCache, nonEmptyKey)
+		delete(modelCacheFlights, emptyKey)
+		delete(modelCacheFlights, nonEmptyKey)
 		modelCacheMu.Unlock()
 	}
 	resetCache()
@@ -670,7 +697,7 @@ func TestCachedDiscoveryDoesNotCacheEmpty(t *testing.T) {
 		return []Model{}, nil
 	}
 	for i := 0; i < 2; i++ {
-		got, err := cachedDiscovery(emptyKey, empty)
+		got, err := cachedDiscovery(context.Background(), emptyKey, empty)
 		if err != nil {
 			t.Fatalf("cachedDiscovery: %v", err)
 		}
@@ -678,8 +705,20 @@ func TestCachedDiscoveryDoesNotCacheEmpty(t *testing.T) {
 			t.Fatalf("expected empty result, got %+v", got)
 		}
 	}
+	if emptyCalls != 1 {
+		t.Fatalf("empty result must be negative-cached: expected fn called 1x, got %d", emptyCalls)
+	}
+	modelCacheMu.Lock()
+	entry := modelCache[emptyKey]
+	entry.refreshAfter = time.Now().Add(-time.Second)
+	entry.hardExpiresAt = time.Now().Add(-time.Second)
+	modelCache[emptyKey] = entry
+	modelCacheMu.Unlock()
+	if _, err := cachedDiscovery(context.Background(), emptyKey, empty); err != nil {
+		t.Fatalf("cachedDiscovery after negative expiry: %v", err)
+	}
 	if emptyCalls != 2 {
-		t.Fatalf("empty result must not be cached: expected fn called 2x, got %d", emptyCalls)
+		t.Fatalf("expired negative result must retry: expected fn called 2x, got %d", emptyCalls)
 	}
 
 	nonEmptyCalls := 0
@@ -688,7 +727,7 @@ func TestCachedDiscoveryDoesNotCacheEmpty(t *testing.T) {
 		return []Model{{ID: "provider/model"}}, nil
 	}
 	for i := 0; i < 2; i++ {
-		if _, err := cachedDiscovery(nonEmptyKey, nonEmpty); err != nil {
+		if _, err := cachedDiscovery(context.Background(), nonEmptyKey, nonEmpty); err != nil {
 			t.Fatalf("cachedDiscovery: %v", err)
 		}
 	}
@@ -1142,8 +1181,8 @@ func TestParseAntigravityModels(t *testing.T) {
 }
 
 // TestParseAntigravityModelsEmpty pins that empty / whitespace-only output
-// yields no models (so cachedDiscovery treats it as a transient miss and
-// retries rather than caching a blank catalog).
+// yields no models (so cachedDiscovery uses only its short negative TTL,
+// rather than retaining a blank catalog for the normal positive TTL).
 func TestParseAntigravityModelsEmpty(t *testing.T) {
 	t.Parallel()
 	if got := parseAntigravityModels("   \n\t\n"); len(got) != 0 {
@@ -1152,6 +1191,9 @@ func TestParseAntigravityModelsEmpty(t *testing.T) {
 }
 
 func TestDiscoverAntigravityModelsSurfacesCommandFailure(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
 	t.Parallel()
 	fake := filepath.Join(t.TempDir(), "agy")
 	writeTestExecutable(t, fake, []byte("#!/bin/sh\necho broken >&2\nexit 7\n"))
@@ -1163,6 +1205,9 @@ func TestDiscoverAntigravityModelsSurfacesCommandFailure(t *testing.T) {
 }
 
 func TestDiscoverAntigravityModelsSurfacesTimeout(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
 	t.Parallel()
 	fake := filepath.Join(t.TempDir(), "agy")
 	writeTestExecutable(t, fake, []byte("#!/bin/sh\nexec sleep 5\n"))
@@ -1176,6 +1221,9 @@ func TestDiscoverAntigravityModelsSurfacesTimeout(t *testing.T) {
 }
 
 func TestListModelsAntigravityCachesPerExecutable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
 	fakeDir := t.TempDir()
 	first := filepath.Join(fakeDir, "agy-first")
 	second := filepath.Join(fakeDir, "agy-second")
@@ -1210,6 +1258,49 @@ func TestListModelsAntigravityCachesPerExecutable(t *testing.T) {
 	}
 }
 
+func TestListModelsCursorCachesPerExecutable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
+	dir := t.TempDir()
+	first := filepath.Join(dir, "cursor-first")
+	second := filepath.Join(dir, "cursor-second")
+	writeTestExecutable(t, first, []byte("#!/bin/sh\nprintf 'Available models\\nfirst-model - First Model (default)\\n'\n"))
+	writeTestExecutable(t, second, []byte("#!/bin/sh\nprintf 'Available models\\nsecond-model - Second Model (default)\\n'\n"))
+
+	firstKey := discoveryCacheKey("cursor", first)
+	secondKey := discoveryCacheKey("cursor", second)
+	modelCacheMu.Lock()
+	delete(modelCache, firstKey)
+	delete(modelCache, secondKey)
+	delete(modelCacheFlights, firstKey)
+	delete(modelCacheFlights, secondKey)
+	modelCacheMu.Unlock()
+	t.Cleanup(func() {
+		modelCacheMu.Lock()
+		delete(modelCache, firstKey)
+		delete(modelCache, secondKey)
+		delete(modelCacheFlights, firstKey)
+		delete(modelCacheFlights, secondKey)
+		modelCacheMu.Unlock()
+	})
+
+	firstModels, err := ListModels(context.Background(), "cursor", first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondModels, err := ListModels(context.Background(), "cursor", second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(firstModels) != 1 || firstModels[0].ID != "first-model" {
+		t.Fatalf("first Cursor executable catalog = %+v", firstModels)
+	}
+	if len(secondModels) != 1 || secondModels[0].ID != "second-model" {
+		t.Fatalf("second Cursor executable catalog = %+v", secondModels)
+	}
+}
+
 func TestCachedDiscovery(t *testing.T) {
 	calls := 0
 	fn := func() ([]Model, error) {
@@ -1221,13 +1312,419 @@ func TestCachedDiscovery(t *testing.T) {
 	delete(modelCache, "testkey")
 	modelCacheMu.Unlock()
 
-	if _, err := cachedDiscovery("testkey", fn); err != nil {
+	if _, err := cachedDiscovery(context.Background(), "testkey", fn); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := cachedDiscovery("testkey", fn); err != nil {
+	if _, err := cachedDiscovery(context.Background(), "testkey", fn); err != nil {
 		t.Fatal(err)
 	}
 	if calls != 1 {
 		t.Errorf("expected 1 underlying call due to cache, got %d", calls)
+	}
+}
+
+func TestCachedDiscoveryBoundedAndDeletesExpiredEntries(t *testing.T) {
+	modelCacheMu.Lock()
+	modelCache = map[string]modelCacheEntry{}
+	modelCacheFlights = map[string]*modelDiscoveryFlight{}
+	modelCacheSequence = 0
+	modelCacheMu.Unlock()
+	t.Cleanup(func() {
+		modelCacheMu.Lock()
+		modelCache = map[string]modelCacheEntry{}
+		modelCacheFlights = map[string]*modelDiscoveryFlight{}
+		modelCacheSequence = 0
+		modelCacheMu.Unlock()
+	})
+
+	for i := 0; i <= modelCacheMaxEntries; i++ {
+		key := "bounded-" + strconv.Itoa(i)
+		if _, err := cachedDiscovery(context.Background(), key, func() ([]Model, error) {
+			return []Model{{ID: key, Label: key}}, nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	modelCacheMu.Lock()
+	if len(modelCache) != modelCacheMaxEntries {
+		t.Fatalf("model cache size = %d, want %d", len(modelCache), modelCacheMaxEntries)
+	}
+	if _, ok := modelCache["bounded-0"]; ok {
+		t.Fatal("oldest model cache entry was not evicted")
+	}
+	expiredKey := "bounded-" + strconv.Itoa(modelCacheMaxEntries)
+	expired := modelCache[expiredKey]
+	expired.refreshAfter = time.Now().Add(-time.Second)
+	expired.hardExpiresAt = time.Now().Add(-time.Second)
+	modelCache[expiredKey] = expired
+	modelCacheMu.Unlock()
+
+	if _, err := cachedDiscovery(context.Background(), "bounded-1", func() ([]Model, error) {
+		t.Fatal("unexpired cache hit unexpectedly rediscovered")
+		return nil, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	modelCacheMu.Lock()
+	_, expiredStillPresent := modelCache[expiredKey]
+	modelCacheMu.Unlock()
+	if expiredStillPresent {
+		t.Fatal("expired model cache entry was not deleted")
+	}
+
+	oversized := make([]Model, modelCacheMaxModels+10)
+	for i := range oversized {
+		oversized[i] = Model{ID: "oversized-" + strconv.Itoa(i)}
+	}
+	got, err := cachedDiscovery(context.Background(), "oversized-models", func() ([]Model, error) {
+		return oversized, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != modelCacheMaxModels {
+		t.Fatalf("cached model rows = %d, want %d", len(got), modelCacheMaxModels)
+	}
+}
+
+func TestCachedDiscoveryServesLastKnownUntilHardExpiry(t *testing.T) {
+	const key = "two-tier-last-known"
+	modelCacheMu.Lock()
+	delete(modelCache, key)
+	delete(modelCacheFlights, key)
+	modelCacheMu.Unlock()
+	t.Cleanup(func() {
+		modelCacheMu.Lock()
+		delete(modelCache, key)
+		delete(modelCacheFlights, key)
+		modelCacheMu.Unlock()
+	})
+
+	want := []Model{{ID: "provider/last-known", Label: "Last known"}}
+	if _, err := cachedDiscovery(context.Background(), key, func() ([]Model, error) {
+		return want, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	modelCacheMu.Lock()
+	entry := modelCache[key]
+	hardExpiry := entry.hardExpiresAt
+	entry.refreshAfter = time.Now().Add(-time.Second)
+	modelCache[key] = entry
+	modelCacheMu.Unlock()
+
+	var refreshCalls atomic.Int32
+	refresh := func() ([]Model, error) {
+		refreshCalls.Add(1)
+		return nil, errors.New("synthetic transient discovery failure")
+	}
+	got, err := cachedDiscovery(context.Background(), key, refresh)
+	if err != nil {
+		t.Fatalf("stale fallback returned error: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("stale fallback = %+v, want %+v", got, want)
+	}
+	if _, err := cachedDiscovery(context.Background(), key, refresh); err != nil {
+		t.Fatal(err)
+	}
+	if got := refreshCalls.Load(); got != 1 {
+		t.Fatalf("failed refresh calls = %d, want 1 during negative backoff", got)
+	}
+
+	modelCacheMu.Lock()
+	entry = modelCache[key]
+	if !entry.hardExpiresAt.Equal(hardExpiry) {
+		modelCacheMu.Unlock()
+		t.Fatalf("stale fallback extended hard expiry: got %v want %v", entry.hardExpiresAt, hardExpiry)
+	}
+	entry.refreshAfter = time.Now().Add(-time.Second)
+	entry.hardExpiresAt = time.Now().Add(-time.Second)
+	modelCache[key] = entry
+	modelCacheMu.Unlock()
+
+	if _, err := cachedDiscovery(context.Background(), key, refresh); err == nil {
+		t.Fatal("hard-expired last-known catalog unexpectedly masked refresh failure")
+	}
+	modelCacheMu.Lock()
+	_, retained := modelCache[key]
+	modelCacheMu.Unlock()
+	if retained {
+		t.Fatal("hard-expired last-known catalog was not deleted")
+	}
+}
+
+func TestExecutableDiscoveryKeysIsolateFreshAndNegativeCatalogs(t *testing.T) {
+	dir := t.TempDir()
+	firstExecutable := filepath.Join(dir, "cursor-first")
+	secondExecutable := filepath.Join(dir, "cursor-second")
+	writeTestExecutable(t, firstExecutable, []byte("synthetic executable one"))
+	writeTestExecutable(t, secondExecutable, []byte("synthetic executable two"))
+
+	firstKey := discoveryCacheKey("cursor", firstExecutable)
+	secondKey := discoveryCacheKey("cursor", secondExecutable)
+	if firstKey == secondKey {
+		t.Fatal("distinct validated executables produced the same discovery key")
+	}
+	for _, key := range []string{firstKey, secondKey} {
+		modelCacheMu.Lock()
+		delete(modelCache, key)
+		delete(modelCacheFlights, key)
+		modelCacheMu.Unlock()
+	}
+	t.Cleanup(func() {
+		modelCacheMu.Lock()
+		delete(modelCache, firstKey)
+		delete(modelCache, secondKey)
+		delete(modelCacheFlights, firstKey)
+		delete(modelCacheFlights, secondKey)
+		modelCacheMu.Unlock()
+	})
+
+	firstCatalog := []Model{{ID: "synthetic/first", Label: "First"}}
+	secondCatalog := []Model{{ID: "synthetic/second", Label: "Second"}}
+	gotFirst, err := cachedDiscovery(context.Background(), firstKey, func() ([]Model, error) { return firstCatalog, nil })
+	if err != nil || !reflect.DeepEqual(gotFirst, firstCatalog) {
+		t.Fatalf("first executable fresh catalog = %+v, err=%v", gotFirst, err)
+	}
+	gotSecond, err := cachedDiscovery(context.Background(), secondKey, func() ([]Model, error) { return secondCatalog, nil })
+	if err != nil || !reflect.DeepEqual(gotSecond, secondCatalog) {
+		t.Fatalf("second executable fresh catalog = %+v, err=%v", gotSecond, err)
+	}
+
+	modelCacheMu.Lock()
+	delete(modelCache, secondKey)
+	modelCacheMu.Unlock()
+	if got, err := cachedDiscovery(context.Background(), secondKey, func() ([]Model, error) { return []Model{}, nil }); err != nil || len(got) != 0 {
+		t.Fatalf("second executable negative catalog = %+v, err=%v", got, err)
+	}
+	var unexpectedSecondRefresh atomic.Int32
+	if got, err := cachedDiscovery(context.Background(), secondKey, func() ([]Model, error) {
+		unexpectedSecondRefresh.Add(1)
+		return secondCatalog, nil
+	}); err != nil || len(got) != 0 {
+		t.Fatalf("second executable negative cache = %+v, err=%v", got, err)
+	}
+	if unexpectedSecondRefresh.Load() != 0 {
+		t.Fatal("negative cache did not suppress the second executable refresh")
+	}
+	if got, err := cachedDiscovery(context.Background(), firstKey, func() ([]Model, error) {
+		return nil, errors.New("first executable unexpectedly refreshed")
+	}); err != nil || !reflect.DeepEqual(got, firstCatalog) {
+		t.Fatalf("second executable negative state contaminated first catalog: got=%+v err=%v", got, err)
+	}
+}
+
+func TestEveryExecutableBackedProviderKeysCustomPathsIndependently(t *testing.T) {
+	dir := t.TempDir()
+	firstExecutable := filepath.Join(dir, "runtime-first")
+	secondExecutable := filepath.Join(dir, "runtime-second")
+	writeTestExecutable(t, firstExecutable, []byte("synthetic executable one"))
+	writeTestExecutable(t, secondExecutable, []byte("synthetic executable two"))
+
+	providers := []string{
+		"cline", "antigravity", "cursor", "copilot", "hermes", "kimi",
+		"kiro", "qoder", "opencode", "pi", "openclaw", "codebuddy",
+	}
+	seen := map[string]string{}
+	for _, provider := range providers {
+		firstKey := discoveryCacheKey(provider, firstExecutable)
+		secondKey := discoveryCacheKey(provider, secondExecutable)
+		if firstKey == secondKey {
+			t.Errorf("provider %s collapsed two custom executable paths", provider)
+		}
+		if previousProvider, exists := seen[firstKey]; exists {
+			t.Errorf("providers %s and %s share discovery key %q", previousProvider, provider, firstKey)
+		}
+		seen[firstKey] = provider
+	}
+}
+
+func TestExecutableDiscoveryKeysIsolateStaleCatalogsAndRefreshErrors(t *testing.T) {
+	dir := t.TempDir()
+	firstExecutable := filepath.Join(dir, "codebuddy-first")
+	secondExecutable := filepath.Join(dir, "codebuddy-second")
+	writeTestExecutable(t, firstExecutable, []byte("synthetic executable one"))
+	writeTestExecutable(t, secondExecutable, []byte("synthetic executable two"))
+
+	firstKey := discoveryCacheKey("codebuddy", firstExecutable)
+	secondKey := discoveryCacheKey("codebuddy", secondExecutable)
+	firstCatalog := []Model{{ID: "synthetic/first-stale", Label: "First stale"}}
+	secondCatalog := []Model{{ID: "synthetic/second-stale", Label: "Second stale"}}
+	for key, catalog := range map[string][]Model{firstKey: firstCatalog, secondKey: secondCatalog} {
+		modelCacheMu.Lock()
+		delete(modelCache, key)
+		delete(modelCacheFlights, key)
+		modelCacheMu.Unlock()
+		if _, err := cachedDiscovery(context.Background(), key, func() ([]Model, error) { return catalog, nil }); err != nil {
+			t.Fatal(err)
+		}
+		modelCacheMu.Lock()
+		entry := modelCache[key]
+		entry.refreshAfter = time.Now().Add(-time.Second)
+		modelCache[key] = entry
+		modelCacheMu.Unlock()
+	}
+	t.Cleanup(func() {
+		modelCacheMu.Lock()
+		delete(modelCache, firstKey)
+		delete(modelCache, secondKey)
+		delete(modelCacheFlights, firstKey)
+		delete(modelCacheFlights, secondKey)
+		modelCacheMu.Unlock()
+	})
+
+	firstResult, firstErr := cachedDiscovery(context.Background(), firstKey, func() ([]Model, error) {
+		return nil, errors.New("synthetic first executable refresh error")
+	})
+	secondResult, secondErr := cachedDiscovery(context.Background(), secondKey, func() ([]Model, error) {
+		return nil, errors.New("synthetic second executable refresh error")
+	})
+	if firstErr != nil || !reflect.DeepEqual(firstResult, firstCatalog) {
+		t.Fatalf("first stale fallback = %+v, err=%v", firstResult, firstErr)
+	}
+	if secondErr != nil || !reflect.DeepEqual(secondResult, secondCatalog) {
+		t.Fatalf("second stale fallback = %+v, err=%v", secondResult, secondErr)
+	}
+}
+
+func TestCachedDiscoveryBlankRefreshKeepsLastKnownWithNegativeBackoff(t *testing.T) {
+	const key = "two-tier-blank-refresh"
+	modelCacheMu.Lock()
+	delete(modelCache, key)
+	delete(modelCacheFlights, key)
+	modelCacheMu.Unlock()
+	t.Cleanup(func() {
+		modelCacheMu.Lock()
+		delete(modelCache, key)
+		delete(modelCacheFlights, key)
+		modelCacheMu.Unlock()
+	})
+
+	want := []Model{{ID: "provider/last-known", Label: "Last known"}}
+	if _, err := cachedDiscovery(context.Background(), key, func() ([]Model, error) { return want, nil }); err != nil {
+		t.Fatal(err)
+	}
+	modelCacheMu.Lock()
+	entry := modelCache[key]
+	entry.refreshAfter = time.Now().Add(-time.Second)
+	modelCache[key] = entry
+	modelCacheMu.Unlock()
+
+	var calls atomic.Int32
+	blank := func() ([]Model, error) {
+		calls.Add(1)
+		return []Model{}, nil
+	}
+	for i := 0; i < 2; i++ {
+		got, err := cachedDiscovery(context.Background(), key, blank)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("blank refresh fallback = %+v, want %+v", got, want)
+		}
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("blank refresh calls = %d, want 1 during negative backoff", got)
+	}
+}
+
+func TestCachedDiscoverySingleFlight(t *testing.T) {
+	const key = "single-flight"
+	modelCacheMu.Lock()
+	delete(modelCache, key)
+	delete(modelCacheFlights, key)
+	modelCacheMu.Unlock()
+
+	var calls atomic.Int32
+	started := make(chan struct{})
+	release := make(chan struct{})
+	var startOnce sync.Once
+	fn := func() ([]Model, error) {
+		calls.Add(1)
+		startOnce.Do(func() { close(started) })
+		<-release
+		return []Model{{ID: "provider/model", Label: "Model"}}, nil
+	}
+
+	const callers = 8
+	errs := make(chan error, callers)
+	var wg sync.WaitGroup
+	for i := 0; i < callers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := cachedDiscovery(context.Background(), key, fn)
+			errs <- err
+		}()
+	}
+	<-started
+	close(release)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("discovery calls = %d, want 1", got)
+	}
+}
+
+func TestCachedDiscoveryCancelledLeaderDoesNotPoisonWaiterOrCache(t *testing.T) {
+	const key = "cancelled-flight"
+	modelCacheMu.Lock()
+	delete(modelCache, key)
+	delete(modelCacheFlights, key)
+	modelCacheMu.Unlock()
+
+	leaderCtx, cancelLeader := context.WithCancel(context.Background())
+	leaderStarted := make(chan struct{})
+	leaderDone := make(chan error, 1)
+	go func() {
+		_, err := cachedDiscovery(leaderCtx, key, func() ([]Model, error) {
+			close(leaderStarted)
+			<-leaderCtx.Done()
+			return nil, leaderCtx.Err()
+		})
+		leaderDone <- err
+	}()
+	<-leaderStarted
+
+	var followerCalls atomic.Int32
+	followerDone := make(chan []Model, 1)
+	followerErr := make(chan error, 1)
+	go func() {
+		models, err := cachedDiscovery(context.Background(), key, func() ([]Model, error) {
+			followerCalls.Add(1)
+			return []Model{{ID: "provider/recovered", Label: "Recovered"}}, nil
+		})
+		followerDone <- models
+		followerErr <- err
+	}()
+
+	cancelLeader()
+	if err := <-leaderDone; !errors.Is(err, context.Canceled) {
+		t.Fatalf("leader error = %v, want context canceled", err)
+	}
+	models := <-followerDone
+	if err := <-followerErr; err != nil {
+		t.Fatal(err)
+	}
+	if len(models) != 1 || models[0].ID != "provider/recovered" {
+		t.Fatalf("follower models = %+v", models)
+	}
+	if got := followerCalls.Load(); got != 1 {
+		t.Fatalf("follower discovery calls = %d, want 1", got)
+	}
+
+	if _, err := cachedDiscovery(context.Background(), key, func() ([]Model, error) {
+		t.Fatal("recovered result was not cached")
+		return nil, nil
+	}); err != nil {
+		t.Fatal(err)
 	}
 }

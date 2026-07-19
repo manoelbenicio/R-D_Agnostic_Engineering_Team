@@ -10,6 +10,7 @@ import (
 	"github.com/lmittmann/tint"
 
 	"github.com/multica-ai/multica/server/internal/middleware"
+	"github.com/multica-ai/multica/server/pkg/redact"
 )
 
 // isTerminal reports whether the given file descriptor is connected to a
@@ -29,9 +30,10 @@ func isTerminal(f *os.File) bool {
 func Init() {
 	level := parseLevel(os.Getenv("LOG_LEVEL"))
 	handler := tint.NewHandler(os.Stderr, &tint.Options{
-		Level:      level,
-		TimeFormat: "15:04:05.000",
-		NoColor:    !isTerminal(os.Stderr),
+		Level:       level,
+		TimeFormat:  "15:04:05.000",
+		NoColor:     !isTerminal(os.Stderr),
+		ReplaceAttr: redact.SanitizeSlogAttr,
 	})
 	slog.SetDefault(slog.New(handler))
 }
@@ -42,9 +44,10 @@ func Init() {
 func NewLogger(component string) *slog.Logger {
 	level := parseLevel(os.Getenv("LOG_LEVEL"))
 	handler := tint.NewHandler(os.Stderr, &tint.Options{
-		Level:      level,
-		TimeFormat: "15:04:05.000",
-		NoColor:    !isTerminal(os.Stderr),
+		Level:       level,
+		TimeFormat:  "15:04:05.000",
+		NoColor:     !isTerminal(os.Stderr),
+		ReplaceAttr: redact.SanitizeSlogAttr,
 	})
 	return slog.New(handler).With("component", component)
 }

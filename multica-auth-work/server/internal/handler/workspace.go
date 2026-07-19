@@ -215,6 +215,31 @@ func (h *Handler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create default squad (Task 1.2)
+	// Leader is deferred until the first eligible agent is created
+	squad, err := qtx.CreateSquad(r.Context(), db.CreateSquadParams{
+		WorkspaceID: ws.ID,
+		Name:        "Workspace Team",
+		Description: "Default workspace squad",
+		CreatorID:   parseUUID(userID),
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to create default squad: "+err.Error())
+		return
+	}
+
+	// Add owner to the default squad
+	_, err = qtx.AddSquadMember(r.Context(), db.AddSquadMemberParams{
+		SquadID:    squad.ID,
+		MemberType: "member",
+		MemberID:   parseUUID(userID),
+		Role:       "member",
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to add owner to default squad: "+err.Error())
+		return
+	}
+
 	// NOTE: CreateWorkspace deliberately does NOT mark the user as
 	// onboarded. The `onboarded_at` flag is owned by CompleteOnboarding
 	// (Step 3 of the flow) and by AcceptInvitation (invitee joining an

@@ -3,8 +3,10 @@ package service
 import (
 	"bufio"
 	"encoding/base64"
+	"bytes"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/smtp"
 	"net/textproto"
@@ -654,5 +656,53 @@ func TestSendSMTP_LoginAuthRejectsUnencryptedRemote(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "unencrypted connection") {
 		t.Errorf("expected 'unencrypted connection' error, got: %v", err)
+	}
+}
+
+// --- Dev mode logging redaction tests ---
+
+func TestSendVerificationCode_DevModeRedactsCode(t *testing.T) {
+	s := &EmailService{} // no client, no smtpHost -> DEV mode
+
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, nil))
+	oldDefault := slog.Default()
+	slog.SetDefault(logger)
+	defer slog.SetDefault(oldDefault)
+
+	err := s.SendVerificationCode("user@example.com", "123456")
+	if err != nil {
+		t.Fatalf("expected no error in dev mode, got %v", err)
+	}
+
+	out := buf.String()
+	if strings.Contains(out, "123456") {
+		t.Errorf("expected verification code to be redacted from logs, got: %s", out)
+	}
+	if !strings.Contains(out, "[REDACTED CREDENTIAL]") {
+		t.Errorf("expected redacted placeholder in logs, got: %s", out)
+	}
+}
+
+func TestSendInvitationEmail_DevModeRedactsURL(t *testing.T) {
+	s := &EmailService{} // no client, no smtpHost -> DEV mode
+
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, nil))
+	oldDefault := slog.Default()
+	slog.SetDefault(logger)
+	defer slog.SetDefault(oldDefault)
+
+	err := s.SendInvitationEmail("user@example.com", "Alice", "Acme", "secret-invite-id-789")
+	if err != nil {
+		t.Fatalf("expected no error in dev mode, got %v", err)
+	}
+
+	out := buf.String()
+	if strings.Contains(out, "secret-invite-id-789") {
+		t.Errorf("expected invitation ID to be redacted from logs, got: %s", out)
+	}
+	if !strings.Contains(out, "[REDACTED CREDENTIAL]") {
+		t.Errorf("expected redacted placeholder in logs, got: %s", out)
 	}
 }

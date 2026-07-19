@@ -2620,6 +2620,8 @@ UPDATE agent SET
     thinking_level = COALESCE($16, thinking_level),
     updated_at = now()
 WHERE id = $1
+  AND runtime_id IS NOT DISTINCT FROM $17::uuid
+  AND model IS NOT DISTINCT FROM $18::text
 RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, custom_env, custom_args, mcp_config, model, thinking_level
 `
 
@@ -2640,6 +2642,8 @@ type UpdateAgentParams struct {
 	McpConfig          []byte      `json:"mcp_config"`
 	Model              pgtype.Text `json:"model"`
 	ThinkingLevel      pgtype.Text `json:"thinking_level"`
+	ExpectedRuntimeID  pgtype.UUID `json:"expected_runtime_id"`
+	ExpectedModel      pgtype.Text `json:"expected_model"`
 }
 
 func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent, error) {
@@ -2660,6 +2664,8 @@ func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent
 		arg.McpConfig,
 		arg.Model,
 		arg.ThinkingLevel,
+		arg.ExpectedRuntimeID,
+		arg.ExpectedModel,
 	)
 	var i Agent
 	err := row.Scan(

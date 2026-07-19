@@ -1,10 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -14,16 +18,75 @@ var okHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 })
 
 func TestRateLimit_NilRedis(t *testing.T) {
-	mw := RateLimit(nil, 5, time.Minute, nil)
+	mw := RateLimit(nil, 2, time.Minute, nil)
 	handler := mw(okHandler)
 
-	req := httptest.NewRequest(http.MethodPost, "/auth/send-code", nil)
-	req.RemoteAddr = "1.2.3.4:12345"
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
+	for i, want := range []int{http.StatusOK, http.StatusOK, http.StatusTooManyRequests} {
+		req := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
+		req.RemoteAddr = "1.2.3.4:12345"
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != want {
+			t.Fatalf("request %d status = %d, want %d", i+1, rec.Code, want)
+		}
+	}
+}
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("nil redis should pass through; got status %d", rec.Code)
+func TestRateLimit_RedisErrorUsesLocalFallback(t *testing.T) {
+	increment := func(context.Context, string, time.Duration) (int64, error) {
+		return 0, errors.New("synthetic redis failure")
+	}
+	handler := rateLimitWithIncrement(increment, 1, time.Minute, nil, 10, time.Now)(okHandler)
+
+	for i, want := range []int{http.StatusOK, http.StatusTooManyRequests} {
+		req := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
+		req.RemoteAddr = "192.0.2.10:9000"
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != want {
+			t.Fatalf("request %d status = %d, want %d", i+1, rec.Code, want)
+		}
+	}
+}
+
+func TestBoundedLocalRateLimiterRejectsNewKeysAtCapacityAndReclaimsExpired(t *testing.T) {
+	now := time.Unix(100, 0)
+	limiter := newBoundedLocalRateLimiter(2, time.Minute, 2, func() time.Time { return now })
+	if !limiter.allow("a") || !limiter.allow("b") {
+		t.Fatal("initial keys should be allowed")
+	}
+	if limiter.allow("c") {
+		t.Fatal("new key was allowed after the bounded map reached capacity")
+	}
+	if len(limiter.entries) != 2 {
+		t.Fatalf("entry count = %d, want hard cap 2", len(limiter.entries))
+	}
+
+	now = now.Add(time.Minute)
+	if !limiter.allow("c") {
+		t.Fatal("expired entries were not reclaimed")
+	}
+	if len(limiter.entries) > 2 {
+		t.Fatalf("entry count = %d, exceeded hard cap", len(limiter.entries))
+	}
+}
+
+func TestBoundedLocalRateLimiterConcurrentLimit(t *testing.T) {
+	limiter := newBoundedLocalRateLimiter(25, time.Minute, 10, time.Now)
+	var allowed atomic.Int32
+	var wg sync.WaitGroup
+	for range 100 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if limiter.allow("same-client") {
+				allowed.Add(1)
+			}
+		}()
+	}
+	wg.Wait()
+	if got := allowed.Load(); got != 25 {
+		t.Fatalf("allowed = %d, want exactly 25", got)
 	}
 }
 

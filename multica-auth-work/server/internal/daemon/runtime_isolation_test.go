@@ -790,6 +790,83 @@ func TestCredentialIsolationVendorMatrixCoversExactlySixP0Vendors(t *testing.T) 
 	}
 }
 
+func TestL2EnabledLocalLaunchFailsClosedOnMissingOrPartialIsolation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		provider  string
+		prepared  *execenv.Environment
+		inherited map[string]string
+	}{
+		{
+			name:     "missing codex home",
+			provider: "codex",
+			prepared: &execenv.Environment{},
+			inherited: map[string]string{
+				"CODEX_HOME": "synthetic-inherited-codex-root",
+			},
+		},
+		{
+			name:     "partial cline sandbox",
+			provider: "cline",
+			prepared: &execenv.Environment{
+				ClineDataDir: "synthetic-task-cline-root",
+			},
+			inherited: map[string]string{
+				"CLINE_DATA_DIR":         "synthetic-inherited-cline-root",
+				"CLINE_SANDBOX":          "1",
+				"CLINE_SANDBOX_DATA_DIR": "synthetic-inherited-cline-sandbox-root",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &Daemon{}
+			d.cfg.L2Runtime.Enabled = true
+			accountHome := filepath.Join(t.TempDir(), "synthetic-account")
+			childEnv := make(map[string]string, len(tt.inherited))
+			for key, value := range tt.inherited {
+				childEnv[key] = value
+			}
+
+			if err := d.injectIsolatedCredentialEnvForLocalLaunch(tt.provider, accountHome, tt.prepared, childEnv); err == nil {
+				t.Fatal("L2-enabled local launch accepted incomplete credential isolation")
+			}
+			for _, key := range requiredCredentialEnvKeys(tt.provider) {
+				if _, exists := childEnv[key]; exists {
+					t.Fatalf("provider root %s remained after fail-closed validation", key)
+				}
+			}
+		})
+	}
+}
+
+func TestL2EnabledLocalLaunchInjectsCompleteSyntheticIsolation(t *testing.T) {
+	t.Parallel()
+
+	d := &Daemon{}
+	d.cfg.L2Runtime.Enabled = true
+	accountHome := filepath.Join(t.TempDir(), "synthetic-account")
+	isolatedHome := filepath.Join(t.TempDir(), "synthetic-task-codex-home")
+	childEnv := map[string]string{
+		"CODEX_HOME": "synthetic-inherited-codex-root",
+		"UNCHANGED":  "synthetic-non-provider-value",
+	}
+	prepared := &execenv.Environment{CodexHome: isolatedHome}
+
+	if err := d.injectIsolatedCredentialEnvForLocalLaunch("codex", accountHome, prepared, childEnv); err != nil {
+		t.Fatalf("L2-enabled local launch rejected complete synthetic isolation: %v", err)
+	}
+	if childEnv["CODEX_HOME"] != isolatedHome {
+		t.Fatal("L2-enabled local launch did not replace the inherited provider root")
+	}
+	if childEnv["UNCHANGED"] != "synthetic-non-provider-value" {
+		t.Fatal("non-provider child environment was altered")
+	}
+}
+
 // testTwoAccountsCoexist verifies that two accounts of the same vendor, backed
 // by real PostgreSQL rows, resolve to non-overlapping home dirs and produce
 // isolated exec environments whose credentials do not cross-contaminate.

@@ -444,3 +444,69 @@ func TestListChatMessagesPage_RejectsInvalidLimit(t *testing.T) {
 		t.Fatalf("ListChatMessagesPage invalid limit: expected 400, got %d: %s", w.Code, w.Body.String())
 	}
 }
+
+// TestCreateChatSession_Routing verifies the chat orchestration routing semantics (Tasks 1.2/1.3).
+func TestCreateChatSession_Routing(t *testing.T) {
+	// 1. Direct explicit routing: agentID provided
+	directAgentID := createHandlerTestAgent(t, "DirectExplicitAgent", []byte("[]"))
+	directReq := newRequest("POST", "/api/chat-sessions", map[string]any{
+		"agent_id": directAgentID,
+		"title":    "Direct Chat",
+	})
+	directReq.Header.Set("X-User-ID", testUserID)
+	directReq.Header.Set("X-Workspace-ID", testWorkspaceID)
+	directW := httptest.NewRecorder()
+	testHandler.CreateChatSession(directW, directReq)
+	if directW.Code != http.StatusCreated {
+		t.Fatalf("CreateChatSession direct explicit: expected 201, got %d: %s", directW.Code, directW.Body.String())
+	}
+	var directResp ChatSessionResponse
+	if err := json.Unmarshal(directW.Body.Bytes(), &directResp); err != nil {
+		t.Fatalf("decode directResp: %v", err)
+	}
+	if directResp.AgentID != directAgentID {
+		t.Fatalf("expected direct routing to agent %s, got %s", directAgentID, directResp.AgentID)
+	}
+
+	// 2. Default routing (no destination -> TL): agent_id empty
+	// Set up a default squad with a TL
+	squadTLID := createHandlerTestAgent(t, "SquadTLAgent", []byte("[]"))
+	
+	// Delete any existing squads to have a clean slate for the test workspace
+	_, _ = testPool.Exec(context.Background(), `DELETE FROM squad WHERE workspace_id = $1`, testWorkspaceID)
+	
+	squad, err := testHandler.Queries.CreateSquad(context.Background(), db.CreateSquadParams{
+		WorkspaceID: util.MustParseUUID(testWorkspaceID),
+		Name:        "Test Workspace Team",
+		CreatorID:   util.MustParseUUID(testUserID),
+	})
+	if err != nil {
+		t.Fatalf("failed to create default test squad: %v", err)
+	}
+	_, err = testHandler.Queries.UpdateSquad(context.Background(), db.UpdateSquadParams{
+		ID:       squad.ID,
+		LeaderID: util.MustParseUUID(squadTLID),
+	})
+	if err != nil {
+		t.Fatalf("failed to update squad TL: %v", err)
+	}
+
+	defaultReq := newRequest("POST", "/api/chat-sessions", map[string]any{
+		"title": "Default Chat to TL",
+	})
+	defaultReq.Header.Set("X-User-ID", testUserID)
+	defaultReq.Header.Set("X-Workspace-ID", testWorkspaceID)
+	defaultW := httptest.NewRecorder()
+	testHandler.CreateChatSession(defaultW, defaultReq)
+	if defaultW.Code != http.StatusCreated {
+		t.Fatalf("CreateChatSession default routing: expected 201, got %d: %s", defaultW.Code, defaultW.Body.String())
+	}
+	var defaultResp ChatSessionResponse
+	if err := json.Unmarshal(defaultW.Body.Bytes(), &defaultResp); err != nil {
+		t.Fatalf("decode defaultResp: %v", err)
+	}
+	if defaultResp.AgentID != squadTLID {
+		t.Fatalf("expected default routing to squad TL %s, got %s", squadTLID, defaultResp.AgentID)
+	}
+}
+

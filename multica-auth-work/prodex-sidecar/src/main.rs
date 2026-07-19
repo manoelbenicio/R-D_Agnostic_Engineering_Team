@@ -130,7 +130,7 @@ fn error_response(status: u16, msg: &str) -> ResponseBox {
 fn check_auth(req: &Request) -> bool {
     let token = required_token();
     if token.is_empty() {
-        return true;
+        return false;
     }
     let expected = format!("Bearer {token}");
     req.headers().iter().any(|h| {

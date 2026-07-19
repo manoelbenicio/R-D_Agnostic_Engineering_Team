@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/multica-ai/multica/server/internal/cli"
 	"github.com/multica-ai/multica/server/internal/daemon"
@@ -88,6 +89,7 @@ func init() {
 	f.Int("max-concurrent-tasks", 0, "Max tasks running in parallel (env: MULTICA_DAEMON_MAX_CONCURRENT_TASKS)")
 	f.Bool("no-auto-update", false, "Disable periodic CLI self-update (env: MULTICA_DAEMON_AUTO_UPDATE=false)")
 	f.Duration("auto-update-interval", 0, "How often to poll GitHub for a newer release (env: MULTICA_DAEMON_AUTO_UPDATE_INTERVAL)")
+	addAgentBrainDevelopmentFlags(f)
 
 	daemonLogsCmd.Flags().BoolP("follow", "f", false, "Follow log output")
 	daemonLogsCmd.Flags().IntP("lines", "n", 50, "Number of lines to show")
@@ -107,6 +109,7 @@ func init() {
 	rf.Int("max-concurrent-tasks", 0, "Max tasks running in parallel (env: MULTICA_DAEMON_MAX_CONCURRENT_TASKS)")
 	rf.Bool("no-auto-update", false, "Disable periodic CLI self-update (env: MULTICA_DAEMON_AUTO_UPDATE=false)")
 	rf.Duration("auto-update-interval", 0, "How often to poll GitHub for a newer release (env: MULTICA_DAEMON_AUTO_UPDATE_INTERVAL)")
+	addAgentBrainDevelopmentFlags(rf)
 
 	df := daemonDiskUsageCmd.Flags()
 	df.Bool("by-workspace", false, "Aggregate output by workspace instead of by task")
@@ -122,6 +125,18 @@ func init() {
 	daemonCmd.AddCommand(daemonStatusCmd)
 	daemonCmd.AddCommand(daemonLogsCmd)
 	daemonCmd.AddCommand(daemonDiskUsageCmd)
+}
+
+func addAgentBrainDevelopmentFlags(flags *pflag.FlagSet) {
+	flags.Bool("agent-brain-development", false, "Enable the default-off Agent Brain development slice")
+	flags.Bool("agent-brain-gateway-required", false, "Require fail-closed OmniRoute admission in the development slice")
+	flags.Bool("agent-brain-legacy-execution", false, "Enable the temporary legacy migration path (default off; mutually exclusive with gateway-required mode)")
+	flags.String("agent-brain-control-url", "", "Neutral control-plane URL (env: AGENT_BRAIN_CONTROL_URL)")
+	flags.String("agent-brain-gateway-base-url", "", "Trusted OmniRoute base URL (env: AGENT_BRAIN_GATEWAY_BASE_URL)")
+	flags.String("agent-brain-gateway-secret-file", "", "Restricted OmniRoute secret-file reference (env: AGENT_BRAIN_GATEWAY_SECRET_FILE)")
+	flags.String("agent-brain-cli-kind", "", "Development frontend: claude-code or codex (env: AGENT_BRAIN_CLI_KIND)")
+	flags.String("agent-brain-route-model", "", "Exact approved OmniRoute model ID (env: AGENT_BRAIN_ROUTE_MODEL)")
+	flags.Int("agent-brain-capacity-tier", 0, "Agent Brain capacity schema (G3 accepts tier 20 but admits one development task)")
 }
 
 // daemonDirForProfile returns the state directory for the given profile.
@@ -320,6 +335,23 @@ func buildDaemonStartArgs(cmd *cobra.Command) []string {
 	if d, _ := cmd.Flags().GetDuration("auto-update-interval"); d > 0 {
 		args = append(args, "--auto-update-interval", d.String())
 	}
+	for _, name := range []string{"agent-brain-development", "agent-brain-gateway-required", "agent-brain-legacy-execution"} {
+		if cmd.Flags().Changed(name) {
+			value, _ := cmd.Flags().GetBool(name)
+			args = append(args, fmt.Sprintf("--%s=%t", name, value))
+		}
+	}
+	for _, name := range []string{
+		"agent-brain-control-url", "agent-brain-gateway-base-url", "agent-brain-gateway-secret-file",
+		"agent-brain-cli-kind", "agent-brain-route-model",
+	} {
+		if value := flagString(cmd, name); value != "" {
+			args = append(args, "--"+name, value)
+		}
+	}
+	if tier, _ := cmd.Flags().GetInt("agent-brain-capacity-tier"); tier > 0 {
+		args = append(args, "--agent-brain-capacity-tier", strconv.Itoa(tier))
+	}
 
 	// Forward global persistent flags.
 	if v, _ := cmd.Flags().GetString("server-url"); v != "" {
@@ -375,6 +407,24 @@ func runDaemonForeground(cmd *cobra.Command) error {
 	if d, _ := cmd.Flags().GetDuration("auto-update-interval"); d > 0 {
 		overrides.AutoUpdateCheckInterval = d
 	}
+	if cmd.Flags().Changed("agent-brain-development") {
+		value, _ := cmd.Flags().GetBool("agent-brain-development")
+		overrides.AgentBrainDevelopment = &value
+	}
+	if cmd.Flags().Changed("agent-brain-gateway-required") {
+		value, _ := cmd.Flags().GetBool("agent-brain-gateway-required")
+		overrides.AgentBrainGateway = &value
+	}
+	if cmd.Flags().Changed("agent-brain-legacy-execution") {
+		value, _ := cmd.Flags().GetBool("agent-brain-legacy-execution")
+		overrides.AgentBrainLegacy = &value
+	}
+	overrides.AgentBrainControlURL = flagString(cmd, "agent-brain-control-url")
+	overrides.AgentBrainGatewayURL = flagString(cmd, "agent-brain-gateway-base-url")
+	overrides.AgentBrainSecretFile = flagString(cmd, "agent-brain-gateway-secret-file")
+	overrides.AgentBrainCLIKind = flagString(cmd, "agent-brain-cli-kind")
+	overrides.AgentBrainRouteModel = flagString(cmd, "agent-brain-route-model")
+	overrides.AgentBrainCapacityTier, _ = cmd.Flags().GetInt("agent-brain-capacity-tier")
 
 	cfg, err := daemon.LoadConfig(overrides)
 	if err != nil {

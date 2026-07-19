@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -37,29 +38,92 @@ type thinkingCacheKey struct {
 type thinkingCacheEntry struct {
 	value     map[string]*ModelThinking // keyed by model ID
 	expiresAt time.Time
+	recency   uint64
 }
 
-const thinkingDiscoveryTTL = 10 * time.Minute
+const (
+	thinkingDiscoveryTTL           = 10 * time.Minute
+	thinkingCacheMaxEntries        = 64
+	thinkingCacheMaxModelsPerEntry = 256
+)
 
 var (
-	thinkingCacheMu sync.Mutex
-	thinkingCache   = map[thinkingCacheKey]thinkingCacheEntry{}
+	thinkingCacheMu       sync.Mutex
+	thinkingCache         = map[thinkingCacheKey]thinkingCacheEntry{}
+	thinkingCacheSequence uint64
 )
 
 func thinkingCacheGet(key thinkingCacheKey) (map[string]*ModelThinking, bool) {
 	thinkingCacheMu.Lock()
 	defer thinkingCacheMu.Unlock()
 	entry, ok := thinkingCache[key]
-	if !ok || time.Now().After(entry.expiresAt) {
+	if !ok {
 		return nil, false
 	}
+	if !time.Now().Before(entry.expiresAt) {
+		delete(thinkingCache, key)
+		return nil, false
+	}
+	thinkingCacheSequence++
+	entry.recency = thinkingCacheSequence
+	thinkingCache[key] = entry
 	return entry.value, true
 }
 
 func thinkingCachePut(key thinkingCacheKey, value map[string]*ModelThinking) {
 	thinkingCacheMu.Lock()
 	defer thinkingCacheMu.Unlock()
-	thinkingCache[key] = thinkingCacheEntry{value: value, expiresAt: time.Now().Add(thinkingDiscoveryTTL)}
+	now := time.Now()
+	for candidate, entry := range thinkingCache {
+		if !now.Before(entry.expiresAt) {
+			delete(thinkingCache, candidate)
+		}
+	}
+	thinkingCacheSequence++
+	thinkingCache[key] = thinkingCacheEntry{
+		value:     boundedThinkingModels(value),
+		expiresAt: now.Add(thinkingDiscoveryTTL),
+		recency:   thinkingCacheSequence,
+	}
+	for len(thinkingCache) > thinkingCacheMaxEntries {
+		var oldestKey thinkingCacheKey
+		var oldestRecency uint64
+		first := true
+		for candidate, entry := range thinkingCache {
+			if first || entry.recency < oldestRecency || (entry.recency == oldestRecency && thinkingCacheKeyLess(candidate, oldestKey)) {
+				oldestKey = candidate
+				oldestRecency = entry.recency
+				first = false
+			}
+		}
+		delete(thinkingCache, oldestKey)
+	}
+}
+
+func boundedThinkingModels(value map[string]*ModelThinking) map[string]*ModelThinking {
+	if len(value) <= thinkingCacheMaxModelsPerEntry {
+		return value
+	}
+	keys := make([]string, 0, len(value))
+	for key := range value {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	bounded := make(map[string]*ModelThinking, thinkingCacheMaxModelsPerEntry)
+	for _, key := range keys[:thinkingCacheMaxModelsPerEntry] {
+		bounded[key] = value[key]
+	}
+	return bounded
+}
+
+func thinkingCacheKeyLess(a, b thinkingCacheKey) bool {
+	if a.provider != b.provider {
+		return a.provider < b.provider
+	}
+	if a.executablePath != b.executablePath {
+		return a.executablePath < b.executablePath
+	}
+	return a.cliVersion < b.cliVersion
 }
 
 // resetThinkingCacheForTests is exposed for tests only; production code
@@ -67,6 +131,7 @@ func thinkingCachePut(key thinkingCacheKey, value map[string]*ModelThinking) {
 func resetThinkingCacheForTests() {
 	thinkingCacheMu.Lock()
 	thinkingCache = map[thinkingCacheKey]thinkingCacheEntry{}
+	thinkingCacheSequence = 0
 	thinkingCacheMu.Unlock()
 }
 
@@ -142,8 +207,11 @@ func loadClaudeThinkingByModel(ctx context.Context, executablePath string) map[s
 	if executablePath == "" {
 		executablePath = "claude"
 	}
+	if requireDiscoveryProcessContainment() != nil {
+		return map[string]*ModelThinking{}
+	}
 	version, _ := DetectVersion(ctx, executablePath)
-	key := thinkingCacheKey{provider: "claude", executablePath: executablePath, cliVersion: version}
+	key := thinkingCacheKey{provider: "claude", executablePath: normalizedDiscoveryExecutablePath("claude", executablePath), cliVersion: version}
 	if cached, ok := thinkingCacheGet(key); ok {
 		return cached
 	}
@@ -169,6 +237,9 @@ func loadClaudeThinkingByModel(ctx context.Context, executablePath string) map[s
 // parsing fails it returns the static fallback rather than nothing so
 // callers can still render a usable picker.
 func claudeEffortSuperset(ctx context.Context, executablePath string) []string {
+	if requireDiscoveryProcessContainment() != nil {
+		return append([]string(nil), claudeStaticEffortFallback...)
+	}
 	cmd := exec.CommandContext(ctx, executablePath, "--help")
 	hideAgentWindow(cmd)
 	out, err := cmd.CombinedOutput()
@@ -286,8 +357,11 @@ func loadCodexThinkingByModel(ctx context.Context, executablePath string) map[st
 	if executablePath == "" {
 		executablePath = "codex"
 	}
+	if requireDiscoveryProcessContainment() != nil {
+		return map[string]*ModelThinking{}
+	}
 	version, _ := DetectVersion(ctx, executablePath)
-	key := thinkingCacheKey{provider: "codex", executablePath: executablePath, cliVersion: version}
+	key := thinkingCacheKey{provider: "codex", executablePath: normalizedDiscoveryExecutablePath("codex", executablePath), cliVersion: version}
 	if cached, ok := thinkingCacheGet(key); ok {
 		return cached
 	}
@@ -313,6 +387,9 @@ func loadCodexThinkingByModel(ctx context.Context, executablePath string) map[st
 var codexDebugModelsArgs = []string{"debug", "models", "--bundled"}
 
 func runCodexDebugModels(ctx context.Context, executablePath string) ([]byte, error) {
+	if err := requireDiscoveryProcessContainment(); err != nil {
+		return nil, err
+	}
 	cmd := exec.CommandContext(ctx, executablePath, codexDebugModelsArgs...)
 	hideAgentWindow(cmd)
 	return cmd.Output()
@@ -380,15 +457,29 @@ var codebuddyStaticEffortFallback = []string{"low", "medium", "high", "xhigh"}
 // (models.go) and effort discovery avoid redundant slow CLI invocations.
 // CodeBuddy's --help takes ~30s; calling it twice on cold start wastes ~30s.
 var (
-	codebuddyHelpMu    sync.Mutex
-	codebuddyHelpStore = map[string]codebuddyHelpEntry{}
+	codebuddyHelpMu       sync.Mutex
+	codebuddyHelpStore    = map[string]codebuddyHelpEntry{}
+	codebuddyHelpFlights  = map[string]*codebuddyHelpFlight{}
+	codebuddyHelpSequence uint64
 )
 
-const codebuddyHelpTTL = 60 * time.Second
+const (
+	codebuddyHelpTTL         = 60 * time.Second
+	codebuddyHelpNegativeTTL = 5 * time.Second
+	codebuddyHelpMaxEntries  = 32
+	codebuddyHelpMaxBytes    = 256 * 1024
+)
 
 type codebuddyHelpEntry struct {
 	output    string
 	expiresAt time.Time
+	recency   uint64
+}
+
+type codebuddyHelpFlight struct {
+	done      chan struct{}
+	output    string
+	cancelled bool
 }
 
 // codebuddyHelpOutput runs `codebuddy --help` (cached for codebuddyHelpTTL).
@@ -398,35 +489,106 @@ func codebuddyHelpOutput(ctx context.Context, executablePath string) string {
 	if executablePath == "" {
 		executablePath = "codebuddy"
 	}
-	key := executablePath
-	codebuddyHelpMu.Lock()
-	if entry, ok := codebuddyHelpStore[key]; ok && time.Now().Before(entry.expiresAt) {
-		codebuddyHelpMu.Unlock()
-		return entry.output
+	if requireDiscoveryProcessContainment() != nil {
+		return ""
 	}
-	codebuddyHelpMu.Unlock()
-
-	runCtx, cancel := context.WithTimeout(ctx, 35*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(runCtx, executablePath, "--help")
-	hideAgentWindow(cmd)
-	out, _ := cmd.CombinedOutput()
-	result := string(out)
-
-	if result != "" {
+	key := discoveryCacheKey("codebuddy", executablePath)
+	for {
+		now := time.Now()
 		codebuddyHelpMu.Lock()
-		codebuddyHelpStore[key] = codebuddyHelpEntry{output: result, expiresAt: time.Now().Add(codebuddyHelpTTL)}
+		pruneExpiredCodebuddyHelpLocked(now)
+		if entry, ok := codebuddyHelpStore[key]; ok {
+			codebuddyHelpSequence++
+			entry.recency = codebuddyHelpSequence
+			codebuddyHelpStore[key] = entry
+			codebuddyHelpMu.Unlock()
+			return entry.output
+		}
+		if flight, ok := codebuddyHelpFlights[key]; ok {
+			done := flight.done
+			codebuddyHelpMu.Unlock()
+			select {
+			case <-ctx.Done():
+				return ""
+			case <-done:
+				if flight.cancelled {
+					continue
+				}
+				return flight.output
+			}
+		}
+
+		flight := &codebuddyHelpFlight{done: make(chan struct{})}
+		codebuddyHelpFlights[key] = flight
 		codebuddyHelpMu.Unlock()
+
+		runCtx, cancel := context.WithTimeout(ctx, 35*time.Second)
+		cmd := exec.CommandContext(runCtx, executablePath, "--help")
+		hideAgentWindow(cmd)
+		out, _ := cmd.CombinedOutput()
+		cancelled := ctx.Err() != nil
+		cancel()
+		result := string(out)
+
+		codebuddyHelpMu.Lock()
+		if !cancelled {
+			ttl := codebuddyHelpTTL
+			if result == "" {
+				ttl = codebuddyHelpNegativeTTL
+			}
+			putCodebuddyHelpLocked(key, result, time.Now().Add(ttl))
+		}
+		flight.output = result
+		flight.cancelled = cancelled
+		delete(codebuddyHelpFlights, key)
+		close(flight.done)
+		codebuddyHelpMu.Unlock()
+		return result
 	}
-	return result
+}
+
+func pruneExpiredCodebuddyHelpLocked(now time.Time) {
+	for key, entry := range codebuddyHelpStore {
+		if !now.Before(entry.expiresAt) {
+			delete(codebuddyHelpStore, key)
+		}
+	}
+}
+
+func putCodebuddyHelpLocked(key, output string, expiresAt time.Time) {
+	if len(output) > codebuddyHelpMaxBytes {
+		output = output[:codebuddyHelpMaxBytes]
+	}
+	codebuddyHelpSequence++
+	codebuddyHelpStore[key] = codebuddyHelpEntry{
+		output:    output,
+		expiresAt: expiresAt,
+		recency:   codebuddyHelpSequence,
+	}
+	for len(codebuddyHelpStore) > codebuddyHelpMaxEntries {
+		var oldestKey string
+		var oldestRecency uint64
+		first := true
+		for candidate, entry := range codebuddyHelpStore {
+			if first || entry.recency < oldestRecency || (entry.recency == oldestRecency && candidate < oldestKey) {
+				oldestKey = candidate
+				oldestRecency = entry.recency
+				first = false
+			}
+		}
+		delete(codebuddyHelpStore, oldestKey)
+	}
 }
 
 func annotateCodebuddyThinking(ctx context.Context, models []Model, executablePath string) {
 	if executablePath == "" {
 		executablePath = "codebuddy"
 	}
+	if requireDiscoveryProcessContainment() != nil {
+		return
+	}
 	version, _ := DetectVersion(ctx, executablePath)
-	key := thinkingCacheKey{provider: "codebuddy", executablePath: executablePath, cliVersion: version}
+	key := thinkingCacheKey{provider: "codebuddy", executablePath: normalizedDiscoveryExecutablePath("codebuddy", executablePath), cliVersion: version}
 	if cached, ok := thinkingCacheGet(key); ok {
 		for i := range models {
 			if t, ok := cached[models[i].ID]; ok && t != nil {
