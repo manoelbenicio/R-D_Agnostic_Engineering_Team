@@ -20,6 +20,7 @@ type syntheticAccountStatus uint8
 const (
 	syntheticEligible syntheticAccountStatus = iota
 	syntheticQuarantined
+	syntheticCooldown
 	syntheticRemoved
 )
 
@@ -386,7 +387,7 @@ type syntheticExecution struct {
 
 type syntheticRetryHarness struct {
 	mu        sync.Mutex
-	completed map[string]struct{}
+	terminal  map[string]error
 	inFlight  map[string]*syntheticRetryFlight
 	active    atomic.Int64
 	followers atomic.Int64
@@ -400,17 +401,17 @@ type syntheticRetryFlight struct {
 
 func newSyntheticRetryHarness() *syntheticRetryHarness {
 	return &syntheticRetryHarness{
-		completed: make(map[string]struct{}),
-		inFlight:  make(map[string]*syntheticRetryFlight),
+		terminal: make(map[string]error),
+		inFlight: make(map[string]*syntheticRetryFlight),
 	}
 }
 
 func (h *syntheticRetryHarness) execute(ctx context.Context, requestID string, attempts []syntheticAttempt) (result syntheticExecution, resultErr error) {
 	h.mu.Lock()
-	_, exists := h.completed[requestID]
-	if exists {
+	terminalErr, terminal := h.terminal[requestID]
+	if terminal {
 		h.mu.Unlock()
-		return syntheticExecution{Deduplicated: true}, nil
+		return syntheticExecution{Deduplicated: true}, terminalErr
 	}
 	if flight, exists := h.inFlight[requestID]; exists {
 		h.mu.Unlock()
@@ -427,11 +428,12 @@ func (h *syntheticRetryHarness) execute(ctx context.Context, requestID string, a
 	h.inFlight[requestID] = flight
 	h.mu.Unlock()
 	h.active.Add(1)
+	noReplay := false
 	defer func() {
 		h.active.Add(-1)
 		h.mu.Lock()
-		if resultErr == nil {
-			h.completed[requestID] = struct{}{}
+		if resultErr == nil || noReplay {
+			h.terminal[requestID] = resultErr
 		}
 		flight.result = result
 		flight.err = resultErr
@@ -463,6 +465,7 @@ func (h *syntheticRetryHarness) execute(ctx context.Context, requestID string, a
 		}
 		decision := classifySyntheticFailure(attempt.Failure)
 		if attempt.OutputCommitted || attempt.ToolActionCommitted || !decision.Retryable {
+			noReplay = attempt.OutputCommitted || attempt.ToolActionCommitted
 			return result, &GatewayError{Operation: "synthetic.retry", Class: decision.Class, Retryable: false}
 		}
 	}

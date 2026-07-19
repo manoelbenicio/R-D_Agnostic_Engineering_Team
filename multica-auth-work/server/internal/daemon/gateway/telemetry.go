@@ -18,7 +18,9 @@ const (
 	HeaderOmniRouteRequestID = "X-OmniRoute-Request-Id"
 	HeaderActualModel        = "X-OmniRoute-Actual-Model"
 	HeaderActualRoute        = "X-OmniRoute-Route"
+	HeaderAccountID          = "X-OmniRoute-Account-Id"
 	HeaderConnectionID       = "X-OmniRoute-Connection-Id"
+	HeaderSelectionReason    = "X-OmniRoute-Selection-Reason"
 	HeaderRetryCount         = "X-OmniRoute-Retry-Count"
 	HeaderFallbackUsed       = "X-OmniRoute-Fallback"
 	HeaderQuotaState         = "X-OmniRoute-Quota-State"
@@ -48,6 +50,20 @@ const (
 	CircuitHalfOpen CircuitState = "half-open"
 )
 
+type SelectionReason string
+
+const (
+	SelectionUnknown             SelectionReason = "unknown"
+	SelectionIndependentRotation SelectionReason = "independent-round-robin"
+	SelectionContinuation        SelectionReason = "continuation-affinity"
+	SelectionPromptCache         SelectionReason = "prompt-cache-affinity"
+	SelectionToolTurn            SelectionReason = "tool-turn-affinity"
+	SelectionRetry               SelectionReason = "retry"
+	SelectionSameModelFallback   SelectionReason = "same-model-fallback"
+	SelectionCrossModelFallback  SelectionReason = "cross-model-fallback"
+	SelectionHalfOpenProbe       SelectionReason = "half-open-probe"
+)
+
 type Usage struct {
 	Input     int64 `json:"input"`
 	Output    int64 `json:"output"`
@@ -60,7 +76,9 @@ type Telemetry struct {
 	RequestID              string           `json:"request_id,omitempty"`
 	ActualModel            brain.RouteModel `json:"actual_model,omitempty"`
 	ActualRoute            string           `json:"actual_route,omitempty"`
+	PseudonymousAccount    string           `json:"pseudonymous_account,omitempty"`
 	PseudonymousConnection string           `json:"pseudonymous_connection,omitempty"`
+	SelectionReason        SelectionReason  `json:"selection_reason"`
 	RetryCount             int              `json:"retry_count"`
 	FallbackUsed           bool             `json:"fallback_used"`
 	Quota                  QuotaState       `json:"quota_state"`
@@ -72,7 +90,9 @@ type telemetryDocument struct {
 	RequestID    string `json:"request_id"`
 	ActualModel  string `json:"actual_model"`
 	ActualRoute  string `json:"actual_route"`
+	AccountID    string `json:"account_id"`
 	ConnectionID string `json:"connection_id"`
+	Selection    string `json:"selection_reason"`
 	RetryCount   int    `json:"retry_count"`
 	FallbackUsed bool   `json:"fallback_used"`
 	QuotaState   string `json:"quota_state"`
@@ -97,7 +117,9 @@ func ParseTelemetryHeaders(header http.Header) (Telemetry, error) {
 		RequestID:    header.Get(HeaderOmniRouteRequestID),
 		ActualModel:  header.Get(HeaderActualModel),
 		ActualRoute:  header.Get(HeaderActualRoute),
+		AccountID:    header.Get(HeaderAccountID),
 		ConnectionID: header.Get(HeaderConnectionID),
+		Selection:    header.Get(HeaderSelectionReason),
 		RetryCount:   retryCount,
 		FallbackUsed: fallback,
 		QuotaState:   header.Get(HeaderQuotaState),
@@ -152,11 +174,17 @@ func sanitizeTelemetry(document telemetryDocument) (Telemetry, error) {
 	if err != nil {
 		return Telemetry{}, telemetryProtocolError()
 	}
+	selection, err := parseSelectionReason(document.Selection)
+	if err != nil {
+		return Telemetry{}, telemetryProtocolError()
+	}
 	return Telemetry{
 		RequestID:              requestID,
 		ActualModel:            actualModel,
 		ActualRoute:            actualRoute,
-		PseudonymousConnection: pseudonymizeConnection(document.ConnectionID),
+		PseudonymousAccount:    pseudonymizeIdentifier("acct_", document.AccountID),
+		PseudonymousConnection: pseudonymizeIdentifier("conn_", document.ConnectionID),
+		SelectionReason:        selection,
 		RetryCount:             document.RetryCount,
 		FallbackUsed:           document.FallbackUsed,
 		Quota:                  quota,
@@ -179,13 +207,13 @@ func safeIdentifier(value string) string {
 	return value
 }
 
-func pseudonymizeConnection(value string) string {
+func pseudonymizeIdentifier(prefix, value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" || len(value) > 512 {
 		return ""
 	}
 	digest := sha256.Sum256([]byte(value))
-	return "conn_" + hex.EncodeToString(digest[:8])
+	return prefix + hex.EncodeToString(digest[:8])
 }
 
 func parseQuota(value string) (QuotaState, error) {
@@ -211,6 +239,27 @@ func parseCircuit(value string) (CircuitState, error) {
 		return state, nil
 	default:
 		return "", errors.New("invalid circuit state")
+	}
+}
+
+func parseSelectionReason(value string) (SelectionReason, error) {
+	if strings.TrimSpace(value) == "" {
+		return SelectionUnknown, nil
+	}
+	reason := SelectionReason(value)
+	switch reason {
+	case SelectionUnknown,
+		SelectionIndependentRotation,
+		SelectionContinuation,
+		SelectionPromptCache,
+		SelectionToolTurn,
+		SelectionRetry,
+		SelectionSameModelFallback,
+		SelectionCrossModelFallback,
+		SelectionHalfOpenProbe:
+		return reason, nil
+	default:
+		return "", errors.New("invalid selection reason")
 	}
 }
 
