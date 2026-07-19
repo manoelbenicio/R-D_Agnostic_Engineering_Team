@@ -609,3 +609,19 @@
 > capacity/cutover/readiness evidence. ETA excluding observability = 24–48h nominal / 72h conservative
 > (functional track completion only; NOT an ETA to G4-OBS/capacity/cutover). Does not alter OBS-lane
 > dispatch gating and does not touch D-V3-19. Holds preserved: 9.1/capacity/PD-08/keys/Prodex/cutover/production/tier 50/100.
+
+---
+
+> **C4 — D-V3-19 RECOMMENDATION/PENDING RECORDED (Kiro-TL/Opus-4.8, 2026-07-19; authorized by Codex56-Principal-TL).**
+> Golden-Rule CHECK-IN/OUT: docs-only recommendation record; **no product/test/product-git/credential/network
+> action; NO ownership rows added to FILE_OWNERSHIP.md; NO dispatch; NO zero-overlap re-run executed here.**
+> D-V3-19 (Wave B.1 minimal TEST-ownership amendment) recorded in DECISIONS.md as **RECOMMENDATION —
+> PENDING owner+council ratification.** Kiro-TL independent recommendation = **ACCEPT (file-scoped) with two
+> conditions:** (a) file-level zero-overlap provably preserved (4 new unique paths, ∩=0; W6 half is a clean
+> accept closing W6's only acceptance gap); (b) package-compilation coupling stays W1-serial — W7 service-pkg
+> tests + W6 daemonws test share a compile unit with W1 Wave C anchors (`task.go`/`hub.go`), so they must
+> target the frozen helper contract, force no anchor edit, and W7 test authoring stays gated on the W7 helper
+> build. **Binding before any dispatch:** update FILE_OWNERSHIP + re-run EV-ZERO-OVERLAP on CURRENT HEAD
+> (NOT the fbabd9c hashes `a4a147…`/`2f345e…`; current HEAD `b77bbba` = FILE_OWNERSHIP `1af3c37c…`,
+> ev-zero-overlap `36267dc2…`) + strict OpenSpec + owner+Kiro+Principal sign-off. **NOT implemented.**
+> Holds intact: 9.1/capacity/PD-08/keys/Prodex/cutover/production/tier 50/100.

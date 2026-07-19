@@ -143,6 +143,33 @@
   `EV-ZERO-OVERLAP`; novo requisito AB-REQ-41 (recovery-mode) e risco R29 (contenção de merge).
 - STATUS: APROVADO / ATIVO.
 
+### D-V3-19 — Wave B.1 emenda mínima de ownership de TESTES (RECOMENDAÇÃO / PENDENTE — não implementar)
+- Proposta ao council (owner + Kiro-TL + Codex56-Principal-TL). **REGISTRO DE RECOMENDAÇÃO APENAS — NÃO
+  implementada, NÃO despachada.** Nenhuma linha de ownership foi adicionada a `FILE_OWNERSHIP.md`; nenhuma
+  revalidação de zero-overlap foi executada nesta entrada.
+- **Escopo proposto (mínimo):** W6 passa a possuir também `internal/middleware/obs_ingress_test.go` +
+  `internal/daemonws/obs_delivery_test.go`; W7 passa a possuir também `internal/service/obs_queue_test.go`
+  + `internal/service/obs_persist_test.go`. **Sem** migração DB, SQL, código gerado, colunas de schema, ou
+  transferência de shared anchor. W1 retém os call-sites compartilhados `task.go`/`request_logger.go`/`hub.go`
+  e a fiação final da Wave C.
+- **Recomendação independente do Kiro-TL = ACEITAR (escopo-de-arquivo) com duas condições de execução:**
+  (a) zero-overlap em nível de ARQUIVO é comprovadamente preservado (4 caminhos novos, cada um casando
+  exatamente uma lane; ∩ permanece 0) — a metade W6 (`obs_ingress_test.go` em `middleware`,
+  `obs_delivery_test.go` em `daemonws`) é um ACEITE limpo que fecha a única lacuna de aceitação do W6;
+  (b) **acoplamento de compilação em nível de PACOTE fica W1-serial:** os testes W7 compilam em
+  `package service` junto de `task.go` (âncora Wave C) e o teste `obs_delivery_test.go` junto de `hub.go` —
+  devem mirar o contrato de helper CONGELADO e não forçar edição de nenhuma âncora; o wiring de call-site
+  permanece W1 Wave C; a autoria dos testes W7 só é significativa após o helper W7 existir (design
+  zero-schema), portanto gated ao build do helper W7.
+- **Governança obrigatória antes de qualquer dispatch:** atualizar `FILE_OWNERSHIP.md`, **re-rodar
+  EV-ZERO-OVERLAP hashes/interseções sobre o HEAD ATUAL do planning** (NÃO sobre os hashes `fbabd9c`
+  `a4a147…`/`2f345e…`, que são de commit anterior — hashes atuais do HEAD `b77bbba`:
+  `FILE_OWNERSHIP.md`=`1af3c37c…`, `ev-zero-overlap-wave-b0.md`=`36267dc2…`), strict-validar OpenSpec, e
+  obter sign-off de council (owner + Kiro + Principal).
+- STATUS: **RECOMENDAÇÃO PENDENTE de ratificação do Owner + council.** NÃO implementar a emenda, NÃO
+  adicionar linhas de ownership, NÃO despachar trabalho de test-path W6/W7 até ratificação explícita do
+  Owner + revalidação de zero-overlap no HEAD atual. Holds preservados.
+
 ### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
 - Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o
   ESCOPO de D-V3-17 — não o enfraquece. D-V3-17 sempre bloqueou a **validade de alegações de
