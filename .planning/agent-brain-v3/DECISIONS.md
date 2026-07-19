@@ -272,6 +272,28 @@
 - STATUS: **ACEITA (Decision 6).** Holds preservados: 9.1/capacidade/PD-08(exec)/keys/Prodex/cutover/
   produção/canary/soak/tier 50/100.
 
+### D-V3-26 — OWNER DECISION 7: branch de integração P0 protegido `integration/agent-brain-p0`, W1 integrador serial único
+- Decisão do dono 2026-07-19 (council-unânime). Arquitetura de integração P0 **APROVADA**:
+  - **`main` `b657129` permanece INTOCADO** (sem merge para main).
+  - Branch protegido **`integration/agent-brain-p0`**; **W1 é o ÚNICO integrador serial**.
+  - **W5 `fd4aa4d` = fundação canônica.** Ordem de integração: fundação W5 → **W1** (latest
+    independentemente-revisado) → **W2** → **W3/W4 conforme necessário**.
+  - **Implementação deferida W6/W7/promexport EXCLUÍDA do P0.**
+  - **Safeguards:** patches W5 duplicados **dedup por patch-id**; **dry-run descartável no latest-tip
+    primeiro**; resolução de conflito de ownership **arquivo-por-arquivo** (SEM `ours`/`theirs` em massa);
+    **sem force push**; **reviewer independente ≠ adjudicador**; **build/test/race/vet/smoke/provenance
+    offline completos ANTES de atualizar o branch**.
+  - **NÃO autoriza:** merge para main, credenciais live, 9.1/capacidade, Prodex, cutover ou produção.
+  - **Gate de dispatch:** preparar a **fila de integração escrita AGORA**; **NÃO despachar integração
+    autoritativa** até os **commits ativos W1/W3/W4 terminarem e as revisões independentes passarem.**
+- **Observação (2026-07-19, Kiro-TL):** os tips das lanes AVANÇARAM além do último commit revisado —
+  W1 `9745eaf`→`3711eb4` (teste credential-isolation offline), W2 `7a2a808`→`528d1bb` (teste P0 failure
+  boundaries), W3 origin `1716186`, W4 `47c693c`→`0a291d9` (teste rollout-trigger/runbook). Estes commits
+  ativos aguardam revisão independente → integração **HELD** conforme o gate. A fila integra o **latest
+  independentemente-revisado** por lane, não o tip cru.
+- STATUS: **ACEITA (Decision 7); fila escrita PREPARADA, integração NÃO despachada.** Holds preservados:
+  9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
+
 ### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
 - Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o
   ESCOPO de D-V3-17 — não o enfraquece. D-V3-17 sempre bloqueou a **validade de alegações de

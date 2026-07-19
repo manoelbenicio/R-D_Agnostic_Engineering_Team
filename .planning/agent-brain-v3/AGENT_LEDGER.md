@@ -739,3 +739,20 @@
 > direction to APPROVED-but-P2-DEFERRED; operational STOP stays in force until revocation confirmed (B).
 > Does not alter D-V3-16/17/18/20/21/22/23/24. All other holds intact:
 > 9.1/capacity/Prodex activation/cutover/production/canary/soak/tier 50/100.
+
+---
+
+> **D-V3-26 — OWNER DECISION 7: protected P0 integration branch `integration/agent-brain-p0` (Kiro-TL recorded, 2026-07-19; council-unanimous).**
+> Golden-Rule CHECK-IN/OUT: docs-only; no product/test/product-git/credential/network action; **no branch created; no integration dispatched.**
+> Architecture recorded (DECISIONS D-V3-26) + written P0 integration queue PREPARED (DISPATCH_QUEUE "P0
+> INTEGRATION QUEUE — D-V3-26"): `main b657129` untouched (no merge); **W1 sole serial integrator**; **W5
+> `fd4aa4d` canonical foundation**; order foundation→W1→W2→required W3/W4; **W6/W7/promexport EXCLUDED from
+> P0**; safeguards (dedup W5 by patch-id; disposable latest-tip dry-run first; file-by-file conflict, no
+> ours/theirs bulk; no force push; reviewer≠adjudicator; full offline build/test/race/vet/smoke/provenance
+> before branch update). Does NOT authorize main merge/live creds/9.1/Prodex/cutover/production.
+> **Lane-tip advance observation (Kiro-TL verified via fetch):** active commits landed beyond last-reviewed —
+> W1 `9745eaf`→`3711eb4` (credential-isolation offline test), W2 `7a2a808`→`528d1bb` (P0 failure boundaries),
+> W3 origin `1716186` (local `0ba88da` still blocked), W4 `47c693c`→`0a291d9` (rollout-trigger/runbook). These
+> await independent review → **integration HELD** per the owner gate; the queue integrates the latest
+> INDEPENDENTLY-REVIEWED commit per lane, not the raw tip. **PREPARED / NOT DISPATCHED.** Holds intact:
+> 9.1/capacity/PD-08/keys/Prodex/cutover/production/canary/soak/tier 50/100.

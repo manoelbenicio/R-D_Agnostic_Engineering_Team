@@ -322,3 +322,47 @@ NOT DISPATCHED.
 - **Coordination focus per Owner: non-observability Main Brain gaps (Priority 0).** D-V3-20 functional
   tests proceed pre-G4-OBS.
 - Holds intact: 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.
+
+
+---
+
+# P0 INTEGRATION QUEUE — D-V3-26 (PREPARED 2026-07-19; NOT DISPATCHED)
+
+> Written per Owner Decision 7 (council-unanimous). **PREPARE-ONLY.** Authoritative integration is **HELD**
+> until active W1/W3/W4 commits finish AND independent reviews pass. **W1 = sole serial integrator.**
+> `main b657129` remains UNTOUCHED (no main merge). Deferred **W6/W7/promexport EXCLUDED from P0**.
+
+## Foundation
+- **W5 `fd4aa4d`** = canonical foundation (technical integration baseline; Principal gofmt/test/race/vet PASS
+  + independent Gemini structural PASS). All OBS callers cherry-picked this chain.
+
+## Integration order (integrate the LATEST INDEPENDENTLY-REVIEWED commit per lane)
+
+| # | Lane | Latest INDEPENDENTLY-REVIEWED (integrate) | Current tip (PENDING review → gate) | Gate |
+|---|---|---|---|---|
+| I0 | W5 | `fd4aa4d` (canonical foundation) | `fd4aa4d` | ready as foundation |
+| I1 | W1 | `9745eaf` (Gemini static + Principal/Codex daemon test+vet PASS; cross-lane-clean) | **`3711eb4`** "cover credential isolation offline" | HELD — `3711eb4` needs independent review (synthetic/no-secret per D-V3-25C) |
+| I2 | W2 | `7a2a808` (independent Gemini review PASS) | **`528d1bb`** "cover priority-zero failure boundaries" | HELD — `528d1bb` needs independent review |
+| I3 | W3 | *none integrable* (`0ba88da` blocked on W1 Wave C; no accepted OBS-5) | origin **`1716186`** | HELD — no reviewed integrable commit; OBS-5 blocked |
+| I4 | W4 | `47c693c` (promtool 14-rule + Codex review PASS; **OBS-11 PRODUCED-NOT-ACCEPTED** — functional/ops portion only) | **`0a291d9`** "RolloutPlan triggers→OperationsCatalog runbooks" | HELD — `0a291d9` needs independent review; OBS-11 acceptance still gated on promexport (D-V3-23) |
+
+> "Required W3/W4" = only the independently-reviewed **functional/P0** portions; OBS-11 acceptance and any
+> exporter/dashboards remain gated (D-V3-17/23/24) and are NOT closed by integration.
+
+## Mandatory safeguards (before any branch update)
+1. **Disposable latest-tip dry-run FIRST** (throwaway worktree; never on `main` or the protected branch).
+2. **Duplicate W5 patches deduped by `git patch-id`** (the lanes cherry-picked the W5 chain — collapse duplicates).
+3. **File-by-file ownership conflict resolution — NO `ours`/`theirs` bulk strategy.**
+4. **No force push.** No history rewrite, no `gc`/`prune`.
+5. **Independent reviewer ≠ adjudicator ≠ producer** (truthful distinct provenance).
+6. **Full offline build + test + race + vet + smoke + provenance PASS BEFORE updating the branch.**
+7. W1 is the sole serial integrator; lanes do not self-integrate.
+
+## Explicit non-authorizations (D-V3-26)
+- Does **NOT** authorize: main merge · live credentials · 9.1/capacity · Prodex activation · cutover ·
+  production/canary/soak · tiers 50/100. All holds intact.
+
+## Dispatch status
+**PREPARED / NOT DISPATCHED.** Branch `integration/agent-brain-p0` NOT yet created. Authoritative
+integration begins only after the active W1 (`3711eb4`)/W3 (`1716186`)/W4 (`0a291d9`) commits finish and
+their independent reviews pass, then TL/Principal adjudication.
