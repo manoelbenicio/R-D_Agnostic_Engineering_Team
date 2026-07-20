@@ -349,3 +349,142 @@ func TestSelectorBindRejectsUnknownAccountAndBlankHandle(t *testing.T) {
 		t.Fatalf("expected invalid request for blank handle, got %v", err)
 	}
 }
+
+// --- W2 second-pass regression tests (F3 AffinityNone, F4 TTL refresh + bounded accounts) ---
+
+func TestSelectorAffinityNoneFailsClosedForStatefulRefs(t *testing.T) {
+	// F3: a route with no continuation affinity must fail closed for any
+	// stateful reference (both Select and Bind), never rotate it to an
+	// arbitrary account. Independent requests still rotate.
+	selector, err := NewSelectorFromConfig(SelectorConfig{
+		Rotation: RotationStrictIndependentRequest,
+		Affinity: AffinityNone,
+		Accounts: []string{"acct-a", "acct-b"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Independent request rotates.
+	if _, err := selector.Select(ContinuationRefs{}); err != nil {
+		t.Fatalf("independent request should rotate under AffinityNone: %v", err)
+	}
+	// Stateful reference fails closed.
+	for _, refs := range []ContinuationRefs{
+		{PreviousResponseID: "resp-x"},
+		{PromptCacheID: "cache-x"},
+		{ToolTurnID: "tool-x"},
+	} {
+		if _, err := selector.Select(refs); !IsErrorClass(err, ErrorContinuationUnavailable) {
+			t.Fatalf("AffinityNone stateful select should fail closed, got %v", err)
+		}
+	}
+	// Bind fails closed too.
+	if err := selector.Bind(ContinuationRefs{PreviousResponseID: "resp-x"}, "acct-a"); !IsErrorClass(err, ErrorContinuationUnavailable) {
+		t.Fatalf("AffinityNone bind should fail closed, got %v", err)
+	}
+}
+
+func TestSelectorAffinityHitRefreshesBindingLifetime(t *testing.T) {
+	// F4: an actively-used continuation must never be reclaimed by the expiry
+	// sweep; each affinity hit refreshes the binding's lifetime.
+	clock := time.Unix(1_700_000_000, 0)
+	selector, err := NewSelectorFromConfig(SelectorConfig{
+		Rotation:   RotationStrictIndependentRequest,
+		Affinity:   AffinityOriginAccount,
+		Accounts:   []string{"acct-a", "acct-b"},
+		BindingTTL: time.Minute,
+		now:        func() time.Time { return clock },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handle := ContinuationRefs{PreviousResponseID: "resp-live"}
+	if err := selector.Bind(handle, "acct-a"); err != nil {
+		t.Fatalf("Bind: %v", err)
+	}
+	// Two hits 50s apart: total 100s > 60s TTL. Without refresh the second hit
+	// would fail closed after expiry; with refresh it stays pinned.
+	clock = clock.Add(50 * time.Second)
+	if sel, err := selector.Select(handle); err != nil || sel.Account != "acct-a" {
+		t.Fatalf("first hit should refresh and pin: sel=%v err=%v", sel.Account, err)
+	}
+	clock = clock.Add(50 * time.Second)
+	if sel, err := selector.Select(handle); err != nil || sel.Account != "acct-a" {
+		t.Fatalf("active continuation was reclaimed despite use: sel=%v err=%v", sel.Account, err)
+	}
+	// Once genuinely idle past TTL, it expires and fails closed.
+	clock = clock.Add(2 * time.Minute)
+	if selector.BindingCount() != 0 {
+		t.Fatalf("idle binding not reclaimed: count=%d", selector.BindingCount())
+	}
+	if _, err := selector.Select(handle); !IsErrorClass(err, ErrorContinuationUnavailable) {
+		t.Fatalf("expired binding still honored: %v", err)
+	}
+}
+
+func TestSelectorAccountLifecycleIsBounded(t *testing.T) {
+	// F4: account order/status growth is bounded; Add fails closed at the cap,
+	// and Remove hard-prunes order/status and the removed account's bindings.
+	selector, err := NewSelectorFromConfig(SelectorConfig{
+		Rotation:    RotationStrictIndependentRequest,
+		Affinity:    AffinityOriginAccount,
+		Accounts:    []string{"acct-a", "acct-b"},
+		MaxAccounts: 3,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := selector.Add("acct-c"); err != nil {
+		t.Fatalf("Add within bound: %v", err)
+	}
+	if err := selector.Add("acct-d"); !IsErrorClass(err, ErrorAccountCapacity) {
+		t.Fatalf("Add beyond bound should fail closed, got %v", err)
+	}
+	if selector.AccountCount() != 3 {
+		t.Fatalf("account count=%d want 3", selector.AccountCount())
+	}
+	// Re-adding a known account is idempotent (no growth).
+	if err := selector.Add("acct-a"); err != nil || selector.AccountCount() != 3 {
+		t.Fatalf("idempotent re-add changed count: err=%v count=%d", err, selector.AccountCount())
+	}
+	// Bind to acct-c, then hard-remove it: order/status and its bindings prune,
+	// freeing capacity and failing the continuation closed.
+	if err := selector.Bind(ContinuationRefs{PreviousResponseID: "resp-c"}, "acct-c"); err != nil {
+		t.Fatalf("Bind: %v", err)
+	}
+	selector.Remove("acct-c")
+	if selector.AccountCount() != 2 {
+		t.Fatalf("Remove did not prune account: count=%d", selector.AccountCount())
+	}
+	if selector.BindingCount() != 0 {
+		t.Fatalf("Remove did not prune owned binding: count=%d", selector.BindingCount())
+	}
+	if _, err := selector.Select(ContinuationRefs{PreviousResponseID: "resp-c"}); !IsErrorClass(err, ErrorContinuationUnavailable) {
+		t.Fatalf("continuation on removed owner should fail closed, got %v", err)
+	}
+	// Capacity freed by Remove allows a fresh add.
+	if err := selector.Add("acct-d"); err != nil {
+		t.Fatalf("Add after Remove freed capacity should succeed: %v", err)
+	}
+	// Removed account still routes independent requests only to live accounts.
+	for i := 0; i < 6; i++ {
+		sel, err := selector.Select(ContinuationRefs{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if sel.Account == "acct-c" {
+			t.Fatal("removed account was selected")
+		}
+	}
+}
+
+func TestNewSelectorRejectsAccountsExceedingBound(t *testing.T) {
+	if _, err := NewSelectorFromConfig(SelectorConfig{
+		Rotation:    RotationStrictIndependentRequest,
+		Affinity:    AffinityOriginAccount,
+		Accounts:    []string{"acct-a", "acct-b", "acct-c"},
+		MaxAccounts: 2,
+	}); !IsErrorClass(err, ErrorInvalidConfiguration) {
+		t.Fatalf("expected invalid config when initial accounts exceed bound, got %v", err)
+	}
+}

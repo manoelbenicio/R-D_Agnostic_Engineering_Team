@@ -554,3 +554,92 @@ func TestCoordinatorPreservesDeadlineVersusCancellation(t *testing.T) {
 		t.Fatalf("deadline outcome retained as terminal: %d", deadlineCoordinator.TerminalCount())
 	}
 }
+
+// --- W2 second-pass regression tests (F7 callback DeadlineExceeded vs Canceled) ---
+
+func TestCoordinatorCallbackDeadlineExceededWhileContextActiveStaysTimeout(t *testing.T) {
+	// F7: if the callback returns context.DeadlineExceeded while execCtx is
+	// still active (e.g. an inner per-attempt deadline), the outcome must be a
+	// timeout, not collapsed into cancellation.
+	coordinator := newTestCoordinator(t)
+	var calls atomic.Int64
+	_, err := coordinator.Execute(context.Background(), "req-inner-deadline", func(ctx context.Context, attempt int) (AttemptResult, error) {
+		calls.Add(1)
+		// execCtx is still active (30s end-to-end); the callback surfaces its
+		// own DeadlineExceeded directly.
+		return AttemptResult{}, context.DeadlineExceeded
+	})
+	if !IsErrorClass(err, ErrorTimeout) {
+		t.Fatalf("callback DeadlineExceeded collapsed: got %v want timeout", err)
+	}
+	// A timeout is transient, not retained as terminal.
+	if coordinator.TerminalCount() != 0 {
+		t.Fatalf("timeout outcome retained as terminal: %d", coordinator.TerminalCount())
+	}
+}
+
+func TestCoordinatorCallbackCanceledWhileContextActiveStaysCancelled(t *testing.T) {
+	// F7 complement: a callback returning context.Canceled while execCtx is
+	// active is a cancellation.
+	coordinator := newTestCoordinator(t)
+	_, err := coordinator.Execute(context.Background(), "req-inner-cancel", func(ctx context.Context, attempt int) (AttemptResult, error) {
+		return AttemptResult{}, context.Canceled
+	})
+	if !IsErrorClass(err, ErrorCancelled) {
+		t.Fatalf("callback Canceled misclassified: got %v want cancelled", err)
+	}
+	if coordinator.TerminalCount() != 0 {
+		t.Fatalf("cancellation retained as terminal: %d", coordinator.TerminalCount())
+	}
+}
+
+func TestCoordinatorFollowerPreservesDeadlineVersusCancellation(t *testing.T) {
+	// F7 (follower path): a follower waiting on an in-flight leader reports its
+	// own context outcome distinctly — deadline as timeout, cancel as cancelled.
+	run := func(t *testing.T, followerCtx context.Context, wantTimeout bool) {
+		t.Helper()
+		coordinator := newTestCoordinator(t)
+		started := make(chan struct{})
+		release := make(chan struct{})
+		leaderDone := make(chan struct{})
+		go func() {
+			_, _ = coordinator.Execute(context.Background(), "req-follow", func(ctx context.Context, attempt int) (AttemptResult, error) {
+				close(started)
+				<-release
+				return AttemptResult{OutputCommitted: true}, nil
+			})
+			close(leaderDone)
+		}()
+		<-started
+		followerDone := make(chan error, 1)
+		go func() {
+			_, err := coordinator.Execute(followerCtx, "req-follow", func(context.Context, int) (AttemptResult, error) {
+				return AttemptResult{}, nil
+			})
+			followerDone <- err
+		}()
+		waitFor(t, func() bool { return coordinator.FollowerSlots() == 1 })
+		err := <-followerDone
+		if wantTimeout && !IsErrorClass(err, ErrorTimeout) {
+			t.Fatalf("follower deadline collapsed: got %v want timeout", err)
+		}
+		if !wantTimeout && !IsErrorClass(err, ErrorCancelled) {
+			t.Fatalf("follower cancel misclassified: got %v want cancelled", err)
+		}
+		close(release)
+		<-leaderDone
+	}
+
+	t.Run("deadline", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+		defer cancel()
+		run(t, ctx, true)
+	})
+	t.Run("cancel", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		// Cancel shortly after the follower joins.
+		go func() { time.Sleep(20 * time.Millisecond); cancel() }()
+		defer cancel()
+		run(t, ctx, false)
+	})
+}

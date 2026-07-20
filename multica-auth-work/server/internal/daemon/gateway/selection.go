@@ -22,12 +22,17 @@ const (
 	// full of still-live entries, so admitting a new binding would require
 	// evicting an active continuation. It fails closed instead.
 	ErrorContinuationCapacity ErrorClass = "continuation_capacity"
+	// ErrorAccountCapacity is returned when adding a new account would exceed
+	// the configured account bound. It fails closed rather than growing the
+	// rotation order without limit.
+	ErrorAccountCapacity ErrorClass = "account_capacity"
 )
 
 const (
 	defaultMaxBindings = 4096
 	defaultBindingTTL  = 15 * time.Minute
 	maxBindingTTL      = time.Hour
+	defaultMaxAccounts = 256
 )
 
 // AccountStatus is the eligibility state of a pooled account for selection.
@@ -92,6 +97,7 @@ type SelectorConfig struct {
 	Accounts    []string
 	BindingTTL  time.Duration
 	MaxBindings int
+	MaxAccounts int
 
 	now func() time.Time // test clock injection; defaults to time.Now
 }
@@ -129,6 +135,7 @@ type Selector struct {
 	affinityMode AffinityMode
 	bindingTTL   time.Duration
 	maxBindings  int
+	maxAccounts  int
 	now          func() time.Time
 
 	mu       sync.Mutex
@@ -172,6 +179,13 @@ func NewSelectorFromConfig(cfg SelectorConfig) (*Selector, error) {
 	if maxBindings < 1 {
 		return nil, &GatewayError{Operation: "selector", Class: ErrorInvalidConfiguration}
 	}
+	maxAccounts := cfg.MaxAccounts
+	if maxAccounts == 0 {
+		maxAccounts = defaultMaxAccounts
+	}
+	if maxAccounts < 1 || maxAccounts < len(cfg.Accounts) {
+		return nil, &GatewayError{Operation: "selector", Class: ErrorInvalidConfiguration}
+	}
 	now := cfg.now
 	if now == nil {
 		now = time.Now
@@ -193,6 +207,7 @@ func NewSelectorFromConfig(cfg SelectorConfig) (*Selector, error) {
 		affinityMode: cfg.Affinity,
 		bindingTTL:   ttl,
 		maxBindings:  maxBindings,
+		maxAccounts:  maxAccounts,
 		now:          now,
 		order:        order,
 		status:       status,
@@ -212,15 +227,25 @@ func (s *Selector) Select(refs ContinuationRefs) (Selection, error) {
 	now := s.now()
 	s.sweepExpiredLocked(now)
 
-	// Independent request, or a route without continuation affinity: rotate.
-	if key == "" || s.affinityMode == AffinityNone {
+	// A truly independent request rotates and never binds.
+	if key == "" {
 		return s.rotateLocked(SelectionIndependentRotation)
+	}
+	// A route without continuation affinity cannot honor a stateful reference;
+	// fail closed rather than route the continuation to an arbitrary account
+	// (consistent with the origin-account fail-closed path below).
+	if s.affinityMode == AffinityNone {
+		return Selection{}, &GatewayError{Operation: "selector.select", Class: ErrorContinuationUnavailable}
 	}
 
 	binding, exists := s.bindings[key]
 	if exists && s.eligibleLocked(binding.account) {
-		// Affinity hit: pin to the owning account without advancing the shared
-		// cursor so independent rotation is untouched.
+		// Affinity hit: refresh the binding's lifetime so an actively-used
+		// continuation is never reclaimed by the expiry sweep, and pin to the
+		// owning account without advancing the shared cursor so independent
+		// rotation is untouched.
+		binding.expiresAt = now.Add(s.bindingTTL)
+		s.bindings[key] = binding
 		s.sequence++
 		return Selection{Sequence: s.sequence, Account: binding.account, Reason: binding.reason}, nil
 	}
@@ -255,9 +280,9 @@ func (s *Selector) Bind(handle ContinuationRefs, account string) error {
 		return &GatewayError{Operation: "selector.bind", Class: ErrorInvalidRequest}
 	}
 	if s.affinityMode == AffinityNone {
-		// Continuation affinity is disabled for this route; binding is a no-op
-		// so no unbounded state accrues.
-		return nil
+		// A route without continuation affinity cannot own continuation state;
+		// fail closed rather than silently accepting a binding it will not honor.
+		return &GatewayError{Operation: "selector.bind", Class: ErrorContinuationUnavailable}
 	}
 	now := s.now()
 	s.sweepExpiredLocked(now)
@@ -347,18 +372,71 @@ func (s *Selector) SetStatus(account string, status AccountStatus) {
 	}
 }
 
-// Add registers a new account (or re-enables a previously removed one) as
-// eligible, appending it to the rotation order the first time it is seen.
-func (s *Selector) Add(account string) {
+// Add registers a new account, or re-enables a known one, as eligible. A new
+// account is appended to the rotation order the first time it is seen and is
+// rejected with ErrorAccountCapacity once the configured account bound is
+// reached, so the rotation order never grows without limit. Re-enabling a known
+// account never grows state.
+func (s *Selector) Add(account string) error {
 	if account == "" {
-		return
+		return &GatewayError{Operation: "selector.add", Class: ErrorInvalidRequest}
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, exists := s.status[account]; !exists {
-		s.order = append(s.order, account)
+	if _, exists := s.status[account]; exists {
+		s.status[account] = AccountEligible
+		return nil
 	}
+	if len(s.order) >= s.maxAccounts {
+		return &GatewayError{Operation: "selector.add", Class: ErrorAccountCapacity}
+	}
+	s.order = append(s.order, account)
 	s.status[account] = AccountEligible
+	return nil
+}
+
+// Remove hard-prunes an account from the rotation order and status, adjusts the
+// cursor, and drops any continuation bindings it owned, returning account and
+// binding state toward bounded/zero after churn. Unknown accounts are ignored.
+func (s *Selector) Remove(account string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.status[account]; !exists {
+		return
+	}
+	delete(s.status, account)
+	removedIndex := -1
+	newOrder := make([]string, 0, len(s.order))
+	for i, a := range s.order {
+		if a == account {
+			removedIndex = i
+			continue
+		}
+		newOrder = append(newOrder, a)
+	}
+	s.order = newOrder
+	switch {
+	case len(s.order) == 0:
+		s.cursor = 0
+	default:
+		if removedIndex >= 0 && removedIndex < s.cursor {
+			s.cursor--
+		}
+		s.cursor = ((s.cursor % len(s.order)) + len(s.order)) % len(s.order)
+	}
+	for key, binding := range s.bindings {
+		if binding.account == account {
+			delete(s.bindings, key)
+		}
+	}
+}
+
+// AccountCount returns the number of accounts currently in the rotation order
+// (eligible or not), for diagnostics and bound proofs.
+func (s *Selector) AccountCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.order)
 }
 
 // EligibleAccounts returns a sorted snapshot of currently eligible accounts for

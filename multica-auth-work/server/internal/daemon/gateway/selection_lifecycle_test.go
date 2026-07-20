@@ -132,7 +132,9 @@ func TestSelectorAccountLifecycleAndReentryUnderConcurrentLoad(t *testing.T) {
 	assertBalancedStrictRotation(t, collectConcurrentSelections(t, selector, 96), []string{"acct-a", "acct-b", "acct-c"})
 
 	// A newly added account joins the rotation without breaking atomicity.
-	selector.Add("acct-d")
+	if err := selector.Add("acct-d"); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
 	assertBalancedStrictRotation(t, collectConcurrentSelections(t, selector, 96), []string{"acct-a", "acct-b", "acct-c", "acct-d"})
 }
 
@@ -150,7 +152,9 @@ func TestSelectorReAddedRemovedAccountBecomesEligibleAgain(t *testing.T) {
 	}
 	// Re-enable via status and add a brand-new account.
 	selector.SetStatus("acct-b", AccountEligible)
-	selector.Add("acct-c")
+	if err := selector.Add("acct-c"); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
 	got := selector.EligibleAccounts()
 	want := map[string]bool{"acct-a": true, "acct-b": true, "acct-c": true}
 	if len(got) != len(want) {
@@ -162,7 +166,9 @@ func TestSelectorReAddedRemovedAccountBecomesEligibleAgain(t *testing.T) {
 		}
 	}
 	// Adding an already-known account is idempotent (no duplicate rotation slot).
-	selector.Add("acct-a")
+	if err := selector.Add("acct-a"); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
 	if got := selector.EligibleAccounts(); len(got) != 3 {
 		t.Fatalf("re-adding known account changed rotation size: %v", got)
 	}

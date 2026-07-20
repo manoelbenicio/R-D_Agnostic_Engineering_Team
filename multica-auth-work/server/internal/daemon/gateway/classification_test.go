@@ -68,20 +68,28 @@ func TestClassifyFailureCoversTheFullAuthQuotaRateAndUpstreamMatrix(t *testing.T
 			class:  ErrorRateLimited, scope: CircuitProvider, retryable: true, quota: QuotaLimited,
 		},
 		{
-			// Taxonomy 4: gateway-local overload, distinct from provider/account throttle.
+			// Taxonomy 4: model-scoped throttle isolates one model.
+			name:   "model-scope-429",
+			signal: FailureSignal{StatusCode: http.StatusTooManyRequests, RateScope: RateLimitScopeModel},
+			class:  ErrorRateLimited, scope: CircuitModel, retryable: true, quota: QuotaLimited,
+		},
+		{
+			// Taxonomy 5: gateway-local overload, distinct from provider/account throttle.
 			name:   "local-overload",
 			signal: FailureSignal{LocalOverload: true},
 			class:  ErrorOverloaded, scope: CircuitLocal, retryable: true, quota: QuotaUnknown,
 		},
 		{
+			// Taxonomy 6: provider 503 is upstream-unavailable on the provider
+			// circuit, NOT a gateway-local overload.
+			name:   "upstream-unavailable-503",
+			signal: FailureSignal{StatusCode: http.StatusServiceUnavailable},
+			class:  ErrorOverloaded, scope: CircuitProvider, retryable: true, quota: QuotaUnknown,
+		},
+		{
 			name:   "server-5xx",
 			signal: FailureSignal{StatusCode: http.StatusInternalServerError},
 			class:  ErrorUpstream, scope: CircuitProvider, retryable: true, quota: QuotaUnknown,
-		},
-		{
-			name:   "service-unavailable",
-			signal: FailureSignal{StatusCode: http.StatusServiceUnavailable},
-			class:  ErrorOverloaded, scope: CircuitLocal, retryable: true, quota: QuotaUnknown,
 		},
 		{
 			name:   "timeout",
@@ -118,6 +126,8 @@ func TestClassifyFailureKeepsThrottleAndOverloadTaxonomiesDistinct(t *testing.T)
 	accountThrottle := ClassifyFailure(FailureSignal{StatusCode: http.StatusTooManyRequests, RateScope: RateLimitScopeAccount})
 	accountExhausted := ClassifyFailure(FailureSignal{StatusCode: http.StatusTooManyRequests, RateScope: RateLimitScopeAccount, QuotaExhausted: true})
 	providerThrottle := ClassifyFailure(FailureSignal{StatusCode: http.StatusTooManyRequests, RateScope: RateLimitScopeProvider})
+	modelScope := ClassifyFailure(FailureSignal{StatusCode: http.StatusTooManyRequests, RateScope: RateLimitScopeModel})
+	upstreamUnavailable := ClassifyFailure(FailureSignal{StatusCode: http.StatusServiceUnavailable})
 	localOverload := ClassifyFailure(FailureSignal{LocalOverload: true})
 
 	// Account throttle vs account quota exhaustion: same class/scope but the
@@ -128,31 +138,41 @@ func TestClassifyFailureKeepsThrottleAndOverloadTaxonomiesDistinct(t *testing.T)
 	if accountThrottle.Scope != CircuitAccount || accountExhausted.Scope != CircuitAccount {
 		t.Fatalf("account taxonomies must stay account-scoped")
 	}
+	// Model-scoped throttle must be model-scoped, never account/provider.
+	if modelScope.Scope != CircuitModel {
+		t.Fatalf("model-scoped throttle leaked scope %v", modelScope.Scope)
+	}
 	// Provider-global throttle must be provider-scoped, never account-scoped.
 	if providerThrottle.Scope != CircuitProvider {
 		t.Fatalf("provider-global throttle leaked scope %v", providerThrottle.Scope)
 	}
-	// Local overload must be its own class and local scope.
+	// A provider 503 is upstream-unavailable on the provider circuit, NOT local.
+	if upstreamUnavailable.Class != ErrorOverloaded || upstreamUnavailable.Scope != CircuitProvider {
+		t.Fatalf("503 not classified as provider upstream-unavailable: %#v", upstreamUnavailable)
+	}
+	// Local overload must be its own class and local scope, distinct from 503.
 	if localOverload.Class != ErrorOverloaded || localOverload.Scope != CircuitLocal {
 		t.Fatalf("local overload not distinct: %#v", localOverload)
 	}
-	// All four remain retryable (recovery is scoped backoff/fallback), but no
-	// two of them collapse to the same (class, scope, quota) tuple except the
-	// two account-scoped ones which are separated by quota state.
+	if upstreamUnavailable.Scope == localOverload.Scope {
+		t.Fatal("503 upstream-unavailable collapsed into local overload")
+	}
+	// All six taxonomies remain retryable (recovery is scoped backoff/fallback)
+	// and map to six distinct (class, scope, quota) tuples.
 	type tuple struct {
 		class ErrorClass
 		scope CircuitScope
 		quota QuotaState
 	}
 	seen := map[tuple]int{}
-	for _, d := range []FailureDecision{accountThrottle, accountExhausted, providerThrottle, localOverload} {
+	for _, d := range []FailureDecision{accountThrottle, accountExhausted, providerThrottle, modelScope, upstreamUnavailable, localOverload} {
 		if !d.Retryable {
 			t.Fatalf("throttle/overload taxonomy unexpectedly non-retryable: %#v", d)
 		}
 		seen[tuple{d.Class, d.Scope, d.Quota}]++
 	}
-	if len(seen) != 4 {
-		t.Fatalf("throttle/overload taxonomies collapsed: %d distinct tuples, want 4", len(seen))
+	if len(seen) != 6 {
+		t.Fatalf("throttle/overload taxonomies collapsed: %d distinct tuples, want 6", len(seen))
 	}
 }
 

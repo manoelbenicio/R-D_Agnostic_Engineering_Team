@@ -204,7 +204,7 @@ func (c *Coordinator) follow(ctx context.Context, flight *coordinatorFlight) (Ex
 	defer c.followers.Add(-1)
 	select {
 	case <-ctx.Done():
-		return ExecutionResult{Deduplicated: true}, contextError("coordinator.execute", ctx)
+		return ExecutionResult{Deduplicated: true}, contextError("coordinator.execute", ctx, ctx.Err())
 	case <-flight.done:
 		// A follower ran no attempts of its own; it only inherits the leader's
 		// terminal error under the deduplication contract.
@@ -239,7 +239,7 @@ func (c *Coordinator) lead(ctx context.Context, requestID string, flight *coordi
 	var lastErr error
 	for attempt := 1; attempt <= c.policy.MaxAttempts; attempt++ {
 		if execCtx.Err() != nil {
-			return result, contextError("coordinator.execute", execCtx)
+			return result, contextError("coordinator.execute", execCtx, execCtx.Err())
 		}
 
 		result.Attempts++
@@ -258,10 +258,11 @@ func (c *Coordinator) lead(ctx context.Context, requestID string, flight *coordi
 			return result, err
 		}
 		// A caller cancellation or end-to-end deadline is terminal for this call
-		// but not for the id; surface cancelled vs timeout distinctly and
+		// but not for the id; surface cancelled vs timeout distinctly (honoring a
+		// deadline the callback returned even while execCtx is still active) and
 		// release the slot.
 		if isContextError(execCtx, err) {
-			return result, contextError("coordinator.execute", execCtx)
+			return result, contextError("coordinator.execute", execCtx, err)
 		}
 		// Only retryable classified errors may be replayed before first output.
 		if !isRetryable(err) {
@@ -270,8 +271,8 @@ func (c *Coordinator) lead(ctx context.Context, requestID string, flight *coordi
 		if attempt == c.policy.MaxAttempts {
 			break
 		}
-		if err := c.sleep(execCtx, c.backoff(attempt, err)); err != nil {
-			return result, contextError("coordinator.execute", execCtx)
+		if sleepErr := c.sleep(execCtx, c.backoff(attempt, err)); sleepErr != nil {
+			return result, contextError("coordinator.execute", execCtx, sleepErr)
 		}
 	}
 	return result, lastErr
@@ -379,11 +380,19 @@ func isContextError(ctx context.Context, err error) bool {
 }
 
 // contextError preserves the distinction between an end-to-end deadline
-// (timeout, retryable) and an explicit cancellation (cancelled). It never
-// collapses a deadline into a cancellation.
-func contextError(operation string, ctx context.Context) error {
-	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+// (timeout, retryable) and an explicit cancellation (cancelled), considering
+// both the context state and any context error the callback returned. A
+// callback that returns context.DeadlineExceeded while execCtx is still active
+// is still a timeout; it is never collapsed into a cancellation.
+func contextError(operation string, ctx context.Context, err error) error {
+	// An explicit cancellation of the context is authoritative.
+	if errors.Is(ctx.Err(), context.Canceled) {
+		return &GatewayError{Operation: operation, Class: ErrorCancelled}
+	}
+	// A deadline from the context or surfaced by the callback is a timeout.
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) {
 		return &GatewayError{Operation: operation, Class: ErrorTimeout, Retryable: true}
 	}
+	// Otherwise honor a cancellation the callback reported directly.
 	return &GatewayError{Operation: operation, Class: ErrorCancelled}
 }
