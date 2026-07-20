@@ -439,7 +439,15 @@ func runDaemonForeground(cmd *cobra.Command) error {
 	defer stop()
 
 	logger := logger_pkg.NewLogger("daemon")
-	d := daemon.New(cfg, logger)
+	var d *daemon.Daemon
+	if cfg.AgentBrain.DevelopmentEnabled && cfg.AgentBrain.Neutral.Gateway.Required {
+		d = daemon.NewWithAgentBrainDependencies(cfg, logger, daemon.AgentBrainDependencies{
+			CredentialSource: daemon.FileCredentialSource{},
+			HTTPClient:       &http.Client{Timeout: 10 * time.Second},
+		})
+	} else {
+		d = daemon.New(cfg, logger)
+	}
 
 	// Write PID file so "daemon stop" can find us.
 	if dir := daemonDirForProfile(profile); dir != "" {
