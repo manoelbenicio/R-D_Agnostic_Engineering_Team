@@ -89,3 +89,109 @@ Coordinators (excluded from the 8 workers): `w3:pW` = Kiro-TL-Orchestrator (plan
 > Pane ids re-read live from `herdr pane list` at dispatch time (ids compact on close). This mapping
 > is a PROPOSAL for Codex56-Principal-TL; verbatim lane prompts are in DISPATCH_QUEUE.md (Wave B),
 > and remain NOT DISPATCHED until EV-ZERO-OVERLAP is ACCEPTED. Prodex/9.1/PD-08/keys/cutover HELD.
+
+---
+
+## AMENDMENT 2026-07-19 — W4 real observability stack included (re-acceptance pending)
+
+**Trigger:** W4 commit `2c5f4d4` rejected as insufficient for OBS-11. Root cause: the original W4
+freeze covered `internal/daemon/deploy/**` + `internal/daemon/observability/**` (server-relative)
+but OMITTED the actual tracked Grafana/Prometheus/Alertmanager stack at
+`multica-auth-work/deploy/observability/**` (repo-root-relative). This amendment assigns that exact
+existing path **exclusively to W4**. Planning-only; no product edits.
+
+**Amended W4 ownership adds (20 tracked files):** `multica-auth-work/deploy/observability/` —
+`docker-compose.yml`, `prometheus.yml`, `alertmanager.yml`, `alerts.yml`,
+`grafana/dashboards/*.json`, `grafana/provisioning/**`, `pg-exporter-entrypoint.sh`,
+`README.md`, `.env.example`, `.gitignore`, `secrets/*.example` (example templates only — NO real
+secret values may be introduced; NO-SECRET hold applies).
+
+**Re-run proof (repo-root-relative):**
+```
+counts: W1=69 W2=25 W3=19 W4=46   (W4 = 26 server + 20 real stack); total = 159
+W1 ∩ W2 = 0
+W1 ∩ W3 = 0
+W1 ∩ W4 = 0
+W2 ∩ W3 = 0
+W2 ∩ W4 = 0
+W3 ∩ W4 = 0
+TOTAL overlaps = 0
+new stack files added to W4 = 20 (disjoint tree: multica-auth-work/deploy/ is a sibling of server/)
+```
+
+**Verdict: PASS (amended)** — the real stack is exclusively W4 and disjoint from all lanes.
+
+**Governance:** the base EV-ZERO-OVERLAP was ACCEPTED @ `4c67ae0`; this amendment RE-OPENS it for
+**re-acceptance by Codex56-Principal-TL**. Until the amended proof is accepted, **W4 MUST NOT edit
+the real stack `multica-auth-work/deploy/observability/**` and MUST NOT claim OBS-11.** Commit
+`2c5f4d4` is recorded **PRODUCED-NOT-ACCEPTED** (not done).
+
+## RE-ACCEPTANCE 2026-07-19 — amended EV-ZERO-OVERLAP ACCEPTED @ fbabd9c
+
+Codex56-Principal-TL independently RE-ACCEPTED the amended proof: matched remote HEAD `fbabd9c`,
+hashes `a4a147…` and `2f345e…`, 20 real-stack files, W1/W2/W3/W4 counts 69/25/19/46, all pairwise
+intersections zero, both OpenSpec changes strict-valid. **W4 hold is LIFTED** — W4 may now edit the
+real stack `multica-auth-work/deploy/observability/**` and pursue OBS-11 within its frozen scope
+(no real secret values in `secrets/*.example`).
+
+Related adjudications (produced-not-accepted): W4 `2c5f4d4` (omitted real stack) and W3 `2a64fc6`
+(guessed nonexistent W5 API; no compile; premature DONE; wrote into W8 evidence path). Each must be
+redone truthfully within frozen scope; W3 must compile against W5's PUBLISHED contract.
+
+
+---
+
+## AMENDMENT 2026-07-19 — Wave B.1 (D-V3-19) four NEW test paths; fresh re-run at CURRENT planning HEAD
+
+**Council:** unanimous (Owner + Kiro-TL + Codex56-Principal-TL). **Planning HEAD at re-run:** `3763f167ead0c904ca6302ea3f87948b0c7ac3ef` (before this proof commit). **Scope:** add ONLY four NEW `*_test.go` paths to W6/W7; no source/schema/migration/generated/shared-anchor transfer.
+
+> Note on hashes: the earlier `a4a147…`/`2f345e…` pair was the `fbabd9c`-era content. This re-run is on
+> the CURRENT planning HEAD tree; the artifact/ownership hashes below are recomputed post-amendment and
+> are the authoritative D-V3-19 pins.
+
+### Level 1 — FILE-GLOB zero-overlap (re-run on current HEAD tree)
+
+```
+counts (unchanged — test paths are NEW, do not alter source-lane sets):
+  W1=69  W2=25  W3=19  W4=46   (total existing 159)
+W1 ∩ W2 = 0   W1 ∩ W3 = 0   W1 ∩ W4 = 0
+W2 ∩ W3 = 0   W2 ∩ W4 = 0   W3 ∩ W4 = 0
+TOTAL overlaps (W1–W4) = 0
+
+Four NEW D-V3-19 test paths — absent at HEAD (no collision), each matches EXACTLY one lane:
+  internal/middleware/obs_ingress_test.go   present=0  → W6 only
+  internal/daemonws/obs_delivery_test.go    present=0  → W6 only
+  internal/service/obs_queue_test.go        present=0  → W7 only
+  internal/service/obs_persist_test.go      present=0  → W7 only
+Pairwise ∩ among the four new paths = 0 (distinct files).
+```
+
+### Level 2 — Go-package / TestMain coupling (the D-V3-19 safeguard proof)
+
+```
+package middleware : existing *_test.go=9 ; TestMain declared=NONE ; W1 Wave-C anchor in pkg=NONE
+                     → obs_ingress_test.go: CLEAN (no anchor, no TestMain conflict)
+package daemonws   : existing *_test.go=1 ; TestMain declared=NONE ; W1 Wave-C anchor in pkg=hub.go
+                     → obs_delivery_test.go: package-coupled to W1 anchor hub.go (Wave C) — safeguard applies
+package service    : existing *_test.go=8 ; TestMain declared=NONE ; W1 Wave-C anchor in pkg=task.go
+                     → obs_queue_test.go + obs_persist_test.go: package-coupled to W1 anchor task.go (Wave C) — safeguard applies
+```
+
+**Coupling verdict:** No package currently declares a `TestMain`, so the safeguard is enforceable — the
+four new test files must add **no `TestMain` and no side-effecting `init()`**, must target the frozen
+span-helper contract, and must not edit/force changes to `hub.go`/`task.go`/`request_logger.go`. W6's
+`middleware` file is fully decoupled. W6/W7 daemonws+service files are package-coupled to W1 Wave C
+anchors → their authoring/wiring stays subordinate to W1 serial integration; W7 authoring is HELD until
+`obs_queue.go`/`obs_persist.go` source exists and is frozen.
+
+### OpenSpec strict validation (both changes, openspec 1.4.1)
+
+```
+openspec validate build-omniroute-agent-brain --strict        → "is valid" (exit 0)
+openspec validate persist-prodex-runtime-integration --strict → "is valid" (exit 0)
+```
+
+**Verdict: PASS (amended, Wave B.1).** File-glob disjoint; four new test paths absent + single-lane;
+package/TestMain coupling identified and safeguarded (W1-serial); both OpenSpec changes strict-valid.
+W6 test dispatch may be PREPARED. W7 implementation HELD until its source helper contract is frozen.
+Holds preserved: 9.1/capacity/PD-08/keys/Prodex/cutover/production/tier 50/100.

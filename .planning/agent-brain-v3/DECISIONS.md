@@ -143,6 +143,233 @@
   `EV-ZERO-OVERLAP`; novo requisito AB-REQ-41 (recovery-mode) e risco R29 (contenção de merge).
 - STATUS: APROVADO / ATIVO.
 
+### D-V3-19 — Wave B.1 emenda mínima de ownership de TESTES (RECOMENDAÇÃO / PENDENTE — não implementar)
+- Proposta ao council (owner + Kiro-TL + Codex56-Principal-TL). **REGISTRO DE RECOMENDAÇÃO APENAS — NÃO
+  implementada, NÃO despachada.** Nenhuma linha de ownership foi adicionada a `FILE_OWNERSHIP.md`; nenhuma
+  revalidação de zero-overlap foi executada nesta entrada.
+- **Escopo proposto (mínimo):** W6 passa a possuir também `internal/middleware/obs_ingress_test.go` +
+  `internal/daemonws/obs_delivery_test.go`; W7 passa a possuir também `internal/service/obs_queue_test.go`
+  + `internal/service/obs_persist_test.go`. **Sem** migração DB, SQL, código gerado, colunas de schema, ou
+  transferência de shared anchor. W1 retém os call-sites compartilhados `task.go`/`request_logger.go`/`hub.go`
+  e a fiação final da Wave C.
+- **Recomendação independente do Kiro-TL = ACEITAR (escopo-de-arquivo) com duas condições de execução:**
+  (a) zero-overlap em nível de ARQUIVO é comprovadamente preservado (4 caminhos novos, cada um casando
+  exatamente uma lane; ∩ permanece 0) — a metade W6 (`obs_ingress_test.go` em `middleware`,
+  `obs_delivery_test.go` em `daemonws`) é um ACEITE limpo que fecha a única lacuna de aceitação do W6;
+  (b) **acoplamento de compilação em nível de PACOTE fica W1-serial:** os testes W7 compilam em
+  `package service` junto de `task.go` (âncora Wave C) e o teste `obs_delivery_test.go` junto de `hub.go` —
+  devem mirar o contrato de helper CONGELADO e não forçar edição de nenhuma âncora; o wiring de call-site
+  permanece W1 Wave C; a autoria dos testes W7 só é significativa após o helper W7 existir (design
+  zero-schema), portanto gated ao build do helper W7.
+- **Governança obrigatória antes de qualquer dispatch:** atualizar `FILE_OWNERSHIP.md`, **re-rodar
+  EV-ZERO-OVERLAP hashes/interseções sobre o HEAD ATUAL do planning** (NÃO sobre os hashes `fbabd9c`
+  `a4a147…`/`2f345e…`, que são de commit anterior — hashes atuais do HEAD `b77bbba`:
+  `FILE_OWNERSHIP.md`=`1af3c37c…`, `ev-zero-overlap-wave-b0.md`=`36267dc2…`), strict-validar OpenSpec, e
+  obter sign-off de council (owner + Kiro + Principal).
+- STATUS: **APROVADA / ACEITA** (ratificação do Owner 2026-07-19; council unânime Owner + Kiro-TL +
+  Codex56-Principal-TL) com os safeguards declarados. Emenda planning-only EXECUTADA: 4 caminhos de teste
+  NOVOS adicionados a `FILE_OWNERSHIP.md` (sem transferência de source/schema/migração/shared-anchor);
+  safeguards de acoplamento TestMain/pacote registrados; EV-ZERO-OVERLAP re-rodado no HEAD atual em nível
+  file-glob E Go-package/TestMain = PASS; ambas validações OpenSpec strict = valid. **Dispatch de teste W6
+  pode ser PREPARADO após PASS; implementação W6/W7 fica sob D-V3-21 (Priority 2 / DEFERRED atrás do P0).**
+  Holds preservados.
+
+### D-V3-21 — Design zero-schema W7 ACEITO como arquitetura, mas Priority 2 / DEFERRED atrás do P0 Main Brain
+- Decisão do dono 2026-07-19. O design **zero-schema** do W7 (IDs determinísticos de queue/result derivados
+  de metadata estável — `task_id` + attempt/kind/timestamp/status; nunca conteúdo/segredo; span de
+  queue/persist autoritativo único por tarefa sintética bem-sucedida; falhas/cancelamentos classificados
+  separadamente) é **ACEITO como arquitetura**.
+- **Prioridade:** **Priority 2 / DEFERRED.** NÃO despachar a implementação de observabilidade W7
+  (queue/persist) — nem consumir capacidade de **Priority-0 Main Brain** com implementação W6/W7 de
+  observabilidade — até o **P0 Main Brain estar funcionalmente completo, integrado, testado e rodando
+  corretamente**, OU reautorização explícita do dono.
+- **Permitido agora:** a prova planning-only do D-V3-19 (ownership de teste + EV-ZERO-OVERLAP + validação)
+  pode completar; **D-V3-20 permanece** (testes funcionais/unit/integração/protocolo/falha/retry/afinidade/
+  cancelamento/paridade prosseguem pré-G4-OBS). Coordenação foca lacunas **não-observabilidade** do Main Brain.
+- STATUS: **ACEITA (arquitetura) / DEFERRED (implementação, Priority 2)**. Firewall de evidência do D-V3-20
+  e todos os holds preservados: 9.1/capacidade/PD-08/keys/Prodex/cutover/produção/tier 50/100.
+
+### D-V3-22 — Arquitetura do context-carrier CONGELADA (metadata-only), mas Priority 2 / DEFERRED atrás do P0
+- Decisão do dono 2026-07-19. Arquitetura do carrier de contexto **APROVADA e CONGELADA**:
+  - **W5** possui a **API de contexto metadata-only** sob `internal/daemon/observability/e2e/**` (a lib é
+    CHAMADA pelas lanes, nunca co-editada — consistente com D-V3-18).
+  - **W1 (serial)** possui a **injeção do launch-anchor** (call-site na Wave C central).
+  - **W3** **lê** o carrier nos seus adapters owned (`runtimeenv/**` + `pkg/agent/{claude,codex,kimi,nim,
+    antigravity}.go` coordenados) — leitura apenas, sem editar a lib W5 nem os anchors W1.
+  - **Sem transferência de ExecOptions/schema/global/credencial.** Metadata-only; `secrets_present=false`;
+    `contract_version` fail-closed no boundary de parse/uso.
+  - **Telemetria ausente/inválida NUNCA quebra a execução** (fail-open para o caminho de execução;
+    fail-closed apenas para aceitação de observabilidade). Correção funcional é independente do carrier.
+- **Prioridade:** **Priority 2 / DEFERRED.** NENHUM dispatch de implementação até o **P0 Main Brain estar
+  funcionalmente completo, integrado, testado e rodando corretamente**, OU reautorização explícita do dono.
+- **Gates preservados:** aceitação **G4/G4-OBS** permanece exigida ANTES de capacidade/cutover (D-V3-17);
+  D-V3-20 (testes funcionais pré-OBS) permanece; unblock de W3/OBS-5 depende desta propagação via Wave C
+  quando reautorizada.
+- STATUS: **CONGELADA (arquitetura) / DEFERRED (implementação, Priority 2)**. Holds preservados:
+  9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
+
+### D-V3-23 — Arquitetura do exporter Prometheus CONGELADA (span→Prometheus), Priority 2 / DEFERRED; SEM nona lane concorrente
+- Decisão do dono 2026-07-19. Arquitetura do exporter span→Prometheus **APROVADA e CONGELADA**:
+  - **Árvore exclusiva** `internal/daemon/observability/promexport/**` (novo tree do exporter).
+  - **NÃO é uma nona lane concorrente:** uma lane P2 existente será **reatribuída** a este tree mais tarde
+    (não abrir W-OBS-EXP como 9ª lane simultânea). **Nenhuma prova EV-ZERO-OVERLAP é rodada agora** — a
+    **prova fresca de overlap (file-glob + Go-package/TestMain) e ambas validações OpenSpec strict são
+    OBRIGATÓRIAS antes de qualquer dispatch futuro**, no momento da reatribuição, sobre o HEAD de então.
+  - **W5** = contrato canônico de span (fonte da verdade dos nomes/labels); **W4** = dashboards/rules que
+    CONSOMEM os nomes de métrica como contrato; **W1 serial** = âncora de registry (registrar o exporter no
+    ponto único de runtime-authority, Wave C).
+  - **Contrato de métrica bounded EXATO (canônico):** `obs_hop_latency_seconds`, `obs_hop_errors_total`,
+    `obs_hop_drops_total`, `obs_trace_gaps_total`, `obs_trace_continuous_ratio`,
+    `obs_leak_scan_failures_total`, `g4_obs_prerequisites_met`.
+  - **Proibido em labels de métrica:** IDs, pseudônimos, free-form e qualquer label de alta cardinalidade
+    (pseudônimos principal/account/connection permanecem trace-only, nunca viram label de métrica — evita
+    exatamente o defeito de cardinalidade que rejeitou W4 `e96343f`/`06031b2`).
+  - **SLOs de latência numéricos permanecem measure-first / owner-ratify antes de 9.1** (D-V3 ballot item 7):
+    o exporter expõe `obs_hop_latency_seconds` mas nenhum threshold numérico é travado aqui.
+- **Prioridade:** **Priority 2 / DEFERRED.** NENHUM dispatch de implementação até o **P0 Main Brain estar
+  funcionalmente completo, integrado, testado e rodando corretamente**, OU reautorização explícita do dono.
+- **Gates preservados:** este exporter é o pré-requisito que torna **OBS-11 aceitável** (W4 `47c693c` é
+  PRODUCED-NOT-ACCEPTED justamente porque nenhum exporter aceito emite as métricas). Aceitação **G4-OBS**
+  (OBS-1..OBS-11, D-V3-17) permanece exigida ANTES de capacidade/cutover; D-V3-20 preservado.
+- STATUS: **CONGELADA (arquitetura) / DEFERRED (implementação, Priority 2); reserved path, sem lane
+  concorrente; prova fresca exigida antes de dispatch.** Holds preservados:
+  9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
+
+### D-V3-24 — Checkpoints de OBS reduced-hop = DIAGNÓSTICO TEMPORÁRIO (zero crédito de aceitação); escopo final NÃO-NEGOCIÁVEL
+- Decisão do dono 2026-07-19 (Decision 5, APROVADA COM EMENDA ESTRITA). Registro em substância:
+- **Reduced-hop diagnostics são permitidos APENAS como diagnóstico temporário durante a implementação do
+  Main Brain.** Conferem **ZERO crédito de aceitação final** e **DEVEM ser rotulados
+  `PARTIAL-HOP DIAGNOSTIC — NOT G4 ACCEPTANCE`.**
+- **Após a conclusão do Main Brain, o escopo final é NÃO-NEGOCIÁVEL** e não pode ser reduzido para cenários
+  small/medium/complex: observabilidade E2E fina em **cada hop exigido** E em cada cenário
+  **funcional/performance/rede/recurso/falha/retry/afinidade/cancelamento/recovery**; métricas Prometheus;
+  drilldowns profundos no Grafana; Alertmanager firing/recovery; correlação a traces/logs detalhados e
+  seguros; diagnóstico de bottleneck/performance/rede; **100% de continuidade de trace sintético
+  bem-sucedido; zero gaps/orphans/leaks; labels bounded; evidência independente**.
+- **Nenhum checkpoint parcial pode fechar OBS/G4, nem autorizar 9.1/capacidade, cutover ou produção.**
+- **Consistência com decisões vigentes:** reforça o firewall de evidência do D-V3-20 (verdes não-observados
+  = evidência de correção apenas) e o gate D-V3-17 (G4-OBS aceito antes de capacidade/cutover). Implementação
+  de observabilidade permanece **Priority 2** salvo autorização expressa (D-V3-21/22/23).
+- STATUS: **ACEITA (Decision 5, emenda estrita).** Holds preservados:
+  9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
+
+### D-V3-25 — OWNER DECISION 6: remediação PD-08 APROVADA mas DEFERRED para Priority 2; chaves controladas pelo dono
+- Decisão do dono 2026-07-19. Remediação PD-08 **APROVADA**, porém o trabalho de engenharia é **DEFERRED
+  para Priority 2** (não é prioridade máxima). O **dono controla pessoalmente todas as chaves** e pode
+  invalidar a chave exposta diretamente na UI do provider. Separação registrada:
+  - **(A)** Nenhum agente faz handling de chave / exibição de valor / execução de rotação. (reafirma
+    delegation-only; TL/agentes nunca leem/imprimem/copiam/movem/reescrevem valor de credencial.)
+  - **(B)** A chave exposta antiga **permanece PROIBIDA** e os **testes com live-provider permanecem
+    SECURITY-STOPPED** até o dono confirmar a invalidação/revogação na UI.
+  - **(C)** Testes P0 **offline/sintéticos continuam** (consistente com D-V3-20; ex.: o teste de
+    credential-isolation do W1 é sintético/no-secret).
+  - **(D)** A remediação/boundary PD-08 completa **OmniRoute-only** (credential boundary + scans) executa
+    em **P2** com os safeguards declarados.
+  - **Proibido:** auth bypass, reescrita de histórico, `git gc`/`prune` (commit forense de 13-jul
+    permanece retido).
+- **Relação:** resolve a direção de **PD-08** (antes PENDENTE do dono) para APROVADA-mas-P2-DEFERRED; o
+  STOP operacional segue vigente até confirmação de revogação (B). Não altera D-V3-16/17/18/20/21/22/23/24.
+- STATUS: **ACEITA (Decision 6).** Holds preservados: 9.1/capacidade/PD-08(exec)/keys/Prodex/cutover/
+  produção/canary/soak/tier 50/100.
+
+### D-V3-26 — OWNER DECISION 7: branch de integração P0 protegido `integration/agent-brain-p0`, W1 integrador serial único
+- Decisão do dono 2026-07-19 (council-unânime). Arquitetura de integração P0 **APROVADA**:
+  - **`main` `b657129` permanece INTOCADO** (sem merge para main).
+  - Branch protegido **`integration/agent-brain-p0`**; **W1 é o ÚNICO integrador serial**.
+  - **W5 `fd4aa4d` = fundação canônica.** Ordem de integração: fundação W5 → **W1** (latest
+    independentemente-revisado) → **W2** → **W3/W4 conforme necessário**.
+  - **Implementação deferida W6/W7/promexport EXCLUÍDA do P0.**
+  - **Safeguards:** patches W5 duplicados **dedup por patch-id**; **dry-run descartável no latest-tip
+    primeiro**; resolução de conflito de ownership **arquivo-por-arquivo** (SEM `ours`/`theirs` em massa);
+    **sem force push**; **reviewer independente ≠ adjudicador**; **build/test/race/vet/smoke/provenance
+    offline completos ANTES de atualizar o branch**.
+  - **NÃO autoriza:** merge para main, credenciais live, 9.1/capacidade, Prodex, cutover ou produção.
+  - **Gate de dispatch:** preparar a **fila de integração escrita AGORA**; **NÃO despachar integração
+    autoritativa** até os **commits ativos W1/W3/W4 terminarem e as revisões independentes passarem.**
+- **Observação (2026-07-19, Kiro-TL):** os tips das lanes AVANÇARAM além do último commit revisado —
+  W1 `9745eaf`→`3711eb4` (teste credential-isolation offline), W2 `7a2a808`→`528d1bb` (teste P0 failure
+  boundaries), W3 origin `1716186`, W4 `47c693c`→`0a291d9` (teste rollout-trigger/runbook). Estes commits
+  ativos aguardam revisão independente → integração **HELD** conforme o gate. A fila integra o **latest
+  independentemente-revisado** por lane, não o tip cru.
+- STATUS: **ACEITA (Decision 7); fila escrita PREPARADA, integração NÃO despachada.** Holds preservados:
+  9.1/capacidade/PD-08/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
+
+### D-V3-27 — OWNER DECISION 8: matriz de rotas autoritativa CONGELADA (live non-prod acceptance obrigatória p/ P0)
+- Decisão do dono 2026-07-19 (council-unânime). Substitui o texto genérico de "cinco vendors" pela matriz
+  autoritativa. Aceitação **live non-prod** do OmniRoute permanece **OBRIGATÓRIA para a conclusão do P0
+  Main Brain**. Nenhuma task é aceita apenas por prosa. Matriz congelada (detalhe + evidências em
+  `evidence/authoritative-route-matrix-D-V3-27.md`):
+  1. **Antigravity** — já totalmente testado com OmniRoute → **tratar como FULLY OPERATIONAL**, sujeito a
+     **revalidação de provenance/evidence/hashes**, não reimplementação redundante.
+  2. **Claude** = rota aceita. 3. **Codex** = rota aceita.
+  4. **Kimi** como modelo via **Cline** como provider/runtime principal: **Cline → Kimi-K2.7**.
+  5. **Cline** também serve **GLM52**.
+  6. **NVIDIA = fallback do GLM52**, com seleção/fallback **exclusivamente OmniRoute-owned e bounded** —
+     Agent Brain **nunca** possui creds de provider nem toma decisão de fallback.
+  7. **Kiro** = **Opus48 da AWS**.
+- **Evidência exigida por rota aplicável:** protocol/tools/reasoning/usage/cancel/error; **mais evidência
+  explícita de primary/fallback para GLM52→NVIDIA**. **Sem dual router; sem credenciais nativas diretas.**
+- **Não marcar aceito por prosa:** revalidar hashes/evidence existentes do Antigravity; testar as rotas
+  restantes independentemente (producer ≠ reviewer ≠ adjudicador).
+- **Dependência:** por D-V3-25(B), testes live-provider ficam **SECURITY-STOPPED** até o dono confirmar a
+  revogação da chave exposta na UI → aceitação live desta matriz **BLOQUEADA até revogação confirmada**;
+  trabalho offline/sintético e a revalidação de provenance do Antigravity podem prosseguir.
+- **Conflito OpenSpec REPORTADO (não editado aqui):** `specs/omniroute-agent-routing/spec.md:4` usa o texto
+  genérico "Kimi/GLM/NVIDIA/Antigravity frontends", que não captura Cline→Kimi-K2.7, Cline→GLM52,
+  NVIDIA-fallback, Antigravity-operacional, nem Kiro=Opus48/AWS; checklist/design/tasks carregam o mesmo
+  enquadramento genérico. **Correção de spec exige processo de council/W8** — flagged, não alterado.
+- STATUS: **ACEITA (Decision 8); matriz CONGELADA; aceitação live gated por D-V3-25(B); conflito OpenSpec
+  reportado p/ correção de council.** Sem capacidade/Prodex/cutover/produção. Holds preservados.
+
+### D-V3-28 — OWNER DIRECTIVE: execução LIVE-FIRST do P0, sem fase de pré-teste duplicativa (emenda D-V3-20 + Decision 8)
+- Direção do dono 2026-07-19. Regra governante de execução P0: como o sistema é **não-produção**, **cada
+  slice funcional pendente é validado LIVE no ambiente de integração non-prod à medida que é construído**.
+- **Unit/property/race/vet permanecem checks de regressão rápida OBRIGATÓRIOS**, mas **NÃO são uma fase de
+  pré-aceitação separada** e **não devem atrasar/repetir** o mesmo trabalho de aceitação posterior.
+- **Um único loop contínuo:** implementar → integrar → exercitar live non-prod → capturar evidência de
+  aceitação → corrigir imediatamente. Aplica-se a **todos os itens pendentes**.
+- **Evidência synthetic-only NUNCA fecha um requisito live**; **não** agendar uma segunda campanha redundante
+  quando o teste live está disponível.
+- **Parar** trabalho de planning que exista apenas para desenhar testes futuros; **refocar as lanes em
+  integração/aceitação live executável.** (Ex.: converter Opus B smoke-runner *design* e Opus C
+  live-readiness *plan* em trabalho live executável; sem readiness/produção claim.)
+- **Emenda:** D-V3-20 (testes funcionais agora **live-first**, não uma fase sintética pré-aceitação separada)
+  e Decision 8/D-V3-27 (aceitação de rota é **live**).
+- **Fronteiras de segurança preservadas (apenas as genuínas):** sem uso de chave exposta/revogada e sem
+  exibição de segredo; **o dono injeta as chaves diretamente no OmniRoute**; sem produção/cutover/Prodex;
+  **sem classificação de capacidade tier-20 antes do G4-OBS** (testes live de concorrência/falha funcional
+  ordinários são permitidos; certificação de capacidade NÃO).
+- **Escopo/limites:** aplica-se aos slices funcionais **P0 Main Brain**. Implementação de observabilidade
+  permanece **P2** (D-V3-21/22/23); o gate **G4-OBS** e o escopo final não-negociável (D-V3-17/24) seguem
+  inalterados. Reconciliação com D-V3-25(B): a chave **antiga/exposta continua proibida**; o loop live usa
+  **chave nova injetada pelo dono no OmniRoute** — portanto o teste live pode prosseguir com chave nova sem
+  usar a chave revogada. Pré-requisitos exatos (sem valores): `evidence/live-first-omniroute-prerequisites-D-V3-28.md`.
+- STATUS: **ACEITA (diretiva governante de execução P0).** Holds preservados:
+  9.1/capacidade/PD-08(chave-exposta)/keys/Prodex/cutover/produção/canary/soak/tier 50/100.
+
+### D-V3-20 — Testes funcionais do Main Brain podem RODAR antes do G4-OBS; D-V3-17 permanece stop-gate de ACEITAÇÃO
+- Direção do dono 2026-07-19 (owner + Codex56-Principal-TL recomendação; Kiro-TL endossa). Esclarece o
+  ESCOPO de D-V3-17 — não o enfraquece. D-V3-17 sempre bloqueou a **validade de alegações de
+  capacidade/cutover**, nunca a **execução de testes de correção funcional**.
+- **EXECUÇÃO — permitida agora, em paralelo, ANTES do G4-OBS:** testes de Main Brain
+  **funcional / unit / integração / protocolo / falha / retry / afinidade / cancelamento / paridade**
+  podem rodar imediatamente e concorrentemente com as lanes OBS. Rodá-los NÃO consome, satisfaz ou
+  contorna o gate G4-OBS.
+- **ACEITAÇÃO — permanece bloqueada por D-V3-17 (OBS-1..OBS-11 aceitos):** nenhuma **certificação de
+  capacidade tier-20 / task 9.1**, **cutover**, **produção** ou **alegação de readiness** pode ser
+  afirmada até o G4-OBS ser aceito. D-V3-17 permanece inalterada como gate de ACEITAÇÃO.
+- **Firewall de evidência (guarda obrigatória):** execuções de teste funcional não-observadas são
+  **evidência de correção apenas**. NÃO podem ser rotuladas, agregadas ou promovidas a evidência de
+  **capacidade / cutover / readiness**. Verdes funcionais não substituem exporters de observabilidade
+  aceitos + sinal E2E ao vivo e não podem ser citados como tal.
+- **Escopo:** D-V3-20 governa a trilha de teste funcional do Main Brain; NÃO altera o gating de dispatch
+  das lanes OBS (ainda pendente de aceitação EV-ZERO-OVERLAP / council) e NÃO toca D-V3-19.
+- **ETA (registrada, com ressalva):** excluindo observabilidade, **24–48h nominal, 72h conservador**
+  (estimativa do Principal) para COMPLETAR a trilha funcional. NÃO é ETA para aceitação G4-OBS,
+  certificação de capacidade, cutover ou readiness — esses permanecem gated e sem cronograma.
+- STATUS: **ACEITA** (owner-dirigida + Principal-recomendada + Kiro-TL-endossada; quorum de council para
+  decisão CRÍTICA). Holds preservados: 9.1/capacidade/PD-08/keys/Prodex/cutover/produção/tier 50/100.
+
 ## Decisões resolvidas pelo dono
 
 - **PD-01 — RESOLVIDA (2026-07-17):** preservar e incorporar a worktree existente de

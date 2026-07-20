@@ -190,7 +190,23 @@ returned APPROVE. Do not replay. Next action is status-only monitoring and evide
 
 ---
 
-# WAVE B — Parallel foundation (READY; NOT DISPATCHED — awaiting owner Wave B authorization)
+# WAVE B — Parallel foundation (AUTHORIZED — NO-SECRET foundation only; EV-ZERO-OVERLAP ACCEPTED)
+
+> **Wave B authorized 2026-07-19** by Council+Owner and **EV-ZERO-OVERLAP ACCEPTED by
+> Codex56-Principal-TL** (independently reproduced at remote-synced commit `4c67ae0`: EV hash
+> `de83dc1b…b8e`, FILE_OWNERSHIP hash `763094f4…210`; both changes strict-valid; branch clean 0/0;
+> ancestry includes `da42282`). Scope = **NO-SECRET foundation work only** under the frozen Wave B.0
+> ownership. HELD: 9.1, PD-08 credential work, key handling/rotation, Prodex activation, cutover,
+> production.
+>
+> **Execution hardening (Codex56-Principal-TL directives):**
+> - **One branch + worktree per lane** (created by Codex56-Principal-TL); lanes work isolated.
+> - **W5 publishes the correlation API contract FIRST**; dependent OBS callers (W1 OBS-4, W2 OBS-6,
+>   W3 OBS-5, W6 OBS-2/8, W7 OBS-3/7) must not finalize against it until published. Other lanes may
+>   begin independent acceptance/audit work in the meantime.
+> - **OpenCode worker panes (W7 `w5:p1`, W8 `w5:p2`) are WITHHELD / to be replaced** until the
+>   exposed `opencode.json` key safety is assured (ties to the held key-rotation work). Reassign W7/W8
+>   to safe panes before dispatch; do not run them on OpenCode until cleared.
 
 > Authored by Kiro/Opus-4.8 (planning owner) during the Wave A governance freeze on branch
 > `planning/agent-brain-observability-freeze` (recovery SHA `da42282`). Wave A authorized
@@ -230,6 +246,13 @@ You are W3 — Runtime/CLI Security for Agent Brain v3. Authorization: Wave B fo
 ```
 
 ## Entry W4 — Ops/Capacity/Evidence (pane `codex4-ops`)
+
+> **AMENDMENT 2026-07-19:** W4 exclusive scope now ALSO includes the real observability stack
+> `multica-auth-work/deploy/observability/**` (Grafana/Prometheus/Alertmanager). OBS-11 acceptance
+> requires this stack. **HOLD:** until the amended EV-ZERO-OVERLAP is RE-ACCEPTED by
+> Codex56-Principal-TL, W4 must NOT edit `multica-auth-work/deploy/observability/**` and must NOT
+> claim OBS-11. W4 commit `2c5f4d4` = PRODUCED-NOT-ACCEPTED (insufficient; stack was omitted).
+> NO real secret values in `secrets/*.example`.
 **Task-IDs:** 8.8; 9.x harness prep (NOT run — gated on G4-OBS PASS); OBS-11. **Files:** `deploy/**`, `observability/dashboards/**`, harness specs, `EVIDENCE_INDEX.md`. **Evidence:** EV-G4-08, EV-OBS-10 (co), EV-OBS-11.
 ```
 You are W4 — Ops/Capacity/Evidence for Agent Brain v3. Authorization: Wave B foundation only; no cutover/tiers/production; do NOT run any capacity tier (9.x is gated on G4-OBS PASS). In deploy/**, observability/dashboards/** and evidence artifacts only (do NOT edit daemon/gateway/runtime impl, central entrypoints, or observability/e2e): finish 8.8 (record evidence against every OmniRoute checklist and Prodex parity ID; stop cutover for unsupported blocker rows without an approved waiver); prepare (do not execute) the 20-task capacity/failure harness so it runs WITH observability instrumentation enabled and measures span overhead (R30); implement OBS-11 — per-hop latency/error/drop/gap dashboards and alerts using pseudonymous identifiers only, plus the consolidated G4-OBS acceptance bundle that declares PASS only when OBS-1..OBS-10 are each independently accepted, OBS-9 shows a continuous trace per synthetic task, and OBS-10 is clean; and co-own OBS-10 with W5 (structural leak scan). PD-08 STOP; secret work is reference-only. Never make Prodex hot. Check in/out to AGENT_LEDGER.md and update EVIDENCE_INDEX.md. Evidence: EV-G4-08, EV-OBS-10 (co), EV-OBS-11. Never print secrets, keys, tokens, cookies, prompts, repo content, or tool payloads.
@@ -262,4 +285,107 @@ You are W8 — Governance and sibling-change closure for Agent Brain v3. Authori
 ## Promotion order (gates)
 Wave B.0 freeze + `EV-ZERO-OVERLAP` → Wave B lanes (W1–W8 parallel) → Wave C (W1 serial central wiring of OBS spans + recovery-mode scaffold) → **G4-OBS stop-gate (OBS-1..OBS-11 PASS, D-V3-17)** → tier-20 capacity (9.1/9.2; needs owner 9.1 A1–F3) → G5 parity → G6 cutover + Prodex quiesced to cold recovery mode. Each gate: TL adjudication + independent review.
 
-Dispatch status: **READY — NOT DISPATCHED.** Awaiting explicit owner authorization for Wave B implementation. Wave A (planning/governance) is the only authorized scope on this branch.
+Dispatch status: **AUTHORIZED — NO-SECRET foundation only (EV-ZERO-OVERLAP ACCEPTED @ 4c67ae0).** Order: W5 publishes the correlation API contract first; all other lanes may start independent acceptance/audit immediately; OBS callers finalize against the W5 contract once published. Central wiring of spans + recovery-mode scaffold remain Wave C (W1 serial). W7/W8 held off OpenCode panes pending key safety. Still HELD: 9.1, PD-08, key rotation, Prodex activation, cutover, production.
+
+
+---
+
+# WAVE B.1 — D-V3-19 minimal TEST-ownership (Council-unanimous 2026-07-19) + Owner P0 priority amendment (D-V3-21)
+
+> Planning-only ownership amendment EXECUTED and PASS (see `evidence/ev-zero-overlap-wave-b0.md` Wave B.1
+> section + `FILE_OWNERSHIP.md` Wave B.1 amendment). Four NEW `*_test.go` paths added to W6/W7; no
+> source/schema/migration/shared-anchor transfer. **Owner priority (D-V3-21):** W6/W7 observability
+> implementation is **Priority 2 / DEFERRED** — must NOT consume Priority-0 Main Brain capacity until P0 is
+> functionally complete/integrated/tested/running OR explicitly reauthorized. Holds intact.
+
+## Entry W6.T — Ingress/Delivery span TESTS (PREP-ONLY; deferred behind P0)
+**Target lane:** W6 (`codex6-ingress-ws`). **NEW owned files:** `internal/middleware/obs_ingress_test.go`,
+`internal/daemonws/obs_delivery_test.go`. **Covers:** `obs_ingress.go`/`obs_delivery.go` (`a715b0a`).
+**Status:** **PREPARE-ONLY.** May be prepared now that EV-ZERO-OVERLAP PASSED; **DO NOT dispatch/implement**
+against Priority-0 Main Brain capacity until P0 complete or explicit reauth (D-V3-21). Safeguards: no
+`TestMain`/no side-effecting `init()`; `obs_delivery_test.go` is package-coupled to W1 anchor `hub.go`
+(Wave C) → must not edit/force-change `hub.go`; target the frozen span-helper contract only. Producer ≠
+reviewer ≠ adjudicator. NOT DISPATCHED.
+
+## Entry W7.T — Queue/Persist span TESTS (HELD; design accepted, deferred behind P0)
+**Target lane:** W7 (`codex7-queue-persist`). **NEW owned files:** `internal/service/obs_queue_test.go`,
+`internal/service/obs_persist_test.go`. **Covers:** `obs_queue.go`/`obs_persist.go` (**not yet produced**).
+**Status:** **HELD.** Zero-schema W7 design ACCEPTED as architecture (D-V3-21) but implementation is
+**Priority 2 / DEFERRED behind P0 Main Brain**. Test authoring blocked until the source helper contract
+exists and is frozen AND P0 reauthorization. Package-coupled to W1 anchor `task.go` (Wave C) → subordinate
+to W1 serial integration; no `TestMain`/no side-effecting `init()`; target frozen helper contract only.
+NOT DISPATCHED.
+
+## Wave B.1 sign-off
+- EV-ZERO-OVERLAP re-run at CURRENT planning HEAD: file-glob PASS (∩=0, 4 paths absent + single-lane) +
+  Go-package/TestMain coupling identified/safeguarded (W1-serial). Both OpenSpec changes strict-valid.
+- **Coordination focus per Owner: non-observability Main Brain gaps (Priority 0).** D-V3-20 functional
+  tests proceed pre-G4-OBS.
+- Holds intact: 9.1/capacity/PD-08/keys/Prodex activation/cutover/production/canary/soak/tier 50/100.
+
+
+---
+
+# P0 INTEGRATION QUEUE — D-V3-26 (PREPARED 2026-07-19; NOT DISPATCHED)
+
+> Written per Owner Decision 7 (council-unanimous). **PREPARE-ONLY.** Authoritative integration is **HELD**
+> until active W1/W3/W4 commits finish AND independent reviews pass. **W1 = sole serial integrator.**
+> `main b657129` remains UNTOUCHED (no main merge). Deferred **W6/W7/promexport EXCLUDED from P0**.
+
+## Foundation
+- **W5 `fd4aa4d`** = canonical foundation (technical integration baseline; Principal gofmt/test/race/vet PASS
+  + independent Gemini structural PASS). All OBS callers cherry-picked this chain.
+
+## Integration order (integrate the LATEST INDEPENDENTLY-REVIEWED commit per lane)
+
+| # | Lane | Latest INDEPENDENTLY-REVIEWED (integrate) | Current tip (PENDING review → gate) | Gate |
+|---|---|---|---|---|
+| I0 | W5 | `fd4aa4d` (canonical foundation) | `fd4aa4d` | ready as foundation |
+| I1 | W1 | `9745eaf` (Gemini static + Principal/Codex daemon test+vet PASS; cross-lane-clean) | **`3711eb4`** "cover credential isolation offline" | HELD — `3711eb4` needs independent review (synthetic/no-secret per D-V3-25C) |
+| I2 | W2 | `7a2a808` (independent Gemini review PASS) | **`528d1bb`** "cover priority-zero failure boundaries" | HELD — `528d1bb` needs independent review |
+| I3 | W3 | *none integrable* (`0ba88da` blocked on W1 Wave C; no accepted OBS-5) | origin **`1716186`** | HELD — no reviewed integrable commit; OBS-5 blocked |
+| I4 | W4 | `47c693c` (promtool 14-rule + Codex review PASS; **OBS-11 PRODUCED-NOT-ACCEPTED** — functional/ops portion only) | **`0a291d9`** "RolloutPlan triggers→OperationsCatalog runbooks" | HELD — `0a291d9` needs independent review; OBS-11 acceptance still gated on promexport (D-V3-23) |
+
+> "Required W3/W4" = only the independently-reviewed **functional/P0** portions; OBS-11 acceptance and any
+> exporter/dashboards remain gated (D-V3-17/23/24) and are NOT closed by integration.
+
+## Mandatory safeguards (before any branch update)
+1. **Disposable latest-tip dry-run FIRST** (throwaway worktree; never on `main` or the protected branch).
+2. **Duplicate W5 patches deduped by `git patch-id`** (the lanes cherry-picked the W5 chain — collapse duplicates).
+3. **File-by-file ownership conflict resolution — NO `ours`/`theirs` bulk strategy.**
+4. **No force push.** No history rewrite, no `gc`/`prune`.
+5. **Independent reviewer ≠ adjudicator ≠ producer** (truthful distinct provenance).
+6. **Full offline build + test + race + vet + smoke + provenance PASS BEFORE updating the branch.**
+7. W1 is the sole serial integrator; lanes do not self-integrate.
+
+## Explicit non-authorizations (D-V3-26)
+- Does **NOT** authorize: main merge · live credentials · 9.1/capacity · Prodex activation · cutover ·
+  production/canary/soak · tiers 50/100. All holds intact.
+
+## Dispatch status
+**PREPARED / NOT DISPATCHED.** Branch `integration/agent-brain-p0` NOT yet created. Authoritative
+integration begins only after the active W1 (`3711eb4`)/W3 (`1716186`)/W4 (`0a291d9`) commits finish and
+their independent reviews pass, then TL/Principal adjudication.
+
+
+---
+
+# P0 LANE RECYCLE — execution (2026-07-19; integration @ 29056e5)
+
+> Integration `origin/integration/agent-brain-p0` @ `29056e5` live (W5→W1→W2→W3→W4; main untouched; image
+> built). Recycle lanes under **frozen ownership**; **live-first (D-V3-28)** — no duplicate pre-test campaign;
+> unit/property/race/vet = fast regression only. **No OBS implementation until functional P0** (P2 defer
+> D-V3-21/22/23); **no capacity/9.1/Prodex/cutover/production.** producer ≠ reviewer ≠ adjudicator; written
+> evidence per slice.
+
+| Lane | Frozen ownership | P0 priority tasks | Live-acceptance basis |
+|---|---|---|---|
+| W1 | central hotspots, brain/**, Wave C wiring | startup + live-smoke; Wave C launch-anchor propagation | adjudicate on landing (pending) |
+| W2 | `gateway/**` | **8.1, 8.4, 8.5, 8.6, 8.7** | live protocol/RR/affinity/failure/lifecycle via OmniRoute |
+| W3 | `runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` | **8.2, 8.3 + 5.6–5.8** (credentialless live routes) | live per D-V3-27: Cline→Kimi-K2.7, Cline→GLM52, NVIDIA fallback, Antigravity revalidate |
+| W4 | `deploy/**`, observability dashboards | rollout/runbook functional (ops) | functional live; OBS-11 stays gated (promexport D-V3-23) |
+
+**Gate:** live route exercise (W2 8.x, W3 5.6–5.8) requires **HD1** — Owner injects fresh key into OmniRoute;
+exposed/old key forbidden (D-V3-25B/28). Credentialless adapter implementation + offline fast-regression may
+proceed now; live acceptance evidence captured once the key is injected. **W6/W7/promexport EXCLUDED (P2).**
+Evidence per route: protocol/tools/reasoning/usage/cancel/error + explicit GLM52→NVIDIA primary/fallback.

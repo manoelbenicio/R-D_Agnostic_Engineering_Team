@@ -1,12 +1,12 @@
 ## 0. Governance and GSD Rebaseline
 
-- [ ] 0.1 [Product owner] Approve the OpenSpec/GSD source hierarchy, G0–G8 roadmap, total ETA range and preservation of RPP/Prodex v2.1 as historical evidence.
+- [x] 0.1 [Product owner] Approve the OpenSpec/GSD source hierarchy, G0–G8 roadmap, total ETA range and preservation of RPP/Prodex v2.1 as historical evidence.
 - [x] 0.2 [Product owner] Confirm Kiro/Principal as the `.planning/` author or explicitly change the current GSD authorship rule before any Codex agent writes GSD artifacts.
 - [x] 0.3 [Kiro/Principal or newly authorized planning owner] Create the Agent Brain v3 GSD `PROJECT`, `REQUIREMENTS`, `ROADMAP`, `STATE`, `DECISIONS`, `RISKS` and phase plans from the approved OpenSpec artifacts.
 - [x] 0.4 [Planning owner] Create bidirectional `TRACEABILITY`, `COMPONENT_REGISTER`, `INTERFACE_REGISTER`, `REMOVAL_REGISTER`, `FILE_OWNERSHIP` and `EVIDENCE_INDEX` documents.
 - [x] 0.5 [Planning owner] Assign a formal disposition to every active/historical OpenSpec change and block concurrent execution of superseded Prodex/router plans.
 - [x] 0.6 [Codex 1 + planning owner] Audit for orphan requirements, scenarios, components, interfaces, tasks, owners, evidence and removal decisions; close every orphan before Wave 0.
-- [ ] 0.7 [Product owner] Approve the GSD v3 baseline and only then mark implementation authorization for Waves 0–3.
+- [x] 0.7 [Product owner] Approve the GSD v3 baseline and only then mark implementation authorization for Waves 0–3.
 
 ## 1. Architecture and Supplier Gate
 

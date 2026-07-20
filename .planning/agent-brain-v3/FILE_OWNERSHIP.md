@@ -104,11 +104,17 @@ globs (cada path casa exatamente uma lane) e registra a prova. Locks em `AGENT_L
 | W1 | `internal/daemon/{daemon,config,health}.go`, `cmd/multica/cmd_daemon.go`, `go.mod`, `internal/daemon/execenv/**`, `pkg/agent/models.go`, `internal/daemon/{prodex.go,prodex_fs_linux.go,prodex_fs_other.go,prodex_profiles.go,l2_runtime.go}`, `internal/daemon/brain/**` | existing |
 | W2 | `internal/daemon/gateway/**` | existing |
 | W3 | `internal/daemon/runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` | existing |
-| W4 | `internal/daemon/deploy/**`, `internal/daemon/observability/**` **EXCEPT `internal/daemon/observability/e2e/**`** | existing (carve-out) |
+| W4 | `internal/daemon/deploy/**`, `internal/daemon/observability/**` **EXCEPT `internal/daemon/observability/e2e/**`**, **PLUS the real stack `multica-auth-work/deploy/observability/**` (repo-root-relative — Grafana/Prometheus/Alertmanager: docker-compose.yml, prometheus.yml, alertmanager.yml, alerts.yml, grafana/**)** | existing (carve-out; amended 2026-07-19) | 
 | W5 | `internal/daemon/observability/e2e/**` | **NEW** |
 | W6 | `internal/middleware/obs_ingress.go` (OBS-2 ingress span), `internal/daemonws/obs_delivery.go` (OBS-8 WS/UI delivery span) | **NEW** |
 | W7 | `internal/service/obs_queue.go` (OBS-3 DB-queue span), `internal/service/obs_persist.go` (OBS-7 terminal-persistence span) | **NEW** |
 | W8 | `openspec/changes/**` docs + `.planning/agent-brain-v3/evidence/**` sibling evidence (no product code) | docs only |
+
+> **Evidence-path clarification (2026-07-19, from W3↔W8 overlap adjudication):** each lane writes ONLY
+> its own EV-id-namespaced artifact under `.planning/agent-brain-v3/evidence/` (e.g., W3 → `EV-OBS-05`
+> file, W4 → `EV-OBS-11` file). **W8's evidence scope is limited to sibling-change reopened-task
+> evidence** (chat-orchestration / agent-credential-isolation / native-runtimes-onboarding) — it does
+> NOT own other lanes' OBS evidence. No lane writes into another lane's EV artifact.
 
 **Shared anchor files — Wave C, W1-serial only (NOT in W6/W7 static ownership):** the call-site
 insertions that invoke the W6/W7 span helpers live in shared files and are inserted exclusively by
@@ -117,6 +123,47 @@ W1 during Wave C serial integration: `internal/metrics/http.go` (or router chain
 enqueue/dequeue + terminal-result sites → call `obs_queue`/`obs_persist`. W6/W7 own only their new
 span-emitter files and call the W5 `observability/e2e` library; they do NOT edit the shared anchors.
 
-**Zero-overlap result (see EV-ZERO-OVERLAP):** existing lanes W1–W4 = 139 tracked files, all
-pairwise intersections = 0; W5/W6/W7 target paths confirmed absent (no collision); shared anchors
-reserved to W1-serial. No file is claimed by two lanes.
+**Zero-overlap result (see EV-ZERO-OVERLAP + 2026-07-19 amendment):** existing lanes W1–W4 =
+**159 tracked files after amendment** (W1 69, W2 25, W3 19, W4 46 = 26 server + 20 real stack),
+all pairwise intersections = 0; W5/W6/W7 target paths absent; shared anchors reserved to W1-serial.
+No file is claimed by two lanes. **OBS-11 (dashboards/alerts) acceptance requires the real stack
+`multica-auth-work/deploy/observability/**`, now exclusively W4.** Note: all lane globs are
+server-relative (`multica-auth-work/server/…`) EXCEPT W4's stack path, which is repo-root-relative.
+
+
+## WAVE B.1 AMENDMENT — D-V3-19 minimal TEST-ownership (Council-unanimous 2026-07-19: Owner + Kiro-TL + Codex56-Principal-TL)
+
+> Planning-only amendment. Adds EXACTLY four NEW `*_test.go` paths to W6/W7 frozen ownership.
+> **No source, schema, migration, generated code, or shared-anchor transfer.** W1 retains all shared
+> call sites (`internal/service/task.go`, `internal/metrics/http.go`, `internal/daemonws/hub.go`,
+> `internal/middleware/request_logger.go`) and the final Wave C wiring. Paths are relative to
+> `multica-auth-work/server/`. Fresh EV-ZERO-OVERLAP re-run recorded in `evidence/ev-zero-overlap-wave-b0.md`.
+
+| Lane | NEW test path (FROZEN) | Package | Covers (already-produced source) |
+|---|---|---|---|
+| W6 | `internal/middleware/obs_ingress_test.go` | `middleware` | `obs_ingress.go` (OBS-2 ingress span, `a715b0a`) |
+| W6 | `internal/daemonws/obs_delivery_test.go` | `daemonws` | `obs_delivery.go` (OBS-8 WS/UI delivery span, `a715b0a`) |
+| W7 | `internal/service/obs_queue_test.go` | `service` | `obs_queue.go` (OBS-3 DB-queue span, **not yet produced — held**) |
+| W7 | `internal/service/obs_persist_test.go` | `service` | `obs_persist.go` (OBS-7 terminal-persistence span, **not yet produced — held**) |
+
+**Package / TestMain coupling safeguards (mandatory, verified at amendment time):**
+1. **No `TestMain` and no side-effecting package `init()` in any of the four new test files.** Verified: `middleware`, `daemonws`, and `service` currently declare **zero** `TestMain` (only one `TestMain` per package is legal; introducing one would break the shared compile unit and could perturb W1's Wave C edits). New files use plain `func TestXxx(t *testing.T)` only.
+2. **Package-compilation coupling is acknowledged and stays W1-serial:** `internal/daemonws/obs_delivery_test.go` compiles in `package daemonws` alongside the W1 Wave C anchor `hub.go`; `internal/service/obs_queue_test.go` + `obs_persist_test.go` compile in `package service` alongside the W1 Wave C anchor `task.go`. The test files MUST target the **frozen span-helper contract** and MUST NOT edit, import-cycle, or force any change to `hub.go`/`task.go`/`request_logger.go`. `internal/middleware/obs_ingress_test.go` has **no** W1 anchor in its package (clean).
+3. **W6 test dispatch may be PREPARED only after the fresh EV-ZERO-OVERLAP PASS** (recorded), because W6's source (`obs_ingress.go`/`obs_delivery.go`) already exists at `a715b0a`. **PRIORITY (Owner, 2026-07-19, D-V3-21):** even prepared, W6/W7 observability *implementation* is **Priority 2 / DEFERRED** and must NOT consume Priority-0 Main Brain capacity until P0 is functionally complete/integrated/tested/running OR explicitly reauthorized.
+4. **W7 implementation remains HELD** until its source helper contract (`obs_queue.go`/`obs_persist.go`, zero-schema deterministic IDs — D-V3-19 item 2 / D-V3-21 accepted architecture) exists and is frozen; the W7 test paths are owned but not authored until then, and W7 dispatch is additionally **DEFERRED behind Priority-0 Main Brain** (D-V3-21).
+5. No shared anchor is transferred; call-site insertions that invoke the span helpers remain exclusively W1 during Wave C serial integration.
+
+
+## RESERVED FUTURE EXCLUSIVE PATH — D-V3-23 (promexport; NOT a concurrent lane)
+
+> `internal/daemon/observability/promexport/**` (span→Prometheus exporter) is a **frozen, reserved
+> exclusive tree** per D-V3-23. It is **NOT an active/9th concurrent lane** — an existing Priority-2 lane
+> will be **reassigned** to it later. **No EV-ZERO-OVERLAP proof is run for it now.** Before ANY future
+> dispatch: run a **fresh EV-ZERO-OVERLAP (file-glob + Go-package/TestMain) + both OpenSpec strict
+> validations** on the then-current HEAD, and add its ownership row at reassignment time.
+> Ownership at reassignment: this tree is exclusive to the reassigned lane; **W5** owns the canonical span
+> contract, **W4** owns dashboards/rules (consumers), **W1 serial** owns the registry anchor (Wave C).
+> Bounded metric contract: `obs_hop_latency_seconds`, `obs_hop_errors_total`, `obs_hop_drops_total`,
+> `obs_trace_gaps_total`, `obs_trace_continuous_ratio`, `obs_leak_scan_failures_total`,
+> `g4_obs_prerequisites_met`. **Prohibited metric labels:** IDs, pseudonyms, free-form, any high-cardinality
+> label (pseudonyms stay trace-only). Priority 2 / DEFERRED behind P0 Main Brain. Holds intact.
