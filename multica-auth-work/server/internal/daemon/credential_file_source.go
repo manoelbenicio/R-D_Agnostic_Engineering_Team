@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"unicode"
@@ -13,28 +14,29 @@ import (
 )
 
 const (
-	// credentialFileMaxBytes bounds the read to reject unreasonable files
-	// (binary, accidental mount, etc.) without disclosing content shape.
+	// credentialFileMaxBytes bounds the read to reject unreasonable files.
 	credentialFileMaxBytes = 4096
 	// credentialMinTrimmedLen rejects obviously empty or stub files.
 	credentialMinTrimmedLen = 8
+	// credentialAllowedModeMask: any group or world bit set → reject.
+	// Accepts 0600 (owner rw only) or stricter (0400).
+	credentialAllowedModeMask = os.FileMode(0o077)
 )
 
-// FileCredentialSource is the production gateway.CredentialSource that reads a
-// restricted secret file at call time, validates its content shape without
-// logging or returning the value outside the callback, and fails closed on any
-// metadata or content-shape violation. The value is never cached beyond the
-// callback scope.
+// FileCredentialSource is the production gateway.CredentialSource.
+// It reads a restricted secret file at call time with fail-closed
+// metadata and content-shape validation. The value is never cached,
+// logged, or returned outside the callback scope.
 //
-// Validation (fail-closed):
-//   - path must be non-empty and absolute (enforced by brain.SecretFileRef)
-//   - file must exist and be a regular file (no symlink, directory, device)
-//   - file permissions must not be world-readable (mode & 0o004 == 0)
-//   - file size must be <= credentialFileMaxBytes
-//   - content must be valid UTF-8 after trimming
-//   - trimmed content must be >= credentialMinTrimmedLen
-//   - trimmed content must not contain control characters (except none after trim)
-//   - trimmed content must not contain whitespace (single token)
+// Security model:
+//   - File is opened with O_NOFOLLOW semantics (see platform helpers) to
+//     reject symlinks atomically at open time, eliminating the TOCTOU race
+//     between a separate Lstat and a subsequent ReadFile.
+//   - Metadata (type, mode, owner) is validated via Fstat on the SAME open
+//     file descriptor — not a re-stat of the path.
+//   - Content is read from the SAME descriptor.
+//   - Mode must have no group or world bits (enforces ≤ 0600).
+//   - Owner must be the current process UID (platform-specific; see helpers).
 type FileCredentialSource struct{}
 
 // compile-time interface check
@@ -48,27 +50,45 @@ func (FileCredentialSource) WithCredential(ctx context.Context, ref brain.Secret
 		return &credentialFileError{reason: "secret_file_ref_empty"}
 	}
 
-	// Metadata validation: regular file, not world-readable.
-	info, err := os.Lstat(ref.Path)
+	// openNoFollow opens the file with O_NOFOLLOW on Unix (ELOOP on symlink)
+	// or a best-effort Lstat guard on Windows — see platform build-tagged files.
+	f, err := openCredentialFile(ref.Path)
 	if err != nil {
-		return &credentialFileError{reason: "secret_file_not_found"}
+		return err
+	}
+	defer f.Close()
+
+	// Fstat the open descriptor — validates the same object we will read.
+	info, err := f.Stat()
+	if err != nil {
+		return &credentialFileError{reason: "secret_file_stat_failed"}
 	}
 	if !info.Mode().IsRegular() {
 		return &credentialFileError{reason: "secret_file_not_regular"}
 	}
-	if info.Mode().Perm()&0o004 != 0 {
-		return &credentialFileError{reason: "secret_file_world_readable"}
+	// Reject any group or world permission bit.
+	if info.Mode().Perm()&credentialAllowedModeMask != 0 {
+		return &credentialFileError{reason: "secret_file_permissions_too_open"}
+	}
+	// Verify owner matches the running process UID (platform-specific).
+	if err := checkCredentialOwner(info); err != nil {
+		return err
 	}
 	if info.Size() > credentialFileMaxBytes {
 		return &credentialFileError{reason: "secret_file_too_large"}
 	}
 
-	// Read and validate content shape (never log or return raw value).
-	data, err := os.ReadFile(ref.Path)
-	if err != nil {
+	// Read from the same open descriptor — no reopen, no TOCTOU.
+	buf := make([]byte, credentialFileMaxBytes+1)
+	n, err := io.ReadFull(f, buf)
+	if err != nil && err != io.ErrUnexpectedEOF {
 		return &credentialFileError{reason: "secret_file_read_failed"}
 	}
-	value := strings.TrimSpace(string(data))
+	if n > credentialFileMaxBytes {
+		return &credentialFileError{reason: "secret_file_too_large"}
+	}
+
+	value := strings.TrimSpace(string(buf[:n]))
 
 	if len(value) < credentialMinTrimmedLen {
 		return &credentialFileError{reason: "secret_file_content_too_short"}
