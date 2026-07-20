@@ -39,6 +39,7 @@ assert_content() {
 }
 
 HOST_HOME="${TMP_DIR}/host-home"
+export AGENT_CRED_ISOLATION_MIGRATE_LEGACY=1
 STATE_ROOT="${TMP_DIR}/state"
 FAKE_BIN="${TMP_DIR}/bin"
 LEGACY_AUTH="${TMP_DIR}/legacy-auth.json"

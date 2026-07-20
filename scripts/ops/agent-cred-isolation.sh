@@ -185,21 +185,18 @@ agent_cred_isolation_copy_file_once() {
 agent_cred_isolation_migrate_slot() {
   local slot_root="$1"
 
-  # Copy the native vendor stores once, preserving live OAuth state, SQLite
-  # sidecars, and vendor-specific metadata. Never overwrite an initialized
-  # slot: after migration its copy is the source of truth for that terminal.
-  agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_HOME}/.codex" "${slot_root}/codex" || return 1
-  agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_HOME}/.cline" "${slot_root}/cline" || return 1
-  agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_HOME}/.gemini/antigravity-cli" "${slot_root}/home/.gemini/antigravity-cli" || return 1
-  agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_XDG_DATA_HOME}/kiro-cli" "${slot_root}/xdg-data/kiro-cli" || return 1
-  agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_XDG_DATA_HOME}/opencode" "${slot_root}/xdg-data/opencode" || return 1
-  agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_XDG_CONFIG_HOME}/opencode" "${slot_root}/xdg-config/opencode" || return 1
-
-  # Keep compatibility with hosts that enrolled GLM into an explicit `glm`
-  # XDG directory. Fleet GLM agents that run through OpenCode use the copied
-  # opencode directories above; both layouts remain physically per-slot.
-  agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_XDG_DATA_HOME}/glm" "${slot_root}/xdg-data/glm" || return 1
-  agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_XDG_CONFIG_HOME}/glm" "${slot_root}/xdg-config/glm" || return 1
+  if [[ "${AGENT_CRED_ISOLATION_MIGRATE_LEGACY:-0}" == "1" ]]; then
+    # Migration is explicit because copying one shared credential store into
+    # every new terminal would duplicate an identity across the fleet.
+    agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_HOME}/.codex" "${slot_root}/codex" || return 1
+    agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_HOME}/.cline" "${slot_root}/cline" || return 1
+    agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_HOME}/.gemini/antigravity-cli" "${slot_root}/home/.gemini/antigravity-cli" || return 1
+    agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_XDG_DATA_HOME}/kiro-cli" "${slot_root}/xdg-data/kiro-cli" || return 1
+    agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_XDG_DATA_HOME}/opencode" "${slot_root}/xdg-data/opencode" || return 1
+    agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_XDG_CONFIG_HOME}/opencode" "${slot_root}/xdg-config/opencode" || return 1
+    agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_XDG_DATA_HOME}/glm" "${slot_root}/xdg-data/glm" || return 1
+    agent_cred_isolation_copy_dir_once "${AGENT_CRED_ISOLATION_HOST_XDG_CONFIG_HOME}/glm" "${slot_root}/xdg-config/glm" || return 1
+  fi
 
   mkdir -p "${slot_root}/codex" "${slot_root}/cline" \
     "${slot_root}/home/.gemini/antigravity-cli" "${slot_root}/xdg-data/kiro-cli" \
@@ -278,11 +275,13 @@ agent_cred_isolation_bootstrap() {
     exec {lock_fd}>&-
     return 1
   }
-  agent_cred_isolation_import_legacy_codex_homes_locked || {
-    flock -u "${lock_fd}"
-    exec {lock_fd}>&-
-    return 1
-  }
+  if [[ "${AGENT_CRED_ISOLATION_MIGRATE_LEGACY:-0}" == "1" ]]; then
+    agent_cred_isolation_import_legacy_codex_homes_locked || {
+      flock -u "${lock_fd}"
+      exec {lock_fd}>&-
+      return 1
+    }
+  fi
   terminal_id="$(agent_cred_isolation_terminal_id_locked)" || {
     flock -u "${lock_fd}"
     exec {lock_fd}>&-
@@ -687,6 +686,9 @@ Usage:
 The sourceable form allocates a stable Herdr terminal slot and exports:
 CODEX_HOME; XDG_DATA_HOME/XDG_CONFIG_HOME (Kiro, OpenCode, GLM);
 CLINE_DATA_DIR/CLINE_SANDBOX_DATA_DIR (Cline); and HOME (Antigravity/agy).
+Legacy credential copying is disabled by default. Set
+AGENT_CRED_ISOLATION_MIGRATE_LEGACY=1 only for an explicitly authorized,
+one-time migration.
 USAGE
 }
 
