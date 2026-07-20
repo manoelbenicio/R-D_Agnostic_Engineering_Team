@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+const (
+	defaultDedupTTL   = 5 * time.Minute
+	maxDedupTTL       = time.Hour
+	defaultMaxTracked = 4096
+)
+
 // AttemptResult reports what an individual upstream attempt committed. Once a
 // request has delivered user-visible output or performed a potentially
 // non-idempotent tool action it can never be safely replayed.
@@ -37,24 +43,44 @@ type coordinatorFlight struct {
 }
 
 type terminalRecord struct {
-	result ExecutionResult
-	err    error
+	result    ExecutionResult
+	err       error
+	expiresAt time.Time
+}
+
+// CoordinatorConfig configures a Coordinator. Policy is required; DedupTTL and
+// MaxTracked default when zero.
+type CoordinatorConfig struct {
+	Policy     RetryPolicy
+	DedupTTL   time.Duration
+	MaxTracked int
+
+	now   func() time.Time                                 // test clock injection
+	sleep func(ctx context.Context, d time.Duration) error // test sleep injection
 }
 
 // Coordinator bounds and deduplicates upstream execution for a route. It:
+//   - admits a request atomically — the in-flight slot and dedup registration
+//     are committed under one lock before any attempt runs, and released
+//     exactly once on every exit;
 //   - retries only before the first user-visible output or tool action, and
 //     only for retryable classified errors, bounded by attempts and the
 //     end-to-end deadline;
 //   - never replays a request after partial output or a committed tool action;
-//   - deduplicates concurrent and repeated requests that share a request id so
-//     a completed request is not re-executed; and
-//   - releases its in-flight capacity slot deterministically on completion or
-//     cancellation, and a pre-output cancellation does not poison the id for a
-//     later legitimate retry.
+//   - deduplicates concurrent and repeated requests that share a request id,
+//     retaining deterministic terminal outcomes (success and non-retryable
+//     terminal failures) so a completed request is not re-executed, while a
+//     pre-output cancellation or a transient/deadline outcome does not poison
+//     the id for a legitimate retry;
+//   - bounds dedup state: terminal records expire after DedupTTL, can be
+//     dropped explicitly via Forget, and are capped at MaxTracked with
+//     oldest-first eviction that never touches an in-flight entry.
 type Coordinator struct {
-	policy RetryPolicy
-	now    func() time.Time
-	sleep  func(ctx context.Context, d time.Duration) error
+	policy     RetryPolicy
+	dedupTTL   time.Duration
+	maxTracked int
+	now        func() time.Time
+	sleep      func(ctx context.Context, d time.Duration) error
 
 	mu       sync.Mutex
 	terminal map[string]terminalRecord
@@ -64,21 +90,51 @@ type Coordinator struct {
 	followers atomic.Int64
 }
 
-// NewCoordinator builds a Coordinator from a validated RetryPolicy. The policy
-// must be pre-commit-only, matching the routing contract.
+// NewCoordinator builds a Coordinator from a validated RetryPolicy with default
+// dedup bounds.
 func NewCoordinator(policy RetryPolicy) (*Coordinator, error) {
+	return NewCoordinatorFromConfig(CoordinatorConfig{Policy: policy})
+}
+
+// NewCoordinatorFromConfig builds a Coordinator from an explicit configuration.
+func NewCoordinatorFromConfig(cfg CoordinatorConfig) (*Coordinator, error) {
+	policy := cfg.Policy
 	if policy.MaxAttempts < 1 || policy.MaxAttempts > 10 ||
 		policy.EndToEndDeadline <= 0 || policy.EndToEndDeadline > 10*time.Minute ||
 		!policy.PreCommitOnly ||
 		policy.MinimumBackoff < 0 || policy.MaximumBackoff < policy.MinimumBackoff || policy.MaximumBackoff > time.Minute {
 		return nil, &GatewayError{Operation: "coordinator", Class: ErrorInvalidConfiguration}
 	}
+	ttl := cfg.DedupTTL
+	if ttl == 0 {
+		ttl = defaultDedupTTL
+	}
+	if ttl < 0 || ttl > maxDedupTTL {
+		return nil, &GatewayError{Operation: "coordinator", Class: ErrorInvalidConfiguration}
+	}
+	maxTracked := cfg.MaxTracked
+	if maxTracked == 0 {
+		maxTracked = defaultMaxTracked
+	}
+	if maxTracked < 1 {
+		return nil, &GatewayError{Operation: "coordinator", Class: ErrorInvalidConfiguration}
+	}
+	now := cfg.now
+	if now == nil {
+		now = time.Now
+	}
+	sleep := cfg.sleep
+	if sleep == nil {
+		sleep = sleepContext
+	}
 	return &Coordinator{
-		policy:   policy,
-		now:      time.Now,
-		sleep:    sleepContext,
-		terminal: make(map[string]terminalRecord),
-		inFlight: make(map[string]*coordinatorFlight),
+		policy:     policy,
+		dedupTTL:   ttl,
+		maxTracked: maxTracked,
+		now:        now,
+		sleep:      sleep,
+		terminal:   make(map[string]terminalRecord),
+		inFlight:   make(map[string]*coordinatorFlight),
 	}, nil
 }
 
@@ -89,14 +145,39 @@ func (c *Coordinator) ActiveSlots() int64 { return c.active.Load() }
 // in-flight request.
 func (c *Coordinator) FollowerSlots() int64 { return c.followers.Load() }
 
-// Execute runs run under the coordinator's retry, replay, dedup and
-// cancellation contract, keyed by requestID.
+// InFlightCount is the number of distinct leader requests currently tracked.
+func (c *Coordinator) InFlightCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return len(c.inFlight)
+}
+
+// TerminalCount is the number of retained terminal records after reclaiming any
+// that have expired.
+func (c *Coordinator) TerminalCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.sweepExpiredTerminalLocked(c.now())
+	return len(c.terminal)
+}
+
+// Forget drops any retained terminal record for a request id, e.g. when the
+// owning session completes or is cancelled, returning dedup state toward zero.
+func (c *Coordinator) Forget(requestID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.terminal, requestID)
+}
+
+// Execute runs run under the coordinator's retry, replay, dedup, cancellation
+// and bounded-state contract, keyed by requestID.
 func (c *Coordinator) Execute(ctx context.Context, requestID string, run AttemptFunc) (ExecutionResult, error) {
 	if strings.TrimSpace(requestID) == "" || run == nil {
 		return ExecutionResult{}, &GatewayError{Operation: "coordinator.execute", Class: ErrorInvalidRequest}
 	}
 
 	c.mu.Lock()
+	c.sweepExpiredTerminalLocked(c.now())
 	if record, terminal := c.terminal[requestID]; terminal {
 		c.mu.Unlock()
 		return ExecutionResult{Deduplicated: true}, record.err
@@ -105,16 +186,19 @@ func (c *Coordinator) Execute(ctx context.Context, requestID string, run Attempt
 		c.mu.Unlock()
 		return c.follow(ctx, flight)
 	}
+	// Atomic admission: commit the dedup registration and acquire the in-flight
+	// slot under a single lock, before any attempt can run.
 	flight := &coordinatorFlight{done: make(chan struct{})}
 	c.inFlight[requestID] = flight
+	c.active.Add(1)
 	c.mu.Unlock()
 
 	return c.lead(ctx, requestID, flight, run)
 }
 
 // follow waits on an in-flight leader and shares its terminal outcome. A
-// follower's own cancellation is reported as cancelled and never poisons the
-// leader or the request id.
+// follower's own cancellation/deadline is reported distinctly and never poisons
+// the leader or the request id.
 func (c *Coordinator) follow(ctx context.Context, flight *coordinatorFlight) (ExecutionResult, error) {
 	c.followers.Add(1)
 	defer c.followers.Add(-1)
@@ -129,31 +213,32 @@ func (c *Coordinator) follow(ctx context.Context, flight *coordinatorFlight) (Ex
 }
 
 func (c *Coordinator) lead(ctx context.Context, requestID string, flight *coordinatorFlight, run AttemptFunc) (result ExecutionResult, resultErr error) {
-	c.active.Add(1)
-
 	execCtx, cancel := context.WithTimeout(ctx, c.policy.EndToEndDeadline)
 	defer cancel()
 
 	committed := false
 	defer func() {
-		c.active.Add(-1)
 		c.mu.Lock()
-		// A completed (successful) or committed request is terminal and must
-		// not be replayed by a later duplicate. A pre-output cancellation is
-		// NOT terminal so a legitimate resubmission may still run.
-		if resultErr == nil || committed {
-			c.terminal[requestID] = terminalRecord{result: result, err: resultErr}
+		// Retain deterministic terminal outcomes so duplicates are deduplicated:
+		// a success, a committed request, or a non-retryable classified failure.
+		// A pre-output cancellation or a transient/deadline outcome is NOT
+		// terminal, so a legitimate resubmission may still run.
+		if resultErr == nil || committed || isTerminalFailure(resultErr) {
+			c.recordTerminalLocked(requestID, result, resultErr, c.now())
 		}
 		flight.result = result
 		flight.err = resultErr
 		delete(c.inFlight, requestID)
 		close(flight.done)
+		// Release the in-flight slot exactly once, paired with the acquisition
+		// in Execute.
+		c.active.Add(-1)
 		c.mu.Unlock()
 	}()
 
 	var lastErr error
 	for attempt := 1; attempt <= c.policy.MaxAttempts; attempt++ {
-		if err := execCtx.Err(); err != nil {
+		if execCtx.Err() != nil {
 			return result, contextError("coordinator.execute", execCtx)
 		}
 
@@ -172,8 +257,9 @@ func (c *Coordinator) lead(ctx context.Context, requestID string, flight *coordi
 		if committed {
 			return result, err
 		}
-		// A caller/deadline cancellation is terminal-for-this-call but not for
-		// the id; surface it as cancelled/timeout and release the slot.
+		// A caller cancellation or end-to-end deadline is terminal for this call
+		// but not for the id; surface cancelled vs timeout distinctly and
+		// release the slot.
 		if isContextError(execCtx, err) {
 			return result, contextError("coordinator.execute", execCtx)
 		}
@@ -189,6 +275,38 @@ func (c *Coordinator) lead(ctx context.Context, requestID string, flight *coordi
 		}
 	}
 	return result, lastErr
+}
+
+// recordTerminalLocked stores a terminal record under the capacity bound.
+// Callers must hold c.mu. Eviction removes the oldest completed record; it can
+// never remove an in-flight entry because those live in a separate map.
+func (c *Coordinator) recordTerminalLocked(requestID string, result ExecutionResult, err error, now time.Time) {
+	if _, exists := c.terminal[requestID]; !exists && len(c.terminal) >= c.maxTracked {
+		c.evictOldestTerminalLocked()
+	}
+	c.terminal[requestID] = terminalRecord{result: result, err: err, expiresAt: now.Add(c.dedupTTL)}
+}
+
+func (c *Coordinator) evictOldestTerminalLocked() {
+	var oldestID string
+	var oldest time.Time
+	first := true
+	for id, record := range c.terminal {
+		if first || record.expiresAt.Before(oldest) {
+			oldestID, oldest, first = id, record.expiresAt, false
+		}
+	}
+	if !first {
+		delete(c.terminal, oldestID)
+	}
+}
+
+func (c *Coordinator) sweepExpiredTerminalLocked(now time.Time) {
+	for id, record := range c.terminal {
+		if !record.expiresAt.IsZero() && !now.Before(record.expiresAt) {
+			delete(c.terminal, id)
+		}
+	}
 }
 
 // backoff computes the pre-commit retry delay, honoring an upstream Retry-After
@@ -229,6 +347,22 @@ func isRetryable(err error) bool {
 	return errors.As(err, &gatewayErr) && gatewayErr.Retryable
 }
 
+// isTerminalFailure reports whether a non-nil error is a deterministic terminal
+// failure that should be deduplicated. Retryable errors are transient;
+// cancellation is never terminal (a pre-output cancel must not poison the id);
+// an end-to-end deadline surfaces as a retryable timeout and is likewise not
+// terminal.
+func isTerminalFailure(err error) bool {
+	var gatewayErr *GatewayError
+	if !errors.As(err, &gatewayErr) {
+		return false
+	}
+	if gatewayErr.Retryable || gatewayErr.Class == ErrorCancelled {
+		return false
+	}
+	return true
+}
+
 func retryAfter(err error) time.Duration {
 	var gatewayErr *GatewayError
 	if errors.As(err, &gatewayErr) {
@@ -244,6 +378,9 @@ func isContextError(ctx context.Context, err error) bool {
 	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }
 
+// contextError preserves the distinction between an end-to-end deadline
+// (timeout, retryable) and an explicit cancellation (cancelled). It never
+// collapses a deadline into a cancellation.
 func contextError(operation string, ctx context.Context) error {
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		return &GatewayError{Operation: operation, Class: ErrorTimeout, Retryable: true}

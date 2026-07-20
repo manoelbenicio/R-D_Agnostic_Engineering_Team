@@ -3,12 +3,32 @@ package gateway
 import (
 	"sort"
 	"sync"
+	"time"
 )
 
-// ErrorNoEligibleAccount is the deterministic fail-closed class returned when a
-// route has no eligible account for a new selection. It is a routing decision,
-// never a leak of account identity or credential material.
-const ErrorNoEligibleAccount ErrorClass = "no_eligible_account"
+// Selection / continuation error classes. They are deterministic routing
+// decisions and never leak account identity or credential material.
+const (
+	// ErrorNoEligibleAccount is returned when a route has no eligible account
+	// for a fresh (independent) selection.
+	ErrorNoEligibleAccount ErrorClass = "no_eligible_account"
+	// ErrorContinuationUnavailable is returned when a stateful continuation
+	// cannot be honored: the referenced state has no known owner, or the owner
+	// is ineligible, and the route's affinity contract does not permit a
+	// stateless rebind. It fails closed rather than silently rerouting stateful
+	// continuation to a different account.
+	ErrorContinuationUnavailable ErrorClass = "continuation_owner_unavailable"
+	// ErrorContinuationCapacity is returned when the bounded binding table is
+	// full of still-live entries, so admitting a new binding would require
+	// evicting an active continuation. It fails closed instead.
+	ErrorContinuationCapacity ErrorClass = "continuation_capacity"
+)
+
+const (
+	defaultMaxBindings = 4096
+	defaultBindingTTL  = 15 * time.Minute
+	maxBindingTTL      = time.Hour
+)
 
 // AccountStatus is the eligibility state of a pooled account for selection.
 // Only AccountEligible accounts are selectable; the remaining states model the
@@ -23,19 +43,19 @@ const (
 	AccountRemoved
 )
 
-// ContinuationRefs carries the stateful references that force continuation
-// affinity. Precedence is fixed and deterministic: a provider conversation
-// (previous_response_id) binds before a prompt cache, which binds before a
-// tool-turn. An empty ContinuationRefs describes an independent request that
-// participates in strict round-robin rotation.
+// ContinuationRefs identifies stateful continuation. As a request field it
+// references state created by an earlier request; as a Bind argument it names
+// the handle a successful request produced. Precedence is fixed and
+// deterministic: previous_response_id, then prompt cache, then tool turn. A
+// zero ContinuationRefs denotes an independent request that rotates.
 type ContinuationRefs struct {
 	PreviousResponseID string
 	PromptCacheID      string
 	ToolTurnID         string
 }
 
-// affinity resolves the ordered (reason, key) pair for a request. A blank key
-// means the request is independent and must rotate.
+// affinity resolves the ordered (reason, key) pair for a continuation
+// reference. A blank key means the request is independent and must rotate.
 func (r ContinuationRefs) affinity() (SelectionReason, string) {
 	switch {
 	case r.PreviousResponseID != "":
@@ -59,45 +79,106 @@ type Selection struct {
 }
 
 type affinityBinding struct {
-	account string
-	reason  SelectionReason
+	account   string
+	reason    SelectionReason
+	expiresAt time.Time
+}
+
+// SelectorConfig configures a Selector. Accounts, Rotation and Affinity are
+// required; BindingTTL and MaxBindings default when zero.
+type SelectorConfig struct {
+	Rotation    RotationMode
+	Affinity    AffinityMode
+	Accounts    []string
+	BindingTTL  time.Duration
+	MaxBindings int
+
+	now func() time.Time // test clock injection; defaults to time.Now
 }
 
 // Selector implements concurrency-safe account selection for a single route.
 //
-// For RotationStrictIndependentRequest every independent logical request
-// atomically advances one shared cursor to the next eligible account, so the
-// rotation order is a single sequence regardless of how many requests race.
-// Continuation references (previous_response_id, prompt cache, tool turn) pin a
-// request to the account that first served the reference and do NOT advance the
-// cursor, so dependent continuations never perturb independent rotation. If a
-// bound account has left rotation the continuation is re-bound to the next
-// eligible account (a documented stateless-continuation fallback) and the stale
-// owner does not reclaim it.
+// Independent requests (zero ContinuationRefs) rotate: for
+// RotationStrictIndependentRequest each atomically advances one shared cursor to
+// the next eligible account; for RotationFailureOnly they stick to the current
+// eligible account until it leaves rotation. Independent selection NEVER creates
+// an affinity binding — a first, continuation-capable turn is just an
+// independent request until it succeeds.
 //
-// For RotationFailureOnly independent requests stick to the current cursor
-// account until it becomes ineligible, at which point the cursor advances.
+// Continuation ownership is established explicitly via Bind after a request
+// succeeds, keyed by the handle the response produced (previous_response_id,
+// prompt cache, tool turn). A later request that References that handle is
+// pinned to the owning account (affinity hit) without advancing the cursor, so
+// dependent continuations never perturb independent rotation.
+//
+// When a referenced handle has no known owner, or the owner is ineligible, the
+// behavior is governed by the route's AffinityMode:
+//   - AffinityOriginAccount (and AffinityNone for stateful refs): fail closed
+//     with ErrorContinuationUnavailable. Stateful continuation is never silently
+//     rerouted to a different account.
+//   - AffinityStatelessMaterialize: rotate to a fresh eligible account and
+//     (re)bind, a documented stateless-continuation fallback.
+//
+// Binding state is bounded: entries expire after BindingTTL, can be released
+// explicitly via Unbind, and the table is capped at MaxBindings. When the cap
+// is reached only expired entries are reclaimed; a full table of live entries
+// fails closed with ErrorContinuationCapacity rather than evicting an active
+// continuation.
 type Selector struct {
-	rotation RotationMode
+	rotation     RotationMode
+	affinityMode AffinityMode
+	bindingTTL   time.Duration
+	maxBindings  int
+	now          func() time.Time
 
 	mu       sync.Mutex
 	order    []string
 	status   map[string]AccountStatus
 	cursor   int
 	sequence uint64
-	affinity map[string]affinityBinding
+	bindings map[string]affinityBinding
 }
 
-// NewSelector builds a Selector for the given rotation mode and initial pool.
-// Duplicate or blank account identifiers are rejected so the rotation order is
-// unambiguous.
+// NewSelector builds a strict/failure-only Selector with fail-closed
+// origin-account affinity and default binding bounds. It is a convenience over
+// NewSelectorFromConfig for the common case.
 func NewSelector(rotation RotationMode, accounts ...string) (*Selector, error) {
-	if rotation != RotationStrictIndependentRequest && rotation != RotationFailureOnly {
+	return NewSelectorFromConfig(SelectorConfig{
+		Rotation: rotation,
+		Affinity: AffinityOriginAccount,
+		Accounts: accounts,
+	})
+}
+
+// NewSelectorFromConfig builds a Selector from an explicit configuration.
+func NewSelectorFromConfig(cfg SelectorConfig) (*Selector, error) {
+	if cfg.Rotation != RotationStrictIndependentRequest && cfg.Rotation != RotationFailureOnly {
 		return nil, &GatewayError{Operation: "selector", Class: ErrorInvalidConfiguration}
 	}
-	status := make(map[string]AccountStatus, len(accounts))
-	order := make([]string, 0, len(accounts))
-	for _, account := range accounts {
+	if cfg.Affinity != AffinityNone && cfg.Affinity != AffinityOriginAccount && cfg.Affinity != AffinityStatelessMaterialize {
+		return nil, &GatewayError{Operation: "selector", Class: ErrorInvalidConfiguration}
+	}
+	ttl := cfg.BindingTTL
+	if ttl == 0 {
+		ttl = defaultBindingTTL
+	}
+	if ttl < 0 || ttl > maxBindingTTL {
+		return nil, &GatewayError{Operation: "selector", Class: ErrorInvalidConfiguration}
+	}
+	maxBindings := cfg.MaxBindings
+	if maxBindings == 0 {
+		maxBindings = defaultMaxBindings
+	}
+	if maxBindings < 1 {
+		return nil, &GatewayError{Operation: "selector", Class: ErrorInvalidConfiguration}
+	}
+	now := cfg.now
+	if now == nil {
+		now = time.Now
+	}
+	status := make(map[string]AccountStatus, len(cfg.Accounts))
+	order := make([]string, 0, len(cfg.Accounts))
+	for _, account := range cfg.Accounts {
 		if account == "" {
 			return nil, &GatewayError{Operation: "selector", Class: ErrorInvalidConfiguration}
 		}
@@ -108,39 +189,121 @@ func NewSelector(rotation RotationMode, accounts ...string) (*Selector, error) {
 		order = append(order, account)
 	}
 	return &Selector{
-		rotation: rotation,
-		order:    order,
-		status:   status,
-		affinity: make(map[string]affinityBinding),
+		rotation:     cfg.Rotation,
+		affinityMode: cfg.Affinity,
+		bindingTTL:   ttl,
+		maxBindings:  maxBindings,
+		now:          now,
+		order:        order,
+		status:       status,
+		bindings:     make(map[string]affinityBinding),
 	}, nil
 }
 
-// Select returns the next account for a request atomically. Independent
-// requests rotate; continuation requests honor affinity. It fails closed with
-// ErrorNoEligibleAccount when the pool has no eligible account.
+// Select returns the account for a request. Independent requests (zero refs)
+// rotate and never bind. Continuation requests are pinned to the owning account
+// established by a prior Bind; an unknown or ineligible owner fails closed under
+// origin-account affinity, or is materialized under stateless affinity.
 func (s *Selector) Select(refs ContinuationRefs) (Selection, error) {
 	reason, key := refs.affinity()
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	now := s.now()
+	s.sweepExpiredLocked(now)
 
-	if key != "" {
-		if binding, exists := s.affinity[key]; exists && s.eligibleLocked(binding.account) {
-			// Affinity hit: pin to the owning account without advancing the
-			// shared cursor so independent rotation is untouched.
-			s.sequence++
-			return Selection{Sequence: s.sequence, Account: binding.account, Reason: binding.reason}, nil
-		}
+	// Independent request, or a route without continuation affinity: rotate.
+	if key == "" || s.affinityMode == AffinityNone {
+		return s.rotateLocked(SelectionIndependentRotation)
 	}
 
+	binding, exists := s.bindings[key]
+	if exists && s.eligibleLocked(binding.account) {
+		// Affinity hit: pin to the owning account without advancing the shared
+		// cursor so independent rotation is untouched.
+		s.sequence++
+		return Selection{Sequence: s.sequence, Account: binding.account, Reason: binding.reason}, nil
+	}
+
+	// Unknown owner or ineligible owner. Only a route that explicitly declares
+	// stateless materialization may rebind; otherwise fail closed so stateful
+	// continuation is never silently rerouted.
+	if s.affinityMode != AffinityStatelessMaterialize {
+		return Selection{}, &GatewayError{Operation: "selector.select", Class: ErrorContinuationUnavailable}
+	}
+	selection, err := s.rotateLocked(reason)
+	if err != nil {
+		return Selection{}, err
+	}
+	if err := s.putBindingLocked(key, selection.Account, reason, now); err != nil {
+		return Selection{}, err
+	}
+	return selection, nil
+}
+
+// Bind records that a continuation handle produced by a successful request is
+// owned by account, so later requests referencing that handle route back to it.
+// It is the only way an affinity binding is created; admission never binds.
+func (s *Selector) Bind(handle ContinuationRefs, account string) error {
+	reason, key := handle.affinity()
+	if key == "" {
+		return &GatewayError{Operation: "selector.bind", Class: ErrorInvalidRequest}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, known := s.status[account]; !known {
+		return &GatewayError{Operation: "selector.bind", Class: ErrorInvalidRequest}
+	}
+	if s.affinityMode == AffinityNone {
+		// Continuation affinity is disabled for this route; binding is a no-op
+		// so no unbounded state accrues.
+		return nil
+	}
+	now := s.now()
+	s.sweepExpiredLocked(now)
+	return s.putBindingLocked(key, account, reason, now)
+}
+
+// Unbind releases the binding for a continuation handle, e.g. when the
+// continuation/session completes or is cancelled. Unknown handles are ignored.
+func (s *Selector) Unbind(handle ContinuationRefs) {
+	_, key := handle.affinity()
+	if key == "" {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.bindings, key)
+}
+
+// putBindingLocked stores or refreshes a binding under the capacity bound.
+// Callers must hold s.mu and must have swept expired entries.
+func (s *Selector) putBindingLocked(key, account string, reason SelectionReason, now time.Time) error {
+	if _, present := s.bindings[key]; !present && len(s.bindings) >= s.maxBindings {
+		// Only live entries remain after the sweep; refuse rather than evict an
+		// active continuation.
+		return &GatewayError{Operation: "selector.bind", Class: ErrorContinuationCapacity}
+	}
+	s.bindings[key] = affinityBinding{account: account, reason: reason, expiresAt: now.Add(s.bindingTTL)}
+	return nil
+}
+
+func (s *Selector) sweepExpiredLocked(now time.Time) {
+	for key, binding := range s.bindings {
+		if !binding.expiresAt.IsZero() && !now.Before(binding.expiresAt) {
+			delete(s.bindings, key)
+		}
+	}
+}
+
+// rotateLocked performs a fresh rotation selection with the given reason.
+// Callers must hold s.mu.
+func (s *Selector) rotateLocked(reason SelectionReason) (Selection, error) {
 	account, ok := s.nextEligibleLocked()
 	if !ok {
 		return Selection{}, &GatewayError{Operation: "selector.select", Class: ErrorNoEligibleAccount}
 	}
 	s.sequence++
-	if key != "" {
-		s.affinity[key] = affinityBinding{account: account, reason: reason}
-	}
 	return Selection{Sequence: s.sequence, Account: account, Reason: reason}, nil
 }
 
@@ -211,4 +374,13 @@ func (s *Selector) EligibleAccounts() []string {
 	}
 	sort.Strings(eligible)
 	return eligible
+}
+
+// BindingCount returns the number of live continuation bindings after reclaiming
+// any that have expired. It lets callers and tests prove bound/zero state.
+func (s *Selector) BindingCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.sweepExpiredLocked(s.now())
+	return len(s.bindings)
 }

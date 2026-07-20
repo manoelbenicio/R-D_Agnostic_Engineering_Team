@@ -5,6 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestSelectorStrictIndependentRoundRobinIsAtomicUnderConcurrency(t *testing.T) {
@@ -67,11 +68,14 @@ func TestSelectorStrictIndependentRoundRobinIsAtomicUnderConcurrency(t *testing.
 	}
 }
 
-func TestSelectorContinuationAffinityPinsAccountAndPreservesIndependentRotation(t *testing.T) {
+func TestSelectorFirstContinuationCapableRequestSelectsIndependentlyThenBindsOwner(t *testing.T) {
+	// Defect 2: a continuation-capable request that does not yet reference prior
+	// state is independent; ownership is established only by Bind after success,
+	// not by rotation at admission.
 	cases := []struct {
-		name   string
-		refs   ContinuationRefs
-		reason SelectionReason
+		name    string
+		handle  ContinuationRefs
+		refName SelectionReason
 	}{
 		{"previous_response_id", ContinuationRefs{PreviousResponseID: "resp-1"}, SelectionContinuation},
 		{"prompt_cache", ContinuationRefs{PromptCacheID: "cache-1"}, SelectionPromptCache},
@@ -83,61 +87,121 @@ func TestSelectorContinuationAffinityPinsAccountAndPreservesIndependentRotation(
 			if err != nil {
 				t.Fatal(err)
 			}
-			origin, err := selector.Select(tc.refs)
+			// The first turn is independent (creates state); it must not pre-bind.
+			first, err := selector.Select(ContinuationRefs{})
 			if err != nil {
 				t.Fatal(err)
 			}
-			if origin.Reason != tc.reason {
-				t.Fatalf("origin reason=%s want %s", origin.Reason, tc.reason)
+			if first.Reason != SelectionIndependentRotation {
+				t.Fatalf("first turn reason=%s want independent", first.Reason)
 			}
-			// An interleaved independent request must not be captured by affinity.
+			if selector.BindingCount() != 0 {
+				t.Fatalf("independent selection created a binding: count=%d", selector.BindingCount())
+			}
+			// The owner is bound explicitly to the account that actually served it.
+			if err := selector.Bind(tc.handle, first.Account); err != nil {
+				t.Fatalf("Bind: %v", err)
+			}
+			// Interleaved independent requests must not steal the affinity owner.
 			independent, err := selector.Select(ContinuationRefs{})
 			if err != nil {
 				t.Fatal(err)
 			}
-			continuation, err := selector.Select(tc.refs)
+			if independent.Account == first.Account {
+				t.Fatalf("independent request reused affinity owner %s", first.Account)
+			}
+			// A continuation referencing the produced handle pins to the owner.
+			continuation, err := selector.Select(tc.handle)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if continuation.Account != origin.Account {
-				t.Fatalf("affinity broke: origin=%s continuation=%s", origin.Account, continuation.Account)
+			if continuation.Account != first.Account {
+				t.Fatalf("continuation not pinned to owner: got %s want %s", continuation.Account, first.Account)
 			}
-			if independent.Account == origin.Account {
-				t.Fatalf("independent request stole the affinity owner %s", origin.Account)
-			}
-			if continuation.Reason != tc.reason {
-				t.Fatalf("continuation reason=%s want %s", continuation.Reason, tc.reason)
+			if continuation.Reason != tc.refName {
+				t.Fatalf("continuation reason=%s want %s", continuation.Reason, tc.refName)
 			}
 		})
 	}
 }
 
-func TestSelectorAffinityRebindsFromIneligibleOwnerAndDoesNotRevert(t *testing.T) {
+func TestSelectorReferencingUnknownContinuationFailsClosedUnderOriginAffinity(t *testing.T) {
+	// Defect 2/3: a reference to state with no known owner must fail closed
+	// under origin-account affinity, not silently rotate to an arbitrary account.
+	selector, err := NewSelector(RotationStrictIndependentRequest, "acct-a", "acct-b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = selector.Select(ContinuationRefs{PreviousResponseID: "unknown-resp"})
+	if !IsErrorClass(err, ErrorContinuationUnavailable) {
+		t.Fatalf("expected fail-closed continuation-unavailable, got %v", err)
+	}
+}
+
+func TestSelectorIneligiblePinnedOwnerFailsClosedUnderOriginAffinity(t *testing.T) {
+	// Defect 3: an ineligible pinned owner must NOT be silently replaced for a
+	// stateful continuation under origin-account affinity.
 	selector, err := NewSelector(RotationStrictIndependentRequest, "acct-a", "acct-b", "acct-c")
 	if err != nil {
 		t.Fatal(err)
 	}
-	refs := ContinuationRefs{PreviousResponseID: "resp-rebind"}
-	origin, err := selector.Select(refs)
+	handle := ContinuationRefs{PreviousResponseID: "resp-pin"}
+	origin, err := selector.Select(ContinuationRefs{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := selector.Bind(handle, origin.Account); err != nil {
+		t.Fatalf("Bind: %v", err)
+	}
+	// Owner leaves rotation: continuation must fail closed, not reroute.
 	selector.SetStatus(origin.Account, AccountQuarantined)
-	rebind, err := selector.Select(refs)
-	if err != nil {
-		t.Fatal(err)
+	if _, err := selector.Select(handle); !IsErrorClass(err, ErrorContinuationUnavailable) {
+		t.Fatalf("ineligible owner was silently replaced: got %v", err)
 	}
-	if rebind.Account == origin.Account {
-		t.Fatalf("continuation stayed on ineligible owner %s", origin.Account)
-	}
-	// Original owner recovers, but the continuation must stay with the replacement.
+	// When the owner recovers, the continuation is honored again on it.
 	selector.SetStatus(origin.Account, AccountEligible)
-	continued, err := selector.Select(refs)
+	recovered, err := selector.Select(handle)
+	if err != nil {
+		t.Fatalf("recovered owner not honored: %v", err)
+	}
+	if recovered.Account != origin.Account {
+		t.Fatalf("recovered continuation routed to %s want owner %s", recovered.Account, origin.Account)
+	}
+}
+
+func TestSelectorStatelessMaterializeRebindsFromIneligibleOwner(t *testing.T) {
+	// Defect 3 (other path): only a route that explicitly declares stateless
+	// materialization may rebind an ineligible/unknown continuation owner.
+	selector, err := NewSelectorFromConfig(SelectorConfig{
+		Rotation: RotationStrictIndependentRequest,
+		Affinity: AffinityStatelessMaterialize,
+		Accounts: []string{"acct-a", "acct-b", "acct-c"},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if continued.Account != rebind.Account {
-		t.Fatalf("stale owner reclaimed continuation: got %s want %s", continued.Account, rebind.Account)
+	handle := ContinuationRefs{PreviousResponseID: "resp-materialize"}
+	// Unknown reference materializes a fresh owner instead of failing closed.
+	origin, err := selector.Select(handle)
+	if err != nil {
+		t.Fatalf("stateless materialize should not fail closed on unknown ref: %v", err)
+	}
+	// Repeated references stay pinned while the owner is eligible.
+	again, err := selector.Select(handle)
+	if err != nil || again.Account != origin.Account {
+		t.Fatalf("stateless materialize did not pin: got %v err=%v", again.Account, err)
+	}
+	// Owner leaves rotation: rebinds to a new eligible account, and does not
+	// revert once the original recovers.
+	selector.SetStatus(origin.Account, AccountQuarantined)
+	rebind, err := selector.Select(handle)
+	if err != nil || rebind.Account == origin.Account {
+		t.Fatalf("stateless materialize did not rebind off ineligible owner: got %v err=%v", rebind.Account, err)
+	}
+	selector.SetStatus(origin.Account, AccountEligible)
+	continued, err := selector.Select(handle)
+	if err != nil || continued.Account != rebind.Account {
+		t.Fatalf("stale owner reclaimed materialized continuation: got %v want %s", continued.Account, rebind.Account)
 	}
 }
 
@@ -213,5 +277,75 @@ func TestNewSelectorRejectsInvalidPools(t *testing.T) {
 	}
 	if _, err := NewSelector(RotationStrictIndependentRequest, ""); !IsErrorClass(err, ErrorInvalidConfiguration) {
 		t.Fatalf("expected invalid config for blank account, got %v", err)
+	}
+	if _, err := NewSelectorFromConfig(SelectorConfig{Rotation: RotationStrictIndependentRequest, Affinity: AffinityMode("bogus"), Accounts: []string{"acct-a"}}); !IsErrorClass(err, ErrorInvalidConfiguration) {
+		t.Fatalf("expected invalid config for bad affinity, got %v", err)
+	}
+	if _, err := NewSelectorFromConfig(SelectorConfig{Rotation: RotationStrictIndependentRequest, Affinity: AffinityOriginAccount, Accounts: []string{"acct-a"}, MaxBindings: -1}); !IsErrorClass(err, ErrorInvalidConfiguration) {
+		t.Fatalf("expected invalid config for negative max bindings, got %v", err)
+	}
+}
+
+func TestSelectorBindingsAreBoundedAndReturnToZero(t *testing.T) {
+	// Defect 4 (selector): binding state must be bounded by explicit release and
+	// TTL expiry, must return to zero after completion, and must fail closed
+	// rather than evict a live continuation when full.
+	clock := time.Unix(1_700_000_000, 0)
+	nowFn := func() time.Time { return clock }
+	selector, err := NewSelectorFromConfig(SelectorConfig{
+		Rotation:    RotationStrictIndependentRequest,
+		Affinity:    AffinityOriginAccount,
+		Accounts:    []string{"acct-a", "acct-b"},
+		BindingTTL:  time.Minute,
+		MaxBindings: 2,
+		now:         nowFn,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := selector.Bind(ContinuationRefs{PreviousResponseID: "r1"}, "acct-a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := selector.Bind(ContinuationRefs{PreviousResponseID: "r2"}, "acct-b"); err != nil {
+		t.Fatal(err)
+	}
+	if selector.BindingCount() != 2 {
+		t.Fatalf("binding count=%d want 2", selector.BindingCount())
+	}
+	// Table full of live entries: a new distinct binding fails closed rather
+	// than evicting an active continuation.
+	if err := selector.Bind(ContinuationRefs{PreviousResponseID: "r3"}, "acct-a"); !IsErrorClass(err, ErrorContinuationCapacity) {
+		t.Fatalf("expected capacity fail-closed, got %v", err)
+	}
+	// Explicit release returns state toward zero and frees capacity.
+	selector.Unbind(ContinuationRefs{PreviousResponseID: "r1"})
+	if selector.BindingCount() != 1 {
+		t.Fatalf("binding count after unbind=%d want 1", selector.BindingCount())
+	}
+	if err := selector.Bind(ContinuationRefs{PreviousResponseID: "r3"}, "acct-a"); err != nil {
+		t.Fatalf("bind after release should succeed: %v", err)
+	}
+	// TTL expiry reclaims all live entries once the clock advances past TTL.
+	clock = clock.Add(2 * time.Minute)
+	if selector.BindingCount() != 0 {
+		t.Fatalf("expired bindings not reclaimed: count=%d", selector.BindingCount())
+	}
+	// An expired binding is treated as unknown and fails closed under origin affinity.
+	if _, err := selector.Select(ContinuationRefs{PreviousResponseID: "r2"}); !IsErrorClass(err, ErrorContinuationUnavailable) {
+		t.Fatalf("expired binding still honored: %v", err)
+	}
+}
+
+func TestSelectorBindRejectsUnknownAccountAndBlankHandle(t *testing.T) {
+	selector, err := NewSelector(RotationStrictIndependentRequest, "acct-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := selector.Bind(ContinuationRefs{PreviousResponseID: "r1"}, "acct-unknown"); !IsErrorClass(err, ErrorInvalidRequest) {
+		t.Fatalf("expected invalid request for unknown account, got %v", err)
+	}
+	if err := selector.Bind(ContinuationRefs{}, "acct-a"); !IsErrorClass(err, ErrorInvalidRequest) {
+		t.Fatalf("expected invalid request for blank handle, got %v", err)
 	}
 }

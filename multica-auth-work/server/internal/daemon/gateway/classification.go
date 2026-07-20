@@ -40,12 +40,20 @@ type FailureSignal struct {
 	// Malformed marks a structurally invalid upstream payload that arrived on
 	// an otherwise-successful transport.
 	Malformed bool
+	// LocalOverload marks a gateway-local capacity rejection (bounded queue
+	// full, local concurrency ceiling) that is distinct from any provider or
+	// account throttle.
+	LocalOverload bool
 	// StatusCode is the upstream HTTP status when one was received.
 	StatusCode int
 	// AuthOutcome refines a 401 into refreshable vs terminal.
 	AuthOutcome AuthOutcome
 	// RateScope refines a 429 into account vs provider-global.
 	RateScope RateLimitScope
+	// QuotaExhausted marks that the selected account has no remaining quota, as
+	// opposed to a transient account throttle. It refines account-scoped 429
+	// handling so callers fall back rather than hammering the same account.
+	QuotaExhausted bool
 	// RetryAfter carries any honored upstream Retry-After hint.
 	RetryAfter time.Duration
 }
@@ -63,19 +71,21 @@ type FailureDecision struct {
 // ClassifyFailure maps a FailureSignal to a deterministic FailureDecision.
 //
 // The mapping is total and side-effect free so identical signals always yield
-// identical decisions:
+// identical decisions. The throttle/overload taxonomy is kept fully distinct:
 //
-//	cancelled            -> cancelled       / local    / not retryable
-//	timeout              -> timeout         / local    / retryable
-//	malformed upstream   -> protocol        / provider / not retryable
-//	401 access expired   -> authentication  / account  / retryable (refresh once)
-//	401 refresh revoked  -> authentication  / account  / not retryable (quarantine)
-//	403                  -> authorization   / account  / not retryable
-//	429 account scope    -> rate_limited    / account  / retryable
-//	429 provider global  -> rate_limited    / provider / retryable
-//	503                  -> overloaded      / local    / retryable
-//	5xx                  -> upstream        / provider / retryable
-//	4xx (other)          -> invalid_request / provider / not retryable
+//	cancelled              -> cancelled       / local    / not retryable
+//	timeout                -> timeout         / local    / retryable
+//	malformed upstream     -> protocol        / provider / not retryable
+//	local overload         -> overloaded      / local    / retryable
+//	401 access expired     -> authentication  / account  / retryable (refresh once)
+//	401 refresh revoked    -> authentication  / account  / not retryable (quarantine)
+//	403                    -> authorization   / account  / not retryable
+//	429 account throttle   -> rate_limited    / account  / retryable   / quota=limited
+//	429 account exhausted  -> rate_limited    / account  / retryable   / quota=exhausted
+//	429 provider-global    -> rate_limited    / provider / retryable   / quota=limited
+//	503                    -> overloaded      / local    / retryable
+//	5xx                    -> upstream        / provider / retryable
+//	4xx (other)            -> invalid_request / provider / not retryable
 func ClassifyFailure(signal FailureSignal) FailureDecision {
 	switch {
 	case signal.Canceled:
@@ -84,6 +94,8 @@ func ClassifyFailure(signal FailureSignal) FailureDecision {
 		return FailureDecision{Class: ErrorTimeout, Scope: CircuitLocal, Retryable: true, Quota: QuotaUnknown}
 	case signal.Malformed:
 		return FailureDecision{Class: ErrorProtocol, Scope: CircuitProvider, Retryable: false, Quota: QuotaUnknown}
+	case signal.LocalOverload:
+		return FailureDecision{Class: ErrorOverloaded, Scope: CircuitLocal, Retryable: true, Quota: QuotaUnknown}
 	}
 
 	switch {
@@ -93,13 +105,7 @@ func ClassifyFailure(signal FailureSignal) FailureDecision {
 	case signal.StatusCode == http.StatusForbidden:
 		return FailureDecision{Class: ErrorAuthorization, Scope: CircuitAccount, Retryable: false, Quota: QuotaUnknown}
 	case signal.StatusCode == http.StatusTooManyRequests:
-		scope := CircuitAccount
-		quota := QuotaLimited
-		if signal.RateScope == RateLimitScopeProvider {
-			scope = CircuitProvider
-			quota = QuotaExhausted
-		}
-		return FailureDecision{Class: ErrorRateLimited, Scope: scope, Retryable: true, Quota: quota}
+		return classifyRateLimited(signal)
 	case signal.StatusCode == http.StatusRequestTimeout:
 		return FailureDecision{Class: ErrorTimeout, Scope: CircuitLocal, Retryable: true, Quota: QuotaUnknown}
 	case signal.StatusCode == http.StatusServiceUnavailable:
@@ -113,6 +119,21 @@ func ClassifyFailure(signal FailureSignal) FailureDecision {
 		// treat it as a protocol fault rather than silently succeeding.
 		return FailureDecision{Class: ErrorProtocol, Scope: CircuitProvider, Retryable: false, Quota: QuotaUnknown}
 	}
+}
+
+// classifyRateLimited keeps the three 429 taxonomies distinct: provider-global
+// throttle (provider circuit), account quota exhaustion (account circuit, quota
+// exhausted), and transient account throttle (account circuit, quota limited).
+// All remain retryable because recovery is a scoped fallback/backoff, not a
+// terminal failure.
+func classifyRateLimited(signal FailureSignal) FailureDecision {
+	if signal.RateScope == RateLimitScopeProvider {
+		return FailureDecision{Class: ErrorRateLimited, Scope: CircuitProvider, Retryable: true, Quota: QuotaLimited}
+	}
+	if signal.QuotaExhausted {
+		return FailureDecision{Class: ErrorRateLimited, Scope: CircuitAccount, Retryable: true, Quota: QuotaExhausted}
+	}
+	return FailureDecision{Class: ErrorRateLimited, Scope: CircuitAccount, Retryable: true, Quota: QuotaLimited}
 }
 
 // AsError renders a FailureDecision as a bounded GatewayError for the given
