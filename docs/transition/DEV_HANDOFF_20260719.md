@@ -1,5 +1,7 @@
 # DEV Transition Handoff — 2026-07-19
 
+> Expanded authority: start with `docs/transition/README.md`, then read the complete restart dossier, Docker/Redis inventory, secrets/access register, and fresh-environment runbook linked there. This file preserves the original zero-loss handoff and deployment evidence.
+
 ## Executive disposition
 
 - Source preservation: COMPLETE. Every discovered remote, uncommitted, and local-only source state has a remote ref.

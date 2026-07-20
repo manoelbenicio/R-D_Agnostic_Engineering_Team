@@ -97,7 +97,7 @@
 ## 8-OBS. Wave 3-OBS — End-to-End Observability Stop-Gate (G4-OBS)
 
 > These 11 OBS tasks are NEW (D-V3-17) and raise the change total from 85 to **96** tasks;
-> completed remains 51 (all OBS-* are OPEN). Count is now **51/96** (Codex56-Principal-TL, 2026-07-19).
+> the OBS wave added no completed task. After the later owner-approved closure of governance tasks 0.1 and 0.7, the authoritative count is **53/96** (43 open; all OBS-* remain OPEN).
 
 > BLOCKING GATE (owner decision D-V3-17). Metadata-only across all eight hops; independent
 > reviewer ≠ producer ≠ adjudicator. G4-OBS must PASS before any capacity tier (§9) or cutover
