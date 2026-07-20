@@ -215,7 +215,23 @@ func (r *agentBrainRuntime) admitTask(ctx context.Context, task Task, provider, 
 		return nil, &agentBrainAdmissionError{class: "gateway_client_invalid"}
 	}
 	registry, err := gateway.NewRegistry(gateway.ModelsFetchFunc(func(fetchCtx context.Context) (gateway.ModelsDocument, error) {
-		return client.FetchModels(fetchCtx, correlation)
+		doc, fetchErr := client.FetchModels(fetchCtx, correlation)
+		if fetchErr != nil {
+			return gateway.ModelsDocument{}, fetchErr
+		}
+		// DEV compatibility: project raw OmniRoute /v1/models into the
+		// enriched schema the registry requires. Gated on the explicit
+		// OMNIROUTE_DEV_MODELS_COMPAT=1 flag; when unset, the enriched
+		// response passes through unchanged (for future OmniRoute versions
+		// that serve the full schema natively).
+		if os.Getenv("OMNIROUTE_DEV_MODELS_COMPAT") == "1" {
+			native := gateway.OmniRouteNativeModels{Object: doc.Object}
+			for _, m := range doc.Models {
+				native.Data = append(native.Data, gateway.OmniRouteNativeModel{ID: m.ID})
+			}
+			return gateway.ProjectOmniRouteModels(native, doc.RegistryVersion), nil
+		}
+		return doc, nil
 	}), time.Second)
 	if err != nil {
 		return nil, &agentBrainAdmissionError{class: "model_registry_invalid"}
