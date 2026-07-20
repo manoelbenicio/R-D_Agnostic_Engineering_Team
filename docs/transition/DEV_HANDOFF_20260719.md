@@ -45,6 +45,15 @@ No branch above may be deleted, force-pushed, or rebased until transition accept
 6. Compare credential-isolation recovery WIP against the candidate. The Kiro wrapper contains an old `/mnt/c` path and must be parameterized before promotion.
 7. Keep the earlier new-DEV NIM recovery branch as evidence unless review proves a required behavior absent from the newer implementation.
 
+## Recovery branch disposition after candidate assembly
+
+- `backup/dev-transition-local-w3-20260719T231359Z`: ARCHIVE. Its `observability/e2e` tree is byte-equivalent to the accepted W5 tree already present in the candidate; merging it would duplicate history without changing source.
+- `backup/dev-transition-old-main-wip-20260719T231359Z`: ARCHIVE/REVIEW-ONLY. The candidate contains a substantially newer credential-isolation implementation. The additional Kiro wrapper hard-codes the retired `/mnt/c` source path and is not portable to the new DEV environment.
+- `backup/dev-transition-home-wip-20260719T231359Z`: ARCHIVE/REVIEW-ONLY. It is an earlier divergent NIM implementation based on `610c847`; the candidate contains the later mainline NIM implementation plus the OmniRoute correction.
+- `backup/dev-transition-disposable-integration-20260719T231359Z`: ARCHIVE. It is a disposable intermediate integration head and is superseded by the canonical candidate.
+
+These dispositions preserve every commit remotely while preventing obsolete recovery trees from silently replacing newer accepted code.
+
 ## Hard acceptance gates
 
 - Git: clean candidate; all expected refs fetched; no local-only commits.
