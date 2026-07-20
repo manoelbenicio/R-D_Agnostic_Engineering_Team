@@ -78,7 +78,11 @@ func BuildMinimalInherited(inherited []string) (MinimalEnvironment, Sanitization
 	for index, raw := range inherited {
 		key, value, ok := strings.Cut(raw, "=")
 		if !ok || !validEnvironmentKey(key) {
-			return MinimalEnvironment{}, SanitizationReport{}, fmt.Errorf("inherited environment entry %d is malformed", index)
+			// Skip entries with no '=' separator or invalid key names (e.g.
+			// exported bash functions like BASH_FUNC_which%% whose key
+			// contains characters not accepted by validEnvironmentKey).
+			report.Removed = append(report.Removed, Removal{Key: fmt.Sprintf("_malformed_%d", index), Reason: DenyGatewayOverride})
+			continue
 		}
 		canonical := strings.ToUpper(key)
 		classification := ClassifyEnvironmentKey(key)

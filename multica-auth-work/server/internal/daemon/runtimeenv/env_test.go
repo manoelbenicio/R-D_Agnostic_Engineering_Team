@@ -269,3 +269,106 @@ func envHasKey(environment ChildEnvironment, key string) bool {
 	}
 	return false
 }
+
+
+func TestBuildMinimalInheritedSkipsMalformedEntries(t *testing.T) {
+	inherited := []string{
+		"PATH=/usr/bin",
+		"LANG=en_US.UTF-8",
+		"BASH_FUNC_which%%=() { builtin which; }",  // invalid key (contains %)
+		"no-equals-separator",                       // no '=' separator
+		"SHELL=/bin/bash",
+		"ANTHROPIC_API_KEY=secret123",               // denied credential (must still be removed)
+	}
+	env, report, err := BuildMinimalInherited(inherited)
+	if err != nil {
+		t.Fatalf("expected skip of malformed, got hard error: %v", err)
+	}
+
+	// Valid safe entries survive
+	keys := env.Keys()
+	keySet := map[string]bool{}
+	for _, k := range keys {
+		keySet[k] = true
+	}
+	if !keySet["PATH"] || !keySet["LANG"] || !keySet["SHELL"] {
+		t.Fatalf("valid entries missing: %v", keys)
+	}
+
+	// Malformed entries use synthetic _malformed_<index> keys (no raw values/paths leaked)
+	malformedCount := 0
+	for _, r := range report.Removed {
+		if strings.HasPrefix(r.Key, "_malformed_") {
+			malformedCount++
+			if strings.Contains(r.Key, "BASH") || strings.Contains(r.Key, "which") || strings.Contains(r.Key, "equals") {
+				t.Fatalf("removal key leaks original content: %s", r.Key)
+			}
+		}
+	}
+	if malformedCount != 2 {
+		t.Fatalf("expected 2 malformed removals (invalid key + no '='), got %d", malformedCount)
+	}
+
+	// Denied credential entries still removed via existing path
+	credRemoved := false
+	for _, r := range report.Removed {
+		if r.Key == "ANTHROPIC_API_KEY" {
+			credRemoved = true
+		}
+	}
+	if !credRemoved {
+		t.Fatal("denied credential ANTHROPIC_API_KEY should be in removal report")
+	}
+
+	// No raw values or paths in any removal entry
+	for _, r := range report.Removed {
+		if strings.Contains(r.Key, "secret") || strings.Contains(r.Key, "builtin") {
+			t.Fatalf("removal leaks value content: %s", r.Key)
+		}
+	}
+}
+
+
+// TestBuildMinimalInheritedSkipsMalformedEntryAtIndex63WithoutLeak reproduces the
+// live terminal failure ("inherited environment entry 63 malformed"): a malformed
+// exported-bash-function fragment sitting at inherited index 63. The sanitizer MUST
+// skip it (not hard-fail the launch), record the removal by INDEX only, and never
+// place the entry's value into the SanitizationReport.
+func TestBuildMinimalInheritedSkipsMalformedEntryAtIndex63WithoutLeak(t *testing.T) {
+	const secretish = "sk-should-never-appear-in-report-63"
+	inherited := make([]string, 0, 65)
+	inherited = append(inherited, "PATH=/usr/bin") // index 0: safe, must survive
+	for i := len(inherited); i < 63; i++ {          // indices 1..62: padding
+		inherited = append(inherited, fmt.Sprintf("PAD_%d=x", i))
+	}
+	// index 63: invalid key name (bash exported-function fragment) with a
+	// secret-looking value that must NOT be echoed into any report field.
+	inherited = append(inherited, "BASH_FUNC_x%%=() { "+secretish+"; }")
+	if got := len(inherited) - 1; got != 63 {
+		t.Fatalf("test setup error: malformed entry is at index %d, want 63", got)
+	}
+
+	env, report, err := BuildMinimalInherited(inherited)
+	if err != nil {
+		t.Fatalf("malformed entry at index 63 must be skipped, got hard error: %v", err)
+	}
+
+	// The safe PATH key must survive the sanitizer.
+	if _, ok := env.entries["PATH"]; !ok {
+		t.Fatalf("PATH dropped; safe key must survive: %v", env.Keys())
+	}
+
+	// Index 63 must be recorded by index only, and no report field may leak the value.
+	foundIndex63 := false
+	for _, r := range report.Removed {
+		if r.Key == "_malformed_63" {
+			foundIndex63 = true
+		}
+		if strings.Contains(r.Key, secretish) || strings.Contains(string(r.Reason), secretish) {
+			t.Fatalf("SanitizationReport leaked the malformed entry value: %+v", r)
+		}
+	}
+	if !foundIndex63 {
+		t.Fatalf("malformed index 63 not recorded as _malformed_63: %v", report.Removed)
+	}
+}
