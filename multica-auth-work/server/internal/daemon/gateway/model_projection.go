@@ -1,10 +1,22 @@
 package gateway
 
 import (
+	"os"
 	"strings"
 
 	"github.com/multica-ai/multica/server/internal/daemon/brain"
 )
+
+// envDevModelsCompat gates the DEV-only OmniRoute native /v1/models
+// compatibility projection. It is OFF by default; the enriched-schema fetch
+// path is unchanged unless OMNIROUTE_DEV_MODELS_COMPAT=1.
+const envDevModelsCompat = "OMNIROUTE_DEV_MODELS_COMPAT"
+
+// devModelsCompatEnabled reports whether the DEV compatibility projection is
+// enabled for Client.FetchModels.
+func devModelsCompatEnabled() bool {
+	return strings.TrimSpace(os.Getenv(envDevModelsCompat)) == "1"
+}
 
 // DEV-only compatibility projection.
 //

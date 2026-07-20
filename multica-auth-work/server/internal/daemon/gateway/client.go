@@ -169,6 +169,17 @@ func (c *Client) FetchModels(ctx context.Context, correlation brain.Correlation)
 	if err != nil {
 		return ModelsDocument{}, &GatewayError{Operation: operationModels, Class: ErrorProtocol}
 	}
+	if devModelsCompatEnabled() {
+		// DEV-only compatibility: OmniRoute serves an OpenAI-basic /v1/models
+		// shape that lacks the enriched fields the registry requires. Decode it
+		// natively and project into the enriched schema. The enriched-schema
+		// path below is used unchanged when the flag is absent.
+		var native OmniRouteNativeModels
+		if err := json.Unmarshal(body, &native); err != nil {
+			return ModelsDocument{}, &GatewayError{Operation: operationModels, Class: ErrorProtocol}
+		}
+		return ProjectOmniRouteModels(native, strings.TrimSpace(response.Header.Get(HeaderRegistryVersion))), nil
+	}
 	var document ModelsDocument
 	if err := json.Unmarshal(body, &document); err != nil {
 		return ModelsDocument{}, &GatewayError{Operation: operationModels, Class: ErrorProtocol}
