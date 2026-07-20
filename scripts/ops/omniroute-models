@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly gateway_root="${AGENT_BRAIN_GATEWAY_BASE_URL:-http://orq1:20128}"
+readonly secret_file="${AGENT_BRAIN_GATEWAY_SECRET_FILE:-/etc/agent-brain/secrets/omniroute-inference-key}"
+
+if [[ ! -r "$secret_file" || ! -s "$secret_file" ]]; then
+  printf 'ERROR: OmniRoute secret is unavailable: %s\n' "$secret_file" >&2
+  exit 78
+fi
+
+key="$(tr -d '\r\n' < "$secret_file")"
+curl -fsS -H "Authorization: Bearer $key" "$gateway_root/v1/models" \
+  | jq -r '.data[] | select(.id | startswith("agy/")) | .id' \
+  | sort
