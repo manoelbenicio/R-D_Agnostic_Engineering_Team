@@ -12,7 +12,8 @@ This directory is the entry point for resuming the repository and DEV environmen
 4. [`DOCKER_AND_REDIS_INVENTORY_20260719.md`](DOCKER_AND_REDIS_INVENTORY_20260719.md) — every Docker container observed on the host, ownership boundaries, networks, ports, volumes, image identity, Redis status, and persistence risks.
 5. [`SECRETS_AND_ACCESS_REGISTER_20260719.md`](SECRETS_AND_ACCESS_REGISTER_20260719.md) — service identities, authentication modes, secret variable names, storage locations, permissions, rotation requirements, and prohibited handling.
 6. [`FRESH_ENV_RESTART_RUNBOOK.md`](FRESH_ENV_RESTART_RUNBOOK.md) — exact clone, verification, secret bootstrap, build, restore, deployment, health, agent-resumption, rollback, and evidence commands.
-7. [`DEV_HANDOFF_20260719.md`](DEV_HANDOFF_20260719.md) — original zero-loss freeze and deployment handoff. This remains historical evidence; the dossier above is the expanded current authority.
+7. [`TOOLCHAIN_INSTALLATION_MATRIX.md`](TOOLCHAIN_INSTALLATION_MATRIX.md) — required tools, version contracts, node ownership, OpenSpec/GSD distinction, and conditional engineering toolchains.
+8. [`DEV_HANDOFF_20260719.md`](DEV_HANDOFF_20260719.md) — original zero-loss freeze and deployment handoff. This remains historical evidence; the dossier above is the expanded current authority.
 
 ## Source-of-truth precedence
 
