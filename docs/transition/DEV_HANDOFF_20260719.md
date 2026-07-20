@@ -79,7 +79,22 @@ These dispositions preserve every commit remotely while preventing obsolete reco
 - Database: fresh isolated PostgreSQL 17 initialized successfully and migrations completed through migration `126`.
 - Runtime probes: candidate backend `/health` returned HTTP `200`; candidate frontend `/login` returned HTTP `200`.
 - Non-regression: the old backend on `8080` and frontend on `3100` continued returning HTTP `200`; no old container, volume, or port was replaced.
-- Runtime secrets: generated outside the repository in permission-`600` files under `/tmp`; no credential was committed or printed.
+- Runtime secrets: generated outside the repository in owner-only `/home/dataops-lab/.config/multica-transition/dev.env`; the directory is mode `700`, files are mode `600`, and no credential was committed or printed.
+
+## DEV stack operations
+
+Run these commands from `multica-auth-work`. They operate only on the isolated `multica-dev-transition` Docker project.
+
+```bash
+docker compose -p multica-dev-transition \
+  --env-file /home/dataops-lab/.config/multica-transition/dev.env \
+  -f docker-compose.selfhost.yml \
+  -f docker-compose.selfhost.build.yml \
+  -f /home/dataops-lab/.config/multica-transition/images.yml \
+  up -d
+```
+
+Use the same prefix with `ps`, `logs`, `restart`, or `down`. Do not add `--volumes` to `down` unless destruction of the isolated DEV database is explicitly authorized.
 
 ## Blue/green deployment sequence
 
