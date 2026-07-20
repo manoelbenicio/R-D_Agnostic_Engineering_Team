@@ -3,9 +3,9 @@
 ## Executive disposition
 
 - Source preservation: COMPLETE. Every discovered remote, uncommitted, and local-only source state has a remote ref.
-- Canonical release candidate: NOT YET ASSEMBLED. `main`, Agent Brain integration, and Agent Brain planning remain separate.
-- New DEV deployment: NOT YET STARTED from `/home/dataops-lab/R-D_Agnostic_Engineering_Team`.
-- Cutover: NO-GO until the candidate builds, passes security and runtime gates, and rollback is proven.
+- Canonical release candidate: ASSEMBLED and pushed at `integration/dev-transition-candidate-20260719`.
+- New DEV deployment: RUNNING from commit `6a2aba3` under Docker project `multica-dev-transition`.
+- Cutover: NO-GO for production. The isolated DEV deployment is green, but supplier pinning, security evidence, Agent Brain live-provider acceptance, and owner decisions remain open.
 - Migration method: blue/green. Keep the old stack available only as rollback until the new DEV stack passes acceptance.
 
 ## Immutable source inventory
@@ -13,6 +13,7 @@
 | Purpose | Remote ref | Commit |
 |---|---|---|
 | Current main baseline | `origin/main` | `b657129` |
+| Deployed DEV candidate snapshot | `dev-deploy-20260719-candidate` | `6a2aba3` |
 | Agent Brain integrated P0 | `origin/integration/agent-brain-p0` | `29056e5` |
 | Agent Brain planning/governance | `origin/planning/agent-brain-observability-freeze` | `043e641` |
 | Cline OmniRoute adapter | `origin/work/agent-brain-w3-cline-omniroute` | `3f73594` |
@@ -28,8 +29,8 @@ No branch above may be deleted, force-pushed, or rebased until transition accept
 
 ## Source-of-truth hierarchy during transition
 
-1. `transition/dev-handoff-20260719` — transition manifest and recovery instructions only.
-2. `integration/agent-brain-p0` — starting point for the canonical implementation candidate.
+1. `integration/dev-transition-candidate-20260719` — canonical reconciled DEV candidate.
+2. `transition/dev-handoff-20260719` — original transition manifest and recovery instructions.
 3. `planning/agent-brain-observability-freeze` — planning, OpenSpec, decisions, risks, and evidence to reconcile into the candidate.
 4. Topic/work branches — reviewed deltas integrated one at a time, never bulk-overwritten.
 5. `main` — stable baseline; remains unchanged until the candidate passes all gates.
@@ -67,6 +68,19 @@ These dispositions preserve every commit remotely while preventing obsolete reco
 - Observability: continuous metadata-only trace; structural secret/content leakage scan clean.
 - Operations: health/readiness, database reachability, backup/restore, kill switch, rollback, and restart-from-clean-clone.
 
+## Validation and deployment evidence
+
+- Git integrity: local candidate and `origin/integration/dev-transition-candidate-20260719` both resolved to `6a2aba3550aaf6b0468a37bfdf2f00c7faaae084` at deployment time; the working tree was clean.
+- OpenSpec: strict validation passed for `build-omniroute-agent-brain` and `persist-prodex-runtime-integration`; Agent Brain implementation progress is `53/96`.
+- Backend: Go 1.26.1 container tests passed for the full `internal/daemon` package plus focused Agent Brain, gateway, runtime environment, observability, and agent packages; focused `go vet` passed.
+- Frontend: frozen-lockfile install, workspace typecheck, and production build passed.
+- Images: `multica-backend:transition-6a2aba3` and `multica-web:transition-6a2aba3` built from the candidate checkout.
+- Isolation: Docker project `multica-dev-transition` uses dedicated network, volumes, images, and loopback ports `15433`, `18080`, and `13100`.
+- Database: fresh isolated PostgreSQL 17 initialized successfully and migrations completed through migration `126`.
+- Runtime probes: candidate backend `/health` returned HTTP `200`; candidate frontend `/login` returned HTTP `200`.
+- Non-regression: the old backend on `8080` and frontend on `3100` continued returning HTTP `200`; no old container, volume, or port was replaced.
+- Runtime secrets: generated outside the repository in permission-`600` files under `/tmp`; no credential was committed or printed.
+
 ## Blue/green deployment sequence
 
 1. Build only from the clean candidate under `/home/dataops-lab`.
@@ -93,8 +107,6 @@ Before implementation or deployment, verify every commit in the inventory resolv
 
 ## Current blockers requiring explicit disposition
 
-- Agent Brain integration and planning histories are divergent.
-- OpenSpec task counters and `STATE` disagree.
 - OmniRoute image digest is not pinned.
 - Smart Context SC01–SC10 requires implementation evidence or a formal waiver.
 - Shared-state topology for higher capacity tiers is undecided.
