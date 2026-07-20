@@ -290,6 +290,16 @@ Do not repeat these only to rediscover whether the candidate compiles. Repeat th
 
 ## 9. Runtime data preservation
 
+The complete current database/agent-state recovery authority is `docs/transition/DATABASE_BACKUP_AND_RESTORE_20260720.md`. It supersedes the earlier candidate-only backup scope below while preserving that earlier snapshot as historical evidence.
+
+Full verified backup set:
+
+```text
+/home/dataops-lab/.local/share/multica-transition/backups/full-20260720T002750-0300
+```
+
+It contains candidate/legacy PostgreSQL, OmniRoute/Grafana/Kiro/OpenCode SQLite, stopped P12 PostgreSQL/Redis volume archives, uploads, full OmniRoute volume state, and an owner-only checksum manifest. Both PostgreSQL logical dumps, both P12 raw volumes, and every SQLite backup have been restore-tested.
+
 ### Candidate Docker volumes
 
 - `multica-dev-transition_pgdata` → PostgreSQL data.

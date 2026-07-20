@@ -63,6 +63,8 @@ Expected deployed tag resolution:
 ```bash
 sed -n '1,240p' docs/transition/README.md
 sed -n '1,320p' docs/transition/DEV_RESTART_DOSSIER_20260719.md
+sed -n '1,360p' docs/transition/DATABASE_BACKUP_AND_RESTORE_20260720.md
+sed -n '1,260p' docs/transition/GIT_ACCESS_AND_BOOTSTRAP.md
 sed -n '1,360p' docs/transition/DOCKER_AND_REDIS_INVENTORY_20260719.md
 sed -n '1,320p' docs/transition/SECRETS_AND_ACCESS_REGISTER_20260719.md
 ```
@@ -212,8 +214,8 @@ Proceed directly to section 10. The backend entrypoint applies all migrations.
 Verify backup checksums first:
 
 ```bash
-cd /home/dataops-lab/.local/share/multica-transition/backups
-sha256sum -c SHA256SUMS-20260719T233100-0300
+BACKUP_DIR=/home/dataops-lab/.local/share/multica-transition/backups/full-20260720T002750-0300
+(cd "$BACKUP_DIR" && sha256sum -c SHA256SUMS)
 ```
 
 Start only PostgreSQL:
@@ -232,7 +234,7 @@ Wait for `healthy`, copy the custom-format archive into the database container, 
 
 ```bash
 docker cp \
-  /home/dataops-lab/.local/share/multica-transition/backups/postgres-20260719T233100-0300.dump \
+  "$BACKUP_DIR/multica-candidate-postgres.dump" \
   multica-dev-transition-postgres-1:/tmp/postgres-transition.dump
 docker exec multica-dev-transition-postgres-1 \
   pg_restore -U multica_transition -d multica_transition \
@@ -244,9 +246,9 @@ Restore uploads into the candidate volume only:
 ```bash
 docker run --rm \
   -v multica-dev-transition_backend_uploads:/data \
-  -v /home/dataops-lab/.local/share/multica-transition/backups:/backup:ro \
+  -v "$BACKUP_DIR":/backup:ro \
   alpine:3.21 \
-  sh -c 'tar -xzf /backup/uploads-20260719T233100-0300.tar.gz -C /data'
+  sh -c 'tar -xzf /backup/multica-candidate-uploads.tar.gz -C /data'
 ```
 
 For a production-sized database, test restore into a second disposable project/database first.

@@ -7,10 +7,12 @@ This directory is the entry point for resuming the repository and DEV environmen
 ## Authoritative reading order
 
 1. [`DEV_RESTART_DOSSIER_20260719.md`](DEV_RESTART_DOSSIER_20260719.md) — complete AS-IS, TO-BE, source topology, completed work, validation, task status, decisions, blockers, risks, and next actions.
-2. [`DOCKER_AND_REDIS_INVENTORY_20260719.md`](DOCKER_AND_REDIS_INVENTORY_20260719.md) — every Docker container observed on the host, ownership boundaries, networks, ports, volumes, image identity, Redis status, and persistence risks.
-3. [`SECRETS_AND_ACCESS_REGISTER_20260719.md`](SECRETS_AND_ACCESS_REGISTER_20260719.md) — service identities, authentication modes, secret variable names, storage locations, permissions, rotation requirements, and prohibited handling.
-4. [`FRESH_ENV_RESTART_RUNBOOK.md`](FRESH_ENV_RESTART_RUNBOOK.md) — exact clone, verification, secret bootstrap, build, restore, deployment, health, agent-resumption, rollback, and evidence commands.
-5. [`DEV_HANDOFF_20260719.md`](DEV_HANDOFF_20260719.md) — original zero-loss freeze and deployment handoff. This remains historical evidence; the dossier above is the expanded current authority.
+2. [`DATABASE_BACKUP_AND_RESTORE_20260720.md`](DATABASE_BACKUP_AND_RESTORE_20260720.md) — complete project/agent database inventory, backup artifacts, sensitivity, integrity/restore tests, and exact PostgreSQL/SQLite/volume import procedures.
+3. [`GIT_ACCESS_AND_BOOTSTRAP.md`](GIT_ACCESS_AND_BOOTSTRAP.md) — public clone URLs, authenticated push options, canonical refs, access verification, and protected-branch rules.
+4. [`DOCKER_AND_REDIS_INVENTORY_20260719.md`](DOCKER_AND_REDIS_INVENTORY_20260719.md) — every Docker container observed on the host, ownership boundaries, networks, ports, volumes, image identity, Redis status, and persistence risks.
+5. [`SECRETS_AND_ACCESS_REGISTER_20260719.md`](SECRETS_AND_ACCESS_REGISTER_20260719.md) — service identities, authentication modes, secret variable names, storage locations, permissions, rotation requirements, and prohibited handling.
+6. [`FRESH_ENV_RESTART_RUNBOOK.md`](FRESH_ENV_RESTART_RUNBOOK.md) — exact clone, verification, secret bootstrap, build, restore, deployment, health, agent-resumption, rollback, and evidence commands.
+7. [`DEV_HANDOFF_20260719.md`](DEV_HANDOFF_20260719.md) — original zero-loss freeze and deployment handoff. This remains historical evidence; the dossier above is the expanded current authority.
 
 ## Source-of-truth precedence
 
