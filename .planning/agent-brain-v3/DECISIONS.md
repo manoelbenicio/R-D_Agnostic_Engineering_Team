@@ -411,3 +411,11 @@
   rotacionar a conta associada. Gate de segurança; requer autorização explícita do dono
   (ação de segredo, fora do mandato delegation-only do TL). Blocker minor p/ hardening; não
   bloqueia freeze G1 (que é no-secret).
+
+### D-V3-29 — P0 funcional exclusivo: oito tasks, quatro workstreams; chat/OBS são P2
+- Decisão explícita do dono em 2026-07-21. O único escopo que consome lanes P0 é `5.6–5.8`, `8.1–8.2`, `8.5–8.7`, agrupado em: rotas funcionais; failure handling; retry/dedup/cancel; lifecycle operacional.
+- **P0 exit:** fluxo funcional `squad → project → Kanban task → Agent Brain → OmniRoute/agent → terminal result`, com rotas aprovadas, tools/reasoning/usage/cancel/error, sem replay indevido e com lifecycle seguro.
+- **P2/deferred:** chat e `OBS-1..OBS-11`. OBS continua obrigatória antes de certificação de capacidade/cutover, mas não bloqueia o primeiro uso funcional do Kanban/Main Brain. Capacidade, cutover, Prodex recovery, debranding e produção também ficam fora das lanes P0.
+- **Orquestração:** Codex#TL#Principal é autoridade máxima operacional/arquitetural; Opus48-Kiro é co-orquestrador gerenciado pelo Principal; todos os agentes disponíveis são redistribuídos a cada 60s entre implementação, testes e revisão independente P0. O dono só é envolvido em segredo/produção/ação irreversível ou decisão arquitetural grave.
+- **Documentos:** OpenSpec `tasks.md` + `design.md`; GSD `P0_MAIN_BRAIN_EXECUTION.md`, `ROADMAP.md`, `STATE.md`, `FILE_OWNERSHIP.md`.
+- STATUS: **APROVADA / ATIVA.** Substitui qualquer priorização concorrente de chat/OBS/capacidade durante o P0; não reduz gates posteriores.

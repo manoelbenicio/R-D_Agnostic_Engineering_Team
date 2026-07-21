@@ -79,9 +79,9 @@ The initial adapter contracts are:
 
 - Claude Code: `ANTHROPIC_BASE_URL=http://127.0.0.1:20128` and a trusted `ANTHROPIC_AUTH_TOKEN` derived from the stable OmniRoute secret. The root URL does not include `/v1`.
 - Codex: generate a controlled per-task `config.toml` custom provider with base URL `http://127.0.0.1:20128/v1`, an environment key dedicated to OmniRoute, `wire_api="responses"`, no provider-native auth flow, HTTP/SSE transport, and task/session correlation headers.
-- OpenAI-compatible Kimi/GLM/NVIDIA: use an explicitly proven Responses or Chat Completions adapter and exact OmniRoute model ID; do not assume that setting `OPENAI_BASE_URL` alone configures every native CLI.
-- Kimi: confirm the installed Kimi provider registry/config contract. ACP controls the local agent; it is not the upstream model HTTP contract. Until proven, a Claude/Codex compatible frontend with a Kimi route is the safe fallback.
-- Antigravity: confirm a native endpoint override. Until proven, use Claude Code or Codex with approved `agy/...` model IDs; do not depend on the Windows MITM inside Linux/WSL/container runtimes.
+- OpenAI-compatible Cline routes: `Cline → Kimi-K2.7` and `Cline → GLM-5.2` use the accepted credentialless OmniRoute OpenAI-compatible contract. `GLM-5.2 → NVIDIA` is an OmniRoute-owned bounded fallback; the Brain neither stores native credentials nor decides provider/account fallback.
+- Kiro/Opus48 AWS: use an existing accepted Anthropic-compatible frontend/`CLIKind` with the exact registry-approved `RouteModel`; Kiro is a persona/model route, not a new credential owner or native account-selection implementation.
+- Antigravity: revalidate the already-operational route from frozen provenance/hashes. Native endpoint support may be used only if proven; otherwise use the accepted Anthropic/Responses-compatible frontend with the exact approved `agy/...` model ID.
 - NIM: either convert the native backend into a generic gateway adapter or point its configurable base URL at OmniRoute while ensuring any legacy `NVIDIA_API_KEY` slot contains only the OmniRoute key and is never overwritten by per-account preparation.
 
 The active host runtime uses loopback. If execution later moves to Docker, deployment selects Docker DNS or host-gateway explicitly; endpoint selection is runtime topology, not a hard-coded universal value.
@@ -216,3 +216,9 @@ Rollback never restores provider keys or dual routing in Agent Brain. It selects
 - What latency/error/resource thresholds approve the 20, 50 and 100 capacity tiers?
 - Which OmniRoute admin/state/backup topology is required beyond the current single local container?
 - How long must legacy API/env/config aliases remain, and who owns each consumer migration?
+
+### 13. Functional P0 is eight tasks in four workstreams
+
+Owner directive D-V3-29 defines the minimum functional release as `5.6–5.8`, `8.1–8.2`, `8.5–8.7`: functional routes, deterministic failures, retry/dedup/cancellation, and operational lifecycle. Exit means squads/projects/Kanban tasks execute through Agent Brain and approved OmniRoute routes to a terminal result. Chat, OBS, capacity certification, cutover, Prodex recovery and debranding do not consume P0 lanes. OBS remains required before later capacity certification/cutover.
+
+Execution uses maximum safe parallelism with disjoint worktrees/file ownership, W1-only shared-hotspot integration, producer/reviewer/adjudicator separation, and 60-second fleet redistribution. See `.planning/agent-brain-v3/P0_MAIN_BRAIN_EXECUTION.md`.

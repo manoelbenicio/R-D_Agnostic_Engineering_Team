@@ -1,5 +1,7 @@
 # HANDOFF — Apêndice de Referência COMPLETA (fullpaths, git, SSH, agentes, comandos)
 
+> **AVISO DE MIGRAÇÃO — 2026-07-21:** os caminhos e comandos LAN/WSL deste apêndice são evidência histórica e não são endpoints operacionais. Não execute acessos ao host aposentado. Topologia vigente: ORQ1 `100.118.244.61` = OmniRoute/stack DEV; ORQ2 `100.110.178.47` = Herdr/agentes/board (acesso local neste host). Protocolo atual: `.kiro/skills/fleet-monitor/SKILL.md`.
+
 > Companion do `HANDOFF_PROXIMO_AGENTE.md`. Tudo nos mínimos detalhes. Caminhos ABSOLUTOS.
 
 ## 1. MÁQUINAS

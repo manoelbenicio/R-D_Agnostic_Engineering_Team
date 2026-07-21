@@ -1,3 +1,7 @@
+## Active P0 Functional Scope — Owner directive 2026-07-21
+
+> **Only these pending tasks consume P0 lanes:** `5.6`, `5.7`, `5.8`, `8.1`, `8.2`, `8.5`, `8.6`, `8.7`. They form four workstreams: functional routes; deterministic failure handling; retry/dedup/cancellation; operational lifecycle. P0 exit means the app can execute **squad → project → Kanban task → Agent Brain → OmniRoute-routed agent → terminal result**. Chat, `OBS-1..OBS-11`, capacity certification, cutover, Prodex recovery and debranding are P2/HOLD/future and MUST NOT consume P0 lanes. OBS remains a later gate before capacity certification/cutover, not a prerequisite for initial functional Kanban use. See D-V3-29 and `.planning/agent-brain-v3/P0_MAIN_BRAIN_EXECUTION.md`.
+
 ## 0. Governance and GSD Rebaseline
 
 - [x] 0.1 [Product owner] Approve the OpenSpec/GSD source hierarchy, G0–G8 roadmap, total ETA range and preservation of RPP/Prodex v2.1 as historical evidence.
@@ -14,6 +18,7 @@
 - [x] 1.2 [Codex 1] Record the existing dirty worktree and assign exclusive ownership for `daemon.go`, `config.go`, `health.go`, command entrypoints, `execenv`, CLI adapters, gateway modules, and deployment files.
 - [ ] 1.3 [Codex 4] Obtain a completed OmniRoute architecture checklist with version/image digest and evidence for every protocol, rotation, expiry, quota, 429, streaming, security, observability, and capacity item.
 - [ ] 1.4 [Codex 4] Obtain a completed Prodex feature-parity matrix, including SC01-SC10 Smart Context, reset/redeem, special crate surfaces, approved waivers, owners, restrictions, and dates.
+  - _Phase 3 HOLD per owner decision D-V3-16. Remains open; no implementation or dispatch until owner releases Phase 3._
 - [x] 1.5 [Codex 4] Complete the per-model route matrix for Claude, Codex/OpenAI, Kimi, GLM, NVIDIA and Antigravity with exact API format, account pool, tools, reasoning, context, rotation/affinity and fallback.
 - [x] 1.6 [Codex 1] Approve the initial supported model set, fallback chains, stable-key scope, runtime endpoint topology, capacity target, and cutover blockers.
 
@@ -49,12 +54,9 @@
 - [x] 5.3 Remove provider-auth copying from per-task homes while preserving sandbox, config, skills, session and workspace isolation.
 - [x] 5.4 Generate a controlled Codex custom-provider configuration for OmniRoute Responses API, stable-key environment lookup, HTTP/SSE transport and correlation headers without `auth.json`.
 - [x] 5.5 Implement Claude Code's trusted OmniRoute root URL/token environment and ensure internal Claude markers do not leak or override gateway policy.
-- [ ] 5.6 Implement the approved OpenAI-compatible Kimi/GLM/NVIDIA adapter and convert or replace the native NIM direct-NVIDIA credential path.
-  - G2C no-secret contract delivered as `EV-G2C-06`; execution remains fail-closed pending an accepted adapter contract.
-- [ ] 5.7 Implement the accepted Kimi provider-registry path or the documented Claude/Codex frontend fallback for Kimi routes.
-  - G2C no-secret contract delivered as `EV-G2C-07`; native registry execution remains fail-closed pending acceptance evidence.
-- [ ] 5.8 Implement native Agy endpoint configuration only if the installed version proves support; otherwise enforce the Claude/Codex `agy/...` model fallback and disable the direct native path.
-  - G2C no-secret contract delivered as `EV-G2C-08`; native execution remains fail-closed and fallback selection is never automatic.
+- [ ] 5.6 Implement and live-validate the credentialless Cline/OpenAI-compatible path for `Cline → GLM-5.2`, with `GLM-5.2 → NVIDIA` as an explicitly declared, bounded fallback owned exclusively by OmniRoute; Agent Brain MUST NOT hold provider credentials or choose the fallback account/provider.
+- [ ] 5.7 Implement and live-validate the credentialless `Cline → Kimi-K2.7` path through the accepted OmniRoute OpenAI-compatible contract; remove the obsolete native-registry/Claude-or-Codex alternative wording and fail closed on any direct-provider route.
+- [ ] 5.8 Revalidate the already-operational Antigravity route against frozen provenance/hashes without redundant reimplementation, and deliver the Kiro/Opus48 AWS route through an existing accepted Anthropic-compatible frontend/`CLIKind` plus the exact registry-approved `RouteModel`; Kiro is a persona/model route, not a new credential owner or account-selection implementation.
 - [x] 5.9 Make model/thinking validation gateway-aware so approved OmniRoute IDs are accepted without provider-native catalog or credential lookup.
 - [x] 5.10 Add a pre-launch assertion that the child environment/config contains only the stable OmniRoute secret and approved local task data.
 
@@ -88,7 +90,9 @@
   - G4 acceptance is synthetic/reference-only: Claude and Codex trusted-gateway paths passed; Kimi/GLM/NVIDIA/NIM/Agy remained deterministic fail-closed contracts. Native tasks 5.6–5.8 remain open.
 - [x] 8.3 [Codex 3] Verify child environments, task homes, process trees, logs and diagnostics contain no provider-native credentials, auth files or direct-provider endpoints.
   - EV-G4-03 covers synthetic child environments, real temporary controlled homes, a two-level Linux helper-process tree and redacted diagnostics; it does not claim live daemon/CLI/provider isolation.
-- [ ] 8.4 [Codex 2 + Codex 4] Demonstrate strict concurrent round-robin for independent requests and correct affinity for Responses continuation, prompt cache and tool turns.
+- [x] 8.4 [Codex 2 + Codex 4] Demonstrate strict concurrent round-robin for independent requests and correct affinity for Responses continuation, prompt cache and tool turns.
+  - _Acceptance clarification (2026-07-21): OmniRoute-owned RR/affinity per D-V3-01/D-V3-06. Acceptance = black-box northbound evidence (pseudonymous OmniRoute telemetry proving rotation/affinity on live requests) + component-level evidence (gateway Selector algorithm tests as fail-closed safety net). Brain does not select accounts._
+  - _Evidence (2026-07-21): sanitized artifact /mnt/shared/handoffs/omniroute-8.4-affinity-RESULT-v6.1-SANITIZED.md SHA256 09daa11d5dadaea3a8aec2eb3e58b0bdeb76db6c6b06feac77b18361a1977dcc; harness SHA 8fde493919f5eb39d8cbefb52f9cc5f8e4e24e0f5c8e227ca3677d246c6439b6; live image sha256:d678650db85880868ead9db0d4cbe39e859d4e8c06e1cb4d555987b9edf89f2e; A/B/A pattern, retry=0, fallback=0, no rerun; independent ACCEPT w7:p4._
 - [ ] 8.5 [Codex 2 + Codex 4] Demonstrate expired access token, revoked refresh token, quota exhaustion, 401, 403, account-scoped 429, provider-global 429, 5xx, timeout and malformed upstream handling.
 - [ ] 8.6 [Codex 2 + Codex 4] Demonstrate safe retry before first output, no replay after partial output/tool action, request deduplication and prompt cancellation slot release.
 - [ ] 8.7 [Codex 2 + Codex 4] Demonstrate account add/remove/quarantine/re-entry and OmniRoute restart/config rollback during active load.
@@ -135,6 +139,7 @@
 - [ ] 10.2 [Codex 4] Observe controlled/default development cohorts for the approved period and confirm no direct-provider traffic, dual router ownership or secret-policy violation; do not claim production readiness.
 - [ ] 10.3 [Codex 1] Drain or stop legacy tasks and remove the temporary legacy execution flag after rollback no longer requires it.
 - [ ] 10.4 [Codex 1 / W1] Reconcile Prodex/L2 to a default-OFF, mutually-exclusive, operator-gated **cold platform recovery mode** in the final Kanban lane (do NOT delete): keep startup/facade/profile/filesystem code present but disabled by default; guarantee it is never per-request, never automatic, and never simultaneously hot with OmniRoute; wire it to the platform recovery-mode state machine (AB-REQ-41) at the single runtime-authority select point. Deletion is explicitly out of scope per D-V3-16.
+  - _Phase 3 HOLD per owner decision D-V3-16. Remains open; no implementation or dispatch until owner releases Phase 3._
 - [ ] 10.5 [Codex 1] Delete legacy Go rotation state/retry/account-selection code and provider-auth home preparation after zero-use evidence.
 - [ ] 10.6 [Codex 3] Delete obsolete provider credential copy/restore implementations and direct NIM/provider-key paths; retain only credentialless state isolation.
 - [ ] 10.7 [Codex 4] Reconcile documentation, deployment, threat model, runbooks and evidence after removal and prove rollback uses only accepted Agent Brain/OmniRoute versions.

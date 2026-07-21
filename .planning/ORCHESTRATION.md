@@ -1,3 +1,5 @@
+> **ACTIVE OVERRIDE — 2026-07-21 / D-V3-29:** este plano RPP é histórico para execução. A orquestração ativa está em `.planning/agent-brain-v3/P0_MAIN_BRAIN_EXECUTION.md`; somente tasks `5.6–5.8`, `8.1–8.2`, `8.5–8.7` consomem lanes P0. Pane IDs e roster abaixo são snapshots antigos e não devem ser usados sem `herdr agent list` local.
+
 # ORCHESTRATION — Plano de Paralelismo para 8 Agentes
 
 > **Autoridade:** Este documento é fonte de verdade para orquestração, propriedade de arquivo, comunicação e paralelismo.
@@ -162,7 +164,7 @@ echo "SIGN-OUT $(whoami)__$(date -u +%Y%m%dT%H%M%SZ) TASK: [N.M] RESULT: [DONE|B
 ┌─────────────────────────────────────┐
 │  Codex#5.5#C → P0 (tasks 0.1–0.9)  │  ← BLOQUEIA todas as waves
 │  Build prodex no fleet host         │
-│  (192.168.1.27, NÃO neste host)     │
+│  (ORQ1 100.118.244.61)              │
 └────────────────┬────────────────────┘
                  │ P0 GATE verde
                  ▼
@@ -262,7 +264,7 @@ echo "SIGN-OUT $(whoami)__$(date -u +%Y%m%dT%H%M%SZ) TASK: [N.M] RESULT: [DONE|B
 2. **Hotspot daemon = dono único serial** — só Codex#5.5#C toca.
 3. **Sign-in/out obrigatório** — antes e depois de tocar arquivo.
 4. **Merge via TL** — se dois agentes precisam do mesmo arquivo, TL sequencializa.
-5. **Build = fleet host** — NUNCA neste host (orquestração). Sempre `ssh 192.168.1.27`.
+5. **Build = ORQ1** — use `ssh ec2-user@100.118.244.61` somente quando ORQ1 estiver alcançável; nunca use infraestrutura aposentada como fallback.
 6. **DONE = evidência** — TL re-roda e confirma; não confia no tail (ERR-08).
 7. **IPv6 OFF** — `--sysctl net.ipv6.conf.all.disable_ipv6=1` em todo `docker run`.
 8. **Sem segredo em log** — scrubbing antes de commitar qualquer evidência.

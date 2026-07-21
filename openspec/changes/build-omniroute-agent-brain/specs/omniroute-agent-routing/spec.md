@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Protocol-complete CLI adapters
-The system SHALL route Claude Code through Anthropic Messages, Codex through OpenAI Responses, and approved Kimi/GLM/NVIDIA/Antigravity frontends through an explicitly supported OmniRoute protocol. Each adapter MUST preserve streaming, tools, reasoning, usage, errors, cancellation, and required continuation fields.
+The system SHALL route Claude Code through Anthropic Messages, Codex through OpenAI Responses, `Cline → Kimi-K2.7` and `Cline → GLM-5.2` through an explicitly accepted credentialless OpenAI-compatible OmniRoute contract, and SHALL permit `GLM-5.2 → NVIDIA` fallback only as an OmniRoute-owned bounded policy. The already-operational Antigravity route SHALL be revalidated from frozen provenance rather than redundantly reimplemented. Kiro/Opus48 AWS SHALL use an existing accepted Anthropic-compatible frontend/`CLIKind` with the exact registry-approved `RouteModel`; it MUST NOT create a new provider credential/account-selection path. Each adapter MUST preserve streaming, tools, reasoning, usage, errors, cancellation, and required continuation fields.
 
 #### Scenario: Agent uses tools during a streamed response
 - **WHEN** an approved CLI sends a streamed model request containing tool schemas and receives one or more tool calls

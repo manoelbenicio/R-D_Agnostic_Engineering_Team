@@ -4,6 +4,8 @@ The current daemon mixes Multica-specific branding, provider credential preparat
 
 ## What Changes
 
+- **P0 functional execution scope (owner directive D-V3-29):** the only pending tasks consuming P0 lanes are `5.6–5.8`, `8.1–8.2`, `8.5–8.7`. P0 exit is a working squad/project/Kanban-task flow through Agent Brain and approved OmniRoute routes to a terminal result. Chat and end-to-end observability are P2 for implementation priority; observability remains a later blocker for capacity certification/cutover, not initial functional use.
+
 - Introduce a brand-neutral Agent Brain daemon as the cold control plane for tasks, workspaces, sessions, agent processes, policy, and lifecycle management.
 - Make OmniRoute the sole hot data plane for provider credentials, account rotation, quota/failover decisions, and model routing.
 - Add a credentialless runtime contract: the daemon and its agents receive only one OmniRoute secret and never store or rotate provider-native credentials.

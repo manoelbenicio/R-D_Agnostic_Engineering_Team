@@ -1,0 +1,6 @@
+8ab5aa7af256ab9b2344e602332784bf0bc0ecbd543821768b9496a979738733  .handoff-staging/omniroute-affinity/work/open-sse/handlers/chatCore.ts
+ed36064dd09b10bd7b2b672699d1e3145f3479094267b667f27ba8a46fc55fe2  .handoff-staging/omniroute-affinity/work/src/lib/db/sessionAccountAffinity.ts
+5ab37d57efab7a297b981aaa0b256657fa8239f14d880ec9a68bac9ff0117c64  .handoff-staging/omniroute-affinity/work/src/sse/handlers/chat.ts
+172b0e1c5e118eceaff2f0ad1b9ca44c6852624e4f905fbe2f21d3ed9687ac55  .handoff-staging/omniroute-affinity/work/src/sse/services/auth.ts
+cba97ab439bd5c1f1539422c930298e0f129fa1bac35a110e15acfaf5dedaacb  .handoff-staging/omniroute-affinity/work/tests/unit/db/responseConnectionAffinity.test.ts
+03c7b9f2899ea8e95438636e3c1c974da6b1bed838223e00a3f8049b412171b1  /tmp/omniroute-affinity-patch.js

@@ -26,9 +26,19 @@ Canal Tech-Lead -> SOMENTE opus-4.8-orchestrator:
 import argparse, json, os, re, shlex, subprocess, sys, time
 from datetime import datetime, timezone
 
-DEFAULT_HOST = os.environ.get("FLEET_SSH_HOST", "dataops-lab@192.168.1.27")
-DEFAULT_BOARD = os.environ.get("FLEET_BOARD", "/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/.deploy-control")
-ORCH = os.environ.get("FLEET_ORCHESTRATOR", "Gemini-PRO-31")
+# Topologia migrada (2026-07-21): ORQ1 hospeda OmniRoute/DEV; ORQ2 hospeda Herdr/agentes.
+ORQ1_TAILSCALE = "100.118.244.61"
+ORQ2_TAILSCALE = "100.110.178.47"
+LEGACY_HOST_MARKERS = ("192.168.1.27", "manoelneto-laptop")
+_configured_host = os.environ.get("FLEET_SSH_HOST", "local")
+# Fail safe: uma variável antiga não pode reativar o host aposentado.
+DEFAULT_HOST = "local" if any(x in _configured_host for x in LEGACY_HOST_MARKERS) else _configured_host
+DEFAULT_BOARD = os.environ.get(
+    "FLEET_BOARD",
+    os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".deploy-control")),
+)
+ORCH = os.environ.get("FLEET_ORCHESTRATOR", "opus-4.8-orchestrator")
+ORCH_PANE = os.environ.get("FLEET_ORCHESTRATOR_PANE", "w5:p1")
 SEP = "@@@BOARD@@@"
 
 def use_color(ascii_mode):
@@ -46,16 +56,25 @@ class C:
     def blue(self, s): return self.w(s, "34")
     def bold(self, s): return self.w(s, "1")
 
-# ---------- ssh ----------
+# ---------- execução local / ssh ----------
 def ssh(host, remote_cmd, timeout=15):
+    host = str(host or "local")
+    if any(marker in host for marker in LEGACY_HOST_MARKERS):
+        return 64, "", "endpoint legado aposentado; acesso bloqueado"
+    local_aliases = {"local", "localhost", "127.0.0.1", "ORQ2", ORQ2_TAILSCALE,
+                     f"ec2-user@{ORQ2_TAILSCALE}"}
     try:
-        p = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
-                            "-o", "StrictHostKeyChecking=accept-new",
-                            "-o", "KexAlgorithms=curve25519-sha256", host, remote_cmd],
-                           capture_output=True, text=True, timeout=timeout)
+        if host in local_aliases:
+            p = subprocess.run(["bash", "-lc", remote_cmd], capture_output=True,
+                               text=True, timeout=timeout)
+        else:
+            p = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
+                                "-o", "StrictHostKeyChecking=accept-new",
+                                "-o", "KexAlgorithms=curve25519-sha256", host, remote_cmd],
+                               capture_output=True, text=True, timeout=timeout)
         return p.returncode, p.stdout, p.stderr
     except subprocess.TimeoutExpired:
-        return 124, "", "ssh timeout"
+        return 124, "", "command timeout"
     except Exception as e:
         return 1, "", str(e)
 
@@ -290,7 +309,7 @@ def build_tasks(plan, checkins, agents, now):
         if status == "TODO":
             motivo = "GATED — aguarda aprovação do dono + smokes verdes" if task.get("gated") else "não iniciado"
         elif status == "IN_PROGRESS":
-            motivo = motivo_live or ((latest.get("notes") if latest else "") or f"em curso ({prog}%)")
+            motivo = ((latest.get("notes") if latest else "") or f"em curso ({prog}%)")
         elif status == "BLOCKED":
             motivo = ((latest.get("blockers") or latest.get("notes")) if latest else "") or "bloqueado"
         elif status == "FAILED":
@@ -403,7 +422,10 @@ def render(host, rows, now, col, ascii_mode, err=None):
 def orch_pane(host):
     rc, out, err = ssh(host, "herdr agent list")
     try:
-        for a in json.loads(out).get("result", {}).get("agents", []):
+        agents = json.loads(out).get("result", {}).get("agents", [])
+        if ORCH_PANE and any(a.get("pane_id") == ORCH_PANE for a in agents):
+            return ORCH_PANE
+        for a in agents:
             if a.get("name") == ORCH:
                 return a.get("pane_id")
     except Exception:
@@ -411,13 +433,16 @@ def orch_pane(host):
     return None
 
 def msg_orch(host, text):
-    # pane run = texto + Enter (submete de verdade). agent send NAO da Enter -> mensagem nao e processada.
     pane = orch_pane(host)
-    if pane:
-        return ssh(host, "herdr pane run " + shlex.quote(pane) + " " + shlex.quote(text))
-    return ssh(host, f"herdr agent send {shlex.quote(ORCH)} {shlex.quote(text)}")
+    if not pane:
+        return 65, "", f"pane de {ORCH} não localizado; configure FLEET_ORCHESTRATOR_PANE"
+    return ssh(host, "herdr pane run " + shlex.quote(pane) + " " + shlex.quote(text))
 
-def read_orch(host, n=60): return ssh(host, f"herdr agent read {shlex.quote(ORCH)} --source recent --lines {int(n)}")
+def read_orch(host, n=60):
+    pane = orch_pane(host)
+    if not pane:
+        return 65, "", f"pane de {ORCH} não localizado; configure FLEET_ORCHESTRATOR_PANE"
+    return ssh(host, f"herdr pane read {shlex.quote(pane)} --source recent-unwrapped --lines {int(n)}")
 
 # ---------- main ----------
 def snapshot(host, board):

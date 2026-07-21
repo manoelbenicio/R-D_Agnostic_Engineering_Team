@@ -112,12 +112,21 @@ def render(path, col):
         L.append(" " + col.g(f"{G['check']} Todas as tasks concluidas."))
     return "\n".join(L)
 
-REMOTE_HOST = "dataops-lab@192.168.1.27"
-REMOTE_TASKS = "/mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/openspec/changes/rotation-parity-polyglot/tasks.md"
+ORQ2_TAILSCALE = "100.110.178.47"
+LEGACY_HOST_MARKERS = ("192.168.1.27", "manoelneto-laptop")
+_configured_remote = os.environ.get("PLAN_REMOTE_HOST", "local")
+REMOTE_HOST = "local" if any(x in _configured_remote for x in LEGACY_HOST_MARKERS) else _configured_remote
+REMOTE_TASKS = os.environ.get(
+    "PLAN_REMOTE_TASKS",
+    "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team/openspec/changes/build-omniroute-agent-brain/tasks.md",
+)
 SSH_OPTS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5", "-o", "KexAlgorithms=curve25519-sha256"]
 
 def sync_remote(local_path):
-    """Fetch latest tasks.md from fleet host via SCP."""
+    """Fetch latest tasks.md from ORQ2 when running elsewhere; ORQ2 itself is already local."""
+    if REMOTE_HOST in {"local", "localhost", "127.0.0.1", "ORQ2", ORQ2_TAILSCALE,
+                       f"ec2-user@{ORQ2_TAILSCALE}"}:
+        return
     try:
         subprocess.run(
             ["scp"] + SSH_OPTS + [f"{REMOTE_HOST}:{REMOTE_TASKS}", local_path],

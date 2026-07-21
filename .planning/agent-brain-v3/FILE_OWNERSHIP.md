@@ -167,3 +167,17 @@ server-relative (`multica-auth-work/server/…`) EXCEPT W4's stack path, which i
 > `obs_trace_gaps_total`, `obs_trace_continuous_ratio`, `obs_leak_scan_failures_total`,
 > `g4_obs_prerequisites_met`. **Prohibited metric labels:** IDs, pseudonyms, free-form, any high-cardinality
 > label (pseudonyms stay trace-only). Priority 2 / DEFERRED behind P0 Main Brain. Holds intact.
+
+## P0 functional ownership override — D-V3-29 (2026-07-21)
+
+Este slice substitui qualquer dispatch concorrente anterior enquanto o P0 funcional estiver aberto. Chat, OBS, capacidade, cutover, Prodex e debrand não possuem lock ativo.
+
+| Lane | Ownership P0 exclusivo | Tasks |
+|---|---|---|
+| W1 Integrator | `internal/daemon/{daemon,config,health,brain_integration}.go`, `internal/daemon/commitledger/**`, config/command hotspots; integração serial | 8.6 wiring + integração final |
+| W2 Gateway | `internal/daemon/gateway/**` | 8.1, 8.5, 8.6, 8.7 gateway side |
+| W3 Routes/runtime | `internal/daemon/runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` | 5.6–5.8, 8.2 |
+| W4 Harness/evidence | P0 harness/runbook/evidence namespaced; nenhum produto W1/W2/W3 | 8.1–8.2, 8.5–8.7 acceptance |
+| QA-A / QA-B | read-only diff/tests/security review | todos, producer ≠ reviewer |
+
+Regras: worktree/branch exclusiva por producer; arquivo disputado escala a W1; nenhuma edição concorrente do mesmo arquivo; OpenSpec/GSD somente pelo Principal; checkbox somente após integração + revisão independente + evidência reproduzida.
