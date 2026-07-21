@@ -322,3 +322,19 @@ func ensureJSONEOF(decoder *json.Decoder) error {
 func telemetryProtocolError() error {
 	return &GatewayError{Operation: "telemetry.parse", Class: ErrorProtocol}
 }
+
+// ParseSelectionTelemetry extracts OmniRoute's own selection telemetry from a
+// live response's headers — the actual route, pseudonymous account (hashed,
+// never the raw id), selection reason (independent-round-robin /
+// continuation-affinity / prompt-cache-affinity / tool-turn-affinity / retry /
+// fallback), model, and usage. This is the gateway-side primitive for proving
+// OmniRoute's own round-robin/affinity selection (OpenSpec 8.4) from real
+// model-request responses; the caller that receives the response (the CLI
+// adapter / observability hop) invokes it. It never surfaces raw account
+// identity, credentials, or content.
+func ParseSelectionTelemetry(response *http.Response) (Telemetry, error) {
+	if response == nil {
+		return Telemetry{}, &GatewayError{Operation: "telemetry.response", Class: ErrorInvalidRequest}
+	}
+	return ParseTelemetryHeaders(response.Header)
+}
