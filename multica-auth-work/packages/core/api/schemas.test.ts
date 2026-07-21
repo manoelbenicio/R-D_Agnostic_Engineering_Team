@@ -172,18 +172,17 @@ describe("UserSchema timezone drift", () => {
     expect(parsed.timezone).toBe(null);
   });
 
-  // Wrong-type drift: a future server bug sending `timezone` as a number
-  // must not throw into the UI. parseWithFallback degrades the whole user
-  // object to the explicit fallback (EMPTY_USER) so /api/me callers keep a
-  // valid shape instead of white-screening.
-  it("falls back to EMPTY_USER when timezone is the wrong type", () => {
-    const parsed = parseWithFallback(
-      { ...base, timezone: 42 },
-      UserSchema,
-      EMPTY_USER,
-      { endpoint: "GET /api/me" },
-    );
-    expect(parsed).toBe(EMPTY_USER);
+  // Wrong-type drift is a contract violation. The client must surface it
+  // instead of fabricating an EMPTY_USER that looks like a successful API row.
+  it("fails closed when timezone is the wrong type", () => {
+    expect(() =>
+      parseWithFallback(
+        { ...base, timezone: 42 },
+        UserSchema,
+        EMPTY_USER,
+        { endpoint: "GET /api/me" },
+      ),
+    ).toThrow("API response failed schema validation: GET /api/me");
   });
 });
 

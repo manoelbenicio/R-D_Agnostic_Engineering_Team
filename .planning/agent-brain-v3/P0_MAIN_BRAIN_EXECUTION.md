@@ -1,6 +1,6 @@
 # P0 MAIN BRAIN — Plano executivo agentic
 
-updated: 2026-07-21T14:11Z  
+updated: 2026-07-21T21:20Z  
 owner: Product Owner  
 principal_orchestrator: Codex#TL#Principal (`w5:p2`)  
 co_orchestrator: Opus48-Kiro (`w5:p1`)  
@@ -19,60 +19,56 @@ O P0 pendente contém exatamente oito checkboxes OpenSpec, agrupados em quatro w
 | Retry, dedup e cancelamento | 8.6 | Retry somente pre-commit; nenhum replay após output/tool; dedup e liberação de slots exatamente uma vez. |
 | Lifecycle operacional | 8.7 | Add/remove/quarantine/re-entry e restart/rollback não corrompem tasks ativas. |
 
-ETA consolidado: **24–48h nominal; 72h conservador**, sem somar tarefas sobrepostas.
+ETA consolidado após deduplicação: **6–12h nominal; até 16h conservador**. A estimativa cobre somente gaps reais de implementação/integração e uma execução live por comportamento alterado; não soma tarefas sobrepostas nem repete evidência equivalente já aceita.
 
 ## 2. Exclusões duras desta execução
 
-Não consumir lanes P0 com: chat; OBS-1..OBS-11; 9.x/capacidade; 10.x/cutover; 1.4/Prodex; debranding; tiers 50/100; produção. OBS e chat são P2. 1.4/10.4 permanecem HOLD. Nenhum agente lê, imprime, copia, rotaciona ou altera segredo. Live non-prod só usa chave nova já injetada diretamente pelo dono no OmniRoute e nunca revela valor.
+Não consumir lanes P0 com: chat; OBS-1..OBS-11; 9.x/capacidade; 10.x/cutover; 1.4/Prodex recovery; debranding; tiers 50/100. OBS e chat são P2. 1.4/10.4 permanecem HOLD. Nenhum agente lê, imprime, copia, rotaciona ou altera segredo.
+
+O ambiente ativo é a validação funcional. Produção-reachable mocks, placeholders, fake-success fallbacks, QA-only routes e dados sintéticos persistidos são proibidos. Fixtures/testes isolados e guardrails sem caller produtivo permanecem. Evidência aceita da mesma versão/digest, configuração, rota e cenário é reutilizada. Só se executa novamente comportamento alterado, sem evidência, com evidência obsoleta/não equivalente ou com risco material distinto ainda não coberto.
 
 ## 3. DAG e paralelismo
 
 ```text
-Freeze OpenSpec/GSD + ownership
-  ├─ R1 adapters/routes 5.6–5.8
-  ├─ R2 protocol acceptance 8.1–8.2
-  ├─ F  deterministic failures 8.5
-  ├─ D  replay/dedup/cancel 8.6
-  └─ L  lifecycle/restart/rollback 8.7
+Implementação paralela em ownership disjunto
+  ├─ R1 Cline/Kimi/GLM: 5.6–5.7 + cobertura 8.1/8.2
+  ├─ R2 Antigravity/Kiro: 5.8 + cobertura 8.1/8.2
+  ├─ B  fronteira Brain: partes Brain-owned de 8.5/8.6
+  └─ L  Kanban/lifecycle Brain-owned: parte de 8.7
            ↓
-W1 serial integration on protected P0 branch
+W1 integra uma lane por vez no ambiente ativo
            ↓
-Independent review A + security review B
+UMA execução live do comportamento alterado
            ↓
-Focused regression + live non-prod functional acceptance
+O mesmo resultado atualiza todas as tasks sobrepostas que ele prova
            ↓
-Evidence hashes/provenance + OpenSpec checkbox closure
+Próxima lane; após a última, P0 termina
 ```
 
-Rotas, falhas, retry e lifecycle executam em paralelo em worktrees/branches isolados. Somente W1 integra hotspots compartilhados. Reviewer nunca é produtor nem adjudicador.
+Implementação paraleliza; integração de hotspots permanece serial. Não existem QA-A/QA-B, regressão ampla separada, segunda live acceptance ou agente dedicado a evidência. Se W1 resolver conflito alterando comportamento, executa novamente somente o cenário afetado. Registro mínimo (task IDs, SHA/config, comando/ação e resultado) reutiliza a própria execução live e não constitui outro teste.
 
 ## 4. Roster e lanes
 
-### Preflight ativo — 2026-07-21T14:11Z
+### Lanes autorizadas após o preflight
 
-| Pane | Lane read-only | Escopo |
+| Lane | Escopo único | Não repetir |
 |---|---|---|
-| w6:p1 | route/source gap | 5.6/5.7/5.8/8.1 |
-| w6:p2 | protocol/tools/live-route | 8.1/8.2 |
-| w7:p3 | failure matrix | 8.5 |
-| w7:p4 | retry/CommitLedger/no-replay | 8.6 |
-| w8:p1 | lifecycle/persistence/active-load | 8.7 |
-| w8:p2 | integration/harness | cross-workstream |
-| wB:p1 | security/credentialless | 5.6/5.7/5.8/8.2 |
-| wB:p2 | independent acceptance matrix | all P0 |
+| R1 | Cline→Kimi-K2.7 e Cline→GLM-5.2; ajustes reais de adapter/config | internals de auth/rotação/fallback do OmniRoute |
+| R2 | gap Kiro→Opus48 e preservação da rota Antigravity já operacional | reimplementação ou recertificação integral de Antigravity |
+| B | fail-closed, propagação de erro e cancelamento pertencentes ao Main Brain | failure injection de provider já coberta pelo mesmo OmniRoute build/config |
+| L | squad/project/Kanban→CLI→resultado terminal; cleanup de processo/slot Brain-owned | add/remove/quarantine internos do OmniRoute já comprovados |
+| W1 | integração serial de hotspots e uma execução live por lane integrada | broad regression ou segunda acceptance |
 
-O Opus48-Kiro coordena esses oito workers e reporta somente ao Principal. O Principal mantém OpenSpec/GSD, ownership, adjudicação e integração gates.
+O Opus48-Kiro coordena as quatro lanes e reporta ao Principal. O Principal mantém OpenSpec/GSD, ownership e integração. Não há lane QA ou reviewer que reproduza a execução.
 
-### Ownership de produção após o preflight
+### Ownership de produção
 
 | Lane | Ownership permitido | Proibido |
 |---|---|---|
-| W1 Integrator | `internal/daemon/{daemon,config,health,brain_integration}.go`, `internal/daemon/commitledger/**`, config/command hotspots e integração serial | editar módulos owned por W2/W3/W4 durante produção |
-| W2 Gateway failures/retry | `internal/daemon/gateway/**` | daemon/config/runtime adapters |
-| W3 Routes/runtime adapters | `internal/daemon/runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` | gateway e hotspots centrais |
-| W4 Lifecycle/harness/evidence | harness P0 isolado, runbook funcional, evidência namespaced por task | produto W1/W2/W3, OBS/capacidade |
-| QA-A | read-only diff + focused tests | qualquer edição do producer |
-| QA-B Security | read-only credentialless/no-secret review | segredo, auth mutation, edição do producer |
+| W1 Integrator | `internal/daemon/{daemon,config,health,brain_integration}.go`, config/command hotspots e integração serial | duplicar lógica hot-path do OmniRoute |
+| R1/R2 Routes | `internal/daemon/runtimeenv/**`, adapters estritamente necessários | gateway internals, credenciais/provider account selection |
+| B Boundary | somente call sites Brain-owned de readiness/error/cancel | refresh, quota, 429 circuit, account retry/fallback OmniRoute-owned |
+| L Lifecycle | fluxo Kanban, processo CLI, persistência terminal e cleanup Brain-owned | estado interno de contas OmniRoute |
 
 Arquivo disputado escala para W1 e é serializado. Não existem duas escritas concorrentes no mesmo arquivo ou worktree.
 
@@ -84,64 +80,53 @@ Todo prompt de produção contém:
 2. branch/worktree e lista de arquivos permitidos;
 3. lista explícita de must-not-touch;
 4. baseline SHA e dependências aceitas;
-5. testes focused obrigatórios (`go test`, `-race` quando toolchain permitir, `go vet`, `gofmt`, `git diff --check`);
-6. evidência sem segredo, com comandos/saídas/hashes/proveniência;
-7. proibição de checkbox, merge, push, live paid call ou broad test sem autorização;
-8. check-in antes de editar e check-out com RESULT/FILES/TESTS/COMMIT/BLOCKERS;
+5. validação proporcional ao delta: build/typecheck/lint ou teste focused somente para comportamento novo/alterado ou gap sem evidência; nenhuma broad regression automática;
+6. reutilização explícita de evidência válida da mesma versão/config/rota/cenário; o registro da execução live contém somente task IDs, SHA/config segura, ação e resultado;
+7. proibição de merge, push, mutação de segredo ou chamada paga fora da execução live autorizada;
+8. check-in antes de editar e check-out com RESULT/FILES/VALIDATION/COMMIT/BLOCKERS;
 9. parada fail-closed diante de design conflict, segredo ou ownership overlap.
 
 ## 6. Prompt packets de produção
 
-### W3 — Rotas funcionais 5.6/5.7/5.8
+### R1/R2 — Rotas funcionais 5.6/5.7/5.8 + 8.1/8.2
 
-Implementar apenas os gaps confirmados pelo preflight para Cline→Kimi-K2.7, Cline→GLM52 com fallback NVIDIA OmniRoute-owned, e Antigravity já operacional (revalidar, não reimplementar). Preservar `CLIKind`/`RouteModel`; nenhum provider key ou fallback decidido pelo Brain. Entregar testes focused por adapter e diff isolado.
+Implementar apenas gaps confirmados: Cline→Kimi-K2.7, Cline→GLM52, gap Kiro→Opus48; Antigravity é preservado, não reimplementado. Cada rota alterada recebe uma única execução live após integração W1; essa execução fecha simultaneamente a cobertura sobreposta de 5.x/8.1/8.2 que provar. Rotas já aceitas no mesmo build/config sem mudança reutilizam evidência.
 
-### W2/W4 — Protocolos 8.1/8.2
+### B — Fronteira Main Brain 8.5/8.6
 
-Exercitar cada rota P0 aprovada em streaming/non-streaming, tools, reasoning, usage, cancellation e deterministic errors. Component evidence não substitui requisito live. Nenhum body/prompt/tool payload em evidência; registrar apenas metadados e hashes seguros.
+OmniRoute continua proprietário exclusivo de credenciais provider, refresh, quota, seleção de conta, 429/5xx circuits e retry/fallback pre-commit. Não implementar CommitLedger de inferência ou account retry no Brain. Validar uma vez somente o delta Brain-owned: OmniRoute indisponível falha fechado sem provider direto; erro seguro vira estado correto; cancelamento encerra CLI e libera slot Brain-owned. Failure-injection interna do OmniRoute usa evidência equivalente existente, salvo mudança de build/config ou gap material não coberto.
 
-### W2 — Falhas 8.5
+### L — Lifecycle 8.7
 
-Fechar a matriz: expired access; revoked refresh; quota; 401; 403; account 429; provider-global 429; 5xx; timeout; malformed upstream. Provar classificação, scope/circuit, fallback permitido, terminal state e zero retry indevido. Não fabricar falha com evidência que não atravessa o boundary sob teste.
+Validar o fluxo real squad/project/Kanban→Brain→CLI→OmniRoute→resultado terminal e somente estado Brain-owned: admissão, workspace, processo, cancelamento, persistência terminal e cleanup. Add/remove/quarantine/re-entry de contas e rollback interno do OmniRoute não são reexecutados quando já comprovados no mesmo build/config.
 
-### W1/W2 — Retry/dedup/cancel 8.6
+### W1 — Integração e execução única
 
-Fechar durable CommitLedger/replay gate e integração produtiva: retry pre-first-output; no replay post-output/tool; dedup concurrent/completed; cancellation libera task/request/account slots exatamente uma vez; ambiguous output fail-closed. Store e HMAC/config devem estar efetivamente wired, não apenas unit-tested.
-
-### W2/W4 — Lifecycle 8.7
-
-Provar add/remove/quarantine/re-entry e restart/config rollback sob carga funcional ordinária. Estado deve persistir/reconciliar, streams ativas não podem corromper ou duplicar task, e rollback retorna à versão/config aceita. Não chamar isso de capacity certification.
-
-### QA-A — revisão independente
-
-Revisar o diff completo contra OpenSpec/design/AB-REQ; reproduzir focused tests; procurar código morto, fake harness, missing production caller, race, replay, leaks e overclaim. Veredito: ACCEPT ou FAIL com achados severidade/caminho/linha/reprodução.
-
-### QA-B — segurança e credenciais
-
-Provar credentialless child env/home/process tree, trusted config last, nenhum provider-native endpoint/key, nenhum segredo em logs/errors/evidence e fail-closed auth. Nunca acessar valor de segredo.
+Integrar uma lane por vez. Se a integração não altera comportamento além do diff produzido, executar uma única vez o cenário real da lane e registrar o resultado para todos os checkboxes sobrepostos. Se houver conflito com alteração semântica, repetir apenas o cenário afetado. Após a última lane não existe fase adicional de QA, regressão ou acceptance.
 
 ## 7. Gates de aceite
 
 Uma task só recebe `[x]` quando todos forem verdadeiros:
 
 - implementação está no caminho produtivo, não somente fixture/harness;
-- testes focused passam e o reviewer independente reproduz;
-- live non-prod exigido pela task foi executado quando autorizado e disponível;
-- evidence artifact contém baseline/final SHA, comandos, resultados, hashes e identidades producer/reviewer;
+- não há mock, placeholder, fake-success ou QA-only path alcançável no comportamento aceito;
+- validação do delta novo/alterado passou, ou evidência aceita equivalente foi explicitamente reutilizada;
+- a execução live única pós-integração cobriu o requisito quando o comportamento foi alterado ou ainda não tinha prova;
+- registro mínimo contém task IDs, SHA/config segura, ação e resultado sem segredo;
 - nenhuma violação de ownership, segredo, dual router ou escopo P2;
-- W1 integrou serialmente no protected P0 branch e o conjunto integrado passou regressão;
-- Principal adjudicou sem usar apenas a declaração do producer.
+- W1 integrou serialmente no protected P0 branch;
+- checkbox não exige uma segunda execução, reviewer ou relatório separado.
 
 ## 8. Monitoramento de 60 segundos
 
 - Opus48-Kiro executa `herdr agent list` a cada 60s, lê panes `done|idle|blocked`, coleta resultado e redistribui imediatamente.
 - Principal mantém um segundo monitor local independente de 60s.
-- `idle|done` sem entrega aceita → nova tarefa P0 de revisão, teste focused ou gap audit.
-- `blocked` → classificar em técnico, ownership, segurança ou decisão humana. Somente segurança irreversível, produção, segredo ou mudança arquitetural grave escala ao dono.
+- `idle|done` sem entrega aceita → nova tarefa de implementação/integração P0 não sobreposta; não criar revisão ou repetição para ocupar lane.
+- `blocked` → classificar em técnico, ownership, segurança ou decisão humana. Somente segurança irreversível, segredo ou mudança arquitetural grave escala ao dono.
 - Toda rodada registra timestamp, pane, lane, estado, deliverable e próxima ação; nenhum conteúdo sensível.
 
-## 9. Integração e evidência
+## 9. Integração e registro
 
-A branch protegida é `integration/agent-brain-p0`; `main` não é tocada. Antes de atualizar a branch: dry-run em worktree descartável, resolução arquivo-a-arquivo, sem `ours/theirs` em massa, sem force push, focused tests + race/vet/smoke/provenance. Commits são criados somente por workers autorizados; o Principal não commita nem edita código de produto.
+A branch protegida é `integration/agent-brain-p0`; `main` não é tocada. W1 resolve arquivo-a-arquivo, sem `ours/theirs` em massa e sem force push. Validação é proporcional ao delta e ocorre uma vez no ambiente ativo após integrar a lane. Não existe broad regression final obrigatória; conflito que altere semântica exige somente o cenário afetado.
 
-OpenSpec e GSD permanecem abertos até evidência integrada. Checkbox nunca é usado como proxy de progresso.
+OpenSpec/GSD recebem o resultado da mesma execução live (task IDs, SHA/config segura, ação, resultado). Checkbox nunca é proxy de progresso nem motivo para repetir teste.

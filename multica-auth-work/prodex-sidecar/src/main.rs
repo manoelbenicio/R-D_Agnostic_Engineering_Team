@@ -180,46 +180,23 @@ fn handle_healthz() -> ResponseBox {
         "sidecar": {
             "name": "prodex-sidecar",
             "version": env!("CARGO_PKG_VERSION"),
-            "commit": std::env::var("MULTICA_PRODEX_COMMIT").unwrap_or_else(|_| "smoke".to_string())
+            "commit": std::env::var("MULTICA_PRODEX_COMMIT").ok()
         }
     }))
 }
 
 fn handle_readyz() -> ResponseBox {
-    let pg = probe_postgres();
-    let gateway = ensure_gateway_running()
-        .and_then(|gw| probe_gateway(&gw.addr).map(|_| gw))
-        .map(|gw| ProbeResult::pass(json!({"pid": gateway_pid(), "listen_addr": gw.addr})))
-        .unwrap_or_else(|err| ProbeResult::fail(err));
-    let ready = pg.ok && gateway.ok;
-    let body = json!({
+    json_response_status(503, &json!({
         "contract_version": CONTRACT_VERSION,
-        "status": if ready { "ready" } else { "error" },
+        "status": "unavailable",
+        "error": "legacy sidecar control plane is disabled; OmniRoute is the exclusive hot router",
         "checks": [
-            {
-                "name": "shared_state_backend",
-                "status": if pg.ok { "pass" } else { "fail" },
-                "details": pg.details
-            },
-            {"name": "kill_switch", "status": "pass"},
-            {
-                "name": "runtime_proxy",
-                "status": if gateway.ok { "pass" } else { "fail" },
-                "details": gateway.details
-            },
-            {"name": "event_stream", "status": "pass"}
+            {"name": "durable_state_backend", "status": "fail"},
+            {"name": "authoritative_policy", "status": "fail"},
+            {"name": "authoritative_account_registry", "status": "fail"},
+            {"name": "authoritative_event_stream", "status": "fail"}
         ]
-    });
-    emit_event(
-        "",
-        "health_status",
-        json!({
-            "producer_component": "sidecar",
-            "severity": if ready { "info" } else { "error" },
-            "message": if ready { "readyz pass" } else { "readyz fail" }
-        }),
-    );
-    json_response_status(if ready { 200 } else { 503 }, &body)
+    }))
 }
 
 struct ProbeResult {
@@ -1120,14 +1097,10 @@ fn route(req: &mut Request) -> ResponseBox {
     match (method, path.as_str()) {
         (Method::Get, "/healthz") => handle_healthz(),
         (Method::Get, "/readyz") => handle_readyz(),
-        (Method::Get, p) if p.starts_with("/v1/killswitch/status") => handle_killswitch_status(p),
-        (Method::Get, p) if p.starts_with("/v1/events/stream") => handle_events_stream(p),
-        (Method::Post, p) if p.starts_with("/v1/runtime/proxy") => handle_runtime_proxy(req, p),
-        (Method::Post, "/v1/policy/apply") => post_json(req, handle_policy_apply),
-        (Method::Post, "/v1/accounts/register") => post_json(req, handle_accounts_register),
-        (Method::Post, "/v1/session/start") => post_json(req, handle_session_start),
-        (Method::Post, "/v1/session/stop") => post_json(req, handle_session_stop),
-        (Method::Post, "/v1/killswitch/apply") => post_json(req, handle_killswitch_apply),
+        (_, p) if p.starts_with("/v1/") => error_response(
+            503,
+            "legacy sidecar control endpoints are disabled; OmniRoute is the exclusive hot router",
+        ),
         _ => error_response(404, "not found"),
     }
 }

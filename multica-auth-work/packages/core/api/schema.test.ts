@@ -391,17 +391,17 @@ describe("parseWithFallback", () => {
     expect(out).toEqual({ id: "x" });
   });
 
-  it("returns the fallback when validation fails", () => {
+  it("throws a contract error when validation fails", () => {
     const schema = z.object({ id: z.string() });
-    const fallback = { id: "fallback" };
-    const out = parseWithFallback({ id: 123 }, schema, fallback, opts);
-    expect(out).toBe(fallback);
+    expect(() =>
+      parseWithFallback({ id: 123 }, schema, { id: "fallback" }, opts),
+    ).toThrow("API response failed schema validation: TEST /unit");
   });
 
-  it("returns the fallback when data is null", () => {
+  it("throws a contract error when data is null", () => {
     const schema = z.object({ id: z.string() });
-    const fallback = { id: "fallback" };
-    const out = parseWithFallback(null, schema, fallback, opts);
-    expect(out).toBe(fallback);
+    expect(() =>
+      parseWithFallback(null, schema, { id: "fallback" }, opts),
+    ).toThrow("API response failed schema validation: TEST /unit");
   });
 });
