@@ -1,132 +1,119 @@
-# P0 MAIN BRAIN — Plano executivo agentic
+# P0 MAIN BRAIN — Plano executivo final
 
-updated: 2026-07-21T21:20Z  
-owner: Product Owner  
-principal_orchestrator: Codex#TL#Principal (`w5:p2`)  
-co_orchestrator: Opus48-Kiro (`w5:p1`)  
+updated: 2026-07-21
+owner: Product Owner
 source_of_truth: `openspec/changes/build-omniroute-agent-brain/` + `.planning/agent-brain-v3/`
 
-## 1. Resultado P0 obrigatório
+## 1. Objetivo único
 
-Entregar o app funcional no fluxo **squad → project → Kanban task → Agent Brain → CLI/model via OmniRoute → resultado terminal**, sem depender de chat, observabilidade E2E, certificação de capacidade, cutover default-on, Prodex recovery ou debranding.
+Concluir todas as integrações e features pendentes do **Main Brain** necessárias para o fluxo produtivo:
 
-O P0 pendente contém exatamente oito checkboxes OpenSpec, agrupados em quatro workstreams:
+**squad → project → Kanban task → Agent Brain → CLI/model via OmniRoute → resultado terminal**
 
-| Workstream | Tasks | Resultado obrigatório |
+O Main Brain possui somente o cold/control plane: tarefa, workspace, processo, admissão baseada em readiness opaca, launch/cancel, eventos, persistência terminal e entrega do resultado.
+
+O **OmniRoute é o proprietário exclusivo** de toda autenticação de inferência, credencial, conta, limite de token, janela de uso (inclusive limite de 5 horas), expiração, refresh, revogação, quota, 401/403, 429/5xx, circuit breaker, retry, seleção/rotação de conta e fallback. O Main Brain não implementa, não corrige, não simula e não recertifica esses comportamentos.
+
+Prodex não participa desta fase. Permanece **Phase 3 / HOLD**, default-OFF, para uma decisão futura de recuperação fria; não é fallback atual, não é caminho por request e não consome lane P0.
+
+## 2. Escopo OpenSpec deduplicado
+
+As únicas tasks abertas que consomem execução P0 do Main Brain são:
+
+- `5.6` — Cline → GLM-5.2 pelo contrato OmniRoute aprovado;
+- `5.7` — Cline → Kimi-K2.7 pelo contrato OmniRoute aprovado;
+- `5.8` — concluir Kiro/Opus48 e apenas reutilizar a evidência válida de Antigravity;
+- `8.1` — comprovar protocolo/modelo somente nas rotas alteradas ou ainda sem evidência equivalente;
+- `8.2` — comprovar tools, reasoning, cancellation, usage, terminal result e erro determinístico somente nas rotas afetadas.
+
+`5.6–5.8` e `8.1–8.2` não são cinco campanhas independentes. Uma execução real de uma rota após integração pode fechar simultaneamente todos os requisitos sobrepostos que ela provar.
+
+As tasks `8.5–8.7` não pertencem ao Main Brain: são certificação interna do OmniRoute para credenciais, contas, quota, retry/failover e lifecycle do router. Permanecem externas ao P0 do Main Brain e não geram implementação, QA ou live test no Multica.
+
+## 3. O que será feito
+
+### Fase A — Gap matrix real, sem retestar
+
+Comparar implementação atual, TO-BE, OpenSpec e evidência existente e classificar cada item em apenas uma categoria:
+
+1. **já implementado + evidência equivalente** — fechar/reutilizar, sem execução;
+2. **implementado sem evidência equivalente** — executar uma vez;
+3. **gap real do Main Brain** — implementar e validar;
+4. **responsabilidade OmniRoute** — retirar da lane e referenciar ownership externo;
+5. **Phase 3/HOLD** — Prodex/recovery, sem trabalho agora.
+
+A análise deve cobrir o caminho real Kanban→terminal e as três famílias de rota pendentes; não deve abrir uma nova auditoria de autenticação, credenciais ou failover.
+
+### Fase B — Implementação paralela com ownership disjunto
+
+| Lane | Trabalho permitido | Proibido |
 |---|---|---|
-| Rotas funcionais | 5.6, 5.7, 5.8, 8.1, 8.2 | Squads executam tasks por todas as rotas P0 aprovadas, preservando protocolo, tools, reasoning, usage, cancelamento e erro. |
-| Tratamento de falhas | 8.5 | Auth/quota/429/5xx/timeout/malformed produzem estado determinístico, recuperável e sem segredo. |
-| Retry, dedup e cancelamento | 8.6 | Retry somente pre-commit; nenhum replay após output/tool; dedup e liberação de slots exatamente uma vez. |
-| Lifecycle operacional | 8.7 | Add/remove/quarantine/re-entry e restart/rollback não corrompem tasks ativas. |
+| `C` Main Brain core | gaps reais em task admission, workspace, launch, cancel, event/result lifecycle, terminal persistence e cleanup | autenticação, credencial, account state, quota, retry/failover |
+| `R1` Cline routes | Cline→GLM-5.2 e Cline→Kimi-K2.7; protocolo/model intent e integração CLI necessária | provider login, key management, account selection, NVIDIA/Kimi fallback logic |
+| `R2` Kiro/Agy | gap Kiro→Opus48; preservar Antigravity já comprovado | recertificar Antigravity inteiro ou criar novo credential owner |
+| `P` Production integrity | remover mocks, fake success, QA routes, placeholders e persistência demo ainda alcançáveis | remover guardrails ou fixtures/testes isolados sem caller produtivo |
+| `W1` Integrator | integrar hotspots serialmente e resolver conflito sem duplicar lógica | implementar router, auth ou failover no Brain |
 
-ETA consolidado após deduplicação: **6–12h nominal; até 16h conservador**. A estimativa cobre somente gaps reais de implementação/integração e uma execução live por comportamento alterado; não soma tarefas sobrepostas nem repete evidência equivalente já aceita.
+Arquivos compartilhados de daemon/config/health/entrypoints pertencem exclusivamente a `W1`. Nenhuma lane escreve concorrentemente no mesmo arquivo.
 
-## 2. Exclusões duras desta execução
+### Fase C — Integração serial
 
-Não consumir lanes P0 com: chat; OBS-1..OBS-11; 9.x/capacidade; 10.x/cutover; 1.4/Prodex recovery; debranding; tiers 50/100. OBS e chat são P2. 1.4/10.4 permanecem HOLD. Nenhum agente lê, imprime, copia, rotaciona ou altera segredo.
+`W1` integra uma lane por vez:
 
-O ambiente ativo é a validação funcional. Produção-reachable mocks, placeholders, fake-success fallbacks, QA-only routes e dados sintéticos persistidos são proibidos. Fixtures/testes isolados e guardrails sem caller produtivo permanecem. Evidência aceita da mesma versão/digest, configuração, rota e cenário é reutilizada. Só se executa novamente comportamento alterado, sem evidência, com evidência obsoleta/não equivalente ou com risco material distinto ainda não coberto.
+1. Production integrity;
+2. Main Brain core;
+3. Cline routes;
+4. Kiro/Agy.
 
-## 3. DAG e paralelismo
+Depois de cada integração, roda somente build/typecheck/test focused exigido pelo delta. Se um conflito não muda semântica, não cria nova campanha. Se muda, repete apenas o cenário diretamente afetado.
 
-```text
-Implementação paralela em ownership disjunto
-  ├─ R1 Cline/Kimi/GLM: 5.6–5.7 + cobertura 8.1/8.2
-  ├─ R2 Antigravity/Kiro: 5.8 + cobertura 8.1/8.2
-  ├─ B  fronteira Brain: partes Brain-owned de 8.5/8.6
-  └─ L  Kanban/lifecycle Brain-owned: parte de 8.7
-           ↓
-W1 integra uma lane por vez no ambiente ativo
-           ↓
-UMA execução live do comportamento alterado
-           ↓
-O mesmo resultado atualiza todas as tasks sobrepostas que ele prova
-           ↓
-Próxima lane; após a última, P0 termina
-```
+### Fase D — Uma aceitação real, sem QA duplicada
 
-Implementação paraleliza; integração de hotspots permanece serial. Não existem QA-A/QA-B, regressão ampla separada, segunda live acceptance ou agente dedicado a evidência. Se W1 resolver conflito alterando comportamento, executa novamente somente o cenário afetado. Registro mínimo (task IDs, SHA/config, comando/ação e resultado) reutiliza a própria execução live e não constitui outro teste.
+A aceitação é o próprio uso real pós-integração:
 
-## 4. Roster e lanes
+1. criar/usar squad e project;
+2. criar Kanban task;
+3. atribuir agente/rota afetada;
+4. observar launch pelo Agent Brain;
+5. quando aplicável, cancelar e confirmar encerramento/cleanup;
+6. confirmar resultado terminal persistido e entregue à UI.
 
-### Lanes autorizadas após o preflight
+Executar uma vez por família de rota **somente se houve alteração ou falta evidência equivalente**. O mesmo resultado fecha `5.x`, `8.1` e `8.2` sobrepostos. Não existem QA-A, QA-B, QA-C, broad regression final, segunda live acceptance ou failure-injection de OmniRoute pelo time Multica.
 
-| Lane | Escopo único | Não repetir |
-|---|---|---|
-| R1 | Cline→Kimi-K2.7 e Cline→GLM-5.2; ajustes reais de adapter/config | internals de auth/rotação/fallback do OmniRoute |
-| R2 | gap Kiro→Opus48 e preservação da rota Antigravity já operacional | reimplementação ou recertificação integral de Antigravity |
-| B | fail-closed, propagação de erro e cancelamento pertencentes ao Main Brain | failure injection de provider já coberta pelo mesmo OmniRoute build/config |
-| L | squad/project/Kanban→CLI→resultado terminal; cleanup de processo/slot Brain-owned | add/remove/quarantine internos do OmniRoute já comprovados |
-| W1 | integração serial de hotspots e uma execução live por lane integrada | broad regression ou segunda acceptance |
+## 4. Critérios de conclusão
 
-O Opus48-Kiro coordena as quatro lanes e reporta ao Principal. O Principal mantém OpenSpec/GSD, ownership e integração. Não há lane QA ou reviewer que reproduza a execução.
+P0 termina quando:
 
-### Ownership de produção
+- o fluxo squad/project/Kanban→Agent Brain→OmniRoute→terminal funciona nas rotas realmente pendentes;
+- gaps reais de lifecycle Main Brain estão implementados;
+- produção não expõe mocks, placeholders, fake-success, QA routes ou demo persistence nos caminhos alterados;
+- cada delta passou no teste/build/typecheck mínimo relevante;
+- cada rota alterada ou sem prova recebeu no máximo uma execução real de aceitação;
+- evidência equivalente foi reutilizada para comportamento não alterado;
+- nenhuma lógica de autenticação, credencial, quota, account selection, retry ou failover foi criada/testada no Main Brain;
+- Prodex permaneceu intocado em Phase 3/HOLD;
+- OpenSpec/GSD refletem o estado real e os checkboxes só são fechados por implementação/evidência concreta.
 
-| Lane | Ownership permitido | Proibido |
-|---|---|---|
-| W1 Integrator | `internal/daemon/{daemon,config,health,brain_integration}.go`, config/command hotspots e integração serial | duplicar lógica hot-path do OmniRoute |
-| R1/R2 Routes | `internal/daemon/runtimeenv/**`, adapters estritamente necessários | gateway internals, credenciais/provider account selection |
-| B Boundary | somente call sites Brain-owned de readiness/error/cancel | refresh, quota, 429 circuit, account retry/fallback OmniRoute-owned |
-| L Lifecycle | fluxo Kanban, processo CLI, persistência terminal e cleanup Brain-owned | estado interno de contas OmniRoute |
+## 5. Exclusões duras
 
-Arquivo disputado escala para W1 e é serializado. Não existem duas escritas concorrentes no mesmo arquivo ou worktree.
+Não executar nesta fase:
 
-## 5. Prompt contract comum
+- auth/credential/token/quota/refresh/revocation/401/403/429/5xx/failover tests;
+- account add/remove/quarantine/re-entry do OmniRoute;
+- circuit breaker ou retry interno do OmniRoute;
+- Prodex integration, recovery ou parity;
+- OBS-1..OBS-11, capacity tiers 20/50/100, default cutover ou debranding;
+- chat, salvo se a gap matrix provar que ele bloqueia diretamente o fluxo Kanban→terminal;
+- qualquer repetição criada apenas para preencher lane ou renomear a mesma validação.
 
-Todo prompt de produção contém:
+## 6. Ordem imediata e ETA
 
-1. task IDs e requisito normativo exato;
-2. branch/worktree e lista de arquivos permitidos;
-3. lista explícita de must-not-touch;
-4. baseline SHA e dependências aceitas;
-5. validação proporcional ao delta: build/typecheck/lint ou teste focused somente para comportamento novo/alterado ou gap sem evidência; nenhuma broad regression automática;
-6. reutilização explícita de evidência válida da mesma versão/config/rota/cenário; o registro da execução live contém somente task IDs, SHA/config segura, ação e resultado;
-7. proibição de merge, push, mutação de segredo ou chamada paga fora da execução live autorizada;
-8. check-in antes de editar e check-out com RESULT/FILES/VALIDATION/COMMIT/BLOCKERS;
-9. parada fail-closed diante de design conflict, segredo ou ownership overlap.
+1. congelar ownership e corrigir OpenSpec/GSD;
+2. produzir a gap matrix curta do caminho Main Brain;
+3. concluir production-integrity residual;
+4. implementar somente gaps confirmados em `C`, `R1` e `R2`;
+5. integrar serialmente em `W1`;
+6. executar a aceitação real mínima das rotas afetadas;
+7. atualizar evidência/checklists e encerrar P0.
 
-## 6. Prompt packets de produção
-
-### R1/R2 — Rotas funcionais 5.6/5.7/5.8 + 8.1/8.2
-
-Implementar apenas gaps confirmados: Cline→Kimi-K2.7, Cline→GLM52, gap Kiro→Opus48; Antigravity é preservado, não reimplementado. Cada rota alterada recebe uma única execução live após integração W1; essa execução fecha simultaneamente a cobertura sobreposta de 5.x/8.1/8.2 que provar. Rotas já aceitas no mesmo build/config sem mudança reutilizam evidência.
-
-### B — Fronteira Main Brain 8.5/8.6
-
-OmniRoute continua proprietário exclusivo de credenciais provider, refresh, quota, seleção de conta, 429/5xx circuits e retry/fallback pre-commit. Não implementar CommitLedger de inferência ou account retry no Brain. Validar uma vez somente o delta Brain-owned: OmniRoute indisponível falha fechado sem provider direto; erro seguro vira estado correto; cancelamento encerra CLI e libera slot Brain-owned. Failure-injection interna do OmniRoute usa evidência equivalente existente, salvo mudança de build/config ou gap material não coberto.
-
-### L — Lifecycle 8.7
-
-Validar o fluxo real squad/project/Kanban→Brain→CLI→OmniRoute→resultado terminal e somente estado Brain-owned: admissão, workspace, processo, cancelamento, persistência terminal e cleanup. Add/remove/quarantine/re-entry de contas e rollback interno do OmniRoute não são reexecutados quando já comprovados no mesmo build/config.
-
-### W1 — Integração e execução única
-
-Integrar uma lane por vez. Se a integração não altera comportamento além do diff produzido, executar uma única vez o cenário real da lane e registrar o resultado para todos os checkboxes sobrepostos. Se houver conflito com alteração semântica, repetir apenas o cenário afetado. Após a última lane não existe fase adicional de QA, regressão ou acceptance.
-
-## 7. Gates de aceite
-
-Uma task só recebe `[x]` quando todos forem verdadeiros:
-
-- implementação está no caminho produtivo, não somente fixture/harness;
-- não há mock, placeholder, fake-success ou QA-only path alcançável no comportamento aceito;
-- validação do delta novo/alterado passou, ou evidência aceita equivalente foi explicitamente reutilizada;
-- a execução live única pós-integração cobriu o requisito quando o comportamento foi alterado ou ainda não tinha prova;
-- registro mínimo contém task IDs, SHA/config segura, ação e resultado sem segredo;
-- nenhuma violação de ownership, segredo, dual router ou escopo P2;
-- W1 integrou serialmente no protected P0 branch;
-- checkbox não exige uma segunda execução, reviewer ou relatório separado.
-
-## 8. Monitoramento de 60 segundos
-
-- Opus48-Kiro executa `herdr agent list` a cada 60s, lê panes `done|idle|blocked`, coleta resultado e redistribui imediatamente.
-- Principal mantém um segundo monitor local independente de 60s.
-- `idle|done` sem entrega aceita → nova tarefa de implementação/integração P0 não sobreposta; não criar revisão ou repetição para ocupar lane.
-- `blocked` → classificar em técnico, ownership, segurança ou decisão humana. Somente segurança irreversível, segredo ou mudança arquitetural grave escala ao dono.
-- Toda rodada registra timestamp, pane, lane, estado, deliverable e próxima ação; nenhum conteúdo sensível.
-
-## 9. Integração e registro
-
-A branch protegida é `integration/agent-brain-p0`; `main` não é tocada. W1 resolve arquivo-a-arquivo, sem `ours/theirs` em massa e sem force push. Validação é proporcional ao delta e ocorre uma vez no ambiente ativo após integrar a lane. Não existe broad regression final obrigatória; conflito que altere semântica exige somente o cenário afetado.
-
-OpenSpec/GSD recebem o resultado da mesma execução live (task IDs, SHA/config segura, ação, resultado). Checkbox nunca é proxy de progresso nem motivo para repetir teste.
+ETA após remoção das lanes duplicadas de auth/failover: **6–12 horas nominais; até 16 horas conservadoras**, condicionado apenas a gaps reais encontrados e disponibilidade das rotas OmniRoute necessárias para a execução terminal.

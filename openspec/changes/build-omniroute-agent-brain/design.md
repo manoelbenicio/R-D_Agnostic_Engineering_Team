@@ -67,6 +67,8 @@ Alternative considered: retain the existing `provider` enum as the primary key. 
 
 Agent Brain sends model intent and correlation only. OmniRoute owns provider credentials, account pools, rotation, continuation affinity, token refresh, quota/subscription state, 429/circuit behavior, bounded pre-commit retry/fallback, protocol translation, Smart Context/token saving, reset/redeem where retained, and hot-path evidence.
 
+**Owner clarification (2026-07-21):** this ownership is absolute for authentication and credential/account lifecycle, including token/window exhaustion (such as five-hour limits), refresh/revocation, quota, 401/403, 429/5xx, retry and failover. Main Brain consumes only opaque readiness/result and does not implement or run acceptance tests for those OmniRoute internals. Prodex recovery remains Phase 3/HOLD and is not a current fallback.
+
 Legacy Go rotation, credential account selection and provider-home auth copying are disabled for gateway-required tasks and deleted only after drain/parity gates. Prodex/L2 routing is disabled for gateway-required tasks and quiesced to a default-OFF, mutually-exclusive cold recovery mode (retained, not deleted — D-V3-16).
 
 Alternative considered: keep Prodex or Go rotation as fallback. Rejected because dual ownership can select different accounts, reintroduce credential overwrites, duplicate retry, and make failures non-deterministic.

@@ -1,9 +1,13 @@
-## Active P0 Functional Scope — Owner directive 2026-07-21
+## Active P0 Functional Scope — Owner directives 2026-07-21
 
-> **Only these pending tasks consume P0 lanes:** `5.6`, `5.7`, `5.8`, `8.1`, `8.2`, `8.5`, `8.6`, `8.7`. They form four workstreams: functional routes; deterministic failure handling; retry/dedup/cancellation; operational lifecycle. P0 exit means the app can execute **squad → project → Kanban task → Agent Brain → OmniRoute-routed agent → terminal result**. Chat, `OBS-1..OBS-11`, capacity certification, cutover, Prodex recovery and debranding are P2/HOLD/future and MUST NOT consume P0 lanes. OBS remains a later gate before capacity certification/cutover, not a prerequisite for initial functional Kanban use. See D-V3-29 and `.planning/agent-brain-v3/P0_MAIN_BRAIN_EXECUTION.md`.
+> **Only `5.6–5.8` and `8.1–8.2` consume Main Brain P0 lanes.** They cover the remaining Cline/GLM, Cline/Kimi, Kiro/Opus48 and affected protocol/lifecycle integration. One post-integration live Kanban→terminal execution may close every overlapping `5.x`/`8.x` requirement it proves. Antigravity evidence is reused when build/config/provenance remain equivalent.
 
+> **OmniRoute-exclusive ownership:** authentication, all credential lifecycle, token/window limits (including five-hour limits), account selection/rotation, expiry, refresh, revocation, quota, 401/403, 429/5xx circuits, retry, quarantine and provider/account fallback are owned, implemented and certified only by OmniRoute. Tasks `8.5–8.7` are external OmniRoute certification and MUST NOT create Multica/Agent Brain implementation, QA lanes or duplicate live tests.
 
-> **Production-integrity / no-duplicate-validation directive (owner 2026-07-21):** runtime/build artifacts must contain no QA-only routes, mock services, placeholder entities, synthetic success fallbacks, fake credentials or demo seed persistence. Preserve isolated tests and safety guardrails. Reuse accepted evidence only when build/digest, configuration, route and scenario are equivalent. Rerun only changed, missing, stale or materially uncovered behavior. The one live run performed after W1 integrates an affected lane is simultaneously its implementation/integration/acceptance proof; do not dispatch QA-A/QA-B, broad regression or a second live-acceptance run without a documented distinct risk.
+> **Prodex Phase 3/HOLD:** Prodex recovery/parity remains future, default-OFF and outside P0. It is not a current fallback and receives no implementation or validation lane.
+
+> **Production integrity / no duplicate validation:** runtime/build artifacts must contain no QA-only routes, mock services, placeholder entities, synthetic success fallbacks, fake credentials or demo seed persistence. Preserve isolated tests and safety guardrails. Reuse equivalent evidence; rerun only changed, missing, stale or materially uncovered Main Brain behavior. No QA-A/QA-B, broad regression or second live acceptance.
+
 ## 0. Governance and GSD Rebaseline
 
 - [x] 0.1 [Product owner] Approve the OpenSpec/GSD source hierarchy, G0–G8 roadmap, total ETA range and preservation of RPP/Prodex v2.1 as historical evidence.
@@ -56,8 +60,8 @@
 - [x] 5.3 Remove provider-auth copying from per-task homes while preserving sandbox, config, skills, session and workspace isolation.
 - [x] 5.4 Generate a controlled Codex custom-provider configuration for OmniRoute Responses API, stable-key environment lookup, HTTP/SSE transport and correlation headers without `auth.json`.
 - [x] 5.5 Implement Claude Code's trusted OmniRoute root URL/token environment and ensure internal Claude markers do not leak or override gateway policy.
-- [ ] 5.6 Implement and live-validate the credentialless Cline/OpenAI-compatible path for `Cline → GLM-5.2`, with `GLM-5.2 → NVIDIA` as an explicitly declared, bounded fallback owned exclusively by OmniRoute; Agent Brain MUST NOT hold provider credentials or choose the fallback account/provider.
-- [ ] 5.7 Implement and live-validate the credentialless `Cline → Kimi-K2.7` path through the accepted OmniRoute OpenAI-compatible contract; remove the obsolete native-registry/Claude-or-Codex alternative wording and fail closed on any direct-provider route.
+- [ ] 5.6 Implement and live-validate the Cline/OpenAI-compatible path for `Cline → GLM-5.2` through OmniRoute. Agent Brain passes only CLI/model intent; it MUST NOT implement or validate NVIDIA fallback, authentication, credentials, token limits, quota, or account/provider selection.
+- [ ] 5.7 Implement and live-validate `Cline → Kimi-K2.7` through the accepted OmniRoute OpenAI-compatible contract; remove obsolete direct-provider alternatives. Authentication, credentials, account state and fallback remain entirely OmniRoute-owned and are not a Brain acceptance target.
 - [ ] 5.8 Revalidate the already-operational Antigravity route against frozen provenance/hashes without redundant reimplementation, and deliver the Kiro/Opus48 AWS route through an existing accepted Anthropic-compatible frontend/`CLIKind` plus the exact registry-approved `RouteModel`; Kiro is a persona/model route, not a new credential owner or account-selection implementation.
 - [x] 5.9 Make model/thinking validation gateway-aware so approved OmniRoute IDs are accepted without provider-native catalog or credential lookup.
 - [x] 5.10 Add a pre-launch assertion that the child environment/config contains only the stable OmniRoute secret and approved local task data.
@@ -87,7 +91,7 @@
 
 ## 8. Wave 3 — Protocol, Security and Failure Acceptance
 
-- [ ] 8.1 [Codex 2 + Codex 4] Verify authenticated models/capabilities and one non-streaming and streaming completion for every approved protocol family and model route.
+- [ ] 8.1 [Main Brain routes] Verify model/capability compatibility and the minimum non-streaming/streaming behavior only for changed or unproven P0 routes. Do not test OmniRoute authentication or credential lifecycle.
 - [ ] 8.2 [Codex 3 + Codex 4] Verify Claude, Codex, Kimi, GLM/NVIDIA and Antigravity accepted paths with tools, reasoning, cancellation, usage and deterministic errors.
   - G4 acceptance is synthetic/reference-only: Claude and Codex trusted-gateway paths passed; Kimi/GLM/NVIDIA/NIM/Agy remained deterministic fail-closed contracts. Native tasks 5.6–5.8 remain open.
 - [x] 8.3 [Codex 3] Verify child environments, task homes, process trees, logs and diagnostics contain no provider-native credentials, auth files or direct-provider endpoints.
@@ -95,9 +99,9 @@
 - [x] 8.4 [Codex 2 + Codex 4] Demonstrate strict concurrent round-robin for independent requests and correct affinity for Responses continuation, prompt cache and tool turns.
   - _Acceptance clarification (2026-07-21): OmniRoute-owned RR/affinity per D-V3-01/D-V3-06. Acceptance = black-box northbound evidence (pseudonymous OmniRoute telemetry proving rotation/affinity on live requests) + component-level evidence (gateway Selector algorithm tests as fail-closed safety net). Brain does not select accounts._
   - _Evidence (2026-07-21): sanitized artifact /mnt/shared/handoffs/omniroute-8.4-affinity-RESULT-v6.1-SANITIZED.md SHA256 09daa11d5dadaea3a8aec2eb3e58b0bdeb76db6c6b06feac77b18361a1977dcc; harness SHA 8fde493919f5eb39d8cbefb52f9cc5f8e4e24e0f5c8e227ca3677d246c6439b6; live image sha256:d678650db85880868ead9db0d4cbe39e859d4e8c06e1cb4d555987b9edf89f2e; A/B/A pattern, retry=0, fallback=0, no rerun; independent ACCEPT w7:p4._
-- [ ] 8.5 [Codex 2 + Codex 4] Demonstrate expired access token, revoked refresh token, quota exhaustion, 401, 403, account-scoped 429, provider-global 429, 5xx, timeout and malformed upstream handling.
-- [ ] 8.6 [Codex 2 + Codex 4] Demonstrate safe retry before first output, no replay after partial output/tool action, request deduplication and prompt cancellation slot release.
-- [ ] 8.7 [Codex 2 + Codex 4] Demonstrate account add/remove/quarantine/re-entry and OmniRoute restart/config rollback during active load.
+- [ ] 8.5 [OMNIROUTE OWNER — external to Main Brain P0] Certify expired/revoked credentials, token/window limits, quota, 401/403, 429, 5xx, timeout and malformed upstream handling inside OmniRoute. Multica/Agent Brain performs no implementation or duplicate test.
+- [ ] 8.6 [OMNIROUTE OWNER — external to Main Brain P0] Certify retry/replay/dedup behavior inside OmniRoute. Main Brain validates only its own process cancellation and slot cleanup when changed; it does not test or implement router retry/failover.
+- [ ] 8.7 [OMNIROUTE OWNER — external to Main Brain P0] Certify account add/remove/quarantine/re-entry and OmniRoute restart/config rollback within OmniRoute. No Multica/Agent Brain lane or duplicate execution is authorized.
 - [x] 8.8 [Codex 4] Record evidence against every OmniRoute checklist and Prodex parity ID; stop the cutover for unsupported blocker rows without an approved waiver.
 
 ## 8-OBS. Wave 3-OBS — End-to-End Observability Stop-Gate (G4-OBS)

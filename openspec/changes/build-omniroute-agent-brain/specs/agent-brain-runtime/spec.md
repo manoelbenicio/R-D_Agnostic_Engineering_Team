@@ -21,12 +21,12 @@ The Agent Brain SHALL model the executable frontend as `CLIKind` and the OmniRou
 - **WHEN** a task specifies `CLIKind=claude-code` and `RouteModel=agy/claude-opus-4-6-thinking`
 - **THEN** the Agent Brain launches Claude Code with the approved OmniRoute adapter without attempting to resolve an Anthropic or Antigravity provider account
 
-### Requirement: OmniRoute readiness gate
-The Agent Brain SHALL fail closed for new model-dependent work when OmniRoute authentication, readiness, required protocol, or selected model capability is unavailable. It MUST NOT fall back to direct provider endpoints or provider-native credentials.
+### Requirement: Opaque OmniRoute readiness gate
+The Agent Brain SHALL consume only OmniRoute's readiness/capability result for new model-dependent work. It MUST NOT authenticate providers, inspect or repair credentials, classify token/account lifecycle, select accounts, or implement retry/failover. Authentication and every credential/account decision remain exclusively inside OmniRoute.
 
 #### Scenario: OmniRoute becomes unavailable
-- **WHEN** OmniRoute is not ready while a new task is admitted
-- **THEN** the Agent Brain queues or rejects the task according to admission policy and reports an actionable gateway-unavailable status without launching a direct-provider path
+- **WHEN** OmniRoute reports not-ready or rejects a new model request
+- **THEN** the Agent Brain queues or rejects the task according to admission policy, propagates an opaque actionable gateway status, and performs no credential repair, alternate-account selection, direct-provider launch, or router fallback
 
 ### Requirement: Bounded compatibility facade
 The system SHALL provide explicit, observable, time-bounded compatibility aliases for required legacy daemon API, environment, stored configuration, and CLI consumers while new neutral consumers migrate.
