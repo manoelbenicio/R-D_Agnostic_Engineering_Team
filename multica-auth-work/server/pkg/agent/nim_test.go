@@ -219,3 +219,106 @@ func TestNIMAPIErrorsAreReturnedWithoutLeakingKey(t *testing.T) {
 		t.Fatalf("result = %#v", result)
 	}
 }
+
+
+// --- Brain 8.6 adapter-boundary coverage (cancellation propagation + no replay) ---
+//
+// These exercise the NIM adapter's half of OpenSpec task 8.6 at the CLI/backend
+// boundary, disjoint from the gateway Coordinator retry/replay/dedup tests:
+//   - cancellation mid-stream propagates to a single terminal "aborted" Result
+//     with partial output preserved and NO re-issued upstream request;
+//   - a committed-partial turn that then breaks is surfaced terminally and is
+//     NOT replayed (the adapter never re-sends a turn after partial output).
+// NIM is chosen because it is fully synthetic (httptest, no spawned CLI) and is
+// the only owned adapter with a multi-turn upstream loop where "no replay of a
+// committed turn" is a testable property. Claude/Codex cancellation is already
+// covered (claude_deadlock_test.go, codex_test.go:933/1660) and is not duplicated.
+
+func TestNIMCancellationMidStreamAbortsOnceWithoutReplay(t *testing.T) {
+	var requests atomic.Int32
+	root := t.TempDir()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		// Emit one partial text delta and flush so the client observes output,
+		// then block until the client cancels — no finish_reason, no [DONE].
+		fmt.Fprintln(w, `data: {"model":"test/model","choices":[{"delta":{"content":"partial-"}}]}`)
+		if fl, ok := w.(http.Flusher); ok {
+			fl.Flush()
+		}
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+
+	backend := &nimBackend{
+		cfg:     Config{Env: map[string]string{"OMNIROUTE_API_KEY": "test-key"}},
+		client:  server.Client(),
+		baseURL: server.URL,
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	session, err := backend.Execute(ctx, "prompt", ExecOptions{Cwd: root, Model: "test/model"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	gotPartial := false
+	for msg := range session.Messages {
+		if msg.Type == MessageText && strings.Contains(msg.Content, "partial-") {
+			gotPartial = true
+			cancel() // cancel AFTER partial output is delivered
+		}
+	}
+	result := <-session.Result
+
+	if !gotPartial {
+		t.Fatal("did not observe partial output before cancellation")
+	}
+	if result.Status != "aborted" {
+		t.Fatalf("status = %q, want aborted (cancellation must propagate to a terminal aborted result)", result.Status)
+	}
+	if !strings.Contains(result.Output, "partial-") {
+		t.Fatalf("partial output not preserved on cancel: %q", result.Output)
+	}
+	if n := requests.Load(); n != 1 {
+		t.Fatalf("upstream requests = %d, want 1 (a cancelled turn must not be replayed)", n)
+	}
+}
+
+func TestNIMBrokenStreamAfterPartialOutputIsNotReplayed(t *testing.T) {
+	var requests atomic.Int32
+	root := t.TempDir()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.Header().Set("Content-Type", "text/event-stream")
+		// Commit partial output, then break the stream mid-turn with a malformed
+		// SSE chunk. The adapter must surface this terminally, NOT re-issue the turn.
+		fmt.Fprintln(w, `data: {"model":"test/model","choices":[{"delta":{"content":"partial-only"}}]}`)
+		fmt.Fprintln(w, `data: {not-valid-json`)
+	}))
+	defer server.Close()
+
+	backend := &nimBackend{
+		cfg:     Config{Env: map[string]string{"OMNIROUTE_API_KEY": "test-key"}},
+		client:  server.Client(),
+		baseURL: server.URL,
+	}
+	session, err := backend.Execute(context.Background(), "prompt", ExecOptions{Cwd: root, Model: "test/model"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range session.Messages {
+	}
+	result := <-session.Result
+
+	if result.Status != "failed" {
+		t.Fatalf("status = %q, want failed (a broken stream after partial output is terminal)", result.Status)
+	}
+	if !strings.Contains(result.Output, "partial-only") {
+		t.Fatalf("partial output not preserved after mid-stream break: %q", result.Output)
+	}
+	if n := requests.Load(); n != 1 {
+		t.Fatalf("upstream requests = %d, want 1 (a committed-partial turn must not be replayed)", n)
+	}
+}
