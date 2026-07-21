@@ -30,6 +30,48 @@ As únicas tasks abertas que consomem execução P0 do Main Brain são:
 
 As tasks `8.5–8.7` não pertencem ao Main Brain: são certificação interna do OmniRoute para credenciais, contas, quota, retry/failover e lifecycle do router. Permanecem externas ao P0 do Main Brain e não geram implementação, QA ou live test no Multica.
 
+### 2.1 ETA por task com 6–10 agentes contínuos
+
+Premissas: agentes disponíveis 24x7 eliminam espera de turno, mas não reduzem linearmente trabalho em hotspots. `daemon.go`, config, health, entrypoints, integração `W1` e o ambiente live permanecem seriais. Agent-hours medem esforço agregado; **ETA wall-clock** mede tempo decorrido e já considera paralelismo. Os relógios abaixo começam com os `RouteModel` exatos publicados pelo OmniRoute, CLIs disponíveis e ambiente de integração operacional; ausência de qualquer um é blocker externo, não trabalho adicional do Main Brain.
+
+| Task | Entrega exata | Agent-hours | ETA wall-clock com 6–10 agentes | Dependência/overlap |
+|---|---|---:|---:|---|
+| `5.6` | Base Cline compartilhada: `CLIKind`/executável, adapter OpenAI Chat, materialização do `providers.json`, reconciliação do ID GLM e uma Kanban task Cline→GLM terminal | 4–6h | **2.5–4h** | Carrega uma única vez a base reutilizada por `5.7`; exige ID GLM exato no registry |
+| `5.7` | Delta Kimi sobre a mesma base Cline: ID exato, seleção do modelo e uma Kanban task Cline→Kimi terminal | 1.5–3h | **1–2h incremental** | Preparação do ID/teste pode ocorrer em paralelo; fechamento depende da integração da base de `5.6` |
+| `5.8` | Opus48 via frontend Anthropic aceito + ID exato OmniRoute; comparação de build/config/hashes de Antigravity e reutilização sem rerun quando equivalente | 3–5h | **2–4h** | Bloqueia sem ID Opus48 aprovado; Antigravity acrescenta 0 live runs se equivalente |
+| `8.1` | Confirmar exact model/protocol/availability no registry atual e ligar a evidência G4 de protocolo às mesmas execuções de `5.6–5.8` | 1–2h | **≤1h incremental** | Não é campanha separada; ocorre durante preflight/integração/registro das três rotas |
+| `8.2` | Capturar tools, reasoning, usage, erro/resultado terminal e cancellation/cleanup somente onde a evidência existente não for equivalente | 2–4h | **0.5–1.5h incremental** | Reusa as execuções de `5.6–5.8`; cancellation adicional somente se o lifecycle Brain mudou ou a prova estiver ausente/stale |
+
+As linhas não são somadas como cinco projetos. A base Cline é implementada uma vez; `8.1` e `8.2` são gates sobrepostos. Esforço de suporte executado em paralelo: production-integrity residual **4–8 agent-hours / 2–4h wall**, gap/fix de lifecycle Main Brain **3–8 agent-hours / 2–5h wall** conforme a gap matrix, e integração `W1` + ambiente live **3–5h wall serial**, iniciando assim que a primeira lane estiver pronta.
+
+### 2.2 Alocação útil dos 6–10 agentes
+
+| Agente/lane | Responsabilidade disjunta |
+|---|---|
+| A1 | contrato/config/home Cline compartilhado |
+| A2 | `CLIKind`, executável e mapping Cline; entrega mudanças de hotspot para W1 |
+| A3 | IDs exatos e catálogo/registry GLM + Kimi; resolve aliases sem inventar model ID |
+| A4 | rota Opus48 via frontend Anthropic aceito |
+| A5 | equivalência de evidência Antigravity, sem rerun por padrão |
+| A6 | trace/gaps Brain-owned Kanban→launch→terminal/cancel/cleanup |
+| A7 | production integrity frontend/mobile/desktop residual |
+| A8 | production integrity backend/config/deploy residual |
+| A9 | testes focused e checks de build somente dos deltas produzidos |
+| A10 | OpenSpec/evidence mapping e preparação de integração, sem segunda QA |
+
+Com 6 agentes, A7–A10 são combinados por prioridade; com 7–10, permanecem separados. Agente livre não cria regression, reviewer ou live run duplicado: ajuda uma lane disjunta ou fica disponível para blocker real. W1 continua único editor/integrador dos hotspots compartilhados.
+
+### 2.3 Critical path e ETA total
+
+```text
+T0–1h      congelar IDs/ownership + gap matrix curta
+T0.5–4h    Cline, Opus48, lifecycle e production integrity em paralelo
+T2.5–7h    W1 integra lanes prontas uma por vez e executa checks focused
+T4–10h     uma execução live por rota alterada + fechamento sobreposto 5.x/8.x
+```
+
+**ETA total:** 6–10 horas wall-clock nominal; 12–16 horas conservadoras se surgirem gaps reais no lifecycle/production integrity. Não há ETA interno enquanto faltar `RouteModel` aprovado ou disponibilidade do OmniRoute/CLI: isso é blocker externo explícito. Operação 24x7 remove pausas de calendário, mas não elimina o critical path serial nem autoriza validação duplicada.
+
 ## 3. O que será feito
 
 ### Fase A — Gap matrix real, sem retestar
@@ -116,4 +158,4 @@ Não executar nesta fase:
 6. executar a aceitação real mínima das rotas afetadas;
 7. atualizar evidência/checklists e encerrar P0.
 
-ETA após remoção das lanes duplicadas de auth/failover: **6–12 horas nominais; até 16 horas conservadoras**, condicionado apenas a gaps reais encontrados e disponibilidade das rotas OmniRoute necessárias para a execução terminal.
+ETA consolidado para 6–10 agentes contínuos: **6–10 horas wall-clock nominais; 12–16 horas conservadoras**, conforme a tabela da seção 2.1 e condicionado à disponibilidade dos `RouteModel` exatos, OmniRoute e CLIs.
