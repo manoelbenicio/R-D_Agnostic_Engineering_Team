@@ -1,6 +1,6 @@
 # ROADMAP — Agent Brain v3 (G0–G8)
 
-> **FOCO EXCLUSIVO P0 (D-V3-29, 2026-07-21):** concluir `5.6–5.8`, `8.1–8.2`, `8.5–8.7` em quatro workstreams até o fluxo squad/project/Kanban/Agent Brain estar funcional. Chat e G4-OBS são P2 e não consomem lanes agora. G4-OBS permanece obrigatório somente antes de certificação de capacidade/cutover.
+> **FOCO EXCLUSIVO P0 (D-V3-29 corrigida, 2026-07-21):** concluir `5.6–5.8` e `8.1–8.2` como três famílias de rota com gates sobrepostos, até o fluxo squad/project/Kanban/Agent Brain estar funcional. `8.5–8.7` são certificação externa OmniRoute. Chat e G4-OBS são P2 e não consomem lanes agora. G4-OBS permanece obrigatório somente antes de certificação de capacidade/cutover.
 >
 > Waves 0–3/tier 20 AUTORIZADOS. Seção 7.1 de OMNIROUTE_ARCHITECT_RESPONSE.md = `AUTORIZADO`.
 > G0/G1/G2 concluídos no escopo autorizado. G3 está READY; cutover/tiers 50–100 permanecem

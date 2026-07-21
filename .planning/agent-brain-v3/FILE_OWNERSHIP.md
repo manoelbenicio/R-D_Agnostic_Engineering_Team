@@ -168,16 +168,19 @@ server-relative (`multica-auth-work/server/…`) EXCEPT W4's stack path, which i
 > `g4_obs_prerequisites_met`. **Prohibited metric labels:** IDs, pseudonyms, free-form, any high-cardinality
 > label (pseudonyms stay trace-only). Priority 2 / DEFERRED behind P0 Main Brain. Holds intact.
 
-## P0 functional ownership override — D-V3-29 (2026-07-21)
+## P0 functional ownership override — D-V3-29 corrected (2026-07-21)
 
-Este slice substitui qualquer dispatch concorrente anterior enquanto o P0 funcional estiver aberto. Chat, OBS, capacidade, cutover, Prodex e debrand não possuem lock ativo.
+Este slice substitui qualquer dispatch concorrente anterior enquanto o P0 funcional estiver aberto. Somente `5.6–5.8` e `8.1–8.2` consomem lanes Main Brain. Chat, OBS, capacidade, cutover, Prodex/debrand e a certificação OmniRoute `8.5–8.7` não possuem lock P0.
 
-| Lane | Ownership P0 exclusivo | Tasks |
+| Lane | Ownership P0 exclusivo | Tasks/resultado |
 |---|---|---|
-| W1 Integrator | `internal/daemon/{daemon,config,health,brain_integration}.go`, `internal/daemon/commitledger/**`, config/command hotspots; integração serial | 8.6 wiring + integração final |
-| W2 Gateway | `internal/daemon/gateway/**` | 8.1, 8.5, 8.6, 8.7 gateway side |
-| W3 Routes/runtime | `internal/daemon/runtimeenv/**`, `pkg/agent/{claude,codex,kimi,nim,antigravity}.go` | 5.6–5.8, 8.2 |
-| W4 Harness/evidence | P0 harness/runbook/evidence namespaced; nenhum produto W1/W2/W3 | 8.1–8.2, 8.5–8.7 acceptance |
-| QA-A / QA-B | read-only diff/tests/security review | todos, producer ≠ reviewer |
+| W1 Integrator | `internal/daemon/{daemon,config,health,brain_integration}.go`, command/entrypoint/config hotspots e qualquer arquivo compartilhado escalado; integração serial | integra os deltas Main-Brain-owned de `5.6–5.8`/`8.1–8.2` |
+| R1 Cline | paths Cline exatos em `internal/daemon/runtimeenv/**` congelados no check-in; handoffs A2/A3 são docs namespaced | base única Cline + GLM/Kimi, sem auth/fallback |
+| R2 Kiro/Opus48 | paths Anthropic/runtime exatos e disjuntos congelados após gap matrix; Antigravity é evidence-only por padrão | Opus48 exato; reuse Antigravity quando equivalente |
+| C Lifecycle | inicialmente gap matrix/handoff read-only; source não-hotspot somente após freeze explícito; hotspot escala a W1 | Kanban→launch→terminal/cancel/cleanup Main-Brain-owned |
+| P Production integrity | paths produtivamente alcançáveis, exatos e disjuntos, locked antes da edição | remove mock/fake-success/QA/demo residual; preserva fixtures/guardrails isolados |
+| E Focused evidence | `.deploy-control/p0/{handoffs,evidence}/**` por lane; technical evidence aceita continua namespaced em `.planning/agent-brain-v3/evidence/**` | checks mínimos e mapeamento sobreposto, sem segunda QA/live run |
 
-Regras: worktree/branch exclusiva por producer; arquivo disputado escala a W1; nenhuma edição concorrente do mesmo arquivo; OpenSpec/GSD somente pelo Principal; checkbox somente após integração + revisão independente + evidência reproduzida.
+Não existem QA-A/QA-B/QA-C no P0. A9 executa somente checks focused ainda não cobertos; A10 prepara traceability sem marcar checkbox. `8.5–8.7` são OmniRoute-only e não recebem owner/file lock Multica.
+
+Regras: arquivo disputado escala a W1 e é serializado; nenhuma edição concorrente; check-in/heartbeat/check-out seguem `.deploy-control/p0/PROTOCOL.md`; OpenSpec/GSD somente pelo Principal; checkbox somente após implementação e evidência concreta; uma única live execution por família alterada/unproven fecha requisitos `5.x`/`8.x` sobrepostos.

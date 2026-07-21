@@ -159,3 +159,20 @@ Não executar nesta fase:
 7. atualizar evidência/checklists e encerrar P0.
 
 ETA consolidado para 6–10 agentes contínuos: **6–10 horas wall-clock nominais; 12–16 horas conservadoras**, conforme a tabela da seção 2.1 e condicionado à disponibilidade dos `RouteModel` exatos, OmniRoute e CLIs.
+
+
+## 7. Prompting, check-in e supervisão
+
+Os prompts oficiais por lane estão versionados em `P0_AGENT_PROMPTS.md`, aplicando as práticas
+atuais de OpenAI GPT-5.6 e Anthropic Claude Opus 4.8. O estado operacional P0 é namespaced em
+`.deploy-control/p0/` e controlado por `scripts/orchestration/p0_control.py`.
+
+Cada assignment ativo faz check-in antes de editar, heartbeat a cada no máximo 10 minutos,
+block imediato sem adivinhação e check-out com evidência + focused validation. O Opus48-Kiro
+atua como braço direito: monitora somente assignments ativos, grava sweeps em disco, audita
+claims de forma bounded e escala fatos ao Principal. Pane não atribuído pode permanecer idle;
+é proibido criar busywork, reviewer/QA ou live run duplicado apenas para ocupar agente.
+
+O Principal Orchestrator mantém responsabilidade final: resolve ownership, amostra claims de
+forma independente, autoriza o único live run por família e edita/valida OpenSpec/GSD. Kiro não
+marca checkbox, não edita produto e não substitui a decisão final do Principal.

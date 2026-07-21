@@ -412,10 +412,10 @@
   (ação de segredo, fora do mandato delegation-only do TL). Blocker minor p/ hardening; não
   bloqueia freeze G1 (que é no-secret).
 
-### D-V3-29 — P0 funcional exclusivo: oito tasks, quatro workstreams; chat/OBS são P2
-- Decisão explícita do dono em 2026-07-21. O único escopo que consome lanes P0 é `5.6–5.8`, `8.1–8.2`, `8.5–8.7`, agrupado em: rotas funcionais; failure handling; retry/dedup/cancel; lifecycle operacional.
-- **P0 exit:** fluxo funcional `squad → project → Kanban task → Agent Brain → OmniRoute/agent → terminal result`, com rotas aprovadas, tools/reasoning/usage/cancel/error, sem replay indevido e com lifecycle seguro.
+### D-V3-29 — P0 funcional exclusivo: cinco tasks sobrepostas; chat/OBS são P2
+- Decisão explícita do dono em 2026-07-21, corrigida pela diretiva final de ownership. O único escopo OpenSpec que consome lanes Main Brain P0 é `5.6–5.8` e `8.1–8.2`. São três famílias de rota com gates sobrepostos, não cinco campanhas independentes. `8.5–8.7` pertencem exclusivamente ao OmniRoute e não geram implementação, QA ou live test Multica.
+- **P0 exit:** fluxo funcional `squad → project → Kanban task → Agent Brain → OmniRoute/agent → terminal result`, nas rotas alteradas/unproven, com tools/reasoning/usage/cancel/error quando materialmente aplicável. Uma execução real pós-integração pode fechar requisitos `5.x`/`8.x` sobrepostos.
 - **P2/deferred:** chat e `OBS-1..OBS-11`. OBS continua obrigatória antes de certificação de capacidade/cutover, mas não bloqueia o primeiro uso funcional do Kanban/Main Brain. Capacidade, cutover, Prodex recovery, debranding e produção também ficam fora das lanes P0.
-- **Orquestração:** Codex#TL#Principal é autoridade máxima operacional/arquitetural; Opus48-Kiro é co-orquestrador gerenciado pelo Principal; todos os agentes disponíveis são redistribuídos a cada 60s entre implementação, testes e revisão independente P0. O dono só é envolvido em segredo/produção/ação irreversível ou decisão arquitetural grave.
-- **Documentos:** OpenSpec `tasks.md` + `design.md`; GSD `P0_MAIN_BRAIN_EXECUTION.md`, `ROADMAP.md`, `STATE.md`, `FILE_OWNERSHIP.md`.
-- STATUS: **APROVADA / ATIVA.** Substitui qualquer priorização concorrente de chat/OBS/capacidade durante o P0; não reduz gates posteriores.
+- **Orquestração:** o Principal é autoridade máxima e responsável final; Opus48-Kiro é braço direito/auditor bounded. Somente assignments ativos mantêm estado `working`/`blocked`/`done` e heartbeat de 10 minutos em `.deploy-control/p0/`. Pane livre permanece standby; são proibidos busywork, reviewer/QA adicional, broad regression e duplicate live run.
+- **Documentos:** OpenSpec `tasks.md` + `design.md`; GSD `P0_MAIN_BRAIN_EXECUTION.md`, `P0_AGENT_PROMPTS.md`, `ROADMAP.md`, `STATE.md`, `FILE_OWNERSHIP.md`; controle `.deploy-control/p0/PROTOCOL.md`.
+- STATUS: **APROVADA / ATIVA.** Substitui a formulação anterior de oito tasks/quatro workstreams e qualquer priorização concorrente de chat/OBS/capacidade durante o P0; não reduz gates posteriores.

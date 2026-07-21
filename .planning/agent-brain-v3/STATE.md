@@ -1,8 +1,9 @@
 # STATE — Agent Brain v3 (estado vivo; re-ler após qualquer reinício)
 
-updated: 2026-07-21T14:11Z · planning_owner: Codex#TL#Principal · co_orchestrator: Opus48-Kiro · milestone: P0 Main Brain functional
-active_focus: **D-V3-29 — ONLY `5.6–5.8`, `8.1–8.2`, `8.5–8.7` consume P0 lanes**; four workstreams; chat/OBS/capacity/cutover/Prodex/debrand excluded. Current OpenSpec count **54/96 complete, 42 open**; P0 functional remainder = **8 checkboxes / 4 workstreams**.
+updated: 2026-07-21T22:10Z · planning_owner: Principal Orchestrator · right_hand: Opus48-Kiro · milestone: P0 Main Brain functional
+active_focus: **D-V3-29 corrected — ONLY `5.6–5.8` and `8.1–8.2` consume Main Brain P0 lanes**; three route families plus Main-Brain lifecycle/production-integrity support. `8.5–8.7` are external OmniRoute certification. Chat/OBS/capacity/cutover/Prodex/debrand are excluded. Current OpenSpec count **54/96 complete, 42 open**; Main Brain P0 remainder = **5 overlapping checkboxes**, not five campaigns.
 execution_plan: `.planning/agent-brain-v3/P0_MAIN_BRAIN_EXECUTION.md`
+prompt_and_control: `.planning/agent-brain-v3/P0_AGENT_PROMPTS.md` + `.deploy-control/p0/PROTOCOL.md`; only active assignments require working/blocked/done and a 10-minute heartbeat; unassigned panes remain valid standby.
 
 historical_snapshot_below: entries dated before 2026-07-21 are retained for audit and may contain superseded counts, panes or priorities.
 

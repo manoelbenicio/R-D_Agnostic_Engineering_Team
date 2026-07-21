@@ -8,6 +8,8 @@
 
 > **Production integrity / no duplicate validation:** runtime/build artifacts must contain no QA-only routes, mock services, placeholder entities, synthetic success fallbacks, fake credentials or demo seed persistence. Preserve isolated tests and safety guardrails. Reuse equivalent evidence; rerun only changed, missing, stale or materially uncovered Main Brain behavior. No QA-A/QA-B, broad regression or second live acceptance.
 
+> **P0 operational control:** every authorized active assignment uses `.deploy-control/p0/PROTOCOL.md` for pre-edit file locks, 10-minute heartbeat, blocker escalation and evidence-bearing checkout. Opus48-Kiro performs bounded supervision and reports to the Principal; it does not create a second QA/review/live campaign. Unassigned panes remain valid idle standby rather than receiving synthetic busywork.
+
 ## 0. Governance and GSD Rebaseline
 
 - [x] 0.1 [Product owner] Approve the OpenSpec/GSD source hierarchy, G0–G8 roadmap, total ETA range and preservation of RPP/Prodex v2.1 as historical evidence.

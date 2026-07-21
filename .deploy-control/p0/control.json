@@ -1,0 +1,24 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "updated_at": "2026-07-21T22:03:37Z",
+  "implementation_authorized": false,
+  "authorization_note": "Prompt/control preparation only. Product implementation lanes require explicit Principal dispatch after exact file locks and external RouteModel blockers are resolved.",
+  "cadence_seconds": 600,
+  "heartbeat_grace_seconds": 300,
+  "principal": "Principal Orchestrator",
+  "supervisor": {
+    "label": "Opus48-Kiro",
+    "role": "right-hand bounded auditor and fleet supervisor",
+    "pane_id": "w5:p1",
+    "status": "ACTIVE"
+  },
+  "assignments": [],
+  "live_runs": {
+    "cline_glm": {"authorized": false, "accepted_run": null},
+    "cline_kimi": {"authorized": false, "accepted_run": null},
+    "opus48": {"authorized": false, "accepted_run": null},
+    "antigravity": {"authorized": false, "accepted_run": null, "default_action": "reuse_equivalent_evidence"}
+  },
+  "external_non_main_brain_tasks": ["8.5", "8.6", "8.7"],
+  "phase3_hold": ["Prodex"]
+}
