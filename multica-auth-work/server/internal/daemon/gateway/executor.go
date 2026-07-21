@@ -24,13 +24,27 @@ type ProviderCall func(ctx context.Context, account string, attempt int) Provide
 
 // ExecutionOutcome reports the account chosen for a request, why it was chosen,
 // the coordinator's execution summary, and any post-success binding error
-// (which never fails an already-successful response).
+// (which never fails an already-successful response). AccountAlias is the
+// pseudonymous form of the selected account (never the raw id), safe for
+// selection evidence/telemetry.
 type ExecutionOutcome struct {
-	Account   string
-	Reason    SelectionReason
-	Sequence  uint64
-	Execution ExecutionResult
-	BindError error
+	Account      string
+	AccountAlias string
+	Reason       SelectionReason
+	Sequence     uint64
+	Execution    ExecutionResult
+	BindError    error
+}
+
+// SelectionRecord is the content-free, pseudonymous evidence of one selection
+// decision. It carries the request correlation and a pseudonymous account alias
+// (never the raw account id, credential, or any content), so selection order
+// can be asserted/audited without exposing account identity.
+type SelectionRecord struct {
+	RequestID    string
+	AccountAlias string
+	Reason       SelectionReason
+	Sequence     uint64
 }
 
 // Executor is the single gateway-side execution entrypoint for OpenSpec
@@ -70,6 +84,7 @@ type ExecutionOutcome struct {
 type Executor struct {
 	selector    *Selector
 	coordinator *Coordinator
+	recorder    func(SelectionRecord)
 }
 
 // NewExecutor composes a Selector and Coordinator into the gateway execution
@@ -79,6 +94,14 @@ func NewExecutor(selector *Selector, coordinator *Coordinator) (*Executor, error
 		return nil, &GatewayError{Operation: "executor", Class: ErrorInvalidConfiguration}
 	}
 	return &Executor{selector: selector, coordinator: coordinator}, nil
+}
+
+// SetSelectionRecorder installs an optional sink that receives one
+// SelectionRecord per Execute call (pseudonymous account alias + correlation).
+// It is intended for selection-order evidence/telemetry and tests; nil disables
+// recording. The sink must not block.
+func (e *Executor) SetSelectionRecorder(fn func(SelectionRecord)) {
+	e.recorder = fn
 }
 
 // Execute selects an account for the request (honoring continuation affinity),
@@ -97,6 +120,18 @@ func (e *Executor) Execute(ctx context.Context, requestID string, refs Continuat
 		return ExecutionOutcome{}, err
 	}
 	account := selection.Account
+	// Observational, pseudonymous selection record: alias only (never the raw
+	// account id), plus the request correlation. Emitting it does not affect
+	// selection.
+	alias := pseudonymizeIdentifier("acct_", account)
+	if e.recorder != nil {
+		e.recorder(SelectionRecord{
+			RequestID:    requestID,
+			AccountAlias: alias,
+			Reason:       selection.Reason,
+			Sequence:     selection.Sequence,
+		})
+	}
 
 	// The closure runs only on the leader path and only sequentially, so the
 	// captured bindErr needs no synchronization.
@@ -120,10 +155,11 @@ func (e *Executor) Execute(ctx context.Context, requestID string, refs Continuat
 	})
 
 	return ExecutionOutcome{
-		Account:   account,
-		Reason:    selection.Reason,
-		Sequence:  selection.Sequence,
-		Execution: execResult,
-		BindError: bindErr,
+		Account:      account,
+		AccountAlias: alias,
+		Reason:       selection.Reason,
+		Sequence:     selection.Sequence,
+		Execution:    execResult,
+		BindError:    bindErr,
 	}, execErr
 }
