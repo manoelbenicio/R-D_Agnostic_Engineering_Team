@@ -150,7 +150,15 @@ func (c *Client) probe(ctx context.Context, operation, endpoint string, correlat
 		return ProbeResult{}, err
 	}
 	defer response.Body.Close()
-	if err := drainBounded(response.Body, c.maxResponseBody); err != nil {
+	if operation == operationReadiness && devModelsCompatEnabled() {
+		// DEV compat: the readiness endpoint (/v1/models) returns OmniRoute's
+		// full native catalog. Fully drain it to io.Discard so the keep-alive
+		// connection is consumed and reusable by the subsequent FetchModels.
+		// Flag-off retains the bounded drain below.
+		if _, err := io.Copy(io.Discard, response.Body); err != nil {
+			return ProbeResult{}, &GatewayError{Operation: operation, Class: ErrorProtocol}
+		}
+	} else if err := drainBounded(response.Body, c.maxResponseBody); err != nil {
 		return ProbeResult{}, &GatewayError{Operation: operation, Class: ErrorProtocol}
 	}
 	return ProbeResult{
