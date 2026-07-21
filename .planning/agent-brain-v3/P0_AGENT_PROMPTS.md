@@ -29,6 +29,8 @@ Todo agente despachado deve ler, nesta ordem:
 
 ### Objetivo comum
 
+**Gate mandatório `FLEET_SATURATED`:** Principal Orchestrator e Opus48-Kiro não produzem código de produto. Antes de qualquer implementação, todas as tasks P0 devem estar atribuídas, todos os agentes elegíveis detectados devem possuir trabalho real/disjunto, check-in, estado `working|blocked` e preflight de ferramentas. Agente elegível idle torna o gate RED. Não se satisfaz o gate com busywork, QA duplicada ou live run redundante. Principal/Kiro permanecem management/supervision-only enquanto existir worker capaz de receber o trabalho.
+
 Entregar o menor delta real necessário para `squad → project → Kanban task → Agent Brain → CLI/model via OmniRoute → terminal`, sem mocks produtivos, fake-success, placeholder, QA route, demo persistence ou default sintético alcançável.
 
 ### Limites de ownership

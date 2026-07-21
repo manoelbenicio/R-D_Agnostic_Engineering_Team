@@ -8,7 +8,7 @@
 
 > **Production integrity / no duplicate validation:** runtime/build artifacts must contain no QA-only routes, mock services, placeholder entities, synthetic success fallbacks, fake credentials or demo seed persistence. Preserve isolated tests and safety guardrails. Reuse equivalent evidence; rerun only changed, missing, stale or materially uncovered Main Brain behavior. No QA-A/QA-B, broad regression or second live acceptance.
 
-> **P0 operational control:** every authorized active assignment uses `.deploy-control/p0/PROTOCOL.md` for pre-edit file locks, 10-minute heartbeat, blocker escalation and evidence-bearing checkout. Opus48-Kiro performs bounded supervision and reports to the Principal; it does not create a second QA/review/live campaign. Unassigned panes remain valid idle standby rather than receiving synthetic busywork.
+> **P0 operational control:** every authorized active assignment uses `.deploy-control/p0/PROTOCOL.md` for pre-edit file locks, 10-minute heartbeat, blocker escalation and evidence-bearing checkout. Opus48-Kiro performs bounded supervision and reports to the Principal; it does not create a second QA/review/live campaign. Before any Principal/Kiro product-code action, `FLEET_SATURATED` must be GREEN: all P0 tasks owned, every eligible worker assigned real disjoint work, working/blocked with check-in, and lane tools preflighted. Principal/Kiro remain management-only while worker capacity can receive the work. Unassigned eligible agents are a RED gate; synthetic busywork is forbidden.
 
 ## 0. Governance and GSD Rebaseline
 

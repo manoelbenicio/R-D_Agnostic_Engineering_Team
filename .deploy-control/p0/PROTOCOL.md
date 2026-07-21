@@ -102,3 +102,20 @@ No token is issued for Antigravity when A5 proves equivalence. No Main Brain tok
 ## Escalation and final authority
 
 Kiro is the right-hand supervisor, not the final authority. The Principal Orchestrator remains accountable, independently verifies high-impact claims, resolves ownership, authorizes live runs and edits authoritative OpenSpec/GSD. No agent commits or pushes unless the user explicitly requests it.
+
+
+## Mandatory FLEET_SATURATED gate
+
+Before any Principal or Opus48-Kiro product-code action, the monitor/auditor must prove all of:
+
+1. every P0 task and supporting lane has an explicit owner in `control.json`;
+2. every detected eligible worker agent has a real, disjoint assignment and check-in;
+3. each assigned worker is Herdr `working`, or `blocked` with a concrete blocker and owner;
+4. each assignment recorded a lane-specific tool preflight;
+5. active file locks have zero intersection;
+6. W1 integration and live-run serialization remain intact.
+
+An eligible idle/unknown worker makes the gate RED. A pane with no agent process is inventory, not an
+eligible worker. Busywork, duplicate QA/review, broad regression and repeated live runs never count.
+Principal and Opus48-Kiro are management/supervision-only and do not write product code while any
+real task remains assignable to a worker, even after the gate first turns GREEN.

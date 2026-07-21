@@ -1,5 +1,5 @@
 {
-  "activity": "sweep: latest monitor 2026-07-21T22:11:33Z severity=GREEN age=334s",
+  "activity": "sweep: monitor 2026-07-21T22:21:33Z sev=GREEN age=317s",
   "agent": "Opus48-Kiro",
   "blocker": null,
   "depends_on": [],
@@ -9,7 +9,7 @@
   ],
   "finished_at": null,
   "lane": "KIRO-SUPERVISOR",
-  "last_heartbeat_at": "2026-07-21T22:17:07Z",
+  "last_heartbeat_at": "2026-07-21T22:26:50Z",
   "pane_id": "w5:p1",
   "progress": 10,
   "schema": "main-brain-p0-checkin.v1",

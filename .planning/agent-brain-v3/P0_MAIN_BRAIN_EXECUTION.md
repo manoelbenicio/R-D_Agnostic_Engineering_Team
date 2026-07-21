@@ -176,3 +176,18 @@ claims de forma bounded e escala fatos ao Principal. Pane não atribuído pode p
 O Principal Orchestrator mantém responsabilidade final: resolve ownership, amostra claims de
 forma independente, autoriza o único live run por família e edita/valida OpenSpec/GSD. Kiro não
 marca checkbox, não edita produto e não substitui a decisão final do Principal.
+
+
+### 7.1 Gate PRIORIDADE ZERO — saturação do fleet antes de código do Principal/Kiro
+
+O Principal Orchestrator e o Opus48-Kiro são management/supervision-only enquanto existir qualquer
+trabalho P0 real que possa ser atribuído a outro agente. Ambos estão terminantemente proibidos de
+produzir ou corrigir código de produto antes de o gate `FLEET_SATURATED` estar GREEN.
+
+`FLEET_SATURATED` exige simultaneamente: (1) todas as tasks/lanes P0 mapeadas a um owner; (2) todos
+os agentes detectados e elegíveis com assignment real, disjunto e check-in; (3) estado Herdr
+`working` ou `blocked` com blocker concreto; (4) preflight de ferramentas por lane; (5) zero overlap
+de locks; (6) W1 e live-run serial preservados. Não vale busywork, QA duplicada, broad regression ou
+repetição de live run. Pane que não hospeda processo de agente não entra no denominador; agente
+elegível sem assignment mantém o gate RED. Mesmo após GREEN, Principal/Kiro continuam sem código
+enquanto houver worker capaz de receber a implementação.
