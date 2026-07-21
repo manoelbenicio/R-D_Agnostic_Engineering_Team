@@ -5,6 +5,12 @@
   "authorization_note": "Prompt/control preparation only. Product implementation lanes require explicit Principal dispatch after exact file locks and external RouteModel blockers are resolved.",
   "cadence_seconds": 600,
   "heartbeat_grace_seconds": 300,
+  "monitor": {
+    "label": "P0-10m-Monitor",
+    "pane_id": "w5:pA",
+    "status": "ACTIVE",
+    "command": "python3 scripts/orchestration/p0_control.py monitor --interval 600"
+  },
   "principal": "Principal Orchestrator",
   "supervisor": {
     "label": "Opus48-Kiro",

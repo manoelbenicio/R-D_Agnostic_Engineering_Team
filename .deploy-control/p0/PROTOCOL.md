@@ -91,7 +91,7 @@ python3 scripts/orchestration/p0_control.py monitor --once
 
 A sweep is RED when any active assignment has overlapping locks, missing check-in, heartbeat older than 15 minutes, missing Herdr pane, or `IN_PROGRESS` while Herdr is not `working`. It is AMBER for a recorded blocker awaiting an external owner. It is GREEN when all active assignments have current locks/heartbeats and the expected Herdr state.
 
-Kiro sends facts only to the Principal Orchestrator. It does not message lanes directly, invent assignments, perform broad review, or launch live acceptance. The Principal independently samples material claims and owns all accept/reject/reassign decisions.
+Kiro reads each snapshot produced by the dedicated `P0-10m-Monitor` pane and sends facts only to the Principal Orchestrator. If that snapshot is older than 11 minutes, Kiro performs one fallback `monitor --once` and escalates the monitor failure. It does not message lanes directly, invent assignments, perform broad review, or launch live acceptance. The Principal independently samples material claims and owns all accept/reject/reassign decisions.
 
 ## Live-run token
 
