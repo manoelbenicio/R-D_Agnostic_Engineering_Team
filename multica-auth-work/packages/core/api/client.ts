@@ -821,9 +821,8 @@ export class ApiClient {
     const raw = await this.fetch<unknown>(
       `/api/agent-templates/${encodeURIComponent(slug)}`,
     );
-    // Round-trip the requested slug into the fallback so a malformed
-    // detail response still produces a navigable record matching the URL
-    // the user clicked.
+    // The legacy compatibility value is retained at the call site until the
+    // parser signature migration is completed; contract drift still throws.
     return parseWithFallback(
       raw,
       AgentTemplateSchema,
