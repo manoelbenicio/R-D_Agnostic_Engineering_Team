@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/analytics"
+	"github.com/multica-ai/multica/server/internal/daemon/commitledger"
 	"github.com/multica-ai/multica/server/internal/events"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	"github.com/multica-ai/multica/server/internal/realtime"
@@ -32,6 +33,11 @@ type TaskService struct {
 	Analytics analytics.Client
 	Metrics   *obsmetrics.BusinessMetrics
 	Wakeup    TaskWakeupNotifier
+	// ReplayGateHook is consulted before CreateRetryTask to block automatic
+	// retry when the parent task's commit ledger shows tool activity
+	// (definite or ambiguous). Nil fails closed (blocks all retries).
+	// Manual RerunIssue is exempt from this gate.
+	ReplayGateHook *commitledger.ReplayGateHook
 	// EmptyClaim caches "this runtime has no queued task" so the daemon
 	// poll path can skip a Postgres scan on the steady-state empty case.
 	// Optional — a nil cache disables the fast path and every claim
@@ -1558,6 +1564,23 @@ func (s *TaskService) MaybeRetryFailedTask(ctx context.Context, parent db.AgentT
 		return nil, nil
 	}
 	if !parent.IssueID.Valid && !parent.ChatSessionID.Valid {
+		return nil, nil
+	}
+
+	// --- CommitLedger: replay gate check ---
+	// Consult the commit ledger before creating a retry child. If the parent
+	// had any tool activity (definite or ambiguous), block automatic replay
+	// to prevent duplicate side effects.
+	// Nil hook fails closed: automatic retry requires authoritative durable
+	// ledger state to confirm safety. Until the durable server-side store is
+	// wired, all automatic retries for tasks with tool activity are blocked.
+	parentTaskID := util.UUIDToString(parent.ID)
+	if err := commitledger.CheckOrAllow(s.ReplayGateHook, parentTaskID); err != nil {
+		slog.Info("task auto-retry blocked by replay gate",
+			"parent_task_id", parentTaskID,
+			"reason", reason,
+			"error", err,
+		)
 		return nil, nil
 	}
 

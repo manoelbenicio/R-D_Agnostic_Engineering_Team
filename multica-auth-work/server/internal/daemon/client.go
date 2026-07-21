@@ -206,6 +206,22 @@ func (c *Client) ReportTaskMessages(ctx context.Context, taskID string, messages
 	}, nil)
 }
 
+// ReportTaskMessagesWithAck sends task messages and parses the server's
+// persisted_through_seq acknowledgement from the response body. Returns the
+// acked seq (0 if not present or on error).
+func (c *Client) ReportTaskMessagesWithAck(ctx context.Context, taskID string, messages []TaskMessageData) (int64, error) {
+	var resp struct {
+		PersistedThroughSeq int64 `json:"persisted_through_seq"`
+	}
+	err := c.postJSON(ctx, fmt.Sprintf("/api/daemon/tasks/%s/messages", taskID), map[string]any{
+		"messages": messages,
+	}, &resp)
+	if err != nil {
+		return 0, err
+	}
+	return resp.PersistedThroughSeq, nil
+}
+
 func (c *Client) CompleteTask(ctx context.Context, taskID, output, branchName, sessionID, workDir string) error {
 	body := map[string]any{"output": output}
 	if branchName != "" {

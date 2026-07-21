@@ -2221,6 +2221,29 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var highestPersistedSeq int32
+
+	// Atomic batch insert: all messages committed in a single transaction.
+	// On any failure, the entire batch is rolled back and no ack is returned.
+	tx, err := h.TxStarter.Begin(r.Context())
+	if err != nil {
+		slog.Error("failed to begin tx for task messages", "task_id", taskID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to persist task messages")
+		return
+	}
+	defer tx.Rollback(r.Context())
+	qtx := h.Queries.WithTx(tx)
+
+	// Validate batch is ordered by seq (contiguous relative to submission).
+	var lastSeq int32
+	for i, msg := range req.Messages {
+		if i > 0 && int32(msg.Seq) <= lastSeq {
+			writeError(w, http.StatusBadRequest, "messages must be ordered by strictly increasing seq")
+			return
+		}
+		lastSeq = int32(msg.Seq)
+	}
+
 	for _, msg := range req.Messages {
 		// Redact sensitive information before persisting or broadcasting.
 		msg.Content = redact.Text(msg.Content)
@@ -2231,7 +2254,7 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 		if msg.Input != nil {
 			inputJSON, _ = json.Marshal(msg.Input)
 		}
-		created, createErr := h.Queries.CreateTaskMessage(r.Context(), db.CreateTaskMessageParams{
+		_, createErr := qtx.CreateTaskMessage(r.Context(), db.CreateTaskMessageParams{
 			TaskID:  parseUUID(taskID),
 			Seq:     int32(msg.Seq),
 			Type:    msg.Type,
@@ -2242,17 +2265,49 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 		})
 		if createErr != nil {
 			slog.Error("failed to create task message", "task_id", taskID, "seq", msg.Seq, "error", createErr)
+			// Transaction will be rolled back by defer — no partial commit.
 			writeError(w, http.StatusInternalServerError, "failed to persist task message")
 			return
 		}
-
-		if workspaceID != "" {
-			h.publishTask(protocol.EventTaskMessage, workspaceID, "system", "", taskID,
-				taskMessageToPayload(created, taskID, uuidToString(task.IssueID)))
+		if int32(msg.Seq) > highestPersistedSeq {
+			highestPersistedSeq = int32(msg.Seq)
 		}
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	// Commit atomically — all rows or none.
+	if err := tx.Commit(r.Context()); err != nil {
+		slog.Error("failed to commit task messages tx", "task_id", taskID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to persist task messages")
+		return
+	}
+
+	// Publish events only AFTER durable commit.
+	for _, msg := range req.Messages {
+		if workspaceID != "" {
+			var inputJSON []byte
+			if msg.Input != nil {
+				inputJSON, _ = json.Marshal(msg.Input)
+			}
+			payload := protocol.TaskMessagePayload{
+				TaskID:  taskID,
+				IssueID: uuidToString(task.IssueID),
+				Seq:     msg.Seq,
+				Type:    msg.Type,
+				Tool:    msg.Tool,
+				Content: redact.Text(msg.Content),
+				Input:   msg.Input,
+				Output:  redact.Text(msg.Output),
+			}
+			_ = inputJSON // used in payload.Input above
+			h.publishTask(protocol.EventTaskMessage, workspaceID, "system", "", taskID, payload)
+		}
+	}
+
+	// Return persisted_through_seq: highest seq durably committed.
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":                "ok",
+		"persisted_through_seq": highestPersistedSeq,
+	})
 }
 
 func taskMessageToPayload(m db.TaskMessage, taskID, issueID string) protocol.TaskMessagePayload {

@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/multica-ai/multica/server/internal/cli"
 	"github.com/multica-ai/multica/server/internal/daemon/brain"
+	"github.com/multica-ai/multica/server/internal/daemon/commitledger"
 	"github.com/multica-ai/multica/server/internal/daemon/execenv"
 	"github.com/multica-ai/multica/server/internal/daemon/repocache"
 	"github.com/multica-ai/multica/server/internal/l2runtime"
@@ -238,6 +240,13 @@ type Daemon struct {
 	agentBrainInitErr error
 	agentBrainOBS     *brain.AdmissionObserver
 
+	// commitLedgers is the in-process registry of active task commit ledgers.
+	// Created per-task in executeAndDrainForTask, consulted by the replay gate
+	// before automatic retry. Nil-safe: if nil, replay gate fails closed.
+	commitLedgers *commitledger.LedgerRegistry
+	// commitAckHandler processes persisted_through_seq acks from the server.
+	commitAckHandler *commitledger.AckHandler
+
 	l2Client             l2RuntimeClient
 	l2InitErr            error
 	l2Sidecar            *l2Sidecar
@@ -300,6 +309,8 @@ func newDaemon(cfg Config, logger *slog.Logger, dependencies AgentBrainDependenc
 		l2ProfileByHome:           make(map[string]string),
 	}
 	d.agentBrain, d.agentBrainInitErr = newAgentBrainRuntime(cfg.AgentBrain, dependencies, logger)
+	d.commitLedgers = commitledger.NewLedgerRegistry()
+	d.commitAckHandler = commitledger.NewAckHandler(d.commitLedgers, logger)
 	if !(cfg.AgentBrain.DevelopmentEnabled && cfg.AgentBrain.Neutral.Gateway.Required) {
 		d.initRotationService()
 		d.initL2RuntimeClient()
@@ -4376,6 +4387,26 @@ func (d *Daemon) observeCredentialEnvInjection(provider, accountHome string, env
 	d.credentialMetrics.ObserveEnvInjection(provider, result)
 }
 
+// commitLedgerSecret returns the decoded HMAC secret for commit ledger tokens.
+// Returns nil if not configured (ledger will fail-closed).
+func (d *Daemon) commitLedgerSecret() []byte {
+	raw := d.cfg.CommitLedgerHMACSecret
+	if raw == "" {
+		return nil
+	}
+	// Accept hex-encoded or raw bytes (if >= 32 bytes as-is)
+	if len(raw) >= 64 {
+		decoded, err := hex.DecodeString(raw)
+		if err == nil && len(decoded) >= 32 {
+			return decoded
+		}
+	}
+	if len(raw) >= 32 {
+		return []byte(raw)
+	}
+	return nil
+}
+
 // executeAndDrain runs a backend, drains its message stream (forwarding to the
 // server), and waits for the final result.
 func (d *Daemon) executeAndDrain(ctx context.Context, backend agent.Backend, prompt string, opts agent.ExecOptions, taskLog *slog.Logger, taskID string) (agent.Result, int32, error) {
@@ -4390,6 +4421,32 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 	// drain, leaving the subprocess running.
 	agentCtx, agentCancel := context.WithCancel(ctx)
 	defer agentCancel()
+
+	// --- CommitLedger: create per-task ledger ---
+	var taskLedger *commitledger.Ledger
+	var ledgerErr error
+	hmacSecret := d.commitLedgerSecret()
+	if len(hmacSecret) >= 32 {
+		taskLedger, ledgerErr = commitledger.New(commitledger.Config{
+			HMACSecret: hmacSecret,
+			TaskID:     taskID,
+		})
+		if ledgerErr != nil {
+			taskLog.Warn("commitledger: failed to create ledger; replay gate will fail closed", "error", ledgerErr)
+			taskLedger = commitledger.NewFailClosed(taskID)
+		}
+	} else {
+		// No valid HMAC secret configured — fail closed
+		taskLedger = commitledger.NewFailClosed(taskID)
+	}
+	if d.commitLedgers != nil {
+		d.commitLedgers.Register(taskID, taskLedger)
+	}
+	defer func() {
+		// On function exit: mark any unresolved entries ambiguous, close.
+		taskLedger.MarkAllUnresolvedAmbiguous()
+		taskLedger.Close()
+	}()
 
 	session, err := backend.Execute(agentCtx, prompt, opts)
 	if err != nil {
@@ -4441,6 +4498,10 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 		go d.runIdleWatchdog(agentCtx, idleWindow, d.cfg.AgentToolWatchdog, &lastActivityAt, &inFlightTools, &idleWatchdogFired, &idleWatchdogThreshold, agentCancel, session.Messages, taskLog, taskID)
 	}
 
+	// drainFinished is closed by the drain goroutine when it has completed
+	// its final flush. The bounded join waits on this before returning.
+	drainFinished := make(chan struct{})
+
 	go func() {
 		var seq atomic.Int32
 		var mu sync.Mutex
@@ -4474,11 +4535,16 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 			mu.Unlock()
 
 			if len(toSend) > 0 {
-				sendCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				if err := d.client.ReportTaskMessages(sendCtx, taskID, toSend); err != nil {
+				sendCtx, cancel := context.WithTimeout(drainCtx, 5*time.Second)
+				ackSeq, err := d.client.ReportTaskMessagesWithAck(sendCtx, taskID, toSend)
+				if err != nil {
 					taskLog.Debug("failed to report task messages", "error", err)
 				} else {
 					taskLog.Debug("reported task messages", "count", len(toSend), "last_seq", toSend[len(toSend)-1].Seq)
+					// --- CommitLedger: process server output ack ---
+					if ackSeq > 0 && d.commitAckHandler != nil {
+						d.commitAckHandler.ProcessOutputAck(taskID, ackSeq)
+					}
 				}
 				cancel()
 			}
@@ -4487,17 +4553,9 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
 
-		done := make(chan struct{})
-		go func() {
-			for {
-				select {
-				case <-ticker.C:
-					flush()
-				case <-done:
-					return
-				}
-			}
-		}()
+		// Single flush owner: the message loop below is the sole goroutine
+		// that calls flush(). No separate ticker goroutine — the ticker is
+		// consumed inline in the same select, guaranteeing no concurrent flush.
 
 		var sessionPinned atomic.Bool
 		for {
@@ -4533,12 +4591,19 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 					n := toolCount.Add(1)
 					inFlightTools.Add(1)
 					taskLog.Info(fmt.Sprintf("tool #%d: %s", n, msg.Tool))
+					// Atomically claim the seq FIRST so ledger and batch use the same value.
+					s := seq.Add(1)
+					// --- CommitLedger: record tool_use (started, not yet committed) ---
+					var toolToken string
 					if msg.CallID != "" {
 						mu.Lock()
 						callIDToTool[msg.CallID] = msg.Tool
 						mu.Unlock()
+						toolToken, _ = taskLedger.RecordToolUse(msg.CallID, int64(s))
 					}
-					s := seq.Add(1)
+					if toolToken != "" {
+						taskLog.Debug("tool_use recorded", "seq", s, "tool", msg.Tool, "token", toolToken)
+					}
 					mu.Lock()
 					batch = append(batch, TaskMessageData{
 						Seq:   int(s),
@@ -4573,7 +4638,14 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 						toolName = callIDToTool[msg.CallID]
 						mu.Unlock()
 					}
-					taskLog.Info("tool_result observed", "seq", s, "tool", toolName, "call_id", msg.CallID)
+					// --- CommitLedger: record tool_result (committed immediately) ---
+					if msg.CallID != "" {
+						toolToken := taskLedger.TokenizeCallID(msg.CallID)
+						_ = taskLedger.RecordToolResult(toolToken)
+						taskLog.Info("tool_result committed", "seq", s, "tool", toolName, "token", toolToken)
+					} else {
+						taskLog.Info("tool_result observed", "seq", s, "tool", toolName)
+					}
 					mu.Lock()
 					batch = append(batch, TaskMessageData{
 						Seq:    int(s),
@@ -4607,17 +4679,52 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 					})
 					mu.Unlock()
 				}
+			case <-ticker.C:
+				flush()
 			case <-drainCtx.Done():
 				goto drainDone
 			}
 		}
 	drainDone:
-		close(done)
+		// Single final flush: we are the sole flush owner, no other goroutine
+		// can call flush() concurrently.
 		flush()
+		close(drainFinished)
 	}()
+
+	// Bounded join contract (frozen, absolute invariant):
+	// Function returns ONLY after drainFinished is observed. No exceptions.
+	// 1. Wait finalFlushBudget for drainFinished (flush completes → done)
+	// 2. If budget expires: cancel drainCtx to abort context-bound I/O
+	// 3. Block on drainFinished unconditionally. The cancelled context ensures
+	//    all client I/O will eventually return (TCP/HTTP timeouts), so this
+	//    cannot block forever in practice.
+	const finalFlushBudget = 10 * time.Second
+
+	joinDrain := func() bool {
+		select {
+		case <-drainFinished:
+			drainCancel()
+			return true // normal: flush completed within budget
+		case <-time.After(finalFlushBudget):
+		}
+		// Budget expired: cancel I/O, then block until goroutine exits.
+		drainCancel()
+		taskLog.Warn("drain flush budget expired; cancelled, blocking on termination")
+		<-drainFinished // absolute: never return without this
+		taskLedger.MarkAllUnresolvedAmbiguous()
+		return false // flush was cancelled, state is ambiguous
+	}
 
 	select {
 	case result := <-session.Result:
+		joined := joinDrain()
+		if !joined {
+			return agent.Result{
+				Status: "failed",
+				Error:  "drain flush budget expired; commit state ambiguous",
+			}, toolCount.Load(), nil
+		}
 		if idleWatchdogFired.Load() {
 			// The backend's wait goroutine (e.g. claude.go) translates the
 			// SIGKILL we delivered via agentCancel into Status="aborted".
@@ -4631,6 +4738,11 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 		}
 		return result, toolCount.Load(), nil
 	case <-drainCtx.Done():
+		// drainCtx already cancelled (timeout or parent cancel). Wait for
+		// drain goroutine to observe the cancellation and exit.
+		// MUST block until drainFinished — never return while goroutine is live.
+		<-drainFinished
+		taskLedger.MarkAllUnresolvedAmbiguous()
 		// Idle watchdog cancels via agentCancel(), which propagates here as
 		// context.Canceled. Check this BEFORE the generic cancelled/timeout
 		// classifiers so a watchdog-induced stop isn't misreported as

@@ -113,6 +113,7 @@ type Config struct {
 	// command_name on PATH. nil/empty means "always resolve via PATH".
 	ProfileCommandOverrides map[string]string
 	RotationDatabaseURL     string
+	CommitLedgerHMACSecret  string // stable >=32-byte hex secret for pseudonymous tool tokens; empty disables ledger (fail-closed)
 	AgentBrain              AgentBrainIntegrationConfig
 	Prodex                  ProdexConfig
 	L2Runtime               L2RuntimeConfig
