@@ -1,1 +1,2 @@
 {"action": "CHECK_IN", "agent": "Opus48-Kiro", "at": "2026-07-21T22:15:25Z", "lane": "KIRO-SUPERVISOR", "progress": 0, "record": ".deploy-control/p0/checkins/Opus48-Kiro__P0-SUPERVISION__20260721T221525Z.json", "status": "IN_PROGRESS", "task": "P0-SUPERVISION"}
+{"action": "HEARTBEAT", "agent": "Opus48-Kiro", "at": "2026-07-21T22:17:07Z", "lane": "KIRO-SUPERVISOR", "progress": 10, "record": ".deploy-control/p0/checkins/Opus48-Kiro__P0-SUPERVISION__20260721T221525Z.json", "status": "IN_PROGRESS", "task": "P0-SUPERVISION"}

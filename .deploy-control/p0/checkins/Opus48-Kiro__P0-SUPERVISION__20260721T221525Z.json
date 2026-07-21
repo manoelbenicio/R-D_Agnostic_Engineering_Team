@@ -1,5 +1,5 @@
 {
-  "activity": "initial independent prompt/control audit",
+  "activity": "sweep: latest monitor 2026-07-21T22:11:33Z severity=GREEN age=334s",
   "agent": "Opus48-Kiro",
   "blocker": null,
   "depends_on": [],
@@ -9,9 +9,9 @@
   ],
   "finished_at": null,
   "lane": "KIRO-SUPERVISOR",
-  "last_heartbeat_at": "2026-07-21T22:15:25Z",
+  "last_heartbeat_at": "2026-07-21T22:17:07Z",
   "pane_id": "w5:p1",
-  "progress": 0,
+  "progress": 10,
   "schema": "main-brain-p0-checkin.v1",
   "started_at": "2026-07-21T22:15:25Z",
   "status": "IN_PROGRESS",
