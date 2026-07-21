@@ -34,7 +34,7 @@ func newAcceptanceSelector(t *testing.T, accounts ...string) *Selector {
 // Blocker 1: strict round-robin for independent requests — sequential exact
 // order AND concurrent overlapping order (goroutines parked at a barrier so
 // they contend simultaneously; the atomic sequence proves one strict order).
-func TestStrictRoundRobinIndependent(t *testing.T) {
+func TestTask84StrictRoundRobinIndependent(t *testing.T) {
 	accounts := []string{"acct-blue", "acct-green", "acct-red", "acct-amber"}
 	selector := newAcceptanceSelector(t, accounts...)
 
@@ -103,7 +103,7 @@ func TestStrictRoundRobinIndependent(t *testing.T) {
 
 // Blocker 2: affinity for Responses continuation / prompt cache / tool turns —
 // bound (via Bind) continuation requests return the SAME account.
-func TestAffinityContinuation(t *testing.T) {
+func TestTask84AffinityContinuation(t *testing.T) {
 	cases := []struct {
 		name   string
 		handle ContinuationRefs
@@ -142,7 +142,7 @@ func TestAffinityContinuation(t *testing.T) {
 // Blocker 3: affinity hits must NOT advance the independent round-robin cursor.
 // Interleave continuation hits between independent requests and prove the
 // independent subsequence is strict rotation, unaffected by the affinity hits.
-func TestAffinityDoesNotAdvanceIndependentCursor(t *testing.T) {
+func TestTask84AffinityDoesNotAdvanceIndependentCursor(t *testing.T) {
 	accounts := []string{"acct-alpha", "acct-beta", "acct-gamma"}
 	selector := newAcceptanceSelector(t, accounts...)
 
@@ -188,7 +188,7 @@ func TestAffinityDoesNotAdvanceIndependentCursor(t *testing.T) {
 
 // Blocker 4: Executor emits a pseudonymous selection record (account ALIAS, not
 // the raw id) with request correlation, on a realistic injected pool.
-func TestExecutorEmitsPseudonymousSelectionRecord(t *testing.T) {
+func TestTask84ExecutorEmitsPseudonymousSelectionRecord(t *testing.T) {
 	accounts := []string{"acct-one", "acct-two", "acct-three"}
 	selector := newAcceptanceSelector(t, accounts...)
 	coordinator, err := NewCoordinator(RetryPolicy{MaxAttempts: 2, EndToEndDeadline: 30 * time.Second, PreCommitOnly: true})
