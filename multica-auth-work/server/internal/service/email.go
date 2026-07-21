@@ -3,6 +3,7 @@ package service
 import (
 	"crypto/tls"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"html"
 	"log/slog"
@@ -21,6 +22,8 @@ import (
 
 // maxSubjectFieldRunes bounds how much user-controlled text (workspace name,
 // inviter name) can land in an email Subject. Prevents attackers from stuffing
+
+var ErrEmailBackendNotConfigured = errors.New("email backend is not configured")
 // a full phishing pitch into a workspace name that gets sent from our domain.
 const maxSubjectFieldRunes = 60
 
@@ -225,7 +228,7 @@ func NewEmailService() *EmailService {
 	case client != nil:
 		fmt.Printf("EmailService: Resend API from=%s\n", from)
 	default:
-		fmt.Println("EmailService: DEV mode — codes printed to stdout (set MULTICA_DEV_VERIFICATION_CODE in .env for a fixed local code)")
+		fmt.Println("EmailService: disabled — configure SMTP_HOST or RESEND_API_KEY before sending email")
 	}
 
 	return &EmailService{
@@ -337,8 +340,7 @@ func (s *EmailService) SendVerificationCode(to, code string) error {
 		return s.sendSMTP(to, "Your Multica verification code", body)
 	}
 	if s.client == nil {
-		slog.Info("[DEV] Verification email generated", "to", to, "code", "[REDACTED CREDENTIAL]")
-		return nil
+		return ErrEmailBackendNotConfigured
 	}
 	params := &resend.SendEmailRequest{
 		From:    s.fromEmail,
@@ -364,8 +366,7 @@ func (s *EmailService) SendInvitationEmail(to, inviterName, workspaceName, invit
 		return s.sendSMTP(to, params.Subject, params.Html)
 	}
 	if s.client == nil {
-		slog.Info("[DEV] Invitation email generated", "to", to, "inviter", inviterName, "workspace", workspaceName, "invite_url", "[REDACTED CREDENTIAL]")
-		return nil
+		return ErrEmailBackendNotConfigured
 	}
 	params := buildInvitationParams(s.fromEmail, to, inviterName, workspaceName, inviteURL)
 	_, err := s.client.Emails.Send(params)

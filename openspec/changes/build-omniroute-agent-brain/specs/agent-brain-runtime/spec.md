@@ -42,3 +42,20 @@ Every active model request SHALL have `omniroute` as the only hot router owner. 
 - **WHEN** the Agent Brain launches an agent task in gateway-required mode
 - **THEN** runtime evidence identifies OmniRoute as router owner and no legacy rotation, account-home selection, or Prodex sidecar is invoked
 
+
+### Requirement: Production integrity without duplicate validation
+Production artifacts and runtime paths SHALL NOT expose QA-only routes, mock services, placeholder entities, synthetic success responses, fake credentials, demo seed data, or in-memory control acknowledgements presented as durable success. Missing configuration or contract drift MUST fail closed with an actionable error. Test-only fixtures and safety guardrails MAY remain when they are excluded from production artifacts and have no production caller.
+
+Acceptance SHALL reuse existing evidence when it identifies the same implementation, version/digest, configuration, route and scenario. A scenario SHALL be rerun only when affected implementation or integration changed, prior evidence is missing/stale/non-equivalent, or a distinct material risk is not covered. One live execution during serial integration MAY simultaneously satisfy implementation, integration and acceptance for every overlapping task it proves.
+
+#### Scenario: API response violates its production schema
+- **WHEN** a production API response fails schema validation
+- **THEN** the client surfaces a contract error and MUST NOT fabricate an empty entity, successful mutation, zero balance, pending checkout or other fallback record
+
+#### Scenario: Existing equivalent evidence is available
+- **WHEN** accepted evidence covers the same deployed build/configuration and scenario and no relevant code or integration changed
+- **THEN** the evidence is reused without a duplicate QA or live execution
+
+#### Scenario: Production configuration is incomplete
+- **WHEN** a required secret, upstream or durable control backend is absent
+- **THEN** startup/readiness or the affected operation fails closed and MUST NOT substitute a known placeholder, fake key, discard-port upstream or volatile success acknowledgement

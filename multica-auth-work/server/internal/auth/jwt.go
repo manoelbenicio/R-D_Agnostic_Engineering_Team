@@ -13,7 +13,14 @@ import (
 
 const defaultJWTSecret = "multica-dev-secret-change-in-production"
 
-var ErrInsecureJWTConfiguration = errors.New("JWT_SECRET must be set to a non-development value outside explicit development or test mode")
+const minimumProductionJWTSecretBytes = 32
+
+var knownInsecureJWTSecrets = map[string]struct{}{
+	defaultJWTSecret:          {},
+	"change-me-in-production": {},
+}
+
+var ErrInsecureJWTConfiguration = errors.New("JWT_SECRET must be a non-placeholder secret of at least 32 bytes outside explicit development or test mode")
 
 var (
 	jwtSecret     []byte
@@ -41,7 +48,11 @@ func ValidateJWTConfiguration(appEnv, secret string) error {
 	case "dev", "development", "test":
 		return nil
 	}
-	if strings.TrimSpace(secret) == "" || secret == defaultJWTSecret {
+	trimmed := strings.TrimSpace(secret)
+	if _, known := knownInsecureJWTSecrets[trimmed]; known {
+		return ErrInsecureJWTConfiguration
+	}
+	if len([]byte(trimmed)) < minimumProductionJWTSecretBytes {
 		return ErrInsecureJWTConfiguration
 	}
 	return nil

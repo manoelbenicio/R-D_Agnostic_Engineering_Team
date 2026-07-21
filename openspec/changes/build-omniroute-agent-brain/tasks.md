@@ -2,6 +2,8 @@
 
 > **Only these pending tasks consume P0 lanes:** `5.6`, `5.7`, `5.8`, `8.1`, `8.2`, `8.5`, `8.6`, `8.7`. They form four workstreams: functional routes; deterministic failure handling; retry/dedup/cancellation; operational lifecycle. P0 exit means the app can execute **squad → project → Kanban task → Agent Brain → OmniRoute-routed agent → terminal result**. Chat, `OBS-1..OBS-11`, capacity certification, cutover, Prodex recovery and debranding are P2/HOLD/future and MUST NOT consume P0 lanes. OBS remains a later gate before capacity certification/cutover, not a prerequisite for initial functional Kanban use. See D-V3-29 and `.planning/agent-brain-v3/P0_MAIN_BRAIN_EXECUTION.md`.
 
+
+> **Production-integrity / no-duplicate-validation directive (owner 2026-07-21):** runtime/build artifacts must contain no QA-only routes, mock services, placeholder entities, synthetic success fallbacks, fake credentials or demo seed persistence. Preserve isolated tests and safety guardrails. Reuse accepted evidence only when build/digest, configuration, route and scenario are equivalent. Rerun only changed, missing, stale or materially uncovered behavior. The one live run performed after W1 integrates an affected lane is simultaneously its implementation/integration/acceptance proof; do not dispatch QA-A/QA-B, broad regression or a second live-acceptance run without a documented distinct risk.
 ## 0. Governance and GSD Rebaseline
 
 - [x] 0.1 [Product owner] Approve the OpenSpec/GSD source hierarchy, G0–G8 roadmap, total ETA range and preservation of RPP/Prodex v2.1 as historical evidence.

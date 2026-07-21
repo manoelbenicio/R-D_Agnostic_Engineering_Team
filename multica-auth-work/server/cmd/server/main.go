@@ -127,7 +127,7 @@ func main() {
 		os.Exit(1)
 	}
 	if os.Getenv("RESEND_API_KEY") == "" && strings.TrimSpace(os.Getenv("SMTP_HOST")) == "" {
-		slog.Warn("no email backend configured (RESEND_API_KEY and SMTP_HOST both empty) — verification codes will be printed to the log instead of emailed.")
+		slog.Warn("no email backend configured; email-dependent operations will fail closed until RESEND_API_KEY or SMTP_HOST is configured")
 	}
 	if os.Getenv("MULTICA_DEV_VERIFICATION_CODE") != "" {
 		if strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production") {

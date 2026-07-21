@@ -991,7 +991,7 @@ fn ensure_gateway_running() -> Result<GatewayHandle, String> {
 
     let addr = gateway_listen_addr();
     let token = std::env::var("PRODEX_GATEWAY_TOKEN").unwrap_or_else(|_| generate_id("gw"));
-    let mut args = gateway_args(&addr);
+    let mut args = gateway_args(&addr)?;
     ensure_arg(&mut args, "--smart-context");
     if !has_arg_with_value(&args, "--listen") {
         args.push("--listen".to_string());
@@ -1009,7 +1009,6 @@ fn ensure_gateway_running() -> Result<GatewayHandle, String> {
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
-    maybe_seed_local_gateway_key(&mut command, &args);
     let child = command.spawn().map_err(|_| "spawn_failed".to_string())?;
     *guard = Some(GatewayProcess {
         child,
@@ -1027,22 +1026,25 @@ fn ensure_gateway_running() -> Result<GatewayHandle, String> {
     Err("gateway_port_closed".to_string())
 }
 
-fn gateway_args(addr: &str) -> Vec<String> {
+fn gateway_args(addr: &str) -> Result<Vec<String>, String> {
     let raw = std::env::var("MULTICA_L2_SIDECAR_ARGS").unwrap_or_default();
     let parsed = split_args(&raw);
     if parsed.first().map(String::as_str) == Some("gateway") {
-        return parsed;
+        return Ok(parsed);
     }
     let base_url = std::env::var("PRODEX_GATEWAY_UPSTREAM_BASE_URL")
         .or_else(|_| std::env::var("OPENAI_BASE_URL"))
-        .unwrap_or_else(|_| "http://127.0.0.1:9".to_string());
-    vec![
+        .map_err(|_| "gateway_upstream_not_configured".to_string())?;
+    if base_url.trim().is_empty() {
+        return Err("gateway_upstream_not_configured".to_string());
+    }
+    Ok(vec![
         "gateway".to_string(),
         "--listen".to_string(),
         addr.to_string(),
         "--base-url".to_string(),
         base_url,
-    ]
+    ])
 }
 
 fn split_args(raw: &str) -> Vec<String> {
@@ -1080,23 +1082,6 @@ fn has_arg_with_value(args: &[String], arg: &str) -> bool {
 
 fn gateway_listen_addr() -> String {
     std::env::var("PRODEX_GATEWAY_LISTEN").unwrap_or_else(|_| "127.0.0.1:43118".to_string())
-}
-
-fn maybe_seed_local_gateway_key(command: &mut Command, args: &[String]) {
-    let has_key = std::env::var("OPENAI_API_KEY").is_ok()
-        || std::env::var("OPENAI_API_KEYS").is_ok()
-        || has_arg_with_value(args, "--api-key");
-    if has_key {
-        return;
-    }
-    let local_base = args
-        .windows(2)
-        .find(|pair| pair[0] == "--base-url" || pair[0] == "--url")
-        .map(|pair| pair[1].as_str())
-        .unwrap_or("");
-    if local_base.starts_with("http://127.0.0.1:") || local_base.starts_with("http://localhost:") {
-        command.env("OPENAI_API_KEY", "sidecar-local-probe");
-    }
 }
 
 fn estimate_tokens(bytes: &[u8]) -> u64 {
