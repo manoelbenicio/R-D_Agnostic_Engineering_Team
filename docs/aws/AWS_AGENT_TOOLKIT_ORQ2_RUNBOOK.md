@@ -4,7 +4,7 @@ Status date: 2026-07-21 (America/Sao_Paulo)
 
 ## 1. Purpose
 
-This installation gives project agents current AWS documentation, curated AWS procedures, read-only AWS resource inspection, and AgentCore development tooling without duplicating configuration across credential-isolated agent homes.
+This installation gives project agents current AWS documentation, curated AWS procedures, regional availability data, and AgentCore development tooling without duplicating configuration across credential-isolated agent homes.
 
 The installation is project-scoped because ORQ2 had 121 isolated Codex homes at audit time. Installing a full plugin separately into every home would waste disk, drift versions, and make upgrades inconsistent.
 
@@ -149,7 +149,18 @@ find .agents/skills -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l
 
 Expected skill count: `48`.
 
-In a new agent session, inspect MCP tools. Expected AWS knowledge tools include documentation search, documentation reading, regional availability, recommendations, and skill retrieval. Read-only AWS API tools are limited by both the proxy and the EC2 IAM role.
+The authenticated validation on 2026-07-21 returned exactly these six tools:
+
+```text
+aws___get_tasks
+aws___get_regional_availability
+aws___list_regions
+aws___read_documentation
+aws___retrieve_skill
+aws___search_documentation
+```
+
+No direct AWS API caller or resource-mutation tool is currently exposed. Resource inspection must therefore continue through separately authorized AWS CLI or SDK workflows, with the EC2 IAM role remaining authoritative. Revalidate the MCP tool inventory after future toolkit upgrades because AWS controls the managed server capability set.
 
 ## 8. Intentionally not enabled
 
