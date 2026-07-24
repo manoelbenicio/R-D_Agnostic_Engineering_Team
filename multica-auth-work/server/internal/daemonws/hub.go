@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -89,10 +91,25 @@ type client struct {
 	identity ClientIdentity
 	runtimes map[string]struct{}
 
+	// sessionID identifies this WS connection (the delivery-hop "WS session").
+	// It is a process-local, content-free identifier generated at connect.
+	sessionID string
+
 	dedupMu  sync.Mutex
 	seenIDs  map[string]struct{}
 	seenList []string
 }
+
+// wsSessionSeq and wsDeliverySeq mint content-free, safe-charset identifiers for
+// the WS delivery observability hop (OBS-8). Session ids are per-connection;
+// delivery ids are unique per delivery attempt.
+var (
+	wsSessionSeq  atomic.Uint64
+	wsDeliverySeq atomic.Uint64
+)
+
+func nextWSSessionID() string  { return "wssess-" + strconv.FormatUint(wsSessionSeq.Add(1), 10) }
+func nextWSDeliveryID() string { return "wsdel-" + strconv.FormatUint(wsDeliverySeq.Add(1), 10) }
 
 const eventDedupCapacity = 128
 
@@ -149,6 +166,9 @@ type Hub struct {
 
 	kindMu       sync.RWMutex
 	kindRecorder MessageKindRecorder
+
+	delivMu       sync.RWMutex
+	delivRecorder *DeliveryRecorder
 }
 
 func NewHub() *Hub {
@@ -208,6 +228,49 @@ func (h *Hub) messageKindRecorder() MessageKindRecorder {
 	return h.kindRecorder
 }
 
+// SetDeliveryRecorder installs an optional metadata-only DeliveryRecorder used
+// to emit the OBS-8 WS-delivery hop span at real delivered/dropped/backpressure
+// outcomes. A nil recorder disables emission (safe no-op); delivery behavior is
+// unchanged either way.
+func (h *Hub) SetDeliveryRecorder(rec *DeliveryRecorder) {
+	if h == nil {
+		return
+	}
+	h.delivMu.Lock()
+	h.delivRecorder = rec
+	h.delivMu.Unlock()
+}
+
+func (h *Hub) deliveryRecorder() *DeliveryRecorder {
+	if h == nil {
+		return nil
+	}
+	h.delivMu.RLock()
+	defer h.delivMu.RUnlock()
+	return h.delivRecorder
+}
+
+// emitDelivery emits one metadata-only HopDelivery span for a single WS frame
+// outcome. It carries ONLY the WS session id, a per-attempt delivery id, the
+// outcome/reason classification and bounded counters — never the frame, its
+// payload, or any user content. Empty session ids and a nil recorder are safe
+// no-ops. Emission is best-effort: a validation failure is dropped, never
+// retried (the correlation contract fails closed).
+func (h *Hub) emitDelivery(sessionID, outcome, reason string, dropCount, backpressureCount int64) {
+	rec := h.deliveryRecorder()
+	if rec == nil || sessionID == "" {
+		return
+	}
+	_ = rec.EmitDelivery(DeliveryResult{
+		SessionID:         sessionID,
+		DeliveryID:        nextWSDeliveryID(),
+		Outcome:           outcome,
+		ReasonCode:        reason,
+		DropCount:         dropCount,
+		BackpressureCount: backpressureCount,
+	})
+}
+
 func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request, identity ClientIdentity) {
 	if len(identity.RuntimeIDs) == 0 {
 		http.Error(w, `{"error":"runtime_ids required"}`, http.StatusBadRequest)
@@ -233,11 +296,12 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request, identity C
 	}
 
 	c := &client{
-		hub:      h,
-		conn:     conn,
-		send:     make(chan []byte, 16),
-		identity: identity,
-		runtimes: runtimes,
+		hub:       h,
+		conn:      conn,
+		send:      make(chan []byte, 16),
+		identity:  identity,
+		runtimes:  runtimes,
+		sessionID: nextWSSessionID(),
 	}
 	h.register(c)
 
@@ -331,6 +395,7 @@ func (h *Hub) notifyFrame(runtimeID string, data []byte, eventID string) (delive
 	h.mu.RLock()
 	clients := h.byRuntime[runtimeID]
 	slow := make([]*client, 0)
+	deliveredSessions := make([]string, 0)
 	for c := range clients {
 		if !c.markSeen(eventID) {
 			deduped = true
@@ -339,13 +404,18 @@ func (h *Hub) notifyFrame(runtimeID string, data []byte, eventID string) (delive
 		select {
 		case c.send <- data:
 			delivered = true
+			deliveredSessions = append(deliveredSessions, c.sessionID)
 		default:
 			slow = append(slow, c)
 		}
 	}
 	h.mu.RUnlock()
 
+	for _, sessionID := range deliveredSessions {
+		h.emitDelivery(sessionID, "delivered", "", 0, 0)
+	}
 	for _, c := range slow {
+		h.emitDelivery(c.sessionID, "dropped", "slow_consumer", 1, 1)
 		h.unregister(c)
 		c.conn.Close()
 	}
@@ -359,6 +429,7 @@ func (h *Hub) notifyWorkspaceFrame(workspaceID string, data []byte, eventID stri
 	h.mu.RLock()
 	clients := h.byWorkspace[workspaceID]
 	slow := make([]*client, 0)
+	deliveredSessions := make([]string, 0)
 	for c := range clients {
 		if !c.markSeen(eventID) {
 			deduped = true
@@ -367,13 +438,18 @@ func (h *Hub) notifyWorkspaceFrame(workspaceID string, data []byte, eventID stri
 		select {
 		case c.send <- data:
 			delivered = true
+			deliveredSessions = append(deliveredSessions, c.sessionID)
 		default:
 			slow = append(slow, c)
 		}
 	}
 	h.mu.RUnlock()
 
+	for _, sessionID := range deliveredSessions {
+		h.emitDelivery(sessionID, "delivered", "", 0, 0)
+	}
 	for _, c := range slow {
+		h.emitDelivery(c.sessionID, "dropped", "slow_consumer", 1, 1)
 		h.unregister(c)
 		c.conn.Close()
 	}
@@ -611,6 +687,9 @@ func (c *client) handleHeartbeatFrame(raw json.RawMessage) {
 		slog.Debug("daemon websocket heartbeat ack dropped: send buffer full",
 			"daemon_id", c.identity.DaemonID,
 			"runtime_id", payload.RuntimeID)
+		// The connection survives here (unlike notifyFrame eviction), so this
+		// is a pure backpressure outcome for the delivery hop.
+		c.hub.emitDelivery(c.sessionID, "backpressure", "send_buffer_full", 0, 1)
 	}
 }
 

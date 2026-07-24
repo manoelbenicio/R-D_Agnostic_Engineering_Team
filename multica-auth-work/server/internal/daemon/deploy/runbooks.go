@@ -97,7 +97,7 @@ func DefaultOperationsCatalog() OperationsCatalog {
 				Verification:  []string{"schema migration reconciles", "readiness and selected model capability pass", "error/latency/security triggers remain within approved bounds"},
 				Rollback:      []string{"invoke RB-ROLLBACK on any mandatory trigger"},
 				Evidence:      []string{"old/new digest", "config revision", "gate results", "cohort timeline"},
-				Prohibited:    []string{"use a mutable tag as release identity", "enable tier 50/100", "remove Prodex during this phase"},
+				Prohibited:    []string{"use a mutable tag as release identity", "enable tier 50/100", "change router ownership during this phase"},
 			},
 			{
 				ID: RunbookRollback, Title: "Safe release/config rollback", OwnerRole: "Incident commander",
@@ -106,7 +106,7 @@ func DefaultOperationsCatalog() OperationsCatalog {
 				Verification:  []string{"no dual router owner", "no direct-provider credential path", "counters and terminal results reconcile"},
 				Rollback:      []string{"if the prior release is not ready, keep admissions closed and escalate; do not reactivate legacy routing"},
 				Evidence:      []string{"trigger", "decision time", "selected revision", "recovery duration", "affected task counts"},
-				Prohibited:    []string{"restore provider credentials", "start Prodex/L2", "silently replay partial output or tool actions"},
+				Prohibited:    []string{"restore provider credentials", "start any alternate router", "silently replay partial output or tool actions"},
 			},
 			{
 				ID: RunbookIncident, Title: "Incident classification and containment", OwnerRole: "Incident commander",
@@ -129,7 +129,7 @@ func DefaultOperationsCatalog() OperationsCatalog {
 		},
 		Incidents: []IncidentClass{
 			{"SEC-AUTH-BOUNDARY", SeverityZero, "credential exposure, authentication bypass, or management/inference authorization crossover", "revoke or isolate affected access and hold admissions", []string{"Security", "OmniRoute operator", "Agent Brain integrator"}},
-			{"ROUTER-DUAL-OWNER", SeverityZero, "provider-direct, Prodex, or legacy router participates in a gateway-required request", "stop affected admissions and apply gateway kill switch", []string{"Agent Brain integrator", "Security", "Product owner"}},
+			{"ROUTER-DUAL-OWNER", SeverityZero, "provider-direct or any alternate router participates in a gateway-required request", "stop affected admissions and apply gateway kill switch", []string{"Agent Brain integrator", "Security", "Product owner"}},
 			{"PROTOCOL-COMMIT", SeverityOne, "message/tool/continuation corruption or replay after commit", "disable exact route/protocol cohort", []string{"OmniRoute architect", "Agent Brain integrator"}},
 			{"STATE-RECOVERY", SeverityOne, "state corruption, failed restore, or unsafe rotation cursor/affinity", "hold admissions and select last accepted state/release", []string{"OmniRoute operator", "Incident commander"}},
 			{"AUTH-REFRESH", SeverityOne, "systemic refresh, 401, or 403 failure", "disable affected route/provider and preserve scoped evidence", []string{"OmniRoute operator", "Security"}},

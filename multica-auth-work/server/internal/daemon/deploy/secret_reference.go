@@ -80,7 +80,7 @@ func DefaultSecretReferenceContract() SecretReferenceContract {
 		Provisioning:      "authorized operator atomically installs an externally derived value; repository, image, command line, screenshots, and logs contain only the reference",
 		Rotation:          "stage a restricted sibling reference target, validate metadata, atomically rename, then perform a controlled reload or restart",
 		LoggingEvidence:   "record reference class, metadata result, generation, timestamp, and safe outcome code only; never record value, authorization data, fingerprint, or hash",
-		RevocationFailure: "make gateway readiness false and fail closed for new inference; never restore provider-native, Prodex, or legacy router fallback",
+		RevocationFailure: "make gateway readiness false and fail closed for new inference; never restore provider-native or alternate-router fallback",
 		Backup:            "exclude plaintext from ordinary repository and configuration backups; use the approved audited secret escrow and restore process",
 	}
 }

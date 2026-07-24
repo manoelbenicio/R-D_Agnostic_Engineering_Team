@@ -16,7 +16,6 @@ const (
 	EnvGatewaySecretFile       = "AGENT_BRAIN_GATEWAY_SECRET_FILE"
 	EnvGatewayReadiness        = "AGENT_BRAIN_GATEWAY_READINESS_POLICY"
 	EnvTaskCapacityTier        = "AGENT_BRAIN_TASK_CAPACITY_TIER"
-	EnvLegacyExecution         = "AGENT_BRAIN_LEGACY_EXECUTION_ENABLED"
 	ChildEnvOmniRouteAPIKey    = "AGENT_BRAIN_OMNIROUTE_API_KEY"
 	DefaultHostGatewayURL      = "http://127.0.0.1:20128"
 	DefaultContainerGatewayURL = "http://omniroute:20128"
@@ -182,10 +181,9 @@ func (c GatewayConfig) Validate() error {
 }
 
 type Config struct {
-	ControlURL      string
-	Gateway         GatewayConfig
-	CapacityTier    CapacityTier
-	LegacyExecution bool
+	ControlURL   string
+	Gateway      GatewayConfig
+	CapacityTier CapacityTier
 }
 
 func (c Config) Validate() error {
@@ -269,8 +267,5 @@ func FrozenConfigAliases() []ConfigAlias {
 	return []ConfigAlias{
 		{Neutral: EnvControlURL, Legacy: []string{"MULTICA_SERVER_URL"}, SemanticCompatibility: true},
 		{Neutral: EnvTaskCapacityTier, Legacy: []string{"MULTICA_DAEMON_MAX_CONCURRENT_TASKS"}, SemanticCompatibility: true},
-		{Neutral: EnvGatewayRequired, Legacy: []string{"MULTICA_PRODEX_REQUIRED"}, SemanticCompatibility: false},
-		{Neutral: EnvGatewayBaseURL, Legacy: []string{"MULTICA_L2_BASE_URL"}, SemanticCompatibility: false},
-		{Neutral: EnvGatewaySecretFile, Legacy: []string{"MULTICA_L2_BEARER_TOKEN"}, SemanticCompatibility: false},
 	}
 }

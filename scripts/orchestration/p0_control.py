@@ -82,6 +82,10 @@ def all_records() -> list[tuple[Path, dict[str, Any]]]:
     ensure_state()
     records: list[tuple[Path, dict[str, Any]]] = []
     for path in sorted(CHECKINS.glob("*.json")):
+        # Human-readable six-hour receipts share this directory but are not
+        # p0_control state records; only the tool-generated records are authoritative.
+        if path.name.startswith(("CHECKIN__", "CHECKOUT__")):
+            continue
         try:
             records.append((path, load_json(path)))
         except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -302,21 +306,28 @@ def monitor_once() -> tuple[dict[str, Any], int]:
         }
         active_summary.append(item)
 
+        control_status = rec.get("status")
         if live is None:
             findings.append({"severity": "RED", "kind": "PANE_MISSING", **item})
-        if age_seconds is None or age_seconds > 900:
+        if age_seconds is None:
+            findings.append({"severity": "RED", "kind": "HEARTBEAT_INVALID", **item})
+        elif control_status == "IN_PROGRESS" and age_seconds > 900:
             findings.append({"severity": "RED", "kind": "HEARTBEAT_STALE", **item})
-        if rec.get("status") == "IN_PROGRESS" and live_status != "working":
+        if control_status == "IN_PROGRESS" and live_status != "working":
             findings.append({"severity": "RED", "kind": "NOT_WORKING", **item})
-        if rec.get("status") == "BLOCKED":
-            findings.append(
-                {
-                    "severity": "AMBER",
-                    "kind": "BLOCKED",
-                    **item,
-                    "blocker": rec.get("blocker"),
-                }
-            )
+        if control_status == "BLOCKED":
+            blocker = rec.get("blocker")
+            if not isinstance(blocker, str) or not blocker.strip():
+                findings.append({"severity": "RED", "kind": "BLOCKER_MISSING", **item})
+            else:
+                findings.append(
+                    {
+                        "severity": "AMBER",
+                        "kind": "BLOCKED",
+                        **item,
+                        "blocker": blocker,
+                    }
+                )
 
     control = load_json(CONTROL) if CONTROL.exists() else {"assignments": []}
     for assignment in control.get("assignments", []):

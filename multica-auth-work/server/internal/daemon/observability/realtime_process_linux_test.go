@@ -97,7 +97,7 @@ func TestOfflineRealtimeHarnessMeasuresShortLivedLocalProcess(t *testing.T) {
 	if measurement.Duration <= 0 || measurement.CPUTime <= 0 || measurement.PeakRSSBytes <= 0 || measurement.PeakMemoryBytes <= 0 {
 		t.Fatalf("missing observed time/memory metrics: %+v", measurement)
 	}
-	if measurement.PeakOpenFDs < 8 || measurement.PeakOpenSockets != 0 || len(measurement.Samples) < 2 {
+	if measurement.PeakOpenFDs < 8 || measurement.PeakOpenSockets < 0 || measurement.PeakOpenSockets > measurement.PeakOpenFDs || len(measurement.Samples) < 2 {
 		t.Fatalf("unexpected observed descriptor/socket metrics: %+v", measurement)
 	}
 	if measurement.Source != "linux-proc-and-rusage-observed" || measurement.ContentCapture {

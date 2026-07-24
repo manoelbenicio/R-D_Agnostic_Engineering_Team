@@ -36,6 +36,68 @@ describe("ApiClient", () => {
     );
   });
 
+  it("createChatSession sends an explicit agent_id (direct-to-agent escape hatch)", async () => {
+    const session = {
+      id: "sess-1",
+      workspace_id: "ws-1",
+      agent_id: "agent-1",
+      creator_id: "user-1",
+      title: "T",
+      status: "active",
+      has_unread: false,
+      created_at: "2025-01-01T00:00:00Z",
+      updated_at: "2025-01-01T00:00:00Z",
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(session), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new ApiClient("https://api.example.test");
+
+    await expect(
+      client.createChatSession({ agent_id: "agent-1", title: "T" }),
+    ).resolves.toMatchObject({ id: "sess-1" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/chat/sessions",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ agent_id: "agent-1", title: "T" }),
+      }),
+    );
+  });
+
+  it("createChatSession omits agent_id for an untargeted chat (routes to default TL)", async () => {
+    const session = {
+      id: "sess-2",
+      workspace_id: "ws-1",
+      agent_id: "tl-agent",
+      creator_id: "user-1",
+      title: "Untargeted",
+      status: "active",
+      has_unread: false,
+      created_at: "2025-01-01T00:00:00Z",
+      updated_at: "2025-01-01T00:00:00Z",
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(session), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new ApiClient("https://api.example.test");
+
+    await expect(
+      client.createChatSession({ title: "Untargeted" }),
+    ).resolves.toMatchObject({ id: "sess-2" });
+    const body = fetchMock.mock.calls[0]![1]!.body as string;
+    expect(body).toBe(JSON.stringify({ title: "Untargeted" }));
+    expect(body).not.toContain("agent_id");
+  });
+
   it("rejects a malformed successful password login response", async () => {
     vi.stubGlobal(
       "fetch",

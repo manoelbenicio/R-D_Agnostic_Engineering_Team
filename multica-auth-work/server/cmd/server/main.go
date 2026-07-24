@@ -333,6 +333,18 @@ func main() {
 	taskSvc := service.NewTaskService(queries, pool, hub, bus, daemonWakeup)
 	taskSvc.Analytics = analyticsClient
 	taskSvc.Metrics = businessMetrics
+	// Install the SERVER e2e recorder on every server-side hop seam via the
+	// testable helper: middleware ingress (hop 1), BOTH TaskService.Obs instances
+	// — the HTTP path (h.TaskService) AND the background sweeper (taskSvc) so
+	// accepted HTTP-task and sweeper persistence are both observed (hops 2/6) —
+	// and the realtime Hub delivery recorder (hop 7). Dedicated 0600 JSONL export
+	// file, fail-closed; closed on every exit path (defer + explicit pre-os.Exit).
+	serverObs, spanErr := installServerObservability(hub, taskSvc, h.TaskService)
+	if spanErr != nil {
+		slog.Error("server e2e span recorder init failed (fail-closed)", "error_class", "export_init")
+		os.Exit(1)
+	}
+	defer serverObs.closeFn()
 	autopilotSvc := service.NewAutopilotService(queries, pool, bus, taskSvc)
 	registerAutopilotListeners(bus, autopilotSvc)
 
@@ -398,6 +410,7 @@ func main() {
 		slog.Info("server starting", "port", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
+			serverObs.closeFn()
 			os.Exit(1)
 		}
 	}()
@@ -417,6 +430,7 @@ func main() {
 	if err := srv.Shutdown(apiShutdownCtx); err != nil {
 		apiShutdownCancel()
 		slog.Error("server forced to shutdown", "error", err)
+		serverObs.closeFn()
 		os.Exit(1)
 	}
 	apiShutdownCancel()

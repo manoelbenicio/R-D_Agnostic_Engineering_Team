@@ -63,21 +63,14 @@ func ParseRouteModel(raw string) (RouteModel, error) {
 // account selection, retry, and fallback decisions for a request.
 type RouterOwner string
 
-const (
-	RouterOwnerOmniRoute       RouterOwner = "omniroute"
-	RouterOwnerLegacyRustL2    RouterOwner = "rust_l2"
-	RouterOwnerLegacyGo        RouterOwner = "legacy_go"
-	RouterOwnerLegacyNativeCLI RouterOwner = "native_cli"
-)
+const RouterOwnerOmniRoute RouterOwner = "omniroute"
 
 func ParseRouterOwner(raw string) (RouterOwner, error) {
 	owner := RouterOwner(strings.ToLower(strings.TrimSpace(raw)))
-	switch owner {
-	case RouterOwnerOmniRoute, RouterOwnerLegacyRustL2, RouterOwnerLegacyGo, RouterOwnerLegacyNativeCLI:
-		return owner, nil
-	default:
-		return "", fmt.Errorf("unsupported router owner %q", raw)
+	if owner != RouterOwnerOmniRoute {
+		return "", fmt.Errorf("unsupported router owner %q: OmniRoute is required", raw)
 	}
+	return owner, nil
 }
 
 // ProtocolFamily is the gateway protocol spoken by a CLI adapter.

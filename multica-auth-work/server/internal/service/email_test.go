@@ -2,8 +2,8 @@ package service
 
 import (
 	"bufio"
-	"encoding/base64"
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -685,6 +685,11 @@ func TestSendVerificationCode_DevModeRedactsCode(t *testing.T) {
 }
 
 func TestSendInvitationEmail_DevModeRedactsURL(t *testing.T) {
+	// Hermetic: pin the frontend origin so the invite URL is deterministic and
+	// independent of the runner's environment. (The URL is redacted from logs
+	// regardless, but this removes the only ambient-env read in the DEV path.)
+	t.Setenv("FRONTEND_ORIGIN", "https://app.example.test")
+
 	s := &EmailService{} // no client, no smtpHost -> DEV mode
 
 	var buf bytes.Buffer

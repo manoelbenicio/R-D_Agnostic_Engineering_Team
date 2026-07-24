@@ -28,7 +28,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      # Host-side daemon needs this DB for credential assignment/rotation.
+      # Persistent product/control-plane data for workspaces, projects, squads, issues, tasks, and sessions.
       # Loopback-only keeps PostgreSQL off LAN/public interfaces.
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     restart: unless-stopped

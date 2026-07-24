@@ -559,7 +559,7 @@ func geminiStaticModels() []Model {
 // the runtime's actual current model take precedence.
 func clineStaticModels() []Model {
 	return []Model{
-		{ID: "cline-pass/glm-5.2", Label: "GLM-5.2", Provider: "cline-pass"},
+		{ID: "cp/cline-pass/glm-5.2", Label: "GLM-5.2", Provider: "cline-pass"},
 		{ID: "cline-pass/kimi-k2.7-code", Label: "Kimi K2.7 Code", Provider: "cline-pass"},
 	}
 }

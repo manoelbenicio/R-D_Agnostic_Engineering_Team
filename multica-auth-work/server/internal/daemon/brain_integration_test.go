@@ -119,7 +119,6 @@ func TestAgentBrainSyntheticChild(t *testing.T) {
 	}
 	for _, forbidden := range []string{
 		"OPENAI_API_KEY", "OPENAI_BASE_URL", "NVIDIA_API_KEY", "NIM_BASE_URL", "CODEX_HOME",
-		"MULTICA_PRODEX_ENABLED", "MULTICA_L2_ENABLED",
 	} {
 		if _, present := os.LookupEnv(forbidden); present {
 			os.Exit(41)
@@ -152,7 +151,7 @@ func TestAgentBrainRejectsDualRouterBeforeGatewayAccess(t *testing.T) {
 		t.Fatalf("newAgentBrainRuntime: %v", err)
 	}
 	task := syntheticGatewayTask()
-	task.RuntimeRouterOwner = string(brain.RouterOwnerLegacyRustL2)
+	task.RuntimeRouterOwner = "alternate_router"
 	if _, err := runtime.admitTask(context.Background(), task, "claude", string(runtime.config.RouteModel)); err == nil {
 		t.Fatal("dual router task was admitted")
 	}
@@ -239,6 +238,10 @@ func TestAgentBrainUsesInstalledOmniRouteHealthContract(t *testing.T) {
 }
 
 func TestAgentBrainDegradedPingFailsClosedBeforeAuthenticatedReadiness(t *testing.T) {
+	// Bounded resilient admission may retry a transient 5xx liveness a few
+	// times; keep the wait short so the test stays fast while still exercising
+	// the fail-closed path.
+	t.Setenv("AGENT_BRAIN_READINESS_ADMISSION_WAIT_MS", "150")
 	var paths []string
 	gatewayServer := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		paths = append(paths, request.URL.Path)
@@ -269,8 +272,16 @@ func TestAgentBrainDegradedPingFailsClosedBeforeAuthenticatedReadiness(t *testin
 	if credential.calls != 0 {
 		t.Fatal("degraded liveness reached the authenticated readiness credential source")
 	}
-	if len(paths) != 1 || paths[0] != "/api/health/ping" {
-		t.Fatal("degraded liveness did not fail closed at the public ping endpoint")
+	// Security invariant: degraded liveness must never advance past the public
+	// ping endpoint to authenticated readiness/models (retries of the ping
+	// itself are acceptable under bounded resilient admission).
+	if len(paths) == 0 {
+		t.Fatal("liveness ping was never attempted")
+	}
+	for _, p := range paths {
+		if p != "/api/health/ping" {
+			t.Fatalf("degraded liveness advanced past ping to %q", p)
+		}
 	}
 	if snapshot := runtime.snapshot(); snapshot.Readiness == brain.GatewayReadinessReady {
 		t.Fatal("degraded liveness reported ready")
@@ -426,91 +437,6 @@ func TestAgentBrainTier20SchemaRemainsFailClosedAtDevelopmentLimit(t *testing.T)
 	config.DevelopmentEnabled = false
 	if got := effectiveTaskAdmissionLimit(config, 20); got != 20 {
 		t.Fatalf("disabled slice changed legacy admission limit: got %d", got)
-	}
-}
-
-func TestAgentBrainDevelopmentSkipsLegacyStartup(t *testing.T) {
-	config := Config{
-		ServerBaseURL: "ws://127.0.0.1:1/ws", WorkspacesRoot: t.TempDir(),
-		AgentBrain:          syntheticAgentBrainConfig(t, "http://127.0.0.1:20128"),
-		RotationDatabaseURL: "synthetic-invalid-database-reference",
-		Prodex:              ProdexConfig{Enabled: true, Required: true},
-		L2Runtime:           L2RuntimeConfig{Enabled: true},
-	}
-	daemon := NewWithAgentBrainDependencies(config, slog.New(slog.NewTextHandler(io.Discard, nil)), AgentBrainDependencies{})
-	if daemon.rotationStore != nil || daemon.rotationService != nil || daemon.l2Client != nil || daemon.l2Sidecar != nil {
-		t.Fatal("legacy rotation or Prodex/L2 startup initialized in Agent Brain development mode")
-	}
-}
-
-func TestAgentBrainOwnerSuppressesLegacyGoRotation(t *testing.T) {
-	daemon := &Daemon{}
-	task := Task{ID: "synthetic-task", RuntimeRouterOwner: string(brain.RouterOwnerOmniRoute)}
-	if daemon.legacyGoRotationAllowed(task, nil, "synthetic") {
-		t.Fatal("legacy Go rotation remained enabled for an OmniRoute-owned task")
-	}
-}
-
-func TestAgentBrainRejectsUnsafeLegacyGatewayAlias(t *testing.T) {
-	t.Setenv("MULTICA_L2_BASE_URL", "http://legacy-router.invalid")
-	enabled := true
-	required := true
-	_, err := loadAgentBrainIntegrationConfig(Overrides{
-		AgentBrainDevelopment:  &enabled,
-		AgentBrainGateway:      &required,
-		AgentBrainControlURL:   "ws://synthetic-control.invalid/ws",
-		AgentBrainSecretFile:   "/synthetic/omniroute/reference",
-		AgentBrainCLIKind:      string(brain.CLIClaudeCode),
-		AgentBrainRouteModel:   "agy/claude-opus-4-6-thinking",
-		AgentBrainCapacityTier: 20,
-	}, "ws://legacy-control.invalid/ws")
-	if err == nil {
-		t.Fatal("semantically unsafe legacy gateway alias was accepted")
-	}
-}
-
-func TestAgentBrainNeutralGatewayAliasWinsAndIsMeasured(t *testing.T) {
-	t.Setenv("MULTICA_L2_BASE_URL", "http://legacy-router.invalid")
-	enabled := true
-	required := true
-	config, err := loadAgentBrainIntegrationConfig(Overrides{
-		AgentBrainDevelopment:  &enabled,
-		AgentBrainGateway:      &required,
-		AgentBrainControlURL:   "ws://synthetic-control.invalid/ws",
-		AgentBrainGatewayURL:   "http://127.0.0.1:20128",
-		AgentBrainSecretFile:   "/synthetic/omniroute/reference",
-		AgentBrainCLIKind:      string(brain.CLIClaudeCode),
-		AgentBrainRouteModel:   "agy/claude-opus-4-6-thinking",
-		AgentBrainCapacityTier: 20,
-	}, "ws://legacy-control.invalid/ws")
-	if err != nil {
-		t.Fatalf("loadAgentBrainIntegrationConfig: %v", err)
-	}
-	if config.Neutral.Gateway.BaseURL != "http://127.0.0.1:20128" || len(config.LegacyUses) == 0 {
-		t.Fatalf("neutral precedence or measurable legacy use missing")
-	}
-}
-
-func TestAgentBrainLegacyMigrationFlagIsExplicitAndMutuallyExclusive(t *testing.T) {
-	legacy := AgentBrainIntegrationConfig{
-		DevelopmentEnabled: true,
-		Neutral: brain.Config{
-			ControlURL:   "ws://synthetic-control.invalid/ws",
-			Gateway:      brain.GatewayConfig{BaseURL: brain.DefaultHostGatewayURL, Readiness: brain.StrictReadinessPolicy()},
-			CapacityTier: brain.CapacityTier20, LegacyExecution: true,
-		},
-	}
-	if err := legacy.Validate(); err != nil {
-		t.Fatalf("explicit legacy migration mode rejected: %v", err)
-	}
-	legacy.Neutral.Gateway.Required = true
-	secretRef, err := brain.NewSecretFileRef("/synthetic/omniroute/reference")
-	if err != nil {
-		t.Fatalf("NewSecretFileRef: %v", err)
-	}
-	legacy.Neutral.Gateway.SecretFile = secretRef
-	if err := legacy.Validate(); err == nil {
-		t.Fatal("legacy and OmniRoute router modes were enabled together")
 	}
 }
 
@@ -870,4 +796,152 @@ func terminalDiagnosticCount(outcomes map[string]int) int {
 		total += count
 	}
 	return total
+}
+
+// --- D6: buildLaunch OpenAI-compatible (Cline) credentialless launch ---
+// Cline (CLIOpenAICompatible) rides the shared OpenAI Chat Completions gateway
+// contract. buildLaunch must materialize the non-secret providers.json carrier
+// in a controlled in-root CLINE_DATA_DIR and inject the stable OmniRoute secret
+// only through the environment. The existing Claude/Codex cases are untouched.
+
+func syntheticClineAgentBrainRuntime(t *testing.T) *agentBrainRuntime {
+	t.Helper()
+	config := syntheticAgentBrainConfig(t, "http://127.0.0.1:20128")
+	config.CLIKind = brain.CLIOpenAICompatible
+	config.RouteModel = brain.RouteModel("cp/cline-pass/glm-5.2")
+	runtime, err := newAgentBrainRuntime(config, AgentBrainDependencies{
+		CredentialSource: syntheticCredentialSource{},
+		InheritedEnvironment: func() []string {
+			return []string{
+				"PATH=" + os.Getenv("PATH"),
+				"HOME=/synthetic/provider-home",
+				"OPENAI_API_KEY=synthetic-provider-value",
+				"OPENAI_BASE_URL=https://direct-provider.invalid/v1",
+				"NVIDIA_API_KEY=synthetic-provider-value",
+			}
+		},
+	}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatalf("newAgentBrainRuntime (cline): %v", err)
+	}
+	return runtime
+}
+
+func syntheticClinePlan(route string) *agentBrainTaskPlan {
+	return &agentBrainTaskPlan{Task: brain.Task{Request: brain.TaskRequest{
+		CLIKind:     brain.CLIOpenAICompatible,
+		RouteModel:  brain.RouteModel(route),
+		RouterOwner: brain.RouterOwnerOmniRoute,
+		Correlation: brain.Correlation{TaskID: "task-cline", SessionID: "session-cline", RequestID: "request-cline"},
+	}}}
+}
+
+func TestBuildLaunchOpenAICompatibleWiresClineDataDirAndSecret(t *testing.T) {
+	runtime := syntheticClineAgentBrainRuntime(t)
+	plan := syntheticClinePlan("cp/cline-pass/glm-5.2")
+
+	envRoot := t.TempDir()
+	workDir := filepath.Join(envRoot, "workdir")
+	if err := os.MkdirAll(workDir, 0o700); err != nil {
+		t.Fatalf("create workdir: %v", err)
+	}
+	prepared := &execenv.Environment{RootDir: envRoot, WorkDir: workDir}
+
+	launch, err := runtime.buildLaunch(context.Background(), plan, prepared, map[string]string{
+		"G3_SYNTHETIC_CHILD_CLINE": "1",
+	}, map[string]string{"SAFE_CUSTOM_SETTING": "synthetic"})
+	if err != nil {
+		t.Fatalf("buildLaunch (cline): %v", err)
+	}
+
+	keys := launch.Environment.Keys()
+	for _, required := range []string{"CLINE_DATA_DIR", "CLINE_OMNIROUTE_API_KEY", "MULTICA_SESSION_ID", "MULTICA_REQUEST_ID", "MULTICA_ROUTER_OWNER"} {
+		if !containsString(keys, required) {
+			t.Fatalf("required child key missing: %s", required)
+		}
+	}
+	for _, forbidden := range []string{"OPENAI_API_KEY", "OPENAI_BASE_URL", "NVIDIA_API_KEY", "CODEX_HOME", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL"} {
+		if containsString(keys, forbidden) {
+			t.Fatalf("forbidden child key present: %s", forbidden)
+		}
+	}
+
+	// The controlled Cline data dir is under the execution root; CLINE_DATA_DIR
+	// is pinned to it.
+	clineDataDir := filepath.Join(envRoot, "cline-data")
+	if !containsString(launch.Environment.Exec(), "CLINE_DATA_DIR="+clineDataDir) {
+		t.Fatalf("CLINE_DATA_DIR not pinned to the controlled in-root dir %q", clineDataDir)
+	}
+
+	// The non-secret providers.json carrier is materialized with the reference
+	// sentinel and never the resolved secret value.
+	carrier := filepath.Join(clineDataDir, "settings", "providers.json")
+	raw, err := os.ReadFile(carrier)
+	if err != nil {
+		t.Fatalf("read cline carrier: %v", err)
+	}
+	if !strings.Contains(string(raw), runtimeenv.ClineSecretReferenceSentinel) {
+		t.Fatal("cline carrier missing the reference sentinel")
+	}
+	if strings.Contains(string(raw), syntheticReferenceSecret) {
+		t.Fatal("cline carrier embedded the stable OmniRoute secret value")
+	}
+
+	// The child process actually receives the controlled environment.
+	command := exec.Command(os.Args[0], "-test.run=TestAgentBrainSyntheticChildCline")
+	command.Env = launch.Environment.Exec()
+	command.Stdout = io.Discard
+	command.Stderr = io.Discard
+	if err := command.Run(); err != nil {
+		t.Fatalf("synthetic cline isolation child: %v", err)
+	}
+}
+
+func TestAgentBrainSyntheticChildCline(t *testing.T) {
+	if os.Getenv("G3_SYNTHETIC_CHILD_CLINE") != "1" {
+		return
+	}
+	for _, forbidden := range []string{
+		"OPENAI_API_KEY", "OPENAI_BASE_URL", "NVIDIA_API_KEY", "NIM_BASE_URL",
+		"CODEX_HOME", "ANTHROPIC_AUTH_TOKEN",
+	} {
+		if _, present := os.LookupEnv(forbidden); present {
+			os.Exit(51)
+		}
+	}
+	dataDir, present := os.LookupEnv("CLINE_DATA_DIR")
+	if !present || dataDir == "" {
+		os.Exit(52)
+	}
+	if _, present := os.LookupEnv("CLINE_OMNIROUTE_API_KEY"); !present {
+		os.Exit(53)
+	}
+	if _, err := os.Stat(filepath.Join(dataDir, "settings", "providers.json")); err != nil {
+		os.Exit(54)
+	}
+	if os.Getenv("HOME") == "" {
+		os.Exit(55)
+	}
+	os.Exit(0)
+}
+
+func TestBuildLaunchOpenAICompatibleRejectsNVIDIAOwnedRoute(t *testing.T) {
+	runtime := syntheticClineAgentBrainRuntime(t)
+	// NVIDIA is an OmniRoute-owned fallback the Brain must never select for a
+	// Cline task; the launch stage must fail closed and write no carrier.
+	plan := syntheticClinePlan("nvidia/z-ai/glm-5.2")
+
+	envRoot := t.TempDir()
+	workDir := filepath.Join(envRoot, "workdir")
+	if err := os.MkdirAll(workDir, 0o700); err != nil {
+		t.Fatalf("create workdir: %v", err)
+	}
+	prepared := &execenv.Environment{RootDir: envRoot, WorkDir: workDir}
+
+	if _, err := runtime.buildLaunch(context.Background(), plan, prepared, map[string]string{}, nil); err == nil {
+		t.Fatal("buildLaunch admitted an OmniRoute-owned NVIDIA route for a Cline task")
+	}
+	if _, statErr := os.Stat(filepath.Join(envRoot, "cline-data", "settings", "providers.json")); !os.IsNotExist(statErr) {
+		t.Fatal("cline carrier written for a rejected NVIDIA route")
+	}
 }

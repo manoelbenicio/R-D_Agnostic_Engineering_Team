@@ -169,7 +169,7 @@ func TestClineStaticModelsExposeRequestedClinePassModels(t *testing.T) {
 	for _, model := range models {
 		ids[model.ID] = model
 	}
-	for _, want := range []string{"cline-pass/kimi-k2.7-code", "cline-pass/glm-5.2"} {
+	for _, want := range []string{"cline-pass/kimi-k2.7-code", "cp/cline-pass/glm-5.2"} {
 		if _, ok := ids[want]; !ok {
 			t.Errorf("missing requested ClinePass model %q in %+v", want, models)
 		}

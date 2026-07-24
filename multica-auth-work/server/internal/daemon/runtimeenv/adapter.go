@@ -46,9 +46,10 @@ func (e *AdapterGateError) Error() string {
 
 func (e *AdapterGateError) Unwrap() error { return ErrAdapterFailClosed }
 
-// CredentiallessAdapterContract implements Claude and Codex contracts and
-// returns explicit fail-closed stubs for the credential-bearing adapters whose
-// native gateway contracts are not accepted by the G1 model matrix.
+// CredentiallessAdapterContract implements the Claude, Codex and accepted
+// OpenAI-compatible (Cline) contracts and returns explicit fail-closed stubs
+// for the remaining credential-bearing native adapters (Kimi/NIM/Antigravity)
+// whose native gateway contracts are not accepted by the G1 model matrix.
 func CredentiallessAdapterContract(cli brain.CLIKind) (AdapterContract, error) {
 	switch cli {
 	case brain.CLIClaudeCode:
@@ -56,8 +57,11 @@ func CredentiallessAdapterContract(cli brain.CLIKind) (AdapterContract, error) {
 	case brain.CLICodex:
 		return AdapterContract{CLI: cli, State: AdapterReady, Protocol: brain.ProtocolOpenAIResponses}, nil
 	case brain.CLIOpenAICompatible:
-		contract := AdapterContract{CLI: cli, State: AdapterFailClosed, Gate: GateOpenAICompatibleUnaccepted}
-		return contract, &AdapterGateError{Gate: contract.Gate}
+		// Accepted OmniRoute OpenAI-compatible (Cline) route: the shared Cline
+		// frontend speaks OpenAI Chat Completions to the gateway. Credentials,
+		// rotation and fallback stay OmniRoute-owned; the Brain passes only
+		// CLI/model intent. Kimi/NIM/Antigravity remain fail-closed below.
+		return AdapterContract{CLI: cli, State: AdapterReady, Protocol: brain.ProtocolOpenAIChat}, nil
 	case brain.CLIKimi:
 		contract := AdapterContract{
 			CLI: cli, State: AdapterFailClosed, Gate: GateNativeKimiUnaccepted,

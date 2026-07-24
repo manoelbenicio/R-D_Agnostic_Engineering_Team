@@ -1,3 +1,5 @@
+> **Historical evidence — superseded.** This auxiliary document is not an active plan or runtime contract. The current owner-approved authority is `proposal.md`, `design.md`, `specs/**/spec.md`, and `tasks.md`, which require Main Brain → OmniRoute-only operation and fail-closed recovery. Any conflicting instruction below is preserved only as historical evidence and MUST NOT be executed.
+
 # Handover Zero-Context — Claude/GLM-5.2 Technical Lead
 
 > **SUPERSEDED 2026-07-18:** Claude was closed by the owner after G2. Current authority is

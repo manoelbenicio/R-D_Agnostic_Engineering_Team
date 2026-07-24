@@ -1,163 +1,45 @@
-## Active P0 Functional Scope — Owner directives 2026-07-21
+## 1. Single-router runtime removal
 
-> **Only `5.6–5.8` and `8.1–8.2` consume Main Brain P0 lanes.** They cover the remaining Cline/GLM, Cline/Kimi, Kiro/Opus48 and affected protocol/lifecycle integration. One post-integration live Kanban→terminal execution may close every overlapping `5.x`/`8.x` requirement it proves. Antigravity evidence is reused when build/config/provenance remain equivalent.
+- [x] 1.1 Delete dedicated alternate-router binaries, sidecars, runtime packages and legacy account-rotation package.
+- [x] 1.2 Delete dedicated daemon startup/facade/profile/session consumers and tests.
+- [x] 1.3 Delete dedicated smoke scripts, prompts, operational documents and obsolete OpenSpec changes.
+- [x] 1.4 Remove alternate startup, shutdown, credential-home selection, retry/rotation and task-time routing branches from `daemon.go`.
+- [x] 1.5 Remove alternate config structs, environment aliases and CLI migration flag.
 
-> **OmniRoute-exclusive ownership:** authentication, all credential lifecycle, token/window limits (including five-hour limits), account selection/rotation, expiry, refresh, revocation, quota, 401/403, 429/5xx circuits, retry, quarantine and provider/account fallback are owned, implemented and certified only by OmniRoute. Tasks `8.5–8.7` are external OmniRoute certification and MUST NOT create Multica/Agent Brain implementation, QA lanes or duplicate live tests.
+## 2. OmniRoute-only Main Brain contract
 
-> **Prodex Phase 3/HOLD:** Prodex recovery/parity remains future, default-OFF and outside P0. It is not a current fallback and receives no implementation or validation lane.
+- [x] 2.1 Restrict router identity to `omniroute` and reject non-gateway task contracts.
+- [x] 2.2 Make a missing Agent Brain/OmniRoute admission plan fail closed before CLI launch.
+- [x] 2.3 Preserve workspace/repository/worktree, context/skills, process lifecycle, watchdog, cancellation, stream, commit-ledger and terminal-result paths.
+- [x] 2.4 Keep controlled `runtimeenv`/`execenv` construction and provider-secret/direct-endpoint exclusion.
+- [x] 2.5 Remove direct provider credential discovery and provider-auth environment injection.
 
-> **Production integrity / no duplicate validation:** runtime/build artifacts must contain no QA-only routes, mock services, placeholder entities, synthetic success fallbacks, fake credentials or demo seed persistence. Preserve isolated tests and safety guardrails. Reuse equivalent evidence; rerun only changed, missing, stale or materially uncovered Main Brain behavior. No QA-A/QA-B, broad regression or second live acceptance.
+## 3. Recovery and health
 
-> **P0 operational control:** every authorized active assignment uses `.deploy-control/p0/PROTOCOL.md` for pre-edit file locks, 10-minute heartbeat, blocker escalation and evidence-bearing checkout. Opus48-Kiro performs bounded supervision and reports to the Principal; it does not create a second QA/review/live campaign. Before any Principal/Kiro product-code action, `FLEET_SATURATED` must be GREEN: all P0 tasks owned, every eligible worker assigned real disjoint work, working/blocked with check-in, and lane tools preflighted. Principal/Kiro remain management-only while worker capacity can receive the work. Unassigned eligible agents are a RED gate; synthetic busywork is forbidden.
+- [x] 3.1 Implement `NORMAL(omniroute)` and `DEGRADED(none)` recovery states only.
+- [x] 3.2 Require a session boundary for outage/restore and strict readiness for restore.
+- [x] 3.3 Add tests proving an outage never promotes an alternate router.
+- [x] 3.4 Remove alternate runtime and migration-mode health fields; report OmniRoute authority and Main Brain diagnostics.
 
-## 0. Governance and GSD Rebaseline
+## 4. Product and operations preservation
 
-- [x] 0.1 [Product owner] Approve the OpenSpec/GSD source hierarchy, G0–G8 roadmap, total ETA range and preservation of RPP/Prodex v2.1 as historical evidence.
-- [x] 0.2 [Product owner] Confirm Kiro/Principal as the `.planning/` author or explicitly change the current GSD authorship rule before any Codex agent writes GSD artifacts.
-- [x] 0.3 [Kiro/Principal or newly authorized planning owner] Create the Agent Brain v3 GSD `PROJECT`, `REQUIREMENTS`, `ROADMAP`, `STATE`, `DECISIONS`, `RISKS` and phase plans from the approved OpenSpec artifacts.
-- [x] 0.4 [Planning owner] Create bidirectional `TRACEABILITY`, `COMPONENT_REGISTER`, `INTERFACE_REGISTER`, `REMOVAL_REGISTER`, `FILE_OWNERSHIP` and `EVIDENCE_INDEX` documents.
-- [x] 0.5 [Planning owner] Assign a formal disposition to every active/historical OpenSpec change and block concurrent execution of superseded Prodex/router plans.
-- [x] 0.6 [Codex 1 + planning owner] Audit for orphan requirements, scenarios, components, interfaces, tasks, owners, evidence and removal decisions; close every orphan before Wave 0.
-- [x] 0.7 [Product owner] Approve the GSD v3 baseline and only then mark implementation authorization for Waves 0–3.
+- [x] 4.1 Preserve backend/web, projects, squads, Kanban issues/tasks, Postgres and terminal/session persistence.
+- [x] 4.2 Update README and self-host Compose comments for the Main Brain/OmniRoute topology.
+- [x] 4.3 Rewrite rollout and rollback runbooks to keep admission closed instead of activating a direct/alternate route.
+- [x] 4.4 Update typed deployment catalog wording and secret-reference failure policy.
 
-## 1. Architecture and Supplier Gate
+## 5. Verification
 
-- [x] 1.1 [Codex 1] Freeze the working `Agent Brain` terminology, cold/hot ownership boundary, `CLIKind`/`RouteModel`/`RouterOwner` contract, and compatibility-surface inventory.
-- [x] 1.2 [Codex 1] Record the existing dirty worktree and assign exclusive ownership for `daemon.go`, `config.go`, `health.go`, command entrypoints, `execenv`, CLI adapters, gateway modules, and deployment files.
-- [ ] 1.3 [Codex 4] Obtain a completed OmniRoute architecture checklist with version/image digest and evidence for every protocol, rotation, expiry, quota, 429, streaming, security, observability, and capacity item.
-- [ ] 1.4 [Codex 4] Obtain a completed Prodex feature-parity matrix, including SC01-SC10 Smart Context, reset/redeem, special crate surfaces, approved waivers, owners, restrictions, and dates.
-  - _Phase 3 HOLD per owner decision D-V3-16. Remains open; no implementation or dispatch until owner releases Phase 3._
-- [x] 1.5 [Codex 4] Complete the per-model route matrix for Claude, Codex/OpenAI, Kimi, GLM, NVIDIA and Antigravity with exact API format, account pool, tools, reasoning, context, rotation/affinity and fallback.
-- [x] 1.6 [Codex 1] Approve the initial supported model set, fallback chains, stable-key scope, runtime endpoint topology, capacity target, and cutover blockers.
+- [x] 5.1 Run `gofmt` on every modified Go file using an available pinned Go toolchain.
+- [x] 5.2 Run targeted tests for `internal/daemon/brain`, `internal/daemon/gateway`, `internal/daemon/runtimeenv`, `internal/daemon/execenv`, `internal/daemon/deploy` and `internal/daemon`.
+- [x] 5.3 Run a server-wide build/test check and resolve compile fallout from deleted symbols.
+- [x] 5.4 Run `openspec validate build-omniroute-agent-brain --strict`.
+- [x] 5.5 Run residual scans proving no active startup/config/health/recovery/fallback reference remains outside preserved historical evidence.
 
-## 2. Wave 0 — Contract and Merge Boundary Freeze
+## 6. Operational work still requiring external readiness/evidence
 
-- [x] 2.1 [Codex 1] Define neutral task/gateway/runtime interfaces and data types in new files without changing the active daemon path.
-- [x] 2.2 [Codex 1] Define neutral configuration names, legacy alias precedence, gateway-required mode, secret-file reference, readiness policy, and 20/50/100 task-tier schema.
-- [x] 2.3 [Codex 1] Define the compatibility facade for the current daemon API, task token, runtime router-owner value, environment variables, stored configuration, CLI command, and runtime brief.
-- [x] 2.4 [Codex 1] Publish the frozen interfaces and file ownership to Codex 2–4; require all shared-entrypoint changes to be integrated by Codex 1 only.
-
-## 3. Wave 1A — Neutral Brain Foundation (Codex 1)
-
-- [x] 3.1 Create the neutral coordinator/task-executor/runtime-registry package around existing lifecycle interfaces without moving provider credential logic.
-- [x] 3.2 Add neutral task fields for `CLIKind`, `RouteModel`, `RouterOwner`, task/session/request correlation and approved route policy.
-- [x] 3.3 Add compatibility translations from supported legacy task/config fields into the neutral contract and emit measurable legacy-use events.
-- [x] 3.4 Add gateway-required admission/readiness states and fail-closed task statuses without enabling the new execution path yet.
-- [x] 3.5 Preserve current workspace, repository/worktree, cancellation, watchdog, context/skills, stream batching, recovery and terminal-result behavior behind the neutral interfaces.
-
-## 4. Wave 1B — OmniRoute Gateway Package (Codex 2)
-
-- [x] 4.1 Create an OmniRoute client with redacted authentication, configurable host/container base URL, bounded timeouts, cancellation and request/session correlation.
-- [x] 4.2 Implement separate liveness/readiness checks and authenticated `/v1/models` retrieval with deterministic error classification.
-- [x] 4.3 Implement and cache the versioned model/capability registry with explicit protocol, tools, reasoning, streaming, context and structured-output validation.
-- [x] 4.4 Define trusted runtime profiles for Anthropic Messages, OpenAI Responses, OpenAI Chat and the documented Antigravity-compatible route.
-- [x] 4.5 Define route-policy types for strict independent-request round-robin, continuation affinity, retry deadline, same-model fallback, approved cross-model fallback, circuit behavior and Smart Context flags.
-- [x] 4.6 Parse safe OmniRoute telemetry headers/events for actual model/route, pseudonymous connection, retries, fallback, quota/circuit state and usage without content or secrets.
-- [x] 4.7 Add protocol fixtures/contracts for Anthropic Messages/SSE, Responses/SSE and Chat Completions/SSE using synthetic credentials and content only.
-
-## 5. Wave 1C — Credentialless Runtime and CLI Adapters (Codex 3)
-
-- [x] 5.1 Implement a minimal inherited-environment builder that removes provider keys, OAuth/cookie variables, direct-provider base URLs and unsafe gateway overrides.
-- [x] 5.2 Expand custom-environment validation to deny provider credentials and routing/auth variables in gateway-required mode, then apply trusted gateway configuration last.
-- [x] 5.3 Remove provider-auth copying from per-task homes while preserving sandbox, config, skills, session and workspace isolation.
-- [x] 5.4 Generate a controlled Codex custom-provider configuration for OmniRoute Responses API, stable-key environment lookup, HTTP/SSE transport and correlation headers without `auth.json`.
-- [x] 5.5 Implement Claude Code's trusted OmniRoute root URL/token environment and ensure internal Claude markers do not leak or override gateway policy.
-- [ ] 5.6 Implement and live-validate the Cline/OpenAI-compatible path for `Cline → GLM-5.2` through OmniRoute. Agent Brain passes only CLI/model intent; it MUST NOT implement or validate NVIDIA fallback, authentication, credentials, token limits, quota, or account/provider selection.
-- [ ] 5.7 Implement and live-validate `Cline → Kimi-K2.7` through the accepted OmniRoute OpenAI-compatible contract; remove obsolete direct-provider alternatives. Authentication, credentials, account state and fallback remain entirely OmniRoute-owned and are not a Brain acceptance target.
-- [ ] 5.8 Revalidate the already-operational Antigravity route against frozen provenance/hashes without redundant reimplementation, and deliver the Kiro/Opus48 AWS route through an existing accepted Anthropic-compatible frontend/`CLIKind` plus the exact registry-approved `RouteModel`; Kiro is a persona/model route, not a new credential owner or account-selection implementation.
-- [x] 5.9 Make model/thinking validation gateway-aware so approved OmniRoute IDs are accepted without provider-native catalog or credential lookup.
-- [x] 5.10 Add a pre-launch assertion that the child environment/config contains only the stable OmniRoute secret and approved local task data.
-
-## 6. Wave 1D — Deployment, Security, Observability and Capacity Assets (Codex 4)
-
-- [x] 6.1 Define a Linux permission-restricted OmniRoute service secret derived operationally from the existing host source without copying its value into the repository, image, logs or screenshots.
-- [x] 6.2 Add host/WSL and future container endpoint configuration, reachability prerequisites and service start/recreate instructions without hard-coding Docker DNS for the host daemon.
-- [x] 6.3 Define structured redacted events/metrics and correlation for admission, gateway readiness, selection, affinity, refresh, quota, 401/403, 429/circuit, retry/fallback, cancellation, usage and overload.
-- [x] 6.4 Define dashboards and alerts for no eligible accounts, auth refresh failure, 401/403/429/5xx spikes, circuit state, queue growth, resource pressure, latency and error SLOs.
-- [x] 6.5 Build a synthetic capacity/failure acceptance harness specification for 20/50/100 tasks, protocol mix, streaming, tools, prompt/output sizes, cancellation and account distribution.
-- [x] 6.6 Define backup/restore, account/route hot-change, key rotation, upgrade, rollback, incident classification and escalation runbooks.
-- [x] 6.7 Define staged feature flags, canary cohorts, rollback triggers and evidence locations for every protocol/provider/capacity gate.
-
-## 7. Wave 2 — Sole-Owner Core Integration (Codex 1)
-
-- [x] 7.1 Review and integrate the gateway, runtime/CLI and operations streams against the frozen contracts; reject hidden provider credentials or duplicate routing decisions.
-- [x] 7.2 Wire neutral/gateway configuration and aliases through the central daemon/config/command entrypoints as their sole editor.
-- [x] 7.3 Replace task-time credential-account resolution with `CLIKind` plus `RouteModel` and trusted gateway profile resolution in gateway-required mode.
-- [x] 7.4 Apply sanitized runtime environment and controlled per-CLI configuration after custom settings and before process launch.
-- [x] 7.5 Gate admission/launch on OmniRoute readiness, stable-key authentication and selected model/protocol capability.
-- [x] 7.6 Set `RouterOwner=omniroute` and emit common task/session/request correlation through launch, result, error and cancellation paths.
-- [x] 7.7 Disable Prodex/L2 startup, legacy Go rotation/retry, provider credential-home preparation and native provider-account selection for gateway-required tasks.
-- [x] 7.8 Keep legacy behavior isolated behind an explicit default-off migration flag only while legacy tasks drain; prevent any task from having two router owners.
-- [x] 7.9 Expose neutral health/readiness/config diagnostics with secrets and raw content redacted.
-- [x] 7.10 Produce a first runnable vertical slice using one approved Claude or Codex model route without enabling broad production admission.
-
-## 8. Wave 3 — Protocol, Security and Failure Acceptance
-
-- [ ] 8.1 [Main Brain routes] Verify model/capability compatibility and the minimum non-streaming/streaming behavior only for changed or unproven P0 routes. Do not test OmniRoute authentication or credential lifecycle.
-- [ ] 8.2 [Codex 3 + Codex 4] Verify Claude, Codex, Kimi, GLM/NVIDIA and Antigravity accepted paths with tools, reasoning, cancellation, usage and deterministic errors.
-  - G4 acceptance is synthetic/reference-only: Claude and Codex trusted-gateway paths passed; Kimi/GLM/NVIDIA/NIM/Agy remained deterministic fail-closed contracts. Native tasks 5.6–5.8 remain open.
-- [x] 8.3 [Codex 3] Verify child environments, task homes, process trees, logs and diagnostics contain no provider-native credentials, auth files or direct-provider endpoints.
-  - EV-G4-03 covers synthetic child environments, real temporary controlled homes, a two-level Linux helper-process tree and redacted diagnostics; it does not claim live daemon/CLI/provider isolation.
-- [x] 8.4 [Codex 2 + Codex 4] Demonstrate strict concurrent round-robin for independent requests and correct affinity for Responses continuation, prompt cache and tool turns.
-  - _Acceptance clarification (2026-07-21): OmniRoute-owned RR/affinity per D-V3-01/D-V3-06. Acceptance = black-box northbound evidence (pseudonymous OmniRoute telemetry proving rotation/affinity on live requests) + component-level evidence (gateway Selector algorithm tests as fail-closed safety net). Brain does not select accounts._
-  - _Evidence (2026-07-21): sanitized artifact /mnt/shared/handoffs/omniroute-8.4-affinity-RESULT-v6.1-SANITIZED.md SHA256 09daa11d5dadaea3a8aec2eb3e58b0bdeb76db6c6b06feac77b18361a1977dcc; harness SHA 8fde493919f5eb39d8cbefb52f9cc5f8e4e24e0f5c8e227ca3677d246c6439b6; live image sha256:d678650db85880868ead9db0d4cbe39e859d4e8c06e1cb4d555987b9edf89f2e; A/B/A pattern, retry=0, fallback=0, no rerun; independent ACCEPT w7:p4._
-- [ ] 8.5 [OMNIROUTE OWNER — external to Main Brain P0] Certify expired/revoked credentials, token/window limits, quota, 401/403, 429, 5xx, timeout and malformed upstream handling inside OmniRoute. Multica/Agent Brain performs no implementation or duplicate test.
-- [ ] 8.6 [OMNIROUTE OWNER — external to Main Brain P0] Certify retry/replay/dedup behavior inside OmniRoute. Main Brain validates only its own process cancellation and slot cleanup when changed; it does not test or implement router retry/failover.
-- [ ] 8.7 [OMNIROUTE OWNER — external to Main Brain P0] Certify account add/remove/quarantine/re-entry and OmniRoute restart/config rollback within OmniRoute. No Multica/Agent Brain lane or duplicate execution is authorized.
-- [x] 8.8 [Codex 4] Record evidence against every OmniRoute checklist and Prodex parity ID; stop the cutover for unsupported blocker rows without an approved waiver.
-
-## 8-OBS. Wave 3-OBS — End-to-End Observability Stop-Gate (G4-OBS)
-
-> These 11 OBS tasks are NEW (D-V3-17) and raise the change total from 85 to **96** tasks;
-> the OBS wave added no completed task. After the later owner-approved closure of governance tasks 0.1 and 0.7, the authoritative count is **53/96** (43 open; all OBS-* remain OPEN).
-
-> BLOCKING GATE (owner decision D-V3-17). Metadata-only across all eight hops; independent
-> reviewer ≠ producer ≠ adjudicator. G4-OBS must PASS before any capacity tier (§9) or cutover
-> (§10). No secrets, prompts, tool payloads, repository content, opaque reasoning, cookies, keys,
-> account emails, or connection strings in any span/label/log. Owning lanes per FILE_OWNERSHIP
-> (W1–W8). Traces to AB-REQ-39/40/41 and the `end-to-end-observability` spec.
-
-- [ ] OBS-1 [W5] Freeze the eight-hop correlation ID schema and propagation contract (metadata-only): `request_id`, `queue_msg_id`, `task_id`, `session_id`, `launch_id`, `proc_id`, `omni_request_id`, `result_id`, `delivery_id`; join keys, header/metadata carriers, `contract_version`, and the `secrets_present=false` invariant. Evidence `EV-OBS-01`.
-- [ ] OBS-2 [W6] Emit the ingress-API span (hop 1): control-API request received with method/route, pseudonymous principal, status, latency; `request_id → task_id`; no request/response bodies. Evidence `EV-OBS-02`.
-- [ ] OBS-3 [W7] Emit the DB-queue span (hop 2): enqueue/dequeue timestamps, queue depth, wait time; `queue_msg_id ↔ task_id`; no task payload content. Evidence `EV-OBS-03`.
-- [ ] OBS-4 [W1] Emit the daemon admission/lifecycle span (hop 3): admission decision, readiness-gate result, `CLIKind`/`RouteModel` labels, fail-closed classification; `task_id`/`session_id`/`launch_id`. Evidence `EV-OBS-04`.
-- [ ] OBS-5 [W3] Emit the CLI-process span (hop 4): launch/exit, exit code, cancellation, structurally-redacted argv shape (never values); `launch_id`/`proc_id`; reuses R21 structural argv redaction. Evidence `EV-OBS-05`.
-- [ ] OBS-6 [W2] Emit the OmniRoute/provider span (hop 5) from safe telemetry only (extends task 4.6): actual route/model, pseudonymous account/connection, selection reason, retries/fallback, quota/circuit state, safe usage; `request_id ↔ omni_request_id`. Evidence `EV-OBS-06`.
-- [ ] OBS-7 [W7] Emit the terminal-persistence span (hop 6): persist latency, byte/token counts, terminal status; `task_id`/`result_id`; no result content. Evidence `EV-OBS-07`.
-- [ ] OBS-8 [W6] Emit the WS/UI-delivery span (hop 7): delivery latency, backpressure/drops, reconnects; `session_id`/`delivery_id`; no delivered payload content. Evidence `EV-OBS-08`.
-- [ ] OBS-9 [W5] Assemble the end-to-end trace (hop 8): join every hop on correlation IDs, detect gaps/orphans, and prove one continuous trace per synthetic task across all eight hops. Evidence `EV-OBS-09`.
-- [ ] OBS-10 [W5 + W4] Run the structural (not pattern-only) secret/content leakage scan across every span, label and log for all hops and prove leak-clean; any leak = STOP. Evidence `EV-OBS-10`.
-- [ ] OBS-11 [W4] Deliver dashboards + alerts (per-hop latency, error classification, drop/gap) and the consolidated G4-OBS acceptance bundle with independent-review sign-off; declare G4-OBS PASS only when OBS-1..OBS-10 are each accepted, OBS-9 shows a continuous trace for every synthetic task, and OBS-10 is clean. Evidence `EV-OBS-11`.
-
-## 9. Wave 4 — Capacity Tiers and Operational Readiness
-
-> Entry gate: G4-OBS (OBS-1..OBS-11) PASS is mandatory before 9.1 runs (D-V3-17).
-
-- [ ] 9.1 [Codex 4] Run and report the approved 20-task model/stream/tool profile with latency, errors, queue, selection fairness, CPU, memory, sockets, retries and fallback.
-- [ ] 9.2 [Codex 1] Enable the 20-task tier only if its acceptance thresholds pass and admission/overload/cancellation counters reconcile.
-- [ ] 9.3 [Codex 4] Run the equivalent 50-task sustained and recovery profile; document required account/route/host tuning.
-- [ ] 9.4 [Codex 1] Enable the 50-task tier only after evidence passes; otherwise enforce 20 and record remediation.
-- [ ] 9.5 [Codex 4] Run the equivalent 100-task sustained and recovery profile with bounded overload beyond the tier.
-- [ ] 9.6 [Codex 1] Enable the 100-task tier only after evidence passes; otherwise enforce the highest proven tier without changing round-robin semantics.
-- [ ] 9.7 [Codex 4] Complete dashboards, alerts, backup/restore, secret rotation, incident, upgrade/rollback and named-owner operational sign-off.
-
-## 10. Wave 5 — Default Cutover and Legacy Removal
-
-- [ ] 10.1 [Codex 1] Enable gateway-required mode by default for new tasks after protocol, security, failure and launch-capacity gates pass.
-- [ ] 10.2 [Codex 4] Observe controlled/default development cohorts for the approved period and confirm no direct-provider traffic, dual router ownership or secret-policy violation; do not claim production readiness.
-- [ ] 10.3 [Codex 1] Drain or stop legacy tasks and remove the temporary legacy execution flag after rollback no longer requires it.
-- [ ] 10.4 [Codex 1 / W1] Reconcile Prodex/L2 to a default-OFF, mutually-exclusive, operator-gated **cold platform recovery mode** in the final Kanban lane (do NOT delete): keep startup/facade/profile/filesystem code present but disabled by default; guarantee it is never per-request, never automatic, and never simultaneously hot with OmniRoute; wire it to the platform recovery-mode state machine (AB-REQ-41) at the single runtime-authority select point. Deletion is explicitly out of scope per D-V3-16.
-  - _Phase 3 HOLD per owner decision D-V3-16. Remains open; no implementation or dispatch until owner releases Phase 3._
-- [ ] 10.5 [Codex 1] Delete legacy Go rotation state/retry/account-selection code and provider-auth home preparation after zero-use evidence.
-- [ ] 10.6 [Codex 3] Delete obsolete provider credential copy/restore implementations and direct NIM/provider-key paths; retain only credentialless state isolation.
-- [ ] 10.7 [Codex 4] Reconcile documentation, deployment, threat model, runbooks and evidence after removal and prove rollback uses only accepted Agent Brain/OmniRoute versions.
-
-## 11. Wave 6 — Complete Debranding
-
-- [ ] 11.1 [Codex 1] Inventory every remaining Multica/Prodex name by public API, CLI, environment, path, package/type, storage, metric/log and user-visible surface.
-- [ ] 11.2 [Codex 1] Introduce final product names for the binary, module/package boundaries, configuration and new contracts without breaking active compatibility consumers.
-- [ ] 11.3 [Codex 2] Rename remaining gateway-facing legacy identifiers and router-owner values while retaining read compatibility for stored historical records.
-- [ ] 11.4 [Codex 3] Rename task-home/runtime-brief/CLI-facing paths and variables with deterministic migration of required local state.
-- [ ] 11.5 [Codex 4] Migrate deployment, dashboards, alerts, documentation, runbooks and operator procedures to final names.
-- [ ] 11.6 [Codex 1] Remove each compatibility alias only after telemetry shows zero use, its consumer migration is complete, and the removal is included in release notes.
-- [ ] 11.7 [Codex 1 + Codex 4] Complete final architecture, parity, security, capacity and operational sign-off with no active Multica/Prodex runtime dependency.
+- [x] 6.1 Consume the owner/operator OmniRoute immutable-revision and selected-route/protocol readiness declaration, and verify only Main Brain's strict fail-closed reaction to ready/not-ready signals; do not inspect, test or validate OmniRoute provider/model mappings, accounts, credentials, sessions or rotation internals.
+- [x] 6.2 Complete metadata-only end-to-end correlation for ingress, queue, daemon, CLI, gateway, terminal persistence and UI delivery.
+- [ ] 6.3 Validate and approve the 20-task bounded capacity profile; keep the current lower limit until evidence passes.
+- [ ] 6.4 Validate 50- and 100-task profiles only after the lower tier and observability gates pass.
+- [x] 6.5 Perform an owner-approved Kanban → Main Brain → OmniRoute → terminal acceptance run in the controlled environment; do not perform it as part of basic source validation.

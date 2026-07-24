@@ -367,3 +367,53 @@ func TestAntigravityResolverEnvDoesNotAliasInput(t *testing.T) {
 		t.Fatalf("resolver env mutated caller slice: %v", input)
 	}
 }
+
+func TestSafeAntigravityArgvForLogRedactsSensitiveValues(t *testing.T) {
+	t.Parallel()
+
+	args := buildAntigravityArgs(
+		"PROMPT-BODY-XYZ",
+		"/tmp/agy.log",
+		time.Minute,
+		ExecOptions{
+			Model:           "Claude Opus 4.6 (Thinking)",
+			ResumeSessionID: "conv-abc123",
+			Cwd:             "/work",
+		},
+		quietAntigravityLogger(),
+	)
+
+	safe := safeAntigravityArgvForLog(args)
+	joined := strings.Join(safe, " ")
+
+	// The prompt (full user/repository content), model display string and
+	// resume conversation id must never reach the log projection.
+	for _, leaked := range []string{"PROMPT-BODY-XYZ", "Claude Opus 4.6 (Thinking)", "conv-abc123"} {
+		if strings.Contains(joined, leaked) {
+			t.Fatalf("sensitive value %q leaked into antigravity log projection: %v", leaked, safe)
+		}
+	}
+
+	// Each value-bearing sensitive flag keeps its flag token but has its value
+	// replaced by the redaction marker.
+	for i, arg := range safe {
+		switch arg {
+		case "-p", "--model", "--conversation":
+			if i+1 >= len(safe) || safe[i+1] != redactedAgentArgValue {
+				t.Fatalf("expected %q value redacted, got projection: %v", arg, safe)
+			}
+		}
+	}
+
+	// Non-sensitive flags/values remain visible so launch diagnostics stay useful.
+	for _, keep := range []string{"-p", "--model", "--conversation", "--dangerously-skip-permissions", "--log-file", "/tmp/agy.log"} {
+		if !strings.Contains(joined, keep) {
+			t.Fatalf("expected %q preserved in projection, got: %v", keep, safe)
+		}
+	}
+
+	// The real argv passed to the process must be unchanged by the projection.
+	if len(args) == 0 || args[1] != "PROMPT-BODY-XYZ" {
+		t.Fatalf("safeAntigravityArgvForLog must not mutate the launch argv: %v", args)
+	}
+}

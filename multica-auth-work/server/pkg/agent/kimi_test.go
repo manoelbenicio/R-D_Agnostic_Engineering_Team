@@ -425,7 +425,6 @@ func TestKimiResumeIncludesMcpServers(t *testing.T) {
 	}
 }
 
-
 // --- Brain 8.6 adapter-boundary coverage: Kimi ACP prompt cancellation ---
 //
 // fakeKimiACPCancelScript impersonates `kimi acp` for a turn that never

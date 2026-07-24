@@ -4,12 +4,15 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -20,7 +23,9 @@ import (
 	"github.com/multica-ai/multica/server/internal/daemon/execenv"
 	"github.com/multica-ai/multica/server/internal/daemon/gateway"
 	"github.com/multica-ai/multica/server/internal/daemon/observability"
+	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
 	"github.com/multica-ai/multica/server/internal/daemon/runtimeenv"
+	"golang.org/x/sync/singleflight"
 )
 
 const (
@@ -49,6 +54,12 @@ type agentBrainRuntime struct {
 
 	diagnosticsMu sync.RWMutex
 	diagnostics   agentBrainDiagnostics
+
+	// admitGroup coalesces concurrent gateway-readiness admissions into a
+	// single in-flight evaluation (no /v1/models stampede) while allowing the
+	// admitted verdict to fan out concurrently to all waiters. It does NOT
+	// serialize admissions — required for bounded tier concurrency.
+	admitGroup singleflight.Group
 }
 
 type agentBrainDiagnostics struct {
@@ -92,7 +103,7 @@ func newAgentBrainRuntime(config AgentBrainIntegrationConfig, dependencies Agent
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
-	capacity, err := brain.NewLifecycleCapacity(agentBrainDevelopmentMaxTasks)
+	capacity, err := brain.NewLifecycleCapacity(effectiveAgentBrainCapacity(config))
 	if err != nil {
 		return nil, err
 	}
@@ -107,13 +118,6 @@ func newAgentBrainRuntime(config AgentBrainIntegrationConfig, dependencies Agent
 		diagnostics: agentBrainDiagnostics{State: "disabled", Readiness: brain.GatewayReadinessNotRequired},
 	}
 	if !config.DevelopmentEnabled {
-		return runtime, nil
-	}
-	if config.Neutral.LegacyExecution {
-		runtime.diagnostics = agentBrainDiagnostics{
-			State: "legacy-migration", Readiness: brain.GatewayReadinessNotRequired,
-			RouterOwner: brain.RouterOwnerLegacyNativeCLI,
-		}
 		return runtime, nil
 	}
 	if err := deploy.DefaultRolloutPlan().Validate(); err != nil {
@@ -146,7 +150,120 @@ func newAgentBrainRuntime(config AgentBrainIntegrationConfig, dependencies Agent
 }
 
 func (r *agentBrainRuntime) enabled() bool {
-	return r != nil && r.config.DevelopmentEnabled && r.config.Neutral.Gateway.Required && !r.config.Neutral.LegacyExecution
+	return r != nil && r.config.DevelopmentEnabled && r.config.Neutral.Gateway.Required
+}
+
+// readinessAdmissionWait bounds how long admitTask will keep retrying for a
+// FRESH successful readiness result before failing closed. Configurable safe
+// cadence via env; default 20s. A value of 0 disables retry (single attempt).
+func readinessAdmissionWait() time.Duration {
+	if v := strings.TrimSpace(os.Getenv("AGENT_BRAIN_READINESS_ADMISSION_WAIT_MS")); v != "" {
+		if ms, err := strconv.Atoi(v); err == nil && ms >= 0 {
+			return time.Duration(ms) * time.Millisecond
+		}
+	}
+	return 20 * time.Second
+}
+
+const (
+	readinessBackoffBase = 500 * time.Millisecond
+	readinessBackoffMax  = 5 * time.Second
+)
+
+// transientReadinessRetry reports whether an admission failure is a transient
+// gateway condition worth a bounded retry for a FRESH ready result, and any
+// server-advised Retry-After. Deterministic rejections (auth, invalid request,
+// selected-protocol mismatch, capability) are NOT retried — they fail closed
+// immediately. This never weakens StrictReadinessPolicy: a persistent transient
+// failure still exhausts the bounded wait and fails closed.
+func transientReadinessRetry(err error, decision brain.AdmissionDecision) (bool, time.Duration) {
+	var ge *gateway.GatewayError
+	if errors.As(err, &ge) {
+		switch ge.Class {
+		case gateway.ErrorRateLimited, gateway.ErrorTimeout, gateway.ErrorOverloaded,
+			gateway.ErrorUpstream, gateway.ErrorTransport:
+			return true, ge.RetryAfter
+		}
+		if ge.Retryable {
+			return true, ge.RetryAfter
+		}
+		return false, 0
+	}
+	if err == nil && !decision.Admitted() && decision.Retryable {
+		switch decision.ReadinessState {
+		case brain.GatewayReadinessUnavailable, brain.GatewayReadinessModelRegistry:
+			return true, 0
+		}
+	}
+	return false, 0
+}
+
+func (r *agentBrainRuntime) admitWithReadinessResilience(ctx context.Context, admission *brain.GatewayAdmissionController, task brain.Task) (brain.AdmissionDecision, error) {
+	// Coalesce concurrent readiness admissions into ONE in-flight gateway
+	// readiness evaluation so N concurrent tasks trigger a single /v1/models
+	// check (no stampede) and all share the fresh verdict — then each task
+	// independently takes its capacity lease. This preserves single-flight
+	// safety without serializing admissions, which is required to reach the
+	// bounded tier concurrency limit.
+	type admitResult struct {
+		decision brain.AdmissionDecision
+		err      error
+	}
+	v, _, _ := r.admitGroup.Do("gateway-readiness", func() (interface{}, error) {
+		// Readiness is a global gateway property. Evaluate it on a fresh bounded
+		// context detached from any single caller's cancellation so one task's
+		// cancel cannot poison the shared verdict.
+		rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), readinessAdmissionWait()+5*time.Second)
+		defer cancel()
+		d, e := admitRetryLoop(rctx, readinessAdmissionWait(), func(c context.Context) (brain.AdmissionDecision, error) {
+			return admission.Admit(c, task)
+		})
+		return admitResult{decision: d, err: e}, nil
+	})
+	res := v.(admitResult)
+	return res.decision, res.err
+}
+
+// admitRetryLoop retries admitFn with Retry-After honoring + bounded
+// exponential backoff+jitter for transient readiness-fetch failures, returning
+// only a fresh ADMITTED decision produced within this call (never stale), and
+// failing closed once the bounded wait is exhausted or on deterministic
+// rejection. Extracted for deterministic testing.
+func admitRetryLoop(ctx context.Context, wait time.Duration, admitFn func(context.Context) (brain.AdmissionDecision, error)) (brain.AdmissionDecision, error) {
+	deadline := time.Now().Add(wait)
+	var lastDecision brain.AdmissionDecision
+	var lastErr error
+	for attempt := 0; ; attempt++ {
+		decision, err := admitFn(ctx)
+		if err == nil && decision.Admitted() {
+			return decision, nil // fresh ready
+		}
+		lastDecision, lastErr = decision, err
+		retry, retryAfter := transientReadinessRetry(err, decision)
+		if !retry {
+			return decision, err // deterministic rejection -> fail closed now
+		}
+		sleep := retryAfter
+		if sleep <= 0 {
+			backoff := readinessBackoffBase << uint(attempt)
+			if backoff <= 0 || backoff > readinessBackoffMax {
+				backoff = readinessBackoffMax
+			}
+			jitter := time.Duration(rand.Int63n(int64(backoff/2)+1)) - backoff/4
+			sleep = backoff + jitter
+		}
+		if sleep < 0 {
+			sleep = 0
+		}
+		if time.Now().Add(sleep).After(deadline) {
+			return lastDecision, lastErr // bounded wait exhausted -> fail closed
+		}
+		select {
+		case <-ctx.Done():
+			return lastDecision, ctx.Err()
+		case <-time.After(sleep):
+		}
+	}
 }
 
 func (r *agentBrainRuntime) admitTask(ctx context.Context, task Task, provider, legacyModel string) (*agentBrainTaskPlan, error) {
@@ -242,11 +359,12 @@ func (r *agentBrainRuntime) admitTask(ctx context.Context, task Task, provider, 
 	if err != nil {
 		return nil, &agentBrainAdmissionError{class: "readiness_checker_invalid"}
 	}
+	checker.SetDiagnosticsLogger(r.logger)
 	admission, err := brain.NewGatewayAdmissionController(checker, r.config.Neutral.Gateway.Readiness)
 	if err != nil {
 		return nil, &agentBrainAdmissionError{class: "admission_controller_invalid"}
 	}
-	decision, err := admission.Admit(ctx, translation.Task)
+	decision, err := r.admitWithReadinessResilience(ctx, admission, translation.Task)
 	if err != nil {
 		r.recordAdmission(correlation, brain.AdmissionGatewayUnavailable, brain.GatewayReadinessUnavailable, "readiness_cancelled")
 		return nil, err
@@ -302,6 +420,19 @@ func (r *agentBrainRuntime) buildLaunch(ctx context.Context, plan *agentBrainTas
 	if err := os.Chmod(taskHome, 0o700); err != nil {
 		return agentBrainLaunch{}, fmt.Errorf("restrict controlled task home: %w", err)
 	}
+	clineDataDir := ""
+	if plan.Task.Request.CLIKind == brain.CLIOpenAICompatible {
+		clineDataDir = filepath.Join(env.RootDir, "cline-data")
+		if err := os.Mkdir(clineDataDir, 0o700); err != nil && !os.IsExist(err) {
+			return agentBrainLaunch{}, fmt.Errorf("create controlled cline data dir: %w", err)
+		}
+		if err := os.Chmod(clineDataDir, 0o700); err != nil {
+			return agentBrainLaunch{}, fmt.Errorf("restrict controlled cline data dir: %w", err)
+		}
+		if err := runtimeenv.ValidateExecutionRoot(clineDataDir); err != nil {
+			return agentBrainLaunch{}, err
+		}
+	}
 	local = cloneStringMap(local)
 	local["MULTICA_SESSION_ID"] = plan.Task.Request.Correlation.SessionID
 	local["MULTICA_REQUEST_ID"] = plan.Task.Request.Correlation.RequestID
@@ -316,11 +447,22 @@ func (r *agentBrainRuntime) buildLaunch(ctx context.Context, plan *agentBrainTas
 		if secretErr != nil {
 			return &agentBrainAdmissionError{class: "stable_key_invalid"}
 		}
+		telEndpoint, telTask, telReq := "", "", ""
+		if plan.Task.Request.CLIKind == brain.CLIClaudeCode {
+			// Route-hop telemetry: point Claude at the fixed loopback OTLP
+			// receiver and carry the canonical correlation as resource attrs.
+			telEndpoint = daemonOTLPLogsEndpoint
+			telTask = plan.Task.Request.Correlation.TaskID
+			telReq = plan.Task.Request.Correlation.RequestID
+		}
 		child, _, buildErr := runtimeenv.BuildGatewayEnvironment(runtimeenv.ComposeOptions{
 			Inherited: inherited(), Local: local, Custom: custom,
 			Adapter: runtimeenv.AdapterEnvironment{
 				CLI: plan.Task.Request.CLIKind, GatewayRoot: r.config.Neutral.Gateway.BaseURL,
-				TaskHome: taskHome, CodexHome: env.CodexHome, StableSecret: secret,
+				TaskHome: taskHome, CodexHome: env.CodexHome, ClineDataDir: clineDataDir, StableSecret: secret,
+				TelemetryOTLPLogsEndpoint: telEndpoint,
+				TelemetryTaskID:           telTask,
+				TelemetryRequestID:        telReq,
 			},
 		})
 		if buildErr != nil {
@@ -344,6 +486,21 @@ func (r *agentBrainRuntime) buildLaunch(ctx context.Context, plan *agentBrainTas
 				runtimeenv.HomeEntry{RelativePath: "sessions", Directory: true},
 				runtimeenv.HomeEntry{RelativePath: "skills", Directory: true},
 			)
+		} else if plan.Task.Request.CLIKind == brain.CLIOpenAICompatible {
+			contract, configErr := runtimeenv.NewClineConfigContract(
+				r.config.Neutral.Gateway.BaseURL, plan.Task.Request.RouteModel, time.Now().UTC().Format(time.RFC3339),
+			)
+			if configErr != nil {
+				return configErr
+			}
+			if err := execenv.WriteCredentiallessClineConfig(clineDataDir, contract.Bytes()); err != nil {
+				return err
+			}
+			// The Cline providers.json carrier lives in CLINE_DATA_DIR and is
+			// deliberately excluded from the task-home manifest: home.go's
+			// ValidateTaskHomeManifest forbids providers.json/.cline in the task
+			// home. The carrier is byte-validated by NewClineConfigContract; the
+			// pre-launch gate validates only env/roots (no config-byte checks).
 		}
 		if err := runtimeenv.AssertPreLaunch(runtimeenv.LaunchPlan{
 			Environment: child, CodexConfig: codexConfig, TaskHome: manifest,
@@ -375,11 +532,14 @@ func (r *agentBrainRuntime) validateThinking(plan *agentBrainTaskPlan, thinking 
 }
 
 func (r *agentBrainRuntime) newCorrelation(task Task) brain.Correlation {
-	sequence := r.requestSeq.Add(1)
+	// Canonical, deterministic correlation shared with the server hops: raw
+	// task_id; request_id and session_id derived from task_id (and chat session)
+	// so ingress, route, admission, and delivery independently compute the
+	// IDENTICAL join keys without cross-process propagation.
 	return brain.Correlation{
-		TaskID:    safeCorrelationID("task", task.ID),
-		SessionID: safeCorrelationID("session", firstConfigured(task.ChatSessionID, task.PriorSessionID, task.ID)),
-		RequestID: fmt.Sprintf("request-%s-%d", correlationDigest(task.ID), sequence),
+		TaskID:    e2e.CanonicalTaskID(task.ID),
+		SessionID: e2e.CanonicalSessionID(task.ChatSessionID, task.ID),
+		RequestID: e2e.CanonicalRequestID(task.ID),
 	}
 }
 

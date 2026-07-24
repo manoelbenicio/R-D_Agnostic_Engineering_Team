@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/multica-ai/multica/server/internal/daemon/brain"
@@ -109,7 +110,109 @@ type AdapterEnvironment struct {
 	GatewayRoot  string
 	TaskHome     string
 	CodexHome    string
+	ClineDataDir string
 	StableSecret StableSecret
+	// TelemetryOTLPLogsEndpoint, when non-empty, enables the official Claude
+	// Code OTLP-logs telemetry as TRUSTED child env pointing at the fixed
+	// loopback receiver (e.g. http://127.0.0.1:<port>/v1/logs). TelemetryTaskID
+	// and TelemetryRequestID are the canonical correlation carried in
+	// OTEL_RESOURCE_ATTRIBUTES. All content/prompt/response/tool logging is
+	// forced off; user/local/inherited values cannot override these.
+	TelemetryOTLPLogsEndpoint string
+	TelemetryTaskID           string
+	TelemetryRequestID        string
+}
+
+// trustedTelemetryEnv returns the EXACT official Claude Code OTLP-logs trusted
+// environment for the fixed loopback receiver, or (nil, nil) when telemetry is
+// entirely absent (endpoint empty). It is FAIL-CLOSED: a present-but-malformed
+// endpoint or unsafe/empty correlation IDs return an error and never enable
+// telemetry. The endpoint must be exactly http://127.0.0.1:<port>/v1/logs with
+// an explicit port and no userinfo/query/fragment; task/request IDs must match
+// the safe bounded correlation charset (which makes raw comma/equals — and thus
+// resource-attribute ambiguity — impossible). Content logging is forced off.
+func trustedTelemetryEnv(p AdapterEnvironment) (map[string]string, error) {
+	ep := strings.TrimSpace(p.TelemetryOTLPLogsEndpoint)
+	if ep == "" {
+		// Off ONLY when telemetry is entirely absent. IDs present without an
+		// endpoint is a partial/misconfigured state and must fail closed.
+		if strings.TrimSpace(p.TelemetryTaskID) != "" || strings.TrimSpace(p.TelemetryRequestID) != "" {
+			return nil, fmt.Errorf("telemetry partial config: correlation ids set without an endpoint")
+		}
+		return nil, nil
+	}
+	u, err := url.Parse(ep)
+	if err != nil {
+		return nil, fmt.Errorf("telemetry endpoint is not a valid URL")
+	}
+	if u.Scheme != "http" {
+		return nil, fmt.Errorf("telemetry endpoint must use the http scheme")
+	}
+	if u.User != nil {
+		return nil, fmt.Errorf("telemetry endpoint must not contain userinfo")
+	}
+	if u.RawQuery != "" || u.Fragment != "" {
+		return nil, fmt.Errorf("telemetry endpoint must not contain a query or fragment")
+	}
+	if u.Hostname() != "127.0.0.1" {
+		return nil, fmt.Errorf("telemetry endpoint host must be the loopback IP 127.0.0.1")
+	}
+	port := u.Port()
+	if port == "" {
+		return nil, fmt.Errorf("telemetry endpoint must specify an explicit port")
+	}
+	if n, perr := strconv.Atoi(port); perr != nil || n < 1 || n > 65535 {
+		return nil, fmt.Errorf("telemetry endpoint port is invalid")
+	}
+	if u.Path != "/v1/logs" {
+		return nil, fmt.Errorf("telemetry endpoint path must be exactly /v1/logs")
+	}
+	if !safeCorrelationValue(p.TelemetryTaskID) || !safeCorrelationValue(p.TelemetryRequestID) {
+		return nil, fmt.Errorf("telemetry correlation ids must be non-empty and safe")
+	}
+	return map[string]string{
+		"CLAUDE_CODE_ENABLE_TELEMETRY":     "1",
+		"OTEL_LOGS_EXPORTER":               "otlp",
+		"OTEL_METRICS_EXPORTER":            "none",
+		"OTEL_EXPORTER_OTLP_LOGS_PROTOCOL": "http/json",
+		"OTEL_EXPORTER_OTLP_LOGS_ENDPOINT": ep,
+		"OTEL_RESOURCE_ATTRIBUTES":         "agent_brain.task_id=" + p.TelemetryTaskID + ",agent_brain.request_id=" + p.TelemetryRequestID,
+		"OTEL_LOG_USER_PROMPTS":            "0",
+		"OTEL_LOG_ASSISTANT_RESPONSES":     "0",
+		"OTEL_LOG_TOOL_DETAILS":            "0",
+		"OTEL_LOG_TOOL_CONTENT":            "0",
+	}, nil
+}
+
+// safeCorrelationValue accepts only a bounded, unambiguous correlation charset
+// ([A-Za-z0-9._-], 1..128). It deliberately excludes comma, equals, and
+// whitespace so OTEL_RESOURCE_ATTRIBUTES cannot be spoofed or made ambiguous.
+func safeCorrelationValue(v string) bool {
+	if len(v) == 0 || len(v) > 128 {
+		return false
+	}
+	for _, r := range v {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9',
+			r == '.', r == '_', r == '-':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// isTrustedTelemetryKey reports whether canonical is one of the exact OTLP
+// telemetry keys the daemon injects trusted-last (allowed only as trusted).
+func isTrustedTelemetryKey(canonical string) bool {
+	switch canonical {
+	case "CLAUDE_CODE_ENABLE_TELEMETRY", "OTEL_LOGS_EXPORTER", "OTEL_METRICS_EXPORTER",
+		"OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
+		"OTEL_RESOURCE_ATTRIBUTES", "OTEL_LOG_USER_PROMPTS", "OTEL_LOG_ASSISTANT_RESPONSES",
+		"OTEL_LOG_TOOL_DETAILS", "OTEL_LOG_TOOL_CONTENT":
+		return true
+	}
+	return false
 }
 
 type ComposeOptions struct {
@@ -123,12 +226,13 @@ type ComposeOptions struct {
 // is the sole value-bearing projection and should be assigned directly to
 // exec.Cmd.Env, never logged.
 type ChildEnvironment struct {
-	entries     map[string]environmentEntry
-	cli         brain.CLIKind
-	gatewayRoot string
-	secretKey   string
-	taskHome    string
-	codexHome   string
+	entries      map[string]environmentEntry
+	cli          brain.CLIKind
+	gatewayRoot  string
+	secretKey    string
+	taskHome     string
+	codexHome    string
+	clineDataDir string
 }
 
 func (e ChildEnvironment) Keys() []string { return sortedEntryKeys(e.entries) }
@@ -189,6 +293,9 @@ func BuildGatewayEnvironment(opts ComposeOptions) (ChildEnvironment, Sanitizatio
 	if opts.Adapter.CLI == brain.CLICodex {
 		child.codexHome = opts.Adapter.CodexHome
 	}
+	if opts.Adapter.CLI == brain.CLIOpenAICompatible {
+		child.clineDataDir = opts.Adapter.ClineDataDir
+	}
 	return child, report, nil
 }
 
@@ -210,6 +317,13 @@ func trustedAdapterEntries(profile AdapterEnvironment) (map[string]environmentEn
 	case brain.CLIClaudeCode:
 		entries["ANTHROPIC_BASE_URL"] = environmentEntry{key: "ANTHROPIC_BASE_URL", value: root, origin: originTrustedGateway}
 		entries["ANTHROPIC_AUTH_TOKEN"] = environmentEntry{key: "ANTHROPIC_AUTH_TOKEN", value: profile.StableSecret.value, origin: originTrustedSecret}
+		telemetry, err := trustedTelemetryEnv(profile)
+		if err != nil {
+			return nil, "", "", err
+		}
+		for k, v := range telemetry {
+			entries[k] = environmentEntry{key: k, value: v, origin: originTrustedLocal}
+		}
 		return entries, root, "ANTHROPIC_AUTH_TOKEN", nil
 	case brain.CLICodex:
 		if err := validatePhysicalControlledDirectory(profile.CodexHome, "Codex home"); err != nil {
@@ -218,6 +332,18 @@ func trustedAdapterEntries(profile AdapterEnvironment) (map[string]environmentEn
 		entries["CODEX_HOME"] = environmentEntry{key: "CODEX_HOME", value: profile.CodexHome, origin: originTrustedLocal}
 		entries[CodexOmniRouteAPIKeyEnv] = environmentEntry{key: CodexOmniRouteAPIKeyEnv, value: profile.StableSecret.value, origin: originTrustedSecret}
 		return entries, root, CodexOmniRouteAPIKeyEnv, nil
+	case brain.CLIOpenAICompatible:
+		// Accepted OmniRoute OpenAI-compatible (Cline) route. The controlled
+		// per-task Cline data dir carries providers.json; the stable OmniRoute
+		// secret is injected trusted-last as CLINE_OMNIROUTE_API_KEY. Both keys
+		// are rejected by the deny-list for inherited/local/custom origins and
+		// are legal only as trusted entries merged after validation.
+		if err := validatePhysicalControlledDirectory(profile.ClineDataDir, "Cline data dir"); err != nil {
+			return nil, "", "", err
+		}
+		entries["CLINE_DATA_DIR"] = environmentEntry{key: "CLINE_DATA_DIR", value: profile.ClineDataDir, origin: originTrustedLocal}
+		entries[ClineOmniRouteAPIKeyEnv] = environmentEntry{key: ClineOmniRouteAPIKeyEnv, value: profile.StableSecret.value, origin: originTrustedSecret}
+		return entries, root, ClineOmniRouteAPIKeyEnv, nil
 	default:
 		return nil, "", "", ErrAdapterFailClosed
 	}

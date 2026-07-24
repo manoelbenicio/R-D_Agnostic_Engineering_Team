@@ -132,7 +132,10 @@ func TestG4NativeCredentialBearingAdaptersStayFailClosed(t *testing.T) {
 		cli  brain.CLIKind
 		gate AdapterGate
 	}{
-		{cli: brain.CLIOpenAICompatible, gate: GateOpenAICompatibleUnaccepted},
+		// CLIOpenAICompatible (Cline) is an ACCEPTED gateway adapter after W1 D1/D2
+		// (ready + ProtocolOpenAIChat, produces a controlled child env), so it is
+		// intentionally not in this "stay fail-closed" table. The remaining native
+		// credential-bearing adapters must still fail closed with zero child env.
 		{cli: brain.CLIKimi, gate: GateNativeKimiUnaccepted},
 		{cli: brain.CLINIM, gate: GateNativeNIMUnaccepted},
 		{cli: brain.CLIAntigravity, gate: GateNativeAntigravityUnaccepted},

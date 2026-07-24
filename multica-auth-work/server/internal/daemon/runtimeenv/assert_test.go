@@ -216,3 +216,98 @@ func TestAssertPreLaunchRejectsPhysicalHomeSubstitution(t *testing.T) {
 		})
 	}
 }
+
+func clineControlledDirectories(t *testing.T) (root, taskHome, clineDataDir string) {
+	t.Helper()
+	root = t.TempDir()
+	taskHome = filepath.Join(root, "task-home")
+	clineDataDir = filepath.Join(root, "cline-data")
+	for _, directory := range []string{taskHome, clineDataDir} {
+		if err := os.MkdirAll(directory, 0o700); err != nil {
+			t.Fatalf("create controlled synthetic directory: %v", err)
+		}
+	}
+	return root, taskHome, clineDataDir
+}
+
+func buildControlledClineEnvironment(t *testing.T, taskHome, clineDataDir string) ChildEnvironment {
+	t.Helper()
+	secret, _ := NewStableSecret(syntheticSecret)
+	environment, _, err := BuildGatewayEnvironment(ComposeOptions{
+		Inherited: []string{"PATH=/usr/bin"},
+		Adapter: AdapterEnvironment{
+			CLI: brain.CLIOpenAICompatible, GatewayRoot: "http://127.0.0.1:20128",
+			TaskHome: taskHome, ClineDataDir: clineDataDir, StableSecret: secret,
+		},
+	})
+	if err != nil {
+		t.Fatalf("BuildGatewayEnvironment returned error: %v", err)
+	}
+	return environment
+}
+
+func TestAssertPreLaunchAcceptsControlledClinePlan(t *testing.T) {
+	root, taskHome, clineDataDir := clineControlledDirectories(t)
+	environment := buildControlledClineEnvironment(t, taskHome, clineDataDir)
+	if err := AssertPreLaunch(LaunchPlan{
+		Environment: environment, ExecutionRoot: root,
+		TaskHome: []HomeEntry{{RelativePath: "skills/review/SKILL.md"}},
+	}); err != nil {
+		t.Fatalf("controlled Cline plan rejected: %v", err)
+	}
+}
+
+func TestAssertPreLaunchRejectsClineDataDirOutsideExecutionRoot(t *testing.T) {
+	root, taskHome, _ := clineControlledDirectories(t)
+	_, _, outsideCline := clineControlledDirectories(t)
+	environment := buildControlledClineEnvironment(t, taskHome, outsideCline)
+	if err := AssertPreLaunch(LaunchPlan{Environment: environment, ExecutionRoot: root}); !errors.Is(err, ErrPreLaunchPolicy) {
+		t.Fatalf("AssertPreLaunch error = %v, want cline-data-dir root rejection", err)
+	}
+}
+
+func TestAssertPreLaunchRejectsClineDataDirTraversal(t *testing.T) {
+	root, taskHome, clineDataDir := clineControlledDirectories(t)
+	environment := buildControlledClineEnvironment(t, taskHome, clineDataDir)
+	entry := environment.entries["CLINE_DATA_DIR"]
+	entry.value += string(filepath.Separator) + ".." + string(filepath.Separator) + "escape"
+	environment.entries["CLINE_DATA_DIR"] = entry
+	if err := AssertPreLaunch(LaunchPlan{Environment: environment, ExecutionRoot: root}); !errors.Is(err, ErrPreLaunchPolicy) {
+		t.Fatalf("AssertPreLaunch error = %v, want cline-data-dir traversal rejection", err)
+	}
+}
+
+func TestAssertPreLaunchRejectsClinePhysicalDataDirSubstitution(t *testing.T) {
+	root, taskHome, clineDataDir := clineControlledDirectories(t)
+	environment := buildControlledClineEnvironment(t, taskHome, clineDataDir)
+	if err := os.Remove(clineDataDir); err != nil {
+		t.Fatalf("remove controlled synthetic directory: %v", err)
+	}
+	createTestDirectorySymlink(t, t.TempDir(), clineDataDir)
+	if err := AssertPreLaunch(LaunchPlan{Environment: environment, ExecutionRoot: root}); !errors.Is(err, ErrPreLaunchPolicy) {
+		t.Fatalf("AssertPreLaunch error = %v, want cline physical-path rejection", err)
+	}
+}
+
+func TestAssertPreLaunchRejectsClineDeniedOriginAndCodexConfig(t *testing.T) {
+	root, taskHome, clineDataDir := clineControlledDirectories(t)
+
+	// The trusted OmniRoute secret key riding a non-trusted origin must be rejected.
+	environment := buildControlledClineEnvironment(t, taskHome, clineDataDir)
+	secretEntry := environment.entries[ClineOmniRouteAPIKeyEnv]
+	secretEntry.origin = originCustom
+	environment.entries[ClineOmniRouteAPIKeyEnv] = secretEntry
+	if err := AssertPreLaunch(LaunchPlan{Environment: environment, ExecutionRoot: root}); !errors.Is(err, ErrPreLaunchPolicy) {
+		t.Fatalf("wrong-origin trusted secret assertion error = %v", err)
+	}
+
+	// Cline must carry no CodexConfig; a non-nil CodexConfig must be rejected.
+	environment = buildControlledClineEnvironment(t, taskHome, clineDataDir)
+	config, err := NewCodexConfigContract("http://127.0.0.1:20128", brain.RouteModel("approved/codex-model"), testCorrelation())
+	if err != nil {
+		t.Fatalf("NewCodexConfigContract returned error: %v", err)
+	}
+	if err := AssertPreLaunch(LaunchPlan{Environment: environment, CodexConfig: &config, ExecutionRoot: root}); !errors.Is(err, ErrPreLaunchPolicy) {
+		t.Fatalf("cline-with-codexconfig assertion error = %v", err)
+	}
+}

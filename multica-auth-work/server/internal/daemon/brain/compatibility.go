@@ -134,16 +134,13 @@ func LegacyProviderCLIKind(provider string) (CLIKind, error) {
 
 func translateLegacyRouterOwner(raw string, gatewayRequired bool) (RouterOwner, error) {
 	raw = strings.ToLower(strings.TrimSpace(raw))
-	if gatewayRequired {
-		if raw != "" && raw != string(RouterOwnerOmniRoute) {
-			return "", fmt.Errorf("legacy router owner conflicts with gateway-required mode")
-		}
-		return RouterOwnerOmniRoute, nil
+	if !gatewayRequired {
+		return "", fmt.Errorf("OmniRoute gateway is required")
 	}
-	if raw == "" {
-		return RouterOwnerLegacyNativeCLI, nil
+	if raw != "" && raw != string(RouterOwnerOmniRoute) {
+		return "", fmt.Errorf("legacy router owner conflicts with OmniRoute-only mode")
 	}
-	return ParseRouterOwner(raw)
+	return RouterOwnerOmniRoute, nil
 }
 
 type LegacyUseEvent struct {

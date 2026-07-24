@@ -61,6 +61,13 @@ func (a *GatewayAdmissionController) Admit(ctx context.Context, task Task) (Admi
 	if err := task.Request.Validate(); err != nil {
 		return AdmissionDecision{}, err
 	}
+	if !task.Request.GatewayRequired {
+		// Fail closed: the gateway admission controller admits only
+		// gateway-required tasks. A task that does not require the gateway is a
+		// bypass attempt and is rejected before any route-policy decision or
+		// readiness probe, so no task can reach a CLI without the gateway path.
+		return AdmissionDecision{}, fmt.Errorf("gateway admission rejected a task that does not require the gateway")
+	}
 	if err := task.RoutePolicy.validateFor(task.Request); err != nil {
 		return AdmissionDecision{
 			State:          AdmissionRoutePolicyRejected,
@@ -68,9 +75,6 @@ func (a *GatewayAdmissionController) Admit(ctx context.Context, task Task) (Admi
 			TaskStatus:     TaskStatusCapabilityRejected,
 			ErrorClass:     "route_policy_rejected",
 		}, nil
-	}
-	if !task.Request.GatewayRequired {
-		return AdmissionDecision{State: AdmissionAdmitted, ReadinessState: GatewayReadinessNotRequired}, nil
 	}
 	if a == nil || a.Checker == nil {
 		return unavailableDecision(), nil

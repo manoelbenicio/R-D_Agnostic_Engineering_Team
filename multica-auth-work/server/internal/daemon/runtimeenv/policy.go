@@ -19,6 +19,7 @@ const (
 	DenyGatewayOverride    DenyReason = "unsafe-gateway-override"
 	DenyClaudeMarker       DenyReason = "internal-claude-marker"
 	DenyNetworkOverride    DenyReason = "unsafe-network-override"
+	DenyTelemetryOverride  DenyReason = "unsafe-telemetry-override"
 )
 
 var deniedExactKeys = map[string]DenyReason{
@@ -100,7 +101,16 @@ func ClassifyEnvironmentKey(key string) EnvironmentKeyClassification {
 	if strings.HasPrefix(upper, "CLAUDECODE_") || strings.HasPrefix(upper, "CLAUDE_CODE_USE_") {
 		return EnvironmentKeyClassification{Denied: true, Reason: DenyClaudeMarker}
 	}
-	if strings.HasPrefix(upper, "AGENT_BRAIN_") || strings.HasPrefix(upper, "MULTICA_L2_") || strings.HasPrefix(upper, "MULTICA_PRODEX_") {
+	// Telemetry env is injected trusted-last by the daemon (exact loopback OTLP
+	// endpoint, canonical resource attrs, content logging forced off). User,
+	// local, and inherited origins must never set it — otherwise a caller could
+	// redirect logs off-box, enable prompt/response/body logging, or spoof the
+	// correlation. Only the trusted adapter injection is allowed (see
+	// trustedEntryAllowed).
+	if upper == "CLAUDE_CODE_ENABLE_TELEMETRY" || strings.HasPrefix(upper, "OTEL_") {
+		return EnvironmentKeyClassification{Denied: true, Reason: DenyTelemetryOverride}
+	}
+	if strings.HasPrefix(upper, "AGENT_BRAIN_") {
 		return EnvironmentKeyClassification{Denied: true, Reason: DenyGatewayOverride}
 	}
 	for _, prefix := range providerPrefixes {

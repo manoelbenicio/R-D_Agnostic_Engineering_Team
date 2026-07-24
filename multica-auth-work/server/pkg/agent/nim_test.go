@@ -220,7 +220,6 @@ func TestNIMAPIErrorsAreReturnedWithoutLeakingKey(t *testing.T) {
 	}
 }
 
-
 // --- Brain 8.6 adapter-boundary coverage (cancellation propagation + no replay) ---
 //
 // These exercise the NIM adapter's half of OpenSpec task 8.6 at the CLI/backend

@@ -101,7 +101,7 @@ func defaultServiceProcedure(service, rollbackTarget string) []OperationalStep {
 		{PhaseWaitReadiness, "wait for liveness, then authenticated readiness for the selected protocol/model; hold admissions while not ready", "readiness transition and safe reason code"},
 		{PhaseLaunchBrain, "start Agent Brain with frozen gateway-required, base-URL, secret-file-reference, strict-readiness, and tier-20 settings", "effective non-secret configuration revision"},
 		{PhaseRecreate, "drain or hold new admissions, checkpoint state, recreate one component at a time, then repeat authenticated readiness", "drain, restart, and recovery timestamps"},
-		{PhaseRollback, "select " + rollbackTarget + "; keep provider-native and Prodex fallback disabled; drain or reject until readiness recovers", "rollback trigger, revision, duration, and outcome"},
+		{PhaseRollback, "select " + rollbackTarget + "; keep provider-native and alternate-router fallback disabled; drain or reject until readiness recovers", "rollback trigger, revision, duration, and outcome"},
 	}
 }
 

@@ -1,85 +1,68 @@
-# R&D — Agnostic Engineering Team (Multica + prodex)
+# R&D — Agnostic Engineering Team
 
-Managed-agents platform. **Multica** (Go control plane / L4) launches **prodex**
-(Rust data plane / L2, pinned `v0.246.0`) on the hot path — pre-commit rotation,
-affinity, Smart Context / token-saver, reset-claim. Program name:
-**Rotation-Parity Polyglot (RPP)**.
+Managed-agent platform built around one execution path:
 
-> The user-facing frontend is the **Multica web app** (Next.js), lives under
-> [`multica-auth-work/`](./multica-auth-work). There is **no separate SPA** in
-> this repo — the former AgentVerse SPA was removed (it belonged to another
-> project). See `LEGACY_ARCHIVE_REFERENCE.md`.
-
-## Layers
-
-```
-L4 (cold)  Multica — Go server (control plane, sessions/workspaces/kanban/auth)
-L2 (hot)   prodex — Rust sidecar (rotation, Smart Context, reset-claim), contract rpp.l2.v1
-Frontend   Multica web (Next.js)  ·  mobile (Expo)  ·  desktop (Electron)
-Data       Postgres (pgvector)
+```text
+Multica web / Kanban → Main Brain (Agent Brain daemon) → OmniRoute → approved coding-agent CLI/model
+                              ↓
+                 terminal/session persistence
 ```
 
-Authoritative sources: `openspec/changes/rotation-parity-polyglot/`,
-`.planning/`, `Diligencias/`, `docs/rotation-parity-polyglot/`.
+OmniRoute is the **only router owner**. Main Brain owns task admission, workspace/repository setup, process lifecycle, cancellation/watchdogs, message streaming, terminal results and capacity. It does not select provider accounts, inject provider-native credentials, or fall back to a native/provider router. If OmniRoute is unavailable or not ready, new model work fails closed.
 
-## Components & where they run (verified local topology)
+## Product components
 
-| Component | Source | Local (Docker) | Health check |
-|-----------|--------|----------------|--------------|
-| Multica backend (Go, L4) | `multica-auth-work/server` | container `multica-backend-1` → `127.0.0.1:8080` | `curl 127.0.0.1:8080/health` → `{"status":"ok"}` |
-| Multica web (frontend) | `multica-auth-work/apps/web` | container `multica-frontend-1` → `127.0.0.1:3100` (internal 3000) | open http://localhost:3100 |
-| Postgres (pgvector pg17) | image | container `multica-postgres-1` | `docker inspect` → `healthy` |
-| prodex (Rust, L2) | `bin/prodex` (`multica-auth-work/prodex-sidecar`) | spawned per-session by the backend | `bin/prodex --version` → `prodex 0.246.0` |
+| Component | Source | Responsibility |
+|---|---|---|
+| Multica backend | `multica-auth-work/server` | Workspaces, projects, squads, Kanban issues/tasks, API and persistence |
+| Multica web | `multica-auth-work/apps/web` | User-facing Kanban/project/squad interface |
+| Main Brain daemon | `multica-auth-work/server/internal/daemon` | Task lifecycle, worktrees, terminals, cancellation, gateway admission |
+| OmniRoute | externally deployed service | Sole model router and inference credential/account owner |
+| Postgres | self-host Compose service | Durable product and control-plane state |
 
-## Run the stack (Docker required)
+The frontend is the Next.js app under `multica-auth-work/`; there is no separate AgentVerse SPA in this repository.
 
-Docker **is** required — the backend, frontend, and Postgres run as containers.
+## Run the self-host product stack
+
+Docker runs the backend, frontend and Postgres. OmniRoute is deployed and operated separately and must be reachable by the host daemon before model work is admitted.
 
 ```bash
 cd multica-auth-work
-cp .env.example .env          # edit JWT_SECRET at minimum
+cp .env.example .env   # configure required product values out of band
 docker compose -f docker-compose.selfhost.yml up -d
 ```
 
-Then open the **real app**: **http://localhost:3100** (not :5173 — that was the
-removed SPA).
+Open <http://localhost:3100>. The backend health endpoint is <http://127.0.0.1:8080/health>.
 
-## Verify everything is 100% up
+## Configure Main Brain
+
+Use the neutral Agent Brain configuration surface:
+
+- `AGENT_BRAIN_GATEWAY_REQUIRED=true`
+- `AGENT_BRAIN_GATEWAY_BASE_URL` (host/WSL default: `http://127.0.0.1:20128`)
+- `AGENT_BRAIN_GATEWAY_SECRET_FILE` (restricted file reference; never commit its value)
+- `AGENT_BRAIN_CLI_KIND`
+- `AGENT_BRAIN_ROUTE_MODEL`
+- `AGENT_BRAIN_TASK_CAPACITY_TIER`
+
+Readiness must include the selected protocol/model. A missing secret reference, unavailable gateway or unsupported route prevents launch; no alternate router is started.
+
+## Verify the control plane (no inference)
 
 ```bash
-# 1) Containers up + Postgres healthy
 docker compose -f multica-auth-work/docker-compose.selfhost.yml ps
-
-# 2) Go control plane healthy
-curl -s 127.0.0.1:8080/health          # expect {"status":"ok"}
-
-# 3) Frontend serving
-curl -s -o /dev/null -w '%{http_code}\n' 127.0.0.1:3100   # expect 200
-
-# 4) Rust data plane binary present & correct pin
-bin/prodex --version                    # expect prodex 0.246.0
+curl -fsS 127.0.0.1:8080/health
+openspec validate build-omniroute-agent-brain --strict
 ```
 
-All four green ⇒ control plane (Go), data plane (Rust), DB, and frontend are
-healthy. Then you can create tasks on the kanban and assign agents from the
-Multica web UI.
-
-## Program state / dashboard (RPP planning)
-
-```bash
-openspec validate rotation-parity-polyglot
-python3 scripts/dashboard/plan_dashboard.py --once --ascii
-```
+Do not use a live provider/inference request as a basic stack-health check. Create Kanban work only after Main Brain reports ready and the approved OmniRoute deployment is ready.
 
 ## Layout
 
-```
-multica-auth-work/   # THE PRODUCT — Go backend, Next.js web, mobile, desktop, prodex-sidecar
-bin/prodex           # built Rust L2 binary (v0.246.0)
-openspec/changes/    # rotation-parity-polyglot, rotation-router, agent-credential-isolation
-docs/                # RPP/prodex/Multica architecture, contracts, deploy runbooks
-.planning/           # GSD planning (PROJECT/REQUIREMENTS/ROADMAP/STATE/RCA)
-Diligencias/         # charter, context, dependency/crate/env matrices, phases
-.deploy-control/     # fleet board, check-ins, evidence
-scripts/{smoke,deploy,dashboard}/  # RPP smoke tests, rollback/kill-switch, dashboards
+```text
+multica-auth-work/                  product backend, frontend, clients and daemon
+openspec/changes/build-omniroute-agent-brain/  active Main Brain contract
+docs/deploy/                       OmniRoute-only rollout and rollback runbooks
+.deploy-control/                   preserved execution/evidence history
+scripts/                            orchestration and non-inference validation tools
 ```

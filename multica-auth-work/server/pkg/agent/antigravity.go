@@ -70,7 +70,7 @@ func (b *antigravityBackend) Execute(ctx context.Context, prompt string, opts Ex
 
 	cmd := exec.CommandContext(runCtx, execPath, args...)
 	hideAgentWindow(cmd)
-	b.cfg.Logger.Info("agent command", "exec", execPath, "args", args)
+	b.cfg.Logger.Info("agent command", "exec", execPath, "args", safeAntigravityArgvForLog(args), "arg_count", len(args))
 	cmd.WaitDelay = 10 * time.Second
 	if opts.Cwd != "" {
 		cmd.Dir = opts.Cwd
@@ -217,6 +217,49 @@ var antigravityBlockedArgs = map[string]blockedArgMode{
 	"--print-timeout":                blockedWithValue,
 	"--dangerously-skip-permissions": blockedStandalone, // always-on in daemon mode
 	"--log-file":                     blockedWithValue,  // daemon needs it for session capture
+}
+
+// antigravitySensitiveValueFlags are agy value-bearing flags whose VALUES must
+// never reach logs: the prompt (full user/repository content) and the resume
+// conversation id. `--model` is already covered by the shared
+// sensitiveAgentArgValueFlags set. agy's `-p` takes the prompt as its value
+// (unlike Claude Code's standalone `-p`), so this redaction is antigravity-local
+// to avoid mis-redacting other adapters that share safeAgentArgvForLog.
+var antigravitySensitiveValueFlags = map[string]struct{}{
+	"-p": {}, "--print": {}, "--prompt": {}, "--conversation": {},
+}
+
+// safeAntigravityArgvForLog returns a redacted projection of the launch argv
+// for logging. The child process still receives the original argv; only the
+// log projection hides prompt/model/session values. It mirrors
+// safeAgentArgvForLog and additionally redacts agy's value-bearing prompt and
+// conversation flags.
+func safeAntigravityArgvForLog(args []string) []string {
+	safe := make([]string, 0, len(args))
+	redactNext := false
+	for _, arg := range args {
+		if redactNext {
+			safe = append(safe, redactedAgentArgValue)
+			redactNext = false
+			continue
+		}
+		flag := arg
+		if index := strings.IndexByte(flag, '='); index >= 0 {
+			flag = flag[:index]
+		}
+		_, antigravitySensitive := antigravitySensitiveValueFlags[flag]
+		if antigravitySensitive || isSensitiveAgentArgValueFlag(flag) {
+			if strings.Contains(arg, "=") {
+				safe = append(safe, flag+"="+redactedAgentArgValue)
+			} else {
+				safe = append(safe, arg)
+				redactNext = true
+			}
+			continue
+		}
+		safe = append(safe, redactSensitiveInlineArg(arg))
+	}
+	return safe
 }
 
 // buildAntigravityArgs assembles the argv for a one-shot agy invocation.

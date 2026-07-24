@@ -61,6 +61,13 @@ func AssertPreLaunch(plan LaunchPlan) error {
 		if plan.CodexConfig != nil {
 			return ErrPreLaunchPolicy
 		}
+	case brain.CLIOpenAICompatible:
+		// Cline carries no CodexConfig; its providers.json carrier is written to
+		// CLINE_DATA_DIR before launch and validated by ValidateClineConfigBytes.
+		// assert.go stays content-free and never re-validates the carrier bytes.
+		if plan.CodexConfig != nil {
+			return ErrPreLaunchPolicy
+		}
 	case brain.CLICodex:
 		if plan.CodexConfig == nil || plan.CodexConfig.Validate() != nil {
 			return ErrPreLaunchPolicy
@@ -79,11 +86,22 @@ func launchRootsAreControlled(executionRoot string, environment ChildEnvironment
 	if !ok || !exactPathWithin(executionRoot, environment.taskHome, home.value) {
 		return false
 	}
-	if environment.cli != brain.CLICodex {
-		return environment.codexHome == ""
+	if environment.cli != brain.CLICodex && environment.cli != brain.CLIOpenAICompatible {
+		return environment.codexHome == "" && environment.clineDataDir == ""
 	}
-	codexHome, ok := environment.entries["CODEX_HOME"]
-	return ok && exactPathWithin(executionRoot, environment.codexHome, codexHome.value)
+	switch environment.cli {
+	case brain.CLICodex:
+		codexHome, ok := environment.entries["CODEX_HOME"]
+		return ok && exactPathWithin(executionRoot, environment.codexHome, codexHome.value)
+	case brain.CLIOpenAICompatible:
+		if environment.codexHome != "" {
+			return false
+		}
+		clineDataDir, ok := environment.entries["CLINE_DATA_DIR"]
+		return ok && exactPathWithin(executionRoot, environment.clineDataDir, clineDataDir.value)
+	default:
+		return false
+	}
 }
 
 func exactPathWithin(root, expected, actual string) bool {
@@ -126,11 +144,21 @@ func trustedEntryAllowed(cli brain.CLIKind, canonical string, origin envOrigin) 
 		case "ANTHROPIC_AUTH_TOKEN":
 			return origin == originTrustedSecret
 		}
+		if isTrustedTelemetryKey(canonical) {
+			return origin == originTrustedLocal
+		}
 	case brain.CLICodex:
 		switch canonical {
 		case "HOME", "CODEX_HOME":
 			return origin == originTrustedLocal
 		case CodexOmniRouteAPIKeyEnv:
+			return origin == originTrustedSecret
+		}
+	case brain.CLIOpenAICompatible:
+		switch canonical {
+		case "HOME", "CLINE_DATA_DIR":
+			return origin == originTrustedLocal
+		case ClineOmniRouteAPIKeyEnv:
 			return origin == originTrustedSecret
 		}
 	}

@@ -471,10 +471,10 @@ func TestCreateChatSession_Routing(t *testing.T) {
 	// 2. Default routing (no destination -> TL): agent_id empty
 	// Set up a default squad with a TL
 	squadTLID := createHandlerTestAgent(t, "SquadTLAgent", []byte("[]"))
-	
+
 	// Delete any existing squads to have a clean slate for the test workspace
 	_, _ = testPool.Exec(context.Background(), `DELETE FROM squad WHERE workspace_id = $1`, testWorkspaceID)
-	
+
 	squad, err := testHandler.Queries.CreateSquad(context.Background(), db.CreateSquadParams{
 		WorkspaceID: util.MustParseUUID(testWorkspaceID),
 		Name:        "Test Workspace Team",
@@ -509,4 +509,3 @@ func TestCreateChatSession_Routing(t *testing.T) {
 		t.Fatalf("expected default routing to squad TL %s, got %s", squadTLID, defaultResp.AgentID)
 	}
 }
-

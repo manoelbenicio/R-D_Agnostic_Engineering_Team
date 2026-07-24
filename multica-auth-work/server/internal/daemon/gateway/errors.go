@@ -37,6 +37,10 @@ type GatewayError struct {
 	Retryable  bool
 	RetryAfter time.Duration
 	RequestID  string
+	// Detail is a sanitized error-category token (e.g. "unexpected_eof",
+	// "conn_reset", "goaway") for diagnostics only. It never contains bodies,
+	// URLs, credentials, or free-form upstream text.
+	Detail string
 }
 
 func (e *GatewayError) Error() string {

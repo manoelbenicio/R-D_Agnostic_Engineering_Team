@@ -382,7 +382,7 @@ func (b *claudeBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 		}
 	}()
 
-	return &Session{Messages: msgCh, Result: resCh}, nil
+	return &Session{Messages: msgCh, Result: resCh, ProcessID: cmd.Process.Pid}, nil
 }
 
 func (b *claudeBackend) handleAssistant(msg claudeSDKMessage, ch chan<- Message, output *strings.Builder, usage map[string]TokenUsage) {

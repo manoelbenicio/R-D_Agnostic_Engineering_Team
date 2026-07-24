@@ -62,7 +62,7 @@ func TestFrozenTier20CanaryPolicyIsFailClosed(t *testing.T) {
 	if len(policy.Fallback.CrossModel) != 0 || !policy.Fallback.SameModelAccounts || !policy.Retry.PreCommitOnly || policy.SmartContext.Mode != SmartContextOff {
 		t.Fatalf("unsafe frozen policy: %+v", policy)
 	}
-	policy.RouterOwner = brain.RouterOwnerLegacyGo
+	policy.RouterOwner = brain.RouterOwner("alternate_router")
 	if err := policy.Validate(model); !IsErrorClass(err, ErrorInvalidConfiguration) {
 		t.Fatalf("legacy owner accepted: %v", err)
 	}

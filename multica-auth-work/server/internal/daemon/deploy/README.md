@@ -1,7 +1,7 @@
 # Agent Brain deployment and operations specifications
 
 This package is specification-only for G2D. It does not activate a service,
-read a secret, change authentication, run a canary, remove Prodex, or wire the
+read a secret, change authentication, run a canary, change router ownership, or wire the
 active daemon.
 
 ## Frozen configuration references
@@ -38,7 +38,7 @@ Provisioning and rotation are operator actions outside the repository:
 3. Reload or restart through the approved service procedure, hold admissions
    until authenticated readiness passes, then revoke the prior generation.
 4. On read/authentication failure, fail readiness closed. Do not restore
-   provider-native, Prodex, or legacy router fallback.
+   provider-native or alternate-router fallback.
 
 Ordinary backups exclude plaintext. Restore uses the audited secret escrow and
 repeats metadata validation and authenticated readiness.
@@ -56,7 +56,7 @@ repeats metadata validation and authenticated readiness.
 5. For recreate/upgrade, hold or drain new work, checkpoint state, change one
    component/revision at a time, and repeat authenticated readiness.
 6. On a rollback trigger, restore the last accepted image/config/state
-   generation while keeping direct-provider and Prodex routing disabled.
+   generation while keeping direct-provider and alternate routing disabled.
 
 The typed catalogs in this package define backup/restore, account and route hot
 changes, key rotation, upgrade, rollback, incident classification, escalation,

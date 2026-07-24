@@ -315,7 +315,7 @@ func normalizedCodexMCPCommandBasename(command string) string {
 func isProtectedCodexMCPCommand(command string) bool {
 	switch normalizedCodexMCPCommandBasename(command) {
 	case "codex", "claude", "kiro", "multica", "multica-cli", "herdr",
-		"prodex", "opencode", "agy", "antigravity":
+		"opencode", "agy", "antigravity":
 		return true
 	default:
 		return false

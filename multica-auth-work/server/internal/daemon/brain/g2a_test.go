@@ -114,7 +114,7 @@ func TestGatewayAdmissionFailsClosed(t *testing.T) {
 	}
 }
 
-func TestGatewayAdmissionReadyAndLegacyBypass(t *testing.T) {
+func TestGatewayAdmissionReadyAndRejectsGatewayBypass(t *testing.T) {
 	checker := &fakeReadinessChecker{snapshot: ReadinessSnapshot{
 		Live: true, Authenticated: true, ModelRegistryReady: true,
 		SelectedModelReady: true, SelectedProtocolReady: true,
@@ -127,9 +127,11 @@ func TestGatewayAdmissionReadyAndLegacyBypass(t *testing.T) {
 
 	legacy := validTask(false)
 	legacy.RoutePolicy.Approved = false
-	decision, err = controller.Admit(context.Background(), legacy)
-	if err != nil || !decision.Admitted() || decision.ReadinessState != GatewayReadinessNotRequired {
-		t.Fatalf("legacy admission decision=%+v err=%v", decision, err)
+	if _, err = controller.Admit(context.Background(), legacy); err == nil {
+		t.Fatal("gateway bypass was accepted")
+	}
+	if checker.calls != 1 {
+		t.Fatalf("readiness calls=%d, want 1", checker.calls)
 	}
 	if checker.calls != 1 {
 		t.Fatalf("readiness calls=%d, want 1", checker.calls)
@@ -242,22 +244,14 @@ func TestCompatibilityConfigTranslationMeasuresShadowAndRejectsUnsafeAlias(t *te
 	if err != nil || resolved.Name != EnvControlURL {
 		t.Fatalf("ResolveConfig=%+v err=%v", resolved, err)
 	}
-	if _, err := translator.ResolveConfig(context.Background(),
-		ConfigCandidate{Name: "MULTICA_L2_BASE_URL", Value: "legacy", Source: SourceLegacyEnv, Set: true},
-	); err == nil {
-		t.Fatal("semantically incompatible legacy alias was accepted")
-	}
 	measurements := recorder.Snapshot()
-	if len(measurements) != 2 || measurements[0].Count != 1 || measurements[1].Count != 1 {
+	if len(measurements) != 1 || measurements[0].Count != 1 {
 		t.Fatalf("unexpected measurements: %+v", measurements)
 	}
 }
 
 func validTask(gatewayRequired bool) Task {
 	owner := RouterOwnerOmniRoute
-	if !gatewayRequired {
-		owner = RouterOwnerLegacyNativeCLI
-	}
 	return Task{
 		Request: TaskRequest{
 			Version:         ContractVersion,

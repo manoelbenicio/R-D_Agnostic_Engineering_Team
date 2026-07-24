@@ -126,6 +126,13 @@ func defaultHTTPClient(timeout time.Duration) *http.Client {
 	transport.ResponseHeaderTimeout = min(timeout, 15*time.Second)
 	transport.TLSHandshakeTimeout = min(timeout, 10*time.Second)
 	transport.IdleConnTimeout = 90 * time.Second
+	// OmniRoute (or a fronting proxy) can close idle keep-alive connections
+	// before the client's IdleConnTimeout, so a reused connection intermittently
+	// fails the response body read on the next readiness probe. These are
+	// low-frequency control-plane probes (liveness/readiness/models), so use a
+	// fresh connection per request — matching a plain client's reliable
+	// behavior — instead of reusing a possibly-stale pooled connection.
+	transport.DisableKeepAlives = true
 	return &http.Client{Transport: transport, Timeout: timeout}
 }
 
@@ -156,10 +163,11 @@ func (c *Client) probe(ctx context.Context, operation, endpoint string, correlat
 		// connection is consumed and reusable by the subsequent FetchModels.
 		// Flag-off retains the bounded drain below.
 		if _, err := io.Copy(io.Discard, response.Body); err != nil {
-			return ProbeResult{}, &GatewayError{Operation: operation, Class: ErrorProtocol}
+			// Unbounded drain: any failure here is a connection-level fault.
+			return ProbeResult{}, classifyBodyReadError(operation, err)
 		}
 	} else if err := drainBounded(response.Body, c.maxResponseBody); err != nil {
-		return ProbeResult{}, &GatewayError{Operation: operation, Class: ErrorProtocol}
+		return ProbeResult{}, classifyBodyReadError(operation, err)
 	}
 	return ProbeResult{
 		StatusCode: response.StatusCode,
@@ -175,7 +183,7 @@ func (c *Client) FetchModels(ctx context.Context, correlation brain.Correlation)
 	defer response.Body.Close()
 	body, err := readBounded(response.Body, c.maxResponseBody)
 	if err != nil {
-		return ModelsDocument{}, &GatewayError{Operation: operationModels, Class: ErrorProtocol}
+		return ModelsDocument{}, classifyBodyReadError(operationModels, err)
 	}
 	if devModelsCompatEnabled() {
 		// DEV-only compatibility: OmniRoute serves an OpenAI-basic /v1/models
@@ -211,7 +219,17 @@ func (c *Client) do(ctx context.Context, operation, method, endpoint string, cor
 		return nil, &GatewayError{Operation: operation, Class: ErrorInvalidConfiguration}
 	}
 	requestCtx, cancel := context.WithTimeout(ctx, c.requestTimeout)
-	defer cancel()
+	// Do NOT unconditionally defer cancel(): callers read response.Body AFTER
+	// do() returns, and cancelling the request context first aborts the body
+	// read with "context canceled" (intermittently on small bodies, reliably on
+	// the large /v1/models readiness catalog). Cancel on every error path; on
+	// success, defer cancellation until the caller closes the body.
+	handedOff := false
+	defer func() {
+		if !handedOff {
+			cancel()
+		}
+	}()
 	request, err := http.NewRequestWithContext(requestCtx, method, requestURL.String(), nil)
 	if err != nil {
 		return nil, &GatewayError{Operation: operation, Class: ErrorInvalidConfiguration}
@@ -255,7 +273,23 @@ func (c *Client) do(ctx context.Context, operation, method, endpoint string, cor
 		_ = response.Body.Close()
 		return nil, classifyStatus(operation, response)
 	}
+	// Bind context cancellation to body close so the full body can be read.
+	response.Body = &cancelOnCloseBody{ReadCloser: response.Body, cancel: cancel}
+	handedOff = true
 	return response, nil
+}
+
+// cancelOnCloseBody defers request-context cancellation until the response body
+// is closed, so readers are not aborted by a premature cancel.
+type cancelOnCloseBody struct {
+	io.ReadCloser
+	cancel context.CancelFunc
+}
+
+func (b *cancelOnCloseBody) Close() error {
+	err := b.ReadCloser.Close()
+	b.cancel()
+	return err
 }
 
 var errInvalidCredential = errors.New("invalid credential")
@@ -270,9 +304,51 @@ func classifyTransportError(operation string, ctx context.Context, err error) er
 	}
 	var networkError net.Error
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) || errors.As(err, &networkError) && networkError.Timeout() {
-		return &GatewayError{Operation: operation, Class: ErrorTimeout, Retryable: true}
+		return &GatewayError{Operation: operation, Class: ErrorTimeout, Retryable: true, Detail: safeErrorToken(err)}
 	}
-	return &GatewayError{Operation: operation, Class: ErrorTransport, Retryable: true}
+	return &GatewayError{Operation: operation, Class: ErrorTransport, Retryable: true, Detail: safeErrorToken(err)}
+}
+
+// safeErrorToken maps a transport error to a sanitized category token for
+// diagnostics. It never returns bodies, URLs, hosts, ports, or credentials.
+func safeErrorToken(err error) string {
+	if err == nil {
+		return ""
+	}
+	// Unwrap *url.Error to drop the request URL, keeping only the cause.
+	var ue *url.Error
+	if errors.As(err, &ue) && ue.Err != nil {
+		err = ue.Err
+	}
+	s := err.Error()
+	switch {
+	case strings.Contains(s, "unexpected EOF"):
+		return "unexpected_eof"
+	case strings.Contains(s, "connection reset"):
+		return "conn_reset"
+	case strings.Contains(s, "connection refused"):
+		return "conn_refused"
+	case strings.Contains(s, "broken pipe"):
+		return "broken_pipe"
+	case strings.Contains(s, "GOAWAY") || strings.Contains(s, "http2") || strings.Contains(s, "HTTP/2"):
+		return "http2"
+	case strings.Contains(s, "malformed"):
+		return "malformed_response"
+	case strings.Contains(s, "deadline exceeded") || strings.Contains(s, "timeout") || strings.Contains(s, "Client.Timeout"):
+		return "deadline"
+	case strings.Contains(s, "no such host") || strings.Contains(s, "dial "):
+		return "dial"
+	case strings.Contains(s, "tls") || strings.Contains(s, "TLS"):
+		return "tls"
+	case strings.Contains(s, "EOF"):
+		return "eof"
+	default:
+		// URL already stripped above; surface a short cause for diagnosis.
+		if len(s) > 80 {
+			s = s[:80]
+		}
+		return "other:" + s
+	}
 }
 
 func validateEndpointPath(value string) error {
@@ -327,9 +403,24 @@ func readBounded(reader io.Reader, limit int64) ([]byte, error) {
 		return nil, err
 	}
 	if int64(len(body)) > limit {
-		return nil, errors.New("response exceeds configured limit")
+		return nil, errResponseTooLarge
 	}
 	return body, nil
+}
+
+// errResponseTooLarge marks a body that exceeds the configured size limit — a
+// non-retryable protocol/policy violation, distinct from a transient
+// connection read failure.
+var errResponseTooLarge = errors.New("response exceeds configured limit")
+
+// classifyBodyReadError distinguishes a size-limit violation (ErrorProtocol,
+// non-retryable) from a connection-level read failure after a healthy status
+// (ErrorTransport, retryable so resilient admission opens a fresh connection).
+func classifyBodyReadError(operation string, err error) *GatewayError {
+	if errors.Is(err, errResponseTooLarge) {
+		return &GatewayError{Operation: operation, Class: ErrorProtocol, Detail: "response_too_large"}
+	}
+	return &GatewayError{Operation: operation, Class: ErrorTransport, Retryable: true, Detail: safeErrorToken(err)}
 }
 
 func drainBounded(reader io.Reader, limit int64) error {

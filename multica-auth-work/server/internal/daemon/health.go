@@ -34,14 +34,11 @@ type HealthResponse struct {
 	ActiveTaskCount int64             `json:"active_task_count"`
 	Agents          []string          `json:"agents"`
 	Workspaces      []healthWorkspace `json:"workspaces"`
-	Prodex          healthProdex      `json:"prodex"`
 	AgentBrain      healthAgentBrain  `json:"agent_brain"`
 }
 
 type healthAgentBrain struct {
-	DevelopmentEnabled        bool                   `json:"development_enabled"`
 	GatewayRequired           bool                   `json:"gateway_required"`
-	LegacyExecutionEnabled    bool                   `json:"legacy_execution_enabled"`
 	SecretReferenceConfigured bool                   `json:"secret_reference_configured"`
 	AdmissionLimit            int                    `json:"admission_limit"`
 	State                     string                 `json:"state"`
@@ -52,20 +49,7 @@ type healthAgentBrain struct {
 	Protocol                  string                 `json:"protocol,omitempty"`
 	TrustedProfile            string                 `json:"trusted_profile,omitempty"`
 	LastOutcome               string                 `json:"last_outcome,omitempty"`
-	LegacyUseCount            uint64                 `json:"legacy_use_count"`
 	Capacity                  brain.CapacityCounters `json:"capacity"`
-}
-
-type healthProdex struct {
-	Enabled          bool   `json:"enabled"`
-	Required         bool   `json:"required"`
-	Version          string `json:"version,omitempty"`
-	Commit           string `json:"commit,omitempty"`
-	ConfigSource     string `json:"config_source,omitempty"`
-	L2Enabled        bool   `json:"l2_enabled"`
-	AdapterReady     bool   `json:"adapter_ready"`
-	RuntimeAuthority string `json:"runtime_authority"`
-	ApprovedProfiles int    `json:"approved_profiles"`
 }
 
 type healthWorkspace struct {
@@ -136,17 +120,6 @@ func (d *Daemon) healthHandler(startedAt time.Time) http.HandlerFunc {
 			ActiveTaskCount: d.activeTasks.Load(),
 			Agents:          agents,
 			Workspaces:      wsList,
-			Prodex: healthProdex{
-				Enabled:          d.cfg.Prodex.Enabled,
-				Required:         d.cfg.Prodex.Required,
-				Version:          d.cfg.Prodex.Version,
-				Commit:           d.cfg.Prodex.Commit,
-				ConfigSource:     d.cfg.Prodex.ConfigSource,
-				L2Enabled:        d.cfg.L2Runtime.Enabled,
-				AdapterReady:     d.cfg.L2Runtime.Enabled && d.l2Client != nil && d.l2InitErr == nil,
-				RuntimeAuthority: runtimeAuthority(d.cfg),
-				ApprovedProfiles: len(d.l2ApprovedProfileIDs()),
-			},
 		}
 		diagnostics := d.agentBrain.snapshot()
 		if d.agentBrainInitErr != nil {
@@ -154,19 +127,17 @@ func (d *Daemon) healthHandler(startedAt time.Time) http.HandlerFunc {
 		}
 		admissionLimit := 0
 		if d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required {
-			admissionLimit = agentBrainDevelopmentMaxTasks
+			admissionLimit = effectiveAgentBrainCapacity(d.cfg.AgentBrain)
 		}
 		resp.AgentBrain = healthAgentBrain{
-			DevelopmentEnabled:        d.cfg.AgentBrain.DevelopmentEnabled,
 			GatewayRequired:           d.cfg.AgentBrain.Neutral.Gateway.Required,
-			LegacyExecutionEnabled:    d.cfg.AgentBrain.Neutral.LegacyExecution,
 			SecretReferenceConfigured: d.cfg.AgentBrain.Neutral.Gateway.SecretFile.Path != "",
 			AdmissionLimit:            admissionLimit,
 			State:                     diagnostics.State, Readiness: string(diagnostics.Readiness),
 			CLIKind: string(diagnostics.CLIKind), RouteModel: string(diagnostics.RouteModel),
 			RouterOwner: string(diagnostics.RouterOwner), Protocol: string(diagnostics.Protocol),
 			TrustedProfile: string(diagnostics.Profile), LastOutcome: diagnostics.LastOutcome,
-			LegacyUseCount: diagnostics.LegacyUseCount, Capacity: diagnostics.Capacity,
+			Capacity: diagnostics.Capacity,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -182,17 +153,11 @@ func runtimeAuthority(cfg Config) string {
 	return runtimeAuthorityWithRecovery(cfg, nil)
 }
 
-func runtimeAuthorityWithRecovery(cfg Config, recovery *brain.RecoveryMode) string {
+func runtimeAuthorityWithRecovery(_ Config, recovery *brain.RecoveryMode) string {
 	if recovery != nil {
 		return string(recovery.RouterOwner())
 	}
-	if cfg.AgentBrain.DevelopmentEnabled && cfg.AgentBrain.Neutral.Gateway.Required {
-		return "omniroute"
-	}
-	if cfg.Prodex.Enabled && cfg.L2Runtime.Enabled {
-		return runtimeRouterOwnerRustL2
-	}
-	return "native_cli"
+	return string(brain.RouterOwnerOmniRoute)
 }
 
 // shutdownHandler triggers a graceful daemon shutdown by cancelling the

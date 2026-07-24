@@ -79,6 +79,10 @@ type Session struct {
 	Messages <-chan Message
 	// Result receives exactly one value — the final outcome — then closes.
 	Result <-chan Result
+	// ProcessID is the OS PID of the launched agent CLI child process, set
+	// synchronously after cmd.Start (0 if the backend did not record it). It
+	// is real — never synthesized — and is used as the e2e HopCLI proc_id.
+	ProcessID int
 }
 
 // MessageType identifies the kind of Message.
@@ -123,6 +127,7 @@ type Result struct {
 	DurationMs int64
 	SessionID  string
 	Usage      map[string]TokenUsage // keyed by model name
+	ProcessID  int                   // real OS PID of the agent CLI child (0 if unknown); never synthesized
 }
 
 // Config configures a Backend instance.

@@ -19,7 +19,7 @@ func TestTaskRequestSeparatesCLIModelAndOwner(t *testing.T) {
 	if err := request.Validate(); err != nil {
 		t.Fatalf("Validate: %v", err)
 	}
-	request.RouterOwner = RouterOwnerLegacyRustL2
+	request.RouterOwner = RouterOwner("alternate_router")
 	if err := request.Validate(); err == nil {
 		t.Fatal("gateway-required request accepted a legacy router owner")
 	}

@@ -1,51 +1,29 @@
 ## ADDED Requirements
 
-### Requirement: Configurable task capacity tiers
-The system SHALL support operator-selected capacity tiers of at least 20, 50, and 100 simultaneous Agent Brain tasks, subject to measured host and upstream limits.
+### Requirement: Bounded task admission
+Main Brain SHALL enforce an explicit active-task limit and bounded overload behavior. It MUST NOT permit unbounded goroutine, process, socket, queue or log growth.
 
-#### Scenario: Operator selects the 50-task tier
-- **WHEN** the configured and validated capacity tier is 50
-- **THEN** the Agent Brain admits up to 50 active tasks and applies the documented queue or rejection policy beyond that limit
+#### Scenario: Admission limit is full
+- **WHEN** another Kanban task is claimed at the active-task limit
+- **THEN** it waits or receives a deterministic retryable status without starting a CLI
 
-### Requirement: Separate task and inference concurrency
-Agent Brain task admission, OmniRoute global concurrency, route/model concurrency, and per-account concurrency SHALL be independently configurable. Strict round-robin selection MUST NOT imply one active request per route or one global request at a time.
+### Requirement: Cancellation releases capacity once
+Cancellation SHALL stop the child process and downstream request, persist one terminal cancellation and release task capacity exactly once.
 
-#### Scenario: Accounts have active requests
-- **WHEN** an account pool has multiple requests in flight within configured safety limits
-- **THEN** OmniRoute continues selecting accounts for new requests without serializing the entire pool
+#### Scenario: Active streamed task is cancelled
+- **WHEN** cancellation reaches Main Brain
+- **THEN** execution stops, counters reconcile, the slot is released once and one cancelled terminal result is published
 
-### Requirement: Bounded admission and overload
-The Agent Brain and OmniRoute SHALL use bounded queues/admission controls and deterministic retryable overload errors; they MUST NOT permit unbounded memory, goroutine/thread, socket, or log growth.
+### Requirement: Evidence-based tiers
+Capacity tiers 20, 50 and 100 SHALL remain disabled until the exact deployed Main Brain/OmniRoute topology passes its approved workload and resource thresholds.
 
-#### Scenario: Capacity and queue are full
-- **WHEN** a new task or inference request arrives after its applicable active and queue limits are exhausted
-- **THEN** the responsible layer rejects it with a safe machine-readable overload status and retry guidance
+#### Scenario: Higher tier lacks evidence
+- **WHEN** a requested tier has no accepted report
+- **THEN** Main Brain enforces the highest proven lower limit and exposes that effective limit
 
-### Requirement: Cancellation releases capacity
-Cancelling a queued task, active CLI, queued inference request, or active stream SHALL stop downstream work promptly and release task, route, account, connection, and accounting capacity exactly once.
+### Requirement: Failure isolation
+One task's timeout, gateway rejection, cancellation or terminal-persistence failure SHALL NOT leak credentials, corrupt another task's environment/session or release another task's slot.
 
-#### Scenario: Operator cancels an active streaming task
-- **WHEN** cancellation reaches the Agent Brain
-- **THEN** the CLI and OmniRoute upstream request are aborted, all capacity counters return to the correct value, and one terminal cancellation is recorded
-
-### Requirement: Fairness and eligibility evidence
-The system SHALL measure selection distribution under concurrency and SHALL explain imbalance using eligibility, continuation affinity, capacity, quota, cooldown, or circuit state rather than hidden randomness or races.
-
-#### Scenario: One account receives fewer requests
-- **WHEN** a concurrency report shows unequal account distribution
-- **THEN** telemetry identifies the exact periods and reasons that the account was ineligible or affinitized traffic changed the expected sequence
-
-### Requirement: Tiered capacity acceptance
-Each launch tier SHALL have reproducible evidence stating model mix, prompt/output sizes, streaming/tool ratio, request rate, duration, account pools, upstream limits, completions/failures, latency percentiles, retries/fallback, queue, fairness, CPU, memory, and sockets.
-
-#### Scenario: Approve the 100-task tier
-- **WHEN** the team proposes enabling 100 simultaneous tasks
-- **THEN** the exact deployed versions pass the defined 100-task sustained and recovery profile within approved error, latency, fairness, and resource thresholds
-
-### Requirement: Capacity downgrade is explicit
-If a higher capacity tier is not accepted, the system SHALL enforce the highest proven lower tier and expose that limit operationally; it MUST NOT describe the gap as a round-robin limitation.
-
-#### Scenario: 100-task tier misses its SLO
-- **WHEN** the 100-task profile fails but the 50-task profile passes
-- **THEN** production admission is capped at 50 with a dated remediation plan and no change to the documented rotation semantics
-
+#### Scenario: One parallel task fails readiness
+- **WHEN** one task is rejected while others are running
+- **THEN** only that task receives the fail-closed terminal disposition and other task lifecycle state remains intact

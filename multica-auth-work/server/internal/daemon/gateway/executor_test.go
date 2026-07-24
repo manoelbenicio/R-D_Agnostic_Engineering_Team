@@ -5,6 +5,9 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/multica-ai/multica/server/internal/daemon/brain"
+	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
 )
 
 func newTestExecutor(t *testing.T, affinity AffinityMode, accounts ...string) (*Executor, *Selector) {
@@ -172,5 +175,130 @@ func TestExecutorSurfacesBindErrorWithoutFailingSuccessfulResponse(t *testing.T)
 	}
 	if !IsErrorClass(out.BindError, ErrorContinuationCapacity) {
 		t.Fatalf("expected surfaced capacity bind error, got %v", out.BindError)
+	}
+}
+
+func TestExecutorEmitsProviderSpanOnTerminalOutcome(t *testing.T) {
+	executor, _ := newTestExecutor(t, AffinityOriginAccount, "acct-a")
+	sink := e2e.NewMemorySink()
+	recorder := e2e.NewRecorder(sink)
+
+	principal := "principal_0123456789abcdef"
+	executor.SetSpanRecorder(recorder, brain.ProtocolAnthropicMessages, principal)
+
+	validTelemetry := Telemetry{
+		RequestID:              "omni-req-1",
+		ActualModel:            "agy/claude-opus-4-6-thinking",
+		ActualRoute:            "route-a",
+		PseudonymousAccount:    "acct_0123456789abcdef",
+		PseudonymousConnection: "conn_fedcba9876543210",
+		SelectionReason:        SelectionIndependentRotation,
+		Quota:                  QuotaAvailable,
+		Circuit:                CircuitClosed,
+		Usage:                  Usage{Input: 10, Output: 20, Total: 30},
+	}
+
+	outcome, err := executor.Execute(context.Background(), "req-span-1", ContinuationRefs{}, func(ctx context.Context, acct string, attempt int) ProviderOutcome {
+		return ProviderOutcome{
+			OutputCommitted: true,
+			Telemetry:       validTelemetry,
+		}
+	})
+
+	if err != nil {
+		t.Fatalf("expected successful execution, got %v", err)
+	}
+	if outcome.Account != "acct-a" {
+		t.Fatalf("expected account acct-a, got %s", outcome.Account)
+	}
+
+	spans := sink.Spans()
+	if len(spans) != 1 {
+		t.Fatalf("expected exactly 1 span emitted, got %d", len(spans))
+	}
+	span := spans[0]
+	if span.Hop != e2e.HopRoute {
+		t.Fatalf("expected HopRoute, got %s", span.Hop)
+	}
+	if span.Correlation.RequestID != "req-span-1" || span.Correlation.OmniRequestID != "omni-req-1" {
+		t.Fatalf("unexpected correlation: %+v", span.Correlation)
+	}
+	if span.Labels["principal_pseudonym"] != principal {
+		t.Fatalf("expected principal_pseudonym %s, got %s", principal, span.Labels["principal_pseudonym"])
+	}
+}
+
+func TestExecutorFailsClosedWhenSpanTelemetryMissingOrInvalid(t *testing.T) {
+	executor, _ := newTestExecutor(t, AffinityOriginAccount, "acct-a")
+	sink := e2e.NewMemorySink()
+	recorder := e2e.NewRecorder(sink)
+
+	// Set invalid protocol family to force EmitProviderSpan failure.
+	executor.SetSpanRecorder(recorder, brain.ProtocolFamily("invalid-protocol"), "principal_0123456789abcdef")
+
+	_, err := executor.Execute(context.Background(), "req-fail-closed", ContinuationRefs{}, func(ctx context.Context, acct string, attempt int) ProviderOutcome {
+		return ProviderOutcome{
+			OutputCommitted: true,
+		}
+	})
+
+	if err == nil {
+		t.Fatal("expected Execute to fail closed when EmitProviderSpan fails")
+	}
+	if !IsErrorClass(err, ErrorProtocol) {
+		t.Fatalf("expected ErrorProtocol, got %v", err)
+	}
+	if sink.Len() != 0 {
+		t.Fatalf("expected no spans recorded on fail closed, got %d", sink.Len())
+	}
+}
+
+func TestExecutorSpanPreservesRetryAndNoReplay(t *testing.T) {
+	executor, _ := newTestExecutor(t, AffinityOriginAccount, "acct-a")
+	sink := e2e.NewMemorySink()
+	recorder := e2e.NewRecorder(sink)
+
+	principal := "principal_0123456789abcdef"
+	executor.SetSpanRecorder(recorder, brain.ProtocolAnthropicMessages, principal)
+
+	var attempts atomic.Int64
+	telemetry := Telemetry{
+		RequestID:              "omni-req-retry",
+		ActualModel:            "agy/claude-opus-4-6-thinking",
+		ActualRoute:            "route-a",
+		PseudonymousAccount:    "acct_0123456789abcdef",
+		PseudonymousConnection: "conn_fedcba9876543210",
+		SelectionReason:        SelectionRetry,
+		Quota:                  QuotaAvailable,
+		Circuit:                CircuitClosed,
+		Usage:                  Usage{Input: 5, Output: 5, Total: 10},
+	}
+
+	_, err := executor.Execute(context.Background(), "req-retry-span", ContinuationRefs{}, func(ctx context.Context, acct string, attempt int) ProviderOutcome {
+		cur := attempts.Add(1)
+		if cur == 1 {
+			return ProviderOutcome{
+				Failed:    true,
+				Failure:   FailureSignal{StatusCode: 503},
+				Telemetry: telemetry,
+			}
+		}
+		telemetry.RetryCount = 1
+		return ProviderOutcome{
+			OutputCommitted: true,
+			Telemetry:       telemetry,
+		}
+	})
+
+	if err != nil {
+		t.Fatalf("expected success after retry, got %v", err)
+	}
+
+	spans := sink.Spans()
+	if len(spans) != 1 {
+		t.Fatalf("expected exactly 1 terminal route span, got %d", len(spans))
+	}
+	if spans[0].Counters["retry_count"] != 1 {
+		t.Fatalf("expected retry_count=1, got %d", spans[0].Counters["retry_count"])
 	}
 }

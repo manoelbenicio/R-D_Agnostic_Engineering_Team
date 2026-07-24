@@ -270,15 +270,14 @@ func envHasKey(environment ChildEnvironment, key string) bool {
 	return false
 }
 
-
 func TestBuildMinimalInheritedSkipsMalformedEntries(t *testing.T) {
 	inherited := []string{
 		"PATH=/usr/bin",
 		"LANG=en_US.UTF-8",
-		"BASH_FUNC_which%%=() { builtin which; }",  // invalid key (contains %)
-		"no-equals-separator",                       // no '=' separator
+		"BASH_FUNC_which%%=() { builtin which; }", // invalid key (contains %)
+		"no-equals-separator",                     // no '=' separator
 		"SHELL=/bin/bash",
-		"ANTHROPIC_API_KEY=secret123",               // denied credential (must still be removed)
+		"ANTHROPIC_API_KEY=secret123", // denied credential (must still be removed)
 	}
 	env, report, err := BuildMinimalInherited(inherited)
 	if err != nil {
@@ -328,7 +327,6 @@ func TestBuildMinimalInheritedSkipsMalformedEntries(t *testing.T) {
 	}
 }
 
-
 // TestBuildMinimalInheritedSkipsMalformedEntryAtIndex63WithoutLeak reproduces the
 // live terminal failure ("inherited environment entry 63 malformed"): a malformed
 // exported-bash-function fragment sitting at inherited index 63. The sanitizer MUST
@@ -338,7 +336,7 @@ func TestBuildMinimalInheritedSkipsMalformedEntryAtIndex63WithoutLeak(t *testing
 	const secretish = "sk-should-never-appear-in-report-63"
 	inherited := make([]string, 0, 65)
 	inherited = append(inherited, "PATH=/usr/bin") // index 0: safe, must survive
-	for i := len(inherited); i < 63; i++ {          // indices 1..62: padding
+	for i := len(inherited); i < 63; i++ {         // indices 1..62: padding
 		inherited = append(inherited, fmt.Sprintf("PAD_%d=x", i))
 	}
 	// index 63: invalid key name (bash exported-function fragment) with a
@@ -370,5 +368,131 @@ func TestBuildMinimalInheritedSkipsMalformedEntryAtIndex63WithoutLeak(t *testing
 	}
 	if !foundIndex63 {
 		t.Fatalf("malformed index 63 not recorded as _malformed_63: %v", report.Removed)
+	}
+}
+
+// TestBuildGatewayEnvironmentClineUsesDedicatedKeyName proves the accepted
+// OpenAI-compatible (Cline) route injects the controlled per-task Cline data
+// dir and the stable OmniRoute secret under the dedicated CLINE_OMNIROUTE_API_KEY
+// as trusted-last entries (W1 D2). Inherited/custom provider surface is dropped
+// and cannot shadow the trusted values; the secret never appears in diagnostics.
+func TestBuildGatewayEnvironmentClineUsesDedicatedKeyName(t *testing.T) {
+	root, taskHome, _ := controlledTestDirectories(t)
+	clineDataDir := filepath.Join(root, "cline-data")
+	if err := os.MkdirAll(clineDataDir, 0o700); err != nil {
+		t.Fatalf("create controlled cline data dir: %v", err)
+	}
+	secret, err := NewStableSecret(syntheticSecret)
+	if err != nil {
+		t.Fatalf("NewStableSecret returned error: %v", err)
+	}
+	environment, _, err := BuildGatewayEnvironment(ComposeOptions{
+		Inherited: []string{"PATH=/usr/bin", "OPENAI_API_KEY=untrusted", "CLINE_OMNIROUTE_API_KEY=untrusted"},
+		Adapter: AdapterEnvironment{
+			CLI: brain.CLIOpenAICompatible, GatewayRoot: "http://127.0.0.1:20128",
+			TaskHome: taskHome, ClineDataDir: clineDataDir, StableSecret: secret,
+		},
+	})
+	if err != nil {
+		t.Fatalf("BuildGatewayEnvironment returned error: %v", err)
+	}
+	if ClineOmniRouteAPIKeyEnv != "CLINE_OMNIROUTE_API_KEY" {
+		t.Fatalf("unexpected dedicated Cline key name %s", ClineOmniRouteAPIKeyEnv)
+	}
+	// Trusted-last secret wins over the inherited untrusted CLINE_OMNIROUTE_API_KEY
+	// (which the deny-list drops), and the controlled data dir + task home are set.
+	assertEnvValue(t, environment, ClineOmniRouteAPIKeyEnv, syntheticSecret)
+	assertEnvValue(t, environment, "CLINE_DATA_DIR", clineDataDir)
+	assertEnvValue(t, environment, "HOME", taskHome)
+	if envHasKey(environment, "OPENAI_API_KEY") {
+		t.Fatal("provider-native OpenAI credential leaked into the Cline child environment")
+	}
+	if got := fmt.Sprintf("%v", environment); strings.Contains(got, syntheticSecret) {
+		t.Fatal("formatted child environment exposed the stable secret")
+	}
+}
+
+// TestClineTrustedKeysRejectedFromCustomEnvironment proves CLINE_DATA_DIR and
+// CLINE_OMNIROUTE_API_KEY are legal ONLY as trusted-injected entries: supplied
+// via custom/local they must be rejected by the deny-list, so the launch cannot
+// be tricked into overriding the controlled Cline data dir or the stable secret.
+func TestClineTrustedKeysRejectedFromCustomEnvironment(t *testing.T) {
+	if err := ValidateCustomEnvironment(map[string]string{"CLINE_DATA_DIR": "/tmp/x"}); err == nil {
+		t.Fatal("CLINE_DATA_DIR must be rejected from the custom environment")
+	}
+	if err := ValidateCustomEnvironment(map[string]string{"CLINE_OMNIROUTE_API_KEY": "x"}); err == nil {
+		t.Fatal("CLINE_OMNIROUTE_API_KEY must be rejected from the custom environment")
+	}
+}
+
+func TestTrustedTelemetryInjectionAndOverrideBlocking(t *testing.T) {
+	_, taskHome, _ := controlledTestDirectories(t)
+	secret, err := NewStableSecret(syntheticSecret)
+	if err != nil {
+		t.Fatalf("NewStableSecret: %v", err)
+	}
+
+	// 1. Verify trusted injection sets exact official OTEL env
+	environment, _, err := BuildGatewayEnvironment(ComposeOptions{
+		Adapter: AdapterEnvironment{
+			CLI:                       brain.CLIClaudeCode,
+			GatewayRoot:               "http://127.0.0.1:20128",
+			TaskHome:                  taskHome,
+			StableSecret:              secret,
+			TelemetryOTLPLogsEndpoint: "http://127.0.0.1:54321/v1/logs",
+			TelemetryTaskID:           "task-77",
+			TelemetryRequestID:        "abreq-9",
+		},
+	})
+	if err != nil {
+		t.Fatalf("BuildGatewayEnvironment: %v", err)
+	}
+
+	assertEnvValue(t, environment, "CLAUDE_CODE_ENABLE_TELEMETRY", "1")
+	assertEnvValue(t, environment, "OTEL_LOGS_EXPORTER", "otlp")
+	assertEnvValue(t, environment, "OTEL_METRICS_EXPORTER", "none")
+	assertEnvValue(t, environment, "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", "http/json")
+	assertEnvValue(t, environment, "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "http://127.0.0.1:54321/v1/logs")
+	assertEnvValue(t, environment, "OTEL_RESOURCE_ATTRIBUTES", "agent_brain.task_id=task-77,agent_brain.request_id=abreq-9")
+	assertEnvValue(t, environment, "OTEL_LOG_USER_PROMPTS", "0")
+	assertEnvValue(t, environment, "OTEL_LOG_ASSISTANT_RESPONSES", "0")
+	assertEnvValue(t, environment, "OTEL_LOG_TOOL_DETAILS", "0")
+	assertEnvValue(t, environment, "OTEL_LOG_TOOL_CONTENT", "0")
+
+	if envHasKey(environment, "OTEL_LOG_RAW_API_BODIES") {
+		t.Fatal("OTEL_LOG_RAW_API_BODIES must be absent/disabled")
+	}
+
+	// 2. Verify user/local/custom overrides for telemetry are rejected fail-closed
+	overrideCases := []string{
+		"CLAUDE_CODE_ENABLE_TELEMETRY",
+		"OTEL_LOGS_EXPORTER",
+		"OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
+		"OTEL_RESOURCE_ATTRIBUTES",
+		"OTEL_LOG_USER_PROMPTS",
+		"OTEL_LOG_ASSISTANT_RESPONSES",
+		"OTEL_LOG_TOOL_DETAILS",
+		"OTEL_LOG_TOOL_CONTENT",
+		"OTEL_LOG_RAW_API_BODIES",
+	}
+	for _, key := range overrideCases {
+		if err := ValidateCustomEnvironment(map[string]string{key: "1"}); err == nil {
+			t.Fatalf("custom override for %s must be rejected fail-closed", key)
+		}
+	}
+
+	// 3. Verify inherited telemetry overrides are stripped
+	inheritedEnv, _, err := BuildMinimalInherited([]string{
+		"PATH=/usr/bin",
+		"OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://attacker.com",
+		"OTEL_LOG_USER_PROMPTS=1",
+	})
+	if err != nil {
+		t.Fatalf("BuildMinimalInherited: %v", err)
+	}
+	for _, key := range inheritedEnv.Keys() {
+		if strings.HasPrefix(strings.ToUpper(key), "OTEL_") {
+			t.Fatalf("inherited telemetry override %s must be stripped", key)
+		}
 	}
 }

@@ -1,3 +1,5 @@
+> **Historical evidence — superseded.** This auxiliary document is not an active plan or runtime contract. The current owner-approved authority is `proposal.md`, `design.md`, `specs/**/spec.md`, and `tasks.md`, which require Main Brain → OmniRoute-only operation and fail-closed recovery. Any conflicting instruction below is preserved only as historical evidence and MUST NOT be executed.
+
 # OmniRoute Requirements Handoff
 
 ## Request to the OmniRoute architect

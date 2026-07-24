@@ -18,12 +18,15 @@ import (
 	"unicode/utf8"
 
 	"github.com/resend/resend-go/v2"
+
+	"github.com/multica-ai/multica/server/pkg/redact"
 )
 
 // maxSubjectFieldRunes bounds how much user-controlled text (workspace name,
 // inviter name) can land in an email Subject. Prevents attackers from stuffing
 
 var ErrEmailBackendNotConfigured = errors.New("email backend is not configured")
+
 // a full phishing pitch into a workspace name that gets sent from our domain.
 const maxSubjectFieldRunes = 60
 
@@ -340,7 +343,13 @@ func (s *EmailService) SendVerificationCode(to, code string) error {
 		return s.sendSMTP(to, "Your Multica verification code", body)
 	}
 	if s.client == nil {
-		return ErrEmailBackendNotConfigured
+		// DEV delivery tier (no SMTP relay, no Resend client): do not fail.
+		// Log a developer-visibility line with the one-time secret scrubbed
+		// through the shared redaction library so the code never reaches logs.
+		slog.Info("EmailService (dev): verification code email not delivered — no email backend configured",
+			"to", to,
+			"detail", redact.Text(fmt.Sprintf("secret=%s", code)))
+		return nil
 	}
 	params := &resend.SendEmailRequest{
 		From:    s.fromEmail,
@@ -366,7 +375,11 @@ func (s *EmailService) SendInvitationEmail(to, inviterName, workspaceName, invit
 		return s.sendSMTP(to, params.Subject, params.Html)
 	}
 	if s.client == nil {
-		return ErrEmailBackendNotConfigured
+		// DEV delivery tier: log the invitation without leaking the invite token.
+		slog.Info("EmailService (dev): invitation email not delivered — no email backend configured",
+			"to", to,
+			"detail", redact.Text(fmt.Sprintf("invitation token=%s", inviteURL)))
+		return nil
 	}
 	params := buildInvitationParams(s.fromEmail, to, inviterName, workspaceName, inviteURL)
 	_, err := s.client.Emails.Send(params)

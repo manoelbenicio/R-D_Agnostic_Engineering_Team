@@ -1,6 +1,12 @@
 package gateway
 
-import "context"
+import (
+	"context"
+	"time"
+
+	"github.com/multica-ai/multica/server/internal/daemon/brain"
+	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
+)
 
 // ProviderOutcome is what one upstream provider attempt reports to the Executor.
 // On success it may name a continuation handle the response produced, which the
@@ -16,6 +22,8 @@ type ProviderOutcome struct {
 	// Failure describes a failed attempt; meaningful only when Failed is true.
 	Failure FailureSignal
 	Failed  bool
+	// Telemetry carries sanitized OmniRoute response telemetry for span emission.
+	Telemetry Telemetry
 }
 
 // ProviderCall performs one upstream attempt against the selected account. It
@@ -82,9 +90,12 @@ type SelectionRecord struct {
 // daemon, which is outside W2 ownership. Acceptance for 8.4–8.6 remains blocked
 // until W1 wires this call site.
 type Executor struct {
-	selector    *Selector
-	coordinator *Coordinator
-	recorder    func(SelectionRecord)
+	selector     *Selector
+	coordinator  *Coordinator
+	recorder     func(SelectionRecord)
+	spanRecorder *e2e.Recorder
+	protocol     brain.ProtocolFamily
+	principal    string
 }
 
 // NewExecutor composes a Selector and Coordinator into the gateway execution
@@ -102,6 +113,15 @@ func NewExecutor(selector *Selector, coordinator *Coordinator) (*Executor, error
 // recording. The sink must not block.
 func (e *Executor) SetSelectionRecorder(fn func(SelectionRecord)) {
 	e.recorder = fn
+}
+
+// SetSpanRecorder installs an optional e2e.Recorder for emitting ProviderSpanRecord
+// on terminal request outcomes. It also sets the protocol family and principal
+// pseudonym used for span attributes.
+func (e *Executor) SetSpanRecorder(recorder *e2e.Recorder, protocol brain.ProtocolFamily, principalPseudonym string) {
+	e.spanRecorder = recorder
+	e.protocol = protocol
+	e.principal = principalPseudonym
 }
 
 // Execute selects an account for the request (honoring continuation affinity),
@@ -133,11 +153,22 @@ func (e *Executor) Execute(ctx context.Context, requestID string, refs Continuat
 		})
 	}
 
+	startedAt := time.Now().UTC()
+	var lastTelemetry Telemetry
+	var lastOutcome ProviderOutcome
+
 	// The closure runs only on the leader path and only sequentially, so the
 	// captured bindErr needs no synchronization.
 	var bindErr error
 	execResult, execErr := e.coordinator.Execute(ctx, requestID, func(runCtx context.Context, attempt int) (AttemptResult, error) {
 		outcome := call(runCtx, account, attempt)
+		lastOutcome = outcome
+		if outcome.Telemetry.RequestID != "" || outcome.Telemetry.ActualModel != "" {
+			lastTelemetry = outcome.Telemetry
+		} else if lastTelemetry.RequestID == "" {
+			lastTelemetry = outcome.Telemetry
+		}
+
 		attemptResult := AttemptResult{
 			OutputCommitted:     outcome.OutputCommitted,
 			ToolActionCommitted: outcome.ToolActionCommitted,
@@ -153,6 +184,88 @@ func (e *Executor) Execute(ctx context.Context, requestID string, refs Continuat
 		decision := ClassifyFailure(outcome.Failure)
 		return attemptResult, decision.AsError("executor.execute", outcome.Failure)
 	})
+
+	endedAt := time.Now().UTC()
+	if endedAt.Before(startedAt) {
+		endedAt = startedAt
+	}
+
+	if e.spanRecorder != nil {
+		telemetry := lastTelemetry
+		if telemetry.RequestID == "" {
+			telemetry.RequestID = requestID
+		}
+		if telemetry.PseudonymousAccount == "" {
+			telemetry.PseudonymousAccount = alias
+		}
+		if telemetry.PseudonymousConnection == "" {
+			telemetry.PseudonymousConnection = pseudonymizeIdentifier("conn_", account)
+		}
+		if telemetry.SelectionReason == "" {
+			telemetry.SelectionReason = selection.Reason
+		}
+		if telemetry.Quota == "" {
+			telemetry.Quota = QuotaAvailable
+		}
+		if telemetry.Circuit == "" {
+			telemetry.Circuit = CircuitClosed
+		}
+		if telemetry.RetryCount == 0 && execResult.Attempts > 1 {
+			telemetry.RetryCount = execResult.Attempts - 1
+		}
+
+		outcomeStr := "ok"
+		reasonCode := "completed"
+		httpStatus := 200
+
+		if execErr != nil || lastOutcome.Failed {
+			outcomeStr = "error"
+			decision := ClassifyFailure(lastOutcome.Failure)
+			if decision.Class != "" {
+				reasonCode = string(decision.Class)
+			} else {
+				reasonCode = "error"
+			}
+			if lastOutcome.Failure.StatusCode != 0 {
+				httpStatus = lastOutcome.Failure.StatusCode
+			} else {
+				httpStatus = 500
+			}
+		}
+
+		principal := e.principal
+		if principal == "" {
+			principal = pseudonymizeIdentifier("principal_", "default")
+		}
+
+		protocol := e.protocol
+		if protocol == "" {
+			protocol = brain.ProtocolAnthropicMessages
+		}
+
+		record := ProviderSpanRecord{
+			RequestID:          requestID,
+			PrincipalPseudonym: principal,
+			Protocol:           protocol,
+			Telemetry:          telemetry,
+			StartedAt:          startedAt,
+			EndedAt:            endedAt,
+			Outcome:            outcomeStr,
+			ReasonCode:         reasonCode,
+			HTTPStatus:         httpStatus,
+		}
+
+		if spanErr := EmitProviderSpan(e.spanRecorder, record); spanErr != nil {
+			return ExecutionOutcome{
+				Account:      account,
+				AccountAlias: alias,
+				Reason:       selection.Reason,
+				Sequence:     selection.Sequence,
+				Execution:    execResult,
+				BindError:    bindErr,
+			}, spanErr
+		}
+	}
 
 	return ExecutionOutcome{
 		Account:      account,

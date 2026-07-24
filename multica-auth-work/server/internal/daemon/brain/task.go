@@ -30,7 +30,7 @@ func (p ApprovedRoutePolicy) validateFor(request TaskRequest) error {
 	default:
 		return fmt.Errorf("approved route policy protocol is unsupported")
 	}
-	if request.GatewayRequired && !p.Approved {
+	if !p.Approved {
 		return fmt.Errorf("route policy is not approved for gateway-required admission")
 	}
 	return nil

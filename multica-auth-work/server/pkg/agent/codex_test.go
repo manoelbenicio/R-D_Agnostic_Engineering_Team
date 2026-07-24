@@ -2289,7 +2289,7 @@ func TestRenderCodexMcpServersBlockRejectsProtectedAgentCommands(t *testing.T) {
 		{name: "Windows multica executable case insensitive", command: `C:\Tools\MULTICA.EXE`},
 		{name: "Windows multica-cli script with slash separators", command: `C:/Tools/multica-cli.CmD`},
 		{name: "Windows herdr path with spaces and outer whitespace", command: " \t C:\\Program Files\\Herdr\\HERDR.BAT  \n"},
-		{name: "repeated Windows extensions", command: "/opt/bin/prodex.cmd.exe"},
+		{name: "repeated Windows extensions", command: "/opt/bin/codex.cmd.exe"},
 		{name: "Windows opencode COM executable", command: `C:\bin\OpenCode.CoM`},
 		{name: "Windows agy PowerShell script", command: `C:\scripts\AGY.PS1`},
 		{name: "Windows antigravity script-host suffix", command: `C:\scripts\Antigravity.VbS`},

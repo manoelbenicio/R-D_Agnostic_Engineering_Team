@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 
 	"github.com/multica-ai/multica/server/internal/daemon/brain"
@@ -59,6 +60,16 @@ type ReadinessChecker struct {
 	registry    *Registry
 	policy      brain.ReadinessPolicy
 	correlation CorrelationSource
+	diag        *slog.Logger
+}
+
+// SetDiagnosticsLogger enables safe per-predicate strict-readiness diagnostics
+// (transport status/error class, registry version, and each predicate outcome).
+// It never logs response bodies, secrets, URLs, or credentials.
+func (c *ReadinessChecker) SetDiagnosticsLogger(logger *slog.Logger) {
+	if c != nil {
+		c.diag = logger
+	}
 }
 
 var _ brain.GatewayReadinessChecker = (*ReadinessChecker)(nil)
@@ -70,40 +81,76 @@ func NewReadinessChecker(client *Client, registry *Registry, policy brain.Readin
 	return &ReadinessChecker{client: client, registry: registry, policy: policy, correlation: correlation}, nil
 }
 
-func (c *ReadinessChecker) CheckGatewayReadiness(ctx context.Context, request brain.ReadinessRequest) (brain.ReadinessSnapshot, error) {
-	var snapshot brain.ReadinessSnapshot
-	if _, err := brain.ParseRouteModel(string(request.RouteModel)); err != nil {
+func (c *ReadinessChecker) CheckGatewayReadiness(ctx context.Context, request brain.ReadinessRequest) (snapshot brain.ReadinessSnapshot, err error) {
+	var registryVersion string
+	defer func() { c.emitPredicates(request, snapshot, registryVersion, err) }()
+	if _, perr := brain.ParseRouteModel(string(request.RouteModel)); perr != nil {
 		return snapshot, &GatewayError{Operation: operationReadiness, Class: ErrorInvalidRequest}
 	}
-	if _, err := protocolFromWire(string(request.Protocol)); err != nil {
-		return snapshot, err
+	if _, perr := protocolFromWire(string(request.Protocol)); perr != nil {
+		return snapshot, perr
 	}
-	correlation, err := c.correlation()
-	if err != nil || correlation.Validate() != nil {
+	correlation, cerr := c.correlation()
+	if cerr != nil || correlation.Validate() != nil {
 		return snapshot, &GatewayError{Operation: operationReadiness, Class: ErrorInvalidRequest}
 	}
-	if _, err := c.client.CheckLiveness(ctx, correlation); err != nil {
-		return snapshot, err
+	if _, lerr := c.client.CheckLiveness(ctx, correlation); lerr != nil {
+		return snapshot, lerr
 	}
 	snapshot.Live = true
-	if _, err := c.client.CheckReadiness(ctx, correlation); err != nil {
-		return snapshot, err
+	if _, rerr := c.client.CheckReadiness(ctx, correlation); rerr != nil {
+		return snapshot, rerr
 	}
 	snapshot.Authenticated = true
-	registrySnapshot, err := c.registry.Snapshot(ctx)
-	if err != nil {
-		return snapshot, err
+	registrySnapshot, serr := c.registry.Snapshot(ctx)
+	if serr != nil {
+		return snapshot, serr
 	}
+	registryVersion = registrySnapshot.Version
 	snapshot.ModelRegistryReady = registrySnapshot.Version != ""
 	model, ok := registrySnapshot.Models[request.RouteModel]
 	if ok && model.Available {
 		snapshot.SelectedModelReady = true
 		snapshot.SelectedProtocolReady = model.Capability.Protocol == request.Protocol
 	}
-	if err := c.policy.Evaluate(snapshot); err != nil {
+	if perr := c.policy.Evaluate(snapshot); perr != nil {
 		return snapshot, &GatewayError{Operation: operationReadiness, Class: ErrorCapability}
 	}
 	return snapshot, nil
+}
+
+// emitPredicates logs a single safe diagnostic line describing every strict
+// readiness predicate outcome and, on failure, the failing sub-check operation,
+// error class, and transport status. No response bodies, URLs, secrets, or
+// credentials are ever logged.
+func (c *ReadinessChecker) emitPredicates(request brain.ReadinessRequest, snapshot brain.ReadinessSnapshot, registryVersion string, err error) {
+	if c == nil || c.diag == nil {
+		return
+	}
+	failOperation, failClass, failStatus := "", "", 0
+	failDetail := ""
+	if err != nil {
+		if ge, okErr := err.(*GatewayError); okErr && ge != nil {
+			failOperation, failClass, failStatus, failDetail = ge.Operation, string(ge.Class), ge.StatusCode, ge.Detail
+		} else {
+			failClass = "non_gateway_error"
+		}
+	}
+	c.diag.Info("strict_readiness_predicate",
+		"route_model", string(request.RouteModel),
+		"protocol", string(request.Protocol),
+		"live", snapshot.Live,
+		"authenticated", snapshot.Authenticated,
+		"model_registry_ready", snapshot.ModelRegistryReady,
+		"selected_model_ready", snapshot.SelectedModelReady,
+		"selected_protocol_ready", snapshot.SelectedProtocolReady,
+		"registry_version_present", registryVersion != "",
+		"ok", err == nil,
+		"fail_operation", failOperation,
+		"fail_error_class", failClass,
+		"fail_status_code", failStatus,
+		"fail_detail", failDetail,
+	)
 }
 
 func protocolFromWire(value string) (brain.ProtocolFamily, error) {
