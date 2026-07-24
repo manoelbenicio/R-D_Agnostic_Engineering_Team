@@ -21,6 +21,17 @@ Task or user custom environment and arguments MUST NOT override gateway URL/auth
 - **WHEN** custom settings contain a provider key or direct base URL
 - **THEN** pre-launch validation rejects the task before reading the gateway secret or creating a child process
 
+### Requirement: Login credential slot retention (24h, login-based)
+Per-login credential slot directories (`~/.agent-cred-homes/slots/slot-<N>`) SHALL be retained for at most 24h and then destroyed automatically, so credential material does not accumulate and exhaust disk. Retention is **login-based and time-based**, NOT task-based: a slot is never deleted merely because a task finished (a task may run from minutes to hours), and deletion is driven only by the slot's age.
+
+#### Scenario: Slot exceeds 24h and is idle
+- **WHEN** a login credential slot is older than 24h and no live process is using it (no running process has its cwd or HOME inside the slot)
+- **THEN** the slot directory is deleted automatically on the next scheduled sweep, with no manual cleanup
+
+#### Scenario: Slot exceeds 24h but is still in use
+- **WHEN** a login credential slot is older than 24h but a live process still references it
+- **THEN** the slot is preserved (never deleted out from under a running agent) and is eligible for deletion only once it is no longer in use
+
 ### Requirement: Secret-safe diagnostics
 Logs, metrics, traces, health and errors SHALL exclude credentials, authorization values, cookies, prompts, tool payloads, repository content and account identity.
 

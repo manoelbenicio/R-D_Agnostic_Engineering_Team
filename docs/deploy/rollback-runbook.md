@@ -10,6 +10,7 @@ Restore the last accepted Main Brain + OmniRoute release/config while preserving
 - Never start an alternate router.
 - If neither current nor previous OmniRoute is ready, keep model admission closed.
 - Do not delete audit/terminal evidence or run destructive database operations.
+- **ALL backend/daemon container recreates MUST pass `--env-file /home/ec2-user/.config/multica-transition/dev.env` as the single env source.** A bare `docker compose up`/`--force-recreate` silently drops the deployment secrets (DB creds, `JWT_SECRET`, ports) → they default to broken values → crash loop. Applies to rollback recreates too. Root cause + full postmortem: `INCIDENTS.md` (2026-07-24).
 
 ## Steps
 

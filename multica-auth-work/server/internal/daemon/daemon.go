@@ -1055,11 +1055,10 @@ func (d *Daemon) registerRuntimesForWorkspace(ctx context.Context, workspaceID s
 	return resp, profileSig, nil
 }
 
-// runtimeVersion avoids probing a binary for native HTTP runtimes.
-func runtimeVersion(ctx context.Context, provider, executablePath string) (string, error) {
-	if provider == "nim" {
-		return "native-http", nil
-	}
+// runtimeVersion probes the agent binary for its version. (The former
+// native-HTTP short-circuit for the nim runtime was removed together with that
+// runtime; NVIDIA is reached through OmniRoute like any other provider.)
+func runtimeVersion(ctx context.Context, _ string, executablePath string) (string, error) {
 	return detectAgentVersion(ctx, executablePath)
 }
 

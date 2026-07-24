@@ -196,17 +196,6 @@ func TestListModelsClineFallsBackAndAnnotatesThinking(t *testing.T) {
 	}
 }
 
-func TestNIMStaticModelsDefaultsToGLM52(t *testing.T) {
-	t.Parallel()
-	models := nimStaticModels()
-	if len(models) < 1 || models[0].ID != "z-ai/glm-5.2" || !models[0].Default {
-		t.Fatalf("NIM catalog must default to z-ai/glm-5.2, got %+v", models)
-	}
-	if models[0].Thinking != nil {
-		t.Fatalf("NVIDIA GLM-5.2 endpoint does not publish a per-request effort parameter; got %+v", models[0].Thinking)
-	}
-}
-
 func thinkingValues(thinking *ModelThinking) []string {
 	if thinking == nil {
 		return nil

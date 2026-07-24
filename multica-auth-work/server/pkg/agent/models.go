@@ -203,8 +203,6 @@ func ListModels(ctx context.Context, providerType, executablePath string) ([]Mod
 			annotateKiroThinking(models)
 			return models, nil
 		})
-	case "nim":
-		return nimStaticModels(), nil
 	case "qoder":
 		if err := requireDiscoveryProcessContainment(); err != nil {
 			return nil, err
@@ -561,16 +559,6 @@ func clineStaticModels() []Model {
 	return []Model{
 		{ID: "cp/cline-pass/glm-5.2", Label: "GLM-5.2", Provider: "cline-pass"},
 		{ID: "cline-pass/kimi-k2.7-code", Label: "Kimi K2.7 Code", Provider: "cline-pass"},
-	}
-}
-
-// nimStaticModels lists the NVIDIA-hosted IDs supported by Multica's
-// OpenAI-compatible NIM backend. z-ai/glm-5.2 is the requested default; the
-// previous Llama default remains selectable for existing agents.
-func nimStaticModels() []Model {
-	return []Model{
-		{ID: "z-ai/glm-5.2", Label: "GLM-5.2", Provider: "z-ai", Default: true},
-		{ID: "meta/llama-3.3-70b-instruct", Label: "Llama 3.3 70B Instruct", Provider: "meta"},
 	}
 }
 
