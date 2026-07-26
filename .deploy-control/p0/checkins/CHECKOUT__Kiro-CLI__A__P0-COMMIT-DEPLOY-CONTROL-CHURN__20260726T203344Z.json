@@ -1,0 +1,50 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T20:33:44Z",
+  "agent": "Kiro-CLI",
+  "pane_id": "lane-A",
+  "lane": "A",
+  "task_ids": ["P0-COMMIT-DEPLOY-CONTROL-CHURN"],
+  "status": "DONE_NO_OP_ALREADY_COMMITTED",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "330 untracked files under .deploy-control/p0 -> git add + one atomic commit",
+  "finding": "Scope was already satisfied before this lane started. Commit f8d1b791cda7b89aa370e0dce4e36d8c556827fc 'chore(p0): record checkins monitor and event churn' (author kiro-lead, 2026-07-26T20:29:53Z, 4 min before dispatch) added 511 files under .deploy-control/p0 (327 checkins, 125 evidence, 52 handoffs, control.json, events.jsonl, monitor.jsonl, kiro-audit.jsonl, ASSIGNMENTS.md, PROTOCOL.md, SIX_HOUR_CHECKIN_CONTRACT.md), 28086 insertions. At lane start: 0 untracked, 0 modified, 0 ignored under .deploy-control/p0; 511 files on disk == 511 tracked.",
+  "action_taken": "No duplicate commit of the churn created. Only this check-out record was added and committed under .deploy-control/p0.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Kiro-CLI__A__P0-COMMIT-DEPLOY-CONTROL-CHURN__20260726T203344Z.json"
+  ],
+  "commits": {
+    "pre_existing_churn_commit": "f8d1b791cda7b89aa370e0dce4e36d8c556827fc",
+    "pre_existing_churn_file_count": 511,
+    "this_lane_commit": "PENDING_SEE_REPORT",
+    "this_lane_file_count": 1
+  },
+  "evidence": [
+    "git ls-files --others --exclude-standard .deploy-control/p0 | wc -l => 0",
+    "git ls-files .deploy-control/p0 | wc -l => 511",
+    "git diff-tree --no-commit-id --name-only -r f8d1b79 | grep -c '^.deploy-control/p0/' => 511"
+  ],
+  "out_of_scope_left_untouched": [
+    ".deploy-control/AUTHORITY_AMENDMENT_001.md",
+    ".deploy-control/MISSION_CHARTER_v3.md",
+    ".deploy-control/HERDR_COMMS_GUIDE.md (modified)",
+    ".deploy-control/HERDR_COMMS_GUIDE.md.bak-20260726",
+    ".deploy-control/dispatch/",
+    ".deploy-control/escalations/",
+    ".deploy-control/inbox-tm/",
+    ".kiro/settings/lsp.json",
+    ".kiro/steering/aws-agent-rules.md",
+    "scripts/windows/",
+    "10 deleted agentic-prompts-hub/new_prompts/* and bin/prodex (other lanes)"
+  ],
+  "non_claims": [
+    "no push, no git reset, no git clean, no git checkout --",
+    "no dependency install, no deploy, no service or container restart",
+    "no files outside .deploy-control/p0 staged or committed",
+    "no AUTHORITY_AMENDMENT_001 STOP-AND-WAIT action taken (commit authorised in writing by owner for this lane only)"
+  ],
+  "blocker": null
+}
