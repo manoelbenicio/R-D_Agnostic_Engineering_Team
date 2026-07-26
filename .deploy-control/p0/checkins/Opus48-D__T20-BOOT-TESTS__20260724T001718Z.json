@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-boot-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-boot-tests.md",
+    "multica-auth-work/server/cmd/server/boot_recorder_wiring_test.go",
+    "multica-auth-work/server/internal/daemon/boot_recorder_wiring_test.go"
+  ],
+  "finished_at": "2026-07-24T00:25:56Z",
+  "lane": "boot-tests",
+  "last_heartbeat_at": "2026-07-24T00:25:56Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T00:17:18Z",
+  "status": "DONE",
+  "summary": "RED->target boot tests added (test-only, new files): daemon shared admission/CLI recorder target now MET (concurrent wiring landed); daemon closable-0600-file + OTLP lifecycle and ALL server hops (ingress/Obs/delivery + 0600 file, no testable server constructor) remain missing seams (SKIP placeholders + exact file:line). Authoritative rerun found + routed an unrelated F6 regression (queue double-emit -> duplicate_task_hop).",
+  "task": "T20-BOOT-TESTS",
+  "validation": "gofmt clean; go vet ./internal/daemon/=0; go test ./internal/daemon/ -run BootDaemon=0 (both SKIP default); T20_BOOT_TARGET=1 TestBootDaemonInstallsSharedAdmissionAndCLIRecorder=0 PASS (daemon admission+CLI shared recorder now wired at daemon.go:288 cliObs=e2e.NewRecorder(daemonSpanSink)); go test ./cmd/server/ -run BootServer=0 SKIP. RotationDatabaseURL removed by coordinator (not re-added)."
+}

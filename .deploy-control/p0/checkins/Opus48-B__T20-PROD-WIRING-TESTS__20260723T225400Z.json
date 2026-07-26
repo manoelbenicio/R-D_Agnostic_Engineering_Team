@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-prod-wiring-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-prod-wiring-tests.md"
+  ],
+  "finished_at": "2026-07-23T23:00:07Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T23:00:07Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T22:54:00Z",
+  "status": "DONE",
+  "summary": "Production-wiring tests delivered under T20-PROD-WIRING-IMPL; this planning record closed.",
+  "task": "T20-PROD-WIRING-TESTS",
+  "validation": "superseded by T20-PROD-WIRING-IMPL (which added + ran the tests); evidence recorded."
+}

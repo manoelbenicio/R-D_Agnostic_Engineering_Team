@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-dispatcher-design.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-dispatcher-design.md"
+  ],
+  "finished_at": "2026-07-23T22:23:35Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T22:23:35Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T22:19:59Z",
+  "status": "DONE",
+  "summary": "Root cause of ~3/poll: serial single-task ClaimTask per round-trip + full 30s PollInterval nap on first transient task==nil mid-burst + lossy/coalescing per-runtime wakeup (signalTaskWakeup non-blocking send drops signals fired while poller busy) -> nap not interrupted; single-agent burst serial through one poller. Fix design: (1) level-triggered generation-counter wakeup (lossless), (2) bounded drainRuntimeQueue up to cap(sem) with non-blocking slot acquire (backpressure) + loop re-drain only on generation advance (no busy-loop, no unbounded launches), (3) optional batch ClaimTasks(limit=freeSlots) throughput boost (server/client/SQL handoff). Cancel/backpressure/auto-update-barrier/tier-gate preserved. Exact diff points + focused tests. Live 20-drain still gated.",
+  "task": "T20-DISPATCHER-DESIGN",
+  "validation": "design-only, no edits (git diff --check CLEAN). Root cause verified by reading runRuntimePoller (daemon.go:2557), waitForTaskSlot, capacityBackoff, newTaskSlotSemaphore, signalTaskWakeup (wakeup.go:321 non-blocking send=lossy), sleepWithContextOrWakeup, config (PollInterval=30s, MaxConcurrentTasks=20)."
+}

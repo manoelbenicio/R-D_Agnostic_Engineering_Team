@@ -1,0 +1,33 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:00:10Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "R5",
+  "task_ids": ["5.1"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/handoffs/R5-gofmt-inventory.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "git rev-parse HEAD", "exit_code": 0, "assertions_or_tests": 0, "result": "a6d50986…"},
+    {"command": "union enumeration (git diff/diff --cached/ls-files -z, *.go, non-deleted) | sort -u", "exit_code": 0, "assertions_or_tests": 53, "result": "53 existing *.go"},
+    {"command": "xargs gofmt -l over 53 files (/home/ec2-user/goroot/go/bin/gofmt)", "exit_code": 0, "assertions_or_tests": 53, "result": "2 flagged, 51 clean"},
+    {"command": "git diff --check -- .deploy-control/p0/handoffs/R5-gofmt-inventory.md", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "N/A (inventory only; no code formatted)", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/handoffs/R5-gofmt-inventory.md"],
+  "requirements": [],
+  "openspec_tasks": ["5.1"],
+  "findings": [
+    {"file": "multica-auth-work/server/internal/daemonws/obs_delivery.go", "gofmt": "NEEDS_FORMAT", "owner_lane": "L7", "action": "gofmt -w in L7 lock"},
+    {"file": "multica-auth-work/server/internal/service/email.go", "gofmt": "NEEDS_FORMAT", "owner_lane": "UNOWNED->L1/manager escalation", "action": "assign owner then gofmt -w"}
+  ],
+  "summary": "gofmt -l inventory over 53 existing modified *.go: 2 need formatting (obs_delivery.go->L7; email.go->L1/manager), 51 clean incl all present L1-L6 files. Read-only on code; wrote only R5 handoff.",
+  "non_claims": ["no code edited/formatted", "no gofmt -w run", "OpenSpec 5.1 NOT closed (Principal adjudicates after owners format + L8 re-verifies)", "no build/vet/test/inference/deploy/secret", "gofmt -l is formatting-divergence only, not behavior"],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "L7", "reason": "format owned file", "file": "multica-auth-work/server/internal/daemonws/obs_delivery.go"},
+    {"to_lane": "L1", "reason": "unowned gofmt-dirty file needs owner assignment then format", "file": "multica-auth-work/server/internal/service/email.go"}
+  ]
+}

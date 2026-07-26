@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/C4-auth-jwt-config-hermetic.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/auth/jwt_configuration_test.go"
+  ],
+  "finished_at": "2026-07-22T12:24:14Z",
+  "lane": "C4",
+  "last_heartbeat_at": "2026-07-22T12:24:14Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:22:01Z",
+  "status": "DONE",
+  "summary": "Hermetic + passing without weakening production validation. Root cause: configured cases used 23-byte secret below 32-byte production minimum (ValidateJWTConfiguration is pure, not env-flaky). Fix: valid 43-byte deployment-owned secret; isolateAuthEnv(t.Setenv JWT_SECRET/APP_ENV) for host independence; added too-short-non-default fail-closed case to lock the 32-byte rule. jwt.go NOT modified. Proven identical PASS under polluted ambient env. Out-of-lock/OmniRoute untouched; no live/inference/deploy/secret; no checkbox closed.",
+  "task": "C4-AUTH-TEST-GATE",
+  "validation": "gofmt -l: clean; go vet ./internal/auth/: PASS (0); go test ./internal/auth/ -run TestValidateJWTConfiguration -v: 2 funcs PASS ok 0.004s (0); hermeticity proof JWT_SECRET=... APP_ENV=production: ok 0.018s (0); git diff --check: PASS (0). GOCACHE/GOTMPDIR=/tmp (root disk full)."
+}

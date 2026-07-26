@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/FIX-race-design.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/FIX-race-design.md"
+  ],
+  "finished_at": "2026-07-23T00:13:04Z",
+  "lane": "race-design",
+  "last_heartbeat_at": "2026-07-23T00:13:04Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:08:48Z",
+  "status": "DONE",
+  "summary": "Race fix design: Option A (primary) classify benign ErrTaskNotStartable -> 409 -> daemon benign skip (no circuit/failure trip), no fail-closed weakening (only present+non-startable row is benign); Option B (complementary) atomic cancel+enqueue txn in RerunIssue (B2 already satisfied). Exact diff points A1-A5,B1 + focused tests. Includes deploy/rollback checklist (no deploy). ORQ1 current-artifact provenance UNVERIFIABLE from this pane (no host access) -> external blocker to operator+Principal.",
+  "task": "FIX-RACE-DESIGN",
+  "validation": "design-only, no edits (git diff --check CLEAN). Root cause + exact diff points verified by reading: StartAgentTask :one WHERE status IN(dispatched,waiting) -> pgx.ErrNoRows on fenced row; service/task.go:1228 wraps generically; handler/daemon.go:1871 ->400; daemon.go:3456 -> FailTask+Classify. CancelAgentTasksByIssueAndAgent confirmed covers queued/dispatched/running/waiting."
+}

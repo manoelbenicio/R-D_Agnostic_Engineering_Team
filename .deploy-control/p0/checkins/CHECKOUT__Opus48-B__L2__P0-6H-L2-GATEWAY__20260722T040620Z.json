@@ -1,0 +1,36 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T04:06:20Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "L2",
+  "task_ids": ["5.1", "5.2", "6.1"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [
+    {"command": "/home/ec2-user/goroot/go/bin/go test ./internal/daemon/gateway/ -count=1", "exit_code": 0, "assertions_or_tests": 139, "result": "PASS"},
+    {"command": "/home/ec2-user/goroot/go/bin/go vet ./internal/daemon/gateway/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [".deploy-control/p0/evidence/L2-gateway-readiness-evidence.md"],
+  "requirements": ["AB-REQ-07", "AB-REQ-08", "AB-REQ-09", "AB-REQ-10", "AB-REQ-11", "AB-REQ-12", "AB-REQ-13", "AB-REQ-33"],
+  "openspec_tasks": ["5.1", "5.2", "6.1"],
+  "summary": "L2 gateway package VERIFIED green (gofmt clean, go vet exit0, 139-test suite ok 0.278s exit0, git diff --check exit0). Acceptance criteria met: readiness distinguishes 5 distinct gates (Live/Authenticated/ModelRegistryReady/SelectedModelReady/SelectedProtocolReady); /v1/models not treated as inference (no chat/completions/messages call in package); no credential/account lifecycle/retry/fallback in Brain gateway (secret exposed only per-call and header deleted; Rotation/Affinity/Fallback are parsed telemetry, not behavior; single Do, no retry loop); deterministic fail-closed proven by frozen-policy test. No source edit by L2 (package already correct; no busywork).",
+  "non_claims": [
+    "No live run and no inference performed (live_runs.*=false honored).",
+    "/v1/models catalog retrieval is NOT an inference/protocol-fidelity proof and was not treated as one.",
+    "No live readiness probe against a running OmniRoute; 6.1 evidence is metadata/structural + green tests only.",
+    "No secret read/print/hash; no network mutation; no deploy/restart/Docker/systemd.",
+    "No source edit, no OpenSpec/GSD edit, no commit/push, no reset/stash/revert/clean.",
+    "Static acceptance items A/B/C are REVIEWED (code inspection), not dynamically VERIFIED beyond the green suite."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "manager/L8", "reason": "pre-existing NOT-authored benign test-only modification in owned tree", "file": "multica-auth-work/server/internal/daemon/gateway/contracts_test.go"}
+  ]
+}

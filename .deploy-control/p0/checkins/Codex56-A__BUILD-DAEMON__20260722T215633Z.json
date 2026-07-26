@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/BUILD-daemon.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/BUILD-daemon.md"
+  ],
+  "finished_at": "2026-07-22T21:58:45Z",
+  "lane": "server-build-test",
+  "last_heartbeat_at": "2026-07-22T21:58:45Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T21:56:33Z",
+  "status": "DONE",
+  "summary": "Focused build+vet+tests GREEN for internal/daemon, internal/daemon/brain, internal/daemon/runtimeenv via /tmp GOCACHE/GOTMPDIR/GOMODCACHE. No deploy, no edits. Pre-existing gofmt findings routed to daemon/L1 owner.",
+  "task": "BUILD-DAEMON",
+  "validation": "go build ./internal/daemon/...: exit 0; go vet daemon+brain+runtimeenv: exit 0; go test -count=1 daemon(ok 15.294s)+brain(ok 0.015s)+runtimeenv(ok 0.037s): exit 0; gofmt -l: 6 pre-existing unformatted daemon files (finding, out of lane); git diff --check: CLEAN"
+}

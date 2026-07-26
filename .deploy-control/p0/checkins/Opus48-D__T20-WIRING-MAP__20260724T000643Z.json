@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-production-wiring-map.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-production-wiring-map.md"
+  ],
+  "finished_at": "2026-07-24T00:10:51Z",
+  "lane": "wiring-map",
+  "last_heartbeat_at": "2026-07-24T00:10:51Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T00:06:43Z",
+  "status": "DONE",
+  "summary": "Delivered read-only startup-wiring map T20-production-wiring-map.md: server+daemon constructors, one-0600-JSONL-recorder-per-process state (daemon-only, env-gated at daemon.go:4033; server builds none), per-hop recorder source with wired-vs-no-op + insertion points (ingress/queue/persist/delivery/CLI/OTLP all no-op pending recorder injection; admission is the only wired export path), and close/shutdown/error/rotation lifecycle gaps (unclosed 0600 file, no rotation, OTLP unstarted). No source edits/deploy; file:line evidence throughout.",
+  "task": "T20-WIRING-MAP",
+  "validation": "READ-ONLY map, no edits. Verified by grep/read at HEAD a6d5098: server constructors cmd/server/main.go hub:167 daemonHub:169 taskSvc:333 shutdown:406/417/447; daemon newDaemon agentBrainOBS:283 via daemonAdmissionSink:4023 0600 file open:4033 (env AGENT_BRAIN_E2E_EXPORT_FILE). NO-OP proven: SetIngressRecorder:222 (0 callers), SetDeliveryRecorder:235 (0 callers), TaskService.Obs (no .Obs= assignment), d.cliObs:159 (nil, self-doc :3767), otlpreceiver LoopbackServer:148 (0 callers), cmd/server has no e2e wiring. Lifecycle gaps: 0600 file never Closed (daemon.go:4033), no rotation, OTLP not started/Shutdown."
+}

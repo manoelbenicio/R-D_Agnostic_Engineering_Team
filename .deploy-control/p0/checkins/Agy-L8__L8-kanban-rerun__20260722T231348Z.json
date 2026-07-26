@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-L8",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/L8-kanban.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/L8-kanban.md"
+  ],
+  "finished_at": "2026-07-22T23:14:04Z",
+  "lane": "L8",
+  "last_heartbeat_at": "2026-07-22T23:14:04Z",
+  "pane_id": "wK:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T23:13:48Z",
+  "status": "DONE",
+  "summary": "Captured post-deploy Kanban rerun pipeline trace (claim->admitted->launch boundary->persisted terminal). Recorded standby status, DB/gateway blockers, and non-claims.",
+  "task": "L8-kanban-rerun",
+  "validation": "cat .deploy-control/p0/evidence/L8-kanban.md: PASS"
+}

@@ -1,0 +1,29 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T21:40:30Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "T20-WAVE",
+  "task_ids": ["9.1", "6.1"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": ["multica-auth-work/server/internal/daemon/gateway/predicate_instrumentation_test.go"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/daemon/gateway/ -run 'EmitPredicates' -count=1", "exit_code": 0, "assertions_or_tests": 4, "result": "PASS"},
+    {"command": "go test ./internal/daemon/ -run 'Tier20' -count=1", "exit_code": 0, "assertions_or_tests": 2, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/gateway/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-tests.md"],
+  "requirements": [],
+  "openspec_tasks": ["9.1", "6.1"],
+  "summary": "ADDED gateway emitPredicates instrumentation test (4 tests, PASS): asserts all strict-readiness predicate fields on success + failing sub-check operation/class/status from *GatewayError (readiness/rate_limited/429) + non_gateway_error classification + nil-diag no-op. CONFIRMED pre-existing tier-20 gate tests (tier20_enablement_test.go, 2 tests PASS): honor 20 only when gate enabled AND tier==20; 50/100 blocked; dev-off returns requested. gofmt/vet/diff-check clean.",
+  "non_claims": [
+    "Only one product file created (the new gateway test); no gateway/daemon source edited by me (other gateway worktree changes belong to other lanes).",
+    "emitPredicates tested via direct same-package call with a capturing slog.Handler (no live HTTP/daemon); end-to-end CheckGatewayReadiness wiring not re-driven.",
+    "No live run/inference/secret/deploy/commit/push; no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": []
+}

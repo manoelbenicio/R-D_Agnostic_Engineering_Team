@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-workload.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-workload.md"
+  ],
+  "finished_at": "2026-07-23T21:11:22Z",
+  "lane": "tier20-workload",
+  "last_heartbeat_at": "2026-07-23T21:11:22Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T21:09:41Z",
+  "status": "DONE",
+  "summary": "Prepared bounded 20-concurrent read-only workload generator spec (T20-workload.md): 20 safe read-only chat/issue tasks via existing EnqueueQuickCreateTask/EnqueueChatTask/EnqueueTaskForIssue against operator-approved route; per-task admission/queue/start/complete capture keyed by frozen agent-brain.e2e.v1 IDs (metadata-only, secrets_present=false); ABORT thresholds A1 readiness instability, A2 error>10% (>2/20), A3 dup/lost persistence, A4 trace breakage (e2e Assemble AllContinuous==false), A5 tier breach>20; GO/NO-GO gates (operator go + live_run token + CapacityTier20/CapacityGateEnabled + D-V3-25B cleared + sustained readiness). NOT RUN (live_runs all false). Does not authorize 9.2/tiers/cutover.",
+  "task": "T20-WORKLOAD-PREP",
+  "validation": "PREPARE-ONLY: nothing executed; live_runs.*=false (run forbidden); no task enqueued/no inference; no product code written; git diff --check evidence: PASS"
+}

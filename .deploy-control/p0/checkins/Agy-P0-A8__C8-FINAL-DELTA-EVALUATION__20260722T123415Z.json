@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/C8-verification-report.md",
+    ".deploy-control/p0/handoffs/C8-handoff.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/C8-verification-report.md",
+    ".deploy-control/p0/handoffs/C8-handoff.md"
+  ],
+  "finished_at": "2026-07-22T12:35:27Z",
+  "lane": "C8",
+  "last_heartbeat_at": "2026-07-22T12:35:27Z",
+  "pane_id": "wB:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:34:15Z",
+  "status": "DONE",
+  "summary": "C8 final delta closing evaluation complete; 5.3, 6.2, and chat 1.3 closing matrix delivered",
+  "task": "C8-FINAL-DELTA-EVALUATION",
+  "validation": "5.3 server-wide Go build and test suite 100% VERIFIED PASS (0 compilation errors, 0 test failures); 6.2 trace assembly 100% VERIFIED PASS; V1-V10 matrix published"
+}

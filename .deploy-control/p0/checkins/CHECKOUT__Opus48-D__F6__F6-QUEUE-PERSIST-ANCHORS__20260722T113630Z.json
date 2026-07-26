@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:36:30Z",
+  "agent": "Opus48#D",
+  "pane_id": "w8:p2",
+  "lane": "F6",
+  "task_ids": ["6.2"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/service/task.go",
+    "multica-auth-work/server/internal/service/task_complete_race_test.go",
+    "multica-auth-work/server/internal/service/task_notify_test.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [
+    {"command": "gofmt -l internal/service/{task,task_complete_race_test,task_notify_test}.go", "exit_code": 0, "assertions_or_tests": 3, "result": "PASS"},
+    {"command": "go vet ./internal/service/", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go test ./internal/service/ -run 'EmitQueue|EmitPersist' -count=1", "exit_code": 0, "assertions_or_tests": 5, "result": "PASS"},
+    {"command": "git diff --check -- <3 F6 files>", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "CGO_ENABLED=1 go test -race ./internal/service/", "exit_code": null, "assertions_or_tests": 0, "result": "NOT_AVAILABLE_no_gcc"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/handoffs/F6-queue-persist-anchors.md"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["6.2"],
+  "summary": "Wired queue-hop span at enqueue (NotifyTaskEnqueued) + claim/dequeue (captureTaskDispatched, covers ClaimTask + ClaimTaskForRuntime delegation) and persist-hop span in CompleteTask AFTER CompleteAgentTask commit, via nil-safe best-effort helpers on TaskService.Obs. Real ids (row id = queue_msg_id = task_id; result_id derived), only frozen closed counters, metadata-only (ScanSpans clean). Persistence ordering proven by helper consuming the persisted row + post-commit placement. 5 focused tests PASS; vet/gofmt/diff clean.",
+  "non_claims": [
+    "Obs recorder is nil by default (NewTaskService does not set it) -> emission inactive in production until the sink/exporter owner injects a real *e2e.Recorder (handoff; not fabricated here)",
+    "ClaimTaskForRuntime stale-reclaim (return &stale) re-dispatch intentionally not separately spanned",
+    "-race not run (gcc/cgo unavailable)",
+    "no full end-to-end DB-driven CompleteTask run (no live DB in unit env); ordering proven structurally + by placement",
+    "no deploy/inference/secret/commit; no OpenSpec checkbox closed"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "DI/observability-sink-owner", "reason": "inject real *e2e.Recorder into TaskService.Obs to activate emission", "file": "multica-auth-work/server/internal/service/task.go"}
+  ]
+}

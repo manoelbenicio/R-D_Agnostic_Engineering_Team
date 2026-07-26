@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/F4-hub-delivery-anchor.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemonws/hub.go",
+    "multica-auth-work/server/internal/daemonws/hub_test.go"
+  ],
+  "finished_at": "2026-07-22T11:40:11Z",
+  "lane": "F4",
+  "last_heartbeat_at": "2026-07-22T11:40:11Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:29:26Z",
+  "status": "DONE",
+  "summary": "Wired EmitDelivery at real delivered (notifyFrame/notifyWorkspaceFrame send ok), dropped (slow-consumer eviction), backpressure (heartbeat-ack buffer full). Added per-conn WS session_id + per-attempt delivery_id (safe, content-free); opt-in recorder nil=no-op. Metadata-only, no frame/payload in span. 4 new tests + full daemonws PASS. Limitation: WS session_id != upstream task session_id; OBS-9 end-to-end join NOT claimed, routed to F1/F8/Principal. Frontend/hub-adjacent untouched; no live/inference/deploy/secret.",
+  "task": "F4-WS-DELIVERY-ANCHOR",
+  "validation": "gofmt -l hub.go hub_test.go: clean; go vet ./internal/daemonws/: PASS (0); go test focused delivery -v: 9 PASS (0); go test ./internal/daemonws/ -count=1: ok 0.452s (0); git diff --check: PASS (0). GOCACHE/GOTMPDIR=/tmp (root disk full)."
+}

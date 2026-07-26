@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T21:57:10Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "VALIDATE",
+  "task_ids": [],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/daemon-auth-pat-flow.md",
+    ".deploy-control/p0/evidence/UI-terminal-status.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "curl --max-time 4 http://127.0.0.1:8080/health (no token)", "exit_code": 7, "assertions_or_tests": 1, "result": "BLOCKED (connection refused; backend not running)"}
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/daemon-auth-pat-flow.md",
+    ".deploy-control/p0/evidence/UI-terminal-status.md"
+  ],
+  "requirements": [],
+  "openspec_tasks": [],
+  "summary": "Independent static/contract validation. Daemon auth PAT flow PASS: POST /api/tokens mints mul_ PAT, persists hash-only (raw returned once), expiry+renew; MULTICA_TOKEN injection is task-scoped (least-privilege, never daemon credential); DaemonAuth (mdt_/mcn_/mul_) hashes before lookup, fail-closed, never logs token. ORQ-7 UI render PASS: ExecutionLogSection (mounted in issue-detail) renders all task statuses + live elapsed timer + transcript(terminal) + retry/cancel, updated live via task: realtime invalidation; board-view reflects issue status. Live end-to-end + browser observation BLOCKED_EXTERNAL (backend :8080 down, live_runs=false, no node install).",
+  "non_claims": [
+    "Live POST /api/tokens / daemon register+heartbeat NOT executed (backend unreachable).",
+    "Live ORQ-7 UI run NOT observed; component tests NOT executed (no node install).",
+    "No token value read, printed, or hashed by this validation.",
+    "No product code modified; no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "Principal", "reason": "provision running backend+daemon+web stack to execute live PAT/register/heartbeat + ORQ-7 UI observation", "file": ".deploy-control/p0/evidence/daemon-auth-pat-flow.md"}
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-final-obs-integration.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/cmd/server/boot_recorder_wiring_test.go",
+    "multica-auth-work/server/cmd/server/e2e_recorder.go",
+    "multica-auth-work/server/cmd/server/listeners.go",
+    "multica-auth-work/server/cmd/server/listeners_terminal_test.go",
+    "multica-auth-work/server/cmd/server/main.go",
+    "multica-auth-work/server/internal/daemon/observability/e2ewiring/production_anchor_test.go",
+    "multica-auth-work/server/internal/realtime/redis_relay.go",
+    "multica-auth-work/server/internal/realtime/redis_relay_terminal_test.go"
+  ],
+  "finished_at": "2026-07-24T01:56:24Z",
+  "lane": "P0-FINAL-OBS",
+  "last_heartbeat_at": "2026-07-24T01:56:24Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T01:42:18Z",
+  "status": "DONE",
+  "summary": "Wired server e2e observability to green in owned files: (1) hub.SetDeliveryRecorder + testable installServerObservability helper (ingress + both TaskService.Obs + realtime hub + 0600 close); (2) DualWriteBroadcaster.BroadcastTerminalToWorkspace single-ULID local-terminal-leg + relay same id + TerminalBroadcaster assert; (3) registerListeners terminal-only TerminalBroadcaster dispatch, others unchanged; (4) boot test rewritten real+ungated (no t.Skip), adapted to holder-based SetIngressTaskID(ctx,taskID); (5) realtime terminal seam tests (runnable no-DB: one span/relay, canonical session, 3 kinds, nonterminal no span, same-chat 2 tasks->2, no daemonws) + cmd/server real-call-site listener test; (6) e2ewiring production-anchor via real emitters incl realtime delivery seam, 7 hops/9 IDs continuous, no fabricated IDs. Removed boot skip; daemonws left read-only (server delivery hop is realtime.Hub). Full verify green; no deploy/inference/secret/commit.",
+  "task": "P0-FINAL-OBS-INTEGRATION",
+  "validation": "gofmt -l owned/new: empty; go vet cmd/server+realtime+e2ewiring: exit 0; go build ./cmd/server + ./cmd/multica: exit 0; go test: realtime ok (4 DualWrite terminal tests RUN+PASS), e2ewiring ok (production anchor PASS), middleware ok, e2e ok, service ok, daemon ok(49s), cmd/server ok(compile; pre-existing DB-gated TestMain); git diff --check owned dirs CLEAN."
+}

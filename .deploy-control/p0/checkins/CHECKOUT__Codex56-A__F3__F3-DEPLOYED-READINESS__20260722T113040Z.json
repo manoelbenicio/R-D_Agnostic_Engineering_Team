@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:30:40Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "F3",
+  "task_ids": ["6.1"],
+  "status": "BLOCKED",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/F3-deployed-readiness.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "curl -sS -o /dev/null -w '%{http_code}' --max-time 4 http://127.0.0.1:20128/health/live", "exit_code": 7, "assertions_or_tests": "http_status=000", "result": "UNREACHABLE"},
+    {"command": "curl -sS -o /dev/null -w '%{http_code}' --max-time 4 http://127.0.0.1:20128/health/ready", "exit_code": 7, "assertions_or_tests": "http_status=000", "result": "UNREACHABLE"},
+    {"command": "curl -sS -o /dev/null -w '%{http_code}' --max-time 4 http://127.0.0.1:20128/v1/models", "exit_code": 7, "assertions_or_tests": "http_status=000", "result": "UNREACHABLE"},
+    {"command": "curl -sS -o /dev/null -w '%{http_code}' --max-time 4 http://192.168.1.27:20128/health/live", "exit_code": 28, "assertions_or_tests": "http_status=000", "result": "TIMEOUT"},
+    {"command": "ss -ltnp | grep -E ':20128|:8080'", "exit_code": 1, "assertions_or_tests": "no listener", "result": "NONE_LISTENING"}
+  ],
+  "format_and_diff": {
+    "format": "NOT_APPLICABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/F3-deployed-readiness.md",
+    ".deploy-control/p0/checkins/CHECKIN__Codex56-A__F3__F3-DEPLOYED-READINESS__20260722T112935Z.json"
+  ],
+  "requirements": ["AB-REQ-33"],
+  "openspec_tasks": ["6.1"],
+  "summary": "Deployed OmniRoute unreachable from pane w7:p3 (nothing listening on :20128/:8080; 127.0.0.1:20128 -> 000/rc7 connection refused; LAN 192.168.1.27:20128 -> 000/rc28 timeout; no X-OmniRoute-Registry-Version). Deployed proof of 6.1 (immutable revision/health/readiness/registry consistency/selected-model+protocol) NOT attainable. Recorded concrete external blocker/owner/next-action.",
+  "non_claims": [
+    "No deployed 6.1 acceptance proven; source-only proof (R3-deploy-readiness.md) is NOT deployed proof.",
+    "No inference, no secret, no deploy/Docker, no bodies printed; no repo files edited.",
+    "Immutable image digest not verified (would require Docker/registry access, prohibited)."
+  ],
+  "blocker": "Deployed OmniRoute not reachable from this host (no listener on 127.0.0.1:20128 rc7; LAN 192.168.1.27:20128 rc28). Owner: OmniRoute operator + Principal Orchestrator (w5:p9) + ORQ1 host owner. Next action: expose a reachable OmniRoute endpoint (host loopback or declared LAN) with at least unauthenticated liveness, provide non-secret handling for authenticated readiness/v1-models under REQUIRE_API_KEY, then rerun F3 probes; additionally gated by D-V3-25(B) and live_runs.*=false.",
+  "handoffs": [
+    {"to_lane": "Principal", "reason": "endpoint provisioning + authorization to reach deployed OmniRoute for deployed 6.1 proof", "file": ".deploy-control/p0/evidence/F3-deployed-readiness.md"}
+  ]
+}

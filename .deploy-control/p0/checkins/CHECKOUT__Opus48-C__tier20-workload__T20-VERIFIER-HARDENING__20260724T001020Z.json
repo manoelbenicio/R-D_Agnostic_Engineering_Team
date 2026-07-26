@@ -1,0 +1,38 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-24T00:10:20Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "tier20-workload",
+  "task_ids": ["9.1-hardening", "6.2-verify"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    "multica-auth-work/server/internal/daemon/observability/e2e/t20_hardened_verify_test.go",
+    ".deploy-control/p0/evidence/T20-verifier-hardening.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "gofmt -l internal/daemon/observability/e2e/t20_hardened_verify_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS (clean)"},
+    {"command": "go vet ./internal/daemon/observability/e2e/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "go test ./internal/daemon/observability/e2e/ -run 'TestT20Hardened' -count=1 -v", "exit_code": 0, "assertions_or_tests": 11, "result": "PASS (accept-real + 9 reject-fabrication subtests)"},
+    {"command": "go test ./internal/daemon/observability/e2e/ -count=1 (full package)", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS (ok 0.012s, no regression)"},
+    {"command": "git diff --check -- .../t20_hardened_verify_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-verifier-hardening.md"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["9.1 (hardening)", "6.2 (verify)"],
+  "summary": "Hardened the tier-20 verifier with 7 anti-fabrication gates (test-only, package e2e over frozen agent-brain.e2e.v1): manifest-present (non-run provenance), within time-window (stale/cumulative), exact 20-task-set (fabricated/extra), exact 7-hop cardinality (inflation/missing/dup), real proc_id>0 tied to a daemon-launched process (sentinel/synthetic rejected), no generated <prefix><task_id> IDs (SyntheticTraceSpans rejected), 20 unique persisted outcomes (dup/lost). RAN: accept-real fixture passes all gates; 9 fabrication vectors each rejected by their gate. Encodes that synthetic /tmp fixtures and the deterministic-barrier run cannot pass REAL acceptance (fail real-proc + generated-id gates).",
+  "non_claims": [
+    "Test + evidence files only: added one _test.go (package e2e) + evidence; NO product/shared source edited (other new e2e/*.go in git status are OTHER lanes' work, not mine)",
+    "fixtures built in-memory, never read from /tmp (hardening posture)",
+    "reuses frozen agent-brain.e2e.v1 public Assemble/EmittingHops/Correlation.Get; no new product contract; manifest+gates are verifier-local test types",
+    "-race NOT_AVAILABLE (gcc/cgo absent); gates deterministic",
+    "verifies anti-fabrication of trace/concurrency/persistence-accounting evidence only; NOT LLM/OmniRoute protocol behavior; no model-route acceptance; no inference/deploy; does not authorize 9.2/tiers/cutover"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "writer/harness", "reason": "the real instrumented tier-20 run must export a run manifest (run_id, window, exact 20 task_ids, launched pids) alongside spans so t20Harden can bind evidence to the real run", "file": ".deploy-control/p0/evidence/T20-verifier-hardening.md"}
+  ]
+}

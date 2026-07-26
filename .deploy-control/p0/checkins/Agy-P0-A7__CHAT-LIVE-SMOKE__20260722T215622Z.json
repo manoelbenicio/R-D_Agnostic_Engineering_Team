@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A7",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/CHAT-live-smoke.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/CHAT-live-smoke.md"
+  ],
+  "finished_at": "2026-07-22T21:57:40Z",
+  "lane": "chat-smoke-live",
+  "last_heartbeat_at": "2026-07-22T21:57:40Z",
+  "pane_id": "wB:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T21:56:22Z",
+  "status": "DONE",
+  "summary": "Prepared read-only harness and 5-hop Kanban pipeline evidence for test1 (untargeted -> Kiro-TL) and test2 (direct -> Codex). Live inference deferred (live_runs=false) pending daemon live-run token authorization.",
+  "task": "CHAT-LIVE-SMOKE",
+  "validation": "go test ./internal/daemon/brain/...: PASS, go vet ./internal/daemon/brain/...: PASS, git diff --check: PASS"
+}

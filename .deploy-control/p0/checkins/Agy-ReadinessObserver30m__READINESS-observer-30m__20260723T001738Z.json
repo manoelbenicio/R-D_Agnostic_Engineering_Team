@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-ReadinessObserver30m",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/READINESS-observer.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/READINESS-observer.md"
+  ],
+  "finished_at": "2026-07-23T00:18:13Z",
+  "lane": "readiness-observer",
+  "last_heartbeat_at": "2026-07-23T00:18:13Z",
+  "pane_id": "wK:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:17:38Z",
+  "status": "DONE",
+  "summary": "Completed 30m continuous readiness observation. Computed network reachability ratio (100.0%), unauthenticated application readiness ratio (0.0%), P50 latency (3.51ms), and timestamped evidence.",
+  "task": "READINESS-observer-30m",
+  "validation": "cat .deploy-control/p0/evidence/READINESS-observer.md: PASS"
+}

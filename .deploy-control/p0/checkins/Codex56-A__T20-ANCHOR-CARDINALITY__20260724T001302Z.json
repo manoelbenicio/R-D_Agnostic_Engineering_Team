@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-anchor-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-anchor-tests.md",
+    "multica-auth-work/server/internal/middleware/anchor_ingress_recorder_test.go",
+    "multica-auth-work/server/internal/service/anchor_queue_cardinality_test.go"
+  ],
+  "finished_at": "2026-07-24T00:15:01Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-24T00:15:01Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T00:13:02Z",
+  "status": "DONE",
+  "summary": "Added per-hop cardinality tests at real call sites per steering. (A) ingress: exactly-one HopIngress span via real RequestLogger handler + Assemble no-duplicate (PASS); documented prod gap M1 (no SetIngressTaskID prod caller -> prod cardinality 0) + handler/DB harness handoff. (B) queue: drives real emitQueueEnqueued+emitQueueDequeued -> asserts exactly one HopQueue / no duplicate_task_hop; FAILS RED-BY-DESIGN on current double-emit (2 spans), the executable spec of M5. Fix: emit one completed queue lifecycle span per task (service/L1). RED is intentional/documented for F2/L8 attribution, not a foreign break. Test-files-only, no shared source edits.",
+  "task": "T20-ANCHOR-CARDINALITY",
+  "validation": "gofmt clean (exit 0). Ingress cardinality TestRequestLoggerAnchorEmitsExactlyOneIngressSpanPerAcceptedRequest: PASS (go test -run RequestLoggerAnchor ./internal/middleware/ exit 0). Queue cardinality TestQueueHopEmitsExactlyOneLifecycleSpanPerTask: FAIL exit 1 RED-BY-DESIGN (2 HopQueue spans for one task -> duplicate_task_hop), the executable spec of audit M5."
+}

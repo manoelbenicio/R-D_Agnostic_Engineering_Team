@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/R1-final-integration-validation.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/R1-final-integration-validation.md"
+  ],
+  "finished_at": "2026-07-22T00:00:18Z",
+  "lane": "A9-R1",
+  "last_heartbeat_at": "2026-07-22T00:00:18Z",
+  "pane_id": "w6:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T23:23:02Z",
+  "status": "DONE",
+  "summary": "Final targeted runtimeenv validation DONE post W1 D1-D7: all five R1 test contracts pass against final integrated source; no edits required (no contract-change failure). Single focused run only, no broad regression, no live run. Residual external blockers unchanged (BLK-KIMI/BLK-AVAIL/D-V3-25B).",
+  "task": "P0-R1-FINAL-INTEGRATION-VALIDATION",
+  "validation": "Inspected final W1 diff (runtimeenv adapter.go/assert.go/env.go): env.go Cline contract unchanged from R1 tests; new ChildEnvironment.clineDataDir field is additive (tests read via Exec()/Keys()); assert.go/brain_integration.go outside the five R1 contracts. Ran once from multica-auth-work/server: /home/ec2-user/goroot/go/bin/go test ./internal/daemon/runtimeenv/ -run \"Adapter|Env|Model|Cline|G4\" -count=1 => ok ...runtimeenv 0.017s (exit 0). No locked-test assertion failed; no edits made."
+}

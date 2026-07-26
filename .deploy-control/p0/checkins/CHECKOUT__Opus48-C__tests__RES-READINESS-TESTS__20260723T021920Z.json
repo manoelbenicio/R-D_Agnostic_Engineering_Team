@@ -1,0 +1,36 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T02:19:20Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "tests",
+  "task_ids": ["RES-READINESS-TESTS"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    "multica-auth-work/server/internal/daemon/gateway/res_readiness_test.go",
+    ".deploy-control/p0/evidence/RES-tests.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "gofmt -l internal/daemon/gateway/res_readiness_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS (clean)"},
+    {"command": "go vet ./internal/daemon/gateway/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "go test ./internal/daemon/gateway/ -run '<5 RES tests>' -count=1 -v", "exit_code": 0, "assertions_or_tests": 8, "result": "PASS (5 tests incl 4 transient subtests)"},
+    {"command": "go test ./internal/daemon/gateway/ -count=1 (full package regression)", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS (ok 0.254s)"},
+    {"command": "CGO_ENABLED=1 go test -race -run TestRegistrySingleFlightCoalescesConcurrentPolls", "exit_code": 1, "assertions_or_tests": 0, "result": "NOT_AVAILABLE (gcc/cgo absent)"},
+    {"command": "git diff --check -- internal/daemon/gateway/res_readiness_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/RES-tests.md"],
+  "requirements": [],
+  "openspec_tasks": [],
+  "summary": "Deterministic fake-fetch readiness/registry regressions added (package gateway, ModelsFetchFunc + injected Registry.now clock): RES-1 transient 429/5xx/timeout->FRESH ready admitted with honored negative-cache backoff; RES-2 persistent failure->fail closed; RES-3 single-flight coalesces 16 concurrent polls to exactly 1 fetch; RES-4 Retry-After parse/classify/extract + bounded poller backoff; RES-5 stale-ready never reused (Invalidate + TTL expiry force refetch; within-TTL positive cache only). All green; full gateway package regression green.",
+  "non_claims": [
+    "ONE new test file added; NO product code edited; full gateway package compiles + passes (no collision)",
+    "-race NOT_AVAILABLE (gcc/cgo absent); single-flight test passes race-free; determinism independent of the detector",
+    "registry uses fixed RegistryRefreshFailureBackoff (not Retry-After); Retry-After honored via parseRetryAfter/classifyStatus/retryAfter; Coordinator.backoff exponential math covered by existing dispatch tests (not duplicated)",
+    "no install; go.mod/go.sum unchanged; no OmniRoute internals (fake fetch, no network); no live run/inference/secret"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

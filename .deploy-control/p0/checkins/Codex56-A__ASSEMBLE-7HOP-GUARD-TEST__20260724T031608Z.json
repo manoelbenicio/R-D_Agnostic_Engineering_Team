@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    "multica-auth-work/server/internal/daemon/observability/e2e/assemble_7hop_test.go"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/observability/e2e/assemble_7hop_test.go"
+  ],
+  "finished_at": "2026-07-24T03:17:13Z",
+  "lane": "ASSEMBLER-GUARD",
+  "last_heartbeat_at": "2026-07-24T03:17:13Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T03:16:08Z",
+  "status": "DONE",
+  "summary": "Authored ONE disjoint file internal/daemon/observability/e2e/assemble_7hop_test.go (no other source edited). 7 hops built with e2e.CanonicalRequestID/CanonicalSessionID + raw task UUID (task/queue_msg/result) + shared launch_id (admission-cli). HAPPY: AllContinuous, exactly one span per emitting hop, 0 orphans/0 anomalies, ScanSpans clean. NEGATIVE: (a) duplicate delivery same task -> AnomalyDuplicateSpan(duplicate_task_hop)+not continuous; (b) drop persist hop -> not AllContinuous, HopPersist in Missing; (c) backfilled/wrong route request_id -> HopRoute orphan + not continuous. Assembler-logic guard, not a live run.",
+  "task": "ASSEMBLE-7HOP-GUARD-TEST",
+  "validation": "gofmt -l empty; go vet ./internal/daemon/observability/e2e exit 0; go test -run Assemble7Hop ./internal/daemon/observability/e2e: PASS 4/4 exit 0 (HappyPath, DuplicateDeliveryIsAnomaly, MissingHopNotContinuous, WrongIDOrphans)."
+}

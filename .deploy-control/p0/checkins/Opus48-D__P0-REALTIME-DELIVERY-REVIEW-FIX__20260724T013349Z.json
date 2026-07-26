@@ -1,0 +1,26 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/P0-realtime-delivery.md",
+    "multica-auth-work/server/internal/realtime/obs_delivery.go",
+    "multica-auth-work/server/internal/realtime/obs_delivery_test.go"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/realtime/obs_delivery.go",
+    "multica-auth-work/server/internal/realtime/obs_delivery_test.go"
+  ],
+  "finished_at": "2026-07-24T01:36:21Z",
+  "lane": "realtime-delivery",
+  "last_heartbeat_at": "2026-07-24T01:36:21Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T01:33:49Z",
+  "status": "DONE",
+  "summary": "Applied 3 blocking review fixes in internal/realtime only: (1) dedup key now rawTaskID|event (+reject empty task id) so distinct tasks in the same chat session no longer collapse, span still joins on CanonicalSessionID; (2) added optional realtime.TerminalBroadcaster interface + *Hub impl (local leg) + compile assertion so cmd/server type-asserts it and DualWrite (later, redis_relay.go) owns shared event ULID + relay.PublishWithID instead of bypassing the relay; (3) no-subscriber drop_count now >=1. Tests updated/added, all green. No edits outside internal/realtime; no redis_relay/cmd_server/daemonws/e2e changes; no deploy/inference/secret/commit.",
+  "task": "P0-REALTIME-DELIVERY-REVIEW-FIX",
+  "validation": "go1.26.1 GOCACHE=/tmp/kgc: gofmt -l (3 files) empty; go vet ./internal/realtime/=0; go test ./internal/realtime/ -count=1=0 (ok 0.435s); 13 delivery/broadcaster tests PASS incl. DistinctTasksSameSessionEmitTwoSpans, RequiresNonEmptyTaskID, HubImplementsTerminalBroadcaster; git diff --check clean. -race unavailable (no gcc)."
+}

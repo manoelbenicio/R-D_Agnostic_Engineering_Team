@@ -1,0 +1,36 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T22:06:40Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "regression",
+  "task_ids": ["REG-CREDSOURCE"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    "multica-auth-work/server/internal/daemon/credsource_regression_test.go",
+    ".deploy-control/p0/evidence/REG-credsource.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "gofmt -l internal/daemon/credsource_regression_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS (clean)"},
+    {"command": "go vet ./internal/daemon/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "go test ./internal/daemon/ -run 'TestPD08' -count=1 -v", "exit_code": 0, "assertions_or_tests": 3, "result": "PASS (3/3)"},
+    {"command": "go test ./internal/daemon/ -count=1 (full package regression)", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS (ok 15.174s)"},
+    {"command": "git diff --check -- internal/daemon/credsource_regression_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/REG-credsource.md"],
+  "requirements": ["PD-08"],
+  "openspec_tasks": [],
+  "summary": "Added focused PD-08 credential-source wiring regression at the daemon/brain_integration level: (1) TestPD08CredentialSourceWiredOnlyForDevGatewaySlice asserts non-nil daemon.FileCredentialSource iff DevelopmentEnabled && Gateway.Required, else nil (mirrors cmd_daemon.go branch + type); (2) TestPD08AdmissionFailsClosedWithoutCredentialSource: nil source -> admitTask credential_source_unavailable; (3) TestPD08AdmissionPassesCredentialGateWithFileCredentialSource: FileCredentialSource clears the PD-08 nil gate. All green; full daemon package regression green.",
+  "non_claims": [
+    "ONE new test file added; NO product code edited (the ' M' cmd_daemon.go/brain_integration.go in git status are pre-existing prior-lane modifications, not this lane)",
+    "no -race (cgo/gcc absent)",
+    "no OmniRoute internals: synthetic httptest gateway; FileCredentialSource reads no real secret in the hermetic test",
+    "no install; go.mod/go.sum unchanged; no live run/inference/secret",
+    "positive test asserts only absence of credential_source_unavailable (wired source clears the nil gate); not full admission success (no real secret file in hermetic run)"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

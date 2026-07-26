@@ -1,0 +1,31 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T11:29:35Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "F3",
+  "task_ids": ["6.1"],
+  "plan_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_COMPLETION_PLAN.md",
+  "prompt_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_PROMPTS.md#F3",
+  "files_locked": [".deploy-control/p0/evidence/F3-deployed-readiness.md"],
+  "read_only_scope": ["repository", "ORQ1 non-secret endpoints/metadata"],
+  "new_files_declared": [".deploy-control/p0/evidence/F3-deployed-readiness.md"],
+  "dependencies": [],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 331,
+    "toolchains": {"go": "go1.26.1 (/home/ec2-user/goroot/go/bin/go)"},
+    "disk_free": "root 187M (100% used); /tmp 7.6G free"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true,
+    "never_print_raw_registry_bodies": true
+  },
+  "status": "IN_PROGRESS"
+}

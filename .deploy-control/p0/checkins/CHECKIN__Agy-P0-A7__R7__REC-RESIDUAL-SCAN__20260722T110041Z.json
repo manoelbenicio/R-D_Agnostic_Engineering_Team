@@ -1,0 +1,39 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T11:00:41Z",
+  "agent": "Agy-P0-A7",
+  "pane_id": "wB:p1",
+  "lane": "R7",
+  "task_ids": ["REC-RESIDUAL-SCAN", "5.5"],
+  "plan_ref": ".planning/agent-brain-v3/P0_SIX_HOUR_EXECUTION_PLAN.md",
+  "prompt_ref": "MANAGER POST-T360 dispatch",
+  "files_locked": [
+    ".deploy-control/p0/evidence/R7-residual-scan.md"
+  ],
+  "new_files_declared": [
+    ".deploy-control/p0/evidence/R7-residual-scan.md"
+  ],
+  "dependencies": [],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d5098",
+    "git_status_count": 301,
+    "toolchains": {
+      "go": "go1.26.1 linux/amd64 at /home/ec2-user/goroot/go/bin/go",
+      "gofmt": "/home/ec2-user/goroot/go/bin/gofmt",
+      "node": "v22.23.1",
+      "pnpm": "10.28.2"
+    },
+    "disk_free": "pending"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true,
+    "read_only_on_code": true
+  },
+  "status": "IN_PROGRESS"
+}

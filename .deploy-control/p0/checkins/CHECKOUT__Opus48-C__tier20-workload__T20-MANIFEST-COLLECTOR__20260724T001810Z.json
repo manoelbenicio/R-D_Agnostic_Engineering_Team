@@ -1,0 +1,37 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-24T00:18:10Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "tier20-workload",
+  "task_ids": ["9.1-collector"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    "scripts/ops/t20_manifest_collector.py",
+    ".deploy-control/p0/evidence/T20-manifest-collector.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "python3 -m py_compile scripts/ops/t20_manifest_collector.py", "exit_code": 0, "assertions_or_tests": 0, "result": "COMPILE_OK"},
+    {"command": "python3 scripts/ops/t20_manifest_collector.py --self-test", "exit_code": 0, "assertions_or_tests": 11, "result": "OK (11 temp-fixture unit tests)"},
+    {"command": "python3 scripts/ops/t20_manifest_collector.py --run-id x (missing inputs)", "exit_code": 2, "assertions_or_tests": 0, "result": "FAILED_CLOSED (no manifest)"},
+    {"command": "git diff --check -- scripts/ops/t20_manifest_collector.py .../T20-manifest-collector.md", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "N/A (python)", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-manifest-collector.md"],
+  "requirements": [],
+  "openspec_tasks": ["9.1 (collector prep)"],
+  "summary": "Built scripts/ops/t20_manifest_collector.py (Python 3.9; ops tooling, not product source): fail-closed collector producing t20-run-manifest.v1 from real inputs only — run_id/window, exact 20 launched task IDs, backend+daemon export inode+mtime+sha256 with a staleness gate, real child PIDs bound to /proc field-22 starttime (live re-verify catches PID reuse/spoof), and 20 unique persisted terminal rows. Never generates spans/IDs, never pads a count, never infers; every shortfall fails closed (exit 2, {status:FAILED_CLOSED}). 11-case unit self-test green with temp fixtures + a fake /proc; live invocation documented but NOT run.",
+  "non_claims": [
+    "No product source: scripts/ops tooling outside the server module; no product .go/shared source edited (collector.go/t20_hardened_verify_test.go in git status are OTHER lanes'/prior-lane files, not this lane)",
+    "self-test uses TEMP FIXTURES only (no live data, no real /proc, no DB, no network); no inference/deploy",
+    "live invocation documented (§4) but NOT executed; NO live PASS claimed",
+    "collector only produces the provenance manifest; it does not itself verify traces (that is the hardened verifier)",
+    "does not authorize tier-20 activation (9.2), higher tiers, cutover, or production"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "operator/harness (authorized run)", "reason": "wire the sampler->pids.json, launcher->tasks.json, backend->rows.json, harness->backend/daemon.json, then run §4 to emit t20-run-manifest.json for the hardened verifier", "file": "scripts/ops/t20_manifest_collector.py"}
+  ]
+}

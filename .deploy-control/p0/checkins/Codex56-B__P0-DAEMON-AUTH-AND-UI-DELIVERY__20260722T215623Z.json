@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/daemon-auth-pat-flow.md",
+    ".deploy-control/p0/evidence/UI-terminal-status.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/UI-terminal-status.md",
+    ".deploy-control/p0/evidence/daemon-auth-pat-flow.md"
+  ],
+  "finished_at": "2026-07-22T21:59:23Z",
+  "lane": "VALIDATE",
+  "last_heartbeat_at": "2026-07-22T21:59:23Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T21:56:23Z",
+  "status": "DONE",
+  "summary": "Independent static validation PASS for temporary PAT flow + secure MULTICA_TOKEN injection + daemon register/heartbeat auth, and ORQ-7 UI terminal/log/status render. Live end-to-end + browser observation BLOCKED_EXTERNAL: backend/daemon/web stack not running (live_runs=false). Reported exact blocker/owner/next-action to Kiro/Principal in evidence. Never printed token; no product edits; no checkbox closed.",
+  "task": "P0-DAEMON-AUTH-AND-UI-DELIVERY",
+  "validation": "Static/contract validation (backend :8080 unreachable, curl exit 7 -> live BLOCKED_EXTERNAL). Source-verified: personal_access_token.go CreatePersonalAccessToken (hash-only persist, show-once), daemon.go:3517 task-scoped MULTICA_TOKEN, middleware/daemon_auth.go DaemonAuth (hash-before-lookup, fail-closed, no token log), router.go /api/tokens + /api/daemon/{register,heartbeat}; execution-log-section.tsx + issue-detail.tsx render status/timer/transcript with task: realtime invalidation. No node install; no token printed."
+}

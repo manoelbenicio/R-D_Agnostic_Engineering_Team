@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/AUDIT-e2e-hops.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/AUDIT-e2e-hops.md"
+  ],
+  "finished_at": "2026-07-24T03:18:23Z",
+  "lane": "AUDIT",
+  "last_heartbeat_at": "2026-07-24T03:18:23Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T03:15:03Z",
+  "status": "DONE",
+  "summary": "AUDIT VERDICT = PASS (report to w5:p1). (1) all 7 hops implemented (ingress obs_ingress.go:60; queue obs_queue.go:32; admission admission_observability.go:65; cli cli_observability.go:43; route obs_span.go:28; persist obs_persist.go:35; delivery obs_delivery.go:143). (2) shared per-process recorder: server e2e_recorder.go:64-73 (one rec -> SetIngressRecorder + ts.Obs on both TaskServices + hub.SetDeliveryRecorder); daemon daemon.go:277-297,830 (one daemonSpanSink/Recorder -> agentBrainOBS admission + cliObs + route receiver). (3) canonical joins per RequiredIDs + exactly-one-per-hop (queue enqueue is no-op, single span at dequeue task.go:183-217; delivery idempotent dedup; cli emitted only with real proc_id daemon.go:3820-3835). (4) metadata-only via NewSpan closed vocab + Recorder.Emit fail-closed validate + ScanSpans/leak tests. (5) emitTerminalDelivery NOT dead: reached from real fanout via listeners.go:197-205 -> TerminalBroadcaster.BroadcastTerminalToWorkspace -> Hub/DualWrite BroadcastTerminalDelivery -> deliverScopeCounting + emit. NOTES: confirm route_telemetry handler emit line (NOTE-2); daemonws.SetDeliveryRecorder is a separate unwired variant (NOTE-3). Read-only; no edits.",
+  "task": "AUDIT-E2E-HOPS",
+  "validation": "read-only independent audit; file:line citations verified at HEAD a6d5098; git diff --check PASS; no code edited"
+}

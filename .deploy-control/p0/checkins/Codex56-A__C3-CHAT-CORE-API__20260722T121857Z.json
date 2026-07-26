@@ -1,0 +1,21 @@
+{
+  "activity": "definitive toolchain re-check: zero installed JS deps (no node_modules/vitest/tsc anywhere), pnpm present but install prohibited + disk 356M critical. Implementation+tests complete; execution impossible here.",
+  "agent": "Codex56#A",
+  "blocker": "CONCRETE ENV BLOCKER (re-verified definitively): focused core tests cannot run in this pane -- zero installed JS deps (no node_modules/vitest/tsc anywhere in repo; pnpm/npx present but require prohibited install; disk 356M/99% critical). Implementation for Chat 1.3 is COMPLETE: types/chat.ts CreateChatSessionRequest{agent_id?:string;title?:string}; api/client.ts + chat/mutations.ts consume it; focused tests written (client.test.ts both bodies; chat/mutations.test.tsx both modes); backward-compatible; git diff --check CLEAN. A DONE claiming test PASS would be fabricated (evidence-contract forbidden). | owner: F2 runner / CI env + Principal Orchestrator w5:p9 | next action: run pnpm --filter @multica/core typecheck + vitest run packages/core/api/client.test.ts packages/core/chat/mutations.test.tsx in an env with core deps installed (/tmp caches), OR Principal grants scoped pnpm install exception in a non-disk-critical env; Chat 1.3 closes on that PASS | evidence: .deploy-control/p0/evidence/C3-chat-core-api.md#8",
+  "depends_on": [],
+  "evidence": [],
+  "files_locked": [
+    "multica-auth-work/packages/core/chat/mutations.ts"
+  ],
+  "finished_at": null,
+  "lane": "C3",
+  "last_heartbeat_at": "2026-07-22T12:35:07Z",
+  "pane_id": "w7:p3",
+  "progress": 90,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:18:57Z",
+  "status": "BLOCKED",
+  "summary": null,
+  "task": "C3-CHAT-CORE-API",
+  "validation": null
+}

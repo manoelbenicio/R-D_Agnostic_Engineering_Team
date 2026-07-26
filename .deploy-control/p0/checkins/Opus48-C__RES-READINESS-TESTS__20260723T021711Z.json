@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/RES-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/RES-tests.md",
+    "multica-auth-work/server/internal/daemon/gateway/res_readiness_test.go"
+  ],
+  "finished_at": "2026-07-23T02:19:19Z",
+  "lane": "tests",
+  "last_heartbeat_at": "2026-07-23T02:19:19Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T02:17:11Z",
+  "status": "DONE",
+  "summary": "Added internal/daemon/gateway/res_readiness_test.go (package gateway, deterministic fake-fetch ModelsFetchFunc + injected Registry.now clock): RES-1 transient 429/5xx/timeout then success -> FRESH ready admitted (backoff honored, no re-fetch within window); RES-2 persistent failure -> fail closed; RES-3 single-flight coalesces 16 concurrent polls -> exactly 1 fetch; RES-4 Retry-After parsed/classified/extracted + bounded poller backoff; RES-5 stale-ready never reused (Invalidate + TTL expiry force refetch, within-TTL positive cache only). NEW test file only; no product edit; go.mod unchanged; no OmniRoute internals/live/secret.",
+  "task": "RES-READINESS-TESTS",
+  "validation": "gofmt -l new test: clean; go vet ./internal/daemon/gateway/: exit0; go test -run <5 RES tests> -count=1: PASS (incl 4 transient subtests) ok 0.061s exit0; go test ./internal/daemon/gateway/ -count=1 full pkg: ok 0.254s exit0 (no regression); git diff --check: PASS; -race NOT_AVAILABLE (gcc/cgo absent)"
+}

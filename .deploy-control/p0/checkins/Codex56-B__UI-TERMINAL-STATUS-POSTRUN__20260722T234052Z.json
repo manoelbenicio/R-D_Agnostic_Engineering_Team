@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/UI-terminal-status.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/UI-terminal-status.md"
+  ],
+  "finished_at": "2026-07-22T23:41:39Z",
+  "lane": "UI",
+  "last_heartbeat_at": "2026-07-22T23:41:39Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T23:40:52Z",
+  "status": "DONE",
+  "summary": "Post-run UI re-validation: static/contract PASS re-affirmed; live browser/API observation still not possible (no reachable web/backend/daemon stack from this pane, confirmed 2x). Reported blocker/owner/next-action. No product edits, no node install, no checkbox closed.",
+  "task": "UI-TERMINAL-STATUS-POSTRUN",
+  "validation": "Reachability re-check 23:40Z: curl :8080/health exit 7, :3100 exit 7, ss -ltn no 8080/3100/20128/5432/6379 -> live observation BLOCKED_EXTERNAL. Static contract re-affirmed: execution-log-section.tsx/issue-detail.tsx unchanged at HEAD a6d5098; renders status/live-timer/transcript with task: realtime invalidation."
+}

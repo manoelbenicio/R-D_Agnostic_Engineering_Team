@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "agy",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/OMNIROUTE-operator-ticket.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/OMNIROUTE-operator-ticket.md"
+  ],
+  "finished_at": "2026-07-23T00:18:36Z",
+  "lane": "EXTERNAL-OPERATOR-TICKET",
+  "last_heartbeat_at": "2026-07-23T00:18:36Z",
+  "pane_id": "wK:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:17:50Z",
+  "status": "DONE",
+  "summary": "Drafted precise OmniRoute operator ticket based strictly on safe empirical evidence in OMNIROUTE-operator-ticket.md",
+  "task": "OPERATOR-TICKET-OMNIROUTE",
+  "validation": "git diff --check .deploy-control/p0/evidence/OMNIROUTE-operator-ticket.md: PASS"
+}

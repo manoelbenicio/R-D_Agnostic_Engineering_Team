@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/W1-live-readiness.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/W1-live-readiness.md"
+  ],
+  "finished_at": "2026-07-22T04:02:29Z",
+  "lane": "W1-LIVE",
+  "last_heartbeat_at": "2026-07-22T04:02:29Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T00:04:45Z",
+  "status": "DONE",
+  "summary": "W1 live-readiness deliverable DONE; external GLM live prerequisites handed to Principal/OmniRoute/Codex56#A. Releasing lock to take manager dispatch lane L2 (gateway).",
+  "task": "P0-W1-LIVE-READINESS",
+  "validation": "Live-readiness recording complete: D1-D7 green (R1 DONE PASS 0.017s; R3 DONE NO-REVALIDATION-NEEDED); W1 holds no source locks/edits; GLM live run externally gated (live_runs.cline_glm=false + BLK-AVAIL + BLK-25B), owned by OmniRoute/Product security + Principal + Codex56#A. No test rerun/live/source edit."
+}

@@ -1,21 +1,23 @@
 {
-  "activity": "sweep: monitor 2026-07-21T22:21:33Z sev=GREEN age=317s",
+  "activity": "checkout",
   "agent": "Opus48-Kiro",
   "blocker": null,
   "depends_on": [],
-  "evidence": [],
+  "evidence": [
+    ".deploy-control/p0/kiro-audit.jsonl"
+  ],
   "files_locked": [
     ".deploy-control/p0/kiro-audit.jsonl"
   ],
-  "finished_at": null,
+  "finished_at": "2026-07-22T04:20:01Z",
   "lane": "KIRO-SUPERVISOR",
-  "last_heartbeat_at": "2026-07-21T22:26:50Z",
+  "last_heartbeat_at": "2026-07-22T04:20:01Z",
   "pane_id": "w5:p1",
-  "progress": 10,
+  "progress": 100,
   "schema": "main-brain-p0-checkin.v1",
   "started_at": "2026-07-21T22:15:25Z",
-  "status": "IN_PROGRESS",
-  "summary": null,
+  "status": "DONE",
+  "summary": "Legacy KIRO-SUPERVISOR worker-style record closed. Role is now 6h execution_manager = management-only (excluded from worker denominator per plan s4/s7.1); ongoing manager tracking via kiro-audit.jsonl + Principal reports, not a p0_control worker assignment.",
   "task": "P0-SUPERVISION",
-  "validation": null
+  "validation": "supervision+manager audits recorded in kiro-audit.jsonl; monitor cadence sustained since 22:15Z; no product/control edits by Kiro"
 }

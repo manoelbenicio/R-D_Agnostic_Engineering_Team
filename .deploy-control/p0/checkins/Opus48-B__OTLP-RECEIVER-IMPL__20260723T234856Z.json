@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-otlp-receiver.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver.go",
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver_test.go"
+  ],
+  "finished_at": "2026-07-23T23:52:07Z",
+  "lane": "OTLP-RECV",
+  "last_heartbeat_at": "2026-07-23T23:52:07Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T23:48:56Z",
+  "status": "DONE",
+  "summary": "NEW package otlpreceiver implemented + 11 package tests PASS. Loopback OTLP logs receiver, allowlist-only persistence, content/identity/tool dropped, bounded, cancel-safe, fail-closed. No shared source edited.",
+  "task": "OTLP-RECEIVER-IMPL",
+  "validation": "gofmt clean(0); go build(0); go vet(0); go test ./internal/daemon/observability/otlpreceiver/ -count=1 = 11/11 PASS ok 0.003s(0); git diff --check(0). Loopback-only (403 non-loopback + LoopbackServer binds 127.0.0.1+timeouts); default-deny allowlist (7 keys) persists only allowed fields; OTLP body not modeled => content-off (marshaled record proven free of prompt/response/email/tool/messages/PROMPT); bounded body/records/value; ctx-cancel->408 no persist; nil-sink/sink-error->503; bad method/ct/json/duration -> 405/415/400. No logging (no auth-header leak)."
+}

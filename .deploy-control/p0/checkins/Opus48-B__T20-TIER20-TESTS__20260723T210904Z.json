@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-tests.md"
+  ],
+  "finished_at": "2026-07-23T21:39:20Z",
+  "lane": "T20-TESTS",
+  "last_heartbeat_at": "2026-07-23T21:39:20Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T21:09:04Z",
+  "status": "DONE",
+  "summary": "Standby resolved: tier-20 impl + tests landed; wave adds emitPredicates instrumentation test.",
+  "task": "T20-TIER20-TESTS",
+  "validation": "Superseded by T20 WAVE: effectiveAgentBrainCapacity now implemented (config.go:670); tier-20 gate tests already exist (tier20_enablement_test.go). Transitioning to add emitPredicates test + confirm tier-20."
+}

@@ -1,0 +1,41 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T00:09:13Z",
+  "agent": "Agy-ReadinessObserver",
+  "pane_id": "wK:p1",
+  "lane": "readiness-observer",
+  "task_ids": ["READINESS-observer"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/READINESS-observer.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "cat .deploy-control/p0/evidence/READINESS-observer.md",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/READINESS-observer.md"
+  ],
+  "requirements": ["READINESS-observer"],
+  "openspec_tasks": ["READINESS-observer"],
+  "summary": "Quantified Main Brain /v1/models readiness poll timing (avg 4.3ms, 100% 401 unauthenticated rate). Recorded operator ticket details, daemon admission span correlation, and non-claims.",
+  "non_claims": [
+    "AcceptanceClaim=false",
+    "LiveEndpointUsed=false",
+    "Zero inference cost incurred",
+    "OmniRoute internals not inspected or modified",
+    "Product code read-only (zero product source files edited)"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

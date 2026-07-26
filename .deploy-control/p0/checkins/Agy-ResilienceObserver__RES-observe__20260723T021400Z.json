@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-ResilienceObserver",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/RES-observe.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/RES-observe.md"
+  ],
+  "finished_at": "2026-07-23T02:14:21Z",
+  "lane": "readiness-observer",
+  "last_heartbeat_at": "2026-07-23T02:14:21Z",
+  "pane_id": "wK:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T02:14:00Z",
+  "status": "DONE",
+  "summary": "Observed /v1/models transient failure rate (0.0%), 429 rate (0.0%), Retry-After header presence (0/20). Formulated backoff and cadence tuning guidelines for Main Brain readiness poller.",
+  "task": "RES-observe",
+  "validation": "cat .deploy-control/p0/evidence/RES-observe.md: PASS"
+}

@@ -1,0 +1,31 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T22:21:40Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "T20-WAVE",
+  "task_ids": ["9.1"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": ["multica-auth-work/server/internal/daemon/bounded_drain_test.go"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/daemon/ -run 'TaskSlotSemaphore|WaitForTaskSlot' -count=1", "exit_code": 0, "assertions_or_tests": 6, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-dispatcher-tests.md"],
+  "requirements": [],
+  "openspec_tasks": ["9.1"],
+  "summary": "PASS: added 5 deterministic bounded-queue-drain tests for newTaskSlotSemaphore + waitForTaskSlot (daemon.go:2701/2669) proving drain-to-capacity, never-exceed-limit, cancellation, wakeup/backpressure, and release-resumes-drain. 6/6 PASS incl 1 pre-existing sibling. gofmt/vet/diff-check clean.",
+  "non_claims": [
+    "One product file created (test-only); no daemon source edited; zero-overlap on the new test file verified.",
+    "pollLoop end-to-end (server/DB/WS) not driven; drain contract proven at the newTaskSlotSemaphore/waitForTaskSlot primitive level.",
+    "Test file lock was extended beyond the initial evidence-only check-in after the exact path was found during read-only investigation (verified no competing lock).",
+    "No inference/secret/deploy/commit/push; no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "L1", "reason": "optional loop-level pollLoop drain test needs drain-body extraction or full daemon fixture", "file": "multica-auth-work/server/internal/daemon/daemon.go"}
+  ]
+}

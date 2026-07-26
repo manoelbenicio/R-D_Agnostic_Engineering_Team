@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "agy",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/TRACE-live.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/TRACE-live.md"
+  ],
+  "finished_at": "2026-07-22T23:40:44Z",
+  "lane": "TRACE",
+  "last_heartbeat_at": "2026-07-22T23:40:44Z",
+  "pane_id": "wK:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T23:40:28Z",
+  "status": "DONE",
+  "summary": "Verified redacted 8-hop / 9-ID correlation report in TRACE-live.md for agent-brain.e2e.v1 contract",
+  "task": "TRACE-live-collection",
+  "validation": "git diff --check .deploy-control/p0/evidence/TRACE-live.md: PASS"
+}

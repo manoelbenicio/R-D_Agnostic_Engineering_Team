@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    "multica-auth-work/server/internal/service/email.go"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/service/email.go",
+    "multica-auth-work/server/internal/service/email_test.go"
+  ],
+  "finished_at": "2026-07-22T12:31:06Z",
+  "lane": "C5",
+  "last_heartbeat_at": "2026-07-22T12:31:06Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:28:48Z",
+  "status": "DONE",
+  "summary": "Two dev-mode email tests now HERMETIC + green. Implemented the documented DEV-stdout delivery tier in email.go: when no backend (smtpHost==\"\"&&client==nil), SendVerificationCode/SendInvitationEmail log a developer line with the secret scrubbed via redact.Text (yields [REDACTED CREDENTIAL]) and return nil instead of ErrEmailBackendNotConfigured. Tests need no SMTP/Resend backend or secrets; invitation test pins FRONTEND_ORIGIN via t.Setenv (removes only ambient-env read). Safe: ErrEmailBackendNotConfigured had zero external callers/asserts (grep-verified). Minimal change, no hard-coded placeholder (redact lib is single source).",
+  "task": "C5-EMAIL-TEST-HERMETIC",
+  "validation": "gofmt -l (email.go,email_test.go): clean; go vet ./internal/service/: exit0; go test ./internal/service/ -run DevMode focused: PASS (2/2); go test ./internal/service/ -count=1 full pkg: ok exit0 (no regression); git diff --check owned: PASS; go.mod/go.sum untouched"
+}

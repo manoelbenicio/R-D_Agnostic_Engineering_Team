@@ -1,0 +1,85 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:14:00Z",
+  "agent": "Agy-P0-A8",
+  "pane_id": "wB:p2",
+  "lane": "R8",
+  "task_ids": [
+    "REC-INDEP-EVAL-FINAL"
+  ],
+  "status": "BLOCKED",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/R8-post-t360-verification-report.md",
+    ".deploy-control/p0/handoffs/R8-post-t360-handoff.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./internal/daemon/runtimeenv/...",
+      "exit_code": 0,
+      "assertions_or_tests": 20,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./internal/daemonws/...",
+      "exit_code": 0,
+      "assertions_or_tests": 12,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./internal/middleware/...",
+      "exit_code": 0,
+      "assertions_or_tests": 8,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./internal/daemon/...",
+      "exit_code": 1,
+      "assertions_or_tests": 0,
+      "result": "BLOCKED",
+      "detail": "internal/daemon/daemon_test.go:4:2: bytes imported and not used"
+    },
+    {
+      "command": "p0_control.py monitor --once",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS",
+      "detail": "severity GREEN, 0 active lock overlaps"
+    },
+    {
+      "command": "openspec validate --all --strict --json",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/R8-post-t360-verification-report.md",
+    ".deploy-control/p0/handoffs/R8-post-t360-handoff.md"
+  ],
+  "requirements": [
+    "AB-REQ-5.2",
+    "AB-REQ-5.3"
+  ],
+  "openspec_tasks": [
+    "REC-INDEP-EVAL-FINAL"
+  ],
+  "summary": "POST-T360 R8 Independent Re-Evaluation pass completed read-only. OmniRoute contract disposition (native_runtime_wiring_test.go test retirement, runtimeenv isolation, zero rotation code restored), OpenSpec strict, and zero-overlap lock audit verified PASS. Package test compilation for ./internal/daemon/ is BLOCKED by FND-R8-07 (unused bytes import in daemon_test.go:4).",
+  "non_claims": [
+    "No product source code edits authored",
+    "No deployment, network, or inference executed"
+  ],
+  "blocker": "internal/daemon/daemon_test.go:4:2: bytes imported and not used blocks go test ./internal/daemon/ build",
+  "handoffs": [
+    {
+      "to_lane": "R1",
+      "reason": "Remove unused bytes import from daemon_test.go:4 to allow go test ./internal/daemon/ package compilation",
+      "file": "multica-auth-work/server/internal/daemon/daemon_test.go"
+    }
+  ]
+}

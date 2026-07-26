@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/A5-antigravity-equivalence.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/A5-antigravity-equivalence.md"
+  ],
+  "finished_at": "2026-07-21T22:34:50Z",
+  "lane": "A5",
+  "last_heartbeat_at": "2026-07-21T22:34:50Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:29:49Z",
+  "status": "DONE",
+  "summary": "DECISION=STALE. Route-identity/protocol layer REUSE (profiles.go+models.go byte-identical to accepted b657 pins); runtime launch adapter antigravity.go changed post-acceptance (in-product GODEBUG=netdns=cgo injection, commit 7735bdc) contradicting accepted antigravity-1.1.4-ipv4-resolver.md and unproven on candidate build a6d5. One minimal scenario (single non-streaming agy/claude-opus-4-6-thinking Kanban->terminal on HEAD a6d5) closes 5.8/8.1/8.2; NOT executed; BLOCKED_EXTERNAL by D-V3-25(B) key-revocation security stop; owner=W1 R2 live-run token. V1-antigravity-gemini-validation excluded (Prodex rust_l2, not OmniRoute).",
+  "task": "P0-ANTIGRAVITY-EQUIVALENCE",
+  "validation": "sha256sum b657:antigravity.go=96ee0c98… vs HEAD a6d5=1196c6f4… (CHANGED); profiles.go=4824ef05… and models.go=a6957e3e… MATCH accepted pins; git merge-base --is-ancestor b657 HEAD=YES; commit 7735bdc introduces antigravityResolverEnv GODEBUG=netdns=cgo; no live run"
+}

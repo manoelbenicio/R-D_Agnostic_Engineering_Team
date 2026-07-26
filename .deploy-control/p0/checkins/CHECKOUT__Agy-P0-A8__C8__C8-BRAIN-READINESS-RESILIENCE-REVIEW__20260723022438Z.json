@@ -1,0 +1,67 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T02:24:38Z",
+  "agent": "Agy-P0-A8",
+  "pane_id": "wB:p2",
+  "lane": "C8",
+  "task_ids": [
+    "C8-BRAIN-READINESS-RESILIENCE-REVIEW"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/RES-review.md",
+    ".deploy-control/p0/handoffs/RES-review-handoff.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "GOCACHE=/tmp/gocache-c8 GOTMPDIR=/tmp/gotmp-c8 /home/ec2-user/goroot/go/bin/go test ./internal/daemon -run 'TestAdmitRetryLoop|TestTransientReadinessRetry'",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PASS",
+      "detail": "TestAdmitRetryLoop_TransientThenFreshReady, TestAdmitRetryLoop_PersistentFailsClosed, TestAdmitRetryLoop_DeterministicRejectionImmediate, TestTransientReadinessRetry_Classification PASS in 0.039s"
+    },
+    {
+      "command": "GOCACHE=/tmp/gocache-c8 GOTMPDIR=/tmp/gotmp-c8 /home/ec2-user/goroot/go/bin/go vet ./internal/daemon/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/gofmt -l internal/daemon/brain_integration.go internal/daemon/readiness_resilience_test.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/RES-review.md",
+    ".deploy-control/p0/handoffs/RES-review-handoff.md"
+  ],
+  "requirements": [
+    "AB-REQ-39",
+    "AB-REQ-40"
+  ],
+  "openspec_tasks": [
+    "C8-BRAIN-READINESS-RESILIENCE-REVIEW"
+  ],
+  "summary": "Completed independent review of brain_integration.go readiness-resilience diff. Verified: (1) no stale-ready reuse (only fresh Admitted returned live from admitFn), (2) StrictReadinessPolicy NOT weakened (persistent transient failure exhausts bounded wait and fails closed), (3) deterministic rejections (auth, protocol, capability) fail closed immediately on first attempt without retry, (4) bounded wait (readinessAdmissionWait) + Retry-After + exponential backoff + jitter correct, (5) no OmniRoute-internal touch (consume-only boundary preserved). PASS confirmed to RES-review.md.",
+  "non_claims": [
+    "No product source code edits authored",
+    "No deployment, network, or inference executed",
+    "No secret values logged or handled"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

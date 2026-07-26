@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/W1-A9-integration-validation.md",
+    ".deploy-control/p0/checkins/Opus48-B__P0-W1-PREFLIGHT__20260721T223103Z.json"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/W1-A9-integration-validation.md"
+  ],
+  "finished_at": "2026-07-21T22:34:00Z",
+  "lane": "W1+A9",
+  "last_heartbeat_at": "2026-07-21T22:34:00Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:31:03Z",
+  "status": "DONE",
+  "summary": "W1-A9 read-only integration/validation matrix delivered: exact W1 hotspots, serial order (Prod integrity->Core->Cline->Opus48), delta->focused-command matrix D1-D8, live-run token prereqs, proposed zero-overlap source-lock freeze, 5.6-5.8/8.1-8.2 overlap. LIMITATIONS: source read-only (no edits/no test campaign); live runs unauthorized; external blockers = RouteModel IDs (A3 GLM/Kimi, A4 Opus48), A5 Antigravity REUSE/STALE, Principal source-lock+token issuance; Go documented path discrepancy handed to toolchain owner (non-blocking, pin satisfied)",
+  "task": "P0-W1-PREFLIGHT",
+  "validation": "preflight: git 2.50.1, python3 3.9.25, rg 15.2.0, openspec 1.4.1, node v22.23.1, pnpm 10.28.2 (multica-auth-work), go1.26.1 at /home/ec2-user/goroot/go/bin/go (documented .local path absent, exit 127, version pin OK); git branch integration/dev-transition-candidate-20260719 HEAD a6d50986, working tree control-plane-only clean of product source; W1 hotspots verified present; NO product test executed and NO live run per read-only phase"
+}

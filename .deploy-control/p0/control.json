@@ -1,8 +1,49 @@
 {
   "schema": "main-brain-p0-control.v1",
-  "updated_at": "2026-07-21T22:03:37Z",
-  "implementation_authorized": false,
-  "authorization_note": "Prompt/control preparation only. Product implementation lanes require explicit Principal dispatch after exact file locks and external RouteModel blockers are resolved.",
+  "updated_at": "2026-07-22T11:09:24Z",
+  "implementation_authorized": true,
+  "authorization_note": "Owner requested T+360 accountability and use of idle fleet. Post-T+360 recovery authorizes only bounded offline fixes/validation for OpenSpec 5.1-5.5 and 6.1-6.2 with exact disjoint locks. 6.3-6.5 remain gated. No deploy, restart, inference, secret access, dependency install, commit/push, destructive git, or out-of-lock edit. Manager/Principal remain product-code prohibited.",
+  "assignment_phase": "POST_T360_OFFLINE_RECOVERY",
+  "implementation_authorization": {
+    "authorized_lanes": [
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5",
+      "L6",
+      "L7"
+    ],
+    "authorized_task": "POST-T360-OFFLINE-RECOVERY",
+    "completed_delta": "L1-L5 and L7 Wave-A offline deltas completed; L6 unblocked for bounded task 6.2 implementation and focused offline validation.",
+    "externally_blocked": [
+      "Kimi runtime availability/enriched row",
+      "Opus48 AWS ListFoundationModels/ListInferenceProfiles result and active runtime row",
+      "OmniRoute runtime endpoint availability",
+      "D-V3-25(B) key revocation"
+    ],
+    "principal_product_code_forbidden": true,
+    "kiro_product_code_forbidden": true,
+    "live_runs_authorized": false,
+    "authorized_at": "2026-07-22T10:56:43Z",
+    "expires_on": "closure or concrete blocking of OpenSpec 5.1-5.5 and 6.1-6.2",
+    "scope": "Exact disjoint recovery locks dispatched through Opus48-Kiro; 6.3-6.5 excluded.",
+    "no_deploy": true,
+    "no_inference": true
+  },
+  "fleet_saturation_gate": {
+    "required": true,
+    "status": "GREEN",
+    "principal_product_code_forbidden": true,
+    "kiro_product_code_forbidden": true,
+    "eligible_worker_count": 8,
+    "required_assigned_worker_count": 8,
+    "requires_tool_preflight": true,
+    "go_toolchain": "/home/ec2-user/goroot/go/bin/go (go1.26.1)",
+    "requires_zero_lock_overlap": true,
+    "green_at": "2026-07-21T23:02:30Z",
+    "green_evidence": ".deploy-control/p0/kiro-audit.jsonl fleet_saturation_reaudit verdict CRITERIA_MET_GREEN_ELIGIBLE; 8/8 assignments and check-ins; preflight 8/8; overlaps={}; monitor RED count=0"
+  },
   "cadence_seconds": 600,
   "heartbeat_grace_seconds": 300,
   "monitor": {
@@ -18,13 +59,205 @@
     "pane_id": "w5:p1",
     "status": "ACTIVE"
   },
-  "assignments": [],
+  "assignments": [
+    {
+      "agent": "Opus48#A",
+      "pane_id": "w6:p1",
+      "lane": "L1",
+      "task": "P0-L1-INTEGRATION",
+      "scope": "Owned packages BUILD GREEN (exit 0): restored 4 over-deleted wakeup.go helpers (handleRuntimeProfilesChanged/signalTaskWakeup/taskWakeupURL/sleepWithContextOrRuntimeChange) verbatim from HEAD + imports, kept credential-rotation removed; removed observeCredentialPrepare orphan in daemon.go; gofmt owned files clean. Now investigating brain g2a_test gateway-bypass-accepted failure.",
+      "locks": [
+        "multica-auth-work/server/cmd/multica/cmd_daemon.go",
+        "multica-auth-work/server/go.mod",
+        "multica-auth-work/server/internal/daemon/brain",
+        "multica-auth-work/server/internal/daemon/brain_integration.go",
+        "multica-auth-work/server/internal/daemon/config.go",
+        "multica-auth-work/server/internal/daemon/daemon.go",
+        "multica-auth-work/server/internal/daemon/execenv",
+        "multica-auth-work/server/internal/daemon/health.go",
+        "multica-auth-work/server/internal/daemon/types.go",
+        "multica-auth-work/server/internal/daemon/wakeup.go",
+        "multica-auth-work/server/pkg/agent/models.go"
+      ],
+      "status": "DONE",
+      "control_status": "DONE",
+      "covers": [
+        "5.1",
+        "5.2",
+        "5.3"
+      ]
+    },
+    {
+      "agent": "Opus48#B",
+      "pane_id": "w6:p2",
+      "lane": "L2",
+      "task": "P0-6H-L2-GATEWAY",
+      "scope": "checkout",
+      "locks": [
+        "multica-auth-work/server/internal/daemon/gateway"
+      ],
+      "status": "DONE",
+      "control_status": "DONE",
+      "covers": [
+        "5.1",
+        "5.2",
+        "6.1"
+      ]
+    },
+    {
+      "agent": "Codex56#A",
+      "pane_id": "w7:p3",
+      "lane": "L3",
+      "task": "P0-L3-RUNTIMEENV",
+      "scope": "checkout",
+      "locks": [
+        "server/internal/daemon/runtimeenv/adapter.go",
+        "server/internal/daemon/runtimeenv/cline.go",
+        "server/internal/daemon/runtimeenv/env.go",
+        "server/internal/daemon/runtimeenv/model.go"
+      ],
+      "status": "DONE",
+      "control_status": "DONE",
+      "covers": [
+        "5.1",
+        "5.2"
+      ]
+    },
+    {
+      "agent": "Codex56#B",
+      "pane_id": "w7:p4",
+      "lane": "L4",
+      "task": "L4-CLI-ADAPTERS",
+      "scope": "Fixed codex protected-cmd test (green); auditing argv-log redaction: claude+codex redact via safeAgentArgvForLog; verifying kimi/antigravity/nim argv for sensitive values",
+      "locks": [
+        "multica-auth-work/server/pkg/agent/antigravity.go",
+        "multica-auth-work/server/pkg/agent/antigravity_test.go",
+        "multica-auth-work/server/pkg/agent/claude.go",
+        "multica-auth-work/server/pkg/agent/claude_deadlock_test.go",
+        "multica-auth-work/server/pkg/agent/claude_log_writer_redaction_test.go",
+        "multica-auth-work/server/pkg/agent/claude_test.go",
+        "multica-auth-work/server/pkg/agent/codex.go",
+        "multica-auth-work/server/pkg/agent/codex_test.go",
+        "multica-auth-work/server/pkg/agent/kimi.go",
+        "multica-auth-work/server/pkg/agent/kimi_test.go",
+        "multica-auth-work/server/pkg/agent/nim.go",
+        "multica-auth-work/server/pkg/agent/nim_test.go"
+      ],
+      "status": "DONE",
+      "control_status": "DONE",
+      "covers": [
+        "5.1",
+        "5.2"
+      ]
+    },
+    {
+      "agent": "Opus48#C",
+      "pane_id": "w8:p1",
+      "lane": "L5",
+      "task": "P0-L5-E2E-CORRELATION-FREEZE",
+      "scope": "checkout",
+      "locks": [
+        "multica-auth-work/server/internal/daemon/observability/e2e/assemble.go",
+        "multica-auth-work/server/internal/daemon/observability/e2e/assemble_test.go",
+        "multica-auth-work/server/internal/daemon/observability/e2e/contract.go",
+        "multica-auth-work/server/internal/daemon/observability/e2e/contract_test.go",
+        "multica-auth-work/server/internal/daemon/observability/e2e/doc.go",
+        "multica-auth-work/server/internal/daemon/observability/e2e/leakscan.go",
+        "multica-auth-work/server/internal/daemon/observability/e2e/leakscan_test.go",
+        "multica-auth-work/server/internal/daemon/observability/e2e/recorder.go",
+        "multica-auth-work/server/internal/daemon/observability/e2e/recorder_test.go",
+        "multica-auth-work/server/internal/daemon/observability/e2e/synthetic.go"
+      ],
+      "status": "DONE",
+      "control_status": "DONE",
+      "covers": [
+        "6.2"
+      ]
+    },
+    {
+      "agent": "Opus48#D",
+      "pane_id": "w8:p2",
+      "lane": "L6",
+      "task": "6.2-L6-obs-helpers",
+      "scope": "Material result: L6 helper design + L1 anchor-insertion map delivered (L6-obs-helpers-design-and-anchor-map.md), grounded in read L5 e2e API. Two hard gates found; blocking.",
+      "locks": [
+        "multica-auth-work/server/internal/middleware/obs_ingress.go",
+        "multica-auth-work/server/internal/service/obs_persist.go",
+        "multica-auth-work/server/internal/service/obs_queue.go"
+      ],
+      "status": "DONE",
+      "control_status": "DONE",
+      "covers": [
+        "6.2"
+      ]
+    },
+    {
+      "agent": "Agy-P0-A7",
+      "pane_id": "wB:p1",
+      "lane": "L7",
+      "task": "P0-L7-WS-UI",
+      "scope": "CHECKIN done; preflight complete; Go=unavailable, Node=v22.23.1, pnpm=10.28.2, node_modules=absent; L5 contract frozen & read (HopDelivery requires IDSession+IDDelivery); obs_delivery.go is NEW file; daemonws hub.go is MUST-NOT-TOUCH; UI files exist and read; BLOCKERS: Go toolchain absent (cannot compile/test Go), node_modules absent (cannot run UI tests)",
+      "locks": [
+        "packages/views/issues/components/board-view.tsx",
+        "packages/views/issues/components/execution-log-section.tsx",
+        "packages/views/issues/components/issue-detail.tsx",
+        "server/internal/daemonws/obs_delivery.go",
+        "server/internal/daemonws/obs_delivery_test.go"
+      ],
+      "status": "DONE",
+      "control_status": "DONE",
+      "covers": [
+        "P0-L7-WS-UI",
+        "6.2"
+      ]
+    },
+    {
+      "agent": "Agy-P0-A8",
+      "pane_id": "wB:p2",
+      "lane": "L8",
+      "task": "L8-INDEPENDENT-VERIFIER",
+      "scope": "independent verification: zero-overlap, format-list, diff-check, targeted tests, OpenSpec strict, residual scan",
+      "locks": [
+        ".deploy-control/p0/evidence/L8-verification-report.md",
+        ".deploy-control/p0/handoffs/L8-verifier-handoff.md"
+      ],
+      "status": "DONE",
+      "control_status": "DONE",
+      "covers": [
+        "5.1",
+        "5.2",
+        "5.3",
+        "5.4",
+        "5.5",
+        "6.1"
+      ]
+    }
+  ],
   "live_runs": {
-    "cline_glm": {"authorized": false, "accepted_run": null},
-    "cline_kimi": {"authorized": false, "accepted_run": null},
-    "opus48": {"authorized": false, "accepted_run": null},
-    "antigravity": {"authorized": false, "accepted_run": null, "default_action": "reuse_equivalent_evidence"}
+    "cline_glm": {
+      "authorized": false,
+      "accepted_run": null
+    },
+    "cline_kimi": {
+      "authorized": false,
+      "accepted_run": null
+    },
+    "opus48": {
+      "authorized": false,
+      "accepted_run": null
+    },
+    "antigravity": {
+      "authorized": false,
+      "accepted_run": null,
+      "default_action": "reuse_equivalent_evidence"
+    }
   },
-  "external_non_main_brain_tasks": ["8.5", "8.6", "8.7"],
-  "phase3_hold": ["Prodex"]
+  "external_non_main_brain_tasks": [
+    "8.5",
+    "8.6",
+    "8.7"
+  ],
+  "phase3_hold": [
+    "Prodex"
+  ]
 }

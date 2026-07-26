@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-barrier-fix.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-barrier-fix.md"
+  ],
+  "finished_at": "2026-07-23T21:49:28Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T21:49:28Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T21:48:04Z",
+  "status": "DONE",
+  "summary": "VALIDATED (offline/read-only): hold mechanism deterministic (wall-clock bound, exit 0 vs 124, read-only, portable) and platform-fit resolved (~120s feasible; watchdogs 30m/2h, no wall-clock cap) -> earlier §3 blocker cleared. NOT validated: end-to-end live 20-overlap + agent executing mandated command (gated live run, live_runs=false/6.3; owner Principal+operator). Residual: runtime refusing shell tools would need runtime-level hold.",
+  "task": "T20-BARRIER-VALIDATE",
+  "validation": "Local scaled shell proof: CASE A HOLD=6/TIMEOUT=8 -> elapsed 6s exit 0 (loop self-terminates, marker printed); CASE B HOLD=20/TIMEOUT=5 -> elapsed 5s exit 124 (outer timeout hard-caps, no marker); timeout+SECONDS present. Platform (config.go): idle watchdog 30m, tool watchdog 2h, no wall-clock task cap -> 110s hold not prematurely killed. No product/:18080/inference/secret/deploy; git diff --check CLEAN."
+}

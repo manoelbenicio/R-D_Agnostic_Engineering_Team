@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/R3-deploy-readiness.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/R3-deploy-readiness.md"
+  ],
+  "finished_at": "2026-07-22T11:01:19Z",
+  "lane": "R3",
+  "last_heartbeat_at": "2026-07-22T11:01:19Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T10:59:07Z",
+  "status": "DONE",
+  "summary": "Deploy pkg verified GREEN read-only; task 6.1 evidence-only: gateway readiness enforces distinct fail-closed gates (live/auth/model-registry-immutable-revision/selected-model/selected-protocol) under strict policy, header/body revision mismatch -> ErrorProtocol. No edits, zero inference/secret/deploy; checkbox not closed.",
+  "task": "REC-DEPLOY-READINESS",
+  "validation": "go test -count=1 ./internal/daemon/deploy/...: PASS (exit 0, 6 tests); go vet: exit 0; gofmt -l internal/daemon/deploy: empty (exit 0); git diff --check deploy: CLEAN"
+}

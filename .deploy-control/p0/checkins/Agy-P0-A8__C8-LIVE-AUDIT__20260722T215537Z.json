@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/C8-live-audit.md",
+    ".deploy-control/p0/handoffs/C8-live-audit-handoff.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/C8-live-audit.md",
+    ".deploy-control/p0/handoffs/C8-live-audit-handoff.md"
+  ],
+  "finished_at": "2026-07-22T21:56:20Z",
+  "lane": "C8",
+  "last_heartbeat_at": "2026-07-22T21:56:20Z",
+  "pane_id": "wB:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T21:55:37Z",
+  "status": "DONE",
+  "summary": "C8 live audit complete; WS delivery and telemetry verified green",
+  "task": "C8-LIVE-AUDIT",
+  "validation": "Main Brain telemetry & WS delivery code VERIFIED green; gateway_required routing verified; live execution BLOCKED-external on gateway_required/account config"
+}

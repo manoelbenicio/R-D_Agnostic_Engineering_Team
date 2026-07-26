@@ -1,0 +1,59 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T04:18:00Z",
+  "agent": "Agy-P0-A7",
+  "pane_id": "wB:p1",
+  "lane": "L7",
+  "task_ids": ["P0-L7-WS-UI", "6.2"],
+  "status": "BLOCKED",
+  "files_changed": [],
+  "files_created": [
+    "server/internal/daemonws/obs_delivery.go",
+    "server/internal/daemonws/obs_delivery_test.go"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "go test ./server/internal/daemonws/... -run TestEmitDelivery -v",
+      "exit_code": null,
+      "assertions_or_tests": 5,
+      "result": "NOT_AVAILABLE (Go toolchain absent)"
+    },
+    {
+      "command": "pnpm vitest run packages/views/issues/components/execution-log-section.test.tsx",
+      "exit_code": null,
+      "assertions_or_tests": 2,
+      "result": "NOT_AVAILABLE (node_modules absent)"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE (Go toolchain absent for gofmt)",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/handoffs/L7-ws-ui-delivery.md"
+  ],
+  "requirements": ["AB-REQ-02", "AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["6.2"],
+  "summary": "Created obs_delivery.go + obs_delivery_test.go (metadata-only HopDelivery span helper using L5 frozen contract). UI components verified clean: no fake/mock/stub/synthetic/fallback/placeholder patterns in board-view, issue-detail, or execution-log-section. Hub.go call-site handed off to L1. Tests cannot execute due to absent Go toolchain and node_modules.",
+  "non_claims": [
+    "Go code NOT compiled — no Go toolchain available",
+    "Go tests NOT executed — no Go toolchain available",
+    "UI tests NOT executed — no node_modules",
+    "gofmt NOT run — no Go toolchain",
+    "hub.go NOT edited — MUST-NOT-TOUCH (handoff to L1)",
+    "No deploy, inference, secret, commit, push, or dependency install"
+  ],
+  "blocker": {
+    "B1": "Go toolchain absent; owner: Infrastructure/L8; next: go test ./server/internal/daemonws/... when available",
+    "B2": "node_modules absent; owner: Infrastructure; next: pnpm vitest when deps installed",
+    "B3": "hub.go call site; owner: L1; next: insert DeliveryRecorder at delivery/drop points"
+  },
+  "handoffs": [
+    {
+      "to_lane": "L1",
+      "reason": "hub.go is shared anchor; L7 created DeliveryRecorder but L1 must insert call site",
+      "file": "server/internal/daemonws/hub.go"
+    }
+  ]
+}

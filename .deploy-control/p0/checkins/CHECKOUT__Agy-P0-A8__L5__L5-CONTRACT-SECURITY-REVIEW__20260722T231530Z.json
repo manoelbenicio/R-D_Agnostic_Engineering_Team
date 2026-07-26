@@ -1,0 +1,68 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T23:15:30Z",
+  "agent": "Agy-P0-A8",
+  "pane_id": "wB:p2",
+  "lane": "L5",
+  "task_ids": [
+    "L5-CONTRACT-SECURITY-REVIEW"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/L5-review.md",
+    ".deploy-control/p0/handoffs/L5-review-handoff.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "GOCACHE=/tmp/gocache-l5 GOTMPDIR=/tmp/gotmp-l5 /home/ec2-user/goroot/go/bin/go test ./internal/daemon/gateway/... -run TestReadiness",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PASS",
+      "detail": "TestReadinessProbeCompatFullyDrainsBody, TestReadinessProbeCompatThenFetchModelsSucceeds, TestReadinessCheckerImplementsFrozenFailClosedContract PASS"
+    },
+    {
+      "command": "GOCACHE=/tmp/gocache-l5 GOTMPDIR=/tmp/gotmp-l5 /home/ec2-user/goroot/go/bin/go test ./internal/daemon -run TestFileCredentialSource",
+      "exit_code": 0,
+      "assertions_or_tests": 12,
+      "result": "PASS",
+      "detail": "12 subtests covering happy path, symlink TOCTOU, mode rejection, owner enforcement, fail-closed cases, cancelled context, and callback error propagation PASS"
+    },
+    {
+      "command": "GOCACHE=/tmp/gocache-l5 GOTMPDIR=/tmp/gotmp-l5 /home/ec2-user/goroot/go/bin/go vet ./internal/daemon/gateway/... ./internal/daemon/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/L5-review.md",
+    ".deploy-control/p0/handoffs/L5-review-handoff.md"
+  ],
+  "requirements": [
+    "AB-REQ-39",
+    "AB-REQ-40"
+  ],
+  "openspec_tasks": [
+    "L5-CONTRACT-SECURITY-REVIEW"
+  ],
+  "summary": "Completed contract and security review of readiness-declaration injection wiring and secret semantics. Consume-only OmniRoute boundary preserved. No-invent-readiness enforced via ReadinessChecker fail-closed policy. Secret file semantics intact (O_NOFOLLOW open, mode <=0600, owner check, max 4096 bytes, content-free error classification). Secret value is NEVER logged or cached.",
+  "non_claims": [
+    "No product source code edits authored",
+    "No deployment, network, or inference executed",
+    "No secret values logged or handled"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/FIX-deploy-prep.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/FIX-deploy-prep.md"
+  ],
+  "finished_at": "2026-07-23T00:11:01Z",
+  "lane": "deploy-prep",
+  "last_heartbeat_at": "2026-07-23T00:11:01Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:09:13Z",
+  "status": "DONE",
+  "summary": "Delivered draft deploy/restart runbook (stage fixed binary to orq1:/tmp/multica-auth with checksum + rollback copy; preserve daemon launcher claude-code + claude_code_kimi_2.7_Code + AGENT_BRAIN_* gateway env verbatim; restart via at with health gate) + a one-clean-run read-only watcher (claim/start/CLI/gateway/persist, single-pass, >=5s cadence, 30-min cap, no re-enqueue/rerun/hammering) that arms and begins only when Kiro deploys under authorized orq1 access. Gated: no deploy until fix built+verified + deploy authorization + authorized orq1 access; live_runs.*=false. No deploy/restart/build/ssh/observe/secret/commit performed.",
+  "task": "FIX-DEPLOY-PREP",
+  "validation": "DRAFT ONLY — no command executed: no build, no scp/ssh, no binary swap, no at job, no daemon restart, no task observation, no inference, no secret read. Authoritative env/launcher/health preserved from docs/transition/FRESH_ENV_RESTART_RUNBOOK.md; exact current launcher/argv/binary-path captured read-only on orq1 by the operator (placeholders), not invented."
+}

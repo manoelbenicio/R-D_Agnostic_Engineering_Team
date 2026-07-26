@@ -1,0 +1,21 @@
+{
+  "activity": "build+tag multica-web image + record rollback ref (frontend-only, orq1); await-go deploy freeze",
+  "agent": "Codex56#A",
+  "blocker": "POST-OWNER-APPROVAL RE-VERIFY (2026-07-24T10:58Z): deploy is APPROVED but pane w7:p3 STILL cannot execute the frontend recreate. Re-checked: no docker binary anywhere (/usr/bin,/usr/local/bin,/snap/bin), docker/podman/nerdctl/docker-compose absent, no DOCKER_HOST/COMPOSE env, no ~/.ssh/config or known_hosts entry for orq1 -> no verified way to reach orq1. Did NOT guess a remote ssh target/creds to recreate a prod container (unsafe). No build/deploy/ssh performed; no source edited; frontend-only scope intact. | owner: LEAD (w5:p1) + orq1 host owner | next action: run the recreate on a pane/host that HAS docker + orq1 access (or provision docker CLI + DOCKER_HOST/context or an orq1 ssh alias on this pane). Prepared plan (evidence LANE-C-web-deploy-prep.md): capture rollback = docker inspect multica-dev-transition-frontend-1 (Config.Image); build multica-web via docker build -f multica-auth-work/Dockerfile.web -t multica-web:<tag> .; docker compose up -d --no-deps frontend (project multica-dev-transition); verify 127.0.0.1:13100=200; rollback to old image tag on fail.",
+  "depends_on": [],
+  "evidence": [],
+  "files_locked": [
+    ".deploy-control/p0/evidence/LANE-C-web-deploy-prep.md"
+  ],
+  "finished_at": null,
+  "lane": "LANE-C-WEB-DEPLOY",
+  "last_heartbeat_at": "2026-07-24T10:59:28Z",
+  "pane_id": "w7:p3",
+  "progress": 0,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T10:47:26Z",
+  "status": "BLOCKED",
+  "summary": null,
+  "task": "WEB-DEPLOY-PREP-FRONTEND",
+  "validation": null
+}

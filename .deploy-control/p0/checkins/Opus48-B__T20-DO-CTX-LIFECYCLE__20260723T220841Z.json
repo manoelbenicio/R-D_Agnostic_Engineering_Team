@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-tests.md",
+    "multica-auth-work/server/internal/daemon/gateway/do_context_lifecycle_test.go"
+  ],
+  "finished_at": "2026-07-23T22:10:13Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T22:10:13Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T22:08:41Z",
+  "status": "DONE",
+  "summary": "PASS with one CONCERN. do() defers ctx cancel to Body.Close on success, cancels immediately on non-2xx, idempotent close. Real-server test (not injected). Test-only file; no source edited. -race not runnable in this env (no C toolchain).",
+  "task": "T20-DO-CTX-LIFECYCLE",
+  "validation": "REAL httptest.Server. gofmt clean(0); go vet gateway lostcancel-clean(0); go test ./internal/daemon/gateway/ -run TestClientDo(...) -count=1 = 3/3 PASS ok 0.050s(0); git diff --check(0). Proven: 83KiB slow chunked body read in full post-do (no premature cancel; *cancelOnCloseBody); 503 -> nil resp + ErrorOverloaded (immediate cancel/close); Body.Close idempotent (no double-close panic). CONCERN: -race unavailable (CGO_ENABLED=0, no gcc, install forbidden) -> leak claim via vet+deterministic logic, not race run."
+}

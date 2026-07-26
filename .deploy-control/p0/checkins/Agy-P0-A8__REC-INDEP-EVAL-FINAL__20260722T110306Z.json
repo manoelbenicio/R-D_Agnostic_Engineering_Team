@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/R8-post-t360-verification-report.md",
+    ".deploy-control/p0/handoffs/R8-post-t360-handoff.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/R8-post-t360-verification-report.md",
+    ".deploy-control/p0/handoffs/R8-post-t360-handoff.md"
+  ],
+  "finished_at": "2026-07-22T11:30:11Z",
+  "lane": "R8",
+  "last_heartbeat_at": "2026-07-22T11:30:11Z",
+  "pane_id": "wB:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:03:06Z",
+  "status": "DONE",
+  "summary": "REC-INDEP-EVAL-FINAL complete; transitioning to F8 sole evaluator dispatch",
+  "task": "REC-INDEP-EVAL-FINAL",
+  "validation": "R2-R7 VERIFIED green; pending R1/R9 final daemon re-eval transitioned to F8 prompt"
+}

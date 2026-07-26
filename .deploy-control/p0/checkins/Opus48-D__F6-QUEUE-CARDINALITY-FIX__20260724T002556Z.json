@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/F6-queue-cardinality-fix-handoff.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/service/task.go",
+    "multica-auth-work/server/internal/service/task_notify_test.go"
+  ],
+  "finished_at": "2026-07-24T00:29:30Z",
+  "lane": "F6",
+  "last_heartbeat_at": "2026-07-24T00:29:30Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T00:25:56Z",
+  "status": "DONE",
+  "summary": "HANDOFF to Kiro (central shared-source owner): I do NOT apply the fix. Reverted my out-of-lane task.go edit to baseline and handed the exact regression + recommended serial fix (emitQueueEnqueued no-op + emitQueueDequeued add enqueue_unix_ms + update task_notify_test.go) in F6-queue-cardinality-fix-handoff.md. Failing test anchor_queue_cardinality_test.go:44 (2 HopQueue spans->want 1). My boot-tests lane is separately green. No product source left modified by me.",
+  "task": "F6-QUEUE-CARDINALITY-FIX",
+  "validation": "Per STOP-SHARED-SOURCE order, reverted my single out-of-lane task.go edit surgically (strReplace, no git reset/checkout/stash); task.go restored to baseline (emitQueueEnqueued original), gofmt -l clean, go build ./internal/service/ exit 0. No other file changed; no one else reverted. Lock released for Kiro serial ownership."
+}

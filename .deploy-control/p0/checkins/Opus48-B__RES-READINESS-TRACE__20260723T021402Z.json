@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/RES-trace.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/RES-trace.md"
+  ],
+  "finished_at": "2026-07-23T02:15:54Z",
+  "lane": "RES-TRACE",
+  "last_heartbeat_at": "2026-07-23T02:15:54Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T02:14:02Z",
+  "status": "DONE",
+  "summary": "Mapped injection points: (1) single-flight across tasks = hoist NewRegistry/NewReadinessChecker to long-lived agentBrainRuntime instance (brain_integration.go:210-236); reuses existing registry.go r.refreshing dedupe. (2) backoff = registry.go failure branch honor GatewayError.RetryAfter (already set by errors.go for 429/503) and/or exponential on consecutive failures. (3) bounded fresh-wait = registry.go Snapshot in-flight select add bounded timer, and/or wrap admission.Admit(ctx) with context.WithTimeout. Advisory; no edits.",
+  "task": "RES-READINESS-TRACE",
+  "validation": "READ-ONLY trace (no edits). Path: admitTask brain_integration.go:210 NewRegistry(ttl=1s, PER-CALL) -> :232 NewReadinessChecker -> admission.Admit -> CheckGatewayReadiness (CheckLiveness/CheckReadiness + registry.Snapshot) -> ValidateCapability. Classification: errors.go classifyStatus (429/503 RetryAfter via parseRetryAfter seconds|HTTP-date bounded 24h; 5xx upstream; timeout retryable); classification.go ClassifyFailure is executor-path (distinct). Existing single-flight+TTL+negative-cache-backoff in registry.go Snapshot:89 (r.refreshing + generation fence + retryAt=failedAt+RegistryRefreshFailureBackoff). GAP: Registry/ReadinessChecker built per admitTask -> ephemeral -> no cross-task single-flight/backoff (stampede)."
+}

@@ -1,0 +1,27 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A7",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/L7-ws-ui-delivery.md"
+  ],
+  "files_locked": [
+    "packages/views/issues/components/board-view.tsx",
+    "packages/views/issues/components/execution-log-section.tsx",
+    "packages/views/issues/components/issue-detail.tsx",
+    "server/internal/daemonws/obs_delivery.go",
+    "server/internal/daemonws/obs_delivery_test.go"
+  ],
+  "finished_at": "2026-07-22T04:20:03Z",
+  "lane": "L7",
+  "last_heartbeat_at": "2026-07-22T04:20:03Z",
+  "pane_id": "wB:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T04:12:17Z",
+  "status": "DONE",
+  "summary": "BLOCKED: obs_delivery.go+test created per L5 frozen contract; UI components verified clean; Go toolchain and node_modules absent prevent compilation/testing; hub.go call-site handed off to L1",
+  "task": "P0-L7-WS-UI",
+  "validation": "git diff --check: PASS; gofmt: NOT_AVAILABLE (no Go); go test: NOT_AVAILABLE (no Go); UI grep scan 3 files: 0 fake/mock/stub hits"
+}

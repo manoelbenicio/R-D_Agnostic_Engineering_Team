@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/RES-design.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/RES-design.md"
+  ],
+  "finished_at": "2026-07-23T02:17:33Z",
+  "lane": "resilience-design",
+  "last_heartbeat_at": "2026-07-23T02:17:33Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T02:14:03Z",
+  "status": "DONE",
+  "summary": "Exact spec: RegistryPollPolicy (Cadence/Min-Max backoff/Jitter/HonorRetryAfter+MaxRetryAfter/NonRetryBackoff/FreshnessWindow/MaxAdmissionWait/MaxAttempts, validated); Registry.nextRefreshBackoff (class-aware bounded exp + full jitter, honors capped Retry-After) replacing fixed 2s; SnapshotFresh (never stale) reusing single-flight; AwaitFreshReady bounded admission wait via shared strict evaluate + SnapshotFresh; additive FreshReadinessAwaiter wiring in GatewayAdmissionController. Retry-After needs NO client change (already parsed). Invariants: single-flight preserved, never reuse stale, never weaken StrictReadinessPolicy, fail-closed on non-retryable. Focused tests listed.",
+  "task": "RES-DESIGN",
+  "validation": "design-only, no edits (git diff --check CLEAN). Grounded by reading registry.go (single-flight refreshing chan + fixed 2s backoff), errors.go (Retry-After already parsed into GatewayError.RetryAfter), dispatch.go (backoff/sleepContext/retryAfter pattern), policy.go (RetryPolicy/CircuitPolicy conventions), health_models.go + brain/admission.go (strict readiness + single no-wait admission)."
+}

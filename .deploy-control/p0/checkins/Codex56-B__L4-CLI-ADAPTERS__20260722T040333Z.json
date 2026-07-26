@@ -1,0 +1,34 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/L4-cli-adapters.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/pkg/agent/antigravity.go",
+    "multica-auth-work/server/pkg/agent/antigravity_test.go",
+    "multica-auth-work/server/pkg/agent/claude.go",
+    "multica-auth-work/server/pkg/agent/claude_deadlock_test.go",
+    "multica-auth-work/server/pkg/agent/claude_log_writer_redaction_test.go",
+    "multica-auth-work/server/pkg/agent/claude_test.go",
+    "multica-auth-work/server/pkg/agent/codex.go",
+    "multica-auth-work/server/pkg/agent/codex_test.go",
+    "multica-auth-work/server/pkg/agent/kimi.go",
+    "multica-auth-work/server/pkg/agent/kimi_test.go",
+    "multica-auth-work/server/pkg/agent/nim.go",
+    "multica-auth-work/server/pkg/agent/nim_test.go"
+  ],
+  "finished_at": "2026-07-22T04:16:22Z",
+  "lane": "L4",
+  "last_heartbeat_at": "2026-07-22T04:16:22Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T04:03:33Z",
+  "status": "DONE",
+  "summary": "L4 adapters verified; antigravity raw-prompt log leak FIXED (antigravity-local safeAntigravityArgvForLog + regression test); codex protected-command test corrected (prodex debrand fallout: wrapper->codex); kimi_test/nim_test gofmt (5.1). claude/codex redaction reviewed+PASS, unmodified. models.go/claude.go untouched. Full pkg/agent PASS. Findings: codebuddy_test.go/cursor_test.go gofmt out-of-scope (routed to manager). No live/inference/deploy/secret.",
+  "task": "L4-CLI-ADAPTERS",
+  "validation": "go vet ./pkg/agent/: PASS (0); go test ./pkg/agent/ -run redaction/protected trio -v: PASS (0); go test ./pkg/agent/ -count=1: ok 7.732s (0); gofmt -l owned files: clean; git diff --check: PASS"
+}

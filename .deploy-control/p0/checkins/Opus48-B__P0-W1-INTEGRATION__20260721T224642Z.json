@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/W1-integration-readiness.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/W1-integration-readiness.md"
+  ],
+  "finished_at": "2026-07-21T23:05:19Z",
+  "lane": "W1",
+  "last_heartbeat_at": "2026-07-21T23:05:19Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:46:42Z",
+  "status": "DONE",
+  "summary": "Closed gate-waiting W1 integration record after FLEET_SATURATED GREEN. Succeeded by P0-W1-SOURCE-LOCK-ACTIVATION which acquires W1 source locks and holds them while implementation_authorized remains false.",
+  "task": "P0-W1-INTEGRATION",
+  "validation": "gate-wait resolved: FLEET_SATURATED=GREEN per independent Kiro audit 2026-07-21T23:02:30Z; readiness+SHA256 provenance recorded; no source edit/test/live run performed"
+}

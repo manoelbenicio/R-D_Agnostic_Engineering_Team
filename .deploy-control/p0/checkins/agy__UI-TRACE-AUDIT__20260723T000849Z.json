@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "agy",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/UI-trace-audit.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/UI-trace-audit.md"
+  ],
+  "finished_at": "2026-07-23T00:09:20Z",
+  "lane": "UI-trace-audit",
+  "last_heartbeat_at": "2026-07-23T00:09:20Z",
+  "pane_id": "wK:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:08:49Z",
+  "status": "DONE",
+  "summary": "Completed UI terminal/status validation and 8-hop/9-ID trace collection audit in UI-trace-audit.md",
+  "task": "UI-TRACE-AUDIT",
+  "validation": "git diff --check .deploy-control/p0/evidence/UI-trace-audit.md: PASS"
+}

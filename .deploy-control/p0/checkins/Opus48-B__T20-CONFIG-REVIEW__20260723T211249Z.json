@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-config-review.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-config-review.md"
+  ],
+  "finished_at": "2026-07-23T21:14:53Z",
+  "lane": "T20-CONFIG-REVIEW",
+  "last_heartbeat_at": "2026-07-23T21:14:53Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T21:12:49Z",
+  "status": "DONE",
+  "summary": "Edge-case risks: R5 HIGH (legacy MAX_CONCURRENT_TASKS non-20/50/100 breaks dev config load), R3 MEDIUM (CAPACITY_GATE_ENABLED ParseBool error swallowed -> yes/on/enabled silently false, inconsistent w/ parseConfigBool), R6/R7 legacy-var dev-only/prod-ignore, R1/R2 Atoi leniency+dual msgs. Tier range validation itself is sound (all modes). Recs: strict parseConfigBool+warn for gate; dedicated error naming legacy var on non-enum. Advisory; no edits.",
+  "task": "T20-CONFIG-REVIEW",
+  "validation": "READ-ONLY review (no source writes). TIER: Atoi(:774) then result.Validate()(:816)->Neutral.Validate->CapacityTier.Validate(:196) enforces {20,50,100} in ALL modes; dev-only requires ==20 (:194). GATE: strconv.ParseBool with SWALLOWED error (:785) -> garbage/alt-spellings (yes/on/enabled) silently false (fail-closed but inconsistent with parseConfigBool). PRECEDENCE: MULTICA_DAEMON_MAX_CONCURRENT_TASKS funneled into tier enum, dev-only (:761-770); legacy non-enum value (e.g. 8) -> config load hard-fail; silently ignored in production."
+}

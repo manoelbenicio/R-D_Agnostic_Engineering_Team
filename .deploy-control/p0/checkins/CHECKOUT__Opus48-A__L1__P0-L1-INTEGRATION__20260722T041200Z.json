@@ -1,0 +1,47 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T04:12:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "L1",
+  "task_ids": ["5.1", "5.2", "5.3"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/daemon/wakeup.go",
+    "multica-auth-work/server/internal/daemon/daemon.go",
+    "multica-auth-work/server/internal/daemon/brain/admission.go",
+    "multica-auth-work/server/internal/daemon/config.go",
+    "multica-auth-work/server/internal/daemon/brain/config.go",
+    "multica-auth-work/server/internal/daemon/brain/recovery.go",
+    "multica-auth-work/server/internal/daemon/brain/recovery_test.go",
+    "multica-auth-work/server/internal/daemon/execenv/codex_sandbox.go",
+    "multica-auth-work/server/internal/daemon/execenv/git.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "edit_note": "Session edits are minimal (wakeup.go tail-helper restore + imports; daemon.go orphan removal; admission.go bypass-reject guard; gofmt on the rest). Large HEAD->working deletions in these files are pre-existing D-work, not authored in this session.",
+  "tests": [
+    {"command": "gofmt -l <owned files/dirs>", "exit_code": 0, "assertions_or_tests": 10, "result": "PASS"},
+    {"command": "go build ./internal/daemon/ ./internal/daemon/brain/ ./internal/daemon/execenv/ ./pkg/agent/ ./cmd/multica/", "exit_code": 0, "assertions_or_tests": 5, "result": "PASS"},
+    {"command": "go test ./internal/daemon/brain/ ./internal/daemon/execenv/ -count=1", "exit_code": 0, "assertions_or_tests": 2, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/brain/ ./internal/daemon/execenv/", "exit_code": 0, "assertions_or_tests": 2, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/ (whole package incl. tests)", "exit_code": 1, "assertions_or_tests": 1, "result": "BLOCKED"}
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [".deploy-control/p0/handoffs/L1-integration-convergence.md"],
+  "requirements": ["AB-REQ-01", "AB-REQ-16", "AB-REQ-31"],
+  "openspec_tasks": ["5.1", "5.2", "5.3"],
+  "summary": "L1 central convergence for owned files: restored 4 over-deleted wakeup.go helpers verbatim from HEAD (+imports), removed daemon.go observeCredentialPrepare orphan, added admission.go fail-closed gateway-bypass rejection (g2a test now green), gofmt owned files clean. Owned source builds (exit 0); brain+execenv tests pass; git diff --check clean.",
+  "non_claims": [
+    "daemon-package TEST build not green: blocked by out-of-lock daemon_test.go (newTestDaemon undefined, 742-line partial deletion). Escalated to manager for owner assignment.",
+    "no server-wide go build ./... in this checkout (L8 scope)",
+    "no deploy/inference/live-run/secret/commit/push/reset"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "manager", "reason": "assign owner / expand lock for daemon_test.go (over-deleted newTestDaemon + callers; blocks daemon pkg tests 5.2/5.3). L1 can converge if lock expanded.", "file": "multica-auth-work/server/internal/daemon/daemon_test.go"}
+  ]
+}

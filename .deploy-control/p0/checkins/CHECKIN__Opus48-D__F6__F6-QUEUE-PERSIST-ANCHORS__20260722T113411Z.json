@@ -1,0 +1,33 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T11:34:11Z",
+  "agent": "Opus48#D",
+  "pane_id": "w8:p2",
+  "lane": "F6",
+  "task_ids": ["6.2"],
+  "plan_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_COMPLETION_PLAN.md",
+  "prompt_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_PROMPTS.md#F6",
+  "files_locked": [
+    "multica-auth-work/server/internal/service/task.go",
+    "multica-auth-work/server/internal/service/task_complete_race_test.go",
+    "multica-auth-work/server/internal/service/task_notify_test.go"
+  ],
+  "new_files_declared": [],
+  "dependencies": ["L6 helpers EmitQueue/EmitPersist (same package service, already merged/green)"],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 331,
+    "toolchains": {"go": "go1.26.1 (/home/ec2-user/goroot/go/bin/go)", "node": "v22.23.1"},
+    "disk_free": "root 183M (100% used); /tmp tmpfs 7.6G (2%) -> GOCACHE/GOTMPDIR under /tmp"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true
+  },
+  "status": "IN_PROGRESS"
+}

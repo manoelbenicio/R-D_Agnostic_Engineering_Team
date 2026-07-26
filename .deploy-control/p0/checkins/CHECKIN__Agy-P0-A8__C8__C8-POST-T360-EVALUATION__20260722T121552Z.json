@@ -1,0 +1,37 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T12:15:52Z",
+  "agent": "Agy-P0-A8",
+  "pane_id": "wB:p2",
+  "lane": "C8",
+  "task_ids": [
+    "C8-POST-T360-EVALUATION"
+  ],
+  "plan_ref": ".planning/agent-brain-v3/CHAT_ORCHESTRATION_STANDARD.md",
+  "prompt_ref": "DISPATCH C8 -> wB:p2",
+  "files_locked": [
+    ".deploy-control/p0/evidence/C8-verification-report.md",
+    ".deploy-control/p0/handoffs/C8-handoff.md"
+  ],
+  "new_files_declared": [],
+  "dependencies": [],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 322,
+    "toolchains": {
+      "go": "/home/ec2-user/goroot/go/bin/go",
+      "node": "v22.23.1"
+    },
+    "disk_free": "410M"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true
+  },
+  "status": "IN_PROGRESS"
+}

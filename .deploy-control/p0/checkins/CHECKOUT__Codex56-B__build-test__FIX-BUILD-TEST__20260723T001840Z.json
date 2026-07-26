@@ -1,0 +1,34 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T00:18:40Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "build-test",
+  "task_ids": ["5.3"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_modified": [".deploy-control/p0/evidence/FIX-build.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go build ./... (authoritative server build)", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go test ./internal/service/ -run '^(TestCompleteTask_AlreadyFinalized|TestFailTask_AlreadyFinalized|TestTaskFailureClassifiers|TestEmitPersistSpanAfterPersistenceMetadataOnly|TestEmitPersistSpanOrderingConsumesPersistedRow)$' -count=1 -v", "exit_code": 0, "assertions_or_tests": 5, "result": "PASS"},
+    {"command": "go test ./internal/daemon/ -run '^(TestHandleTask_DoesNotCallStartTaskItself|TestRunTask_StartTaskCalledAfterWorkdirOnDisk|TestHandleTask_KeepsEnvRootActiveAcrossCompletion)$' -count=1 -v", "exit_code": 0, "assertions_or_tests": 3, "result": "PASS"}
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [".deploy-control/p0/evidence/FIX-build.md"],
+  "requirements": [],
+  "openspec_tasks": ["5.3"],
+  "summary": "POST-FIX VALIDATION PASS against the exact race-fix artifact (working tree at HEAD a6d5098; source provenance sha256 recorded for task.go/daemon.go + race test files). Authoritative go build ./... exit 0. Targeted race-fix tests: 5/5 service (task-complete finalize-once) + 3/3 daemon (StartTask-after-workdir ordering) PASS. No baseline suites re-run (targeted only).",
+  "non_claims": [
+    "-race data-race DETECTOR not run: CGO_ENABLED=0 and no gcc/cc on host; validated functional ordering invariants, not a detector pass. Detector gate needs CGO_ENABLED=1 + C toolchain host.",
+    "Race fix is uncommitted working-tree state (HEAD a6d5098 unchanged); validated the exact on-disk artifact by sha256.",
+    "No product code modified; no deploy/inference/secret; no duplicate baseline testing."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "Principal", "reason": "optional -race detector gate on a host with C toolchain (CGO_ENABLED=1 go test -race ./internal/service/ ./internal/daemon/)", "file": ".deploy-control/p0/evidence/FIX-build.md"}
+  ]
+}
