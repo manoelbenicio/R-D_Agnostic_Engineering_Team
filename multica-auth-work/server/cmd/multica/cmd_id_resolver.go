@@ -162,7 +162,7 @@ func resolveIssueRefStrict(ctx context.Context, client *cli.APIClient, input str
 	if looksLikeIssueIdentifier(trimmed) || uuidRegexp.MatchString(trimmed) {
 		return fetchIssueRefStrict(ctx, client, trimmed)
 	}
-	return resolveIDByPrefix(ctx, client, "issue", trimmed, fetchIssueCandidates)
+	return resolveIDByPrefix(ctx, client, "issue", trimmed, fetchIssueCandidatesStrict)
 }
 
 type issueIdentity struct {
@@ -287,6 +287,41 @@ func fetchIssueCandidates(ctx context.Context, client *cli.APIClient) ([]idCandi
 		}
 	}
 	return candidates, nil
+}
+
+// fetchIssueCandidatesStrict enforces the issue-get contract: list pages must
+// return exactly 200 and redirects must never be followed or decoded.
+func fetchIssueCandidatesStrict(ctx context.Context, client *cli.APIClient) ([]idCandidate, error) {
+	if client.WorkspaceID == "" {
+		return nil, fmt.Errorf("workspace_id is required to resolve issue id prefixes")
+	}
+	const limit = resolverListPageLimit
+	candidates := []idCandidate{}
+	for offset := 0; ; {
+		params := url.Values{}
+		params.Set("workspace_id", client.WorkspaceID)
+		params.Set("include_closed", "true")
+		params.Set("limit", strconv.Itoa(limit))
+		if offset > 0 {
+			params.Set("offset", strconv.Itoa(offset))
+		}
+		var result map[string]any
+		if err := client.GetJSONExpectedStatus(ctx, "/api/issues?"+params.Encode(), http.StatusOK, &result); err != nil {
+			return nil, err
+		}
+		issuesRaw, _ := result["issues"].([]any)
+		for _, raw := range issuesRaw {
+			issue, ok := raw.(map[string]any)
+			if !ok {
+				continue
+			}
+			candidates = append(candidates, issueCandidate(issue))
+		}
+		if len(issuesRaw) < limit {
+			return candidates, nil
+		}
+		offset += len(issuesRaw)
+	}
 }
 
 func resolveAutopilotID(ctx context.Context, client *cli.APIClient, input string) (resolvedID, error) {

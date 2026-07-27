@@ -252,7 +252,16 @@ func (c *APIClient) GetJSONExpectedStatus(ctx context.Context, path string, expe
 	}
 	c.setHeaders(req)
 
-	resp, err := c.HTTPClient.Do(req)
+	httpClient := http.Client{Timeout: httpTimeout()}
+	if c.HTTPClient != nil {
+		httpClient = *c.HTTPClient
+	}
+	// Contract requests must not follow redirects: a 3xx response is an
+	// unexpected status, and following it could decode data from another URL.
+	httpClient.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	resp, err := httpClient.Do(req)
 	err = wrapTransport(req, err)
 	if err != nil {
 		return err

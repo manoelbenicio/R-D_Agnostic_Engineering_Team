@@ -86,6 +86,31 @@ func TestGetJSONExpectedStatus(t *testing.T) {
 		}
 	})
 
+	t.Run("rejects redirect without reaching Location", func(t *testing.T) {
+		destinationCalls := 0
+		destination := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			destinationCalls++
+			_, _ = io.WriteString(w, `{"id":"destination"}`)
+		}))
+		defer destination.Close()
+		source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Location", destination.URL)
+			w.WriteHeader(http.StatusFound)
+		}))
+		defer source.Close()
+
+		client := NewAPIClient(source.URL, "ws-contract", "")
+		var out response
+		err := client.GetJSONExpectedStatus(context.Background(), "/issue", http.StatusOK, &out)
+		var statusErr *UnexpectedStatusError
+		if !errors.As(err, &statusErr) || statusErr.Actual != http.StatusFound {
+			t.Fatalf("error = %T %v, want redirect UnexpectedStatusError", err, err)
+		}
+		if destinationCalls != 0 || out.ID != "" {
+			t.Fatalf("destination calls=%d out=%#v, want 0/empty", destinationCalls, out)
+		}
+	})
+
 	for name, body := range map[string]string{
 		"invalid JSON":         `{`,
 		"wrong top-level type": `[]`,

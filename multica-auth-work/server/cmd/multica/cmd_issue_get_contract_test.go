@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -239,4 +240,33 @@ func TestRunIssueGetFailClosed(t *testing.T) {
 			t.Fatalf("err=%v out=%q calls=%d", err, out, calls)
 		}
 	})
+}
+
+func TestResolveIssueRefStrictPrefixRequiresExactListStatus(t *testing.T) {
+	for _, status := range []int{http.StatusCreated, http.StatusFound} {
+		status := status
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			destinationCalls := 0
+			destination := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				destinationCalls++
+				_, _ = io.WriteString(w, `{"issues":[]}`)
+			}))
+			defer destination.Close()
+			source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Location", destination.URL)
+				w.WriteHeader(status)
+			}))
+			defer source.Close()
+
+			client := cli.NewAPIClient(source.URL, "ws-contract", "")
+			_, err := resolveIssueRefStrict(context.Background(), client, "abcd")
+			var statusErr *cli.UnexpectedStatusError
+			if !errors.As(err, &statusErr) || statusErr.Actual != status {
+				t.Fatalf("error = %T %v, want exact status %d", err, err, status)
+			}
+			if destinationCalls != 0 {
+				t.Fatalf("redirect destination calls=%d, want 0", destinationCalls)
+			}
+		})
+	}
 }
