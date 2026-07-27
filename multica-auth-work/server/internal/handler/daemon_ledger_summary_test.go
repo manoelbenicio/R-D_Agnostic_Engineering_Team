@@ -11,7 +11,10 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestPutDaemonLedgerSummary_Valid(t *testing.T) {
+// A well-formed report is still refused: the durable store does not exist in
+// this lane, so the endpoint must not answer success and must not use the word
+// "recorded". The assertion covers both the status code and the body claim.
+func TestPutDaemonLedgerSummary_WellFormedPayloadFailsClosedWithoutClaimingPersistence(t *testing.T) {
 	h := &Handler{}
 
 	taskID := uuid.New().String()
@@ -35,20 +38,11 @@ func TestPutDaemonLedgerSummary_Valid(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected status 200 OK, got %d. Body: %s", w.Code, w.Body.String())
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status 503 Service Unavailable, got %d. Body: %s", w.Code, w.Body.String())
 	}
-
-	var resp DaemonLedgerSummaryResponse
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	if resp.Status != "recorded" {
-		t.Errorf("expected status 'recorded', got '%s'", resp.Status)
-	}
-	if resp.TaskID != taskID {
-		t.Errorf("expected task_id '%s', got '%s'", taskID, resp.TaskID)
+	if bytes.Contains(w.Body.Bytes(), []byte(`"status":"recorded"`)) {
+		t.Fatalf("fail-closed scaffold must not claim persistence: %s", w.Body.String())
 	}
 }
 

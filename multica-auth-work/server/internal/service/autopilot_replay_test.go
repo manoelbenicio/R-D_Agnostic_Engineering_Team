@@ -3,100 +3,201 @@ package service
 import (
 	"context"
 	"errors"
-	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/multica-ai/multica/server/internal/daemon/commitledger"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
-func TestAutopilotReplayGate_NilHookFailsClosed(t *testing.T) {
-	svc := &AutopilotService{
-		ReplayGateHook: nil,
-	}
+// --- doubles -----------------------------------------------------------------
 
+// recordingGate captures every correlation ID it is asked about so a test can
+// assert *which* identity the service correlates by.
+type recordingGate struct {
+	seen []string
+	err  error
+}
+
+func (g *recordingGate) AllowReplay(_ context.Context, correlationID string) error {
+	g.seen = append(g.seen, correlationID)
+	return g.err
+}
+
+type stubCorrelation struct {
+	id     string
+	ok     bool
+	err    error
+	called int
+}
+
+func (c *stubCorrelation) PriorTaskCorrelationID(_ context.Context, _ db.Autopilot, _ db.Agent) (string, bool, error) {
+	c.called++
+	return c.id, c.ok, c.err
+}
+
+func testAutopilotAndAgent(t *testing.T) (db.Autopilot, db.Agent, string) {
+	t.Helper()
 	apID := uuid.New()
+	agentID := uuid.New()
 	ap := db.Autopilot{
 		ID:           pgtype.UUID{Bytes: apID, Valid: true},
 		AssigneeType: "agent",
-		AssigneeID:   pgtype.UUID{Bytes: apID, Valid: true},
+		AssigneeID:   pgtype.UUID{Bytes: agentID, Valid: true},
 	}
-	agent := db.Agent{
-		ID: pgtype.UUID{Bytes: apID, Valid: true},
-	}
+	agent := db.Agent{ID: pgtype.UUID{Bytes: agentID, Valid: true}}
+	return ap, agent, apID.String()
+}
 
-	err := svc.checkAutopilotReplayGate(context.Background(), ap, agent)
-	if err == nil {
-		t.Fatal("expected nil ReplayGateHook to return error (fail-closed), got nil")
-	}
+// --- unwired production behaviour -------------------------------------------
 
-	if !errors.Is(err, commitledger.ErrReplayBlocked) {
-		t.Errorf("expected error to wrap ErrReplayBlocked, got: %v", err)
+// The production constructor must leave the gate disarmed. If this ever flips,
+// every deployment starts exercising an unwired safety gate.
+func TestNewAutopilotService_LeavesReplayGateDisarmed(t *testing.T) {
+	svc := NewAutopilotService(nil, nil, nil, nil)
+
+	if svc.ReplayGateArmed() {
+		t.Fatal("production constructor must leave the replay gate disarmed")
+	}
+	if svc.replayGate != nil || svc.replayCorrelation != nil {
+		t.Fatalf("expected both collaborators nil, got gate=%v correlation=%v", svc.replayGate, svc.replayCorrelation)
 	}
 }
 
-func TestAutopilotReplayGate_AllowedWhenNoToolUse(t *testing.T) {
-	registry := commitledger.NewLedgerRegistry()
-	hook := commitledger.NewReplayGateHook(registry, slog.Default())
+// This is the regression that the previous implementation would have failed:
+// with the gate unwired, admission must not refuse a single dispatch. Built
+// through the *production* constructor on purpose — a struct literal would hide
+// exactly the wiring defect this guards against.
+func TestReplayGateSkipReason_ProductionServiceDoesNotBlockWhenUnwired(t *testing.T) {
+	svc := NewAutopilotService(nil, nil, nil, nil)
+	ap, agent, _ := testAutopilotAndAgent(t)
 
-	svc := &AutopilotService{
-		ReplayGateHook: hook,
-	}
+	reason, skip := svc.replayGateSkipReason(context.Background(), ap, agent)
 
-	apID := uuid.New()
-	apIDStr := apID.String()
-	ledger, err := commitledger.New(commitledger.Config{
-		TaskID:     apIDStr,
-		HMACSecret: []byte("01234567890123456789012345678901"),
-	})
-	if err != nil {
-		t.Fatalf("failed to create test ledger: %v", err)
+	if skip {
+		t.Fatalf("unwired replay gate must not skip dispatch; got skip=true reason=%q", reason)
 	}
-	registry.Register(apIDStr, ledger)
-
-	ap := db.Autopilot{
-		ID: pgtype.UUID{Bytes: apID, Valid: true},
-	}
-	agent := db.Agent{
-		ID: pgtype.UUID{Bytes: apID, Valid: true},
-	}
-
-	err = svc.checkAutopilotReplayGate(context.Background(), ap, agent)
-	if err != nil {
-		t.Fatalf("expected allowed replay gate check for clean state, got: %v", err)
+	if reason != "" {
+		t.Fatalf("unwired replay gate must not produce an admission reason, got %q", reason)
 	}
 }
 
-func TestAutopilotReplayGate_BlockedWhenToolUseRecorded(t *testing.T) {
-	registry := commitledger.NewLedgerRegistry()
-	hook := commitledger.NewReplayGateHook(registry, slog.Default())
+// --- arming contract ---------------------------------------------------------
 
-	apID := uuid.New()
-	apIDStr := apID.String()
-
-	// Register a fail-closed or tool-active ledger for this correlation ID
-	ledger := commitledger.NewFailClosed(apIDStr)
-	registry.Register(apIDStr, ledger)
-
-	svc := &AutopilotService{
-		ReplayGateHook: hook,
+func TestNewAutopilotServiceWithReplayGate_RejectsPartialWiring(t *testing.T) {
+	if _, err := NewAutopilotServiceWithReplayGate(nil, nil, nil, nil, &recordingGate{}, nil); !errors.Is(err, ErrAutopilotReplayGateIncomplete) {
+		t.Fatalf("gate without correlation resolver must be rejected, got %v", err)
 	}
-
-	ap := db.Autopilot{
-		ID: pgtype.UUID{Bytes: apID, Valid: true},
+	if _, err := NewAutopilotServiceWithReplayGate(nil, nil, nil, nil, nil, &stubCorrelation{}); !errors.Is(err, ErrAutopilotReplayGateIncomplete) {
+		t.Fatalf("correlation resolver without gate must be rejected, got %v", err)
 	}
-	agent := db.Agent{
-		ID: pgtype.UUID{Bytes: apID, Valid: true},
-	}
+}
 
-	err := svc.checkAutopilotReplayGate(context.Background(), ap, agent)
-	if err == nil {
-		t.Fatal("expected replay gate error for fail-closed ledger, got nil")
-	}
+// --- wired-on behaviour ------------------------------------------------------
 
-	if !errors.Is(err, commitledger.ErrReplayBlocked) {
-		t.Errorf("expected error to wrap ErrReplayBlocked, got: %v", err)
+// The defect this exposes: correlating by autopilot_id. Commit ledgers are
+// registered per task, so an autopilot ID is a key that is never present and
+// the gate would block forever. The assertion is explicit about both sides —
+// the task ID must be used and the autopilot ID must not.
+func TestReplayGateSkipReason_CorrelatesByPriorTaskNotAutopilotID(t *testing.T) {
+	priorTaskID := uuid.New().String()
+	gate := &recordingGate{}
+	correlation := &stubCorrelation{id: priorTaskID, ok: true}
+
+	svc, err := NewAutopilotServiceWithReplayGate(nil, nil, nil, nil, gate, correlation)
+	if err != nil {
+		t.Fatalf("arming the gate failed: %v", err)
+	}
+	ap, agent, apIDStr := testAutopilotAndAgent(t)
+
+	reason, skip := svc.replayGateSkipReason(context.Background(), ap, agent)
+
+	if skip {
+		t.Fatalf("gate allowed replay, dispatch must proceed; got reason=%q", reason)
+	}
+	if len(gate.seen) != 1 {
+		t.Fatalf("expected exactly one gate consultation, got %d", len(gate.seen))
+	}
+	if gate.seen[0] != priorTaskID {
+		t.Errorf("gate must be consulted with the prior task ID %q, got %q", priorTaskID, gate.seen[0])
+	}
+	if gate.seen[0] == apIDStr {
+		t.Errorf("gate must never be consulted with the autopilot ID %q", apIDStr)
+	}
+}
+
+// First run: there is no prior task, so there is nothing to replay. The gate
+// must not even be consulted, otherwise a fail-closed checker would block every
+// autopilot's very first dispatch.
+func TestReplayGateSkipReason_AllowsFirstRunWithoutConsultingGate(t *testing.T) {
+	gate := &recordingGate{err: errors.New("must not be called")}
+	correlation := &stubCorrelation{ok: false}
+
+	svc, err := NewAutopilotServiceWithReplayGate(nil, nil, nil, nil, gate, correlation)
+	if err != nil {
+		t.Fatalf("arming the gate failed: %v", err)
+	}
+	ap, agent, _ := testAutopilotAndAgent(t)
+
+	reason, skip := svc.replayGateSkipReason(context.Background(), ap, agent)
+
+	if skip {
+		t.Fatalf("first run must be allowed, got skip=true reason=%q", reason)
+	}
+	if len(gate.seen) != 0 {
+		t.Fatalf("gate must not be consulted when there is no prior task, saw %v", gate.seen)
+	}
+	if correlation.called != 1 {
+		t.Fatalf("expected one correlation lookup, got %d", correlation.called)
+	}
+}
+
+func TestReplayGateSkipReason_BlocksWhenGateRefuses(t *testing.T) {
+	gate := &recordingGate{err: errors.New("replay blocked")}
+	correlation := &stubCorrelation{id: uuid.New().String(), ok: true}
+
+	svc, err := NewAutopilotServiceWithReplayGate(nil, nil, nil, nil, gate, correlation)
+	if err != nil {
+		t.Fatalf("arming the gate failed: %v", err)
+	}
+	ap, agent, _ := testAutopilotAndAgent(t)
+
+	reason, skip := svc.replayGateSkipReason(context.Background(), ap, agent)
+
+	if !skip {
+		t.Fatal("a refusing gate must skip the dispatch")
+	}
+	if !strings.Contains(reason, "replay gate blocked") {
+		t.Errorf("admission reason must name the replay gate, got %q", reason)
+	}
+	if strings.Contains(reason, correlation.id) {
+		t.Errorf("admission reason must not leak the correlation ID, got %q", reason)
+	}
+}
+
+// Without an authoritative correlation the service cannot distinguish a first
+// run from a replay, so an armed deployment fails closed. This only affects
+// deployments that opted in.
+func TestReplayGateSkipReason_FailsClosedWhenCorrelationErrors(t *testing.T) {
+	gate := &recordingGate{}
+	correlation := &stubCorrelation{err: errors.New("lookup failed")}
+
+	svc, err := NewAutopilotServiceWithReplayGate(nil, nil, nil, nil, gate, correlation)
+	if err != nil {
+		t.Fatalf("arming the gate failed: %v", err)
+	}
+	ap, agent, _ := testAutopilotAndAgent(t)
+
+	reason, skip := svc.replayGateSkipReason(context.Background(), ap, agent)
+
+	if !skip {
+		t.Fatal("an unavailable correlation lookup must fail closed on an armed service")
+	}
+	if !strings.Contains(reason, "prior task correlation unavailable") {
+		t.Errorf("reason must state the correlation was unavailable, got %q", reason)
+	}
+	if len(gate.seen) != 0 {
+		t.Fatalf("gate must not be consulted when correlation failed, saw %v", gate.seen)
 	}
 }

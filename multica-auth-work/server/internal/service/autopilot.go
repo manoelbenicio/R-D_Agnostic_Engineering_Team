@@ -13,7 +13,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/analytics"
-	"github.com/multica-ai/multica/server/internal/daemon/commitledger"
 	"github.com/multica-ai/multica/server/internal/events"
 	"github.com/multica-ai/multica/server/internal/issueposition"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
@@ -27,12 +26,45 @@ type TxStarter interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
+// AutopilotReplayGate decides whether a new Autopilot dispatch may reuse a
+// prior execution's side-effect budget. Implementations receive the correlation
+// ID of the *prior task*, never the autopilot ID: commit ledgers are registered
+// per task (internal/daemon/daemon.go registers by task ID) and the existing
+// consumer in TaskService correlates by parent task ID. Passing an autopilot ID
+// would look up a key that is never registered and block every dispatch.
+//
+// The production implementation is deferred: it needs the durable ledger
+// summary store (LANE-DB migration `task_ledger_summary`) and the prior-task
+// lookup owned by W2. Until those land, no wiring exists and the gate stays
+// disarmed (see NewAutopilotService).
+type AutopilotReplayGate interface {
+	// AllowReplay returns nil when dispatch may proceed. A non-nil error
+	// blocks the dispatch and its message must stay content-free.
+	AllowReplay(ctx context.Context, priorTaskCorrelationID string) error
+}
+
+// AutopilotReplayCorrelation resolves which prior task an Autopilot dispatch
+// would be replaying. `ok == false` means there is no prior task at all — the
+// first-run case — and the dispatch is allowed without consulting the gate.
+//
+// This lookup is a database read that W4 does not own (no query or generated
+// method for it exists in this lane), so W4 only declares the contract.
+type AutopilotReplayCorrelation interface {
+	PriorTaskCorrelationID(ctx context.Context, ap db.Autopilot, agent db.Agent) (correlationID string, ok bool, err error)
+}
+
 type AutopilotService struct {
-	Queries        *db.Queries
-	TxStarter      TxStarter
-	Bus            *events.Bus
-	TaskSvc        *TaskService
-	ReplayGateHook *commitledger.ReplayGateHook
+	Queries   *db.Queries
+	TxStarter TxStarter
+	Bus       *events.Bus
+	TaskSvc   *TaskService
+
+	// replayGate and replayCorrelation are set once, at construction, and are
+	// never mutated afterwards. There is deliberately no setter: a setter
+	// called after the service starts serving would race with the reads in
+	// replayGateSkipReason.
+	replayGate        AutopilotReplayGate
+	replayCorrelation AutopilotReplayCorrelation
 }
 
 // DefaultAutopilotTriggerTimezone is the timezone used to render Autopilot
@@ -41,12 +73,49 @@ type AutopilotService struct {
 // when computing next run times.
 const DefaultAutopilotTriggerTimezone = "UTC"
 
+// NewAutopilotService builds the service used in production today. The replay
+// gate is left **disarmed**, which keeps admission behaviour identical to the
+// pre-gate Autopilot: no dispatch is ever refused because of the gate. Arming
+// it requires NewAutopilotServiceWithReplayGate and therefore an explicit
+// deployment decision plus both collaborators.
 func NewAutopilotService(q *db.Queries, tx TxStarter, bus *events.Bus, taskSvc *TaskService) *AutopilotService {
 	return &AutopilotService{Queries: q, TxStarter: tx, Bus: bus, TaskSvc: taskSvc}
 }
 
-func (s *AutopilotService) SetReplayGateHook(hook *commitledger.ReplayGateHook) {
-	s.ReplayGateHook = hook
+// ErrAutopilotReplayGateIncomplete is returned when a caller tries to arm the
+// replay gate with only part of the contract. Arming halfway would either
+// silently disable the gate or block every dispatch, so construction fails
+// instead.
+var ErrAutopilotReplayGateIncomplete = errors.New("autopilot replay gate requires both a gate and a correlation resolver")
+
+// NewAutopilotServiceWithReplayGate builds the service with the replay gate
+// armed. Both collaborators are mandatory and immutable after construction.
+//
+// No production call site exists yet: the durable checker and the prior-task
+// lookup are owned by other waves. This constructor is the seam they will use,
+// and it is what the wired-on tests exercise.
+func NewAutopilotServiceWithReplayGate(
+	q *db.Queries,
+	tx TxStarter,
+	bus *events.Bus,
+	taskSvc *TaskService,
+	gate AutopilotReplayGate,
+	correlation AutopilotReplayCorrelation,
+) (*AutopilotService, error) {
+	if gate == nil || correlation == nil {
+		return nil, ErrAutopilotReplayGateIncomplete
+	}
+	svc := NewAutopilotService(q, tx, bus, taskSvc)
+	svc.replayGate = gate
+	svc.replayCorrelation = correlation
+	return svc, nil
+}
+
+// ReplayGateArmed reports whether the replay gate is wired. Exposed so
+// operators and readiness checks can tell the two behaviours apart without
+// reaching into unexported state.
+func (s *AutopilotService) ReplayGateArmed() bool {
+	return s.replayGate != nil && s.replayCorrelation != nil
 }
 
 // DispatchAutopilot is the core execution entry point.
@@ -767,10 +836,41 @@ func (s *AutopilotService) shouldSkipDispatch(ctx context.Context, ap db.Autopil
 			}
 		}
 	}
+	if reason, skip := s.replayGateSkipReason(ctx, ap, agent); skip {
+		return reason, true
+	}
+	return "", false
+}
 
-	// Fail-closed Autopilot Replay Gate (ORQ-41 Wave W4):
-	// Consult the commit ledger replay gate before enqueueing any new task for a prior run.
-	if err := s.checkAutopilotReplayGate(ctx, ap, agent); err != nil {
+// replayGateSkipReason applies the Autopilot replay gate. It is the *only*
+// place the gate can refuse a dispatch, and it refuses nothing while the gate
+// is disarmed — which is the state of every deployment today. That is
+// deliberate: an unwired safety gate must not take a product feature down.
+//
+// When armed, the order is: resolve the prior task correlation, allow the
+// first-run case outright, then consult the gate with the *task* correlation
+// ID. A resolver error fails closed, because without an authoritative answer
+// the service cannot tell a first run from a replay.
+func (s *AutopilotService) replayGateSkipReason(ctx context.Context, ap db.Autopilot, agent db.Agent) (string, bool) {
+	if !s.ReplayGateArmed() {
+		return "", false
+	}
+
+	correlationID, ok, err := s.replayCorrelation.PriorTaskCorrelationID(ctx, ap, agent)
+	if err != nil {
+		slog.Warn("autopilot admission: replay correlation unavailable",
+			"autopilot_id", util.UUIDToString(ap.ID),
+			"agent_id", util.UUIDToString(agent.ID),
+			"error", err,
+		)
+		return formatAdmissionReason(ap, "replay gate blocked: prior task correlation unavailable"), true
+	}
+	if !ok {
+		// No prior task: nothing to replay, nothing to block.
+		return "", false
+	}
+
+	if err := s.replayGate.AllowReplay(ctx, correlationID); err != nil {
 		slog.Warn("autopilot admission: replay gate blocked",
 			"autopilot_id", util.UUIDToString(ap.ID),
 			"agent_id", util.UUIDToString(agent.ID),
@@ -778,15 +878,7 @@ func (s *AutopilotService) shouldSkipDispatch(ctx context.Context, ap db.Autopil
 		)
 		return formatAdmissionReason(ap, "replay gate blocked: "+err.Error()), true
 	}
-
 	return "", false
-}
-
-// checkAutopilotReplayGate verifies whether a prior run for this autopilot attempted tool side-effects
-// and consults commitledger.CheckOrAllow to fail closed if side-effects occurred or if hook is unconfigured.
-func (s *AutopilotService) checkAutopilotReplayGate(ctx context.Context, ap db.Autopilot, agent db.Agent) error {
-	correlationID := util.UUIDToString(ap.ID)
-	return commitledger.CheckOrAllow(s.ReplayGateHook, correlationID)
 }
 
 // formatAdmissionReason rewrites the generic AgentReadiness reason into the
