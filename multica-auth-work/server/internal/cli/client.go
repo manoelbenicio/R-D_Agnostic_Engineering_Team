@@ -228,6 +228,66 @@ func (c *APIClient) GetJSON(ctx context.Context, path string, out any) error {
 	return json.NewDecoder(resp.Body).Decode(out)
 }
 
+// UnexpectedStatusError reports a successful HTTP response whose status did
+// not match the caller's exact contract. It intentionally omits the response
+// body so an unexpected 2xx response cannot be rendered as successful data.
+type UnexpectedStatusError struct {
+	Method   string
+	Path     string
+	Expected int
+	Actual   int
+}
+
+func (e *UnexpectedStatusError) Error() string {
+	return fmt.Sprintf("%s %s returned %d, expected %d", e.Method, e.Path, e.Actual, e.Expected)
+}
+
+// GetJSONExpectedStatus performs a GET that succeeds only for expectedStatus.
+// HTTP errors retain the existing *HTTPError contract; other status mismatches
+// return *UnexpectedStatusError without decoding or exposing the body.
+func (c *APIClient) GetJSONExpectedStatus(ctx context.Context, path string, expectedStatus int, out any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+path, nil)
+	if err != nil {
+		return err
+	}
+	c.setHeaders(req)
+
+	resp, err := c.HTTPClient.Do(req)
+	err = wrapTransport(req, err)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return newHTTPError(http.MethodGet, path, resp)
+	}
+	if resp.StatusCode != expectedStatus {
+		return &UnexpectedStatusError{
+			Method:   http.MethodGet,
+			Path:     path,
+			Expected: expectedStatus,
+			Actual:   resp.StatusCode,
+		}
+	}
+	if out == nil {
+		return nil
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(out); err != nil {
+		return err
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("GET %s returned multiple JSON values", path)
+		}
+		return err
+	}
+	return nil
+}
+
 // GetJSONWithHeaders performs a GET request, decodes the JSON response, and
 // returns the response headers. Useful when callers need header values like
 // X-Total-Count for pagination.

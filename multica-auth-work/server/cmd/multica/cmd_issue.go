@@ -617,14 +617,22 @@ func runIssueGet(cmd *cobra.Command, args []string) error {
 	ctx, cancel := cli.APIContext(context.Background())
 	defer cancel()
 
-	issueRef, err := resolveIssueRef(ctx, client, args[0])
+	issueRef, err := resolveIssueRefStrict(ctx, client, args[0])
 	if err != nil {
 		return fmt.Errorf("resolve issue: %w", err)
 	}
 
 	var issue map[string]any
-	if err := client.GetJSON(ctx, "/api/issues/"+issueRef.ID, &issue); err != nil {
+	path := "/api/issues/" + url.PathEscape(issueRef.ID)
+	if err := client.GetJSONExpectedStatus(ctx, path, http.StatusOK, &issue); err != nil {
 		return fmt.Errorf("get issue: %w", err)
+	}
+	identity, err := requireIssueIdentity(issue)
+	if err != nil {
+		return fmt.Errorf("get issue: %w", err)
+	}
+	if identity.ID != issueRef.ID {
+		return fmt.Errorf("get issue: response id %q does not match resolved id %q", identity.ID, issueRef.ID)
 	}
 
 	output, _ := cmd.Flags().GetString("output")

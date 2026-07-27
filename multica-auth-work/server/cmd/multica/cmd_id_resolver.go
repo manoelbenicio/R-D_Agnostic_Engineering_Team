@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
+	"net/http"
 	"net/url"
 	"sort"
 	"strconv"
@@ -145,16 +147,85 @@ func resolveIssueRef(ctx context.Context, client *cli.APIClient, input string) (
 	return resolveIDByPrefix(ctx, client, "issue", trimmed, fetchIssueCandidates)
 }
 
+// resolveIssueRefStrict is the fail-closed resolver for `issue get`. Other
+// commands retain resolveIssueRef's established response-shape compatibility;
+// the identity-verification contract is specific to the GET Issue command.
+func resolveIssueRefStrict(ctx context.Context, client *cli.APIClient, input string) (resolvedID, error) {
+	trimmed := strings.TrimSpace(input)
+	if trimmed == "" {
+		return resolvedID{}, fmt.Errorf("issue id is required")
+	}
+	if strings.TrimSpace(client.WorkspaceID) == "" {
+		return resolvedID{}, fmt.Errorf("workspace_id is required to resolve issue")
+	}
+
+	if looksLikeIssueIdentifier(trimmed) || uuidRegexp.MatchString(trimmed) {
+		return fetchIssueRefStrict(ctx, client, trimmed)
+	}
+	return resolveIDByPrefix(ctx, client, "issue", trimmed, fetchIssueCandidates)
+}
+
+type issueIdentity struct {
+	ID         string
+	Identifier string
+	Number     int64
+}
+
+func requireIssueIdentity(issue map[string]any) (issueIdentity, error) {
+	idValue, ok := issue["id"]
+	if !ok || idValue == nil {
+		return issueIdentity{}, fmt.Errorf("issue response missing id")
+	}
+	id, ok := idValue.(string)
+	id = strings.TrimSpace(id)
+	if !ok || id == "" || !uuidRegexp.MatchString(id) {
+		return issueIdentity{}, fmt.Errorf("issue response has invalid id")
+	}
+
+	identifierValue, ok := issue["identifier"]
+	if !ok || identifierValue == nil {
+		return issueIdentity{}, fmt.Errorf("issue response missing identifier")
+	}
+	identifier, ok := identifierValue.(string)
+	identifier = strings.TrimSpace(identifier)
+	if !ok || identifier == "" {
+		return issueIdentity{}, fmt.Errorf("issue response has invalid identifier")
+	}
+
+	numberValue, ok := issue["number"]
+	if !ok || numberValue == nil {
+		return issueIdentity{}, fmt.Errorf("issue response missing number")
+	}
+	number, ok := numberValue.(float64)
+	if !ok || number <= 0 || math.IsNaN(number) || math.IsInf(number, 0) || math.Trunc(number) != number || number > float64(1<<31-1) {
+		return issueIdentity{}, fmt.Errorf("issue response has invalid number")
+	}
+
+	return issueIdentity{ID: id, Identifier: identifier, Number: int64(number)}, nil
+}
+
 func fetchIssueRef(ctx context.Context, client *cli.APIClient, ref string) (resolvedID, error) {
 	var issue map[string]any
 	if err := client.GetJSON(ctx, "/api/issues/"+url.PathEscape(ref), &issue); err != nil {
 		return resolvedID{}, err
 	}
-	c := issueCandidate(issue)
-	if c.Display == "" {
-		c.Display = c.ID
+	candidate := issueCandidate(issue)
+	if candidate.Display == "" {
+		candidate.Display = candidate.ID
 	}
-	return resolvedID{ID: c.ID, Display: c.Display}, nil
+	return resolvedID{ID: candidate.ID, Display: candidate.Display}, nil
+}
+
+func fetchIssueRefStrict(ctx context.Context, client *cli.APIClient, ref string) (resolvedID, error) {
+	var issue map[string]any
+	if err := client.GetJSONExpectedStatus(ctx, "/api/issues/"+url.PathEscape(ref), http.StatusOK, &issue); err != nil {
+		return resolvedID{}, err
+	}
+	identity, err := requireIssueIdentity(issue)
+	if err != nil {
+		return resolvedID{}, err
+	}
+	return resolvedID{ID: identity.ID, Display: identity.Identifier}, nil
 }
 
 func looksLikeIssueIdentifier(input string) bool {
