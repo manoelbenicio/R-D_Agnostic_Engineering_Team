@@ -1535,7 +1535,13 @@ type deleteSnapshot struct {
 	err         error
 	deadline    time.Time
 	hasDeadline bool
-	value       any
+	// observedAt is sampled in the same instant as deadline, so the remaining
+	// budget can be computed from two timestamps taken inside Delete. Measuring
+	// against a timestamp captured before the call is wrong: the deadline is
+	// created as time.Now()+5s *during* the call, so deadline minus a pre-call
+	// instant is always slightly MORE than 5s.
+	observedAt time.Time
+	value      any
 }
 
 // mockStorageRecordingDelete records a snapshot per Delete call. mockStorage
@@ -1582,6 +1588,7 @@ func (m *mockStorageRecordingDelete) Delete(ctx context.Context, key string) {
 		err:         ctx.Err(),
 		deadline:    deadline,
 		hasDeadline: hasDeadline,
+		observedAt:  time.Now(),
 		value:       ctx.Value(cleanupProbeKey{}),
 	})
 	delete(m.files, key)
@@ -1638,7 +1645,6 @@ func TestCleanupOrphanObject_RunsWithCanceledRequestContext(t *testing.T) {
 	if reqCtx.Err() == nil {
 		t.Fatal("test setup: request context should already be canceled")
 	}
-	before := time.Now()
 
 	h.cleanupOrphanObject(reqCtx, key)
 
@@ -1659,8 +1665,11 @@ func TestCleanupOrphanObject_RunsWithCanceledRequestContext(t *testing.T) {
 	if !got.hasDeadline {
 		t.Fatal("cleanup context must carry its own deadline")
 	}
-	if remaining := got.deadline.Sub(before); remaining <= 0 || remaining > 5*time.Second {
-		t.Fatalf("cleanup deadline out of range: %v", remaining)
+	// Both timestamps come from inside Delete, so the budget is measured
+	// strictly after the deadline was created and cannot exceed it.
+	remaining := got.deadline.Sub(got.observedAt)
+	if remaining <= 0 || remaining > 5*time.Second {
+		t.Fatalf("cleanup budget out of range: %v remaining at call time", remaining)
 	}
 	if store.fileCount() != 0 {
 		t.Fatalf("orphan object still present after cleanup, %d left", store.fileCount())
@@ -1725,6 +1734,9 @@ func TestUploadFile_InsertFailureDeletesOriginalKeyWhenKeyFromURLCollapses(t *te
 	}
 	if !snaps[0].hasDeadline {
 		t.Fatal("cleanup context must carry its own deadline in the handler path")
+	}
+	if remaining := snaps[0].deadline.Sub(snaps[0].observedAt); remaining <= 0 || remaining > 5*time.Second {
+		t.Fatalf("cleanup budget out of range in the handler path: %v", remaining)
 	}
 	if store.fileCount() != 0 {
 		t.Fatalf("orphan object left behind, %d present", store.fileCount())

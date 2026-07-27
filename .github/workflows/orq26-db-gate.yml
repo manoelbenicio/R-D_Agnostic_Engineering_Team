@@ -55,7 +55,7 @@ jobs:
       PGPASSWORD: orq26_gate
       PGDATABASE: orq26_gate
       LOCKED_FILE_SHA256: 70f45ebdcd07e24d892657a9add7a624b2c10bb2c657d9af1118af453c0fc50e
-      LOCKED_TEST_SHA256: 02f9bb0acf50f492fa524deb6e9898dfcfa74375f0a96407168ed574349e442b
+      LOCKED_TEST_SHA256: b1c3c515e31d97cfa4ed26a07ee7ae2c1c824d07e61fc05929c7a0ed92fd8f1a
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
