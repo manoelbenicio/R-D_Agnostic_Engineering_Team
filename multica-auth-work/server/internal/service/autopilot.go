@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/analytics"
+	"github.com/multica-ai/multica/server/internal/daemon/commitledger"
 	"github.com/multica-ai/multica/server/internal/events"
 	"github.com/multica-ai/multica/server/internal/issueposition"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
@@ -27,10 +28,11 @@ type TxStarter interface {
 }
 
 type AutopilotService struct {
-	Queries   *db.Queries
-	TxStarter TxStarter
-	Bus       *events.Bus
-	TaskSvc   *TaskService
+	Queries        *db.Queries
+	TxStarter      TxStarter
+	Bus            *events.Bus
+	TaskSvc        *TaskService
+	ReplayGateHook *commitledger.ReplayGateHook
 }
 
 // DefaultAutopilotTriggerTimezone is the timezone used to render Autopilot
@@ -41,6 +43,10 @@ const DefaultAutopilotTriggerTimezone = "UTC"
 
 func NewAutopilotService(q *db.Queries, tx TxStarter, bus *events.Bus, taskSvc *TaskService) *AutopilotService {
 	return &AutopilotService{Queries: q, TxStarter: tx, Bus: bus, TaskSvc: taskSvc}
+}
+
+func (s *AutopilotService) SetReplayGateHook(hook *commitledger.ReplayGateHook) {
+	s.ReplayGateHook = hook
 }
 
 // DispatchAutopilot is the core execution entry point.
@@ -761,7 +767,26 @@ func (s *AutopilotService) shouldSkipDispatch(ctx context.Context, ap db.Autopil
 			}
 		}
 	}
+
+	// Fail-closed Autopilot Replay Gate (ORQ-41 Wave W4):
+	// Consult the commit ledger replay gate before enqueueing any new task for a prior run.
+	if err := s.checkAutopilotReplayGate(ctx, ap, agent); err != nil {
+		slog.Warn("autopilot admission: replay gate blocked",
+			"autopilot_id", util.UUIDToString(ap.ID),
+			"agent_id", util.UUIDToString(agent.ID),
+			"error", err,
+		)
+		return formatAdmissionReason(ap, "replay gate blocked: "+err.Error()), true
+	}
+
 	return "", false
+}
+
+// checkAutopilotReplayGate verifies whether a prior run for this autopilot attempted tool side-effects
+// and consults commitledger.CheckOrAllow to fail closed if side-effects occurred or if hook is unconfigured.
+func (s *AutopilotService) checkAutopilotReplayGate(ctx context.Context, ap db.Autopilot, agent db.Agent) error {
+	correlationID := util.UUIDToString(ap.ID)
+	return commitledger.CheckOrAllow(s.ReplayGateHook, correlationID)
 }
 
 // formatAdmissionReason rewrites the generic AgentReadiness reason into the
