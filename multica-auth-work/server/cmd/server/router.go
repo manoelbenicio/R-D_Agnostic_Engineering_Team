@@ -604,6 +604,9 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 				// Admin-level access
 				r.Group(func(r chi.Router) {
 					r.Use(middleware.RequireWorkspaceRoleFromURL(queries, "id", "owner", "admin"))
+					// ORQ-43A: owner/admin-only mdt_ issuance. ORQ-43B rotation
+					// remains a separate operational lane.
+					r.Post("/daemon-tokens", h.CreateDaemonToken)
 					r.Put("/", h.UpdateWorkspace)
 					r.Patch("/", h.UpdateWorkspace)
 					r.Post("/members", h.CreateInvitation)
