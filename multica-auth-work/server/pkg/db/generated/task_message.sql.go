@@ -52,19 +52,6 @@ func (q *Queries) CreateTaskMessage(ctx context.Context, arg CreateTaskMessagePa
 	return i, err
 }
 
-const getTaskMessageMaxSeq = `-- name: GetTaskMessageMaxSeq :one
-SELECT COALESCE(MAX(seq), 0)::integer AS max_seq
-FROM task_message
-WHERE task_id = $1
-`
-
-func (q *Queries) GetTaskMessageMaxSeq(ctx context.Context, taskID pgtype.UUID) (int32, error) {
-	row := q.db.QueryRow(ctx, getTaskMessageMaxSeq, taskID)
-	var maxSeq int32
-	err := row.Scan(&maxSeq)
-	return maxSeq, err
-}
-
 const deleteTaskMessages = `-- name: DeleteTaskMessages :exec
 DELETE FROM task_message
 WHERE task_id = $1
@@ -73,6 +60,19 @@ WHERE task_id = $1
 func (q *Queries) DeleteTaskMessages(ctx context.Context, taskID pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, deleteTaskMessages, taskID)
 	return err
+}
+
+const getTaskMessageMaxSeq = `-- name: GetTaskMessageMaxSeq :one
+SELECT COALESCE(MAX(seq), 0)::integer AS max_seq
+FROM task_message
+WHERE task_id = $1
+`
+
+func (q *Queries) GetTaskMessageMaxSeq(ctx context.Context, taskID pgtype.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, getTaskMessageMaxSeq, taskID)
+	var max_seq int32
+	err := row.Scan(&max_seq)
+	return max_seq, err
 }
 
 const listTaskMessages = `-- name: ListTaskMessages :many
