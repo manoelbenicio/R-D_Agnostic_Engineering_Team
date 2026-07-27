@@ -1525,29 +1525,75 @@ func TestUploadFile_SuccessShapesAlwaysCarryContractFields(t *testing.T) {
 	}
 }
 
-// mockStorageRecordingDelete records every key handed to Delete together with
-// the context it received, so a test can assert BOTH what was deleted and that
-// the cleanup context was usable. mockStorage.Delete discards its context and
-// the key, which is exactly what F1/F2 need to observe.
+// deleteSnapshot captures what a Delete call observed AT CALL TIME. Inspecting
+// the stored context after cleanupOrphanObject returns is worthless: its
+// `defer cancel()` has already fired, so Err() would report context.Canceled
+// no matter how the context was built. Everything asserted about the cleanup
+// context must therefore be sampled inside Delete.
+type deleteSnapshot struct {
+	key         string
+	err         error
+	deadline    time.Time
+	hasDeadline bool
+	value       any
+}
+
+// mockStorageRecordingDelete records a snapshot per Delete call. mockStorage
+// discards both the key and the context, which is exactly what F1/F2 need to
+// observe.
 type mockStorageRecordingDelete struct {
 	mockStorage
-	deleteKeys []string
-	deleteCtxs []context.Context
+	// uploadURL, when set, is returned by Upload instead of the CDN-shaped URL.
+	uploadURL string
+	// collapseKeyFromURL makes KeyFromURL behave like the S3Storage fallback
+	// ("everything after the last /"), which is the shape F1 must never use.
+	collapseKeyFromURL bool
+	snapshots          []deleteSnapshot
+}
+
+type cleanupProbeKey struct{}
+
+func (m *mockStorageRecordingDelete) Upload(ctx context.Context, key string, data []byte, contentType string, filename string) (string, error) {
+	if _, err := m.mockStorage.Upload(ctx, key, data, contentType, filename); err != nil {
+		return "", err
+	}
+	if m.uploadURL != "" {
+		return m.uploadURL, nil
+	}
+	return fmt.Sprintf("https://cdn.example.com/%s", key), nil
+}
+
+func (m *mockStorageRecordingDelete) KeyFromURL(rawURL string) string {
+	if m.collapseKeyFromURL {
+		if i := strings.LastIndex(rawURL, "/"); i >= 0 {
+			return rawURL[i+1:]
+		}
+		return rawURL
+	}
+	return m.mockStorage.KeyFromURL(rawURL)
 }
 
 func (m *mockStorageRecordingDelete) Delete(ctx context.Context, key string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.deleteKeys = append(m.deleteKeys, key)
-	m.deleteCtxs = append(m.deleteCtxs, ctx)
+	deadline, hasDeadline := ctx.Deadline()
+	m.snapshots = append(m.snapshots, deleteSnapshot{
+		key:         key,
+		err:         ctx.Err(),
+		deadline:    deadline,
+		hasDeadline: hasDeadline,
+		value:       ctx.Value(cleanupProbeKey{}),
+	})
 	delete(m.files, key)
 }
 
-// F1 — the orphan cleanup must delete the EXACT key the upload used. Deriving
-// the key from the returned URL is what made this unsafe: Storage.KeyFromURL
-// ends with a "everything after the last /" fallback, so a URL shape it does
-// not recognise collapses "users/<id>/<file>" to "<file>" and the delete
-// targets an unrelated object at the bucket root.
+func (m *mockStorageRecordingDelete) deleteSnapshots() []deleteSnapshot {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]deleteSnapshot(nil), m.snapshots...)
+}
+
+// F1 (unit) — the orphan cleanup must delete the EXACT key it was given.
 func TestCleanupOrphanObject_DeletesExactKeyNotDerivedFromURL(t *testing.T) {
 	const key = "users/11111111-1111-1111-1111-111111111111/22222222-2222-2222-2222-222222222222.png"
 
@@ -1557,15 +1603,16 @@ func TestCleanupOrphanObject_DeletesExactKeyNotDerivedFromURL(t *testing.T) {
 
 	h.cleanupOrphanObject(context.Background(), key)
 
-	if len(store.deleteKeys) != 1 {
-		t.Fatalf("expected exactly one Delete call, got %d", len(store.deleteKeys))
+	snaps := store.deleteSnapshots()
+	if len(snaps) != 1 {
+		t.Fatalf("expected exactly one Delete call, got %d", len(snaps))
 	}
-	if store.deleteKeys[0] != key {
-		t.Fatalf("cleanup must delete the exact key\n got: %q\nwant: %q", store.deleteKeys[0], key)
+	if snaps[0].key != key {
+		t.Fatalf("cleanup must delete the exact key\n got: %q\nwant: %q", snaps[0].key, key)
 	}
-	// Guard the specific regression: the last path element alone must never be
-	// what reaches the backend, because it addresses the bucket root.
-	if last := key[strings.LastIndex(key, "/")+1:]; store.deleteKeys[0] == last {
+	// Guard the specific regression: the last path element alone must never
+	// reach the backend, because it addresses the bucket root.
+	if last := key[strings.LastIndex(key, "/")+1:]; snaps[0].key == last {
 		t.Fatalf("cleanup deleted the bare filename %q instead of the full key", last)
 	}
 	if store.fileCount() != 0 {
@@ -1573,9 +1620,10 @@ func TestCleanupOrphanObject_DeletesExactKeyNotDerivedFromURL(t *testing.T) {
 	}
 }
 
-// F2 — CreateAttachment most often fails BECAUSE the client disconnected and
-// the request context was canceled. The cleanup must still run: it detaches
-// cancellation and carries its own deadline.
+// F2 (unit) — CreateAttachment most often fails BECAUSE the client
+// disconnected and the request context was canceled. The cleanup must still
+// run: cancellation is dropped, values survive, and its own deadline applies.
+// Every context property is sampled INSIDE Delete, before `defer cancel()`.
 func TestCleanupOrphanObject_RunsWithCanceledRequestContext(t *testing.T) {
 	const key = "workspaces/33333333-3333-3333-3333-333333333333/44444444-4444-4444-4444-444444444444.pdf"
 
@@ -1583,33 +1631,102 @@ func TestCleanupOrphanObject_RunsWithCanceledRequestContext(t *testing.T) {
 	store.put(key, []byte("orphan"))
 	h := &Handler{Storage: store}
 
-	reqCtx, cancel := context.WithCancel(context.Background())
+	reqCtx, cancel := context.WithCancel(
+		context.WithValue(context.Background(), cleanupProbeKey{}, "request-scoped"),
+	)
 	cancel() // the client is already gone before cleanup starts
 	if reqCtx.Err() == nil {
 		t.Fatal("test setup: request context should already be canceled")
 	}
+	before := time.Now()
 
 	h.cleanupOrphanObject(reqCtx, key)
 
-	if len(store.deleteCtxs) != 1 {
-		t.Fatalf("cleanup must still call Delete with a canceled request context, got %d calls",
-			len(store.deleteCtxs))
+	snaps := store.deleteSnapshots()
+	if len(snaps) != 1 {
+		t.Fatalf("cleanup must still call Delete with a canceled request context, got %d calls", len(snaps))
 	}
-	if store.deleteKeys[0] != key {
-		t.Fatalf("cleanup deleted %q, want %q", store.deleteKeys[0], key)
+	got := snaps[0]
+	if got.key != key {
+		t.Fatalf("cleanup deleted %q, want %q", got.key, key)
 	}
-	gotCtx := store.deleteCtxs[0]
-	if err := gotCtx.Err(); err != nil {
-		t.Fatalf("cleanup context must not inherit cancellation, got %v", err)
+	if got.err != nil {
+		t.Fatalf("cleanup context must not inherit cancellation, Err() was %v at call time", got.err)
 	}
-	deadline, ok := gotCtx.Deadline()
-	if !ok {
+	if got.value != "request-scoped" {
+		t.Fatalf("cleanup context must preserve request values, got %v", got.value)
+	}
+	if !got.hasDeadline {
 		t.Fatal("cleanup context must carry its own deadline")
 	}
-	if remaining := time.Until(deadline); remaining <= 0 || remaining > 5*time.Second {
-		t.Fatalf("cleanup deadline out of range: %v remaining", remaining)
+	if remaining := got.deadline.Sub(before); remaining <= 0 || remaining > 5*time.Second {
+		t.Fatalf("cleanup deadline out of range: %v", remaining)
 	}
 	if store.fileCount() != 0 {
 		t.Fatalf("orphan object still present after cleanup, %d left", store.fileCount())
+	}
+}
+
+// F1 (wiring) — proves UploadFile itself deletes the ORIGINAL key. The storage
+// fake returns an upload URL that its own KeyFromURL cannot parse and collapses
+// to the bare filename, reproducing the S3Storage fallback. If the handler ever
+// goes back to deleting by URL, the recorded key becomes the bare filename and
+// this test fails.
+func TestUploadFile_InsertFailureDeletesOriginalKeyWhenKeyFromURLCollapses(t *testing.T) {
+	origStorage := testHandler.Storage
+	store := &mockStorageRecordingDelete{
+		uploadURL:          "https://unrecognised.example.net/some/other/prefix/collapsed.txt",
+		collapseKeyFromURL: true,
+	}
+	testHandler.Storage = store
+	defer func() { testHandler.Storage = origStorage }()
+
+	forceInsertFailure := withFailingAttachmentInsert(t)
+
+	body, contentType := uploadRequestBody(t, "collapse-cleanup.txt", "bytes", nil)
+	req := httptest.NewRequest("POST", "/api/upload-file", body)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("X-User-ID", testUserID)
+	req.Header.Set("X-Workspace-ID", testWorkspaceID)
+
+	w := httptest.NewRecorder()
+	testHandler.UploadFile(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("insert failure: expected 500, got %d: %s", w.Code, w.Body.String())
+	}
+	if forceInsertFailure.calls != 1 {
+		t.Fatalf("expected exactly one CreateAttachment attempt, got %d", forceInsertFailure.calls)
+	}
+
+	snaps := store.deleteSnapshots()
+	if len(snaps) != 1 {
+		t.Fatalf("expected exactly one cleanup Delete, got %d", len(snaps))
+	}
+	deleted := snaps[0].key
+	// The handler builds workspaces/<workspace>/<uuid><ext>; assert the full
+	// prefixed key, not the collapsed filename the URL would have produced.
+	wantPrefix := "workspaces/" + testWorkspaceID + "/"
+	if !strings.HasPrefix(deleted, wantPrefix) {
+		t.Fatalf("cleanup must delete the original key\n got: %q\nwant prefix: %q", deleted, wantPrefix)
+	}
+	if !strings.HasSuffix(deleted, ".txt") {
+		t.Fatalf("cleanup key lost the upload extension: %q", deleted)
+	}
+	if deleted == "collapsed.txt" || !strings.Contains(deleted, "/") {
+		t.Fatalf("cleanup deleted a URL-derived bare filename %q", deleted)
+	}
+	if store.KeyFromURL(store.uploadURL) != "collapsed.txt" {
+		t.Fatalf("test setup: KeyFromURL should collapse to the bare filename, got %q",
+			store.KeyFromURL(store.uploadURL))
+	}
+	// And the cleanup context must be usable here too.
+	if snaps[0].err != nil {
+		t.Fatalf("cleanup context unusable in the handler path: %v", snaps[0].err)
+	}
+	if !snaps[0].hasDeadline {
+		t.Fatal("cleanup context must carry its own deadline in the handler path")
+	}
+	if store.fileCount() != 0 {
+		t.Fatalf("orphan object left behind, %d present", store.fileCount())
 	}
 }
