@@ -1524,3 +1524,92 @@ func TestUploadFile_SuccessShapesAlwaysCarryContractFields(t *testing.T) {
 		})
 	}
 }
+
+// mockStorageRecordingDelete records every key handed to Delete together with
+// the context it received, so a test can assert BOTH what was deleted and that
+// the cleanup context was usable. mockStorage.Delete discards its context and
+// the key, which is exactly what F1/F2 need to observe.
+type mockStorageRecordingDelete struct {
+	mockStorage
+	deleteKeys []string
+	deleteCtxs []context.Context
+}
+
+func (m *mockStorageRecordingDelete) Delete(ctx context.Context, key string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.deleteKeys = append(m.deleteKeys, key)
+	m.deleteCtxs = append(m.deleteCtxs, ctx)
+	delete(m.files, key)
+}
+
+// F1 — the orphan cleanup must delete the EXACT key the upload used. Deriving
+// the key from the returned URL is what made this unsafe: Storage.KeyFromURL
+// ends with a "everything after the last /" fallback, so a URL shape it does
+// not recognise collapses "users/<id>/<file>" to "<file>" and the delete
+// targets an unrelated object at the bucket root.
+func TestCleanupOrphanObject_DeletesExactKeyNotDerivedFromURL(t *testing.T) {
+	const key = "users/11111111-1111-1111-1111-111111111111/22222222-2222-2222-2222-222222222222.png"
+
+	store := &mockStorageRecordingDelete{}
+	store.put(key, []byte("orphan"))
+	h := &Handler{Storage: store}
+
+	h.cleanupOrphanObject(context.Background(), key)
+
+	if len(store.deleteKeys) != 1 {
+		t.Fatalf("expected exactly one Delete call, got %d", len(store.deleteKeys))
+	}
+	if store.deleteKeys[0] != key {
+		t.Fatalf("cleanup must delete the exact key\n got: %q\nwant: %q", store.deleteKeys[0], key)
+	}
+	// Guard the specific regression: the last path element alone must never be
+	// what reaches the backend, because it addresses the bucket root.
+	if last := key[strings.LastIndex(key, "/")+1:]; store.deleteKeys[0] == last {
+		t.Fatalf("cleanup deleted the bare filename %q instead of the full key", last)
+	}
+	if store.fileCount() != 0 {
+		t.Fatalf("orphan object still present, %d left", store.fileCount())
+	}
+}
+
+// F2 — CreateAttachment most often fails BECAUSE the client disconnected and
+// the request context was canceled. The cleanup must still run: it detaches
+// cancellation and carries its own deadline.
+func TestCleanupOrphanObject_RunsWithCanceledRequestContext(t *testing.T) {
+	const key = "workspaces/33333333-3333-3333-3333-333333333333/44444444-4444-4444-4444-444444444444.pdf"
+
+	store := &mockStorageRecordingDelete{}
+	store.put(key, []byte("orphan"))
+	h := &Handler{Storage: store}
+
+	reqCtx, cancel := context.WithCancel(context.Background())
+	cancel() // the client is already gone before cleanup starts
+	if reqCtx.Err() == nil {
+		t.Fatal("test setup: request context should already be canceled")
+	}
+
+	h.cleanupOrphanObject(reqCtx, key)
+
+	if len(store.deleteCtxs) != 1 {
+		t.Fatalf("cleanup must still call Delete with a canceled request context, got %d calls",
+			len(store.deleteCtxs))
+	}
+	if store.deleteKeys[0] != key {
+		t.Fatalf("cleanup deleted %q, want %q", store.deleteKeys[0], key)
+	}
+	gotCtx := store.deleteCtxs[0]
+	if err := gotCtx.Err(); err != nil {
+		t.Fatalf("cleanup context must not inherit cancellation, got %v", err)
+	}
+	deadline, ok := gotCtx.Deadline()
+	if !ok {
+		t.Fatal("cleanup context must carry its own deadline")
+	}
+	if remaining := time.Until(deadline); remaining <= 0 || remaining > 5*time.Second {
+		t.Fatalf("cleanup deadline out of range: %v remaining", remaining)
+	}
+	if store.fileCount() != 0 {
+		t.Fatalf("orphan object still present after cleanup, %d left", store.fileCount())
+	}
+}

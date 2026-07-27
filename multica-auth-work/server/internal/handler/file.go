@@ -472,7 +472,7 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 			// success surfaces as an opaque contract error while leaving an
 			// orphan object behind. Delete best-effort and fail loudly.
 			slog.Error("failed to create attachment record", "error", err)
-			h.deleteS3Object(r.Context(), link)
+			h.cleanupOrphanObject(r.Context(), key)
 			writeError(w, http.StatusInternalServerError, "failed to persist attachment")
 			return
 		}
@@ -1006,6 +1006,36 @@ func (h *Handler) deleteS3Object(ctx context.Context, url string) {
 		return
 	}
 	h.Storage.Delete(ctx, h.Storage.KeyFromURL(url))
+}
+
+// cleanupOrphanObject removes an object that was written to storage but whose
+// attachment row could not be persisted. Two properties matter and neither is
+// provided by deleteS3Object:
+//
+//  1. F1 — it deletes by the EXACT key the upload used, never by round-tripping
+//     the returned URL through Storage.KeyFromURL. That resolver ends with a
+//     "everything after the last /" fallback, so a URL shape it does not
+//     recognise (for example an S3Storage configured without cdnDomain,
+//     endpointURL and region) collapses "users/<id>/<file>" to "<file>" and the
+//     delete would target an unrelated object at the bucket root. The caller
+//     already holds the exact key, so there is no reason to derive it.
+//
+//  2. F2 — it detaches the request context. CreateAttachment most often fails
+//     BECAUSE the client disconnected and r.Context() was canceled; reusing
+//     that context makes Delete fail immediately and leaves the orphan behind,
+//     which is precisely what this cleanup exists to prevent. Values (tracing,
+//     auth) are preserved, only cancellation is dropped, and a short deadline
+//     keeps a wedged backend from holding the handler.
+//
+// Cleanup stays best-effort: Storage.Delete reports no error and the caller
+// fails closed regardless.
+func (h *Handler) cleanupOrphanObject(ctx context.Context, key string) {
+	if h.Storage == nil || key == "" {
+		return
+	}
+	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	h.Storage.Delete(cleanupCtx, key)
 }
 
 // deleteS3Objects removes multiple files from S3 by their CDN URLs.

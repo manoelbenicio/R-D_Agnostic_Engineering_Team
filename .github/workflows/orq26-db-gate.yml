@@ -54,8 +54,8 @@ jobs:
       PGUSER: orq26_gate
       PGPASSWORD: orq26_gate
       PGDATABASE: orq26_gate
-      LOCKED_FILE_SHA256: 48553c6c48d4423ebfba7d5a05366c0a23ec77d27a463ae4934eda200b557161
-      LOCKED_TEST_SHA256: 815b7d1cf12ed9ca18340f9e87813994eebb7e5153aee281125f9e5b3db9e44d
+      LOCKED_FILE_SHA256: 70f45ebdcd07e24d892657a9add7a624b2c10bb2c657d9af1118af453c0fc50e
+      LOCKED_TEST_SHA256: 768b18ef64ae229e5182724eefa337a8cd0a81ff8c2e5a8ef12945065f2ebe63
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -151,12 +151,12 @@ jobs:
           test ! -s "$GATE_DIR/missing-migrations"
           echo "migrations_expected=$(wc -l <"$GATE_DIR/expected-migrations")"
 
-      - name: Targeted ORQ-26 tests (8 leaves must run and pass)
+      - name: Targeted ORQ-26 tests (10 leaves must run and pass)
         working-directory: multica-auth-work/server
         timeout-minutes: 20
         run: |
           set -euo pipefail
-          run_re='^(TestUploadFile_ContextlessWithoutEntityRefsReturnsEmptyIDAndStorageLinks|TestUploadFile_ContextlessWithEntityRefsRejectedPreUpload|TestUploadFile_InsertFailureCleansUpAndReturns500|TestUploadFile_InsertFailureStillFailsWhenCleanupIsNoop|TestUploadFile_SuccessShapesAlwaysCarryContractFields)$'
+          run_re='^(TestUploadFile_ContextlessWithoutEntityRefsReturnsEmptyIDAndStorageLinks|TestUploadFile_ContextlessWithEntityRefsRejectedPreUpload|TestUploadFile_InsertFailureCleansUpAndReturns500|TestUploadFile_InsertFailureStillFailsWhenCleanupIsNoop|TestUploadFile_SuccessShapesAlwaysCarryContractFields|TestCleanupOrphanObject_DeletesExactKeyNotDerivedFromURL|TestCleanupOrphanObject_RunsWithCanceledRequestContext)$'
           go test -race -count=1 -json -run "$run_re" ./internal/handler >"$GATE_DIR/targeted.json"
           jq -r 'select(.Action=="output") | .Output' "$GATE_DIR/targeted.json" >"$GATE_DIR/output.txt"
           if grep -Eq 'Skipping tests:|database not reachable|could not connect|no tests to run' "$GATE_DIR/output.txt"; then
@@ -174,6 +174,8 @@ jobs:
             'TestUploadFile_InsertFailureStillFailsWhenCleanupIsNoop'
             'TestUploadFile_SuccessShapesAlwaysCarryContractFields/workspace_shape'
             'TestUploadFile_SuccessShapesAlwaysCarryContractFields/contextless_shape'
+            'TestCleanupOrphanObject_DeletesExactKeyNotDerivedFromURL'
+            'TestCleanupOrphanObject_RunsWithCanceledRequestContext'
           )
           count=0
           for name in "${expected[@]}"; do
@@ -182,7 +184,7 @@ jobs:
             ! grep -Fxq "$name" "$GATE_DIR/skip-names"
             count=$((count + 1))
           done
-          test "$count" -eq 8
+          test "$count" -eq 10
           jq -e 'select(.Action=="pass" and .Package=="github.com/multica-ai/multica/server/internal/handler" and .Test==null)' \
             "$GATE_DIR/targeted.json" >/dev/null
           echo "ORQ26_TARGETED_PASS leaf_tests=$count"
@@ -223,5 +225,5 @@ jobs:
             echo "- branch: \`${GITHUB_REF_NAME}\`"
             echo "- file.go sha256: \`${LOCKED_FILE_SHA256}\`"
             echo "- file_test.go sha256: \`${LOCKED_TEST_SHA256}\`"
-            echo "- required leaf tests: 8"
+            echo "- required leaf tests: 10"
           } >>"$GITHUB_STEP_SUMMARY"
