@@ -215,30 +215,21 @@ func (h *Handler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create default squad (Task 1.2)
-	// Leader is deferred until the first eligible agent is created
-	squad, err := qtx.CreateSquad(r.Context(), db.CreateSquadParams{
-		WorkspaceID: ws.ID,
-		Name:        "Workspace Team",
-		Description: "Default workspace squad",
-		CreatorID:   parseUUID(userID),
-	})
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to create default squad: "+err.Error())
-		return
-	}
-
-	// Add owner to the default squad
-	_, err = qtx.AddSquadMember(r.Context(), db.AddSquadMemberParams{
-		SquadID:    squad.ID,
-		MemberType: "member",
-		MemberID:   parseUUID(userID),
-		Role:       "member",
-	})
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to add owner to default squad: "+err.Error())
-		return
-	}
+	// Default squad creation is DEFERRED until an eligible leader exists.
+	//
+	// squad.leader_id is NOT NULL (migration 084_squad.up.sql:7) and must
+	// reference an agent in this workspace, which CreateSquad enforces for
+	// user-driven creation (squad.go:217-239). At workspace-creation time no
+	// agent exists yet, so there is no valid leader and the row cannot be
+	// written: the previous code called CreateSquad without LeaderID, which
+	// sent NULL and made every CreateWorkspace fail with
+	// "failed to create default squad ... violates not-null constraint".
+	//
+	// Consumers already model the absence of a default squad rather than
+	// assuming one: CreateChatSession answers "no default squad found for
+	// routing" (chat.go:56-60) and "default squad has no leader yet"
+	// (chat.go:62). Creating the squad once a leader is available is a
+	// separate change and is intentionally not done here.
 
 	// NOTE: CreateWorkspace deliberately does NOT mark the user as
 	// onboarded. The `onboarded_at` flag is owned by CompleteOnboarding
