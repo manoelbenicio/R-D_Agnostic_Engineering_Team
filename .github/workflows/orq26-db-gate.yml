@@ -54,6 +54,7 @@ jobs:
       PGUSER: orq26_gate
       PGPASSWORD: orq26_gate
       PGDATABASE: orq26_gate
+      GATE_BASE_SHA: 0cb8aebb5aff79cb430b3740d22fadc53c0116fd
       LOCKED_FILE_SHA256: 70f45ebdcd07e24d892657a9add7a624b2c10bb2c657d9af1118af453c0fc50e
       LOCKED_TEST_SHA256: b1c3c515e31d97cfa4ed26a07ee7ae2c1c824d07e61fc05929c7a0ed92fd8f1a
     steps:
@@ -94,14 +95,20 @@ jobs:
       - name: Changed-file guard (branch range must equal the three expected paths)
         run: |
           set -euo pipefail
-          base="origin/${{ github.event.repository.default_branch }}"
-          # Fail closed rather than silently degrading to a single-commit check:
-          # a missing base ref means the range cannot be established.
-          git rev-parse --verify --quiet "$base" >/dev/null || {
-            echo "base ref $base not available; cannot establish the branch range"; exit 1; }
+          base="$GATE_BASE_SHA"
+          # The default branch is NOT the base: this branch descends from the
+          # integration lineage, and 0cb8aeb is not an ancestor of origin/main,
+          # so origin/main..HEAD would drag in the whole integration delta and
+          # the equality check below could never hold. The branch point is
+          # pinned explicitly instead, and both its existence and its ancestry
+          # are proven before the range is used. Fail closed on either.
+          git rev-parse --verify --quiet "$base^{commit}" >/dev/null || {
+            echo "pinned base commit not present; cannot establish the branch range"; exit 1; }
+          git merge-base --is-ancestor "$base" HEAD || {
+            echo "pinned base is not an ancestor of HEAD"; exit 1; }
           # Union of every file touched by every commit this branch adds on top
-          # of the default branch. `git log -1` only covered the tip commit, so
-          # an earlier commit could smuggle a fourth file past the gate.
+          # of the pinned base. `git log -1` only covered the tip commit, so an
+          # earlier commit could smuggle a fourth file past the gate.
           git log --name-only --pretty=format: "$base..HEAD" \
             | sed '/^$/d' | LC_ALL=C sort -u >"$GATE_DIR/changed"
           cat >"$GATE_DIR/allowed" <<'EOF'
