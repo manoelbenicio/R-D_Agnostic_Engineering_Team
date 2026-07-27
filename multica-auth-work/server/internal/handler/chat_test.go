@@ -455,6 +455,7 @@ func TestCreateChatSession_Routing(t *testing.T) {
 	})
 	directReq.Header.Set("X-User-ID", testUserID)
 	directReq.Header.Set("X-Workspace-ID", testWorkspaceID)
+	directReq = withChatTestWorkspaceCtx(t, directReq)
 	directW := httptest.NewRecorder()
 	testHandler.CreateChatSession(directW, directReq)
 	if directW.Code != http.StatusCreated {
@@ -475,20 +476,14 @@ func TestCreateChatSession_Routing(t *testing.T) {
 	// Delete any existing squads to have a clean slate for the test workspace
 	_, _ = testPool.Exec(context.Background(), `DELETE FROM squad WHERE workspace_id = $1`, testWorkspaceID)
 
-	squad, err := testHandler.Queries.CreateSquad(context.Background(), db.CreateSquadParams{
+	_, err := testHandler.Queries.CreateSquad(context.Background(), db.CreateSquadParams{
 		WorkspaceID: util.MustParseUUID(testWorkspaceID),
 		Name:        "Test Workspace Team",
+		LeaderID:    util.MustParseUUID(squadTLID),
 		CreatorID:   util.MustParseUUID(testUserID),
 	})
 	if err != nil {
 		t.Fatalf("failed to create default test squad: %v", err)
-	}
-	_, err = testHandler.Queries.UpdateSquad(context.Background(), db.UpdateSquadParams{
-		ID:       squad.ID,
-		LeaderID: util.MustParseUUID(squadTLID),
-	})
-	if err != nil {
-		t.Fatalf("failed to update squad TL: %v", err)
 	}
 
 	defaultReq := newRequest("POST", "/api/chat-sessions", map[string]any{
@@ -496,6 +491,7 @@ func TestCreateChatSession_Routing(t *testing.T) {
 	})
 	defaultReq.Header.Set("X-User-ID", testUserID)
 	defaultReq.Header.Set("X-Workspace-ID", testWorkspaceID)
+	defaultReq = withChatTestWorkspaceCtx(t, defaultReq)
 	defaultW := httptest.NewRecorder()
 	testHandler.CreateChatSession(defaultW, defaultReq)
 	if defaultW.Code != http.StatusCreated {
