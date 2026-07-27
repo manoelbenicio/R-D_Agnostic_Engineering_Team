@@ -3854,6 +3854,11 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	)
 
 	// Convert agent usage map to task usage entries.
+	// The reasoning tier is read from the agent record, not derived from the
+	// model id: a `-high`/`-thinking` suffix is not a dependable tier signal.
+	// It stays empty when the agent declares none, which the backend persists
+	// as NULL ("not declared") rather than as the base tier.
+	usageThinkingLevel := usageThinkingLevelFor(task)
 	var usageEntries []TaskUsageEntry
 	for model, u := range result.Usage {
 		if u.InputTokens == 0 && u.OutputTokens == 0 && u.CacheReadTokens == 0 && u.CacheWriteTokens == 0 {
@@ -3866,6 +3871,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 			OutputTokens:     u.OutputTokens,
 			CacheReadTokens:  u.CacheReadTokens,
 			CacheWriteTokens: u.CacheWriteTokens,
+			ThinkingLevel:    usageThinkingLevel,
 		})
 	}
 

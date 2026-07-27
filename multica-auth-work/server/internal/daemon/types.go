@@ -166,6 +166,26 @@ type TaskUsageEntry struct {
 	OutputTokens     int64  `json:"output_tokens"`
 	CacheReadTokens  int64  `json:"cache_read_tokens"`
 	CacheWriteTokens int64  `json:"cache_write_tokens"`
+	// ThinkingLevel is the reasoning tier the agent was configured with for
+	// this task, taken from the agent record — never inferred from the model
+	// name, because a suffix like `-high` is not a reliable tier signal
+	// (OmniRoute serves ids such as `auto/best-coding` with no suffix at all).
+	// Empty means "not declared"; `omitempty` keeps it off the wire so an
+	// older backend sees the exact payload it saw before.
+	ThinkingLevel string `json:"thinking_level,omitempty"`
+}
+
+// usageThinkingLevelFor reports the reasoning tier to attach to a task's usage
+// rows. It reads the agent record only: the model id is never parsed for a
+// `-high`/`-thinking` suffix, because OmniRoute also serves ids with no tier
+// suffix at all (e.g. `auto/best-coding`), so suffix inference would
+// misattribute cost. A task with no agent, or an agent with no declared tier,
+// yields "" — which the backend persists as NULL, meaning "not declared".
+func usageThinkingLevelFor(task Task) string {
+	if task.Agent == nil {
+		return ""
+	}
+	return task.Agent.ThinkingLevel
 }
 
 // TaskResult is the outcome of executing a task.

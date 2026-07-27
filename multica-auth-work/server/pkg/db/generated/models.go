@@ -756,6 +756,8 @@ type TaskUsage struct {
 	CacheWriteTokens int64              `json:"cache_write_tokens"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	// Reasoning tier declared by the agent config for this task (e.g. high, low, thinking). NULL = not declared by the reporting daemon. Never inferred from the model name.
+	ThinkingLevel pgtype.Text `json:"thinking_level"`
 }
 
 type TaskUsageHourly struct {
