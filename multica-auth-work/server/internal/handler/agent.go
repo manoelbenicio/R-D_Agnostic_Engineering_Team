@@ -1211,6 +1211,17 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, "agent changed concurrently; reload it and submit runtime_id with model atomically")
 			return
 		}
+		// Same (workspace_id, name) unique violation that CreateAgent and the
+		// template path already translate. Without this branch a rename onto a
+		// taken name answered 500 and echoed the driver message, which both
+		// misreports a client conflict as a server fault and leaks schema
+		// detail. The message stays content-free: it names the field and the
+		// scope, never the colliding agent's id or owner.
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "agent_workspace_name_unique" {
+			writeError(w, http.StatusConflict, "an agent with this name already exists in this workspace")
+			return
+		}
 		slog.Warn("update agent failed", append(logger.RequestAttrs(r), "error", err, "agent_id", id)...)
 		writeError(w, http.StatusInternalServerError, "failed to update agent: "+err.Error())
 		return
