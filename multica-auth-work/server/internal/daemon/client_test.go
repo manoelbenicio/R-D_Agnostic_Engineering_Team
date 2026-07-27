@@ -6,11 +6,38 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
 )
+
+func TestStoreDaemonTokenPrivateFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Chmod(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "daemon.token")
+	if err := StoreDaemonToken(path, "mdt_0123456789abcdef0123456789abcdef01234567"); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("mode=%o", info.Mode().Perm())
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) == "" {
+		t.Fatal("empty token")
+	}
+}
 
 func TestClient_IdentityHeaders_PostJSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

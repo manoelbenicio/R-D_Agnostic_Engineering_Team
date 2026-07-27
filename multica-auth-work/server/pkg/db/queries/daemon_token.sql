@@ -23,3 +23,8 @@ RETURNING token_hash;
 -- name: DeleteExpiredDaemonTokens :exec
 DELETE FROM daemon_token
 WHERE expires_at <= now();
+
+-- name: RevokeDaemonToken :one
+DELETE FROM daemon_token
+WHERE id = $1 AND workspace_id = $2 AND daemon_id = $3
+RETURNING token_hash;

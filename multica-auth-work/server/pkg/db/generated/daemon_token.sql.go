@@ -92,6 +92,25 @@ func (q *Queries) DeleteExpiredDaemonTokens(ctx context.Context) error {
 	return err
 }
 
+const revokeDaemonToken = `-- name: RevokeDaemonToken :one
+DELETE FROM daemon_token
+WHERE id = $1 AND workspace_id = $2 AND daemon_id = $3
+RETURNING token_hash
+`
+
+type RevokeDaemonTokenParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	DaemonID    string      `json:"daemon_id"`
+}
+
+func (q *Queries) RevokeDaemonToken(ctx context.Context, arg RevokeDaemonTokenParams) (string, error) {
+	row := q.db.QueryRow(ctx, revokeDaemonToken, arg.ID, arg.WorkspaceID, arg.DaemonID)
+	var hash string
+	err := row.Scan(&hash)
+	return hash, err
+}
+
 const getDaemonTokenByHash = `-- name: GetDaemonTokenByHash :one
 SELECT id, token_hash, workspace_id, daemon_id, expires_at, created_at FROM daemon_token
 WHERE token_hash = $1 AND expires_at > now()

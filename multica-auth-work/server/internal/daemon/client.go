@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -151,6 +153,56 @@ func (c *Client) SetToken(token string) {
 // Token returns the current auth token.
 func (c *Client) Token() string {
 	return c.token
+}
+
+// StoreDaemonToken writes an mdt_ credential to a caller-owned private file.
+// It never logs or returns the token and refuses symlink targets. The caller
+// must provide a path inside a 0700 credential directory.
+func StoreDaemonToken(path, token string) error {
+	if !strings.HasPrefix(token, "mdt_") || len(token) != 44 {
+		return fmt.Errorf("invalid daemon token")
+	}
+	info, err := os.Lstat(path)
+	if err == nil && info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("token path is a symlink")
+	}
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	dir := filepath.Dir(path)
+	if st, err := os.Stat(dir); err != nil || !st.IsDir() || st.Mode().Perm() != 0o700 {
+		return fmt.Errorf("token directory must be an existing 0700 directory")
+	}
+	tmp, err := os.CreateTemp(dir, ".mdt-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+	if err := tmp.Chmod(0o600); err != nil {
+		tmp.Close()
+		return err
+	}
+	if _, err := tmp.WriteString(token); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		return err
+	}
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	return d.Sync()
 }
 
 func (c *Client) ClaimTask(ctx context.Context, runtimeID string) (*Task, error) {
@@ -309,8 +361,8 @@ type (
 func (c *Client) SendHeartbeat(ctx context.Context, runtimeID string) (*HeartbeatResponse, error) {
 	var resp HeartbeatResponse
 	if err := c.postJSON(ctx, "/api/daemon/heartbeat", map[string]any{
-		"runtime_id":             runtimeID,
-		"supports_batch_import":  true,
+		"runtime_id":            runtimeID,
+		"supports_batch_import": true,
 	}, &resp); err != nil {
 		return nil, err
 	}

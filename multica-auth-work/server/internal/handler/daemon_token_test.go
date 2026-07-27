@@ -12,6 +12,7 @@ func TestCreateDaemonTokenRejectsMalformedOrMissingDaemon(t *testing.T) {
 	for name, body := range map[string]string{
 		"malformed":      `{`,
 		"missing daemon": `{ "expires_at": "2030-01-01T00:00:00Z" }`,
+		"unknown field":  `{ "daemon_id": "d", "unexpected": true }`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			r := httptest.NewRequest("POST", "/api/workspaces/00000000-0000-0000-0000-000000000001/daemon-tokens", strings.NewReader(body))

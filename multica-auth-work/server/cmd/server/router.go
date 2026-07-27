@@ -606,7 +606,8 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Use(middleware.RequireWorkspaceRoleFromURL(queries, "id", "owner", "admin"))
 					// ORQ-43A: owner/admin-only mdt_ issuance. ORQ-43B rotation
 					// remains a separate operational lane.
-					r.Post("/daemon-tokens", h.CreateDaemonToken)
+					r.With(handler.RequireHumanActor).Post("/daemon-tokens", h.CreateDaemonToken)
+					r.With(handler.RequireHumanActor).Delete("/daemon-tokens/{tokenId}", h.RevokeDaemonToken)
 					r.Put("/", h.UpdateWorkspace)
 					r.Patch("/", h.UpdateWorkspace)
 					r.Post("/members", h.CreateInvitation)
