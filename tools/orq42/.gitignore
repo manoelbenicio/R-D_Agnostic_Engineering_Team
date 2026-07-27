@@ -1,0 +1,5 @@
+# Build outputs. The pinned binaries are produced out of tree, under a private
+# 0700 cache, so a stray `go build ./...` in a package directory can never add
+# a multi-megabyte blob to the repository again.
+/envsecret-editor/envsecret-editor
+/wsprobe/wsprobe
