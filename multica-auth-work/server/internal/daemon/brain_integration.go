@@ -517,18 +517,82 @@ func (r *agentBrainRuntime) buildLaunch(ctx context.Context, plan *agentBrainTas
 	return launch, nil
 }
 
-func (r *agentBrainRuntime) validateThinking(plan *agentBrainTaskPlan, thinking string) error {
-	if strings.TrimSpace(thinking) != "" {
-		return runtimeenv.ErrThinkingNotApproved
+// gatewayApprovedThinkingLevels is the gateway-side allowlist of reasoning
+// levels, keyed by the built-in provider that agentBrainBuiltInCLIFor resolves
+// for an accepted CLIKind. Only the three accepted gateway frontends appear
+// here; every other CLI (Antigravity, Kimi, NIM, anything unmapped) has no
+// entry and therefore fails closed.
+//
+// The lists mirror pkg/agent's provider enums, which remain the authority for
+// what a level means. TestGatewayThinkingLevelsMatchProviderEnums asserts that
+// every level below is still recognised by agent.IsKnownThinkingValue, so the
+// two cannot drift apart silently. Antigravity is deliberately absent from both:
+// `agy` exposes no effort flag, so reasoning there is model-embedded only.
+var gatewayApprovedThinkingLevels = map[string][]string{
+	"claude": {"low", "medium", "high", "xhigh", "max"},
+	"codex":  {"none", "minimal", "low", "medium", "high", "xhigh"},
+	"cline":  {"none", "low", "medium", "high", "xhigh"},
+}
+
+// gatewayThinkingLevelsFor resolves the approved level list for a CLIKind. An
+// unmapped CLI, or a CLI whose built-in provider has no reasoning contract, is
+// a fail-closed condition rather than an empty allowlist.
+func gatewayThinkingLevelsFor(kind brain.CLIKind) ([]string, error) {
+	builtIn, err := agentBrainBuiltInCLIFor(kind)
+	if err != nil {
+		return nil, runtimeenv.ErrThinkingNotApproved
 	}
+	levels, ok := gatewayApprovedThinkingLevels[builtIn.Provider]
+	if !ok || len(levels) == 0 {
+		return nil, runtimeenv.ErrThinkingNotApproved
+	}
+	return levels, nil
+}
+
+func (r *agentBrainRuntime) validateThinking(plan *agentBrainTaskPlan, thinking string) error {
+	// Native execution has no Agent Brain launch plan. Its provider-specific
+	// backend validates the persisted thinking level, so the gateway allowlist
+	// must not run (or dereference a nil plan) on this path.
+	if plan == nil {
+		return nil
+	}
+
+	// A blank value means "runtime default", matching the previous behaviour.
+	// Anything else is validated verbatim: daemon.go hands the persisted string
+	// to the child unchanged, so normalising here would approve a level the
+	// child never receives (e.g. "medium " with a trailing space).
+	requested := thinking
+	if strings.TrimSpace(requested) == "" {
+		requested = ""
+	}
+	var approved []string
+	if requested != "" {
+		// A reasoning level is admissible only when the gateway model itself
+		// advertises reasoning. Capability comes from the OmniRoute model
+		// registry, so this is the authoritative per-model gate; without it a
+		// non-reasoning model would silently accept an effort token.
+		if !plan.Capability.Reasoning {
+			return runtimeenv.ErrThinkingNotApproved
+		}
+		levels, err := gatewayThinkingLevelsFor(plan.Task.Request.CLIKind)
+		if err != nil {
+			return err
+		}
+		approved = levels
+	}
+
 	policy, err := runtimeenv.NewGatewayModelPolicy([]runtimeenv.ApprovedGatewayModel{{
 		Model: plan.Task.Request.RouteModel, Protocol: plan.Task.RoutePolicy.Protocol,
-		CLIs: []brain.CLIKind{plan.Task.Request.CLIKind},
+		CLIs: []brain.CLIKind{plan.Task.Request.CLIKind}, ThinkingLevels: approved,
 	}})
 	if err != nil {
 		return err
 	}
-	return policy.ValidateSelection(plan.Task.Request.CLIKind, plan.Task.Request.RouteModel, "")
+	// The persisted level is what the child process will actually receive, so it
+	// is what gets validated. Passing "" here (the previous behaviour) left the
+	// allowlist unreachable and forced an unconditional rejection of every
+	// configured level.
+	return policy.ValidateSelection(plan.Task.Request.CLIKind, plan.Task.Request.RouteModel, requested)
 }
 
 func (r *agentBrainRuntime) newCorrelation(task Task) brain.Correlation {
