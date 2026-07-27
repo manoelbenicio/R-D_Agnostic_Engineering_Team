@@ -73,7 +73,9 @@ func TestValidateThinking_KiroDispatchesOnlyOnNativePath(t *testing.T) {
 
 func TestValidateThinking_RejectsUnknownLevelBeforeEnqueue(t *testing.T) {
 	r := &agentBrainRuntime{}
-	for _, level := range []string{"ultra", "max", "MEDIUM", "medium "} {
+	// Whitespace-only and padded values are misconfigurations, not defaults:
+	// only "" selects the runtime default, so each of these must fail closed.
+	for _, level := range []string{"ultra", "max", "MEDIUM", "medium ", " ", "\t", "\n", " medium"} {
 		plan := thinkingPlan(t, brain.CLICodex, "gpt-5.5", brain.ProtocolOpenAIResponses, true)
 		err := r.validateThinking(plan, level)
 		if !errors.Is(err, runtimeenv.ErrThinkingNotApproved) {
@@ -86,18 +88,48 @@ func TestValidateThinking_RejectsUnknownLevelBeforeEnqueue(t *testing.T) {
 	if err := r.validateThinking(plan, "max"); err != nil {
 		t.Errorf("claude must accept max, got %v", err)
 	}
+	// Only the exact empty string is the default.
+	if err := r.validateThinking(plan, ""); err != nil {
+		t.Errorf("empty level must be admitted, got %v", err)
+	}
 }
 
-func TestValidateThinking_FailsClosedWithoutModelReasoning(t *testing.T) {
+func TestValidateThinking_ModelReasoningGateFollowsCapabilityAuthority(t *testing.T) {
 	r := &agentBrainRuntime{}
+
+	// Enriched schema (flag unset): the capability bit is an observation, so a
+	// model without reasoning must refuse a level.
+	t.Setenv("OMNIROUTE_DEV_MODELS_COMPAT", "")
+	if !gatewayReasoningCapabilityAuthoritative() {
+		t.Fatal("capability must be authoritative when the compat flag is unset")
+	}
 	plan := thinkingPlan(t, brain.CLICodex, "gpt-5.5", brain.ProtocolOpenAIResponses, false)
 	if err := r.validateThinking(plan, "high"); !errors.Is(err, runtimeenv.ErrThinkingNotApproved) {
-		t.Fatalf("a model without reasoning capability must refuse a level, got %v", err)
+		t.Fatalf("observed Reasoning=false must refuse a level, got %v", err)
 	}
-	// The same model with no level configured still admits normally, so the gate
-	// costs nothing to non-reasoning workloads.
 	if err := r.validateThinking(plan, ""); err != nil {
 		t.Fatalf("empty level must remain admissible, got %v", err)
+	}
+
+	// Compat projection (the deployment that runs today): every row is
+	// hardcoded Reasoning=false, so the bit carries no information. The level
+	// must still be admitted when the provider allowlist accepts it, otherwise
+	// production keeps rejecting every configured level.
+	t.Setenv("OMNIROUTE_DEV_MODELS_COMPAT", "1")
+	if gatewayReasoningCapabilityAuthoritative() {
+		t.Fatal("capability must not be authoritative under the compat projection")
+	}
+	if err := r.validateThinking(plan, "high"); err != nil {
+		t.Fatalf("compat projection must not veto an allowlisted level, got %v", err)
+	}
+	// The provider gate is still live under compat: an unknown level and an
+	// unapproved CLI both fail closed.
+	if err := r.validateThinking(plan, "ultra"); !errors.Is(err, runtimeenv.ErrThinkingNotApproved) {
+		t.Fatalf("unknown level must fail closed even under compat, got %v", err)
+	}
+	agy := thinkingPlan(t, brain.CLIAntigravity, "gemini-3.6-flash", brain.ProtocolAntigravity, true)
+	if err := r.validateThinking(agy, "high"); !errors.Is(err, runtimeenv.ErrThinkingNotApproved) {
+		t.Fatalf("antigravity must fail closed even under compat, got %v", err)
 	}
 }
 
@@ -115,20 +147,56 @@ func TestValidateThinking_FailsClosedForUnapprovedCLIs(t *testing.T) {
 	}
 }
 
-// Guards against the allowlist drifting away from pkg/agent, which owns what a
-// level means for each provider.
+// thinkingTokenUniverse is every effort token used by any provider enum in
+// pkg/agent today, plus a few plausible-but-absent tokens. The comparison below
+// is exact in both directions over this set, so adding "ultra" to claude's enum
+// in pkg/agent, or dropping "max", breaks this test.
+//
+// Honest limitation: a token outside this list would escape the check. Making it
+// exhaustive requires pkg/agent to export its enum (an immutable accessor), which
+// belongs to another owner; it is requested as a handoff and deliberately not
+// taken here.
+var thinkingTokenUniverse = []string{
+	"none", "minimal", "low", "medium", "high", "xhigh", "max",
+	"ultra", "xlow", "default", "off", "on", "medium ", "MEDIUM", "",
+}
+
 func TestGatewayThinkingLevelsMatchProviderEnums(t *testing.T) {
 	for provider, levels := range gatewayApprovedThinkingLevels {
 		if len(levels) == 0 {
 			t.Errorf("provider %q has an empty allowlist; remove the entry instead", provider)
 		}
+		mine := map[string]bool{}
 		for _, level := range levels {
-			if !agent.IsKnownThinkingValue(provider, level) {
-				t.Errorf("provider %q level %q is not recognised by pkg/agent", provider, level)
+			mine[level] = true
+		}
+		for _, token := range thinkingTokenUniverse {
+			// pkg/agent always accepts "" as "runtime default"; the gateway
+			// allowlist deliberately never contains it.
+			if token == "" {
+				if mine[token] {
+					t.Errorf("provider %q must not list the empty token", provider)
+				}
+				continue
+			}
+			known := agent.IsKnownThinkingValue(provider, token)
+			if known != mine[token] {
+				t.Errorf("provider %q token %q: pkg/agent knows=%v, gateway allowlist has=%v — the two drifted",
+					provider, token, known, mine[token])
 			}
 		}
 	}
 	if _, ok := gatewayApprovedThinkingLevels["antigravity"]; ok {
 		t.Error("antigravity must stay absent: it has no effort flag")
+	}
+	// Antigravity has no reasoning contract in pkg/agent either, in either
+	// direction.
+	for _, token := range thinkingTokenUniverse {
+		if token == "" {
+			continue
+		}
+		if agent.IsKnownThinkingValue("antigravity", token) {
+			t.Errorf("pkg/agent now accepts antigravity level %q; the gateway allowlist must be revisited", token)
+		}
 	}
 }

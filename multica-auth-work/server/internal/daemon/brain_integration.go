@@ -524,10 +524,14 @@ func (r *agentBrainRuntime) buildLaunch(ctx context.Context, plan *agentBrainTas
 // entry and therefore fails closed.
 //
 // The lists mirror pkg/agent's provider enums, which remain the authority for
-// what a level means. TestGatewayThinkingLevelsMatchProviderEnums asserts that
-// every level below is still recognised by agent.IsKnownThinkingValue, so the
-// two cannot drift apart silently. Antigravity is deliberately absent from both:
-// `agy` exposes no effort flag, so reasoning there is model-embedded only.
+// what a level means. TestGatewayThinkingLevelsMatchProviderEnums compares the
+// two in BOTH directions over a closed token universe, so a level added to or
+// removed from pkg/agent's enum for these providers breaks the build. The
+// comparison is not exhaustive: a token nobody listed in that universe would
+// escape it. Closing that hole requires pkg/agent to export its enum, which is
+// another package's file and is requested as a formal handoff rather than taken
+// silently. Antigravity is deliberately absent from both: `agy` exposes no
+// effort flag, so reasoning there is model-embedded only.
 var gatewayApprovedThinkingLevels = map[string][]string{
 	"claude": {"low", "medium", "high", "xhigh", "max"},
 	"codex":  {"none", "minimal", "low", "medium", "high", "xhigh"},
@@ -549,6 +553,26 @@ func gatewayThinkingLevelsFor(kind brain.CLIKind) ([]string, error) {
 	return levels, nil
 }
 
+// gatewayReasoningCapabilityAuthoritative reports whether
+// brain.ModelCapability.Reasoning carries an observed value.
+//
+// It does not, in the deployment that runs today. With
+// OMNIROUTE_DEV_MODELS_COMPAT=1 the registry is fed by
+// gateway.ProjectOmniRouteModels, whose rows hardcode Reasoning=false for every
+// model (gateway/model_projection.go:130 for the approved row, :146 for the
+// unavailable one) because raw OmniRoute /v1/models carries only ids. In that
+// mode `false` means "not advertised", not "cannot reason", so treating it as a
+// veto would refuse every configured level in production — the exact bug this
+// change exists to remove. Assuming `true` instead would be equally wrong, so
+// the flag is read and the model-level gate is declared unavailable, leaving the
+// per-provider allowlist as the operative check.
+//
+// When the flag is unset the enriched schema passes through untouched, the bit
+// is an observation, and reasoning becomes a hard requirement.
+func gatewayReasoningCapabilityAuthoritative() bool {
+	return os.Getenv("OMNIROUTE_DEV_MODELS_COMPAT") != "1"
+}
+
 func (r *agentBrainRuntime) validateThinking(plan *agentBrainTaskPlan, thinking string) error {
 	// Native execution has no Agent Brain launch plan. Its provider-specific
 	// backend validates the persisted thinking level, so the gateway allowlist
@@ -557,21 +581,18 @@ func (r *agentBrainRuntime) validateThinking(plan *agentBrainTaskPlan, thinking 
 		return nil
 	}
 
-	// A blank value means "runtime default", matching the previous behaviour.
-	// Anything else is validated verbatim: daemon.go hands the persisted string
-	// to the child unchanged, so normalising here would approve a level the
-	// child never receives (e.g. "medium " with a trailing space).
+	// Only the empty string means "runtime default". A whitespace-only value is
+	// a misconfiguration and is validated like any other token, so it fails
+	// closed: daemon.go hands the persisted string to the child unchanged, and
+	// " " is not an effort level for any provider.
 	requested := thinking
-	if strings.TrimSpace(requested) == "" {
-		requested = ""
-	}
 	var approved []string
 	if requested != "" {
-		// A reasoning level is admissible only when the gateway model itself
-		// advertises reasoning. Capability comes from the OmniRoute model
-		// registry, so this is the authoritative per-model gate; without it a
-		// non-reasoning model would silently accept an effort token.
-		if !plan.Capability.Reasoning {
+		// The model-level gate applies only when the capability bit is an
+		// observation (see gatewayReasoningCapabilityAuthoritative). When it is
+		// a projection placeholder the check is skipped rather than inverted,
+		// and admission still depends on the provider allowlist below.
+		if gatewayReasoningCapabilityAuthoritative() && !plan.Capability.Reasoning {
 			return runtimeenv.ErrThinkingNotApproved
 		}
 		levels, err := gatewayThinkingLevelsFor(plan.Task.Request.CLIKind)
