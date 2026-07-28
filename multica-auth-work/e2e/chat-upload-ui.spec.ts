@@ -72,6 +72,8 @@ async function removeChatFixture(fixture: ChatFixture | null) {
   }
 }
 
+test.use({ locale: "en-US" });
+
 test.describe("Chat upload UI", () => {
   let api: TestApiClient;
   let fixture: ChatFixture | null = null;

@@ -22,6 +22,8 @@ async function persistedStatus(issueId: string): Promise<string | null> {
   }
 }
 
+test.use({ locale: "en-US" });
+
 test.describe("Board Kanban", () => {
   let api: TestApiClient;
 

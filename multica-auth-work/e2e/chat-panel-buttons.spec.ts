@@ -89,6 +89,8 @@ async function removePanelFixture(fixture: PanelFixture | null) {
   }
 }
 
+test.use({ locale: "en-US" });
+
 test.describe("Chat panel buttons", () => {
   let api: TestApiClient;
   let fixture: PanelFixture | null = null;
