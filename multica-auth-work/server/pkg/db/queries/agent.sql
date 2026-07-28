@@ -275,8 +275,28 @@ WHERE atq.id = $1 AND a.workspace_id = $2;
 -- "any other quick-create-shaped task" (all four FKs NULL) for the same agent —
 -- otherwise a user mashing the create button could fire concurrent quick-creates
 -- whose completion lookup would race over "most recent issue by this agent".
+--
+-- ORQ-12: the producing account is FROZEN here, at claim/dispatch, and never
+-- again. COALESCE keeps an already-frozen value, so a reclaim or a second claim
+-- attempt cannot re-file the task under a different account. The value is
+-- resolved server-side from the agent's assignment, restricted to accounts that
+-- are explicitly allowed in approved_accounts; an agent with no allowed
+-- assignment leaves NULL rather than borrowing someone else's account.
 UPDATE agent_task_queue
-SET status = 'dispatched', dispatched_at = now()
+SET status = 'dispatched',
+    dispatched_at = now(),
+    credential_account_id = COALESCE(
+        agent_task_queue.credential_account_id,
+        (
+            SELECT asg.account_id
+            FROM assignments asg
+            JOIN approved_accounts ap
+              ON ap.account_id = asg.account_id
+             AND ap.allowed IS TRUE
+            WHERE asg.agent_id = agent_task_queue.agent_id
+            LIMIT 1
+        )
+    )
 WHERE id = (
     SELECT atq.id FROM agent_task_queue atq
     WHERE atq.agent_id = $1 AND atq.status = 'queued'

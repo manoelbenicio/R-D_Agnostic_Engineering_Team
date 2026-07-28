@@ -116,6 +116,8 @@ type AgentTaskQueue struct {
 	IsLeaderTask      bool               `json:"is_leader_task"`
 	WaitReason        pgtype.Text        `json:"wait_reason"`
 	InitiatorUserID   pgtype.UUID        `json:"initiator_user_id"`
+	// Provider account frozen on this task at claim/dispatch, resolved server-side from the approved assignment. Immutable once set. NULL = claimed before this column existed, or the agent had no approved assignment. Never supplied by the daemon.
+	CredentialAccountID pgtype.UUID `json:"credential_account_id"`
 }
 
 type ApprovedAccount struct {
