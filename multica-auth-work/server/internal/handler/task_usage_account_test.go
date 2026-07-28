@@ -703,7 +703,6 @@ func TestWritePath_NormalizeProviderAndClaim(t *testing.T) {
 	}
 }
 
-
 func TestClaimFreeze_AccountStatusPolicy(t *testing.T) {
 	// Only available and leased can produce work.
 	for _, status := range []string{"exhausted", "cooldown", "degraded"} {
@@ -840,7 +839,12 @@ func TestClaimFreeze_CoveredProvidersOnly(t *testing.T) {
 	}
 }
 
-func TestReclaim_FailsClosedForCoveredProviderWithNullSnapshot(t *testing.T) {
+// reclaimFixture puts one task of this runtime into the exact shape reclaim
+// recovers from - `dispatched`, never started, older than the recovery window -
+// with the given frozen account snapshot (nil = the legacy NULL snapshot every
+// in-flight task carries before the account column ships).
+func reclaimFixture(t *testing.T, name, provider string, frozenAccountID *string) (string, string) {
+	t.Helper()
 	ctx := context.Background()
 	runtimeID := handlerTestRuntimeID(t)
 	var originalProvider string
@@ -850,28 +854,91 @@ func TestReclaim_FailsClosedForCoveredProviderWithNullSnapshot(t *testing.T) {
 	t.Cleanup(func() {
 		testPool.Exec(context.Background(), `UPDATE agent_runtime SET provider = $1 WHERE id = $2`, originalProvider, runtimeID)
 	})
-
-	if _, err := testPool.Exec(ctx, `UPDATE agent_runtime SET provider = 'codex' WHERE id = $1`, runtimeID); err != nil {
-		t.Fatalf("set provider to codex: %v", err)
+	if _, err := testPool.Exec(ctx, `UPDATE agent_runtime SET provider = $1 WHERE id = $2`, provider, runtimeID); err != nil {
+		t.Fatalf("set provider to %s: %v", provider, err)
 	}
 
-	agentID := createHandlerTestAgent(t, "ORQ12 ReclaimFailClosed", nil)
+	agentID := createHandlerTestAgent(t, name, nil)
 	taskID := enqueueTaskForAgent(t, agentID)
-
 	if _, err := testPool.Exec(ctx, `
 		UPDATE agent_task_queue
-		SET status = 'dispatched', dispatched_at = now() - INTERVAL '10 minutes', credential_account_id = NULL
+		SET status = 'dispatched', dispatched_at = now() - INTERVAL '10 minutes',
+		    started_at = NULL, credential_account_id = $2
 		WHERE id = $1
-	`, taskID); err != nil {
+	`, taskID, frozenAccountID); err != nil {
 		t.Fatalf("setup dispatched task: %v", err)
 	}
+	return runtimeID, taskID
+}
 
+// A covered-provider task that reached `dispatched` with no account snapshot is
+// exactly the shape of every task in flight when this change ships. Reclaim used
+// to drop it from the candidate set, which made it invisible rather than
+// fail-closed: it could then be neither recovered nor cancelled. It must be
+// observable, and reclaim must still refuse to invent an account for it, so the
+// claim path can see it and cancel it fail-closed.
+func TestReclaim_SurfacesCoveredProviderLegacyNullSnapshot(t *testing.T) {
+	ctx := context.Background()
 	queries := db.New(testPool)
-	_, err := queries.ReclaimStaleDispatchedTaskForRuntime(ctx, db.ReclaimStaleDispatchedTaskForRuntimeParams{
+
+	for _, covered := range []string{"codex", "kiro", "antigravity"} {
+		t.Run(covered, func(t *testing.T) {
+			runtimeID, taskID := reclaimFixture(t, "ORQ12 ReclaimNullSnapshot "+covered, covered, nil)
+
+			reclaimed, err := queries.ReclaimStaleDispatchedTaskForRuntime(ctx, db.ReclaimStaleDispatchedTaskForRuntimeParams{
+				RuntimeID:         uuidParam(t, runtimeID),
+				ClaimRecoverySecs: 60.0,
+			})
+			if err != nil {
+				t.Fatalf("legacy NULL-snapshot task must stay observable to the claim path, got: %v", err)
+			}
+			if got := uuidText(reclaimed.ID); got != taskID {
+				t.Fatalf("reclaimed task=%s, want %s", got, taskID)
+			}
+			if reclaimed.CredentialAccountID.Valid {
+				t.Fatalf("reclaim must never resolve an account, got %v", reclaimed.CredentialAccountID)
+			}
+
+			// The stored row must also still be NULL: no backfill, no borrowed
+			// account. The claim path is what turns this into a cancellation.
+			var stored *string
+			if err := testPool.QueryRow(ctx,
+				`SELECT credential_account_id::text FROM agent_task_queue WHERE id = $1`, taskID).
+				Scan(&stored); err != nil {
+				t.Fatalf("read stored snapshot: %v", err)
+			}
+			if stored != nil {
+				t.Fatalf("stored credential_account_id=%s, want NULL after reclaim", *stored)
+			}
+		})
+	}
+}
+
+// The counterpart contract: a task whose account was frozen at claim reclaims
+// normally and keeps that exact snapshot, so a lost claim response cannot re-file
+// the spend under a different account.
+func TestReclaim_PreservesFrozenAccountSnapshot(t *testing.T) {
+	ctx := context.Background()
+	queries := db.New(testPool)
+
+	accountID := createTestAccountFull(t, testWorkspaceID, "codex", "available")
+	approveAccount(t, accountID)
+	runtimeID, taskID := reclaimFixture(t, "ORQ12 ReclaimFrozenSnapshot", "codex", &accountID)
+
+	reclaimed, err := queries.ReclaimStaleDispatchedTaskForRuntime(ctx, db.ReclaimStaleDispatchedTaskForRuntimeParams{
 		RuntimeID:         uuidParam(t, runtimeID),
 		ClaimRecoverySecs: 60.0,
 	})
-	if err == nil {
-		t.Fatal("reclaim of covered provider task with NULL credential_account_id must fail closed, but succeeded")
+	if err != nil {
+		t.Fatalf("reclaim of a frozen-account task must succeed: %v", err)
+	}
+	if got := uuidText(reclaimed.ID); got != taskID {
+		t.Fatalf("reclaimed task=%s, want %s", got, taskID)
+	}
+	if !reclaimed.CredentialAccountID.Valid || uuidText(reclaimed.CredentialAccountID) != accountID {
+		t.Fatalf("reclaim changed the frozen snapshot: got %v, want %s", reclaimed.CredentialAccountID, accountID)
+	}
+	if !reclaimed.DispatchedAt.Valid || time.Since(reclaimed.DispatchedAt.Time) > time.Minute {
+		t.Fatalf("reclaim must refresh dispatched_at, got %v", reclaimed.DispatchedAt)
 	}
 }

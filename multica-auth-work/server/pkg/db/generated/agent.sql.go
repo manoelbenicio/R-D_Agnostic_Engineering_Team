@@ -2438,15 +2438,10 @@ UPDATE agent_task_queue
 SET dispatched_at = now()
 WHERE id = (
     SELECT atq.id FROM agent_task_queue atq
-    JOIN agent_runtime rt ON rt.id = atq.runtime_id
     WHERE atq.runtime_id = $1
       AND atq.status = 'dispatched'
       AND atq.started_at IS NULL
       AND atq.dispatched_at < now() - make_interval(secs => $2::double precision)
-      AND NOT (
-          rt.provider IN ('codex', 'kiro', 'antigravity')
-          AND atq.credential_account_id IS NULL
-      )
     ORDER BY atq.priority DESC, atq.dispatched_at ASC
     LIMIT 1
     FOR UPDATE SKIP LOCKED
@@ -2466,8 +2461,17 @@ type ReclaimStaleDispatchedTaskForRuntimeParams struct {
 // recovered delivery attempt.
 //
 // Reclaim NEVER resolves or changes an account: it preserves the existing
-// credential_account_id. If a covered provider task reaches `dispatched` with
-// a NULL credential_account_id, reclaim MUST fail closed and refuse to reclaim.
+// credential_account_id exactly as frozen at claim, and it must never invent one
+// for a row that reached `dispatched` with NULL.
+//
+// It does NOT hide such a row, either. Excluding covered-provider rows with a
+// NULL snapshot from the candidate set made them invisible instead of
+// fail-closed: every task already in flight when the account snapshot ships is
+// exactly that shape, and an invisible row can be neither recovered nor
+// cancelled - it just stalls. The claim path is the only layer that may decide a
+// task is non-executable, and it can only do that for a row it can see, so the
+// row stays selectable here and the approved-assignment gate in
+// ClaimTaskByRuntime cancels it. See ORQ-12/ORQ-21 combined-gate finding.
 func (q *Queries) ReclaimStaleDispatchedTaskForRuntime(ctx context.Context, arg ReclaimStaleDispatchedTaskForRuntimeParams) (AgentTaskQueue, error) {
 	row := q.db.QueryRow(ctx, reclaimStaleDispatchedTaskForRuntime, arg.RuntimeID, arg.ClaimRecoverySecs)
 	var i AgentTaskQueue
