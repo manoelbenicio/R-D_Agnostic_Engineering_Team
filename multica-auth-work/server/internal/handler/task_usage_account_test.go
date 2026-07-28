@@ -613,6 +613,39 @@ func TestClaimFreeze_CanonicalisesAgyToAntigravity(t *testing.T) {
 	}
 }
 
+// The mirror case, and the one that ORQ-21 R3 accepts while an asymmetric
+// canonicalisation would reject: the ACCOUNT carries the alias. R3 compares
+// CanonicalProvider(vendor) against CanonicalProvider(provider), so a vendor
+// stored as agy is valid; if this freeze rejected it, the task would execute and
+// its spend would be unattributable.
+func TestClaimFreeze_CanonicalisesAliasOnTheAccountSideToo(t *testing.T) {
+	ctx := context.Background()
+	runtimeID := handlerTestRuntimeID(t)
+	var original string
+	if err := testPool.QueryRow(ctx,
+		`SELECT provider FROM agent_runtime WHERE id = $1`, runtimeID).Scan(&original); err != nil {
+		t.Fatalf("read provider: %v", err)
+	}
+	if _, err := testPool.Exec(ctx,
+		`UPDATE agent_runtime SET provider = 'antigravity' WHERE id = $1`, runtimeID); err != nil {
+		t.Fatalf("set provider: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(),
+			`UPDATE agent_runtime SET provider = $1 WHERE id = $2`, original, runtimeID)
+	})
+
+	// Vendor stored with the alias, and with padding to prove the btrim.
+	accountID := createTestAccountFull(t, testWorkspaceID, " AGY ", "available")
+	approveAccount(t, accountID)
+
+	_, _, frozen, ok := freezeAttempt(t, "ORQ12 AliasOnAccount", accountID)
+	if !ok || frozen != accountID {
+		t.Fatalf("a vendor stored as agy must match an antigravity runtime: got %q ok=%v want %s",
+			frozen, ok, accountID)
+	}
+}
+
 func TestClaimFreeze_AccountStatusPolicy(t *testing.T) {
 	// Only available and leased can produce work.
 	for _, status := range []string{"exhausted", "cooldown", "degraded"} {
