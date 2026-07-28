@@ -2,7 +2,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { AgentRuntime } from "@multica/core/types";
 import { I18nProvider } from "@multica/core/i18n/react";
 import enCommon from "../../locales/en/common.json";
@@ -13,14 +13,17 @@ const TEST_RESOURCES = {
   en: { common: enCommon, runtimes: enRuntimes, agents: enAgents },
 };
 
+const { toastSuccess } = vi.hoisted(() => ({
+  toastSuccess: vi.fn(),
+}));
+
 // Stub the workspace queries the columns reach into. None of them feed the
 // row menu directly, but `createRuntimeColumns` wires CliCell + CostCell
 // against the same query client, so we still need useQuery to resolve.
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>(
-      "@tanstack/react-query",
-    );
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
   return {
     ...actual,
     useQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -28,7 +31,11 @@ vi.mock("@tanstack/react-query", async () => {
 });
 
 vi.mock("@multica/core/runtimes/mutations", () => ({
-  useDeleteRuntime: () => ({ mutate: vi.fn(), isPending: false, mutateAsync: vi.fn() }),
+  useDeleteRuntime: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    mutateAsync: vi.fn(),
+  }),
   useArchiveAgentsAndDeleteRuntime: () => ({
     mutate: vi.fn(),
     isPending: false,
@@ -46,9 +53,26 @@ vi.mock("@multica/core/agents", () => ({
   useWorkspacePresenceMap: () => ({ byAgent: new Map(), loading: false }),
 }));
 
-// The unified DeleteRuntimeDialog the kebab now opens reaches into auth +
-// the api singleton. The dialog never renders in these tests (`open=false`
-// throughout) but its hooks still mount; stub them so module init is clean.
+// This file owns the list affordance only. Keep the real portal-heavy dialog
+// in delete-runtime-dialog.test.tsx so clicking the row action cannot leave
+// this narrow suite waiting on dialog/tooltip lifecycle work.
+vi.mock("./delete-runtime-dialog", () => ({
+  DeleteRuntimeDialog: ({
+    open,
+    onDeleted,
+  }: {
+    open: boolean;
+    onDeleted: () => void;
+  }) =>
+    open ? (
+      <div role="dialog" aria-label="Delete runtime confirmation">
+        <button type="button" onClick={onDeleted}>
+          Complete mocked delete
+        </button>
+      </div>
+    ) : null,
+}));
+
 vi.mock("@multica/core/auth", () => ({
   useAuthStore: (sel: (s: { user: { id: string } }) => unknown) =>
     sel({ user: { id: "user-me" } }),
@@ -63,7 +87,7 @@ vi.mock("@multica/core/api", () => ({
 }));
 
 vi.mock("sonner", () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
+  toast: { error: vi.fn(), success: toastSuccess },
 }));
 
 vi.mock("../../common/use-viewing-timezone", () => ({
@@ -76,7 +100,7 @@ vi.mock("./shared", () => ({
   useHealthLabel: () => () => "Online",
 }));
 
-import { CliCell, RuntimeRowMenu, type RuntimeRow } from "./runtime-list";
+import { CliCell, RuntimeDeleteButton, type RuntimeRow } from "./runtime-list";
 
 function makeRuntime(overrides: Partial<AgentRuntime>): AgentRuntime {
   return {
@@ -108,15 +132,15 @@ function makeRow(runtime: AgentRuntime, canDelete = true): RuntimeRow {
   };
 }
 
-// The row menu is a plain exported component on the ListGrid version of the
-// list — render it directly with the row fields it reads.
+// The delete button is a plain exported component on the ListGrid version of
+// the list — render it directly with the row fields it reads.
 function renderActionsCell(row: RuntimeRow) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   return render(
     <I18nProvider locale="en" resources={TEST_RESOURCES}>
       <QueryClientProvider client={qc}>
-        <RuntimeRowMenu
+        <RuntimeDeleteButton
           runtime={row.runtime}
           wsId="ws-1"
           canDelete={row.canDelete}
@@ -126,44 +150,65 @@ function renderActionsCell(row: RuntimeRow) {
   );
 }
 
-describe("runtime list row menu", () => {
+describe("runtime list delete button", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("renders the kebab menu for an online local runtime (self-healing is no longer hidden)", () => {
-    // MUL-3352: hiding the kebab on a self-healing row left owners reading
-    // it as a missing permission. The action stays available; the dialog
-    // surfaces the self-heal warning instead.
+  it("renders a directly visible delete button and hands off to the confirmation dialog", () => {
     renderActionsCell(
       makeRow(makeRuntime({ runtime_mode: "local", status: "online" })),
     );
-    expect(screen.getByLabelText("Row actions")).toBeInTheDocument();
+
+    const deleteButton = screen.getByRole("button", { name: "Delete" });
+    expect(deleteButton).toBeVisible();
+
+    fireEvent.click(deleteButton);
+
+    expect(
+      screen.getByRole("dialog", { name: "Delete runtime confirmation" }),
+    ).toBeInTheDocument();
   });
 
-  it("renders the kebab menu for an offline local runtime", () => {
+  it("closes the dialog and reports success after the dialog completes deletion", () => {
     renderActionsCell(
       makeRow(makeRuntime({ runtime_mode: "local", status: "offline" })),
     );
-    expect(screen.getByLabelText("Row actions")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Complete mocked delete" }),
+    );
+
+    expect(
+      screen.queryByRole("dialog", { name: "Delete runtime confirmation" }),
+    ).not.toBeInTheDocument();
+    expect(toastSuccess).toHaveBeenCalledOnce();
+    expect(toastSuccess).toHaveBeenCalledWith("Runtime deleted");
   });
 
-  it("renders the kebab menu for a cloud runtime regardless of status", () => {
+  it("renders the delete button for an offline local runtime", () => {
+    renderActionsCell(
+      makeRow(makeRuntime({ runtime_mode: "local", status: "offline" })),
+    );
+    expect(screen.getByRole("button", { name: "Delete" })).toBeVisible();
+  });
+
+  it("renders the delete button for a cloud runtime regardless of status", () => {
     renderActionsCell(
       makeRow(makeRuntime({ runtime_mode: "cloud", status: "online" })),
     );
-    expect(screen.getByLabelText("Row actions")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeVisible();
   });
 
-  it("hides the kebab menu when the caller lacks delete permission", () => {
-    // Pre-existing behavior — re-asserted so the new self-healing guard
-    // doesn't accidentally regress it (both paths return the same empty
-    // span).
+  it("hides the delete button when the caller lacks delete permission", () => {
     renderActionsCell(
       makeRow(
         makeRuntime({ runtime_mode: "local", status: "offline" }),
         /* canDelete */ false,
       ),
     );
-    expect(screen.queryByLabelText("Row actions")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Delete" }),
+    ).not.toBeInTheDocument();
   });
 });
 

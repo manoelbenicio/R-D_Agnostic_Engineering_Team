@@ -18,7 +18,12 @@ const TEST_RESOURCES = {
 // mocked api throws. vi.hoisted is required because vi.mock is hoisted above
 // imports — a top-level class declaration would not be visible to the mock
 // factory at hoist time.
-const { ApiError, apiDeleteRuntime, apiArchiveAgentsAndDeleteRuntime } = vi.hoisted(() => {
+const {
+  ApiError,
+  apiDeleteRuntime,
+  apiArchiveAgentsAndDeleteRuntime,
+  toastError,
+} = vi.hoisted(() => {
   class ApiError extends Error {
     status: number;
     body: unknown;
@@ -32,6 +37,7 @@ const { ApiError, apiDeleteRuntime, apiArchiveAgentsAndDeleteRuntime } = vi.hois
     ApiError,
     apiDeleteRuntime: vi.fn(),
     apiArchiveAgentsAndDeleteRuntime: vi.fn(),
+    toastError: vi.fn(),
   };
 });
 
@@ -58,16 +64,21 @@ vi.mock("@multica/core/runtimes/mutations", () => ({
   useArchiveAgentsAndDeleteRuntime: () => ({
     isPending: false,
     mutate: vi.fn(),
-    mutateAsync: (vars: { runtimeId: string; expectedActiveAgentIds: string[] }) =>
-      apiArchiveAgentsAndDeleteRuntime(vars.runtimeId, vars.expectedActiveAgentIds),
+    mutateAsync: (vars: {
+      runtimeId: string;
+      expectedActiveAgentIds: string[];
+    }) =>
+      apiArchiveAgentsAndDeleteRuntime(
+        vars.runtimeId,
+        vars.expectedActiveAgentIds,
+      ),
   }),
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>(
-      "@tanstack/react-query",
-    );
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
   return {
     ...actual,
     // The dialog reads agentListOptions / memberListOptions through useQuery.
@@ -103,7 +114,7 @@ vi.mock("../../agents/presence", () => ({
 }));
 
 vi.mock("sonner", () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
+  toast: { error: toastError, success: vi.fn() },
 }));
 
 import { useQuery } from "@tanstack/react-query";
@@ -158,11 +169,23 @@ function makeAgent(id: string, overrides: Partial<Agent> = {}): Agent {
   };
 }
 
-function renderDialog(opts: {
-  runtime?: AgentRuntime;
-  cachedAgents?: Agent[];
-  onDeleted?: () => void;
-} = {}) {
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+function renderDialog(
+  opts: {
+    runtime?: AgentRuntime;
+    cachedAgents?: Agent[];
+    onDeleted?: () => void;
+  } = {},
+) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const onOpenChange = vi.fn();
   const onDeleted = opts.onDeleted ?? vi.fn();
@@ -174,9 +197,14 @@ function renderDialog(opts: {
     const key = q?.queryKey ?? [];
     const tail = key[key.length - 1];
     if (tail === "agents") {
-      return { data: opts.cachedAgents ?? [], isLoading: false } as unknown as ReturnType<typeof useQuery>;
+      return {
+        data: opts.cachedAgents ?? [],
+        isLoading: false,
+      } as unknown as ReturnType<typeof useQuery>;
     }
-    return { data: [], isLoading: false } as unknown as ReturnType<typeof useQuery>;
+    return { data: [], isLoading: false } as unknown as ReturnType<
+      typeof useQuery
+    >;
   }) as unknown as typeof useQuery);
 
   const utils = render(
@@ -207,11 +235,87 @@ describe("DeleteRuntimeDialog", () => {
     expect(screen.getByText("Delete runtime")).toBeInTheDocument();
     // No checkbox, no agent table in light mode.
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
-    expect(screen.queryByText(/Archive .* and delete this Runtime/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Archive .* and delete this Runtime/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("cancels light mode without invoking either delete mutation", () => {
+    const { onOpenChange } = renderDialog({ cachedAgents: [] });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(onOpenChange).toHaveBeenCalledOnce();
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(apiDeleteRuntime).not.toHaveBeenCalled();
+    expect(apiArchiveAgentsAndDeleteRuntime).not.toHaveBeenCalled();
+  });
+
+  it("cancels cascade mode without invoking either delete mutation", () => {
+    const { onOpenChange } = renderDialog({
+      cachedAgents: [makeAgent("a-1")],
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(onOpenChange).toHaveBeenCalledOnce();
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(apiDeleteRuntime).not.toHaveBeenCalled();
+    expect(apiArchiveAgentsAndDeleteRuntime).not.toHaveBeenCalled();
+  });
+
+  it("calls onDeleted exactly once after a successful light delete", async () => {
+    apiDeleteRuntime.mockResolvedValueOnce({ status: "ok" });
+    const { onDeleted } = renderDialog({ cachedAgents: [] });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete runtime" }));
+
+    await waitFor(() => expect(onDeleted).toHaveBeenCalledOnce());
+    expect(apiDeleteRuntime).toHaveBeenCalledWith("rt-1");
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("keeps the dialog open and reports a generic non-409 delete error", async () => {
+    apiDeleteRuntime.mockRejectedValueOnce(new Error("network unavailable"));
+    const { onDeleted, onOpenChange } = renderDialog({ cachedAgents: [] });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete runtime" }));
+
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith("network unavailable"),
+    );
+    expect(onDeleted).not.toHaveBeenCalled();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(screen.getByText("Delete Runtime?")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Delete runtime" }),
+    ).toBeEnabled();
+  });
+
+  it("disables confirm and cancel while a light delete is pending", async () => {
+    const pendingDelete = deferred<{ status: string }>();
+    apiDeleteRuntime.mockReturnValueOnce(pendingDelete.promise);
+    const { onDeleted, onOpenChange } = renderDialog({ cachedAgents: [] });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete runtime" }));
+
+    const pendingConfirm = await screen.findByRole("button", {
+      name: "Deleting...",
+    });
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(pendingConfirm).toBeDisabled();
+    expect(cancel).toBeDisabled();
+
+    fireEvent.click(cancel);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(apiDeleteRuntime).toHaveBeenCalledOnce();
+
+    pendingDelete.resolve({ status: "ok" });
+    await waitFor(() => expect(onDeleted).toHaveBeenCalledOnce());
   });
 
   it("opens directly in cascade mode when local cache shows bound agents, with the destructive button gated by the checkbox", async () => {
-    renderDialog({
+    const { onDeleted } = renderDialog({
       cachedAgents: [
         makeAgent("a-1", { name: "Alpha" }),
         makeAgent("a-2", { name: "Beta" }),
@@ -243,6 +347,7 @@ describe("DeleteRuntimeDialog", () => {
         "a-2",
       ]),
     );
+    await waitFor(() => expect(onDeleted).toHaveBeenCalledOnce());
   });
 
   it("pivots from light to cascade mode when the strict DELETE returns runtime_has_active_agents", async () => {
@@ -314,9 +419,7 @@ describe("DeleteRuntimeDialog", () => {
       "false",
     );
     // Notice copy explains why the dialog re-prompted.
-    expect(
-      screen.getByText(/active agent set changed/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/active agent set changed/i)).toBeInTheDocument();
   });
 
   // MUL-3352: the dialog used to refuse self-healing runtimes outright,
@@ -420,9 +523,7 @@ describe("DeleteRuntimeDialog", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Delete runtime" }));
-    await waitFor(() =>
-      expect(apiDeleteRuntime).toHaveBeenCalledWith("rt-1"),
-    );
+    await waitFor(() => expect(apiDeleteRuntime).toHaveBeenCalledWith("rt-1"));
     await waitFor(() => expect(onDeleted).toHaveBeenCalled());
   });
 });

@@ -1,13 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  Globe,
-  Loader2,
-  MoreHorizontal,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, Globe, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import type {
@@ -29,12 +23,6 @@ import {
 } from "@multica/core/runtimes";
 import { useWorkspacePaths } from "@multica/core/paths";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@multica/ui/components/ui/dropdown-menu";
-import {
   ListGrid,
   ListGridCell,
   ListGridHeader,
@@ -52,11 +40,7 @@ import { useViewingTimezone } from "../../common/use-viewing-timezone";
 import { ProviderLogo } from "./provider-logo";
 import { HealthIcon, useHealthLabel } from "./shared";
 import { DeleteRuntimeDialog } from "./delete-runtime-dialog";
-import {
-  computeCostInWindow,
-  formatLastSeen,
-  pctChange,
-} from "../utils";
+import { computeCostInWindow, formatLastSeen, pctChange } from "../utils";
 import { splitRuntimeName } from "./runtime-machines";
 import {
   isPendingCustomRuntime,
@@ -74,8 +58,8 @@ import { useT } from "../../i18n";
 // be dead weight, and batch-deleting runtimes (a cascade-confirm heavy
 // operation) is deliberately not offered.
 const GRID_COLS =
-  "grid-cols-[0.75rem_minmax(120px,1fr)_var(--rtc-health)_var(--rtc-kebab)_0.75rem] " +
-  "@2xl:grid-cols-[0.75rem_minmax(140px,1fr)_var(--rtc-health)_var(--rtc-owner)_var(--rtc-agents)_var(--rtc-cost)_var(--rtc-cli)_var(--rtc-kebab)_0.75rem]";
+  "grid-cols-[0.75rem_minmax(120px,1fr)_var(--rtc-health)_var(--rtc-actions)_0.75rem] " +
+  "@2xl:grid-cols-[0.75rem_minmax(140px,1fr)_var(--rtc-health)_var(--rtc-owner)_var(--rtc-agents)_var(--rtc-cost)_var(--rtc-cli)_var(--rtc-actions)_0.75rem]";
 
 const COLUMN_WIDTHS = {
   // Health folds the workload in as a suffix ("Healthy · 2 running") —
@@ -92,7 +76,7 @@ const COLUMN_WIDTHS = {
 // gaps).
 const FIXED_TRACKS_WIDTH = 164 + 8 * 12;
 
-// The kebab track is conditional like the owner column: on a list where
+// The action track is conditional like the owner column: on a list where
 // no row carries a delete-permission, EVERY row's only action is hidden,
 // and an unconditionally reserved 28px action track would hang a
 // permanent dead zone off the last column.
@@ -114,7 +98,7 @@ function columnTrackVars(
     "--rtc-agents": `${COLUMN_WIDTHS.agents}px`,
     "--rtc-cost": `${COLUMN_WIDTHS.cost}px`,
     "--rtc-cli": `${COLUMN_WIDTHS.cli}px`,
-    "--rtc-kebab": showActions ? "1.75rem" : "0px",
+    "--rtc-actions": showActions ? "1.75rem" : "0px",
     "--rtc-minw": `${minWidth}px`,
   } as React.CSSProperties;
 }
@@ -152,12 +136,11 @@ export function buildWorkloadIndex(
   for (const a of agents) {
     if (!a.runtime_id || a.archived_at) continue;
     agentToRuntime.set(a.id, a.runtime_id);
-    const entry =
-      result.get(a.runtime_id) ?? {
-        agentIds: [],
-        runningCount: 0,
-        queuedCount: 0,
-      };
+    const entry = result.get(a.runtime_id) ?? {
+      agentIds: [],
+      runningCount: 0,
+      queuedCount: 0,
+    };
     entry.agentIds.push(a.id);
     result.set(a.runtime_id, entry);
   }
@@ -451,7 +434,7 @@ function AgentStack({ agentIds }: { agentIds: string[] }) {
   );
 }
 
-export function RuntimeRowMenu({
+export function RuntimeDeleteButton({
   runtime,
   wsId,
   canDelete,
@@ -462,43 +445,35 @@ export function RuntimeRowMenu({
 }) {
   const { t } = useT("runtimes");
   const [deleteOpen, setDeleteOpen] = useState(false);
-  // Delete is currently the only row action; if the row can't run it, drop
-  // the kebab entirely so the column doesn't render an empty popover. We
-  // used to also hide it for self-healing runtimes (live local daemon
-  // re-registers within seconds), but MUL-3352 surfaced that owners read
-  // a missing kebab as "I lost my permission" rather than "the daemon
-  // would undo this". The dialog now carries the self-heal warning and
-  // the user gets to decide.
 
+  // Delete is currently the only row action. Expose it directly instead of
+  // hiding it behind a hover-only kebab: runtime cleanup must be discoverable
+  // before an obsolete runtime is selected elsewhere in the product. The
+  // dialog remains the single confirmation surface and carries the
+  // self-healing warning when applicable.
   if (!canDelete) {
     return <span aria-hidden />;
   }
 
+  const label = t(($) => $.list.delete_action);
+
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
+      <Tooltip>
+        <TooltipTrigger
           render={
             <button
               type="button"
-              aria-label={t(($) => $.list.row_actions_aria)}
-              className="flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-accent-foreground group-hover/row:opacity-100 data-popup-open:bg-accent data-popup-open:opacity-100 data-popup-open:text-accent-foreground"
+              aria-label={label}
+              className="flex size-7 items-center justify-center rounded-md text-destructive/75 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => setDeleteOpen(true)}
             >
-              <MoreHorizontal className="size-4" />
+              <Trash2 className="size-4" />
             </button>
           }
         />
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => setDeleteOpen(true)}
-            title={t(($) => $.list.delete_permission_hint)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            {t(($) => $.list.delete_action)}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        <TooltipContent>{label}</TooltipContent>
+      </Tooltip>
       <DeleteRuntimeDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
@@ -576,7 +551,7 @@ export function RuntimeList({
     return runtimes.map((runtime) => ({
       runtime,
       ownerMember: runtime.owner_id
-        ? memberById.get(runtime.owner_id) ?? null
+        ? (memberById.get(runtime.owner_id) ?? null)
         : null,
       workload: workloadIndex.get(runtime.id) ?? EMPTY_WORKLOAD,
       canDelete:
@@ -585,7 +560,7 @@ export function RuntimeList({
     }));
   }, [runtimes, memberById, workloadIndex, isAdmin, user]);
 
-  // Mirrors RuntimeRowMenu's render guard: the kebab track only earns its
+  // Mirrors RuntimeDeleteButton's render guard: the action track only earns its
   // width when at least one row will actually show the menu.
   const showActions = rows.some((row) => row.canDelete);
 
@@ -674,7 +649,7 @@ export function RuntimeList({
                   onClick={(e) => e.stopPropagation()}
                   className="flex items-center"
                 >
-                  <RuntimeRowMenu
+                  <RuntimeDeleteButton
                     runtime={row.runtime}
                     wsId={wsId}
                     canDelete={row.canDelete}
