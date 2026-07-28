@@ -1,7 +1,7 @@
 # Current pending tasks — canonical control table
 
-- **Version:** 3.0
-- **Updated:** 2026-07-28T19:08:00Z
+- **Version:** 3.1
+- **Updated:** 2026-07-28T20:30:00Z
 - **Scope:** production workspace and P0 engineering program
 - **Update owner:** General Tech Manager
 - **Initial cohort:** 29 open cards
@@ -20,8 +20,8 @@ This is the canonical human-readable status table. Runtime/API evidence and card
 | # | Card | State | Current work / next deliverable | ETA | Owner decision |
 |---:|---|---|---|---:|---|
 | 1 | ORQ-21 | **FINAL PASS / awaiting integration sequence** | Code-only stack `ee87f7b + ec8f945 + aac2227 + feccee4` independently passed. Evidence-only commit `42db561`; worktree clean. No technical defect remains in this lane. | Complete | None |
-| 2 | ORQ-12 | **IN PROGRESS / reclaim correction running** | The first native run found a real combined-tree defect: legacy dispatched rows with a NULL frozen account were excluded from reclaim before ORQ-21 could fail-closed/cancel them. A second Kanban task, `5601a616`, is now `running` with explicit write authority to fix the selection, add regression tests, rerun the combined gate and then bind migration 128 if green. | 45–75 min | None |
-| 3 | ORQ-13 | **Code/evidence PASS; waiting chain** | Migration 127 remains reserved. Integrate/retest after the final ORQ-21/12 tree. | 45–90 min after ORQ-12 | Final merge authorization |
+| 2 | ORQ-12 | **IN PROGRESS / final independent review running** | Fix commits `785a8ac` and `ea1eee7` are complete: reclaim exposes legacy NULL snapshots, migration 128 is canonical, and the combined ORQ-12/21 gate is green. Two Kiro reviews failed before start because slot 140 lacked runtime artifacts; its safe directory skeleton was restored without reading credentials. Independent review task `174565eb` is now running on Gemini-3.6-Flash-A through Kanban. | 20–45 min | None |
+| 3 | ORQ-13 | **IN PROGRESS / integration preparation dispatched** | Kanban task `81ff5f41` is preparing the exact ORQ-21 + ORQ-12 + ORQ-13 integration tree now. It will execute the final combined gate immediately after ORQ-12 independent PASS; migrations remain 127 then 128 and generated SQLC output must be regenerated, never hand-edited. | 45–90 min | None; owner authorization already recorded |
 | 4 | ORQ-26 | **DIAGNOSIS COMPLETE / implementation dispatch pending** | Root cause is confirmed in `chat-window.tsx`: icons sit outside the `Button` supplied through `TooltipTrigger.render`, producing empty controls. The next implementation must be assigned natively through Kanban; no Herdr follow-up is allowed. | 45–90 min after native dispatch | None |
 | 5 | OPS-LIFECYCLE | **Preflight complete / cutover package pending** | User-scope/system-scope topology, install/enable/verify/rollback and first-run acceptance were mapped. Local package plus review takes 30–55 min; real cutover is separate and final acceptance requires the first scheduled run after about 24 h. | 30–55 min code; 24 h acceptance | Cutover authorization |
 | 6 | ORQ-42 | **Independent PASS / integration pending** | `fc77e89` passed 24/24 race tests and strict JSON/STOP_VARIANT review. Integrate tools; real JWT rotation remains separate. | 20–30 min code | Rotation window later |
@@ -39,8 +39,8 @@ This is the canonical human-readable status table. Runtime/API evidence and card
 | 18 | ORQ-35 | **TASK FAILED / agent authentication repair needed** | The single native task `9248f3e2` started but failed because Codex-C's refresh token was revoked. The card must be reassigned to a healthy authenticated agent or Codex-C must log in again; no duplicate task is active. | 2–4 h after healthy reassignment | Rotation authorization later |
 | 19 | ORQ-36 | **INDEPENDENT PASS / disposition pending** | Independent review confirmed `mat_`, `mdt_`, `mul_` and `mcn_` boundaries, fail-closed task-token isolation and lifecycle/rollback semantics without secret exposure. | 15–30 min close/integration disposition | Mutation authorization later |
 | 20 | ORQ-44 | **External questions open** | Resolve overlap, scope, introspection, AWSPREVIOUS, post-swap proof and exact secret identity. | No honest ETA until answers | Provider/owner answers and window |
-| 21 | ORQ-14 | **External capability blocker** | AGY/Kiro do not expose truthful per-turn token totals. Obtain authoritative telemetry or revise acceptance. | External | Decide whether estimates are acceptable |
-| 22 | ORQ-19 | **Destructive action pending** | Back up and execute one bounded cascade for obsolete runtimes linked to archived agents. | 30–60 min after approval | Explicit cascade approval |
+| 21 | ORQ-14 | **IN PROGRESS / authoritative telemetry investigation** | Kanban task `f43e3bc1` is running on Gemini-3.6-Flash-B. It must locate machine-readable per-attempt counters or prove the exact missing provider contract. Estimates from text length, time, cost or averages are forbidden; unavailable data remains explicit NULL. | 45–90 min for factual verdict; implementation ETA follows evidence | None |
+| 22 | ORQ-19 | **IN PROGRESS / authorized cascade preflight** | Kanban task `c2a35b50` is running on Opus-46#A after the Kiro slot-140 attempt failed before start. Exact targets, active-reference guards, content-free backup, transaction order and rollback are being proved. Owner authorization for the bounded cascade is recorded; GTM executes after technical approval of the exact set. | 30–60 min preflight; 15–30 min execution | None unless target set changes |
 | 23 | ORQ-40 | **Maintenance pending** | Align Codex CLI version with exact pin, verification and rollback. | 30–60 min | Maintenance-window authorization |
 | 24 | ORQ-30 | **Acceptance pending** | Review durable backend/JWT containment evidence and close or return one concrete correction. | 15–30 min | Acceptance |
 | 25 | ORQ-11 | **Legacy acceptance pending** | Close the legacy E2E root-count card or declare it obsolete. | 15 min | Business-value decision |
@@ -51,10 +51,11 @@ This is the canonical human-readable status table. Runtime/API evidence and card
 1. Confirm Tailnet-only production access for ORQ-17.
 2. Authorize the reviewed ORQ-26 integration sequence when handed off.
 3. Authorize dormant-only ORQ-41 merge separately from activation.
-4. Approve or reject destructive cascade for ORQ-19.
-5. Approve maintenance window for ORQ-40.
-6. Return acceptance on ORQ-30 and decide whether ORQ-11 still has value.
-7. Provide rotation metadata/windows only when ORQ-34/35/36/42/44 readiness is complete; never send secret values in chat.
+4. Approve maintenance window for ORQ-40.
+5. Return acceptance on ORQ-30 and decide whether ORQ-11 still has value.
+6. Provide rotation metadata/windows only when ORQ-34/35/36/42/44 readiness is complete; never send secret values in chat.
+
+Standing owner authorization recorded at `2026-07-28T20:29Z`: when the exact target, verified backup, rollback and bounded action are technically approved by the General Tech Manager, execution is authorized without asking the owner for the same generic approval again. A new decision is required only if the target set or risk scope changes.
 
 ## Live Kanban reconciliation
 
@@ -84,10 +85,13 @@ At `2026-07-28T17:25:57Z`, ORQ-12 was assigned natively through Kanban to Opus48
 
 The first ORQ-12 task completed as a diagnostic instead of writing: it proved that `ReclaimStaleDispatchedTaskForRuntime` filters out covered-provider legacy rows with `credential_account_id IS NULL`, preventing the ORQ-21 fail-closed cancellation path from seeing them. The issue was returned to `in_progress`, the stale no-write interpretation was explicitly superseded, and exactly one new Kanban task (`5601a616-3a14-4219-8409-97c7879d389b`) was created at `2026-07-28T19:07:43Z`. It is now `running`; no Herdr activation or duplicate task was used.
 
+At `2026-07-28T20:30Z`, the blocked column was reduced from three to **zero** through executable Kanban work rather than cosmetic status changes. ORQ-12 independent review is running as task `174565eb` on Gemini-3.6-Flash-A; ORQ-14 authoritative-token work is running as `f43e3bc1` on Gemini-3.6-Flash-B; ORQ-19 authorized preflight is running as `c2a35b50` on Opus-46#A; and ORQ-13 integration preparation is dispatched as `81ff5f41` to Opus48-A. The Kiro slot-140 directory skeleton was restored to the required 0700 layout without reading or copying credentials, but its missing `data.sqlite3` was not fabricated. Live project counts are **Done 6, In Progress 6, In Review 11, Todo 1, Blocked 0**. The only Todo card is ORQ-35, whose prior Codex-C task failed because its provider refresh token was revoked.
+
 ## Version history
 
 | Version | Date | Change |
 |---|---|---|
+| 3.1 | 2026-07-28 | Eliminated the blocked Kanban column by launching real work for ORQ-12/13/14/19; recorded standing owner authorization, exact task IDs, credential-slot infrastructure findings and current 6/6/11/1/0 board counts. |
 | 3.0 | 2026-07-28 | Recorded the real ORQ-12 combined-tree reclaim defect and launched one native correction task with explicit write authority, focused regressions and migration-128 promotion contingent on a green gate. |
 | 2.9 | 2026-07-28 | Dispatched ORQ-12 natively to Opus48-A with one running product task and an exact migration-128 execution contract; corrected ORQ-35 from dispatched to terminal auth failure after live verification. |
 | 2.8 | 2026-07-28 | Reconciled latest deliveries and ETAs: ORQ-18 and ORQ-36 independent PASS; ORQ-23 and ORQ-37 actionable BLOCKs; ORQ-15 partial build/vet interrupted by provider limit; ORQ-26 diagnosis complete; ORQ-33 review incomplete; ORQ-34 readiness complete. |
