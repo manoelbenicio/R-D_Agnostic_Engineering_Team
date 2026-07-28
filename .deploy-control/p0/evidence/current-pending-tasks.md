@@ -1,15 +1,15 @@
 # Current pending tasks — canonical control table
 
-- **Version:** 4.0
-- **Updated:** 2026-07-28T21:49:00Z
+- **Version:** 5.0
+- **Updated:** 2026-07-28T22:07:00Z
 - **Scope:** production workspace and P0 engineering program
 - **Update owner:** General Tech Manager
 - **Kanban cohort:** 24 cards
-- **Done:** 11 (45.8%)
+- **Done:** 18 (75.0%)
 - **Target today:** 18 Done (75%)
-- **Remaining to target:** 7
-- **Live execution:** 4 product tasks, 4 distinct AGY accounts
-- **Current columns:** Done 11, In Progress 5, In Review 7, Todo 1, Blocked 0
+- **Remaining to target:** 0
+- **Live execution:** zero active product tasks at the acceptance snapshot
+- **Current columns:** Done 18, In Progress 1, In Review 4, Blocked 1, Todo 0
 
 This is the canonical human-readable status table. Runtime/API evidence and card notes remain authoritative for individual facts, but every material status, ETA, dependency or owner-decision change must be reflected here with a version increment and changelog entry.
 
@@ -19,25 +19,18 @@ This is the canonical human-readable status table. Runtime/API evidence and card
 
 | # | Card | State | Current work / next deliverable | ETA | Owner decision |
 |---:|---|---|---|---:|---|
-| 1 | ORQ-21 | **IN PROGRESS — E2E acceptance** | Integrated and deployed. Four clean AGY accounts are registered with unique slots and assignments. Product task `646900f0` is running on Gemini-B with frozen account `23c485f0…`. | 15–30 min | None |
-| 2 | ORQ-18 | **IN PROGRESS — production acceptance** | UI commit `a943a3f` is integrated in `9f7b963`; frontend image `f79a78b…` is live with HTTP 200 and zero restarts. Product task `b9be6624` is running on Agy-A7 with frozen account `adb99fe1…`. | 15–30 min | None |
-| 3 | ORQ-26 | **IN PROGRESS — implementation** | Root cause is known in the chat-panel button composition. Product task `6300e7a0` is running on Gemini-A with frozen account `fc2a6653…`. | 30–75 min | None |
-| 4 | ORQ-14 | **IN PROGRESS — telemetry completion** | Product task `7515612f` is running on Agy-A8 with frozen account `733b4787…`; preserve authoritative counters and explicit NULL when unavailable. | 45–90 min | None |
-| 5 | ORQ-15 | **IN PROGRESS — integration lane** | Multi-account affinity implementation exists in `dfb90f1`; final reconciliation must consume the newly proven four-slot map and avoid a second source of truth. No active product task while all four accounts are occupied. | 30–60 min after an AGY account frees | None |
-| 6 | ORQ-20 | **IN REVIEW — deployed, canary pending** | Reasoning admission is deployed and six Codex/Kiro agents carry `high`; successful provider canary is still required. Codex/Kiro authentication remains the limiting input. | 20–40 min after usable provider login | Owner action only if Codex/Kiro login is requested |
-| 7 | ORQ-23 | **IN REVIEW — correction required** | Preserve the server-side frozen account snapshot; use `thinking_level` and raw token counters. Do not put account identity on the daemon wire. | 40–70 min | None |
-| 8 | ORQ-39 | **IN REVIEW — executable gate** | Workflow/spec structure passed review; execute locally or on available CI without treating GitHub billing as a product blocker. | 30–60 min | None |
-| 9 | ORQ-33 | **IN REVIEW — JWT rotation** | Scope is correctly `JWT_SECRET`; finalize independent review and execute only in a queue-zero window with rollback. | 45–90 min | Owner login/window when prompted |
-| 10 | ORQ-34 | **IN REVIEW — external key metadata** | Secret-safe consumer map is ready; exact secret identity and provider-key distinction remain to be supplied without values in chat. | 30–60 min after metadata | Owner action when exact metadata is requested |
-| 11 | ORQ-36 | **IN REVIEW — disposition** | Token-boundary review passed; convert the verified no-mutation scope into Done or return one concrete implementation requirement. | 15–30 min | None |
-| 12 | ORQ-37 | **IN REVIEW — hardening correction** | User-scoped umask approach is valid, but installer path traversal/TMPDIR/temp-file/rollback issues require correction before cutover. | 60–110 min | Issuer identity only for later origin rotation |
-| 13 | ORQ-35 | **TODO — provider authentication** | Prior Codex task failed on revoked refresh token. Reassign to the next free healthy AGY account or perform a Codex owner login if Codex-specific behavior is required. | 15 min dispatch; 1–2 h work | Owner action only if Codex-specific login is required |
+| 1 | ORQ-26 | **IN REVIEW** | Backend regression fixes are integrated; close only after the production chat-panel browser smoke proves attach/send/stop on the current clean frontend image. | 30–60 min | None |
+| 2 | ORQ-39 | **BLOCKED — executable environment** | Static implementation and peer review passed. Rebase the exact seven-file package onto the current base and run the ephemeral Playwright gate locally or on available CI; GitHub billing is not a product blocker. | 45–90 min | None |
+| 3 | ORQ-35 | **IN PROGRESS** | PostgreSQL/DATABASE_URL hardening remains. The Codex provider account is now registered, but its refresh token is revoked; work can be reassigned to AGY where provider specificity is unnecessary. | 60–120 min | **OWNER ACTION — refresh Codex slot 152 if Codex execution is required** |
+| 4 | ORQ-33 | **IN REVIEW** | JWT_SECRET runbook/tooling requires final independent acceptance and a queue-zero production rotation with tested rollback. | 45–90 min | Rotation window when requested |
+| 5 | ORQ-34 | **IN REVIEW** | Secret-safe consumer map is ready; supply exact non-secret secret identity/provider distinction, then execute bounded rotation without exposing value. | 30–60 min after metadata | Exact non-secret identifier |
+| 6 | ORQ-37 | **IN REVIEW** | MCP tooling-header custody hardening needs the reviewed installer corrections and scoped cutover; origin rotation still depends on identifying the external issuer. | 60–110 min | Issuer identity for origin rotation |
 
 ## Decisions currently required from the owner
 
-No immediate owner decision blocks the four running tasks. Human actions are now elevated immediately as **OWNER ACTION — IMMEDIATE** with the exact reason, action and estimated duration. Likely next actions are:
+No owner decision blocks the already-achieved 75% target. Human actions are now elevated immediately as **OWNER ACTION — IMMEDIATE** with the exact reason, action and estimated duration. Likely next actions for the remaining six cards are:
 
-1. Codex/Kiro interactive login only if ORQ-20 or ORQ-35 requires those providers specifically.
+1. Refresh Codex slot 152 only if ORQ-35 must execute specifically under Codex; ORQ-20 was closed with a successful Kiro `high` canary.
 2. Exact non-secret secret identifiers and a rotation window when ORQ-33/34 reach executable readiness.
 3. Origin/issuer identity for the two MCP tooling headers before ORQ-37 rotates them; local custody hardening does not wait for that identity.
 
@@ -75,10 +68,13 @@ At `2026-07-28T20:32Z`, the blocked column remains **zero**, but execution capac
 
 At `2026-07-28T21:49Z`, the AGY credential pool was rebuilt from zero. Four distinct owner-authenticated sessions were assigned automatically to slots `162`, `163`, `168` and `169`; all token files are nonempty `0600` under `0700` slot directories and no token content was read. The daemon allowlist, its local affinity ledger and the production `accounts`/`approved_accounts`/`assignments` metadata now agree. Four product tasks are concurrently `running` through Kanban, each with a distinct frozen `credential_account_id`: ORQ-18/Agy-A7, ORQ-26/Gemini-A, ORQ-14/Agy-A8 and ORQ-21/Gemini-B. Live project counts are **Done 11, In Progress 5, In Review 7, Todo 1, Blocked 0**.
 
+At `2026-07-28T22:07Z`, the verified target was reached: **18 of 24 cards are Done (75.0%)**, with zero active product tasks at the acceptance snapshot. ORQ-14, ORQ-18, ORQ-21 and ORQ-23 completed their acceptance paths; ORQ-15 closed after the four-account AGY pool ran concurrently with unique frozen account IDs; ORQ-36 closed after independent PASS confirmed that `MULTICA_TOKEN` is a per-task `mat_` lifecycle rather than a static secret awaiting manual rotation. ORQ-20 closed after a production Kiro canary ran `thinking_level=high`, started ACP, emitted messages and executed tools without `thinking_not_approved`; all six Codex/Kiro agents read back `high` and AGY agents remain `NULL`. A stale historical note temporarily returned ORQ-20 to blocked after the canary, and the GTM restored the accepted Done state after the task became terminal.
+
 ## Version history
 
 | Version | Date | Change |
 |---|---|---|
+| 5.0 | 2026-07-28 | Verified and recorded the 75% target: 18/24 Done. Closed ORQ-14/15/18/20/21/23/36, integrated the ORQ-23 rollback fix, recorded the Kiro `high` production canary, and reduced the live pending table to six cards. |
 | 4.0 | 2026-07-28 | Rebased the canonical table on the live 24-card Kanban, recorded 11 Done and the seven-card gap to 75%, deployed ORQ-18, rebuilt the four-account AGY pool from zero, and recorded four concurrent Kanban tasks with distinct frozen account IDs. |
 | 3.2 | 2026-07-28 | Corrected two pre-start execution failures without cosmetic status: ORQ-13 and ORQ-19 are READY and serially queued behind the two healthy Gemini tasks; blocked remains zero and live counts are 6/3/12/3/0. |
 | 3.1 | 2026-07-28 | Eliminated the blocked Kanban column by launching real work for ORQ-12/13/14/19; recorded standing owner authorization, exact task IDs, credential-slot infrastructure findings and current 6/6/11/1/0 board counts. |
