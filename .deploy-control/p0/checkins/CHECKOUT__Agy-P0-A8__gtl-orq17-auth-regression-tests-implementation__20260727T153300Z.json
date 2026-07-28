@@ -1,0 +1,19 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T15:33:00Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "ORQ17-AUTH-REGRESSION-TESTS-IMPLEMENTATION",
+  "issue_id": "ORQ-17",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-regression-tests-implementation.md"
+  ],
+  "hashes": {
+    "auth_test.go": "51971f0c0ae2a003b831ff982270b6391032ea4f3d3395dd67fdba2451c77ee2",
+    "local_commit_sha": "40909d85ee1962745e436cc540c2323f95e59820"
+  },
+  "summary": "Implementação autorizada da suíte de regressão de autenticação da ORQ-17 concluída no worktree isolado /home/ec2-user/workspace/worktrees/gtl-orq17-auth-tests na branch agent/agy-a8/orq17-auth-regression. Criado um único commit local (40909d85ee1962745e436cc540c2323f95e59820). Zero edições em código de produção. Validados com 100% PASS (-race -count=1 -json) os testes de desativação de bypass fail-closed, origem HTTPS com cookie Secure e TTL de 24h, tratamento de proxy confiável, validação de JWT de produção e negação de requisições anônimas."
+}

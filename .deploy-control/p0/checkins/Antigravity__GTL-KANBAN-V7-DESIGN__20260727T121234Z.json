@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T121234Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-75",
+  "task_ids": ["GTL-KANBAN-V7-DESIGN"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v7.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T121234Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v7.md"
+  ],
+  "summary": "Desenho V7 do Kanban Integrity Monitor concluido incorporando o audit GTL-67. Tabela duravel kanban_integrity_anomaly, migration placeholder NEXT_CANONICAL, API de hidratacao no frontend, lock 4247 em conexao dedicada com unlock nao-cancelado, guards tenant cross-workspace e suite de testes com restart/failover.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

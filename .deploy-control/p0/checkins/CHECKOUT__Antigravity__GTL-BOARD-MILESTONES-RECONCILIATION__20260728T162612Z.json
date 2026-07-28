@@ -1,0 +1,36 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T16:26:12Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-15",
+    "ORQ-23",
+    "ORQ-34",
+    "ORQ-36",
+    "ORQ-37",
+    "ORQ-26",
+    "ORQ-18",
+    "ORQ-33",
+    "ORQ-35"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "target_host": "ORQ1 (100.118.244.61)",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Execution of GTL board milestone reconciliations: in_progress->in_review for ORQ15, ORQ23, ORQ34, ORQ36, ORQ37 and preservation of ORQ26 in_progress",
+  "finding": "Produced gtl-board-milestones-in-review-reconciliation.md. Moved ORQ-15 (4ddb3400), ORQ-23 (6230b5c0), ORQ-34 (685524e4), ORQ-36 (41645aaf), ORQ-37 (36d18727) status-only to in_review (GET-back verified 100%). Preserved assignees intact. Preserved ORQ-26 in in_progress with Agy-P0-A8 (5b336637) in wB:p2. Preserved ORQ-18 and ORQ-33 in in_review, and ORQ-35 in todo. Measured column counts: BEFORE (blocked=5, done=6, in_progress=6, in_review=6, todo=1) vs AFTER (blocked=5, done=6, in_progress=1, in_review=11, todo=1). Active task queue count is 0 (zero duplicate tasks created). Recorded reconciliation SHA256 e7a2fe16e04d427f3273ebbd01ea101c8dbd5951ce239f0669ccc67d73688758.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-board-milestones-in-review-reconciliation.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Status-only milestone reconciliation operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-board-milestones-in-review-reconciliation.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260728T162612Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-BOARD-MILESTONES-RECONCILIATION__20260728T162612Z.json"
+  ],
+  "milestones_reconciliation_sha256": "e7a2fe16e04d427f3273ebbd01ea101c8dbd5951ce239f0669ccc67d73688758",
+  "non_claims": [
+    "gtl board milestone reconciliation, no assignee change, no duplicate task creation, no GetSecretValue, no product code edit"
+  ],
+  "blocker": null
+}

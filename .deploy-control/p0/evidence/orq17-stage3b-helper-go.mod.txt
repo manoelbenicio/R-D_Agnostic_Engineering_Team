@@ -1,0 +1,7 @@
+module github.com/multica-ai/multica/server/orq17stage3b
+
+go 1.26.1
+
+require github.com/multica-ai/multica/server v0.0.0
+
+replace github.com/multica-ai/multica/server => /home/ec2-user/R-D_Agnostic_Engineering_Team/multica-auth-work/server

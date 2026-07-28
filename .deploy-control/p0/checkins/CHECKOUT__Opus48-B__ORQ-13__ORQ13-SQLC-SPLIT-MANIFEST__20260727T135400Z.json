@@ -1,0 +1,109 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:54:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-13",
+  "orq_issue_id": "ORQ-13",
+  "task_ids": [
+    "ORQ13-SQLC-SPLIT-MANIFEST"
+  ],
+  "status": "DONE",
+  "worktree": "/home/ec2-user/workspace/worktrees/gtl-i03-orq13-phase1",
+  "branch": "agent/opus48-b/orq-13-thinking-level",
+  "base_commit": "0cb8aeb",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq13-sqlc-split-manifest.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-13__ORQ13-SQLC-SPLIT-MANIFEST__20260727T135400Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "git log --oneline 0cb8aeb..HEAD | wc -l ; git diff --cached --name-only | wc -l ; git diff --stat",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "WORKTREE INTACTO - 0 commits proprios, 0 arquivos staged, e o stat segue 7 files changed 138 insertions 18 deletions, identico a entrega anterior. Nao editei, nao fiz stage, nao commitei, nao rodei migration"
+    },
+    {
+      "command": "git diff -U0 pkg/db/generated/models.go | grep -E '^@@|^\\+type |^\\+.*ThinkingLevel'",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "SPLIT POR HUNK IDENTIFICADO - models.go tem 6 hunks: 5 sao drift (Account em @@ -12,0 +13,17@@; ApprovedAccount e Assignment em @@ -103,0 +121,15@@; Credential em @@ -249,0 +282,10@@; RotationEvent em @@ -587,0 +630,10@@; UserPasswordCredential em @@ -763,2 +817,9@@) e apenas 1 e feature (@@ -706,2 +758,4@@ com ThinkingLevel em TaskUsage). models.go e o UNICO arquivo compartilhado entre A e B, logo o split precisa ser por hunk e nao por arquivo"
+    },
+    {
+      "command": "diff do bloco removido vs inserido em task_message.sql.go",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "ACHADO DE RISCO - NAO e move puro: 3 linhas diferem, maxSeq no versionado vira max_seq no gerado. O arquivo gerado foi editado A MAO em algum momento, e o commit A REVERTE essa edicao. Underscore em nome de variavel Go e o padrao que revive/stylecheck ST1003 reclamam"
+    },
+    {
+      "command": "find -maxdepth 3 -name '.golangci*' e grep golangci-lint-action em ci.yml",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "RISCO ABERTO, NAO PROVADO - nao existe .golangci.yml em nenhum nivel, e ci.yml:115-118 usa golangci-lint-action@v9 version v2.12 working-directory server, ou seja defaults do v2. Se ST1003 estiver ativo por default, o commit A quebra o lint. Nao instalei golangci-lint e por isso nao provei"
+    },
+    {
+      "command": "ls -1 server/migrations/ | grep -E '^12[4-9]'",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "NUMERO NAO RESERVADO - existem 124 approved_accounts, 125 user_password_credential e 126 runtime_profile_protocol_family_native_runtimes. 127 e o proximo LIVRE observado, nao reservado; o manifesto grafa <N> e exige rename antes do commit B"
+    },
+    {
+      "command": "grep -nEi 'account_id|AccountID|price|pricing|rollup|hourly|daily' nos arquivos do commit B",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "SEM VAZAMENTO NO B - todas as ocorrencias sao comentario explicativo (pricing lookup no teste, Rollups NOT touched na migration, rollup worker em comentario pre-existente da query) ou codigo PRE-EXISTENTE do task_usage.sql fora dos 2 hunks de B. Nenhuma coluna account_id, nenhuma tabela de preco, nenhuma alteracao nas 4 tabelas de rollup"
+    },
+    {
+      "command": "grep -rIn 'db.Account|db.Assignment|db.ApprovedAccount|db.Credential|db.RotationEvent' --include='*.go' . | grep -v /generated/",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "SEM USO NO A - zero referencias aos structs de rotacao fora do proprio generated. O commit A nao habilita nem exercita account_id; apenas alinha o generated as migrations 123, 124 e 125 que ja estavam no repo"
+    }
+  ],
+  "split_summary": {
+    "commit_A": {
+      "message_proposto": "chore(db): regenerate sqlc baseline (pre-existing drift)",
+      "arquivos": 2,
+      "hunks": 7,
+      "detalhe": "models.go 5 hunks + task_message.sql.go 2 hunks",
+      "risco_principal": "reverte edicao manual maxSeq -> max_seq; pode reprovar lint"
+    },
+    "commit_B": {
+      "message_proposto": "feat(usage): persist thinking_level on task_usage (ORQ-13 phase 1)",
+      "arquivos": "5 modificados + 4 novos",
+      "hunks": 15,
+      "detalhe": "queries 2 + task_usage.sql.go 7 + models.go 1 + types.go 1 + daemon.go 2 + handler/daemon.go 3, mais 2 migrations e 2 arquivos de teste",
+      "dependencia": "aplicar A antes de B, senao o proximo sqlc generate de qualquer pessoa arrasta o drift para um PR alheio"
+    }
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/orq13-sqlc-split-manifest.md",
+    ".deploy-control/p0/evidence/gtl-i03-orq13-phase1-implementation.md",
+    "worktree agent/opus48-b/orq-13-thinking-level base 0cb8aeb, 0 commits proprios",
+    "multica-auth-work/.github/workflows/ci.yml:115-118",
+    "multica-auth-work/server/migrations/124, 125, 126"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+  "summary": "Manifesto de split exato entregue para o ORQ-13 fase 1, sem tocar o worktree congelado, que segue com 0 commits proprios, 0 staged e o mesmo stat de 7 arquivos, 138 insercoes e 18 delecoes. Commit A isola o drift pre-existente de sqlc em 2 arquivos e 7 hunks; commit B isola a feature thinking_level em 5 arquivos modificados e 4 novos, 15 hunks. models.go e o unico arquivo compartilhado, com 5 hunks de drift e 1 de feature, o que obriga split por HUNK e nao por arquivo. Dois achados novos: task_message.sql.go nao e move puro, porque o versionado usa maxSeq e o gerador emite max_seq, o que revela edicao manual anterior em codigo gerado e faz o commit A reverte-la, com risco de reprovar lint por underscore em nome de variavel Go, risco que nao pude provar porque nao existe .golangci no repo e o CI usa defaults do v2.12 e eu nao instalei o linter. Reconfirmado ausencia de vazamento: no commit B as unicas ocorrencias de account_id, pricing e rollup sao comentario explicativo ou codigo pre-existente fora dos hunks, e no commit A os cinco structs de rotacao tem zero referencias fora do generated. Numero de migration tratado como NAO reservado: 124, 125 e 126 existem, 127 e apenas o proximo livre observado, e o manifesto grafa <N> exigindo rename antes do commit B.",
+  "non_claims": [
+    "READ-ONLY: nao editei, nao fiz git add nem stage, nao commitei, nao rodei migration, nao rodei sqlc generate nesta rodada, nao dei push, nao abri PR",
+    "Nao reexecutei os gates nesta rodada; os numeros citados sao da entrega anterior com A e B JUNTOS. Os gates independentes de A e de B separadamente NUNCA foram executados, e essa e a lacuna que o executor deve fechar",
+    "Nao provei se o commit A quebra o lint por causa de max_seq: risco aberto",
+    "Nao sei por que task_message.sql.go foi editado a mao; inferi da direcao do rename, nao de historico de commit",
+    "Nao reservei numero de migration e nao renomeei os arquivos: 127 e apenas o proximo livre observado",
+    "Nao verifiquei se outro worktree ativo tambem usa 127",
+    "Nao apliquei a migration, logo o COALESCE nao foi provado contra Postgres real",
+    "Nao criei, atribui nem comentei issue alguma: o freeze de assignment e comentario permanece integral",
+    "Nao toquei no plano de browser QA congelado do ORQ-39, cujo sha256 9a4f51413840b8f68cb4ca0da87dc9fdbaf6c3729bdded5dd1b37a4e1d4d95b9 foi reconferido e esta identico"
+  ],
+  "blocker": "Tres itens precisam de decisao ou execucao antes de commitar: (1) o numero de migration precisa ser RESERVADO e os dois arquivos renomeados, porque 127 e suposicao minha e outro worktree paralelo pode colidir; (2) o risco de lint do commit A por max_seq precisa ser verificado por quem tem o gate, e se reprovar a correcao certa e excluir pkg/db/generated do linter, que e mudanca de outro dono; (3) os gates independentes de A e de B nunca rodaram separadamente. Commitar continua exigindo autorizacao, e a ordem obrigatoria e A antes de B, e migration antes do binario.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (GENERAL-TECH-LEAD)",
+      "reason": "Split pronto por hunk. Precisa de reserva de numero de migration, verificacao do risco de lint do commit A, e execucao dos gates independentes. O achado de que codigo gerado foi editado a mao antes de mim merece atencao propria, porque significa que qualquer sqlc generate futuro de qualquer agente vai reverter aquela edicao.",
+      "file": ".deploy-control/p0/evidence/orq13-sqlc-split-manifest.md"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:20:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-42",
+  "task_ids": ["ORQ42-V5-REMEDIATION-RUNBOOK-DESIGN"],
+  "status": "DONE_PROPOSAL",
+  "verdict": "PROPOSTA - nao aprovada, nao executavel sem as 4 autorizacoes; NAO me auto-aprovo",
+  "deliverable": ".deploy-control/p0/evidence/orq42-jwt-rotation-runbook-v5-design.md",
+  "artifact_sha256": "2504cc3b2624ab465bfe743ca846f26713106deae148df05589a00e2de605936",
+  "supersedes": ["orq33-jwt-rotation-remediation-v3-design.md (V3)", "orq42-jwt-rotation-runbook-v4-design.md (V4)"],
+  "reconciled_inputs": ["orq42-jwt-v3-adversarial-peer-review.md (meu BLOCK da V3)", "orq42-jwt-rotation-runbook-v4-adversarial-peer-review.md (BLOCK F1-F13)", "kanban-runtime-diagnosis-20260727.md secao ORQ-30 (fonte duravel validada)"],
+  "skill_loaded": "aws-secrets-manager v1 INTEGRAL antes de escrever: overview, aviso best-effort defense not a security boundary, as 3 regras MUST, sintaxe resolve com defaults SecretString e AWSCURRENT, Using asm-exec, How It Works com scan de ARGUMENTOS e ordem SMA depois MCP SigV4 e regiao por ARN ou AWS_REGION e re.sub single-pass e ausencia de fallback para CLI local, SigV4, prerequisitos, Common Patterns incluindo Configuration file templating, hook PreToolUse do aws-core e troubleshooting.",
+  "central_correction": "A V4 rotacionaria de forma NAO DURAVEL. O compose base declara JWT_SECRET em services.backend.environment como interpolacao com :? (docker-compose.selfhost.yml:58), e environment tem precedencia sobre env_file, logo o valor efetivo vem da interpolacao. Com o --env-file TEMPORARIO da V4, o container passaria a ter o segredo novo mas o dev.env duravel do ORQ-30 continuaria com o antigo, e a proxima execucao do helper autorizado multica-backend-recreate REVERTERIA SILENCIOSAMENTE a rotacao, invalidando todas as sessoes emitidas depois, sem sinal de erro. A V5 rotaciona a fonte duravel dev.env atomicamente por rename, com backup para rollback simetrico, o que tambem elimina a objecao F13 das duas fontes concorrentes: passa a existir UMA fonte.",
+  "new_guard_not_in_any_prior_version": "P6 - o bypass de auth local (middleware/auth.go:38-55) se autodesativa quando FRONTEND_ORIGIN nao e loopback, mas se estiver ATIVO o /api/me responde 200 sem token e o gate antigo=401 seria falso positivo GARANTIDO. P6 prova por EFEITO que /api/me sem credencial devolve 401, antes de tocar em nada, sem inspecionar nenhuma variavel de ambiente.",
+  "design_highlights": [
+    "P1-P8 derivam TUDO das labels no momento da execucao: projeto, working_dir e a lista ordenada de config_files (com.docker.compose.project.config_files) montada em -f na ordem exata, e o arquivo env duravel vindo da label com.multica.backend.env_file - zero hardcode, o que supera o achado F2 em vez de so corrigi-lo",
+    "force-recreate e nao restart, com justificativa: jwt.go:25-40 tem jwtSecretOnce sync.Once e o Config.Env e imutavel apos criacao, logo docker restart nao aplicaria o segredo novo; --no-deps backend preserva postgres, web e omniroute",
+    "filho asm-exec UNICO e CURTO com as 4 guardas dentro (G1 nao vazio, G2 placeholder literal em QUALQUER posicao, G3 contrato de caracteres hex, G4 comprimento exato 64 via printf %s) emitindo SOMENTE palavras de status; escrita atomica por mktemp 0600 no mesmo diretorio mais mv (rename), trap que SAI, e grep -v para preservar as demais chaves",
+    "a recriacao do Compose NAO carrega valor nenhum em argv, porque a fonte e duravel - isso resolve F5 melhor que um filho gigante",
+    "gates com codigo HTTP EXATO e curl -f PROIBIDO (nao distingue 401 esperado de falha de transporte): /health E /readyz sao rotas diferentes (router.go:443-445) em 127.0.0.1:18080; cookie multica_auth e nao session (auth/cookie.go:20-21); precedencia Bearer antes do cookie (middleware/auth.go:329-341); /api/me em router.go:552; tokens fora de argv via curl --config 0600 criado pelo OWNER",
+    "G5 justificado e nao redundante: se o literal {{resolve:...}} fosse gravado teria mais de 32 bytes, passaria ValidateJWTConfiguration e o backend assinaria e verificaria consistentemente, entao antigo=401 e novo=200 PASSARIAM - o defeito e invisivel por HTTP. G5 emite apenas rc= e e o unico contato autorizado com .Config.Env, ainda assim exigindo aprovacao do owner",
+    "rollback simetrico R1-R5 com os mesmos -f/-p/flags e gates invertidos; --no-recreate PROIBIDO nas duas direcoes, porque foi o defeito que reprovei na V3 - ele impede o container de assumir o ambiente restaurado e torna o rollback inerte",
+    "raio de impacto declarado pelos 5 consumidores de JWTSecret(): sessoes humanas caem, realtime cai, e os tokens mdt_ param de validar (daemon_auth.go:234), o que torna o re-pareamento do ORQ2 pre-condicao da MESMA janela - o ORQ1 nao tem daemon, a unit e multica-daemon-orq2-credential.service no ORQ2",
+    "recusa de shred com justificativa CoW/SSD; o backup fica no mesmo diretorio 0700 e portanto nao amplia a classe de exposicao"
+  ],
+  "open_owner_questions": [
+    "Q-A usar os artefatos ORQ-30 existentes (helpers com hash + dev.env) ou supersede-los - define todo o mecanismo",
+    "Q-B secret-id exato, json-key e version-stage - a V4 chuta prod/jwt-secret e eu NAO adivinho nome de segredo",
+    "Q-C presenca confirmada por identidade autorizada SO com metadados - DescribeSecret em sa-east-1 deu AccessDenied para esta identidade; DescribeSecret nao prova que uma json-key existe",
+    "Q-D o valor novo e hex de 64 caracteres - contrato que torna a escrita em env_file segura e mantem paridade com o comprimento 64 medido no ORQ-30, por atestacao SEM revelar valor",
+    "Q-E como o owner obtem o token novo pos-rotacao sem expo-lo a agente - o gate novo=200 depende disso",
+    "Q-F autorizacao e card ORQ-N proprio JA VERIFICADO para o re-pareamento do ORQ2 - nunca ORQ-N previsto, e eu nao sou o registrador"
+  ],
+  "authorizations_required": ["A1 metadados/mutacao do segredo por identidade autorizada", "A2 escrita no dev.env e force-recreate do backend no ORQ1", "A3 rollback pre-autorizado para nao decidir sob pressao", "A4 re-pareamento do daemon no ORQ2 com card proprio"],
+  "residual_exposure_declared": "O asm-exec substitui a referencia nos ARGUMENTOS do filho, logo o valor resolvido existe brevemente no argv do sh filho, legivel em /proc/<pid>/cmdline por processo do mesmo usuario. E inerente ao desenho do asm-exec e a propria skill se declara best-effort defense, not a security boundary. Mitigacao: filho CURTO e recriacao do Compose FORA dele. Nao ha como eliminar a janela com as ferramentas disponiveis; o owner precisa aceita-la explicitamente.",
+  "non_claims": [
+    "NAO li nenhum valor de segredo: zero GetSecretValue/BatchGetSecretValue, zero SMA em localhost:2773, zero asm-exec executado, zero docker compose config (que imprimiria o segredo interpolado), zero dump de .Config.Env",
+    "nenhuma mutacao: nao escrevi em dev.env, nao recriei container, nao reiniciei unit, nao logei, nao rotacionei, nao alterei quadro, nao criei card",
+    "NAO executei o preflight: P1-P8 sao propostas, e nao reli as labels do ORQ1 nesta sessao - a V5 foi escrita para NAO depender de snapshot, derivando tudo na execucao",
+    "o comprimento 64 e a paridade com dev.env vem da evidencia ORQ-30 preservada, nao de medicao minha nesta sessao",
+    "nao verifiquei se a json-key existe nem o nome do segredo",
+    "nao confirmei o UUID do cartao ORQ-42 e nao o predigo",
+    "nao alterei assignee nem postei comentario em issue"
+  ],
+  "review_requested_from": "agente independente que NAO seja Opus48#A, nem o autor da V4 (Antigravity), nem o revisor da V4",
+  "review_attack_priorities": ["a precedencia environment sobre env_file da secao 0, que e o eixo da V5", "se grep -v mais printf preserva fielmente o resto do dev.env", "se G5 e aceitavel sob a proibicao de dump de .Config.Env", "se a janela de argv do filho e tolerada pelo owner"],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "blocker": null
+}

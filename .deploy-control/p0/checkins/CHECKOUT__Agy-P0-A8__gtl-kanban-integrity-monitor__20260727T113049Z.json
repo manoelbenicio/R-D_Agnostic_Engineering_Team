@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:30:49Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-KANBAN-INTEGRITY-MONITOR",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor.md"
+  ],
+  "summary": "Design do Monitor Automático de Integridade do Kanban (GTL-14) concluído em modo READ-ONLY. Mapeadas as 4 consultas SQL de detecção de anomalias (assigned todo sem task, in_progress sem active task, completed sem task completion, blocked com dependência resolvida), estabelecida a arquitetura de notificação passiva via eventos WebSocket kanban:integrity_anomaly e estruturada a suíte de testes automatizados."
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T114325Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-40",
+  "task_ids": ["GTL-ORQ13-SALVAGE"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq13-salvage-map.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T114325Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq13-salvage-map.md"
+  ],
+  "summary": "Salvage audit do worktree ORQ-13 finalizado. Mapeados arquivos/hunks para REAPROVEITAR (daemon, handler, task_usage.sql), REESCREVER (migration 127 up minima) e DESCARTAR (migration 127 down destrutiva com DELETE FROM task_usage). Identificada ausencia da camada Go ModelPrice/EffectiveFrom do GTL-36.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

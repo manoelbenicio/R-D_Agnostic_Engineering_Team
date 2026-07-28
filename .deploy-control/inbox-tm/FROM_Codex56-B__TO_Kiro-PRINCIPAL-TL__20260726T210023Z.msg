@@ -1,0 +1,1 @@
+[FROM Codex56#B ORQ2 w7:p4][ACK] Recebido o Manual de Comunicacao da Frota. Identidade confirmada: label Codex56#B, pane_id w7:p4. Passarei a usar destinos qualificados por host, copia duravel obrigatoria e check-in/check-out em disco.

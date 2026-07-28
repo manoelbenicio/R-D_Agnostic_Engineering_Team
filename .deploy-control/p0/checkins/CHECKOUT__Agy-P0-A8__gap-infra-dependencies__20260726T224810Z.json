@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-26T22:48:10Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GAP-INFRA-DEPENDENCIES",
+  "status": "DONE",
+  "reported_to": "Kiro-PRINCIPAL-TL",
+  "evidence": [
+    ".deploy-control/p0/evidence/gap-infra-dependencies.md"
+  ],
+  "summary": "Inspeção do Tema C (Infraestrutura) concluída. Redis possui fallback em memória para ModelListStore/Liveness (degrada apenas em cluster multi-node); agent_task_queue e Autopilot dependem 100% do PostgreSQL (sem bloqueio); CLIs ausentes no container backend são por design (execução é realizada pelo Daemon host em execenv)."
+}

@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:08:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-41",
+  "wave": "W4",
+  "commit_reviewed": "c047c0b7ed710f260e76a6ee50257b2a5f96dc70",
+  "worktree": "/home/ec2-user/workspace/worktrees/gtl-orq41-w4-autopilot (agent/opus48-d/orq41-w4-autopilot, pai 0cb8aeb)",
+  "task_ids": ["ORQ41-W4-INDEPENDENT-CODE-REVIEW"],
+  "status": "DONE_BLOCK",
+  "verdict": "BLOCK",
+  "deliverable": ".deploy-control/p0/evidence/orq41-w4-c047c0b-code-review.md",
+  "artifact_sha256": "ec763b052aa74f681b17acb270dd64cb9d8e8c63781299a9e083135a0236e38a",
+  "green_evidence": "go build ./... exit 0; go vet dos 3 pacotes exit 0; go test focado 3/3 PASS; pacotes service, handler e commitledger inteiros ok; go test -race ok nos dois pacotes novos. Caches privados criados e verificados com stat -c %a = 700 em /home/ec2-user/.cache/{go-build,gotmp}-review-a, fora do /tmp que esta cheio. git show --check sem problema de whitespace. Worktree limpo.",
+  "scope_clean": "4 arquivos, 291 insercoes, 4 remocoes. NAO tocou router.go (coerente com W3 dono), NAO tocou migrations, NAO tocou pkg/db/generated nem queries, NAO tocou commitledger. Sem violacao de FILES_LOCKED e sem colisao com LANE-DB nem com a Wave 0 do ORQ-13.",
+  "blockers": [
+    "B1 O GATE DESLIGA O AUTOPILOT INTEIRO EM PRODUCAO. Posicao do gate esta correta - shouldSkipDispatch e chamado em autopilot.go:72, no topo de DispatchAutopilot, cobrindo os dois enqueues em :277 e :281 - mas o hook NUNCA e injetado: NewAutopilotService (autopilot.go:44-45) nao seta ReplayGateHook, nao existe literal AutopilotService com o campo fora de teste, e SetReplayGateHook (autopilot.go:48-50) NAO TEM NENHUM CHAMADOR. As duas construcoes de producao sao cmd/server/main.go:348 e internal/handler/handler.go:208, ambas sem o hook. Com hook nil, CheckOrAllow retorna erro por contrato (replay_gate.go:200-203), logo shouldSkipDispatch sempre retorna skip=true e NENHUM autopilot dispara jamais. Nao e degradacao parcial: e desligamento total de feature de produto, sem flag e sem sinalizacao no commit. Viola a clausula do plano de ondas de que com a flag off o comportamento seja byte-identical.",
+    "B2 CORRELACAO ERRADA: autopilot.go:787-790 usa correlationID = util.UUIDToString(ap.ID), o ID do AUTOPILOT. O registry e chaveado por ID de TASK: o daemon registra em daemon.go:4195 Register(taskID, ...) com taskID vindo de daemon.go:3842 task.ID, e o consumidor existente usa a mesma chave em task.go:1664-1665 com o UUID da task pai. Logo, mesmo com o hook injetado, Registry.Get devolve nil, ReplayGate(nil) da ReplayBlocked 'no ledger available' e o bloqueio e permanente por um segundo caminho independente do B1. Contraria o desenho V2 aprovado, que define a correlacao como a task mais recente em estado TERMINAL do par (issue_id, agent_id), permitindo apenas quando nao existe task anterior. Sintomas do mesmo defeito: os parametros ctx e agent de checkAutopilotReplayGate estao NAO UTILIZADOS.",
+    "B3 O HANDLER RESPONDE 200 recorded E NAO GRAVA NADA. Entre o comentario '// Register / record in memory or durable hook if available' e o WriteHeader nao ha nenhuma escrita - nem tabela, nem registry, nem canal. O campo Status recorded e afirmacao FALSA de durabilidade. Quando a W3 registrar a rota, um daemon que reporte ever_had_tool_use true recebe 200 recorded e o backend nao tem nada. Correcao: implementar a persistencia (depende da migration MIG_LEDGER_SUMMARY, que ainda nao existe), ou responder 501/202 com status que nao afirme persistencia, ou nao entregar o handler nesta onda.",
+    "B4 A MENSAGEM DO COMMIT REIVINDICA O HMAC SECRET, QUE NAO FOI IMPLEMENTADO. grep de CommitLedgerHMACSecret neste worktree sem testes retorna APENAS config.go:115 (declaracao) e daemon.go:4101 (leitura) - nenhuma atribuicao, exatamente como antes do commit. Todo ledger continua nascendo NewFailClosed com EverSaturated true, o que AGRAVA o B1: mesmo resolvendo hook e correlacao, o gate ainda bloquearia tudo enquanto o secret nao for populado. Corrigir por commit novo, nao amend."
+  ],
+  "false_green_analysis": "NAO ha falso-verde por skip: zero t.Skip nos dois arquivos novos, os tres testes rodam e passam inclusive sob -race. Mas HA falso-verde epistemico: TestAutopilotReplayGate_AllowedWhenNoToolUse registra o ledger sob o apID (registry.Register(apIDStr, ledger)), reproduzindo exatamente a chave errada do B2 - o teste passa porque espelha o bug. Falta o teste que revelaria tudo: exercitar shouldSkipDispatch com AutopilotService construido por NewAutopilotService, que hoje mostraria skip=true para autopilot saudavel. Nota de diagnostico: o log do gate diz 'replay gate blocked automatic retry' porque vem de replay_gate.go:182, escrito para o caminho de retry - reusar o hook no Autopilot faz o log mentir sobre a origem.",
+  "handler_unregistered": "CONFIRMADO E CORRETO: grep de PutDaemonLedgerSummary e ledger-summary sem testes retorna apenas o proprio arquivo do handler; nao ha entrada em router.go. Isso e intencional e conforme o plano V3, em que router.go pertence exclusivamente a W3 e a W4 entrega o handler em arquivo proprio. Duas exigencias para quem registrar em W3, que o handler nao garante sozinho: montar DENTRO do grupo autenticado de daemon (router.go:510), porque o handler nao faz checagem de auth propria; e validar PERTENCIMENTO do taskId ao daemon chamador, porque o handler valida forma de UUID e nao pertencimento.",
+  "concurrency_security": "-race limpo. SetReplayGateHook escreve o campo SEM sincronizacao: hoje inofensivo por nao haver chamador, mas se W3/W10 chamar apos o servico comecar a servir, e data race com as leituras do gate - recomendo injecao por construtor. Nenhum segredo, token ou credencial em log ou resposta: o slog.Warn loga autopilot_id, agent_id e error, e o erro e ErrReplayBlocked content-free.",
+  "fixes": ["F1 resolver hook nil (wiring, degradar declarado, ou flag off)", "F2 correlacao pela task terminal de (issue_id, agent_id) com permissao na ausencia", "F3 handler grava de verdade ou responde 501/202", "F4 corrigir mensagem do commit por commit novo", "F5 teste de shouldSkipDispatch com NewAutopilotService e ledger por chave de task", "F6 usar ou remover ctx e agent", "F7 anotar exigencias de registro para W3", "F8 sincronizar ou eliminar o setter"],
+  "non_claims": [
+    "NAO editei, nao fiz amend, rebase, commit, push, board ou deploy; worktree limpo e HEAD segue c047c0b",
+    "build/vet/test/-race escrevem somente em GOCACHE e GOTMPDIR privados 0700 fora de /tmp; go build baixou modulos para o cache de modulos, efeito inevitavel de compilar",
+    "NAO executei o Autopilot nem enfileirei task: a conclusao do B1 vem de leitura dos construtores e do contrato de CheckOrAllow",
+    "nao li o plano V3 aprovado nem manifesto de ownership DESTE worktree; usei como referencia o plano de ondas que eu proprio revisei - se houver manifesto divergente, reconciliar",
+    "nao localizei a evidencia de rescue mencionada no dispatch e nao presumi qual seria",
+    "nao avaliei daemon_ledger_summary_test.go linha a linha; verifiquei ausencia de t.Skip e que o pacote passa",
+    "nao alterei assignee nem postei comentario; nenhum card criado"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "blocker": null
+}

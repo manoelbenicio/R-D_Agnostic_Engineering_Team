@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-Lane-B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    "7c76adf83a29dcbf0ef05b70d11d7234a79db67f",
+    "ba7dfdb0739352c12b3de3366e48ca1cb0d76a66",
+    "38ffb6f docs(planning): capture agent brain and transition handovers"
+  ],
+  "files_locked": [
+    "scripts/windows/setup-omniroute-https.ps1"
+  ],
+  "finished_at": "2026-07-26T20:36:10Z",
+  "lane": "B",
+  "last_heartbeat_at": "2026-07-26T20:36:10Z",
+  "pane_id": null,
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-26T20:33:07Z",
+  "status": "DONE",
+  "summary": "Lane B batch reconciled: 11 of 12 assigned docs were already committed at HEAD 38ffb6f (kiro-lead, 20:30:27Z, 3 min before lane start); only remaining untracked batch file scripts/windows/setup-omniroute-https.ps1 committed atomically as ba7dfdb (1 file, 487 insertions). A concurrent lane then rewrote history: my commit is now 7c76adf and it carries one extra Lane A file (.deploy-control/p0/checkins/...COMMIT-DEPLOY-CONTROL-CHURN__20260726T203344Z.json, 2 +-), so the commit is no longer single-file atomic. Correcting that needs rebase/amend, which is STOP-AND-WAIT under AUTHORITY-AMENDMENT-001; not done. No push, no reset, no clean, no checkout --, no install, no deploy, no service or container restart.",
+  "task": "LANE-B-PLANNING-DOCS-COMMIT",
+  "validation": "git status --porcelain over the full batch scope (.planning/, .planning/agent-brain-v3, HANDOVER_SQUAD_TRANSICAO.md, HANDOVER_MULTICA_MAIN_BRAIN.md, .planning/EXECUTION_PLAN_v3_AGENTIC.md, docs/ops, docs/architecture, scripts/windows) returns empty after commit. Secret-pattern scan of the .ps1 (password/secret/api-key/token/private-key/AKIA/sk-/xox-) found only one benign comment mention of the word 'passwords'; no credential material committed. Batch had 0 untracked files in .planning/agent-brain-v3, contrary to the assignment premise."
+}

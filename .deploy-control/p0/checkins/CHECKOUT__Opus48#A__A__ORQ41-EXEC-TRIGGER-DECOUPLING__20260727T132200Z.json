@@ -1,0 +1,46 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:22:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-41",
+  "issue_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "issue_number": 41,
+  "issue_workspace_id": "20fce817-895d-447b-965a-49f5e279314a",
+  "card_identity_verified": "Par UUID+numero verificado por GET /api/issues?workspace_slug=orq2-dev, read-only. Status todo, assignee_type null.",
+  "scope_divergence": "ATENCAO: o titulo real do ORQ-41 e 'Add safe non-triggering documentation comments to assig...', mais estreito que o objetivo do dispatch (contrato de desacoplamento). Cito o card indicado mas registro a divergencia: ou o titulo e ampliado, ou este design pertence a outro card. NAO alterei o card.",
+  "containment_verified": "ORQ-39 c03941bc-3bde-4de1-ab19-1ba93de0ad51 e ORQ-40 d2001a24-af70-4367-8828-2225ed43ad84 ambos blocked e com assignee_type null. Replay proibido e nao executado.",
+  "task_ids": ["ORQ41-EXECUTION-TRIGGER-DECOUPLING-DESIGN"],
+  "status": "DONE_DESIGN_ONLY_AWAITING_INDEPENDENT_REVIEW",
+  "deliverable": ".deploy-control/p0/evidence/orq41-execution-trigger-decoupling-design.md",
+  "trigger_surface_mapped": "17 gatilhos reais de enqueue, todos com arquivo:linha: issue.go 2535/2541/2559/2562 (update single), 3035/3038/3050/3053 (batch), comment.go 1127/1136 (assignee, sem mencao) e 1140/1146 (mencao squad/agente), service/issue.go:388 via maybeEnqueueOnAssign:383 (criacao com assignee), onboarding_shim.go:329, autopilot.go 271/275, e task.go:1675 CreateRetryTask via MaybeRetryFailedTask:1631. NENHUM deles e acao explicita de executar; o unico com gate real e o retry (task.go:1666 commitledger.CheckOrAllow), e ele guarda replay e nao custo. Webhooks (router.go:498 e :501) NAO tem caminho proprio: herdam criacao/autopilot.",
+  "comment_default_finding": "comment.go:1174-1180 mostra que o assignee entra como trigger quando o comentario NAO menciona outros e NAO e resposta a thread de membro: o gatilho e o DEFAULT, e ausencia de mencao nao protege - confirma o fato medido.",
+  "exactly_once_gap": "LACUNA MEDIDA: migrations/037_fix_pending_task_unique_index.up.sql cria idx_one_pending_task_per_issue_agent UNIQUE (issue_id, agent_id) WHERE status IN ('queued','dispatched'). NAO cobre 'running' nem 'waiting_local_directory' (109_...:15), logo com task EM EXECUCAO um segundo enqueue passa pelo indice: e por isso que duplo clique sobrevive hoje.",
+  "recommended_option": "A + B em par: A canonico = endpoint dedicado POST /api/issues/{id}/runs com Idempotency-Key obrigatoria, agent_id explicito, model, reasoning_level, account_ref (referencia, nunca credencial), cost_ack e reason; B = campo opt-in execute apenas como ponte de migracao, nascendo deprecated. Opcao C (so confirmacao na UI) REJEITADA: mantem API, CLI, mobile e webhook disparando custo sem intencao.",
+  "explicit_semantics": "Metadado puro: assign/reassign (mantendo CancelTasksForIssue, que e contencao e nao custo), saida de backlog, comentario comum e criacao com assignee. Continuam executando, com cost_ack e as 5 guardas: mencao a agente e a lider (a mencao E a acao explicita), onboarding (excecao nomeada do produto) e Autopilot (automatizador ligado deliberadamente, com ack gravado na definicao). Retry mantem o gate do commitledger. Regra guarda-chuva: qualquer novo call site de EnqueueTaskFor* fora de /runs, Autopilot e Retry e DEFEITO, barrado por teste estrutural.",
+  "schema_needs": "NEXT_CANONICAL_a task_execution_request com idempotency_key como PK, trigger_kind CHECK em explicit_run/mention/onboarding/autopilot/retry e account_ref sem credencial; NEXT_CANONICAL_b ampliar o indice unico para os 4 estados ativos (BREAKING, aplicar por ultimo e sozinho, apos levantar se algum fluxo enfileira durante running); NEXT_CANONICAL_c task_trigger_audit append-only com decision em enqueued/denied_guard/denied_auth/deduped, imutavel por PERMISSAO do role e nao por trigger, que o mesmo role contornaria. Transacao unica reusando runInTx (task.go:1918) e TxStarter (task.go:127).",
+  "ui_separation": "Assign sem efeito de execucao; Comment puro, com aviso e confirmacao ANTES do envio quando houver mencao a agente; Run now como controle distinto com dialogo de agente, modelo, reasoning, conta e custo, unico que chama /runs; desabilitado quando ha task ativa, para o usuario nao descobrir o guard por 409. FILES_LOCKED sugerido: board-card.tsx, issue-actions-dropdown.tsx, issue-actions-context-menu.tsx, use-issue-actions.ts, um dono unico.",
+  "migration_plan": "Flag MULTICA_EXECUTION_TRIGGER_DECOUPLED em 4 fases: off (auditoria e /runs ja disponiveis), warn (metadado ainda enfileira, marcado implicit_trigger), on (metadado nao enfileira, execute ainda aceito e deprecated), on sem B. Compatibilidade dura: campo omitido = NAO executa. Metrica de saida da fase warn: zero implicit_trigger na auditoria por N dias.",
+  "tests_required": "15 testes, de create-with-assignee sem enqueue a duplo clique concorrente com uma unica task, incluindo 409 com task em running (falha hoje), retry ainda gated, rollback sem task orfa, bateria zero-custo de metadados, e um teste ESTRUTURAL que falha se aparecer novo call site de EnqueueTaskFor*.",
+  "pass_gates_and_rollback": "P1 review independente do mapa de 17 gatilhos; P2 levantar dependencia do indice ampliado; P3 decisao do owner sobre as 3 excecoes que seguem executando (mencao, onboarding, autopilot); P4 resolver a divergencia de titulo do ORQ-41; P5 implementar por fases com review por fase. Rollback: voltar a flag, SEM reverter migration, porque _a e _c sao aditivas e inertes com flag off; o unico item nao trivial e o indice _b, cujo rollback e recriar o antigo - por isso vem por ultimo e sozinho.",
+  "open_questions_not_asserted": [
+    "se algum fluxo legitimo enfileira durante running - bloqueia NEXT_CANONICAL_b; nao levantei",
+    "se CLI/mobile tem caminho proprio de enqueue por outro nome - varri EnqueueTaskFor*, nao chamadas indiretas",
+    "custo estimado por execucao nao existe hoje: cost_ack confirma INTENCAO, nao valor; estimativa real depende do preco por tier, que e o gap da ORQ-13",
+    "se o modelo de papeis permite separar 'executar' de 'editar issue' - nao verifiquei"
+  ],
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-execution-trigger-decoupling-design.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__ORQ41-EXEC-TRIGGER-DECOUPLING__20260727T132200Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "nenhum codigo, board, API, schema, build, teste, deploy ou credencial tocado; nenhuma implementacao",
+    "nao alterei assignee nem postei comentario (freeze vigente); nao sou registrar, nenhum card criado",
+    "NAO reexecutei ORQ-39, ORQ-40 nem qualquer issue preservada"
+  ],
+  "next": "Revisor independente solicitado antes de qualquer implementacao.",
+  "blocker": null
+}

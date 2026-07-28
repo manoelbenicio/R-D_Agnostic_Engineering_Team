@@ -1,0 +1,103 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:10:09Z",
+  "agent": "Kiro",
+  "lane": "ORQ-39",
+  "task_ids": [
+    "ORQ-39-BROWSER-QA-V5-CORRECTION"
+  ],
+  "orq_n": "ORQ-39",
+  "orq_uuid": "c03941bc-3bde-4de1-ab19-1ba93de0ad51",
+  "status": "DONE",
+  "verdict": "DESIGN READY FOR INDEPENDENT REVIEW; EXECUTION BLOCKED",
+  "mode": "READ_ONLY",
+  "supersedes": ".deploy-control/p0/evidence/orq39-browser-qa-v4-amendment-design.md",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq39-browser-qa-v5-correction.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Kiro__ORQ-39__ORQ39-BROWSER-QA-V5-CORRECTION__20260727T161009Z.json"
+  ],
+  "evidence": [
+    {
+      "path": ".deploy-control/p0/evidence/orq39-browser-qa-v5-correction.md",
+      "sha256": "5f2bf39c86fbe62f10d17cd8b9561871b9e3285d4a9c1ad05d95307a74b55add"
+    }
+  ],
+  "six_block_closures": [
+    "Root-aware secret guard runs from github.workspace and covers root/application .env and .env.worktree paths",
+    "PostgreSQL service has bounded pg_isready health options",
+    "Backend and web PIDs have bounded readiness, continuous liveness monitoring, failure propagation and cleanup",
+    "Playwright and pgvector images use immutable sha256 digests",
+    "Node comes from the digest-pinned job container and exact pnpm 10.28.2 is activated with Corepack; setup-node and pnpm/action-setup are absent",
+    "The sole trigger is push to ci/orq39-browser-qa; PR and merge remain prohibited under GTL-69R"
+  ],
+  "files_locked": [
+    ".github/workflows/orq39-browser-qa.yml",
+    "multica-auth-work/e2e/chat-upload-ui.spec.ts",
+    "multica-auth-work/e2e/chat-panel-buttons.spec.ts",
+    "multica-auth-work/e2e/chat-reasoning-level.spec.ts",
+    "multica-auth-work/e2e/squad-model-dropdown.spec.ts",
+    "multica-auth-work/e2e/delete-flows.spec.ts",
+    "multica-auth-work/e2e/board-kanban.spec.ts"
+  ],
+  "orq26_exclusions": [
+    "multica-auth-work/server/internal/handler/file.go",
+    "multica-auth-work/server/internal/handler/file_test.go"
+  ],
+  "documentation_validation": [
+    {
+      "check": "source and blocker audit",
+      "result": "PASS — V4, V4 peer review, V3/review and GTL-69R were reconciled against repository metadata and routes"
+    },
+    {
+      "check": "static closure scan",
+      "result": "PASS — all six corrective constructs, narrowed FILES_LOCKED and independent review request are present"
+    },
+    {
+      "check": "embedded workflow YAML parse",
+      "result": "PASS — trigger is exactly push:ci/orq39-browser-qa; immutable images 2/2; pinned actions 2/2"
+    },
+    {
+      "check": "embedded multiline Bash syntax",
+      "result": "PASS — every multiline run block passed bash -n after substituting GitHub context expressions; no script was executed"
+    },
+    {
+      "check": "authentication fixture path",
+      "result": "PASS — MULTICA_DEV_VERIFICATION_CODE remains unset so the fixture uses verification_code.code; credentialless DEV email tier performs no external delivery"
+    }
+  ],
+  "peer_review_request": {
+    "required": true,
+    "reviewer": "different from the author",
+    "mode": "READ_ONLY",
+    "requested_verdict": "PASS or BLOCK with line citations",
+    "scope": [
+      "all six V4 blockers",
+      "root path semantics",
+      "Postgres health and backend/web PID behavior",
+      "immutable images and actions",
+      "container-safe exact pnpm",
+      "absence of ORQ-26 overlap",
+      "GTL-69R push-only trigger and owner gates",
+      "secret, log and artifact safety",
+      "YAML and GitHub Actions container semantics"
+    ],
+    "execution_gate": "No implementation or execution may begin before written PASS"
+  },
+  "owner_authorization_gates": [
+    "D1: local workflow/spec creation and local commit",
+    "D2: one push to ci/orq39-browser-qa, which automatically triggers the run",
+    "D3: sanitized result collection",
+    "D4: remote ephemeral branch deletion"
+  ],
+  "non_claims": [
+    "No workflow, application code or test file was created or edited",
+    "No Go, pnpm, Playwright, migration, container or workflow was executed",
+    "No branch, commit, push, PR, merge, dispatch or deployment occurred",
+    "No board, issue or remote resource was mutated",
+    "The paused ORQ-41 worktree was not inspected, validated, modified, committed or discarded",
+    "This checkout does not claim execution PASS"
+  ],
+  "summary": "ORQ-39 V5 correction completed as documentation only. It supersedes V4, incorporates all six peer-review corrections, removes ORQ-26 file.go/file_test.go from the lock, preserves the real database verification-code path, aligns triggering with GTL-69R, and formally requests independent review. Execution remains blocked.",
+  "schema": "main-brain-p0-checkin.v1"
+}

@@ -1,0 +1,377 @@
+package main
+
+import (
+	"bufio"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/mail"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/multica-ai/multica/server/internal/handler"
+)
+
+const (
+	expectedDBHost = "postgres"
+	expectedDBPort = uint16(5432)
+	expectedDBName = "multica_transition"
+	expectedDBUser = "multica_transition"
+	expectedEmail  = "dataops.cloud.mbf@gmail.com"
+)
+
+type opError string
+
+func (e opError) Error() string { return string(e) }
+
+type backup struct {
+	UserID          string `json:"user_id"`
+	PreviousEmail   string `json:"previous_email"`
+	CredentialCount int64  `json:"credential_count"`
+}
+
+func clear(b []byte) {
+	for i := range b {
+		b[i] = 0
+	}
+}
+func readNUL(r *bufio.Reader, max int, code opError) ([]byte, error) {
+	out := make([]byte, 0, max)
+	for i := 0; i <= max; i++ {
+		b, err := r.ReadByte()
+		if err != nil {
+			clear(out)
+			return nil, code
+		}
+		if b == 0 {
+			return out, nil
+		}
+		if i == max {
+			clear(out)
+			return nil, code
+		}
+		out = append(out, b)
+	}
+	return nil, code
+}
+func readCredentials(r io.Reader) ([]byte, []byte, error) {
+	br := bufio.NewReader(io.LimitReader(r, 1024))
+	e, err := readNUL(br, 320, "E_IDENTITY_INPUT")
+	if err != nil {
+		return nil, nil, err
+	}
+	p, err := readNUL(br, handler.PasswordMaxBytes, "E_PASSWORD_INPUT")
+	if err != nil {
+		clear(e)
+		return nil, nil, err
+	}
+	if _, err = br.ReadByte(); !errors.Is(err, io.EOF) {
+		clear(e)
+		clear(p)
+		return nil, nil, opError("E_TRAILING_INPUT")
+	}
+	return e, p, nil
+}
+func normalizeEmail(raw []byte) (string, error) {
+	email := strings.ToLower(strings.TrimSpace(string(raw)))
+	parsed, err := mail.ParseAddress(email)
+	if err != nil || parsed.Address != email || email != expectedEmail || strings.ContainsAny(email, "\r\n\x00") {
+		return "", opError("E_IDENTITY_BINDING")
+	}
+	return email, nil
+}
+func pool(ctx context.Context) (*pgxpool.Pool, error) {
+	cfg, err := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return nil, opError("E_DATABASE_CONFIG")
+	}
+	cc := cfg.ConnConfig
+	if cc.Host != expectedDBHost || cc.Port != expectedDBPort || cc.Database != expectedDBName || cc.User != expectedDBUser || cc.TLSConfig != nil {
+		return nil, opError("E_DATABASE_TUPLE")
+	}
+	p, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		return nil, opError("E_DATABASE_CONNECT")
+	}
+	if err = p.Ping(ctx); err != nil {
+		p.Close()
+		return nil, opError("E_DATABASE_PING")
+	}
+	return p, nil
+}
+func rollbackTx(ctx context.Context, tx pgx.Tx) { _ = tx.Rollback(ctx) }
+func beginGuard(ctx context.Context, p *pgxpool.Pool) (pgx.Tx, error) {
+	tx, err := p.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	if err != nil {
+		return nil, opError("E_GUARD_BEGIN")
+	}
+	if _, err = tx.Exec(ctx, `SET LOCAL lock_timeout='5s'; LOCK TABLE agent_task_queue IN SHARE MODE`); err != nil {
+		rollbackTx(ctx, tx)
+		return nil, opError("E_QUEUE_FREEZE")
+	}
+	var n int64
+	if err = tx.QueryRow(ctx, `SELECT count(*) FROM agent_task_queue WHERE status IN ('queued','dispatched','running','waiting_local_directory')`).Scan(&n); err != nil || n != 0 {
+		rollbackTx(ctx, tx)
+		return nil, opError("E_QUEUE_ACTIVE")
+	}
+	return tx, nil
+}
+func verifyFKCatalog(ctx context.Context, tx pgx.Tx) error {
+	var n int64
+	err := tx.QueryRow(ctx, `SELECT count(*) FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid JOIN pg_namespace n ON n.oid=t.relnamespace WHERE c.contype='f' AND array_length(c.conkey,1)=1 AND n.nspname='public' AND c.confrelid='public.user'::regclass`).Scan(&n)
+	if err != nil || n != 16 {
+		return opError("E_FK_CATALOG")
+	}
+	return nil
+}
+func verifyAdoptable(ctx context.Context, tx pgx.Tx) (string, string, error) {
+	var users, creds, members, workspaces, validMembers, conflicts int64
+	if err := tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM "user"),(SELECT count(*) FROM user_password_credential),(SELECT count(*) FROM member),(SELECT count(*) FROM workspace),(SELECT count(*) FROM member m JOIN "user" u ON u.id=m.user_id JOIN workspace w ON w.id=m.workspace_id WHERE m.role IN ('owner','admin')),(SELECT count(*) FROM "user" WHERE lower(email)=lower($1))`, expectedEmail).Scan(&users, &creds, &members, &workspaces, &validMembers, &conflicts); err != nil {
+		return "", "", opError("E_PREDICATE_QUERY")
+	}
+	if users != 1 || creds != 0 || members != 1 || workspaces != 1 || validMembers != 1 || conflicts != 0 {
+		return "", "", opError("E_PREDICATES")
+	}
+	var id, oldEmail string
+	if err := tx.QueryRow(ctx, `SELECT id::text,email FROM "user"`).Scan(&id, &oldEmail); err != nil {
+		return "", "", opError("E_SOLE_USER")
+	}
+	return id, oldEmail, nil
+}
+func writeBackup(path string, b backup) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		return opError("E_BACKUP_CREATE")
+	}
+	encErr := json.NewEncoder(f).Encode(b)
+	syncErr := f.Sync()
+	closeErr := f.Close()
+	if encErr != nil || syncErr != nil || closeErr != nil {
+		_ = os.Remove(path)
+		return opError("E_BACKUP_WRITE")
+	}
+	return nil
+}
+func readBackup(path string) (backup, error) {
+	var b backup
+	st, err := os.Stat(path)
+	if err != nil || st.Mode().Perm() != 0600 {
+		return b, opError("E_BACKUP_MODE")
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return b, opError("E_BACKUP_OPEN")
+	}
+	defer f.Close()
+	if err = json.NewDecoder(io.LimitReader(f, 4096)).Decode(&b); err != nil || b.UserID == "" || b.PreviousEmail == "" || b.CredentialCount != 0 {
+		return backup{}, opError("E_BACKUP_CONTENT")
+	}
+	return b, nil
+}
+func adopt(ctx context.Context, stdin io.Reader) (retErr error) {
+	eb, pb, err := readCredentials(stdin)
+	if err != nil {
+		return err
+	}
+	defer clear(eb)
+	defer clear(pb)
+	email, err := normalizeEmail(eb)
+	if err != nil {
+		return err
+	}
+	password := string(pb)
+	defer func() { password = "" }()
+	if err = handler.ValidatePassword(password); err != nil {
+		return opError("E_PASSWORD_POLICY")
+	}
+	p, err := pool(ctx)
+	if err != nil {
+		return err
+	}
+	defer p.Close()
+	guard, err := beginGuard(ctx, p)
+	if err != nil {
+		return err
+	}
+	guardClosed := false
+	defer func() {
+		if !guardClosed {
+			rollbackTx(ctx, guard)
+		}
+	}()
+	tx, err := p.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+	if err != nil {
+		return opError("E_TX_BEGIN")
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			rollbackTx(ctx, tx)
+		}
+	}()
+	if _, err = tx.Exec(ctx, `SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='40s'; LOCK TABLE "user",user_password_credential,member IN SHARE ROW EXCLUSIVE MODE`); err != nil {
+		return opError("E_TABLE_LOCK")
+	}
+	if err = verifyFKCatalog(ctx, tx); err != nil {
+		return err
+	}
+	id, oldEmail, err := verifyAdoptable(ctx, tx)
+	if err != nil {
+		return err
+	}
+	backupPath := os.Getenv("ORQ17_BACKUP_FILE")
+	if backupPath == "" {
+		return opError("E_BACKUP_PATH")
+	}
+	if err = writeBackup(backupPath, backup{UserID: id, PreviousEmail: oldEmail, CredentialCount: 0}); err != nil {
+		return err
+	}
+	tag, err := tx.Exec(ctx, `UPDATE "user" SET email=$1 WHERE id=$2::uuid AND email=$3`, email, id, oldEmail)
+	if err != nil || tag.RowsAffected() != 1 {
+		return opError("E_EMAIL_UPDATE")
+	}
+	uuid, parseErr := parseUUID(id)
+	if parseErr != nil {
+		return opError("E_SOLE_USER_ID")
+	}
+	if err = handler.NewPostgresPasswordCredentialStore(tx).ProvisionPassword(ctx, uuid, password); err != nil {
+		return opError("E_CREDENTIAL_INSERT")
+	}
+	var u, c, m, match int64
+	if err = tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM "user"),(SELECT count(*) FROM user_password_credential),(SELECT count(*) FROM member),(SELECT count(*) FROM "user" u JOIN user_password_credential c ON c.user_id=u.id WHERE lower(u.email)=lower($1))`, expectedEmail).Scan(&u, &c, &m, &match); err != nil || u != 1 || c != 1 || m != 1 || match != 1 {
+		return opError("E_POST_VERIFY")
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return opError("E_ADOPT_COMMIT")
+	}
+	committed = true
+	if err = guard.Commit(ctx); err != nil {
+		guardClosed = true
+		return opError("E_GUARD_COMMIT_AFTER_ADOPT")
+	}
+	guardClosed = true
+	return nil
+}
+func parseUUID(s string) (pgtype.UUID, error) { var u pgtype.UUID; err := u.Scan(s); return u, err }
+func rollback(ctx context.Context) (retErr error) {
+	b, err := readBackup(os.Getenv("ORQ17_BACKUP_FILE"))
+	if err != nil {
+		return err
+	}
+	p, err := pool(ctx)
+	if err != nil {
+		return err
+	}
+	defer p.Close()
+	guard, err := beginGuard(ctx, p)
+	if err != nil {
+		return err
+	}
+	guardClosed := false
+	defer func() {
+		if !guardClosed {
+			rollbackTx(ctx, guard)
+		}
+	}()
+	tx, err := p.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+	if err != nil {
+		return opError("E_TX_BEGIN")
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			rollbackTx(ctx, tx)
+		}
+	}()
+	if _, err = tx.Exec(ctx, `SET LOCAL lock_timeout='5s'; LOCK TABLE "user",user_password_credential,member IN SHARE ROW EXCLUSIVE MODE`); err != nil {
+		return opError("E_TABLE_LOCK")
+	}
+	var u, c, m int64
+	if err = tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM "user"),(SELECT count(*) FROM user_password_credential),(SELECT count(*) FROM member)`).Scan(&u, &c, &m); err != nil || u != 1 || m != 1 {
+		return opError("E_ROLLBACK_COUNTS")
+	}
+	if c == 1 {
+		tag, e := tx.Exec(ctx, `DELETE FROM user_password_credential WHERE user_id=$1::uuid`, b.UserID)
+		if e != nil || tag.RowsAffected() != 1 {
+			return opError("E_ROLLBACK_CREDENTIAL")
+		}
+	}
+	tag, err := tx.Exec(ctx, `UPDATE "user" SET email=$1 WHERE id=$2::uuid`, b.PreviousEmail, b.UserID)
+	if err != nil || tag.RowsAffected() != 1 {
+		return opError("E_ROLLBACK_EMAIL")
+	}
+	if err = tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM "user"),(SELECT count(*) FROM user_password_credential),(SELECT count(*) FROM member)`).Scan(&u, &c, &m); err != nil || u != 1 || c != 0 || m != 1 {
+		return opError("E_ROLLBACK_VERIFY")
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return opError("E_ROLLBACK_COMMIT")
+	}
+	committed = true
+	if err = guard.Commit(ctx); err != nil {
+		guardClosed = true
+		return opError("E_ROLLBACK_GUARD_COMMIT")
+	}
+	guardClosed = true
+	return nil
+}
+func httpBody(stdin io.Reader, stdout io.Writer) error {
+	e, p, err := readCredentials(stdin)
+	if err != nil {
+		return err
+	}
+	defer clear(e)
+	defer clear(p)
+	email, err := normalizeEmail(e)
+	if err != nil {
+		return err
+	}
+	password := string(p)
+	defer func() { password = "" }()
+	if err = handler.ValidatePassword(password); err != nil {
+		return opError("E_PASSWORD_POLICY")
+	}
+	return json.NewEncoder(stdout).Encode(map[string]string{"email": email, "password": password})
+}
+func realMain(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	if len(args) != 2 {
+		fmt.Fprintln(stderr, "E_MODE")
+		return 1
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
+	defer cancel()
+	var err error
+	switch args[1] {
+	case "adopt":
+		err = adopt(ctx, stdin)
+	case "rollback":
+		err = rollback(ctx)
+	case "http-body":
+		err = httpBody(stdin, stdout)
+	default:
+		err = opError("E_MODE")
+	}
+	if err != nil {
+		var fixed opError
+		if errors.As(err, &fixed) {
+			fmt.Fprintln(stderr, fixed.Error())
+		} else {
+			fmt.Fprintln(stderr, "E_INTERNAL")
+		}
+		return 1
+	}
+	if args[1] == "adopt" {
+		fmt.Fprintln(stdout, "ADOPT=PASS USERS=1 CREDENTIALS=1 MEMBERS=1 UUID=PRESERVED")
+	}
+	if args[1] == "rollback" {
+		fmt.Fprintln(stdout, "ROLLBACK=PASS USERS=1 CREDENTIALS=0 MEMBERS=1 UUID=PRESERVED")
+	}
+	return 0
+}
+func main() { os.Exit(realMain(os.Args, os.Stdin, os.Stdout, os.Stderr)) }

@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T113841Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-30",
+  "task_ids": ["GTL-KANBAN-MONITOR-V2"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v2.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T113841Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v2.md"
+  ],
+  "summary": "Design v2 do Kanban Integrity Monitor concluido. SQLs corrigidas com status 'done', NOT EXISTS ativo, waiting_local_directory e issue_dependency. Ticker background passivo 30s em cmd/server. Zero rerun automatico. Evento kanban:integrity_anomaly + badge UI. Suite de testes Go e arquivos_locked definidos.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

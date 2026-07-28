@@ -1,0 +1,90 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T22:54:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "B",
+  "task_ids": [
+    "P2-GATEWAY-CLIENT"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gw-discovery-p2-gateway-client.md",
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T225200Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__B__P2-GATEWAY-CLIENT__20260726T225400Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "sed -n '178,212p' server/internal/daemon/gateway/client.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - assinatura atual capturada literal: FetchModels(ctx, correlation brain.Correlation) (ModelsDocument, error) na linha 178"
+    },
+    {
+      "command": "grep -n 'defaultRequestTimeout|defaultMaxBodyBytes|MaxRegistryModels|RegistryRefreshFailureBackoff' server/internal/daemon/gateway/*.go",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PASS - client.go:20 30s, client.go:21 2MiB, registry.go:29 1024, registry.go:24 2s"
+    },
+    {
+      "command": "sed -n '265,300p' client.go e sed -n '103,126p' classification.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS - c.do classifica status antes do corpo (client.go:272-274); 401 ErrorAuthentication e 403 ErrorAuthorization em classification.go:104-108"
+    },
+    {
+      "command": "grep -A45 'func buildSnapshot' registry.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - registry.go:222-240 exige registry_version, protocol, streaming, tools, reasoning, structured_output, context_limit>0, account_pool, rotation, affinity, available"
+    },
+    {
+      "command": "ssh ec2-user@100.118.244.61 curl -D - /v1/models com Authorization do secret-file",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "MEDIDO - http=200 bytes=110807, 327 modelos, chunked; headers x-model-catalog-version=model-metadata-v1:static e x-request-id; NAO existe X-OmniRoute-Registry-Version; corpo top-level so object+data, sem registry_version"
+    },
+    {
+      "command": "ssh ec2-user@100.118.244.61 curl /v1/models sem credencial",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "MEDIDO - http=401 AUTH_002 'Authentication required'; 403 NAO observado neste endpoint"
+    },
+    {
+      "command": "python3 -c inspecao do primeiro item do catalogo",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "MEDIDO - keys: id, object, created, owned_by, permission, root, parent, context_length, max_input_tokens, max_output_tokens, capabilities{tool_calling,reasoning,thinking,temperature}; faltam 8 campos exigidos por buildSnapshot"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gw-discovery-p2-gateway-client.md",
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T225200Z.msg",
+    "multica-auth-work/server/internal/daemon/gateway/client.go:20-24, :178-212, :221, :272-274, :400-409",
+    "multica-auth-work/server/internal/daemon/gateway/registry.go:24, :29, :118, :220-260",
+    "multica-auth-work/server/internal/daemon/gateway/classification.go:103-126",
+    "multica-auth-work/server/internal/daemon/gateway/health_models.go:11, :18-42, :51",
+    "multica-auth-work/server/internal/daemon/gateway/errors.go:15-44"
+  ],
+  "reported_to": "KIRO-PRINCIPAL-TL (100.117.245.15, pane wB:p1) via herdr pane run, exit 0 + copia duravel em .deploy-control/inbox-tm/",
+  "summary": "PACOTE 2 p2-gateway-client preparado, nao aplicado. Assinatura atual client.go:178 FetchModels(ctx, correlation) (ModelsDocument, error). Proposta ADITIVA: ModelsCatalog{Document, CatalogVersion, RequestID, FetchedAt, ModelCount} + FetchModelsCatalog, com FetchModels delegando para preservar ModelsFetcher (health_models.go:51) e registry.go:118. Oito validacoes propostas: V1 teto de 20s dentro do orcamento de 40s do daemon; V2 manter bound de 2 MiB (medido 110KB, resposta chunked); V3 Content-Type estrito; V4 aceitar X-OmniRoute-Registry-Version com precedencia e cair para X-Model-Catalog-Version, ausencia dos dois = falha, nunca sintetizar; V5 catalogo vazio com 200 = ErrorProtocol nao-retryable sem fallback estatico nem CLI; V6 teto de contagem MaxRegistryModels; V7 401/403 ja classificados em c.do, propor catalogAuthzBackoff de 60s so para ErrorAuthorization e proibir snapshot expirado e fallback para CLI; V8 AccountPool como rotulo opaco para o daemon nunca aprender identidade de conta. Tres fatos medidos ao vivo mudam o desenho: o header canonico de versao nao existe, o gateway devolve 401 e nao 403 sem credencial, e o /v1/models nao entrega 8 dos 10 campos exigidos por buildSnapshot.",
+  "non_claims": [
+    "Nao editei nenhum arquivo .go; nao rodei go build, go vet ou go test",
+    "Nao substitui binario, nao reiniciei daemon, nao instalei nada, nao reiniciei container",
+    "Nenhum commit, push, git rm, reset, clean ou checkout --",
+    "Nao li valor de segredo: o Authorization foi montado no shell remoto a partir do secret-file e o valor nunca entrou no contexto nem em log",
+    "Nao observei 403 empiricamente: o endpoint devolve 401; a semantica de 403 vem de classification.go:107-108, nao de medicao",
+    "Nao escolhi entre opcao A e B para o gap de schema: e decisao do owner com voto do Codex56-TL",
+    "Nao toquei nos pacotes dos outros agentes; criei apenas o meu arquivo de evidencia e as mensagens"
+  ],
+  "blocker": "Escrever o codigo do PACOTE 2 depende de (1) assinatura do Codex56-TL no split e (2) ruling escrito do owner entre OPCAO A (OmniRoute passa a servir o schema enriquecido) e OPCAO B (projecao explicita com defaults assinados). Sem isso, nenhuma validacao de cliente faz o caminho enriquecido passar, porque o gateway nao entrega protocol, streaming, structured_output, account_pool, rotation, affinity, available nem registry_version. Dono do bloqueio: human owner via KIRO-PRINCIPAL-TL.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL",
+      "reason": "Proposta de assinatura e validacoes do PACOTE 2 pronta para revisao e assinatura do split; inclui recomendacao aditiva (opcao A) e o motivo tecnico para rejeitar defaults inventados no cliente",
+      "file": ".deploy-control/p0/evidence/gw-discovery-p2-gateway-client.md"
+    }
+  ]
+}

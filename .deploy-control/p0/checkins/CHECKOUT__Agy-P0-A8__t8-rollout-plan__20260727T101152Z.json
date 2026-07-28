@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T10:11:52Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "T8-ROLLOUT-PLAN",
+  "status": "DONE",
+  "reported_to": "Codex56#B (w7:p4), Codex56-TL (w5:pC), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/t8-rollout-plan.md"
+  ],
+  "summary": "Plano de Rollout T8 (Backend + Daemon + AGY/Status Patches) elaborado em modo READ-ONLY. Identificadas 3 decisões obrigatórias do owner (STOP-AND-WAIT §0.1: rebuild de binário/imagem D1, restart de daemon/cutover D2, e alteração de código em produção D3). Estratégia de healthcheck e rollback emergencial (usando /tmp/daemon.*.bak e mantendo frontend intocado) detalhada."
+}

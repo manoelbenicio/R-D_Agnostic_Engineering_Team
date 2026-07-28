@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T16:21:58Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-37"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "target_host": "ORQ1 (100.118.244.61)",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Publication of idempotent note ORQ37-RULING-V2 for ORQ-37 while preserving in_progress status and squad Navy_Seals assignee intact",
+  "finding": "Produced gtl-board-orq37-ruling-v2-note.md. Published idempotent human-only note ORQ37-RULING-V2 (content: issuer unknown blocks only origin rotation; custody-private and user/service-scoped umask077 implementation continues; preserve files, no delete; host cutover after review/canary/rollback) in comment table. Preserved in_progress status and squad Navy_Seals assignee intact (GET-back verified 100%). Column counts: blocked=5, done=6, in_progress=6, in_review=6, todo=1. Active task queue count is 0 (zero new product tasks created). Recorded note publication SHA256 2f3a4d72f88fb9cbff89be81e33f4bee7c2897367f83d89a525d3008a07a4ae5.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-board-orq37-ruling-v2-note.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Idempotent note publication operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-board-orq37-ruling-v2-note.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260728T162158Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-BOARD-ORQ37-RULING-V2__20260728T162158Z.json"
+  ],
+  "orq37_ruling_v2_sha256": "2f3a4d72f88fb9cbff89be81e33f4bee7c2897367f83d89a525d3008a07a4ae5",
+  "non_claims": [
+    "gtl ORQ-37 ruling v2 note publication, no assignee change, no status change, no duplicate task creation, no GetSecretValue, no product code edit"
+  ],
+  "blocker": null
+}

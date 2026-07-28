@@ -1,0 +1,27 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T22:45:33Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "GW-DISCOVERY-P7-TESTES"
+  ],
+  "status": "PREPARED_NOT_APPLIED",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Package 7 (p7-testes) - Propose test suite for gateway discovery path without modifying code",
+  "finding": "Designed unit test suite with httptest.Server, fail-closed handling, and unmocked live integration test against OmniRoute gateway. Mocks restricted exclusively to *_test.go.",
+  "action_taken": "Recorded proposed patch in .deploy-control/p0/evidence/gw-discovery-p7-testes.md, sent SSH notification, created inbox msg and check-out JSON. ZERO code edits performed.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gw-discovery-p7-testes.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Kiro-PRINCIPAL-TL__20260726T224533Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GW-DISCOVERY-P7-TESTES__20260726T224533Z.json"
+  ],
+  "non_claims": [
+    "no code edits in multica-auth-work/server, no go compile, no binary replacement, no daemon restart, no commit, no push"
+  ],
+  "blocker": null
+}

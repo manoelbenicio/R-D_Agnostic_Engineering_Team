@@ -1,0 +1,15 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T102046Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "lane": "KANBAN-RECOVERY",
+  "task_ids": ["ORQ-RECOVERY-MATRIX-V2"],
+  "status": "DONE",
+  "files_created": [".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_Codex56B-w7p4__20260727T102046Z.msg"],
+  "files_changed": [".deploy-control/p0/evidence/gap-orq-recovery-matrix.md"],
+  "evidence": [".deploy-control/p0/evidence/gap-orq-recovery-matrix.md"],
+  "summary": "Correcao: runs.tool_use_count era stale. run-messages confirma 57/83/31/45/57/87 tool_use reais. ORQ-13/21=ALTO RISCO. ORQ-12/17/18/23=AMBIGUO. Nenhuma SAFE. Entregue w7:p4.",
+  "reported_to": ["w7:p4"]
+}

@@ -1,0 +1,46 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:44:32Z",
+  "agent": "Codex",
+  "lane": "ORQ-42",
+  "task_ids": ["ORQ-42"],
+  "status": "DONE_BLOCK",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq42-jwt-rotation-runbook-v4-adversarial-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex__ORQ-42-JWT-ROTATION-V4-ADVERSARIAL-PEER-REVIEW__20260727T154432Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "full aws-secrets-manager skill read",
+      "exit_code": 0,
+      "result": "Secret-safe constraints applied; no value API, SMA access or asm-exec used."
+    },
+    {
+      "command": "read-only V4/V3/source/evidence audit",
+      "exit_code": 0,
+      "result": "Reviewed Compose config paths/project/flags, parent-child boundary, temp lifecycle, routes, cookie name, ORQ1 port and ORQ2 re-pair governance."
+    },
+    {
+      "command": "aws secretsmanager describe-secret metadata-only",
+      "exit_code": 254,
+      "result": "AccessDenied for DescribeSecret in sa-east-1; secret-id presence remains unverified. No secret value API was called."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq42-jwt-rotation-runbook-v4-adversarial-peer-review.md",
+    ".deploy-control/p0/evidence/orq42-jwt-rotation-runbook-v4-design.md",
+    ".deploy-control/p0/evidence/orq42-jwt-v3-adversarial-peer-review.md",
+    ".deploy-control/p0/evidence/kanban-runtime-diagnosis-20260727.md",
+    "multica-auth-work/server/cmd/server/router.go",
+    "multica-auth-work/server/internal/auth/cookie.go",
+    "multica-auth-work/server/internal/middleware/auth.go"
+  ],
+  "summary": "BLOCK: V4 still omits/wrongs the effective four ORQ1 Compose paths, lacks a complete child-only forward/rollback script, has insufficient anti-literal/temp gates, targets wrong host port/cookie and omits readiness/exact HTTP checks. DescribeSecret was denied, so secret-id presence is unverified. ORQ2 same-window separate authorization is directionally correct but not execution-ready.",
+  "non_claims": [
+    "No secret value, credential file, container environment or sensitive override was read.",
+    "No asm-exec, Docker command, container action, login, rotation, restart or board mutation was performed.",
+    "No AWS mutation or secret value API was performed."
+  ]
+}

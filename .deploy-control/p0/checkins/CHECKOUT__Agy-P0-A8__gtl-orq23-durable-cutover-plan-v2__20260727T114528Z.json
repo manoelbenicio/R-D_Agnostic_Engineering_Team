@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:45:28Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-ORQ23-DURABLE-CUTOVER-PLAN-V2",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq23-durable-cutover-plan.md"
+  ],
+  "summary": "Plano de Cutover Durável e Rollback ORQ-23 (GTL-11R v2) corrigido em modo READ-ONLY. Atendidas as 9 condições exigidas: alterado pacote target para cmd/multica, aplicadas as flags CGO_ENABLED=0 -trimpath -ldflags='-s -w', estabelecida a reversão estrita por hash SHA256 contra a linha de base do Gate 1 (88ca4f39...), inventariados todos os 6 binários com SHA256 e bytes, adicionada validação de fila vazia pre-cutover, desacoplado healthcheck H1 de H2 live e esclarecidos o estado do slot 142 e o log stale do AGY."
+}

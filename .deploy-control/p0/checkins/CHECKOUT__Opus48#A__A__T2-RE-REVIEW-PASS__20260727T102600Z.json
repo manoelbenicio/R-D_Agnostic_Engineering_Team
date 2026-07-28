@@ -1,0 +1,36 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T10:26:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["T2-RE-REVIEW-POST-FIX"],
+  "status": "DONE_PASS",
+  "verdict": "PASS",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/t2-re-review-PASS-Opus48A-20260727.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__T2-RE-REVIEW-PASS__20260727T102600Z.json"
+  ],
+  "closed_findings": [
+    "F1 FECHADO: runtime_sweeper.go:299 constroi fallbackTaskSvc com Bus e :308 chama ReconcileFailedIssue; grep de HasActiveTaskForIssue e UpdateIssueStatus em runtime_sweeper.go = ZERO, o check-then-act e o UpdateIssueStatus sem guarda foram removidos",
+    "F2 FECHADO: task.go:1888 ReconcileFailedIssue com switch - case err == nil chama broadcastIssueUpdated(updated), case pgx.ErrNoRows no-op silencioso, default so loga. Evento apenas em reset casado e com a issue do RETURNING, nao a leitura previa (task.go:2219-2228)"
+  ],
+  "verified": [
+    "query e gerado sem divergencia: issue.sql @id/@workspace_id e guardas; issue.sql.go:1247-1272 $1/$2 na mesma ordem, RETURNING i.* em 24 colunas iguais a updateIssueStatus, row.Scan coerente",
+    "testes: task_complete_race_test.go:265 cobre 0/0/1 resets e asserta literalmente i.status = 'in_progress', NOT EXISTS e a lista dos 4 status ativos (298-306) mais os 2 args (307-309); :314 exige exatamente 1 EventIssueUpdated com WorkspaceID correto",
+    "CreateRetryTask insere 'queued' (pkg/db/queries/agent.sql), dentro da guarda: retried bool e defesa redundante e o false hardcoded em runtime_sweeper.go:308 e seguro"
+  ],
+  "non_blocking_notes": [
+    "getIssuePrefix usa context.Background() em task.go:2231, perde cancelamento/deadline; funcao pre-existente agora em caminho mais quente",
+    "broadcastIssueUpdated faz s.Bus.Publish sem guarda de nil; NAO e defeito de producao (unicas construcoes fora de teste setam Bus: task.go:127 e runtime_sweeper.go:299), mas o svc do teste na linha 287 tem Bus nil e so nao estoura porque o mock devolve ErrNoRows na 259",
+    "internal/service/autopilot.go:578 ainda consome HasActiveTaskForIssue e nao foi revisado (fora do escopo T2)"
+  ],
+  "reported_to": ["Codex56#B w7:p4 (ORQ2)", "Codex56-TL w5:pC (ORQ2)"],
+  "non_claims": [
+    "somente leitura: nada editado, nenhum deploy, restart, rerun, commit ou push",
+    "go test, go vet e go build NAO executados por mim",
+    "nenhum estado de card alterado"
+  ],
+  "blocker": null
+}

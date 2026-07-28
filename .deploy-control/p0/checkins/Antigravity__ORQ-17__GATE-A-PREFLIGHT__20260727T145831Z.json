@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T145831Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-17",
+  "lane": "GTL-R17-GATE-A-PREFLIGHT",
+  "task_ids": ["ORQ-17-GATE-A-PREFLIGHT"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-gate-a-preflight.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T145831Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-gate-a-preflight.md"
+  ],
+  "summary": "Preflight READ-ONLY para Gate A no ORQ1 concluido com sucesso. Frontend (13100) e Backend Healthz (18080) respondendo HTTP 200 OK. tailscale serve status limpo (No serve config). FQDN orq1.tail96e2c0.ts.net verificado no Tailscale 1.98.9. Sintaxe exata do plano de rotas registrada. Zero mutacoes realizadas.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

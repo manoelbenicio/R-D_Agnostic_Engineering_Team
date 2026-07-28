@@ -1,0 +1,27 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T10:13:31Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "T7-REPLAY-LEDGER-AUDIT"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Evidencia duravel T7 Follow-up: ReplayGateHook & Commit Ledger Audit",
+  "finding": "Recorded full specification for durable Postgres commit_ledger_events, fail-closed invariants, pre/post daemon tool intent recording, 24h TTL, and MaybeRetryFailedTask impact.",
+  "action_taken": "Created .deploy-control/p0/evidence/t7-replay-ledger-audit.md, sent herdr messages to Codex56-TL (w5:pC), Codex56#B (w7:p4), and SSH to KIRO-PRINCIPAL-TL (wB:p1), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/t7-replay-ledger-audit.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T101331Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__T7-REPLAY-LEDGER-AUDIT__20260727T101331Z.json"
+  ],
+  "non_claims": [
+    "read-only audit, no code edit, no deploy, no restart"
+  ],
+  "blocker": null
+}

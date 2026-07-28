@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:29:21Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-2"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Mechanical READ-ONLY storage cleanup manifest for ORQ2",
+  "finding": "Produced machine-readable TSV orq2-storage-cleanup-manifest.tsv and Markdown orq2-storage-cleanup-manifest.md. Recorded current df: / = 93% (3.5G avail), /tmp = 97% (294M avail). Revalidated Group 1 /tmp Go caches older than 4h (~7.23GB) and Group 2 root home caches codex56-go-build, go-build, go-build-i03 (~2.34GB). Verified ec2-user ownership, age > 48h-85h, and lsof NO (zero open files or active processes). Expected post-cleanup utilization: /tmp -> ~2% (7.52GB avail), / -> ~88% (5.84GB avail). Explicitly excluded worktrees, evidence, backups, agent credential homes, sqlcbuild, active ORQ38/41/Kiro caches, journals, product data. Read-only operation: ZERO files deleted, truncated, or pruned. Recorded manifest SHA256 ee854c5022e80ed09be2c91862607e3e1e0ae04685abdbcf0ae5ce6a282ece8e.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq2-storage-cleanup-manifest.tsv, .deploy-control/p0/evidence/orq2-storage-cleanup-manifest.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq2-storage-cleanup-manifest.tsv",
+    ".deploy-control/p0/evidence/orq2-storage-cleanup-manifest.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T162921Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ2-STORAGE-CLEANUP-MANIFEST__20260727T162921Z.json"
+  ],
+  "manifest_sha256": "ee854c5022e80ed09be2c91862607e3e1e0ae04685abdbcf0ae5ce6a282ece8e",
+  "non_claims": [
+    "storage cleanup manifest, no deletion, no truncation, no pruning, no file removal, no board mutation"
+  ],
+  "blocker": null
+}

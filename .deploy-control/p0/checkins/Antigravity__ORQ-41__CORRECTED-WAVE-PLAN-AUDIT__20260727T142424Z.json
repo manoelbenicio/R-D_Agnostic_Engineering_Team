@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T142424Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-41",
+  "lane": "GTL-R41-WAVE-PLAN-AUDIT",
+  "task_ids": ["ORQ-41-CORRECTED-WAVE-PLAN-AUDIT"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-v2-waves-checklist-audit-results.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T142424Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-v2-waves-checklist-audit-results.md"
+  ],
+  "summary": "Auditoria de re-review corrigida para o arquivo exato orq41-implementation-wave-plan.md V2 (SHA256 629163c23f9c63b804a71e59ffb00970273564a93c5dc353ea1d20fba0b8e59c). Veredito corrigido: BLOCK. A Secao V2.2 aloca fixamente as migrations 127 e 128, gerando colisao direta com Z01 (127 Ledger) e ORQ-13 (128 SQLC Split). Os demais 7 itens foram validados com PASS.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

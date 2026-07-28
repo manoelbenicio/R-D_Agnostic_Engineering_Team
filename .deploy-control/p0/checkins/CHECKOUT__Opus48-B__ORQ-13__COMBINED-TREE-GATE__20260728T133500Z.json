@@ -1,0 +1,79 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T13:35:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "P1-ORQ-13-COMBINED-TREE-GATE",
+  "task_ids": ["ORQ-13"],
+  "status": "DONE",
+  "verdict": "BLOCK evidence-only ATENDIDO. PASS mantido.",
+  "eta": "Concluido 13:35Z, dentro do prazo pedido de 15:15Z",
+  "arvore_combinada": {
+    "metodo": "worktree TEMPORARIO privado 0700, --detach em 0cb8aeb, cherry-pick -x na ordem recomendada. SEM merge no alvo, SEM push.",
+    "cherry_picks": {"11ef715": "7d7b692", "67e9a4c": "c5f298b", "b1f08e3": "cfcfb0b", "c0e93a2": "6757249"},
+    "conflitos": "NENHUM em nenhum dos quatro",
+    "head_combinado": "6757249006983c0f1c929f558082b3c9a069f308",
+    "diffstat": "13 files changed, 400 insertions(+), 50 deletions(-) contra 0cb8aeb",
+    "migrations_conferidas_na_combinada": "up 0ea3005da0ee257618062552cf8792f9c2e6ed478dce3ba174bf08692486cac1 e down 74354ae28dee526c7dbc6bc6733471a59c2f3dabfe5a7fe609fe20d747e61113, batendo com RES-ORQ13-001"
+  },
+  "db_efemero": {
+    "container": "orq13-combined-pg id 30db43410b9c303b91261bf259af8cdcfe186da424c2ea5db14dacc39d3f4ef2",
+    "imagem": "pgvector/pgvector@sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0 local sem pull",
+    "binding": "loopback-only 127.0.0.1:47477",
+    "tunel": "SSH privado 127.0.0.1:38807",
+    "database_url": "arquivo 600, senha aleatoria gerada no ORQ1, nunca em argv",
+    "schema": "migrations up ate 127_task_usage_thinking_level, apenas no banco descartavel"
+  },
+  "resultado_json": {
+    "comando": "go test -race -count=1 -json ./internal/handler",
+    "exit": 0,
+    "package_verdict": "pass",
+    "action_counts": {"cont": 16, "output": 2938, "pass": 1347, "pause": 16, "run": 1383, "skip": 37, "start": 1},
+    "fail": 0,
+    "skip": "37, todos top-level, 0 subtestes, os mesmos externos ja documentados",
+    "data_race": 0,
+    "falso_verde_testmain": "'Skipping tests:' = 0, ou seja o pacote RODOU de fato",
+    "log_sha256": "abf8c39f90547d4aa6335b191d042d1de37295ed2e00f09539cd75ae28a4df8d",
+    "sete_testes_relevantes": "TestCreateChatSession_Routing pass, TestCreateWorkspaceUsesRequestedSlug pass, TestCreateWorkspace_DoesNotMarkOnboarded pass, TestThinkingLevelText pass, TestThinkingLevelTextNeverStoresEmptyString pass, TestTaskUsagePayloadDecodesThinkingLevel pass, TestTaskUsagePayloadLegacyDaemonYieldsNull pass",
+    "comparacao_com_a_corrida_por_branch": "a combinada tem pass 1347 contra 1338, nove a mais, coerente com testes que antes nem chegavam a rodar; skip segue 37 e fail e race seguem 0"
+  },
+  "qualidade_estatica": {
+    "gofmt_nos_10_alterados": "vazio, limpo",
+    "build": "go build ./... OK",
+    "vet": "OK em internal/handler, internal/daemon e pkg/db/generated",
+    "achado_honesto": "gofmt -l no MODULO INTEIRO acusa 44 arquivos nao formatados, NENHUM meu. Divida pre-existente, soma-se a D4 e merece cartao."
+  },
+  "lint": {
+    "binario": "v2.12.0 rebaixado da release oficial, sha256sum -c OK contra 6b89d77b6396f81decee882f20473486bda5ef28b160f9a13b08f24848d9003c, o MESMO hash da rodada anterior; reporta 2.12.0 built with go1.26.2 from 7761527a. Dir privado 0700, nunca global, REMOVIDO no teardown.",
+    "caches": "isolados por execucao, para nao repetir a contaminacao que eu mesmo detectei antes",
+    "baseline_0cb8aeb": "119 issues: errcheck 50, ineffassign 1, staticcheck 39, unused 29",
+    "combinada_6757249": "119 issues, mesma quebra",
+    "novas": 0,
+    "resolvidas": 0,
+    "logs_identicos": "byte a byte, sha256 e5e3b46ba3d23a3400ba3a7c155d803598ad5dbe93df7a8d1a0751794fd122d8 nos dois",
+    "exit_1": "nos dois lados, pelas 119 issues PRE-EXISTENTES (D4), nao pelos commits"
+  },
+  "teardown": "worktrees temporarios wt e wt-base removidos via git worktree remove, restando 30 entradas; container removido com grep -c orq13-combined igual a 0; tunel encerrado sem ssh -L residual; senha removida; cache orq13-combined removido INTEIRO incluindo o binario golangci-lint e os 2 caches de lint; docker prune NAO executado. Produto intacto: backend Up 21 hours, frontend Up 34 hours, postgres Up 6 days healthy, omniroute Up 3 days healthy, ORQ1 com 4.3G livres",
+  "governanca": "Nada contornado. Verificado DEPOIS do gate: agent/opus48-b/orq-13-thinking-level em c0e93a2, agent/opus48-b/squad-default-leader em 67e9a4c, e integration/dev-transition-candidate-20260719 em 0cb8aeb, ou seja o alvo NAO foi tocado. Sem merge, push, rebase ou alteracao de branch de terceiro; toda escrita ocorreu dentro dos MEUS dois worktrees temporarios, ambos removidos. ORQ-21, ORQ-12 e as demais preservadas nao foram reexecutadas nem alteradas.",
+  "condicao_dura_remanescente": "Janela de RES-ORQ13-001, migration 127, expira 2026-07-28T15:37:12Z. Fora dela e BLOCK administrativo, nao tecnico. Recomendo RENOVAR o 127, ja que a varredura provou que ninguem mais o reivindicou. EU NAO POSSO renovar nem emitir reserva.",
+  "re_review_request": "Re-review do gate da arvore combinada, por alguem que NAO seja eu. Pontos a atacar: (1) o metodo cherry-pick reproduz fielmente o que um merge produziria, na sua avaliacao; (2) a lacuna do frontend Next.js, nao varrido, com 11ef715 mudando comportamento de produto; (3) se aceita skip=37 externo como divida separada.",
+  "evidence": [
+    ".deploy-control/p0/evidence/orq13-squad-integration-readiness.md (Adendo 1)",
+    "/home/ec2-user/.cache/orq13-combined-evidence/combined-json.log abf8c39f90547d4aa6335b191d042d1de37295ed2e00f09539cd75ae28a4df8d",
+    "/home/ec2-user/.cache/orq13-combined-evidence/lint-combined.log e5e3b46ba3d23a3400ba3a7c155d803598ad5dbe93df7a8d1a0751794fd122d8",
+    "/home/ec2-user/.cache/orq13-combined-evidence/lint-baseline.log e5e3b46ba3d23a3400ba3a7c155d803598ad5dbe93df7a8d1a0751794fd122d8"
+  ],
+  "non_claims": [
+    "SEM merge no alvo, SEM push, SEM rebase, SEM amend, SEM alteracao de branch existente",
+    "Os 4 commits de cherry-pick existiram apenas dentro dos worktrees temporarios e foram DESCARTADOS com eles",
+    "Nenhuma migration em banco de PRODUTO: schema ate 127 apenas no descartavel, removido depois",
+    "NAO autorizo merge e NAO me autoaprovo: escrevi os quatro commits",
+    "NAO afirmo skip=0: foram 37, externos e documentados",
+    "NAO varri o frontend Next.js",
+    "NAO contornei governanca: ORQ-21, ORQ-12 e branches de terceiros intocadas",
+    "NAO rodei docker prune",
+    "Nao instalei nada global: o golangci-lint ficou em dir privado 0700 e foi removido",
+    "Nao li nem usei segredo, token ou credencial"
+  ],
+  "blocker": null
+}

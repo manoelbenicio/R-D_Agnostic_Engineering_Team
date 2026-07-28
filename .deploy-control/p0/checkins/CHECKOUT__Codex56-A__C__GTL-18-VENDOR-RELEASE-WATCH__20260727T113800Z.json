@@ -1,0 +1,70 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:38:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "GTL-18-VENDOR-RELEASE-WATCH"
+  ],
+  "status": "DONE",
+  "mode": "READ_ONLY_SEM_UPGRADE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-official-release-notes-watch.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__GTL-18-VENDOR-RELEASE-WATCH__20260727T113800Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "codex --version; claude --version (ORQ2 e ORQ1)",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "ORQ2 codex-cli 0.145.0 e claude 2.1.215; ORQ1 codex-cli 0.144.6 e claude 2.1.218 — frota DESALINHADA nos dois CLIs"
+    },
+    {
+      "command": "fetch https://developers.openai.com/codex/changelog (oficial OpenAI)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "entradas datadas coletadas: 0.145.0 (2026-07-21), 0.144.6 (07-18), 0.144.5 (07-16), 0.144.4 (07-14), 0.144.3/0.144.2 (07-13), 0.144.1/0.144.0 (07-09), 0.143.0 (07-08); ultima entrada da pagina e app 26.715 (07-23), nao CLI"
+    },
+    {
+      "command": "fetch https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md (repo oficial Anthropic; docs.claude.com redireciona para ele)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "2.1.220 (bug fixes), 2.1.219 (Opus 5 default 1M ctx, sandbox.network.strictAllowlist, DirectoryAdded hook, mcp_server_errors, subagent depth 1->3), 2.1.218 (gateway spend metering, hooks exigem workspace trust, skills context: fork em background, agent name rejeita ':'); CHANGELOG SEM data por entrada"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-official-release-notes-watch.md (matriz completa com link, data quando existe, eixo e classificacao aplicar/agendar/ignorar)",
+    "BLAST RADIUS ALTO: Anthropic 2.1.219 muda o default de nesting de subagente de 1 para 3 (CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1 desliga) — multiplica processos-filho por agente sem mudanca de prompt",
+    "LACUNA DE SEGURANCA no ORQ2 (2.1.215): nao tem as correcoes de 2.1.218 de hooks de frontmatter exigindo workspace trust nem o metering de gateway corrigido para ARNs/model IDs mapeados",
+    "BREAKING candidates em Codex: motor legado de exec-policy removido em 0.143.0 (#32093) com regras migradas em 0.145.0 (#34271); 'Reject forks of paginated threads' (#33109); chave de multi-agente unificada sob 'agents' (#33550)",
+    "GATEWAY/EGRESS: Codex 0.145.0 'Honor managed permission profiles in network proxy resolution' (#34436) e 'Resolve outbound proxy routes explicitly' (#34435); Anthropic 2.1.219 sandbox.network.strictAllowlist; web_search default 'cached' desde 2026-01-28 segue implicito na frota"
+  ],
+  "summary": "GTL-18 entregue como matriz read-only a partir de duas fontes oficiais (changelog OpenAI Codex datado e CHANGELOG do repo oficial anthropics/claude-code) mais as versoes instaladas. Estado medido: ORQ2 codex 0.145.0 + claude 2.1.215; ORQ1 codex 0.144.6 + claude 2.1.218; ultimas oficiais 0.145.0 (2026-07-21) e 2.1.220. A frota esta desalinhada nos DOIS CLIs, o que invalida comparacao entre agentes que deveriam ser equivalentes. Classifiquei por eixo (agentes paralelos, worktrees, permissions, gateways, reasoning, breaking): APLICAR o endurecimento de permissao do Codex 0.145.0 (confirmacao obrigatoria de full access, deteccao reforcada de rm forcado, motivo de rejeicao propagado) e, no Anthropic, sandbox.network.strictAllowlist, mcp_server_errors, forwarding de subagente aninhado, correcao de metering de gateway e a exigencia de workspace trust para hooks de frontmatter; AGENDAR o alinhamento de versao dos dois hosts, a revisao da chave 'agents' do multi-agente V2, a migracao de exec-policy (motor legado removido em 0.143.0), a decisao de web_search, Team Config como mecanismo de padronizacao, o default Opus 5 (custo) e as mudancas que alteram quem decide permissao (classificador de auto mode); IGNORAR Bedrock direto, audio/realtime e ripgrep empacotado. Item de maior blast radius: 2.1.219 sobe o nesting de subagente de 1 para 3 por default, e recomendo fixar CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1 ANTES de qualquer host subir. Risco de breaking em Codex: fork de thread paginada rejeitado e regras de exec-policy migradas. Nenhum upgrade executado.",
+  "non_claims": [
+    "nao instalei, nao atualizei, nao reiniciei e nao alterei configuracao de CLI ou host",
+    "usei apenas as duas fontes oficiais citadas e --version local; sem blog de terceiro, agregador ou memoria do modelo",
+    "o CHANGELOG oficial do Claude Code nao datava as entradas na coleta: nao inventei datas, a unica data que afirmo para ele e a da coleta (2026-07-27); as datas da tabela Codex sao as impressas na pagina oficial",
+    "nao verifiquei se 2.1.220 ja esta publicada no canal de instalacao usado pela frota (constar no CHANGELOG nao e prova de disponibilidade)",
+    "nao avaliei kiro-cli, agy, cline nem opencode: o dispatch limitou a OpenAI e Anthropic",
+    "nao medi impacto de custo real; a precificacao citada e a do texto oficial"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "gate de upgrade: alinhar versoes nos dois hosts na mesma janela, fixar CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1 antes de 2.1.219+, e testar exec-policy e fork de thread antes de subir o ORQ1 para 0.145.0",
+      "file": ".deploy-control/p0/evidence/gtl-official-release-notes-watch.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

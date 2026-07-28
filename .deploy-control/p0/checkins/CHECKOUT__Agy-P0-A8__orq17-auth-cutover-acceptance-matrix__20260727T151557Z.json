@@ -1,0 +1,15 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T15:15:57Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "ORQ17-AUTH-CUTOVER-ACCEPTANCE-MATRIX",
+  "issue_id": "ORQ-17",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/orq17-auth-cutover-acceptance-matrix.md"
+  ],
+  "summary": "Matriz de aceite e lista de verificação independente do cutover de autenticação backend (ORQ-17) concluída em modo READ-ONLY. Estabelecidos 13 critérios estritos de aceite (M-01 a M-13) para a remediação atômica antes da reativação do serviço (Pre-Serve Re-enable), cobrindo owner login zero-plaintext via asm-exec, bypass=false, origens MagicDNS HTTPS, segurança de cookies, proxy loopback confiável, princípio Recreate Not Restart, portões 401/403 anônimos, CSRF, WS/Upload auth, auditoria de logs e protocolo de rollback."
+}

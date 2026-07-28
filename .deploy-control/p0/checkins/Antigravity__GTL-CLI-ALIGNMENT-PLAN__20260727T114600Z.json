@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T114600Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-45",
+  "task_ids": ["GTL-CLI-ALIGNMENT-PLAN"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-cli-version-alignment-plan.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T114600Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-cli-version-alignment-plan.md"
+  ],
+  "summary": "Plano de alinhamento de versoes de CLI da frota concluido. Definidas versoes-alvo (Codex 0.145.0, Claude 2.1.220), trava pre-upgrade CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1, migracao exec-policy, workspace trust, canary no ORQ1, rollback de binario sem branches antigas e gate checklist.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

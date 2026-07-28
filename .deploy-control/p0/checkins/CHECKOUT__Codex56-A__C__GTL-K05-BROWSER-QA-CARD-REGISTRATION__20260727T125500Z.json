@@ -1,0 +1,89 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:55:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "GTL-K05-BROWSER-QA-CARD-REGISTRATION"
+  ],
+  "orq_n": "ORQ-39",
+  "orq_uuid": "c03941bc-3bde-4de1-ab19-1ba93de0ad51",
+  "status": "DONE",
+  "mode": "REGISTRAR_UNICO_UM_CARD",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-k05-browser-qa-card-registration.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__GTL-K05-BROWSER-QA-CARD-REGISTRATION__20260727T125500Z.json"
+  ],
+  "board_mutations": [
+    "POST /api/issues -> 201, exatamente 1 card criado: ORQ-39 / c03941bc-3bde-4de1-ab19-1ba93de0ad51"
+  ],
+  "tests": [
+    {
+      "command": "GET /api/issues (pre-POST) + filtro de titulo browser|playwright|qa|supply",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "TOTAL 28, MAX 38, HITS 0 => nenhuma duplicata de Browser QA antes da criacao"
+    },
+    {
+      "command": "GET /api/agents?workspace_id=...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "Opus48-B = 4069a041-9c68-416a-b0cf-52226c076c6c (UUID exato descoberto; nada inventado)"
+    },
+    {
+      "command": "POST /api/issues?workspace_id=... (uma unica vez)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP=201; id=c03941bc-3bde-4de1-ab19-1ba93de0ad51 identifier=ORQ-39 number=39 status=todo assignee=4069a041 (Opus48-B)"
+    },
+    {
+      "command": "GET /api/issues/<uuid>?workspace_id=... (leitura imediata)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS — mesmo par: id c03941bc..., number 39, identifier ORQ-39, titulo correto, assignee correto"
+    },
+    {
+      "command": "GET /api/issues + Counter de number e identifier",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "TOTAL 29, MAX 39, DUPLICATE numbers {} e DUPLICATE identifiers {} => unicidade provada; filtro browser|playwright|supply = 1 unico card (ORQ-39)"
+    },
+    {
+      "command": "GET /api/issues/<uuid> SEM workspace_id",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "ACHADO — devolve corpo com campos nulos em vez de 404; um verificador que use essa forma concluiria erradamente que o card nao existe (insumo para o ORQ-38)"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-k05-browser-qa-card-registration.md",
+    "card contem invariante NO PRODUCTION DATA, gate de governanca para ativacao do workflow da raiz, pins imutaveis por SHA/digest, stack efemera pgvector+backend+frontend, 7 specs + 6 testes de browser, teto de custo/tempo com abort, cleanup verificado, 6 criterios de aceite, dependencias (ORQ-26 e966922d-..., ruling de CI, fila zero) e estado BLOCK ate peer review V2 PASS",
+    "vinculo com ORQ-26 por referencia na descricao, nao por parent_issue_id, para nao alterar hierarquia sem autorizacao"
+  ],
+  "summary": "Como registrar designado, criei exatamente UM card. Pre-checagem: TOTAL 28, MAX 38 e zero titulo com browser/playwright/qa/supply, logo sem duplicata. Assignee atribuido somente porque o UUID e descobrivel: Opus48-B = 4069a041-9c68-416a-b0cf-52226c076c6c. POST unico retornou HTTP 201 com id c03941bc-3bde-4de1-ab19-1ba93de0ad51, identifier ORQ-39 e number 39; nao previ numero algum. A leitura imediata por UUID confirmou o mesmo par (ORQ-39 / 39) com titulo e assignee corretos. Unicidade provada no workspace: TOTAL 29, MAX 39, zero number duplicado, zero identifier duplicado, e apenas 1 card casando browser/playwright/supply. ACHADO relevante para o ORQ-38: GET /api/issues/<uuid> SEM workspace_id devolve corpo com campos nulos em vez de 404, ou seja, um verificador que use essa forma conclui erradamente que o card nao existe — este e exatamente o tipo de leitura capaz de gerar relato de identidade divergente; nao retentei o POST por causa disso, apenas repeti a leitura na forma correta. Card nasce todo/high e BLOCK ate o peer review V2 PASS, com invariante de nenhum dado de producao, gate de governanca para ativar o workflow da raiz, pins imutaveis, stack efemera, 7 specs + 6 testes de browser, teto de custo/tempo, cleanup, 6 aceites, dependencias e rollback. Vinculo a ORQ-26 por referencia na descricao. Card de CLI NAO criado; ORQ-31 e ORQ-38 nao tocados; nenhuma evidencia anexada a card ainda.",
+  "non_claims": [
+    "um unico POST, zero retry, nenhum outro card criado; card de CLI nao criado",
+    "ORQ-31 e ORQ-38 nao tocados; nenhum card preexistente teve status, descricao ou assignee alterados",
+    "nenhuma evidencia anexada a card (proibido por enquanto pelo K05); nenhum arquivo de repo editado",
+    "nao previ ORQ-N: o numero veio do 201 e foi reconfirmado por leitura por UUID",
+    "nao afirmo que o pipeline exista ou passe: o card nasce todo e BLOCK ate o peer review V2 PASS"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "ORQ-39 registrado e verificado; pendente ainda o card unico de CLI alignment (GTL-71/GTL-74) e os 4 anexos PUT do K03, ambos aguardando autorizacao. Recomendo anexar ao ORQ-38 o achado de que GET por UUID sem workspace_id devolve campos nulos em vez de 404",
+      "file": ".deploy-control/p0/evidence/gtl-k05-browser-qa-card-registration.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

@@ -2,7 +2,13 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+} from "@testing-library/react";
 import type { Agent, MemberWithUser, RuntimeDevice } from "@multica/core/types";
 import { I18nProvider } from "@multica/core/i18n/react";
 import { WorkspaceSlugProvider } from "@multica/core/paths";
@@ -29,6 +35,20 @@ vi.mock("@multica/core/hooks", () => ({
 // stand-in here, so swap it out.
 vi.mock("./model-dropdown", () => ({
   ModelDropdown: () => null,
+}));
+
+vi.mock("./create-thinking-field", () => ({
+  CreateThinkingField: ({
+    value,
+    onChange,
+  }: {
+    value: string;
+    onChange: (next: string) => void;
+  }) => (
+    <button type="button" onClick={() => onChange("high")}>
+      Reasoning {value || "unset"}
+    </button>
+  ),
 }));
 
 // Provider logos don't matter for these assertions but they pull in SVGs.
@@ -225,6 +245,30 @@ describe("CreateAgentDialog runtime visibility gate", () => {
     // first in the input list.
     expect(screen.queryByText("Others Private", { selector: "span.truncate" })).toBeNull();
     expect(screen.getByText("My Runtime", { selector: "span.truncate" })).toBeInTheDocument();
+  });
+
+  it("persists the selected reasoning token in the create payload", async () => {
+    const runtime = makeRuntime({
+      id: "rt-codex",
+      name: "Codex Runtime",
+      provider: "codex",
+    });
+    const { onCreate } = renderDialog([runtime]);
+
+    fireEvent.change(screen.getByPlaceholderText("e.g. Deep Research Agent"), {
+      target: { value: "Reasoning Agent" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Reasoning unset" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => {
+      expect(onCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          runtime_id: "rt-codex",
+          thinking_level: "high",
+        }),
+      );
+    });
   });
 
   it("in duplicate mode, does not pre-fill the template's runtime when it's now locked", async () => {

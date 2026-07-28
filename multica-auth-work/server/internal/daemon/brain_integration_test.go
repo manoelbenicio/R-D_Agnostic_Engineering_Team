@@ -945,3 +945,10 @@ func TestBuildLaunchOpenAICompatibleRejectsNVIDIAOwnedRoute(t *testing.T) {
 		t.Fatal("cline carrier written for a rejected NVIDIA route")
 	}
 }
+
+func TestAgentBrainValidateThinkingAllowsNativeExecution(t *testing.T) {
+	runtime := &agentBrainRuntime{}
+	if err := runtime.validateThinking(nil, "xhigh"); err != nil {
+		t.Fatalf("native execution must bypass gateway thinking validation: %v", err)
+	}
+}

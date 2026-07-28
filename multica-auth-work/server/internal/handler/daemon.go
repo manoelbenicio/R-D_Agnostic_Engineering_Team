@@ -2059,6 +2059,22 @@ type TaskUsagePayload struct {
 	OutputTokens     int64  `json:"output_tokens"`
 	CacheReadTokens  int64  `json:"cache_read_tokens"`
 	CacheWriteTokens int64  `json:"cache_write_tokens"`
+	// ThinkingLevel is optional: a daemon older than ORQ-13 omits it. Empty
+	// persists as NULL, which reads as "tier not declared" — deliberately not
+	// the base tier, so an unpriced reasoning tier surfaces as a gap instead
+	// of being silently charged at the base rate.
+	ThinkingLevel string `json:"thinking_level"`
+}
+
+// thinkingLevelText maps a reported reasoning tier onto a nullable column.
+// A blank or whitespace-only value becomes SQL NULL rather than an empty
+// string: NULL reads as "the reporting daemon declared no tier", so a pricing
+// lookup can treat it as a gap instead of charging the model's base rate.
+// Whitespace is trimmed so a stray " high" cannot create a second, distinct
+// tier value.
+func thinkingLevelText(level string) pgtype.Text {
+	trimmed := strings.TrimSpace(level)
+	return pgtype.Text{String: trimmed, Valid: trimmed != ""}
 }
 
 func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
@@ -2098,6 +2114,11 @@ func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
 			}
 			provider = runtimeProvider
 		}
+		// An absent or blank tier is stored as SQL NULL, never as an empty
+		// string: NULL means "the reporting daemon did not declare a tier",
+		// which a pricing lookup must treat as a gap rather than as the
+		// model's base tier.
+		thinkingLevel := strings.TrimSpace(u.ThinkingLevel)
 		if err := h.Queries.UpsertTaskUsage(r.Context(), db.UpsertTaskUsageParams{
 			TaskID:           parseUUID(taskID),
 			Provider:         provider,
@@ -2106,6 +2127,7 @@ func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
 			OutputTokens:     u.OutputTokens,
 			CacheReadTokens:  u.CacheReadTokens,
 			CacheWriteTokens: u.CacheWriteTokens,
+			ThinkingLevel:    thinkingLevelText(thinkingLevel),
 		}); err != nil {
 			slog.Warn("upsert task usage failed", "task_id", taskID, "model", u.Model, "error", err)
 			continue

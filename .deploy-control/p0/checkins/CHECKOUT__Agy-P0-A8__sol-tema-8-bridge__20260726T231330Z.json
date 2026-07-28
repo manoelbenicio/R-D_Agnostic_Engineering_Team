@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-26T23:13:30Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "SOL-TEMA-8-BRIDGE",
+  "status": "DONE",
+  "reported_to": "Kiro-PRINCIPAL-TL",
+  "evidence": [
+    ".deploy-control/p0/evidence/sol-tema-8-bridge.md"
+  ],
+  "summary": "Solução do Tema 8 alinhada 100% com os 8 Fatos Estabelecidos. Mapeamento de raízes por provider (agy->slot/home, kiro->slot/xdg-data, codex->slot/codex, cline->slot/cline) estruturado para corrigir a regressão em daemon.go:3448 (commit 31d50b9). Filtro para kiro restrito aos 5 slots que possuem credenciais (139, 140, 142, 143, 149)."
+}

@@ -1,0 +1,66 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T16:28:45Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "ORQ-37",
+  "task_ids": [
+    "ORQ-37"
+  ],
+  "status": "DONE_BLOCK",
+  "mode": "SANDBOX_READ_ONLY_INDEPENDENT_REVIEW",
+  "reviewed_commit": "90b56a55b87826e70706914737ecd3d0d44602d7",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq37-umask-hardening-90b56a5-independent-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-37-I3-90B56A5-INDEPENDENT-REVIEW__20260728T162845Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "git scope/diff check",
+      "exit_code": 0,
+      "result": "Exactly 3 code-only files; owner worktree clean; git show --check PASS"
+    },
+    {
+      "command": "ShellCheck 0.11.0 and bash -n",
+      "exit_code": 0,
+      "result": "PASS, zero findings"
+    },
+    {
+      "command": "author sandbox suite",
+      "exit_code": 0,
+      "result": "25 pass, 0 fail"
+    },
+    {
+      "command": "independent hostile-path sandbox matrix",
+      "exit_code": 1,
+      "result": "Root symlink followed; unit traversal escaped root; external TMPDIR created; predictable temp symlink overwrote sentinel and was installed; unmanaged rollback target deleted; relative root and spaced unit accepted; missing root value returned undocumented code 1"
+    },
+    {
+      "command": "task-specific sandbox teardown",
+      "exit_code": 0,
+      "result": "Private /tmp/orq37-adversarial.MMIpGp fixture tree removed after trash was unavailable; no live/user-home path touched"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq37-umask-hardening-90b56a5-independent-review.md",
+    "git:90b56a55b87826e70706914737ecd3d0d44602d7:scripts/ops/umask-hardening/install-umask-hardening.sh",
+    "git:90b56a55b87826e70706914737ecd3d0d44602d7:scripts/ops/umask-hardening/test-umask-hardening.sh",
+    "git:90b56a55b87826e70706914737ecd3d0d44602d7:scripts/ops/umask-hardening/README.md"
+  ],
+  "summary": "BLOCK. Positive 25/25 sandbox gates pass, and the user-scoped design is directionally correct, but hostile roots/unit/tmpdir values escape containment, predictable temporary paths permit symlink overwrite, and rollback deletes unmanaged drop-ins.",
+  "blockers": [
+    "Canonical absolute non-symlink root and contained TMPDIR validation.",
+    "Strict systemd user-unit basename validation.",
+    "Unpredictable non-symlink atomic temporary files.",
+    "Managed ownership/content proof before overwrite or rollback removal.",
+    "Expanded adversarial option/path/systemd syntax tests."
+  ],
+  "non_claims": [
+    "No live home, SSH, root, AWS, secret, service, reload, restart, cutover, board, source edit or commit mutation was performed.",
+    "No credential content or secret value was read.",
+    "The private sandbox was the only test mutation and was removed after the gate."
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

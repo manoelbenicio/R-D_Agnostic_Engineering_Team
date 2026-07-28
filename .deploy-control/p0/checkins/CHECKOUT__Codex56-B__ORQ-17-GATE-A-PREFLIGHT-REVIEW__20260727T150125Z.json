@@ -1,0 +1,26 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:01:25Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "ORQ-17",
+  "task_ids": ["ORQ-17"],
+  "status": "DONE_PASS_PREFLIGHT",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-gate-a-preflight-independent-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-17-GATE-A-PREFLIGHT-REVIEW__20260727T150125Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "read-only evidence line audit", "exit_code": 0, "result": "Checked Tailscale 1.98.9, --set-path, route pairs, exact routes, status/reset and Funnel absence."},
+    {"command": "official Tailscale CLI documentation review", "exit_code": 0, "result": "Confirmed Serve grammar, path flag, HTTPS certificate behavior, status JSON and reset semantics."}
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-gate-a-preflight.md",
+    ".deploy-control/p0/evidence/gtl-orq17-gate-a-preflight-independent-review.md"
+  ],
+  "reported_to": ["GENERAL-TECH-LEAD Codex56-TL (w5:pC)"],
+  "summary": "PASS for preflight syntax/readiness only; no serve/cert/ACL/restart executed and Funnel remains uninvoked. Live forwarding/certificate/browser behavior remains unproven until authorized smoke.",
+  "non_claims": ["No operational Tailscale command, ACL mutation, certificate request, restart or live route test was executed."]
+}

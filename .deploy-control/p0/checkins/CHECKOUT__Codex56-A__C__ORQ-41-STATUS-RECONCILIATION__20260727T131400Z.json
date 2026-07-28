@@ -1,0 +1,79 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:14:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-41-STATUS-RECONCILIATION"
+  ],
+  "orq_n": "ORQ-41",
+  "orq_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "status": "DONE",
+  "mode": "MUTACAO_MINIMA_AUTORIZADA",
+  "files_changed": [
+    ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md (secao de reconciliacao, arquivo proprio)"
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-41-STATUS-RECONCILIATION__20260727T131400Z.json"
+  ],
+  "board_mutations": [
+    "PUT /api/issues/c03941bc-3bde-4de1-ab19-1ba93de0ad51?workspace_id=... -> HTTP 200, body {\"status\":\"blocked\"} (campo unico)"
+  ],
+  "tests": [
+    {
+      "command": "leitura de handler/issue.go:2555-2564 e do dono das linhas ~3035/3050",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CONFIRMADO — enqueue por mudanca de status exige statusChanged && !assigneeChanged && prevIssue.Status=='backlog' && agente assignee/squad ready; ORQ-39 estava in_progress e SEM assignee, logo o gate nao abre. As linhas ~3035/3050 pertencem a BatchUpdateIssues, nao ao PUT individual"
+    },
+    {
+      "command": "GET pre-estado do ORQ-39 com workspace_id",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "status=in_progress assignee=None priority=high desc_len=2182 title_len=55 project=None"
+    },
+    {
+      "command": "PUT /api/issues/<ORQ-39>?workspace_id=... com {\"status\":\"blocked\"}",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP 200"
+    },
+    {
+      "command": "GET-back do ORQ-39 com workspace_id",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "PASS — status=blocked, assignee_type=None, assignee_id=None, priority=high, desc_len=2182, title_len=55, project=None (todos os campos nao enviados permanecem identicos)"
+    },
+    {
+      "command": "psql: contagem ativa por issue e global; status do ORQ-40 (13:13:56Z)",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "ORQ39_ACTIVE=0 · GLOBAL_ACTIVE=0 · ORQ-40 = blocked e unassigned=t (nao tocado)"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "summary": "Reconciliacao de status concluida com uma unica mutacao de campo unico. Antes de mutar, verifiquei no handler que um PUT contendo somente status NAO enfileira: handler/issue.go:2555-2564 exige statusChanged && !assigneeChanged && prevIssue.Status=='backlog' e um assignee/squad ready, e o ORQ-39 estava em in_progress e SEM assignee, portanto o gate nao abre; confirmei tambem que o enqueue das linhas ~3035/3050 pertence ao BatchUpdateIssues e nao ao PUT individual. Pre-estado do ORQ-39: in_progress, sem assignee, priority high, desc_len 2182, title_len 55, project None. PUT com body {\"status\":\"blocked\"} retornou HTTP 200 e o GET-back com workspace_id mostra status=blocked, assignee_type e assignee_id nulos, e priority, description, title e project inalterados. Verificacao final as 13:13:56Z: ORQ39_ACTIVE=0, GLOBAL_ACTIVE=0 e ORQ-40 segue blocked e unassigned, intocado neste passo. Os dois cards do incidente ficam agora blocked e sem assignee, com a evidencia das tasks preservada (uma cancelled, uma completed, 267 mensagens no total). Nenhum comentario, atribuicao, rerun, escrita SQL direta, edicao de codigo, deploy ou restart.",
+  "non_claims": [
+    "enviei exclusivamente o campo status; title, description, priority, assignee e project nao foram enviados e permanecem identicos por medicao",
+    "nao toquei o ORQ-40 neste passo (permanece blocked e unassigned)",
+    "nao revertí nem apaguei mensagens, historico de task ou evidencia do incidente",
+    "nenhum comentario postado, nenhuma atribuicao, nenhum rerun, nenhuma escrita SQL direta, nenhum deploy ou restart",
+    "nao afirmo que os efeitos colaterais das duas execucoes ja incorridas sejam nulos: seguem desconhecidos deste host"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "incidente contido e reconciliado: ORQ-39 e ORQ-40 blocked e sem assignee, fila global zero. Resta o defeito de fundo rastreado pelo ORQ-41 (assignee e comentario como gatilhos de execucao) e a decisao sobre prioridade da correcao",
+      "file": ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

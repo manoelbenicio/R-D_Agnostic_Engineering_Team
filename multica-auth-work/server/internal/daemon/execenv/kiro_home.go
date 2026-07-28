@@ -47,6 +47,11 @@ func prepareKiroHome(home string, opts KiroHomeOptions, logger *slog.Logger) err
 
 	src := filepath.Join(opts.AccountHome, kiroCredentialRelPath)
 	dst := filepath.Join(home, kiroCredentialRelPath)
+	if info, err := os.Lstat(src); err != nil {
+		return fmt.Errorf("required per-account kiro credential is unavailable: %w", err)
+	} else if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+		return fmt.Errorf("required per-account kiro credential must be a regular physical file")
+	}
 	if err := syncCredentialFile(src, dst); err != nil {
 		return fmt.Errorf("seed per-account kiro data.sqlite3: %w", err)
 	}
@@ -55,13 +60,13 @@ func prepareKiroHome(home string, opts KiroHomeOptions, logger *slog.Logger) err
 }
 
 func syncCredentialFile(src, dst string) error {
-	srcInfo, srcErr := os.Stat(src)
+	srcInfo, srcErr := os.Lstat(src)
 	srcMissing := os.IsNotExist(srcErr)
 	if srcErr != nil && !srcMissing {
-		return fmt.Errorf("stat src %s: %w", src, srcErr)
+		return fmt.Errorf("lstat src %s: %w", src, srcErr)
 	}
-	if !srcMissing && !srcInfo.Mode().IsRegular() {
-		return fmt.Errorf("src %s is not a regular file", src)
+	if !srcMissing && (srcInfo.Mode()&os.ModeSymlink != 0 || !srcInfo.Mode().IsRegular()) {
+		return fmt.Errorf("src %s is not a physical regular file", src)
 	}
 
 	if _, err := os.Lstat(dst); err == nil {
@@ -81,18 +86,37 @@ func copyCredentialFile(src, dst string, srcInfo os.FileInfo) error {
 		return fmt.Errorf("create dst parent %s: %w", filepath.Dir(dst), err)
 	}
 
-	in, err := os.Open(src)
+	in, err := openCredentialCopySource(src)
 	if err != nil {
 		return fmt.Errorf("open %s: %w", src, err)
 	}
 	defer in.Close()
+	openedInfo, err := in.Stat()
+	if err != nil {
+		return fmt.Errorf("fstat %s: %w", src, err)
+	}
+	if !openedInfo.Mode().IsRegular() {
+		return fmt.Errorf("src %s is not a regular file", src)
+	}
+	if !os.SameFile(srcInfo, openedInfo) {
+		return fmt.Errorf("src %s changed during credential copy", src)
+	}
 
-	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, srcInfo.Mode().Perm())
+	// Credentials are private from the first byte written. Never inherit a
+	// broader source mode: a copy/close failure must not leave a partial
+	// group/world-readable token behind.
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		return fmt.Errorf("create %s: %w", dst, err)
 	}
+	success := false
+	defer func() {
+		if !success {
+			_ = out.Close()
+			_ = os.Remove(dst)
+		}
+	}()
 	if _, err := io.Copy(out, in); err != nil {
-		out.Close()
 		return fmt.Errorf("copy %s to %s: %w", src, dst, err)
 	}
 	if err := out.Close(); err != nil {
@@ -101,6 +125,7 @@ func copyCredentialFile(src, dst string, srcInfo os.FileInfo) error {
 	if err := os.Chtimes(dst, srcInfo.ModTime(), srcInfo.ModTime()); err != nil {
 		return fmt.Errorf("restore mtime %s: %w", dst, err)
 	}
+	success = true
 	return nil
 }
 

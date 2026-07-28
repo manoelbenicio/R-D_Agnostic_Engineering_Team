@@ -1,0 +1,88 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:48:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "GTL-17",
+  "task_ids": [
+    "GTL-17-USAGE-SCHEMA-OBSERVABILITY"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-usage-schema-observability.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__GTL-17__GTL-17-USAGE-SCHEMA-OBSERVABILITY__20260727T114800Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "grep -n 'handleUsageUpdate|usage_update' pkg/agent/hermes.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CAMINHO 1 - dispatch em hermes.go:797-798 'case \"usage_update\": c.handleUsageUpdate(updateData)'; handler em :1190-1201 com struct camelCase; snapshot cumulativo por maximo em :1205-1213"
+    },
+    {
+      "command": "read pkg/agent/hermes.go:720-761",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CAMINHO 2 - gatilho em :725-727 'if pr.method == \"session/prompt\" { c.extractPromptResult(raw[\"result\"]) }'; extrator :732-743 com schema DIFERENTE (thoughtTokens e usage como ponteiro); acumulo por soma += em :380-385"
+    },
+    {
+      "command": "read pkg/agent/hermes.go:788-801",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "CAMINHO 2b - ':800-801 case \"turn_end\": c.extractPromptResult(updateData)'; o mesmo extrator tem duas origens, logo o rotulo da sonda precisa distinguir"
+    },
+    {
+      "command": "read pkg/agent/hermes.go:418-435",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "GATE - :421-432 so cria usageMap quando InputTokens, OutputTokens ou CacheReadTokens for maior que zero; e a origem do zero silencioso"
+    },
+    {
+      "command": "read pkg/agent/codex.go:1855-1890",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CONTROLE - codex.go:1863-1874 tenta usage/token_usage/tokens; :1882-1887 le campo por multiplos aliases. Codex e tolerante por design e e o unico dos tres com linhas em task_usage"
+    },
+    {
+      "command": "grep os.Getenv em pkg/agent/*.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PRECEDENTE DE FLAG - as unicas env vars lidas no pacote sao CLAUDE_FAKE_MODE e CODEX_HOME, o que sustenta MULTICA_USAGE_SCHEMA_PROBE como env var e nao config de banco"
+    },
+    {
+      "command": "read pkg/agent/hermes.go:455-479 e grep 'type Config struct' pkg/agent/agent.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "LOGGER - hermesClient NAO tem campo de logger (struct :455-479), mas agent.Config tem Logger *slog.Logger (agent.go:134,143) e o client carrega cfg Config, logo usar c.cfg.Logger com guarda de nil. Struct codexClient nao verificada"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-usage-schema-observability.md",
+    ".deploy-control/p0/evidence/gtl-cost-implementation-audit.md (base GTL-03)",
+    ".deploy-control/p0/evidence/T3-runtime-health-audit.md (pre-condicao do experimento AGY)",
+    "multica-auth-work/server/pkg/agent/hermes.go:380-385, :418-432, :455-479, :720-761, :788-801, :1190-1215",
+    "multica-auth-work/server/pkg/agent/codex.go:1863-1874, :1882-1887",
+    "multica-auth-work/server/pkg/agent/agent.go:134, :143"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run no ORQ2, exit 0",
+  "summary": "Desenho read-only da instrumentacao minima para observar apenas nome e tipo das chaves de usage. Tracei os dois caminhos Hermes com schemas declarados diferentes: caminho 1, notificacao usage_update (hermes.go:797-798 -> :1190-1201), snapshot cumulativo por maximo; caminho 2, result de session/prompt (:725-727 -> :732-743), acumulo por soma em :380-385, com thoughtTokens e usage como ponteiro; e caminho 2b, turn_end reaproveitando o mesmo extrator em :800-801. Quatro sondas de uma linha em pontos exatos: hermes.go:1199, hermes.go:742, hermes.go:426 e codex.go:1872, sendo o Codex o grupo de controle por ser o unico dos tres com linhas em task_usage. Redaction por construcao: jsonKind classifica pelo primeiro byte e descarta o valor, profundidade fixa em 2 niveis, so o subobjeto usage e passado, nomes truncados e nomes hex redigidos. Flag MULTICA_USAGE_SCHEMA_PROBE default OFF em var de pacote, com precedente de CLAUDE_FAKE_MODE e CODEX_HOME. Cardinalidade resolvida com log e sync.Once por caminho em vez de metrica com label aberto. Protocolo de prova em quatro passos, com a regra de nenhum patch de parser antes do passo 4, e a pre-condicao critica de rodar AGY em slot cuja preparacao conclua, porque o T3 mediu falha anterior a usage. Dez testes unitarios, incluindo o negativo com canario provando que nenhum valor vaza. Impacto declarado: hermes.go e codex.go vivem no binario do daemon systemd do ORQ2, logo exigem rebuild e restart da unit com fila vazia, sem afetar o backend Docker do ORQ1.",
+  "non_claims": [
+    "READ-ONLY: nao editei codigo, nao criei o arquivo da sonda, nao compilei, nao rodei build, teste, deploy, restart ou rerun",
+    "Nao executei a sonda: nao sei qual formato AGY e Kiro enviam. O documento desenha o experimento, nao entrega o resultado",
+    "Nao verifiquei a struct codexClient quanto a logger; assumi por simetria e marquei como a confirmar",
+    "Nao confirmei quais slots AGY concluem a preparacao hoje, o que e pre-condicao do passo 2 do experimento",
+    "Nao propus metrica de Prometheus com label de nome de chave: seria explosao de cardinalidade",
+    "Nao toquei nas 9 issues preservadas (ORQ-12, 13, 15, 16, 17, 18, 21, 22, 23) e nao disparei rerun",
+    "Os arquivos de codigo modificados no repo nao sao meus: pertencem ao escritor unico"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (GENERAL-TECH-LEAD)",
+      "reason": "A sonda exige rebuild do daemon e restart da unit, o que precisa de gate. Sequencia obrigatoria: validar no Codex primeiro, depois AGY em slot que conclua a preparacao, depois Kiro, e so entao escrever o parser. Nenhum patch de parser antes disso.",
+      "file": ".deploy-control/p0/evidence/gtl-usage-schema-observability.md"
+    }
+  ]
+}

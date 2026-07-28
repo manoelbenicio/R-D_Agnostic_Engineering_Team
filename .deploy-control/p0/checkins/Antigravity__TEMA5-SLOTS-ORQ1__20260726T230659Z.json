@@ -1,0 +1,13 @@
+{
+  "event": "checkout",
+  "timestamp_utc": "20260726T230659Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p1",
+  "lane": "E",
+  "task_ids": ["TEMA5-SLOTS-ORQ1"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/sol-tema5-slots-orq1.md", ".deploy-control/p0/checkins/Antigravity__TEMA5-SLOTS-ORQ1__20260726T230659Z.json"],
+  "evidence": ".deploy-control/p0/evidence/sol-tema5-slots-orq1.md",
+  "reported_to": "KIRO-PRINCIPAL-TL"
+}

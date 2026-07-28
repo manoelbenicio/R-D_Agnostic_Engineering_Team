@@ -1,0 +1,83 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T13:15:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "P1-ORQ-13-INTEGRATION-READINESS",
+  "task_ids": ["ORQ-13"],
+  "status": "DONE",
+  "mode": "READ-ONLY",
+  "verdict": "PASS para integracao, sem BLOCK tecnico, condicionado a janela da reserva",
+  "aviso_de_papel": "Eu escrevi os quatro commits. Esta reconciliacao NAO e revisao independente e NAO autoriza merge.",
+  "estado_verificado_agora": {
+    "alvo": "integration/dev-transition-candidate-20260719 esta em 0cb8aeb, identico a base dos quatro commits, ZERO drift",
+    "orq13": "agent/opus48-b/orq-13-thinking-level em c0e93a2 sobre b1f08e3, arvore limpa",
+    "squad": "agent/opus48-b/squad-default-leader em 67e9a4c sobre 11ef715, arvore limpa",
+    "merge_base_comum": "0cb8aebb5aff nas duas",
+    "sobreposicao_entre_as_duas": "NENHUMA",
+    "merge_tree": "LIMPO para as duas contra o alvo",
+    "stash_salvaguarda": "ORQ13-SAFEGUARD-V31 presente"
+  },
+  "varredura_de_colisao": {
+    "migration_127": "EXCLUSIVA minha. Varri todas as branches agent/* e ci/*: a unica que adiciona 127_* e a do ORQ-13. Sem colisao.",
+    "sobreposicao_com_outras_lanes": "ZERO com p1-reasoning-thinking-gateway, p0-agent-name-unique, orq38-get-contract, orq43-mdt-enablement, orq42-secret-tools-clean, ci/orq26-db-gate e orq41-w4-autopilot",
+    "achado_relevante": "agent/codex56-a/p1-reasoning-thinking-gateway e COMPLEMENTAR, nao duplicada, e era a checagem que mais importava porque o nome sugere duplicidade. Ela mexe em internal/daemon/brain_integration.go e corrige a ADMISSAO de thinking_level, pois antes qualquer valor persistido nao-vazio era rejeitado e so NULL era despachavel. A minha PERSISTE o campo para custo. Arquivos disjuntos e minha lane nao toca brain_integration.go. Consequencia: o thinking_level fim-a-fim precisa das DUAS lanes."
+  },
+  "ordem_de_integracao": {
+    "sequencia": ["11ef715", "67e9a4c", "b1f08e3", "c0e93a2"],
+    "por_que_squad_primeiro": "O alvo 0cb8aeb esta VERMELHO hoje, com 3 FAIL em internal/handler, e a branch do ORQ-13 nao conserta isso: medi que c0e93a2 ainda apresenta os 3 FAIL pre-existentes. Integrar ORQ-13 primeiro deixaria a integracao vermelha e tornaria qualquer falha seguinte ambigua. Com squad primeiro, o pacote fica VERDE antes de entrar codigo novo e qualquer regressao passa a ter culpado obvio.",
+    "restricoes_rigidas": [
+      "b1f08e3 antes de c0e93a2 sempre: c0e93a2 contem o estado final de models.go, que pressupoe o drift de A",
+      "11ef715 antes de 67e9a4c: o teste corrigido exercita o comportamento do fix de producao",
+      "entre os PARES nao ha dependencia tecnica, arquivos disjuntos e merge-tree limpo nos dois sentidos; a ordem recomendada e por higiene de bissecao"
+    ]
+  },
+  "unica_condicao_do_pass": {
+    "reserva": "RES-ORQ13-001, migration 127, expira 2026-07-28T15:37:12Z",
+    "medido_agora": "144 minutos restantes",
+    "dentro_da_janela": "PASS sem acao adicional",
+    "fora_da_janela": "BLOCK ADMINISTRATIVO, nao tecnico: o codigo segue valido, caduca a reserva do numero. Seria preciso RENOVAR ou RENUMERAR, e renumerar invalida os hashes registrados up 0ea3005d e down 74354ae2 e exige re-verificacao.",
+    "recomendacao": "Se a janela for perdida, renovar o numero 127 e o caminho de menor risco, porque a varredura prova que ninguem mais o reivindicou. EU NAO POSSO renovar nem emitir reserva: nao sou o registrador."
+  },
+  "evidencia_reconciliada": {
+    "corrida_canonica": "go test -race -count=1 -json ./internal/handler em 67e9a4c: exit 0, package pass, fail 0, DATA RACE 0, pass 1338, skip 37. Log package-json.log sha256 9027b7896a5015c01460628133c356ebf5a184ccf59966eefe365988f86d974d",
+    "db": "PostgreSQL 17.10 efemero, digest sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0, loopback-only, migration maxima lida de schema_migrations igual a 126_runtime_profile_protocol_family_native_runtimes",
+    "lint": "golangci-lint v2.12.0 com checksum oficial conferido: 119 issues no baseline e 119 no HEAD, ZERO novas, relatorios byte a byte identicos. Risco max_seq FECHADO como negativo.",
+    "determinismo_do_split": "diff dos 7 arquivos rastreados igual a b87bc5cae3e877af9a26ebe39cce7f0a90fff2a126e075c7f5d12799d04707ce, provado por 3 vias"
+  },
+  "minhas_correcoes_no_registro": [
+    "Afirmei que leader_id explicava os 3 FAIL; explicava 2. O terceiro era defeito de teste independente, contexto versus header. Corrigido em A3.1 a A3.3.",
+    "Propus fix de UMA linha para o chat; medi que NAO bastava, pois resolvia o 400 e expunha um segundo defeito atras dele. Foram TRES correcoes, com prova em one-line-insufficient.log"
+  ],
+  "skips_como_divida_separada": {
+    "total": "37, todos top-level, zero subtestes, nenhum tocando os quatro commits",
+    "taxonomia": "35 Redis via newRedisTestClient sem REDIS_TEST_URL, com imagem Redis INEXISTENTE no ORQ1 e portanto exigindo pull; 1 skills.sh exigindo rede viva ao GitHub; 1 webhook com t.Skip INCONDICIONAL, marcador de regressao deliberado em autopilot_webhook_handler_test.go:807-819",
+    "conclusao": "skip = 0 e estruturalmente impossivel neste pacote e concordo em nao exigi-lo. Criterio que sustento: package pass mais fail 0 mais race 0 mais zero skip entre os testes afetados, satisfeito.",
+    "cartoes_de_divida_recomendados": [
+      "D1 cobertura Redis ausente por falta de REDIS_TEST_URL (35 testes)",
+      "D2 t.Skip incondicional do webhook impede qualquer metrica de skip zerada",
+      "D3 TestMain de internal/handler com os.Exit(0) causando falso-verde, transversal",
+      "D4 119 issues de lint pre-existentes farao o job falhar ao ser ligado",
+      "D5 os 4 workflows vivem fora da raiz e estao inertes"
+    ]
+  },
+  "pendencias_que_nao_sao_minhas": ["revisor independente que nao seja o autor", "autorizacao de merge do owner"],
+  "lacuna_declarada": "Verifiquei os consumidores em GO; NAO varri o frontend Next.js para confirmar que nada depende do squad default existir imediatamente apos criar o workspace. 11ef715 MUDA comportamento de produto: se algo no frontend assumir o squad, o sintoma aparece la e nao nos testes de Go.",
+  "evidence": [".deploy-control/p0/evidence/orq13-squad-integration-readiness.md"],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq13-squad-integration-readiness.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-13__FINAL-INTEGRATION-READINESS__20260728T131500Z.json"
+  ],
+  "non_claims": [
+    "READ-ONLY: nenhum merge, push, rebase, amend, commit, tag ou mutacao de branch. merge-tree --write-tree nao altera arvore nem refs, cria apenas objeto de teste",
+    "Nenhum banco tocado nesta revisao: nao subi container, nao abri tunel, nao rodei teste; os numeros sao reconciliados de logs ja fingerprintados, nao remedidos agora",
+    "NAO autorizo merge e NAO me autoaprovo: escrevi os quatro commits",
+    "Nao criei, atribui nem comentei cartao algum: a nota de Kanban e TEXTO PRONTO, nao cartao criado",
+    "NAO posso renovar nem emitir reserva de migration",
+    "NAO varri o frontend Next.js",
+    "Nao verifiquei se as outras lanes passam nos proprios testes: avaliei apenas colisao com as minhas, por arquivo e por numero de migration",
+    "Nao removi cache nem rodei docker prune",
+    "Nao li nem usei segredo, token ou credencial"
+  ],
+  "blocker": null
+}

@@ -1,0 +1,51 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:30:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-44",
+  "task_ids": ["ORQ44-V5-LIFECYCLE-AMENDMENT"],
+  "status": "DONE_PROPOSAL",
+  "verdict": "PROPOSTA - nao aprovada, nao executavel; NAO me auto-aprovo",
+  "deliverable": ".deploy-control/p0/evidence/orq44-v5-lifecycle-amendment.md",
+  "artifact_sha256": "658af263ffe8a53ec1dfde0870d15912c79f3ba0ffa0d86aa363fbf588b81972",
+  "amends": "orq44-omniroute-inference-key-lifecycle.md (corpo + E1-E8)",
+  "corrects": "os tres bloqueadores do meu proprio parecer orq44-e1-e8-independent-rereview.md",
+  "skill_loaded": "aws-secrets-manager v1 recarregada INTEGRALMENTE nesta rodada antes de escrever: overview, aviso best-effort defense not a security boundary, as 3 regras MUST, sintaxe resolve com defaults SecretString e AWSCURRENT, Using asm-exec, How It Works com scan de ARGUMENTOS e ordem SMA depois MCP SigV4 e regiao por ARN ou AWS_REGION e re.sub single-pass e ausencia de fallback para CLI local, SigV4, prerequisitos, Common Patterns incluindo Configuration file templating, hook PreToolUse do aws-core e troubleshooting.",
+  "corrections": [
+    "V5.1 substitui E1.1: D1 e D2 eram INEXEQUIVEIS (nao existe flag --health-port nem env var, e a porta nunca aparece na unit porque nao e parametro; o ExecStart do ORQ2 tem --daemon-id e --device-name e o Environment traz PATH e MULTICA_*_PATH). D0 CANONICO = healthPortForProfile (cmd_daemon.go:162-172): perfil vazio da 19514, perfil nomeado da 19514+1+(soma dos bytes mod 1000). Usado consistentemente em cmd_daemon.go:186, :383, :517, :554, :636, com o perfil entrando por --profile em :360, DefaultHealthPort=19514 em config.go:58 e bind 127.0.0.1:%d em health.go:63. Para o ORQ2 a unit nao passa --profile, logo a porta canonica e 19514 - o mesmo numero de antes, mas agora DERIVADO e nao presumido. D3 (ss -ltnp) deixa de ser alternativa e passa a ser CONFIRMACAO obrigatoria porta->PID.",
+    "V5.2 substitui E1.2: endosso I1 e I2 e fecho o ciclo pelo proprio corpo do /health, que publica pid, os, daemon_id, device_name, server_url e cli_version (health.go:20-37). Sequencia obrigatoria de 5 passos: D0 calcula, D3 confirma socket e captura PID, MainPID casa com o PID do socket, /health.pid casa com MainPID e /health.daemon_id casa com o --daemon-id (orq2-credential-runtime-v1), e /health.os deve ser linux. Um 200 sozinho nao e prova - health.go:102-105 avisa que a porta e ligada ANTES do preflight e que callers must not treat a reachable endpoint as ready.",
+    "V5.3 substitui E5: o probe de readiness existe em UM unico ponto fora de teste, brain_integration.go:356, DENTRO de admitTask (:269); o /health serve health.go:124 snapshot() em :136-138, preenchido durante a ULTIMA ADMISSAO. Logo pos-swap sem nova admissao os campos descrevem a chave ANTIGA. Tabela de reclassificacao: L1 canario pre-swap prova a chave nova; V4a prova processo vivo e NADA sobre credencial; V4b secret_reference_configured prova CONFIGURACAO (booleano, nao valor); V4c state/readiness/cli_kind/route_model/router_owner/protocol/last_outcome prova apenas AUSENCIA DE REGRESSAO e NADA sobre a chave nova; V5 so gera sinal se houver trafego. Tres consequencias normativas: L1 passa de recomendado a PRE-CONDICAO DURA (sem canario verde, nao se troca a chave); todo V4b/V4c pos-swap deve vir rotulado como snapshot da ultima admissao com a frase nao reflete a chave nova; e NAO EXISTE validacao positiva pos-swap sem custo - nao inventar uma, isso e a Q5.",
+    "V5.4 substitui E3: novo gate E3.0 ANTES do L2, verificando por METADADO se existe versao com estagio AWSPREVIOUS via describe-secret e list-secret-version-ids, inspecionando VersionIdsToStages. Conformidade: nenhuma das duas e get-secret-value ou batch-get-secret-value, retornam metadado de versao e estagio e nao SecretString, logo nao violam a regra 1. Saida reduzida a booleano no runbook, sem colar ARNs de versao. Arvore: presente da E3.1, ausente torna o .prev OBRIGATORIO, indeterminado ou AccessDenied da STOP. E remover a marcacao PREFERIDA da E3.1 enquanto Q4 estiver aberta - a preferencia passa a ser condicional ao E3.0. Preservo o trap cobrindo .prev/.new/.rollback, o test ! -e final e a recusa fundamentada de shred por CoW e wear-leveling.",
+    "V5.5 E2 preservada UNIX-only, com limite explicito do verificado: o _windows.go tem build tag windows e falha fechado incondicional nos DOIS helpers com platform_unsupported, e existe o par _unix.go com build tag not windows; NAO verifiquei o corpo do _unix linha a linha. Norma: o runbook so se aplica a alvo com os igual a linux no corpo do /health.",
+    "V5.6 E7 preservada: verificado nesta rodada em credential_file_source.go:111-119 que credentialFileError guarda apenas um token de razao e o comentario declara ser deterministic, content-free error that never leaks the secret value, file content, or detailed OS error messages. Proibido cat, head, tail, xxd, od, strings, diff, grep sem -q e qualquer redirecionamento de conteudo; nenhum valor, prefixo ou comprimento de valor valido entra em evidencia. Os campos do /health usados (secret_reference_configured, last_outcome, daemon_id, pid, os) sao todos content-free.",
+    "V5.7 sequencia consolidada com ordem obrigatoria e uma fronteira de autorizacao explicita marcando onde termina o que nao muta nada; L1 usa /v1/models, que JA e o endpoint de Readiness configurado pelo cliente em brain_integration.go:327, logo nao inventa trafego de natureza nova, com teto de UMA requisicao, timeout curto, sem loop e sem retry - mas se listagem consome cota permanece a Q3.",
+    "V5.9 preservado sem mudanca porque ataquei e nao achei defeito: leitura por chamada sem cache (troca de CONTEUDO nao exige restart, so troca de CAMINHO, ao contrario do JWT_SECRET com jwtSecretOnce em auth/jwt.go:31), troca atomica por rename no mesmo diretorio, gate de fila com os 4 estados ativos de migrations/109:15 com a justificativa de que task running tem CLI vivo, e a distincao dos tres segredos"
+  ],
+  "no_paid_smoke_task": "Nenhuma task e admitida, atribuida ou comentada para validar. Atribuir enfileira trabalho PAGO e comentario em issue atribuida pode enfileirar. A E5 acertou a motivacao; a V5 mantem a proibicao e corrige apenas o substituto escolhido.",
+  "owner_provider_blockers": [
+    "Q1 sobreposicao de duas chaves ativas, tempo e revogacao - NAO RESOLVIDA",
+    "Q2 escopo por conta ou global diante das 4 Antigravity, 4 ClinePass e 2 OpenAI Codex - NAO RESOLVIDA",
+    "Q3 introspeccao sem consumo de cota e se a listagem do L1 conta - NAO RESOLVIDA",
+    "Q4 a promocao preserva AWSPREVIOUS ou sobrescreve - NAO RESOLVIDA, e o que o E3.0 decide na janela",
+    "Q5 aceita-se ausencia de validacao positiva pos-swap sem custo, com a garantia vindo do L1 pre-swap? Prova positiva pos-swap implicaria task PAGA, colidindo com o freeze e exigindo autorizacao e orcamento - ABERTA",
+    "Q6 NOVA, necessaria por causa do E3.0: qual o secret-id exato e a regiao, e qual identidade tem permissao de describe-secret/list-secret-version-ids? Eu NAO adivinho nome de segredo e a identidade desta sessao nao foi verificada - ABERTA"
+  ],
+  "non_claims": [
+    "NAO li valor de segredo e NAO fiz stat no arquivo de credencial: nao sei modo, dono, tamanho nem se existe; tudo que exijo vem do codigo do consumidor",
+    "zero GetSecretValue/BatchGetSecretValue, zero SMA em localhost:2773, zero asm-exec executado, ZERO chamada a provider ou AWS",
+    "NAO executei describe-secret nem list-secret-version-ids - apenas os proponho como gate E3.0",
+    "NAO executei L1 nem qualquer requisicao a /v1/models",
+    "nao troquei arquivo, nao reiniciei unit, nao admiti/atribui/comentei task, nao mutei quadro, nao compilei, nao implementei",
+    "nao calculei a porta de perfil real executando codigo; li a funcao e apliquei o algoritmo ao caso perfil vazio. A afirmacao de que a unit do ORQ2 nao passa --profile vem de leitura anterior de systemctl --user cat, nao repetida nesta rodada",
+    "nao verifiquei o corpo de credential_file_source_unix.go linha a linha; confirmei existencia e build tag e li o _windows.go integralmente",
+    "nao sei se o segredo proposto no corpo existe (Q6)",
+    "NAO respondi nenhuma das cinco perguntas e acrescentei uma sexta em vez de presumir",
+    "nao alterei assignee nem postei comentario; nenhum card criado"
+  ],
+  "review_requested_from": "agente independente que NAO seja Opus48#A nem o autor do corpo e das E1-E8 (Opus48#B)",
+  "review_attack_priorities": ["se D0 cobre alvo que use override de config por caminho que eu nao encontrei", "se secret_reference_configured prova configuracao e nao valor, e se e atualizado fora de admitTask", "se describe-secret e list-secret-version-ids sao aceitaveis sob a regra 1 da skill", "se declarar V4c como snapshot velho basta ou se ele deveria ser REMOVIDO do runbook para nao induzir leitura errada"],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "blocker": null
+}

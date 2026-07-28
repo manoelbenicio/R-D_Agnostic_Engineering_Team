@@ -1,0 +1,47 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:52:09Z",
+  "agent": "Codex",
+  "lane": "ORQ-17",
+  "task_ids": ["ORQ-17"],
+  "status": "DONE_PASS_REBUILD_AVOIDED",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-stage1-frontend-recovery-execution.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex__ORQ-17-STAGE-1-FRONTEND-RECOVERY__20260727T155209Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "ORQ1 identity, labels, ports and health preflight",
+      "exit_code": 0,
+      "result": "ORQ1 100.118.244.61 proven; project multica-dev-transition/frontend; frontend 13100=200 and backend 18080/health=200."
+    },
+    {
+      "command": "mandatory rollback backup and checksum gate",
+      "exit_code": 0,
+      "result": "Private 0700 rollback directory, 0600 copies/metadata, eight checksum OK results, immutable old-image rollback tag and recovery command preserved."
+    },
+    {
+      "command": "exhaustive public static JavaScript scan",
+      "exit_code": 0,
+      "result": "453 files scanned; zero incompatible absolute apiBaseUrl/NEXT_PUBLIC_API_URL assignments and eight relative /api/ tokens."
+    },
+    {
+      "command": "final invariant verification",
+      "exit_code": 0,
+      "result": "Frontend/backend container and image IDs unchanged; both HTTP gates 200; Serve and Funnel remained empty."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq17-stage1-frontend-recovery-execution.md",
+    ".deploy-control/p0/evidence/orq17-stage1-safety-monitor.md",
+    "/home/ec2-user/.local/state/orq17-stage1-frontend-recovery-20260727T155000Z"
+  ],
+  "summary": "PASS: current frontend uses relative same-origin /api requests with no incompatible absolute API origin. Rebuild was safely avoided. Mandatory backups, checksums, old image tag and recovery command are preserved; frontend/backend IDs stayed unchanged and healthy; Serve/Funnel stayed empty.",
+  "non_claims": [
+    "No frontend or backend container was rebuilt, recreated or restarted.",
+    "No secret value, Config.Env, backend override content, login, Serve/Funnel, DB, board, AWS, push or PR action occurred.",
+    "No image prune occurred."
+  ]
+}

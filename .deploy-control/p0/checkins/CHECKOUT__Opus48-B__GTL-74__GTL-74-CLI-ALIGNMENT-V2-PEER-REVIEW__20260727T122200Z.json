@@ -1,0 +1,100 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:22:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "GTL-74",
+  "task_ids": [
+    "GTL-74-CLI-ALIGNMENT-V2-PEER-REVIEW"
+  ],
+  "status": "DONE",
+  "verdict": "PASS",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-cli-alignment-v2-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__GTL-74__GTL-74-CLI-ALIGNMENT-V2-PEER-REVIEW__20260727T122200Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "systemctl --user cat multica-daemon-orq2-credential.service | grep MULTICA_*_PATH e ls -l /run/multica-disabled/claude",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "PASS E MAIS FORTE - MULTICA_CLAUDE_PATH=/run/multica-disabled/claude e o caminho NAO EXISTE; pelo probe de config.go um caminho com barra inexistente da hard-miss deliberado, logo claude nunca entra no mapa. Journal: agents=[codex kiro antigravity]"
+    },
+    {
+      "command": "codex --version / claude --version / npm ls -g --depth=0 nos dois hosts",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "PASS - ORQ2 codex-cli 0.145.0 e 2.1.215; ORQ1 codex-cli 0.144.6 e 2.1.218; pacotes @openai/codex e @anthropic-ai/claude-code confirmados nos dois, refutando @openai/codex-cli do V1"
+    },
+    {
+      "command": "systemctl list-units/--user list-units grep multica e pgrep daemon no ORQ1",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "PASS - ORQ1 sem unit multica (system 0, user 0) e sem processo daemon; ORQ2 com 2 units. Sem sinal de uso no ORQ1: ~/.claude inexistente, ~/.codex/sessions 0, ~/.claude/projects 0"
+    },
+    {
+      "command": "grep CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH em /etc/environment, /etc/profile.d, rc files e env dos containers",
+      "exit_code": 0,
+      "assertions_or_tests": 10,
+      "result": "PASS - ausente nos dois hosts em todas as superficies; claude_env=0 nos 4 containers do ORQ1"
+    },
+    {
+      "command": "ls -d /home/ec2-user/.config/systemd/user/multica-daemon-orq2-credential.service.d",
+      "exit_code": 2,
+      "assertions_or_tests": 1,
+      "result": "PASS - diretorio de drop-in nao existe, confirmando que a criacao e passo explicito e nao edicao"
+    },
+    {
+      "command": "psql select title, status from issue where title ilike '%smoke%'",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "PASS - Gate2 runtime smoke AGY, Codex e Kiro 20260727T1043Z todos done; nao existe smoke de Claude"
+    },
+    {
+      "command": "sed -n '13,15p' migrations/109_agent_task_waiting_local_directory.up.sql",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - constraint lista 7 status, 3 terminais, logo os ativos sao exatamente queued, dispatched, running e waiting_local_directory. A correcao contra o GTL-46 e material"
+    },
+    {
+      "command": "sed -n das linhas 17,18,46,53,55,60 de gtl-official-release-notes-watch.md",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "PASS - todas as citacoes do plano conferem palavra por palavra, incluindo Opus 5 default com 10/50 por Mtok (L55) e medium size guideline fewer than 15 agents (L60)"
+    },
+    {
+      "command": "inventario read-only de claude fora do daemon: crontab, /etc/cron.*, timers, rc files, scripts/*.sh, env de container nos dois hosts",
+      "exit_code": 0,
+      "assertions_or_tests": 12,
+      "result": "PASS - nenhuma referencia encontrada em nenhuma superficie; 5 limites da varredura declarados explicitamente no parecer"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-cli-alignment-v2-peer-review.md",
+    ".deploy-control/p0/evidence/gtl-cli-version-alignment-v2.md (documento revisado)",
+    ".deploy-control/p0/evidence/gtl-official-release-notes-watch.md (L17-18, 46, 53, 55, 60)",
+    "multica-auth-work/server/migrations/109_agent_task_waiting_local_directory.up.sql:13-15",
+    "multica-auth-work/server/cmd/server/router.go:927",
+    "systemd user units multica-daemon-orq2-credential.service e multica-orq1-backend-tunnel.service"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run no ORQ2, exit 0",
+  "summary": "Peer review adversarial do plano V2 de alinhamento de CLI: VEREDITO PASS. Os 11 itens exigidos foram verificados de forma independente e todos confirmados, sem defeito bloqueante. Um achado fortalece o plano alem do que ele proprio afirma: o caminho MULTICA_CLAUDE_PATH aponta para /run/multica-disabled/claude, que NAO EXISTE, e o probe de descoberta trata caminho absoluto inexistente como hard-miss deliberado, logo a desabilitacao do Claude nao depende de ordem de PATH e o blast radius do 2.1.219 nao pode se materializar. Confirmei tambem: ORQ1 sem executor por tres angulos independentes e sem sinal de uso de CLI; pacote correto @openai/codex nos dois hosts, refutando o @openai/codex-cli do V1; ausencia total da variavel de profundidade em todas as superficies globais dos dois hosts e no env dos quatro containers; diretorio de drop-in inexistente; os tres smokes de runtime concluidos e nenhum smoke de Claude; tunel como user unit do ORQ2; os quatro status ativos exatamente como a migration 109 define; as citacoes do watch palavra por palavra; e alvos de rollback que sao versoes vivas, nao known-bad. Endosso sem reservas a proibicao de usar GET /api/runtimes como validacao do ORQ1, e comprovei de forma independente que o endpoint reflete o registro do daemon do ORQ2. Registrei tres observacoes que fortalecem o plano e duas correcoes de precisao sem impacto em acao. Inventario de uso de Claude fora do daemon nao encontrou nada, com cinco limites da varredura declarados explicitamente.",
+  "non_claims": [
+    "READ-ONLY: nao editei nenhum arquivo alem do parecer e deste check-out; nao instalei, nao atualizei pacote, nao reiniciei unit ou container, nao apliquei migration, nao toquei board",
+    "Nao executei nenhum passo da secao 9 do plano; nao rodei npm install em host algum",
+    "Nao provei ausencia total de uso de Claude: declarei 5 limites, entre eles nao ter varrido o filesystem inteiro, nao ter auditado processos ao longo do tempo, nao ter reconfirmado os 10 panes e nao ter inspecionado a maquina LOCAL",
+    "Nao verifiquei as paginas oficiais de release: aceitei o watch GTL-44 como fonte e conferi apenas a fidelidade das citacoes",
+    "Nao verifiquei se codex exec no ORQ1 consome cota paga; concordo em manter isso fora do escopo de validacao",
+    "Nao toquei nas 9 issues preservadas (ORQ-12, 13, 15, 16, 17, 18, 21, 22, 23) e nao disparei rerun"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (GENERAL-TECH-LEAD)",
+      "reason": "PASS sem bloqueio. Tres melhorias opcionais: citar a inexistencia de /run/multica-disabled/claude na secao 1, porque e evidencia mais forte do que o plano usa; rotular claude --version no ORQ1 como controle negativo; e escrever na propria linha do passo 2 por que a fila e as units medidas sao do ORQ2 e nao do host que recebe o pacote.",
+      "file": ".deploy-control/p0/evidence/gtl-cli-alignment-v2-peer-review.md"
+    }
+  ]
+}

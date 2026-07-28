@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260726T210037Z",
+  "agent": "Antigravity",
+  "slot": "slot-145",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "COMMS-ACK",
+  "task_ids": ["ACK-MANUAL-DE-COMUNICACAO"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Antigravity-slot145__TO_Kiro-PRINCIPAL-TL__20260726T210026Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/inbox-tm/FROM_Antigravity-slot145__TO_Kiro-PRINCIPAL-TL__20260726T210026Z.msg"
+  ],
+  "summary": "Manual de comunicacao da frota recebido e confirmado. Pane_id=w8:p2, label=Opus48#D (ORQ2). ACK enviado via SSH para KIRO-PRINCIPAL-TL em 100.117.245.15 pane wB:p1 (SSH_EXIT=0). Copia duravel gravada em inbox-tm. Mecanismos aprendidos: SSH local, herdr pane run w5:pC para Codex56-TL, inbox-tm, check-in/out JSON, escalacao de bloqueio, proibicoes absolutas.",
+  "reported_to": "KIRO-PRINCIPAL-TL via SSH 100.117.245.15 wB:p1"
+}

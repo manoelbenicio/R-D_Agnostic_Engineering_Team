@@ -1,0 +1,18 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T101633Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "KANBAN-RECOVERY",
+  "task_ids": ["ORQ-RECOVERY-MATRIX"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gap-orq-recovery-matrix.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_Codex56B-w7p4__20260727T101633Z.msg"
+  ],
+  "evidence": [".deploy-control/p0/evidence/gap-orq-recovery-matrix.md"],
+  "summary": "Matriz read-only ORQ-12/13/15/16/17/18/21/23: todos status=todo, assignee=none, tool_use=0. 6 issues runtime_offline=safe rerun apos assignee. 2 issues agent_error.unknown=OWNER. Relay gate nao bloqueia issue rerun. Entregue a Codex56#B w7:p4, Codex56-TL w5:pC, KIRO-PRINCIPAL-TL wB:p1.",
+  "reported_to": ["w7:p4", "w5:pC", "100.117.245.15 wB:p1"]
+}

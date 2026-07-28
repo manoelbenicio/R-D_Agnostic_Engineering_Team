@@ -1,0 +1,95 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T23:20:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "TEMA-3-CORRECAO-E-PONTE"
+  ],
+  "status": "DONE",
+  "mode": "PREPARADO_NAO_APLICADO",
+  "correction_of": ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__TEMA-3-account-slot-source__20260726T231400Z.json",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/sol-tema3-bridge-registry-to-multica.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__TEMA-3-CORRECAO-E-PONTE__20260726T232000Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "whoami; hostname; echo $HOME; ls -la ~/.agent-cred-homes",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "CAUSA RAIZ DO MEU ERRO — HOME=/home/ec2-user/.agent-cred-homes/slots/slot-139/home, entao '~' expandia para DENTRO do slot; erro literal: cannot access '/home/ec2-user/.agent-cred-homes/slots/slot-139/home/.agent-cred-homes'. Nao foi 0700 nem sudo."
+    },
+    {
+      "command": "ls -ld /home/ec2-user/.agent-cred-homes; ls -d /home/ec2-user/.agent-cred-homes/slots/slot-* | wc -l",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS — drwx------ 5 ec2-user ec2-user (0700) e 22 slots: FATO 1 confirmado"
+    },
+    {
+      "command": "ls -la /home/ec2-user/.agent-cred-homes",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS — registry.json 13183 bytes, registry.json.pre-orphan-cleanup.20260722T023208Z 33009 bytes, registry.lock, codex-logins/, fallback-terminals/, slots/: FATO 2 confirmado"
+    },
+    {
+      "command": "ls -la /home/ec2-user/.agent-cred-homes/slots/slot-140",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS — cline, cline-sandbox, codex, home, xdg-config, xdg-data: FATO 3 confirmado (raizes por provider)"
+    },
+    {
+      "command": "for cada slot: find xdg-data/kiro-cli -type f | wc -l",
+      "exit_code": 0,
+      "assertions_or_tests": 10,
+      "result": "PASS — kiro com estado real em 139(7), 140(7), 142(1), 143(7), 149(7); vazios em 141, 145, 146, 150, 152. FATO 4 confirmado, inclusive slot-145 sem kiro. Minha medicao anterior por presenca de diretorio (10 slots) era evidencia inferior."
+    },
+    {
+      "command": "python3: chaves de primeiro nivel de registry.json",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS — {version:1, next_slot:153, slots:{'<n>':{created_at,terminal_id}} 48 registros, terminals:{'herdr:term_*':{first_seen,last_seen,slot}} 48}: FATO 5 confirmado (registry indexa por terminal_id)"
+    },
+    {
+      "command": "git status --porcelain multica-auth-work | grep -c '\\.go$'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS — 0 arquivos .go tocados"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/sol-tema3-bridge-registry-to-multica.md",
+    "RETRATACAO: o relatorio anterior de que os slots nao existiam esta errado; causa = HOME do meu pane e o proprio slot-139/home, logo '~/.agent-cred-homes' resolvia para dentro do slot",
+    "licao operacional para a frota: sondar o registry SEMPRE com caminho absoluto /home/ec2-user/.agent-cred-homes, nunca com '~'",
+    "no ORQ1 o caminho ABSOLUTO realmente nao existe (a mensagem de erro de la era absoluta), coerente com FATO 1 (isolamento no ORQ2) e FATO 8 (ORQ1 usa HOME do processo) — registrado como questao de localidade Q1, nao como contestacao",
+    "consequencia de schema: accounts tem UM home_dir por linha mas FATO 3 exige raiz por provider, logo a granularidade correta e 1 linha por par (vendor, slot): 22 agy + 5 kiro + N codex",
+    "elegibilidade tem de vir de estado de credencial e nao de presenca de diretorio, senao a rotacao escolhe slot vazio e o kiro roda sem credencial em silencio por kiro_home.go:73-75 (if srcMissing return nil)"
+  ],
+  "summary": "CORRECAO PRIMEIRO: retrato meu relatorio anterior de que os slots de isolamento nao existiam. A causa nao foi 0700 nem sudo: o HOME do meu proprio pane E /home/ec2-user/.agent-cred-homes/slots/slot-139/home, entao todo '~/.agent-cred-homes' que eu sondei resolvia para dentro do slot e nunca poderia existir. Com caminho absoluto confirmei FATO 1 (0700, 22 slots), FATO 2 (registry.json 13183 bytes, backup pre-orphan-cleanup 33009, registry.lock, codex-logins, fallback-terminals), FATO 3 (slot-140 = cline, cline-sandbox, codex, home, xdg-config, xdg-data), FATO 4 por contagem de arquivos (kiro com estado real so em 139, 140, 142, 143, 149; slot-145 vazio - minha medicao por diretorio, que apontava 10, era evidencia inferior) e FATO 5 (registry indexa por terminal_id herdr:term_*, 48 registros de slot x 22 diretorios, excedente historico/orfao). Nao contesto nenhum dos 8 fatos. PONTE PROPOSTA: slot-NNN e a unica chave estavel e terminal_id nunca entra no Multica (efemero, serve so para orfao/GC). Como accounts tem um unico home_dir por linha e a raiz e por provider, a granularidade correta e 1 linha por par (vendor, slot) - agy->slot/home, kiro->slot/xdg-data, codex->slot/codex, config_dir->slot/xdg-config. status='available' so com estado de credencial medido e 'degraded' quando o diretorio existe vazio, o que fecha o modo silencioso do kiro_home.go:73-75. approved_accounts aprova quais das 4 contas agy entram e em qual worktype_scope; assignments(agent_id PK) da o isolamento 1 agente/1 conta; credentials guarda so secret_ref; rotation_events ja tem o CHECK de razao para auditoria e custo. Ferramenta proposta: scripts/bridge/agent-cred-bridge.py (~120 linhas) que le o registry sob registry.lock, inventaria os slots contando arquivos sem ler conteudo, e EMITE SQL idempotente (ON CONFLICT DO UPDATE, chave natural vendor+home_dir) sem executar - aplicar e ato do owner. 4 questoes travam a ponte: Q1 localidade (registry no ORQ2, daemon no ORQ1, accounts nao tem coluna de host), Q2 qual tenant_id, Q3 o mapa conta->slot das 4 contas agy NAO EXISTE em arquivo algum porque o registry indexa por terminal, Q4 se codex usa slots/*/codex ou o pool codex-logins.",
+  "non_claims": [
+    "nao editei codigo, nao compilei, nao troquei binario, nao reiniciei daemon nem container, nao commitei",
+    "nao li conteudo de arquivo de credencial: apenas ls, find -type f | wc -l e chaves de primeiro nivel do registry.json; nenhum token ou secret_ref impresso",
+    "nao mapeei conta->slot (Q3): esse dado nao existe no registry, precisa vir do TL/owner",
+    "nao medi o inventario de codex por slot nem o pool codex-logins (Q4)",
+    "nao escrevi a ferramenta da ponte nem o SQL de seed"
+  ],
+  "blocker": "Q1: o registry esta no ORQ2 e o daemon PID 3244391 no ORQ1; home_dir absoluto so vale no host do slot e accounts nao tem coluna de host/daemon. Owner/TL decide: escopo de host na ponte ou daemon passa a rodar no ORQ2. Q3: o mapa das 4 contas agy para slots nao existe em arquivo (registry indexa por terminal_id) e precisa ser fornecido.",
+  "handoffs": [
+    {
+      "to_lane": "KIRO-PRINCIPAL-TL",
+      "reason": "correcao registrada e ponte desenhada; preciso de Q1 (localidade host), Q2 (tenant_id), Q3 (mapa conta agy -> slot) e Q4 (raiz do codex) para emitir o SQL de seed",
+      "file": ".deploy-control/p0/evidence/sol-tema3-bridge-registry-to-multica.md"
+    }
+  ],
+  "reported_to": [
+    "KIRO-PRINCIPAL-TL (host 100.117.245.15, pane wB:p1) via item 2 + copia duravel em inbox-tm"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

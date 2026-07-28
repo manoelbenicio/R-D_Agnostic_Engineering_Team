@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T125417Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-17",
+  "lane": "GTL-R17D",
+  "task_ids": ["ORQ-17-DEVICE-MAP-VERIFY"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-cutover-v4-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T125417Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-cutover-v4-peer-review.md"
+  ],
+  "summary": "Verificacao independente de mapeamento de dispositivos do Tailnet para ORQ-17 concluida. Veredito: PASS. Dispositivos fisicos Windows msi-laptop-1 (100.112.85.91) e hp-laptop (100.85.79.80) validados ONLINE. Dispositivo manoelneto-laptop-1 (100.86.110.121) marcado como ACEITE PENDENTE por estar OFFLINE. Duplicatas Linux totalmente excluidas. Regras de ACL validadas.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

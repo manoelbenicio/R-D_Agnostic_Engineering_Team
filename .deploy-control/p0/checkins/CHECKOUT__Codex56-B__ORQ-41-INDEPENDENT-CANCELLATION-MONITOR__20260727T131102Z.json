@@ -1,0 +1,72 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:11:02Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "ORQ-41",
+  "task_ids": [
+    "ORQ-41"
+  ],
+  "status": "DONE_PASS_CONTAINMENT_BLOCK_REPLAY",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-independent-cancellation-monitor.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-41-INDEPENDENT-CANCELLATION-MONITOR__20260727T131102Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "read-only PostgreSQL task snapshot for f460ed12 and 07cdc53b",
+      "exit_code": 0,
+      "result": "f460ed12 cancelled at 13:08:04.121791Z; 07cdc53b completed at 13:06:05.011737Z; both Kiro on online ORQ2 runtime; no secrets/content read."
+    },
+    {
+      "command": "read-only task_message aggregate by type/tool",
+      "exit_code": 0,
+      "result": "f460ed12: 175 messages, 55 tool_use, 2 tool_result; 07cdc53b: 92 messages, 30 tool_use, 0 tool_result."
+    },
+    {
+      "command": "read-only issue assignee/active-task snapshot",
+      "exit_code": 0,
+      "result": "ORQ-39 in_progress with empty assignee and 0 active tasks; ORQ-40 blocked with empty assignee and 0 active tasks."
+    },
+    {
+      "command": "read-only global active queue count",
+      "exit_code": 0,
+      "result": "queued=0, dispatched=0, running=0, waiting_local_directory=0."
+    },
+    {
+      "command": "read-only preserved-issue snapshot",
+      "exit_code": 0,
+      "result": "ORQ-12/13/15/16/17/18/21/22/23 have zero active tasks; no mutation or rerun performed."
+    },
+    {
+      "command": "stability reread after 3 seconds",
+      "exit_code": 0,
+      "result": "Terminal statuses and global active count remained unchanged."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-independent-cancellation-monitor.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__GTL-K08-DOC-COMMENT-SAFETY-CARD__20260727T130700Z.json"
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)"
+  ],
+  "summary": "PASS for containment: both unintended tasks are terminal, ORQ-39/40 have empty assignees and no active tasks, and global active queue is zero. BLOCK for replay certainty: the two tasks have many unpaired tool_use events, including 07cdc53b completed with zero tool_result; no rerun is safe without effect review.",
+  "non_claims": [
+    "No prompt, message content, tool input/output, result payload, secret or credential was read or exposed.",
+    "No claim that any individual write_file action completed or did not complete.",
+    "No claim that the nine preserved issues are eligible for rerun."
+  ],
+  "blockers": [
+    "Replay/effect review is required before any rerun of ORQ-39 or ORQ-40.",
+    "The nine preserved issues remain protected and must not be rerun."
+  ],
+  "handoffs": [
+    {
+      "to": "w5:pC",
+      "reason": "Use the PASS/BLOCK split: containment is complete; replay remains ambiguous due to unpaired tool intents."
+    }
+  ]
+}

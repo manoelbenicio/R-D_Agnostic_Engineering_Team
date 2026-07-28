@@ -1,0 +1,234 @@
+package main
+
+import (
+	"bufio"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"net/mail"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/multica-ai/multica/server/internal/handler"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
+)
+
+type rower interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+func stop(code string) {
+	fmt.Fprintln(os.Stderr, code)
+	os.Exit(1)
+}
+
+func readNUL(r *bufio.Reader, limit int, code string) []byte {
+	out := make([]byte, 0, limit)
+	for i := 0; i <= limit; i++ {
+		b, err := r.ReadByte()
+		if err != nil {
+			stop(code)
+		}
+		if b == 0 {
+			return out
+		}
+		if i == limit {
+			stop(code)
+		}
+		out = append(out, b)
+	}
+	stop(code)
+	return nil
+}
+
+func counts(ctx context.Context, q rower) (users, credentials int64, err error) {
+	err = q.QueryRow(ctx, `
+		SELECT
+		  (SELECT count(*) FROM "user"),
+		  (SELECT count(*) FROM user_password_credential)
+	`).Scan(&users, &credentials)
+	return
+}
+
+func beginLocked(ctx context.Context, pool *pgxpool.Pool) pgx.Tx {
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+	if err != nil {
+		stop("E_TX_BEGIN")
+	}
+	if _, err := tx.Exec(ctx,
+		`LOCK TABLE "user", user_password_credential IN SHARE ROW EXCLUSIVE MODE`); err != nil {
+		_ = tx.Rollback(ctx)
+		stop("E_TX_LOCK")
+	}
+	return tx
+}
+
+func memberRefs(ctx context.Context, q rower, id pgtype.UUID) int64 {
+	var n int64
+	if err := q.QueryRow(ctx, `SELECT count(*) FROM member WHERE user_id = $1`, id).Scan(&n); err != nil {
+		stop("E_MEMBER_GATE")
+	}
+	return n
+}
+
+func compensate(ctx context.Context, pool *pgxpool.Pool, id pgtype.UUID) bool {
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+	if err != nil {
+		return false
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx,
+		`LOCK TABLE "user", user_password_credential IN SHARE ROW EXCLUSIVE MODE`); err != nil {
+		return false
+	}
+	u, c, err := counts(ctx, tx)
+	if err != nil || u != 1 || c != 1 || memberRefs(ctx, tx, id) != 0 {
+		return false
+	}
+	tag, err := tx.Exec(ctx, `DELETE FROM "user" WHERE id = $1`, id)
+	if err != nil || tag.RowsAffected() != 1 {
+		return false
+	}
+	u, c, err = counts(ctx, tx)
+	if err != nil || u != 0 || c != 0 {
+		return false
+	}
+	return tx.Commit(ctx) == nil
+}
+
+func provision(ctx context.Context, pool *pgxpool.Pool, email, password string) {
+	tx := beginLocked(ctx, pool)
+	defer tx.Rollback(ctx)
+
+	u, c, err := counts(ctx, tx)
+	if err != nil {
+		stop("E_COUNT")
+	}
+	if u != 0 || c != 0 {
+		stop("E_NOT_EMPTY")
+	}
+
+	name := strings.SplitN(email, "@", 2)[0]
+	user, err := db.New(tx).CreateUser(ctx, db.CreateUserParams{Name: name, Email: email})
+	if err != nil {
+		stop("E_CREATE_USER")
+	}
+
+	store := handler.NewPostgresPasswordCredentialStore(tx)
+	if err := store.ProvisionPassword(ctx, user.ID, password); err != nil {
+		stop("E_PROVISION_PASSWORD")
+	}
+	identity, err := handler.NewPasswordAuthProvider(store).Login(ctx, email, password)
+	if err != nil || identity.UserID != user.ID {
+		stop("E_IN_TX_VERIFY")
+	}
+	_, hash, err := store.FindByEmail(ctx, email)
+	if err != nil {
+		stop("E_HASH_VERIFY")
+	}
+	cost, err := bcrypt.Cost([]byte(hash))
+	if err != nil || cost != bcrypt.DefaultCost {
+		stop("E_HASH_COST")
+	}
+	u, c, err = counts(ctx, tx)
+	if err != nil || u != 1 || c != 1 {
+		stop("E_IN_TX_COUNTS")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		stop("E_COMMIT")
+	}
+
+	liveStore := handler.NewPostgresPasswordCredentialStore(pool)
+	liveIdentity, verifyErr := handler.NewPasswordAuthProvider(liveStore).Login(ctx, email, password)
+	u, c, countErr := counts(ctx, pool)
+	if verifyErr != nil || liveIdentity.UserID != user.ID || countErr != nil || u != 1 || c != 1 {
+		if compensate(ctx, pool, user.ID) {
+			stop("E_POST_VERIFY_ROLLED_BACK")
+		}
+		stop("E_POST_VERIFY_ROLLBACK_FAILED")
+	}
+	fmt.Println("PROVISION=PASS USERS=1 CREDENTIALS=1 VERIFY=PASS SESSION=NONE")
+}
+
+func rollback(ctx context.Context, pool *pgxpool.Pool, email, password string) {
+	tx := beginLocked(ctx, pool)
+	defer tx.Rollback(ctx)
+
+	u, c, err := counts(ctx, tx)
+	if err != nil || u != 1 || c != 1 {
+		stop("E_ROLLBACK_COUNTS")
+	}
+	user, err := db.New(tx).GetUserByEmail(ctx, email)
+	if err != nil {
+		stop("E_ROLLBACK_IDENTITY")
+	}
+	store := handler.NewPostgresPasswordCredentialStore(tx)
+	identity, err := handler.NewPasswordAuthProvider(store).Login(ctx, email, password)
+	if err != nil || identity.UserID != user.ID {
+		stop("E_ROLLBACK_VERIFY")
+	}
+	if memberRefs(ctx, tx, user.ID) != 0 {
+		stop("E_ROLLBACK_REFERENCED")
+	}
+	tag, err := tx.Exec(ctx, `DELETE FROM "user" WHERE id = $1`, user.ID)
+	if err != nil || tag.RowsAffected() != 1 {
+		stop("E_ROLLBACK_DELETE")
+	}
+	u, c, err = counts(ctx, tx)
+	if err != nil || u != 0 || c != 0 {
+		stop("E_ROLLBACK_POSTCOUNT")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		stop("E_ROLLBACK_COMMIT")
+	}
+	fmt.Println("ROLLBACK=PASS USERS=0 CREDENTIALS=0")
+}
+
+func main() {
+	if len(os.Args) != 2 || (os.Args[1] != "provision" && os.Args[1] != "rollback") {
+		stop("E_MODE")
+	}
+	r := bufio.NewReader(io.LimitReader(os.Stdin, 1024))
+	emailBytes := readNUL(r, 320, "E_IDENTITY_INPUT")
+	passwordBytes := readNUL(r, handler.PasswordMaxBytes, "E_PASSWORD_INPUT")
+	if _, err := r.ReadByte(); !errors.Is(err, io.EOF) {
+		stop("E_TRAILING_INPUT")
+	}
+	defer clear(emailBytes)
+	defer clear(passwordBytes)
+
+	email := strings.ToLower(strings.TrimSpace(string(emailBytes)))
+	parsed, err := mail.ParseAddress(email)
+	if err != nil || parsed.Address != email || strings.ContainsAny(email, "\r\n\x00") {
+		stop("E_IDENTITY_FORMAT")
+	}
+	password := string(passwordBytes)
+	if err := handler.ValidatePassword(password); err != nil {
+		stop("E_PASSWORD_POLICY")
+	}
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		stop("E_DATABASE_HANDLE")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	pool, err := pgxpool.New(ctx, dbURL)
+	if err != nil || pool.Ping(ctx) != nil {
+		stop("E_DATABASE_CONNECT")
+	}
+	defer pool.Close()
+
+	if os.Args[1] == "provision" {
+		provision(ctx, pool, email, password)
+		return
+	}
+	rollback(ctx, pool, email, password)
+}

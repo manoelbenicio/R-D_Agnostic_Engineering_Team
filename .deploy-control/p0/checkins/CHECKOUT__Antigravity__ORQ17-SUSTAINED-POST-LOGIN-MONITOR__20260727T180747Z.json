@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T18:07:47Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-17"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "target_host": "ORQ1 (100.118.244.61 / ip-172-31-18-217)",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "ORQ-17 / Kanban sustained production monitoring post-login",
+  "finding": "Produced orq17-sustained-post-login-production-monitor.md. Sampled 3 UTC metric snapshots on ORQ1: Frontend :13100 = 200 OK, Backend :18080 healthz/readyz = 200 OK, Anon /api/me = 401 Unauthorized (fail-closed OK). Verified Tailscale Serve status: 7 canonical mounts active in tailnet mode. Verified Tailscale Funnel status: OFF (tailnet only). Queried 4-state task queue count: 1 active item. Verified presence of both AGY agents in DB multica_transition: Agy-P0-A7 and Agy-P0-A8 present out of 27 total agents. Zero POST requests or credentials used. Confirmed verdict STABLE. Recorded monitor SHA256 8c3484823904e6cafc9da621c7c5cf8e7754a528235fb10bc1ab8a4cffb1addd.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq17-sustained-post-login-production-monitor.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only monitoring operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-sustained-post-login-production-monitor.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T180747Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ17-SUSTAINED-POST-LOGIN-MONITOR__20260727T180747Z.json"
+  ],
+  "monitor_sha256": "8c3484823904e6cafc9da621c7c5cf8e7754a528235fb10bc1ab8a4cffb1addd",
+  "non_claims": [
+    "sustained production monitor, no POST requests, no credential usage, no DB mutation, no secret read, no GetSecretValue, no board mutation"
+  ],
+  "blocker": null
+}

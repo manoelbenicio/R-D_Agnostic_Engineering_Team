@@ -1,0 +1,52 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T21:27:21Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["CLI-KIND-FLAG-ARITY-PROOF"],
+  "status": "DONE",
+  "host": "ORQ2 (investigacao read-only no ORQ1 100.118.244.61)",
+  "question": "--agent-brain-cli-kind aceita multiplos valores repetidos ou apenas um?",
+  "answer": "APENAS UM. Nao e repetivel. pflag String sobrescreve, ultimo valor vence, sem erro. Nao existe comando que registre os 6 CLIs por essa flag.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Opus48#A__TO_Kiro-PRINCIPAL-TL__20260726T212721Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__CLI-KIND-FLAG-ARITY-PROOF__20260726T212721Z.json"
+  ],
+  "evidence": [
+    "ssh ec2-user@100.118.244.61 '/tmp/multica-auth-fixed daemon start --help' => '--agent-brain-cli-kind string' (tipo escalar; pflag imprimiria strings/stringArray se fosse repetivel)",
+    "strings -a /tmp/multica-auth-fixed | grep -E 'stringArray|stringSlice' => *pflag.stringArrayValue e *pflag.stringSliceValue LINKADOS no binario, logo o tipo repetivel existe e nao foi usado nesta flag",
+    "strings -a /tmp/multica-auth-fixed | grep -i 'unsupported CLI kind' => 'unsupported CLI kind %q' (parser de valor unico com whitelist)",
+    "server/cmd/multica/cmd_daemon.go:136 flags.String(\"agent-brain-cli-kind\", \"\", ...)",
+    "server/cmd/multica/cmd_daemon.go:420 overrides.AgentBrainCLIKind = flagString(...)",
+    "server/internal/daemon/config.go:235 AgentBrainCLIKind string (campo escalar)",
+    "server/internal/daemon/config.go:787-792 firstConfigured(...) -> brain.ParseCLIKind -> um brain.CLIKind",
+    "brain/identity.go:14-28 valores validos: claude-code, codex, kimi, openai-compatible, antigravity, nim (kiro/cline/opencode nao sao CLIKind)",
+    "config.go:144-155 mapeamento built-in aceita so 3: claude-code->claude, codex->codex, openai-compatible->cline",
+    "config.go:425-431 if DevelopmentEnabled && Gateway.Required { agents = map[string]AgentEntry{provider: entry} } -> colapsa o mapa detectado para UM: esta e a causa raiz do sintoma 'Agents: claude'",
+    "/proc/1744675 ausente: o PID do briefing esta morto",
+    "ps: PID 3244391 iniciado Sun Jul 26 21:26:24 2026, cmdline '/tmp/multica-auth-fixed daemon start --foreground --server-url http://127.0.0.1:18080', sem --agent-brain-cli-kind",
+    "/proc/3244391/environ: sem AGENT_BRAIN_CLI_KIND, sem AGENT_BRAIN_DEVELOPMENT_ENABLED, sem AGENT_BRAIN_ROUTE_MODEL; com GATEWAY_REQUIRED=true, GATEWAY_BASE_URL=http://100.118.244.61:20128, GATEWAY_SECRET_FILE=/etc/agent-brain/secrets/omniroute-inference-key, READINESS_POLICY=strict, LEGACY_EXECUTION_ENABLED=true",
+    "PATH do daemon resolve os 6 CLIs: claude, codex, kiro-cli, cline, agy, opencode",
+    "'/tmp/multica-auth-fixed daemon status' => 'Agents: antigravity, claude, codex, opencode, kiro, cline' (SEIS agents, uptime 40s)",
+    "curl 127.0.0.1:18080/health => {\"status\":\"ok\"}; porta 8080 nao escuta no ORQ1"
+  ],
+  "reported_to": [
+    "KIRO-PRINCIPAL-TL - LOCAL 100.117.245.15 pane wB:p1 (herdr pane run via ssh)",
+    ".deploy-control/inbox-tm/FROM_Opus48#A__TO_Kiro-PRINCIPAL-TL__20260726T212721Z.msg"
+  ],
+  "briefing_corrections": [
+    "PID 1744675 nao existe mais; daemon vivo e 3244391 iniciado 21:26:24Z",
+    "o processo vivo nao tem AGENT_BRAIN_ROUTE_MODEL definido, ao contrario do briefing",
+    "o sintoma 'Agents: claude' nao se reproduz: o daemon atual registra 6 agents"
+  ],
+  "residual_gap": "Runtime offline / No models available na UI e outra camada (linhas de runtime por workspace + auth de agy e opencode). Nao investigado: fora da pergunta exclusiva.",
+  "non_claims": [
+    "nenhum daemon reiniciado, nenhum processo morto, nada instalado, nenhum container reiniciado",
+    "nenhum arquivo apagado, nenhum git rm/push/reset/clean/checkout --",
+    "nenhum valor de segredo lido, impresso ou transcrito (MULTICA_TOKEN e a chave OmniRoute referenciados apenas por nome)",
+    "nenhum comando de registro multi-CLI inventado: a flag nao suporta isso"
+  ],
+  "blocker": null
+}

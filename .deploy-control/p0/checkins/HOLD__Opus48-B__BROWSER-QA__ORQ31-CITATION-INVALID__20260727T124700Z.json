@@ -1,0 +1,47 @@
+{
+  "event": "HOLD_RECORD",
+  "timestamp_utc": "2026-07-27T12:47:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "BROWSER-QA-DISPOSABLE",
+  "status": "RESOLVED_CITATION_REPAIRED",
+  "orq_issue_id": "ORQ-39",
+  "orq_citation_status": "CORRECTED",
+  "note": "Registro LOCAL, conforme ordem GTL HOLD. A citacao ORQ-31 usada em CHECKOUT__Opus48-B__ORQ-31__GTL-ORQ31-V2-PLAN-CORRECTION__20260727T125200Z.json e PROVISORIA E INVALIDA: o unico ORQ-31 real e Security Wave A, e o Browser QA nao tem cartao persistido. Este registro NAO altera nem revisa a evidencia congelada nem o check-out anterior, que ficam como entregues.",
+  "frozen_artifact": {
+    "path": ".deploy-control/p0/evidence/gtl-browser-qa-disposable-plan.md",
+    "bytes": 39070,
+    "lines": 680,
+    "sha256": "4b3bbaf23bc9e8aee13589ad4cc11a164d1d4f5783cd3c9d2f445e47d7a4d348",
+    "mtime": "2026-07-27 12:43",
+    "purpose": "Baseline de congelamento: qualquer divergencia futura deste sha256 indica que a evidencia foi mutada durante o freeze."
+  },
+  "prior_checkout_left_untouched": ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-31__GTL-ORQ31-V2-PLAN-CORRECTION__20260727T125200Z.json",
+  "acknowledged_constraints": [
+    "Plano V2 congelado exatamente como entregue; nao revisei a evidencia",
+    "Nao solicitei review; o pedido de peer reviewer feito antes desta ordem fica suspenso",
+    "Nao criei cartao, nao criei workflow, nao commitei, nao dei push, nao abri PR",
+    "Habilitar o primeiro workflow do GitHub Actions na raiz e gate de governanca SEPARADO do owner, e NAO esta implicado por aprovacao anterior de ferramenta",
+    "Permaneco idle ate o GTL fornecer novo ORQ-N com UUID verificado"
+  ],
+  "unblocks_on": "GTL fornecer ORQ-N novo e verificado, com UUID, para o trabalho de Browser QA. Somente entao a citacao deixa de ser provisoria e o plano pode voltar a revisao.",
+  "controlled_unfreeze_20260727T125200Z": {
+    "kanban_status": "UNFREEZE CONTROLADO. Unicidade do banco saudavel. ORQ-38 registra o incidente de nivel de reporte.",
+    "my_registrar_status": "NAO SOU O REGISTRAR. O GTL nao me nomeou, portanto sigo PROIBIDO de POST /api/issues.",
+    "browser_qa_card": "AINDA NAO EXISTE cartao verificado para Browser QA. Nenhum mapeamento me foi fornecido, logo a citacao permanece PROVISIONAL_INVALID e o plano V2 permanece congelado.",
+    "correction_rule_understood": "Cartao existe somente apos POST 201 devolver UUID mais numero E um GET imediato por UUID devolver o mesmo par; reportar AMBOS e NUNCA prever ORQ-N. Quando o mapeamento verificado chegar, eu corrijo a citacao provisoria citando UUID e numero conforme retornados, sem inferir.",
+    "action_taken_now": "Nenhuma. Nao criei cartao, nao previ numero, nao mutei a evidencia congelada, nao pedi review. Permaneco aguardando mapeamento verificado."
+  },
+  "non_claims": [
+    "Nao mutei a evidencia congelada: o sha256 acima e o do arquivo como entregue",
+    "Nao criei, deletei, renumerei, mesclei nem mutei cartao algum, incluindo os dois ORQ-31 reportados",
+    "Nao consultei o Kanban",
+    "Nao iniciei trabalho novo"
+  ],
+  "orq_issue_uuid": "c03941bc-3bde-4de1-ab19-1ba93de0ad51",
+  "resolution_20260727T130200Z": {
+    "verified_card": "ORQ-39 UUID c03941bc-3bde-4de1-ab19-1ba93de0ad51, assignee Opus48-B, depende de ORQ-26",
+    "note": "Reparo de citacao autorizado e aplicado. O baseline sha256 registrado neste arquivo refere-se ao estado CONGELADO anterior ao reparo e permanece valido como prova do que existia antes.",
+    "new_frozen_sha256": "9a4f51413840b8f68cb4ca0da87dc9fdbaf6c3729bdded5dd1b37a4e1d4d95b9"
+  }
+}

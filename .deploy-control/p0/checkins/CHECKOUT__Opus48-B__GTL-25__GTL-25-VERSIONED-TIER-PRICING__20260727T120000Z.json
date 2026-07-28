@@ -1,0 +1,81 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:00:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "GTL-25",
+  "task_ids": [
+    "GTL-25-VERSIONED-TIER-PRICING"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-versioned-tier-pricing-design.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__GTL-25__GTL-25-VERSIONED-TIER-PRICING__20260727T120000Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "read internal/metrics/business.go:259-294",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "AUTOCORRECAO DO GTL-03 - o miss por modelo JA e observavel: ramo 'if !priced' em :260-268 chama recordUnpricedTokens, e :289-294 alimenta multica_llm_unpriced_tokens_total (:124-129). Minha afirmacao anterior de que o miss era invisivel estava errada e foi corrigida na secao 0 do documento"
+    },
+    {
+      "command": "read internal/metrics/pricing.go integral",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "BASE - ModelPrice :8-15, mapa de 22 entradas :17-39, 21 regex de alias :41-66, PriceForModelAlias :68-77, tokenCostUSD :79-84. Sem Tier, sem EffectiveFrom, sem Version"
+    },
+    {
+      "command": "grep chaves de rollup em migrations/073, 084, 101, 102",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "FATO CENTRAL - 073:11-23 PK (bucket_date, workspace_id, runtime_id, provider, model); 084:37-52 PK (bucket_date, workspace_id, agent_id, project_id, model); 101:37-54 PK de 7 colunas e 101:114-125 dirty com a mesma chave; 102:274 rollup window com GROUP BY 1..7 em :348 e triggers em :50,142,176,233. NENHUMA das quatro tem coluna de custo: agregam somente os quatro campos de token"
+    },
+    {
+      "command": "ls migrations/ | grep -iE 'price|cost|rate'",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "CONFIRMA - nao existe preco nem custo em banco; custo vive apenas em Prometheus"
+    },
+    {
+      "command": "grep -n 'func (m *BusinessMetrics) RecordLLMUsage' internal/metrics/business.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - assinatura em :253; unico consumidor de preco, o que permite estender ModelPrice sem tocar o call site desde que os quatro campos de valor mantenham o nome"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-versioned-tier-pricing-design.md",
+    ".deploy-control/p0/evidence/gtl-cost-implementation-audit.md (base GTL-03)",
+    "multica-auth-work/server/internal/metrics/pricing.go:8-15, :17-39, :41-66, :68-77, :79-84",
+    "multica-auth-work/server/internal/metrics/business.go:118-129, :253, :259-276, :289-294",
+    "multica-auth-work/server/migrations/073_task_usage_daily_rollup.up.sql:11-23, :38, :76",
+    "multica-auth-work/server/migrations/084_task_usage_dashboard_rollup.up.sql:14-15, :37-52, :68, :86-95",
+    "multica-auth-work/server/migrations/101_task_usage_hourly_schema.up.sql:37-54, :85, :114-125",
+    "multica-auth-work/server/migrations/102_task_usage_hourly_pipeline.up.sql:31, :50, :142, :176, :233, :274, :348, :418",
+    "multica-auth-work/server/pkg/db/generated/task_usage.sql.go:418-420"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run no ORQ2, exit 0",
+  "summary": "Design read-only de fonte unica de preco por provider/model/tier com effective_from e version, sem definir nenhum valor monetario. Corrigi uma afirmacao minha do GTL-03: o miss por modelo ja e observavel via multica_llm_unpriced_tokens_total; o defeito real e o eixo tier, onde claude-opus-4-6-thinking casa a regra base e e cobrado como Opus normal, isto e um erro que se apresenta como sucesso. Decidi codigo versionado e nao tabela DB, com o argumento decisivo de topologia: internal/metrics e compilado no binario do daemon e o Postgres e do backend no ORQ1, logo preco em DB obrigaria copia, que e a segunda fonte de verdade a evitar; declarei o gatilho que inverteria a decisao. Patch map: ModelPrice ganha Tier, EffectiveFrom e Version mantendo os quatro campos de valor com o mesmo nome, o mapa vira modelPriceHistory append-only por chave provider:model:tier com slice ordenado, e nasce PriceFor(provider, model, tier, at) com PriceForModelAlias delegando. O tier vem do parametro originado de thinking_level e nunca do nome do modelo. Miss observavel com label fechado de tres valores e a recomendacao explicita de nao cair para o preco base em tier_unknown. Rollups: as quatro tabelas nao tem coluna de custo, logo nenhuma mudanca e necessaria desde que custo continue derivado na leitura; registrei o custo real do caminho alternativo, que mexe em quatro PKs, no GROUP BY e nos triggers. Nenhuma migration de preco. Rollback nao destrutivo em tres niveis, com correcao de preco por append e nunca por edicao. Treze testes, incluindo regressao dos 22 modelos atuais e uma assercao de schema de que os rollups nao tem custo.",
+  "non_claims": [
+    "READ-ONLY: nao editei codigo, nao toquei no DB, nao criei migration, nao compilei, nao rodei build, teste, migration, deploy, restart ou rerun",
+    "Nao defini nenhum valor monetario: todas as entradas de exemplo estao comentadas e sem valor",
+    "Nao verifiquei se NormalizeModelAlias e NormalizeRuntimeProvider preservam sufixo de tier, o que importa para o teste 8",
+    "Nao medi a cardinalidade observada das series de custo em producao; a analise e sobre o conjunto de labels declarado",
+    "Nao decidi entre nao cobrar em tier_unknown e cair para base contando o miss: recomendei a primeira e registrei a segunda como aceitavel, a escolha e do owner",
+    "Nao decidi codigo vs DB de forma irrevogavel: declarei o gatilho que inverteria a recomendacao",
+    "Nao redesenhei a migration de thinking_level, que e dependencia do GTL-03 e pertence a outro pacote",
+    "Nao toquei nas 9 issues preservadas (ORQ-12, 13, 15, 16, 17, 18, 21, 22, 23) e nao disparei rerun",
+    "Os arquivos de codigo modificados no repo nao sao meus: pertencem ao escritor unico"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (GENERAL-TECH-LEAD)",
+      "reason": "Precisa de ruling do owner em dois pontos: (1) politica de tier_unknown, nao cobrar (recomendado) versus cair para base contando o miss; (2) cadastro dos valores monetarios, incluindo os modelos AGY hoje ausentes como gemini-3.6-flash. Dependencia externa: thinking_level em task_usage, sem o qual o design fica correto porem inerte.",
+      "file": ".deploy-control/p0/evidence/gtl-versioned-tier-pricing-design.md"
+    }
+  ]
+}

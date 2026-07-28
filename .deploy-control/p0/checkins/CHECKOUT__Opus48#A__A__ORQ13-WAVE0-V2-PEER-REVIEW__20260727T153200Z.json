@@ -1,0 +1,35 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:32:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-13",
+  "task_ids": ["ORQ13-WAVE0-SQLC-BASELINE-V2-PEER-REVIEW"],
+  "status": "DONE_BLOCK",
+  "verdict": "BLOCK",
+  "deliverable": ".deploy-control/p0/evidence/orq13-wave0-sqlc-baseline-v2-peer-review.md",
+  "artifact_sha256": "897e5fb05da7f659ffaaff59b3c0fc0b80bfc95399d35e36821280059e89f51c",
+  "conceptual_pass": "As retificacoes da V2 estao CORRETAS e eu endosso: remover o grep de snake_case como gate, declarar pkg/db/generated/** como excecao de lint de ESTILO (sem isentar compilacao), proibir edicao manual, e aceitar max_seq porque e saida determinista do gerador. Confirmei tambem que sqlc existe em /home/ec2-user/.cache/sqlcbuild/sqlc (fora do PATH, validando o export) e que gofmt existe em /home/ec2-user/goroot/go/bin/gofmt.",
+  "blockers": [
+    "B1 Gate 1.3 SEMPRE FALHA, provado empiricamente: executado de multica-auth-work/server, git diff --name-only imprime caminhos relativos a RAIZ do repo (multica-auth-work/server/pkg/db/generated/...), entao grep -v '^pkg/db/generated/' casa TODAS as linhas e o gate faz exit 1 mesmo quando o diff esta 100% dentro de generated. Com --relative a saida vira pkg/db/generated/... e o gate funciona. Correcao: git diff --name-only --relative.",
+    "B2 Gate 1.4 MUTA ARQUIVOS: go help fmt diz literalmente que 'Fmt runs the command gofmt -l -w', ou seja go fmt sempre inclui -w e REESCREVE. Isso viola a PROIBICAO ABSOLUTA DE EDICAO MANUAL da propria secao 1.2, e cria falso verde porque a segunda execucao ja acha tudo formatado. Alem disso -l nao esta na usage documentada ([-n] [-x] [packages]) e pkg/db/generated e caminho de diretorio, nao padrao de pacote. Correcao: usar gofmt -l puro, que nao escreve sem -w.",
+    "B3 O worktree citado NAO EXISTE: /home/ec2-user/workspace/worktrees/gtl-orq13-wave0 retorna No such file or directory. O real e gtl-i03-orq13-phase1 [agent/opus48-b/orq-13-thinking-level]. Sem set -e, o cd falha e os gates rodam no diretorio errado. E o criterio 'git status --porcelain DEVE ESTAR LIMPO' e estruturalmente errado: no worktree real ha 7 modificados e 4 untracked, entao nunca estara limpo. Correcao: comparar geracao 2 vs geracao 1 restrito a pkg/db/generated, via git add -A do diretorio depois da 1a geracao e git diff --quiet depois da 2a.",
+    "B4 A premissa de 'isolar churn' ignora que o churn JA ESTA MATERIALIZADO E MISTURADO no worktree real: generated/models.go, task_message.sql.go e task_usage.sql.go modificados, mais queries/task_usage.sql, handler/daemon.go, daemon/daemon.go e daemon/types.go, mais 4 untracked incluindo a migration 127. Notavel: task_message.sql.go esta modificado e task_message NAO e alvo do ORQ-13, o que confirma drift de baseline anterior mas precisa ser provado hunk por hunk. O trabalho nao e gerar e commitar, e SEPARAR POR HUNK um estado ja misturado. Correcao: passo 0 de inventario e git add -p com criterio de atribuicao declarado.",
+    "B5 COLISAO DE FILES_LOCKED COM O ORQ-41: a Wave 0 declara pkg/db/generated/* e internal/service/task.go, e ambos sao reivindicados pelo ORQ-41 (LANE-DB exclusivo e W2). Dois cartoes nao podem deter o mesmo diretorio de codigo gerado, porque um sqlc generate sobrescreve o do outro. Alem disso generated/* com UM asterisco nao cobre subdiretorio, e handler/daemon.go e service/task.go pertencem ao Commit 2 e nao a Wave 0. Correcao: reduzir o lock da Wave 0 a sqlc.yaml + pkg/db/generated/** e obter ruling do GTL sobre a precedencia com o ORQ-41.",
+    "B6 Reconciliacao da 127: 127_task_usage_thinking_level.{up,down}.sql existem no worktree do ORQ-13 e estao UNTRACKED (git ls-files --error-unmatch falha). Na integracao o maior numero e 126, logo a 127 nao esta reservada visivelmente. A secao 2 do runbook diz Migration NEXT_CANONICAL, o que esta correto em principio, mas conflita em silencio com o digito ja materializado. Saidas: registrador ratifica a 127 e o runbook substitui o placeholder pelo numero ratificado, ou a 127 e renumerada, o que e barato porque esta untracked. BLOQUEIO DE PROCESSO: eu NAO SEI quem e o registrador central, e a mesma lacuna apareceu no ORQ-41 - hoje ORQ-12, ORQ-13, ORQ-21 e ORQ-41 criam numero em worktrees isolados sem coordenacao, e o primeiro merge ganha por acidente.",
+    "B7 mkdir -p -m 0700 nao corrige diretorio PRE-EXISTENTE (o modo vale so para os criados): exigir chmod 0700 incondicional e verificar com stat -c%a. Falta set -euo pipefail no bloco de gates. E o Gate 1.6 compila apenas ./cmd/server/..., enquanto o churn em generated afeta tambem daemon e CLI: usar go build ./... .",
+    "B8 A secao 6 declara PASS no proprio artefato. Autor nao se auto-aprova; o status correto e proposta aguardando review."
+  ],
+  "non_claims": [
+    "NAO executei nenhum gate: sem sqlc generate, sem go build, sem go vet, sem gofmt, sem migration",
+    "leituras: git status --porcelain, git diff --name-only com e sem --relative, git ls-files --error-unmatch, git worktree list, ls, command -v e go help fmt - todas nao mutantes",
+    "nao editei arquivo, nao commitei, nao fiz stage, nao toquei o worktree do ORQ-13",
+    "nao sei se 127 e o numero correto: decisao do registrador central, que nao identifiquei",
+    "nao atribui hunks de generated a Wave 0 ou 1 - e o trabalho do executor e o motivo do B4",
+    "nao revalidei o UUID do ORQ-13 por GET: o runbook cita a issue por numero, sem UUID",
+    "nao alterei assignee nem postei comentario; nenhum card criado"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "blocker": null
+}

@@ -1,0 +1,85 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T22:48:21Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "p3-projection"
+  ],
+  "status": "DONE",
+  "mode": "PREPARADO_NAO_APLICADO",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gw-discovery-p3-projection.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__p3-projection__20260726T224821Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "git status --porcelain multica-auth-work | grep -c '\\.go$'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS (0 arquivos .go tocados; subtree do server limpo)"
+    },
+    {
+      "command": "leitura integral de internal/daemon/gateway/model_projection.go e health_models.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "REVIEWED (ProjectOmniRouteModels em 93-122; ModelDocumentMeta em 40-42; ModelsFetchFunc.FetchModels em 44-48)"
+    },
+    {
+      "command": "sed -n '220,296p' internal/daemon/gateway/registry.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "REVIEWED (buildSnapshot rejeita snapshot inteiro por linha invalida; fallback ausente rejeita tudo em 277-284; ModelSpec 44-51 sem Metadata)"
+    },
+    {
+      "command": "grep -rn 'MaxRegistryModels' internal/daemon/gateway/*.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS (registry.go:29 MaxRegistryModels = 1024 => os 327 modelos cabem, nao ha teto a alterar)"
+    },
+    {
+      "command": "grep -n 'effort|Effort|tier|Tier' internal/daemon/gateway/classification.go",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "PASS (zero ocorrencias: nao existe conceito de esforco no pacote hoje, a taxonomia e nova)"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/gw-discovery-p3-projection.md (16400 bytes, com trecho literal ANTES/DEPOIS e numero de linha)",
+    "model_projection.go:93-122 — corpo atual de ProjectOmniRouteModels, que achata tudo em unavailableProjectionRow (140-154) exceto approvedProjectionRouteModel (48)",
+    "model_projection.go:140-154 — perfil inerte: Streaming/Tools/Reasoning/StructuredOutput=false, ContextLimit:1, Available=false",
+    "health_models.go:40-42 — ModelDocumentMeta atual com apenas RegistryVersion; proposta adiciona EffortTier, BaseModelID, CapabilityInherited (todos omitempty, aditivos)",
+    "health_models.go:44-48 — ModelsFetchFunc.FetchModels: proposta NAO muda a assinatura",
+    "registry.go:220-245 e 277-284 — validacao fail-closed por linha e exigencia de fallback existente: justificam skip-em-vez-de-rejeitar e a poda de fallback",
+    "registry.go:29 — MaxRegistryModels=1024",
+    "registry.go:44-51 — ModelSpec sem Metadata: fronteira que faz o tier morrer no snapshot (item 2 da secao 6, fora do meu pacote)",
+    "client.go:188-198 — decode atual e OmniRouteNativeModels (id/object/owned_by), logo capability enriquecida nunca chega a projecao (item 1 da secao 6, fora do meu pacote)"
+  ],
+  "summary": "PACOTE 3 (p3-projection) preparado, nao aplicado. Proposta em 2 arquivos do meu escopo. (A) health_models.go:40-42: ModelDocumentMeta ganha 3 campos aditivos omitempty (EffortTier, BaseModelID, CapabilityInherited); FetchModels nao muda de assinatura. (B) model_projection.go: taxonomia de esforco com sufixos ordenados longest-first ('-xhigh' antes de '-high') e regra conservadora de que o sufixo so e tier se o id-base existir no MESMO catalogo, o que impede mutilar modelos legitimamente terminados em -max/-fast e torna a classificacao auto-verificada; ProjectOmniRouteModels passa a duas passagens (pass 1 admite ids, pass 2 classifica e herda) porque 'isto e tier?' so e respondivel com o catalogo completo; variante herda Protocol/Streaming/Tools/Reasoning/StructuredOutput/ContextLimit/AccountPool/Rotation/Affinity da base e NUNCA herda Available; linha ja enriquecida e preservada verbatim em vez de achatada; politica de selecionabilidade sai de constante para parametro ProjectionPolicy mantendo fail-closed (politica vazia = zero available=true); poda de fallback para ids descartados, porque registry.go:277-284 rejeita o snapshot inteiro por um alvo ausente; ProjectionStats agrega contagens e nunca ids, nunca identidade de conta; OwnedBy continua lido e descartado. Assinatura antiga preservada como wrapper. 3 fronteiras declaradas fora do meu pacote: decode enriquecido por linha em client.go:188-198 (sem ele Enriched=0 e as 327 seguem inertes), campo aditivo em ModelSpec/registry.go para o tier sobreviver ao snapshot, e o mapeamento para o dropdown em pkg/agent. Aguardo assinatura do split por Codex56-TL antes de qualquer edicao.",
+  "non_claims": [
+    "nao editei arquivo de codigo, nao recompilei, nao rodei go vet, nao troquei binario, nao reiniciei daemon, nao commitei (0 arquivos .go modificados)",
+    "NAO inspecionei o payload real dos 327 modelos: /v1/models e auth-gated e trazer a chave para contexto/argv e proibido, logo nao provei se o gateway serve schema nativo ou enriquecido nem confirmei empiricamente os 53 sufixos; o desenho cobre os dois casos",
+    "nao escrevi os testes propostos na secao 7",
+    "nao toquei client.go, registry.go nem pkg/agent (pacotes de outros)",
+    "nao provei que /tmp/multica-auth-fixed (build 24/07) corresponde a este codigo"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL",
+      "reason": "assinatura do split antes de escrever codigo; e decisao sobre as 3 fronteiras cross-package (decode enriquecido em client.go, campo aditivo em ModelSpec, mapeamento de dropdown em pkg/agent) sem as quais a projecao correta nao chega ao usuario",
+      "file": ".deploy-control/p0/evidence/gw-discovery-p3-projection.md"
+    }
+  ],
+  "reported_to": [
+    "KIRO-PRINCIPAL-TL (host 100.117.245.15, pane wB:p1) via item 2 + copia duravel em inbox-tm"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

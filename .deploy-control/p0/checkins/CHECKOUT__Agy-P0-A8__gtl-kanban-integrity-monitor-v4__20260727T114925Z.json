@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:49:25Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-KANBAN-INTEGRITY-MONITOR-V4",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v4.md"
+  ],
+  "summary": "Design Corrigido do Monitor de Integridade do Kanban V4 (GTL-49) concluído em modo READ-ONLY. Atendidos os 8 itens de correção do BLOCK GTL-43: unificadas as fontes de dependência na Anomalia 4 (UNION/FILTER), incorporadas análises EXPLAIN de índices reais por workspace, acoplada a execução ao final do loop de runtime_sweeper.go (adicionado a FILES_LOCKED), estruturado o advisory lock 4247 em conexão dedicada com liberação limpa e criada a suíte de testes com validação StrictReadOnly."
+}

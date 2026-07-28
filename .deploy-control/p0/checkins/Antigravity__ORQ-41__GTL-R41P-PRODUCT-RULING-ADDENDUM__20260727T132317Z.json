@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T132317Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-41",
+  "lane": "GTL-R41P",
+  "task_ids": ["ORQ-41-PRODUCT-RULING-ADDENDUM"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-execution-trigger-decoupling-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T132317Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-execution-trigger-decoupling-peer-review.md"
+  ],
+  "summary": "Aditivo de incorporacao da Decisao de Produto do GTL entregue para ORQ-41. Comentarios e atribuicoes sao metadados fail-closed por padrao. Mencao exige opt-in explicito com cost_ack. Reassign nao cancela tarefas em andamento. Caminho de migracao minima em 4 fases detalhado. Veredito: BLOCK.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

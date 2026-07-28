@@ -1,0 +1,93 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T10:20:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "T4-KANBAN-ORQ26-READONLY-AUDIT"
+  ],
+  "status": "DONE",
+  "mode": "READ_ONLY",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/audit-t4-kanban-orq26-readonly-20260727.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__T4-KANBAN-ORQ26-READONLY-AUDIT__20260727T102000Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "docker inspect -f '{{.Id}} created={{.Created}}' multica-web:transition-6a2aba3 / multica-backend:transition-6a2aba3 / tags irmas",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "ACHADO — web:transition-6a2aba3 = sha256:cf8017e3d2fd created 2026-07-24T11:42:47Z, MESMO ID de web:20260724-web-cf8017e3d2fd; backend:transition-6a2aba3 = sha256:04217fa1fdbe created 2026-07-20T07:32:05Z; backend em uso = t20obs-8f524054 sha256:994aa2284b55 created 2026-07-24T12:19:04Z"
+    },
+    {
+      "command": "docker inspect sha256:29e4bc52c351... e sha256:c8ba7dc56be0... (IDs do dossier 19/07)",
+      "exit_code": 1,
+      "assertions_or_tests": 2,
+      "result": "ABSENT nos dois — os artefatos originais de 6a2aba3 nao existem mais no ORQ1; rollback real exigiria rebuild do commit 6a2aba3550aaf6b0468a37bfdf2f00c7faaae084"
+    },
+    {
+      "command": "curl -s -o /dev/null -w %{http_code} em /health, /api/workspaces, /api/me, /api/issues?workspace_id=..., /api/issues, /api/agents, /api/runtimes, 13100/, 13100/login, 13100/api/health",
+      "exit_code": 0,
+      "assertions_or_tests": 10,
+      "result": "READ OK — 200/200/200/200, 400/400/400 (sem workspace_id), 200/200/404. Porta do frontend e 13100 (3100 retorna 000). Nenhuma escrita emitida."
+    },
+    {
+      "command": "docker logs --tail 5000 multica-dev-transition-backend-1 | tally de status",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "status=200 3922, status=404 8, status=400 3, ZERO 5xx e zero level=ERROR"
+    },
+    {
+      "command": "psql: select count(*) from chat_session where id::text like 'cffb5ee4%' / total",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "0 de 190 — os 404 de chat sao resource-level (sessao removida), nao rota faltando: pending-task e messages/page existem no binario"
+    },
+    {
+      "command": "strings /app/server e grep no bundle /app/apps/web/.next para fragmentos de board action",
+      "exit_code": 0,
+      "assertions_or_tests": 9,
+      "result": "PRESENTES em ambos — issues/grouped, batch-update, batch-delete, quick-create, child-progress, children, pending-task, messages/page; bundle chama task-runs e active-task, logo quem pede /api/issues/<uuid>/runs nao e o frontend em execucao"
+    },
+    {
+      "command": "docker inspect -f 'started/restarts' frontend + grep de erro nas ultimas 200 linhas",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "started=2026-07-27T03:11:24Z, restarts=0, sem error/unhandled/failed"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/audit-t4-kanban-orq26-readonly-20260727.md",
+    "docs/transition/DEV_RESTART_DOSSIER_20260719.md:269-270 e DOCKER_AND_REDIS_INVENTORY_20260719.md:38-39 fixam web=29e4bc52... e backend=c8ba7dc5... para 6a2aba3; ambos ABSENT no host hoje",
+    "ORQ-26 (issue number 26, workspace orq2-dev, status in_progress, priority urgent, criada 2026-07-27T03:11:13Z) registra o rollback para sha256:cf8017e3..., portanto a execucao esta documentada; o problema e de rotulo nos runbooks",
+    "log do backend: os 3 status=400 das 10:14:12Z sao dos MEUS probes sem workspace_id (declarado para nao poluir analise alheia)"
+  ],
+  "summary": "Auditoria read-only concluida. ACHADO PRINCIPAL: a tag multica-web:transition-6a2aba3 nao identifica mais o artefato de 19/07 — resolve para sha256:cf8017e3d2fd criado em 2026-07-24T11:42 (mesmo ID de web:20260724-web-cf8017e3d2fd), e a tag do backend aponta para 04217fa1fdbe de 2026-07-20; os dois IDs fixados no dossier (web 29e4bc52..., backend c8ba7dc5...) estao ABSENT no ORQ1. Logo o rollback do ORQ-26 levou ao build de 24/07 e nao ao codigo de 6a2aba3; a issue registra corretamente sha256:cf8017e3, entao a execucao esta certa e o defeito e de rotulo: os runbooks de transicao prometem um sha256 que nao existe mais. Recomendo identificar imagem por ID/digest e, se o owner quiser o artefato real, tratar como rebuild do commit 6a2aba3550aaf6b0468a37bfdf2f00c7faaae084, nao rollback. ESTADO: frontend Up 7h (started 03:11:24Z, restarts=0, sem erro em log), backend Up 2 dias, postgres healthy; web 11:42 e server 12:19 do mesmo 24/07, sem defasagem grande de contrato; a porta do frontend e 13100, nao 3100. API READ funciona (health/workspaces/me/issues com workspace_id = 200; sem workspace_id = 400); API WRITE nao testada por proibicao, verificada estaticamente: batch-update, batch-delete, quick-create, grouped, children, child-progress existem no binario em execucao e casam com o bundle. 4xx/5xx: em 5000 linhas, 3922x200, 8x404, 3x400 e ZERO 5xx; os 404 de chat sao resource-level (chat_session cffb5ee4 tem 0 linhas de 190 existentes, e as rotas existem no binario), os 404 de /api/issues/<uuid>/runs vem de cliente que nao e o frontend atual (o bundle chama task-runs e active-task), e os 3 400 sao meus probes. BOARD ACTIONS: o caminho servidor esta presente e coerente, entao deveriam funcionar do lado da API; NAO posso afirmar nada sobre a UI porque nao ha browser autenticado — falha de bundle/handler no cliente, que e a classe descrita no ORQ-26, nao aparece em log de servidor nem em strings. Critério de aceite do ORQ-26 (console/teste de browser) segue em aberto. RISCO DE SEGURANCA registrado: GET /api/me sem credencial retorna o owner (owner@local.test) e os probes anonimos aparecem no log com user_id do owner, isto e, autenticacao nao esta sendo exigida; mitigado por 18080 e 13100 estarem publicados so em 127.0.0.1 (unico bind de rede e o OmniRoute em 100.118.244.61:20128). Nenhuma mudanca proposta ou aplicada nisso.",
+  "non_claims": [
+    "nao editei, nao fiz deploy, nao reiniciei container ou daemon, nao rodei rerun, nao commitei",
+    "nao emiti nenhuma requisicao de escrita (POST/PATCH/PUT/DELETE) contra a API",
+    "sem browser autenticado: zero verificacao de UI, clique, drag-and-drop ou console — limite explicito",
+    "nao comparei o bundle da imagem defeituosa reasoning-ui-20260727T013129Z com o atual (proximo passo natural do ORQ-26, fora do pedido)",
+    "nao li credencial, token nem secret_ref"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (w5:pC) e Codex56#B (w7:p4)",
+      "reason": "decidir se o ORQ-26 passa a identificar imagem por digest e se o artefato real de 6a2aba3 sera reconstruido; e quem executa o teste de browser autenticado que fecha o critério de aceite",
+      "file": ".deploy-control/p0/evidence/audit-t4-kanban-orq26-readonly-20260727.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL (ORQ2 pane w5:pC)",
+    "Codex56#B (ORQ2 pane w7:p4)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

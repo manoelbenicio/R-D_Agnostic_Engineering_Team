@@ -1,0 +1,51 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T20:59:30Z",
+  "agent": "Kiro-CLI",
+  "pane_id": "lane-A",
+  "lane": "A",
+  "task_ids": ["REVIEW-LOTE-00"],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "scope": "/tmp/review/lote_00 - 64 caminhos (61 arquivos + 3 diretorios contendo 9 arquivos)",
+  "verdict_counts_lote": {"KEEP": 3, "PURGE": 45, "STALE": 2, "OWNER": 14, "total": 64},
+  "verdict_counts_dir_expansion": {"KEEP": 7, "STALE": 1, "OWNER": 1, "total": 9},
+  "rows_written": 73,
+  "files_created": [
+    ".deploy-control/p0/evidence/review-lote_00.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Kiro-CLI__A__REVIEW-LOTE-00__20260726T205930Z.json"
+  ],
+  "files_changed": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/review-lote_00.md",
+    "ls -l => -rw-rw-r--. 1 ec2-user ec2-user 20980 Jul 26 20:59 .deploy-control/p0/evidence/review-lote_00.md",
+    "coverage check: every path in /tmp/review/lote_00 matched a table row, missing_flag=0",
+    "grep -c row markers => 73"
+  ],
+  "owner_items": [
+    ".deploy-control/AUTHORITY_AMENDMENT_001.md - governanca valida mas contaminada com escopo omniroute/orq1/Cashless anulado pelo owner",
+    ".deploy-control/MISSION_CHARTER_v3.md - charter canonico com escopo Cashless a remover",
+    ".deploy-control/HERDR_COMMS_GUIDE.md - delta com secao 7 auto-rotulada UNRATIFIED/FROZEN, ordem nunca registrada por escrito (0.3)",
+    ".deploy-control/escalations/ - B1-B5 sem ruling e reply de 28KB com escopo anulado",
+    ".deploy-control/p0/SIX_HOUR_CHECKIN_CONTRACT.md - declara receipts imutaveis, conflita com retencao de 1 dia",
+    "9 receipts de checkin citados por nome em handoffs/evidence (F9, A7 x2, C8 x3, F8, L5, R8) - purgar cria referencia orfa"
+  ],
+  "stale_items": [
+    ".deploy-control/p0/ASSIGNMENTS.md - phase PREFLIGHT e edits BLOCKED vs control.json POST_T360_OFFLINE_RECOVERY com implementation_authorized=true",
+    ".deploy-control/dispatch/ - premissas build-no-orq1 e Cashless anuladas por ordem escrita do owner"
+  ],
+  "method_notes": [
+    "arquivos sem prefixo CHECKIN__ NAO sao duplicata dos com prefixo: cmp => DIFEREM; os primeiros sao estado do p0_control.py (schema main-brain-p0-checkin.v1), os segundos o receipt manual do SIX_HOUR contract",
+    "os 54 receipts do lote ja estao agregados em events.jsonl/monitor.jsonl, que ficam KEEP, entao PURGE nao perde historico",
+    "bin/prodex e os 9 prompts de agentic-prompts-hub/new_prompts NAO estao neste lote: nenhum veredito emitido"
+  ],
+  "non_claims": [
+    "nada apagado, nenhum git rm, push, reset, clean ou checkout --",
+    "nenhum commit criado nesta tarefa",
+    "unico artefato de conteudo criado: review-lote_00.md, mais este receipt de check-out",
+    "decisao final e do owner apos os 8 lotes reportarem"
+  ],
+  "blocker": null
+}

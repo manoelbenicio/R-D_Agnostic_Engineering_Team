@@ -1,0 +1,24 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T23:14:23Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "T4-BRIDGE-CORRECTION",
+  "task_ids": [
+    "REGISTRY-MULTICA-BRIDGE"
+  ],
+  "status": "DONE",
+  "files_changed": [
+    ".deploy-control/p0/evidence/sol-credential-account-home.md"
+  ],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Codex56-B__TO_Kiro-PRINCIPAL-TL__20260726T231406Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/sol-credential-account-home.md",
+    ".deploy-control/inbox-tm/FROM_Codex56-B__TO_Kiro-PRINCIPAL-TL__20260726T231406Z.msg"
+  ],
+  "reported_to": "KIRO-PRINCIPAL-TL@100.117.245.15:wB:p1",
+  "summary": "Evidência corrigida para reconhecer o isolamento existente e funcional no ORQ2, as raízes específicas por provider, a regressão 31d50b9 e o estado global funcional. O único foco remanescente foi registrado como ponte registry terminal_id/slot para conta/provider-root e assignment por agent_id.",
+  "validation": "Nenhum slot, token, banco, código, binário ou daemon foi sondado ou alterado. Correção baseada exclusivamente nos fatos estabelecidos pelo owner/TL e reportada por Herdr com cópia durável."
+}

@@ -1,0 +1,31 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:48:19Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "GTL-I02",
+    "ORQ-26"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "agent/agy-a7/orq26-consumer-tests",
+  "assigned_scope": "Implementation of consumer tests for ORQ-26 uploadFile contextless schema contract",
+  "finding": "Created isolated worktree /home/ec2-user/workspace/worktrees/gtl-orq26-consumer-tests on branch agent/agy-a7/orq26-consumer-tests. Maintained FILES_LOCKED on file.go/file_test.go. Implemented tests in schema.test.ts and client.test.ts for id=\"\", download_url, and markdown_url contextless shapes. Ran vitest (95/95 PASS) and tsc --noEmit (exit 0). Verdict: PASS.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-orq26-consumer-tests-impl.md, sent herdr update to General-TL Codex56-TL (w5:pC) and SSH to KIRO-PRINCIPAL-TL (wB:p1), created inbox msg and check-out JSON. Zero git commit, zero push, zero deploy.",
+  "files_changed": [
+    "multica-auth-work/packages/core/api/schema.test.ts",
+    "multica-auth-work/packages/core/api/client.test.ts"
+  ],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq26-consumer-tests-impl.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T114819Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-I02-ORQ26-CONSUMER-TESTS-IMPL__20260727T114819Z.json"
+  ],
+  "non_claims": [
+    "test implementation in isolated worktree, no file.go mutation, no git commit, no git push, no deploy"
+  ],
+  "blocker": null
+}

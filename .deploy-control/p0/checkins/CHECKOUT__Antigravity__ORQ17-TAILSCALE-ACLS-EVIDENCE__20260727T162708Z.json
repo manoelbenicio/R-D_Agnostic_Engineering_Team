@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:27:08Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-17"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Mechanical owner-evidence registration for ACLs.png and ORQ-17 U-1 gap closure",
+  "finding": "Produced orq17-tailscale-acls-owner-evidence.md. Inspected local ACLs.png (101,529 bytes, modified 2026-07-27T14:56:11Z, SHA256 ef8fa8a10ae188c5e502a6ea77da12a023c5b25536127211c096f95b621b063d). Declared screenshot source OWNER-PROVIDED. Interpreted rule src=* dst=* ip=* as full-mesh access across all users, devices, ports, and protocols inside private Tailnet. Confirmed it closes ORQ-17 U-1 observational gap. Stated non-claims: does not prove historical state outside screenshot time, does not imply Funnel/public internet exposure, zero ACL/Serve mutations occurred. Delivered note SHA256 1b8265de1f80de41a937964fbc99d2d1908971f24b7c8de0c9cc353b0ebd778a.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq17-tailscale-acls-owner-evidence.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only mechanical operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-tailscale-acls-owner-evidence.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T162708Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ17-TAILSCALE-ACLS-EVIDENCE__20260727T162708Z.json"
+  ],
+  "acls_image_sha256": "ef8fa8a10ae188c5e502a6ea77da12a023c5b25536127211c096f95b621b063d",
+  "evidence_note_sha256": "1b8265de1f80de41a937964fbc99d2d1908971f24b7c8de0c9cc353b0ebd778a",
+  "non_claims": [
+    "owner evidence registration, no Tailscale Admin API call, no historical state proof outside screenshot time, no Funnel/public internet implication, no ACL mutation, no Tailscale Serve mutation"
+  ],
+  "blocker": null
+}

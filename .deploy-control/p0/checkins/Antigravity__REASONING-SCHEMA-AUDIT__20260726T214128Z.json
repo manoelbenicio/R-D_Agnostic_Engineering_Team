@@ -1,0 +1,13 @@
+{
+  "event": "checkout",
+  "timestamp_utc": "20260726T214128Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p1",
+  "lane": "E",
+  "task_ids": ["REASONING-SCHEMA-AUDIT"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/checkins/Antigravity__REASONING-SCHEMA-AUDIT__20260726T214128Z.json", ".deploy-control/inbox-tm/FROM_Opus48C__TO_Kiro-PRINCIPAL-TL__20260726T214128Z.msg"],
+  "evidence": "agent.thinking_level TEXT NULLABLE (sem CHECK constraint); agent.model TEXT NULLABLE; agent_runtime.metadata JSONB livre. Todos thinking_level=NULL nos registros atuais.",
+  "reported_to": "KIRO-PRINCIPAL-TL"
+}

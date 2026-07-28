@@ -1,0 +1,47 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:48:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-17",
+  "issue_title": "Publicar frontend 13100 com acesso LAN estavel",
+  "task_ids": ["GTL-ORQ17-V4-PLAN-CORRECTION"],
+  "status": "DONE_PLAN_ONLY_AWAITING_INDEPENDENT_REREVIEW",
+  "deliverable": ".deploy-control/p0/evidence/gtl-orq17-approved-cutover-plan.md (secao V4 apendada, supersede V3 nas secoes 3.3, 4, 5.2 e 10)",
+  "closes": "BLOCK do GTL-R17",
+  "kanban_freeze_compliance": "Nenhum card criado nem POST de issue: Kanban em FREEZE pelo incidente de ORQ-31 duplicado. Trabalho vinculado ao card EXISTENTE ORQ-17, com UUID e escopo de aceite nao ambiguos. Nenhum ORQ-31 tocado ou citado como referencia.",
+  "tailscale_syntax_verified": "tailscale version = 1.98.9 (commit 4fb758c39ae5b208b974af14ba6bc896a250394c). serve --help confirma nesta versao: --bg, --http, --https, --set-path ('Appends the specified path to the base URL'), --yes, e os subcomandos status [--json] e reset. --set-path e prefixo; a raiz monta-se SEM --set-path. A V3 declarava a sintaxe como nao validada; agora esta validada read-only.",
+  "route_map_correction": "CORRECAO DE FATO: /auth/login, /auth/google e /auth/logout NAO sao rotas do Next.js, sao do BACKEND - router.go:487-489. A unica rota /auth/* do frontend e /auth/callback (apps/web/app/auth/callback/page.tsx). E o grupo (auth) do app router NAO aparece na URL, logo a pagina de login e /login e nao /auth/login. Consequencia: existe COLISAO DE PREFIXO em /auth - mandar /auth inteiro ao backend quebra /auth/callback e mata o login Google; mandar ao frontend elimina os tres POSTs. Solucao: montar os tres paths EXATOS no backend e deixar /auth/callback cair na raiz do frontend, o que funciona por precedencia de prefixo mais longo.",
+  "route_map": "raiz -> 127.0.0.1:13100 (captura /, /login, /auth/callback, /_next, /lark, /{workspaceSlug}); --set-path /api, /ws, /uploads, /auth/login, /auth/google, /auth/logout -> 127.0.0.1:18080. NAO expor /health, /readyz, /healthz, /health/realtime: seguem loopback-only, o que basta ao preflight.",
+  "residual_risk_declared": "Montar /api expoe /api/daemon/* incluindo o WS de daemon (router.go:516), e daemonws/hub.go:182 tem CheckOrigin sempre true por desenho. tailscale serve NAO tem regra de negacao, logo nao existe excluir /api/daemon na borda. Mitigacao aceita: a ACL de V4.3 limita a 443 ao dispositivo do owner, e o daemon do ORQ2 continua entrando por loopback via tunel. Sem a ACL, esta exposicao e inaceitavel.",
+  "acl_finding": "ACHADO QUE MUDA O DESENHO: identidade NAO separa owner de agentes. Medido em tailscale status --json: um unico user 7650130887043022 cloud.labs.brazil@gmail.com, e TODOS os 15 nos (orq1 + 14 peers, incluindo orq2, wsl-dataops-labs e ec2-jump-box) com esse mesmo UserID e tags=None. Logo src por identidade concederia acesso aos nos de agente. Menor privilegio tem de ser por DISPOSITIVO.",
+  "acl_proposal": "Proposta A, aplicavel hoje sem re-keying: hosts mapeando orq1 100.118.244.61, orq2 100.110.178.47 e owner-dev-N com IP declarado pelo owner, mais acl accept src owner-dev-N dst orq1:443, preservando apenas o que a frota ja precisa (orq2 -> orq1:22 e orq1:18080). PONTO EXPLICITO: nao existe deny em ACL Tailscale; a exclusao dos agentes vem da AUSENCIA de regra para orq1:443, portanto qualquer regra ampla pre-existente ANULA a restricao e o owner precisa LER a ACL atual antes. Proposta B por tag:agent e mais robusta mas aplicar tag re-autentica o no e poderia derrubar o tunel e o daemon do orq1: NAO recomendada no Gate A. Variante grants tambem fornecida; nao verifiquei qual sintaxe a policy usa.",
+  "acl_verification_rollback": "Verificacao: do dispositivo do owner curl -fsSI https://orq1.tail96e2c0.ts.net/ deve suceder; do ORQ2 a conexao deve FALHAR NA REDE (timeout/refused), nao HTTP 403, porque ACL bloqueia antes do HTTP. Rollback: restaurar a revisao anterior do policy file no admin console - nao ha rollback por CLI no host, e isso precisa estar dito ANTES de aplicar.",
+  "idle_removed_from_gate_a": "Idle 4h e cookie deslizante REMOVIDOS integralmente do Gate A. Motivo tecnico: CSRF = hmac(authToken) em cookie.go:141-145, logo qualquer renovacao do auth invalida o CSRF existente, e janela deslizante implica reemissao continua; somado a isso nao existe estado de sessao (grep refresh/rolling/sliding/renew vazio; sem tabela de sessao nas migrations). Registrado como problema FUTURO SEPARADO e ENFILEIRADO, com evidencia, impacto, dependencia e risco escritos no proprio documento - SEM criar card, por causa do freeze. Politica efetiva do Gate A dita sem ambiguidade: teto absoluto 24h, SEM timeout de inatividade.",
+  "gate_a_policy": "login real com bypass false; FRONTEND_ORIGIN e MULTICA_APP_URL = https://orq1.tail96e2c0.ts.net; Secure derivado do scheme (cookie.go:115-119) e SameSite=Strict (cookie.go:164), o que exige host unico - satisfeito pelo mapa de rotas; AUTH_TOKEN_TTL=24h (cookie.go:36-61 aceita 24h; default atual 30 dias em :23; sync.Once em :74 exige processo novo); tunel do ORQ2 PRESERVADO porque serve o daemon e nao o browser.",
+  "gate_zero_business_action": "Somente o owner, no admin console do tailnet cloud.labs.brazil@gmail.com: 1 abrir DNS; 2 em HTTPS Certificates clicar Enable HTTPS; 3 confirmar MagicDNS ainda habilitado (ja esta true); 4 confirmar que CertDomains passa a listar orq1.tail96e2c0.ts.net. Hoje CertDomains=None e serve status='No serve config'. Sem o passo 2 o cutover NAO comeca e nao ha contorno no host.",
+  "stop_rule": "Falha em qualquer uma das 10 verificacoes pos-cutover (cert, rotas montadas, frontend 200, /auth/callback preservado, login com Secure+Strict, CSRF em request mutante, WS, upload maior que 10 MB, ACL negando do ORQ2, daemon e tunel intactos) interrompe o cutover e dispara rollback. Nao ha seguir e ajustar depois.",
+  "rollback_order": "1 borda: tailscale serve reset, segundos, sem reiniciar nada; 2 env: restaurar origin loopback e remover AUTH_TOKEN_TTL, uma recriacao - e o bypass volta a funcionar automaticamente por middleware/auth.go:38-55; 3 ACL: revisao anterior no console; NUNCA desligar o tunel do ORQ2, nunca reabilitar bypass com origin publico, nunca reaplicar branch antiga ou copia bruta de credencial (ressalva Codex56#B).",
+  "open_questions_not_asserted": [
+    "qual dos 14 peers e o dispositivo do owner - todos com mesma identidade e sem tag; nao escolho por ele",
+    "conteudo da ACL atual - sem acesso ao admin console; regra ampla pre-existente anularia a proposta",
+    "se a policy usa acls ou grants - nao verificado",
+    "valores atuais de CORS_ALLOWED_ORIGINS e MULTICA_TRUSTED_PROXIES - nao lidos",
+    "senha do usuario do owner - 125_user_password_credential existe, mas nao consultei o banco; e o risco do G3",
+    "limite de body do tailscale serve - nao documentado no --help; medir no G7"
+  ],
+  "files_changed": [],
+  "files_created_or_appended": [
+    ".deploy-control/p0/evidence/gtl-orq17-approved-cutover-plan.md (secao V4 apendada)",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__GTL-ORQ17-V4__20260727T124800Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "zero mutacao de codigo, config, cert, serve, ACL, env, container, restart, instalacao ou credencial",
+    "somente leitura: tailscale version, serve --help, serve status, status --json, ss -tln e leitura de fonte",
+    "nenhum card criado; nenhum ORQ-31 tocado; as 9 issues preservadas seguem intactas; zero rerun"
+  ],
+  "next": "Re-review independente obrigatoria antes de qualquer execucao. Aguardando w5:pC e unfreeze do Kanban para o item enfileirado de idle.",
+  "blocker": "G0: HTTPS Certificates do tailnet desligado (CertDomains=None) - acao do owner no admin console. G1: ACL atual desconhecida e identidade nao separa owner de agentes."
+}

@@ -1,0 +1,81 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:42:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-38-ISSUE-GET-WORKSPACE-CONTRACT-AUDIT"
+  ],
+  "orq_n": "ORQ-38",
+  "orq_uuid": "fd5c4d55 (identificador citado; UUID completo do card conforme board)",
+  "status": "DONE",
+  "mode": "READ_ONLY",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq38-issue-get-workspace-contract-audit.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-38-ISSUE-GET-CONTRACT-AUDIT__20260727T134200Z.json"
+  ],
+  "tests": [
+    {
+      "command": "curl -w %{http_code} GET /api/issues/<uuid> SEM workspace_id",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP 400 com corpo {\"error\":\"workspace_id or workspace_slug is required\"} — o servidor JA falha fechado; nao existe objeto de forma nula"
+    },
+    {
+      "command": "curl GET com workspace_id valido (controle)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP 200"
+    },
+    {
+      "command": "curl GET com UUID inexistente + workspace_id",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP 404 {\"error\":\"issue not found\"}"
+    },
+    {
+      "command": "curl GET com workspace_id=not-a-uuid",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP 400 {\"error\":\"invalid workspace_id\"}"
+    },
+    {
+      "command": "leitura de router.go:734, handler/issue.go:1583-1588 e handler/handler.go:568-606 e :445-447",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "contrato mapeado: requireUserID -> 401; resolveWorkspaceID vazio -> 400 (handler.go:574-577); identificador tipo ORQ-41 resolvido apenas dentro do escopo (:582); UUID invalido -> 404; workspace invalido -> 400; GetIssueInWorkspace escopa a query por workspace, logo UUID de outro tenant da 404 e nao leitura cruzada"
+    },
+    {
+      "command": "grep -rl 'workspace_id or workspace_slug is required|workspace_id is required' internal/handler/*_test.go",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "VAZIO — nenhum teste de handler cobre esses codigos/mensagens; e a lacuna real"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "summary": "Auditoria concluida e ela RETRATA a minha propria premissa. O servidor NAO devolve objeto de forma nula: GET /api/issues/<uuid> sem workspace_id retorna HTTP 400 com {\"error\":\"workspace_id or workspace_slug is required\"}, e os demais casos tambem sao fail-closed e distinguiveis — 200 com workspace valido, 404 para UUID inexistente dentro do escopo, 400 para workspace_id invalido. Contrato mapeado em router.go:734 -> handler/issue.go:1583-1588 -> handler/handler.go:568-606, com resolveWorkspaceID em :445-447 delegando ao middleware que aceita workspace_id ou workspace_slug; a query GetIssueInWorkspace e escopada por workspace, portanto UUID de outro tenant produz 404 e nao leitura cruzada. A CAUSA do relato falso de identidade foi o CLIENTE, nao o servidor: a minha sonda do K05 usou curl -s sem verificar http_code e depois aplicou dict.get em um corpo de erro, o que devolveu None para id/identifier/number e pareceu um objeto nulo; sem workspace_id na URL, o verificador nao distinguia requisicao malformada de card inexistente. A tabela estava sa: a auditoria de unicidade por Counter de number e identifier mostrou zero duplicata. Lacunas reais que proponho fechar: (1) nenhum teste de handler cobre esses codigos, com grep vazio nos *_test.go; (2) o padrao de verificacao da frota precisa ser fail-closed por status, com exigencia de workspace_id, checagem de codigo != 200 como falha de verificacao e presenca obrigatoria de id, identifier e number antes de afirmar identidade, mais prova de unicidade por agregacao; (3) a mensagem do handler (workspace_id is required) difere da mensagem real observada (workspace_id or workspace_slug is required), o que quebraria teste por grep de mensagem. Propus 5 testes de regressao herméticos, incluindo o de nao-vazamento cross-tenant e o de identificador tipo ORQ-41 exigindo escopo.",
+  "non_claims": [
+    "nao patchei, nao chamei API de escrita, nao rodei teste/build/deploy/restart",
+    "RETRATO minha afirmacao anterior de objeto de forma nula: era artefato do meu cliente; o servidor responde 400",
+    "nao testei workspace_slug nem o caminho autenticado por sessao real",
+    "nao avaliei /usage, /comments e /runs quanto ao mesmo contrato",
+    "nenhum valor de segredo lido"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "ORQ-38 nao precisa de patch de servidor; precisa de (a) 5 testes de regressao no handler, (b) padrao de verificacao fail-closed adotado pela frota e (c) alinhamento da mensagem de erro entre handler e middleware. Nada disso foi implementado nesta auditoria",
+      "file": ".deploy-control/p0/evidence/orq38-issue-get-workspace-contract-audit.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

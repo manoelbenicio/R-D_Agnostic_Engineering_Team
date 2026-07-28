@@ -1,0 +1,31 @@
+{
+  "event": "GOVERNANCE_ACK",
+  "timestamp_utc": "2026-07-27T17:28:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "governance": "OWNER RULING - custo/tokens NAO sao bloqueador",
+  "acknowledged": [
+    "Custo e consumo de token NAO sao motivo de bloqueio nem de pedido de aprovacao",
+    "Toda tarefa real autorizada pode ser atribuida e executada com o agente/modelo necessario",
+    "Continuam bloqueados apenas: duplicidade/acidente, conflito de ownership, segredo exposto, mutacao fora de escopo, e risco de dados sem backup/rollback",
+    "Card puramente de status fica SEM assignee, porque nao ha trabalho a executar",
+    "Card real pode e DEVE disparar execucao"
+  ],
+  "minha_correcao_de_postura": {
+    "o_que_eu_vinha_fazendo": "Em varios entregaveis eu tratei o custo como gate. Exemplos meus: no contrato do Kanban escrevi que o passo de atribuicao 'e o UNICO que gasta orcamento' e o coloquei atras de dois gates de contagem; no ORQ-44 propus teto de UMA requisicao de canario 'para nao gerar custo'; e no ACK do freeze de atribuicao eu recomendei criar cartao sem assignee e atribuir so na janela autorizada, argumentando gasto de orcamento.",
+    "o_que_muda": "Deixo de usar custo como razao para exigir autorizacao, para adiar execucao ou para desenhar gate. Nao vou mais escrever 'gasta orcamento' como justificativa de bloqueio.",
+    "o_que_permanece": "Continuo DECLARANDO o efeito quando ele existe, porque efeito de execucao e informacao operacional: dizer que atribuir enfileira task e fato tecnico util para prever comportamento e para dimensionar rollback. A diferenca e que isso passa a ser aviso, e nao condicao de parada.",
+    "o_que_reforco": "Os cinco bloqueadores que permanecem sao exatamente os que eu ja aplicava por outras razoes, e continuam: duplicidade, ownership, segredo, escopo e dado sem rollback. O gate de fila zero antes de mutacao, por exemplo, permanece valido - mas a justificativa correta e risco de dado e trabalho em voo, nao custo."
+  },
+  "estado_atual": {
+    "aguardando": "Aceite do DELTA GATE 0 do ORQ-13 P1, enviado as 17:24Z. Este ruling nao e o aceite, portanto NAO iniciei a retomada da V3.1.",
+    "worktrees": "intactos: gtl-i03-orq13-phase1 com 0 commits e 0 staged; nenhum stash",
+    "ORQ-39": "congelado no hash conhecido",
+    "ORQ-41": "fechado como CODE_PASS/EVIDENCE_PASS, com I7 e I8 pendentes e nao meus"
+  },
+  "non_claims": [
+    "Nao iniciei nenhuma tarefa com base neste ruling: ele e governanca, nao atribuicao",
+    "Nao alterei nenhum entregavel anterior nesta rodada; a correcao de postura vale de agora em diante e sera aplicada quando eu revisitar cada artefato sob nova ordem",
+    "Nao criei, atribui nem comentei issue alguma"
+  ]
+}

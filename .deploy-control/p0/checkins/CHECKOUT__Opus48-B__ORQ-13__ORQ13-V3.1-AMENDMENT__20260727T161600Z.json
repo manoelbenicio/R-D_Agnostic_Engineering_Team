@@ -1,0 +1,122 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:16:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-13",
+  "orq_issue_id": "ORQ-13",
+  "task_ids": [
+    "ORQ13-V3.1-AMENDMENT"
+  ],
+  "status": "DONE",
+  "verdict_sought": "PROPOSTA aguardando review independente final. Nao me auto-aprovo.",
+  "reservation": {
+    "id": "RES-ORQ13-001",
+    "numero_canonico": "127",
+    "sha256_up": "0ea3005da0ee257618062552cf8792f9c2e6ed478dce3ba174bf08692486cac1",
+    "sha256_down": "74354ae28dee526c7dbc6bc6733471a59c2f3dabfe5a7fe609fe20d747e61113",
+    "expira": "2026-07-28T15:37:12Z",
+    "estado": "PRESERVADA - hashes reconferidos nesta rodada e identicos; arquivos nao tocados"
+  },
+  "files_changed": [
+    ".deploy-control/p0/evidence/orq13-sqlc-split-runbook-v3.md"
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-13__ORQ13-V3.1-AMENDMENT__20260727T161600Z.json"
+  ],
+  "files_deleted": [],
+  "findings_closed": [
+    {
+      "id": "F1",
+      "closure": "Gate de fingerprint como ULTIMO passo antes do commit B, comparando sha256sum dos dois arquivos 127_* contra RES-ORQ13-001, com PARADA e re-associacao pelo registrar (protocolo 2.3) em caso de divergencia. Registrei tambem que o passo renomear para <N> do V3 e NO-OP, porque o numero reservado E o 127 ja usado, e renomear ALTERARIA o fingerprint"
+    },
+    {
+      "id": "F2",
+      "closure": "Gate de TTL antes do de fingerprint, comparando data corrente com 2026-07-28T15:37:12Z, com PARADA e pedido de renovacao se expirado, e proibicao de commitar sob reserva expirada porque outro agente pode ter recebido 127 no intervalo. Recomendei agrupar as 8 autorizacoes em UMA janela com o owner para nao esbarrar no TTL"
+    },
+    {
+      "id": "F3",
+      "closure": "patchutils medido como AUSENTE (filterdiff, splitdiff, interdiff), logo a rota do revisor nao esta disponivel e instalar e proibido. Publiquei git diff -U0 como invocacao canonica e identifiquei o hunk de B por ORDINAL mais CONTEUDO (hunk 5 de 6, o do ThinkingLevel), com regra de nao confiar em numero de linha e parar se o hunk 5 nao contiver ThinkingLevel. Proposta preferida A3.2: stash mais sqlc generate, reconstruindo cada commit a partir de estado deterministico, de modo que pkg/db/generated seja exclusivamente saida do gerador nos dois commits, sem edicao manual em codigo gerado. Avaliada com tabela de 5 riscos e ponto de aborto explicito, e NAO executada"
+    },
+    {
+      "id": "F4",
+      "closure": "Gate de diff qualificado por MOMENTO, em tres formas: G-PRE-A e G-PRE-B validam o INDEXADO com --cached; G-ENTRE-A-E-B NAO usa --exit-code e passa a exigir positivamente que reste EXATAMENTE 1 hunk em models.go; G-POS-B usa --exit-code mais --check. Isso deixa de reprovar um executor correto no meio do split"
+    },
+    {
+      "id": "F5",
+      "closure": "Medicao nova em handler_test.go:38-54: TestMain faz os.Exit(0) ANTES de m.Run() quando o banco nao responde, logo o pacote internal/handler sai 0 SEM executar teste e go test imprime ok. Gate novo exige DATABASE_URL obrigatorio, prova de conectividade antes de rodar, e verificacao NOMINAL de --- PASS: por teste, alem de falhar se aparecer a linha Skipping tests:. Regra: ok nunca e aceito como evidencia nesse pacote. Registrei tambem que meus dois arquivos de teste novos importam apenas encoding/json, strings e testing, sem dependencia de banco: o problema e o os.Exit(0) do pacote, nao os testes"
+    },
+    {
+      "id": "A6",
+      "closure": "Ratificacao registrada como EXCECAO e NAO PRECEDENTE: o 127 foi materializado antes da reserva, desviando do paragrafo 6 da governanca que obriga placeholders NEXT_CANONICAL_* e reserva o renumero ao Codex56-TL. A RES-ORQ13-001 ratificou a posteriori, resolvendo o caso concreto sem criar precedente; materializar primeiro e pedir ratificacao depois NAO e procedimento aceito. Responsabilidade pelo desvio assumida nominalmente por mim"
+    }
+  ],
+  "self_correction": "Corrijo um relato meu anterior: o 'ok 0.087s' de ./internal/handler que reportei em entregas anteriores pode ter sido VERDE VAZIO, por causa do os.Exit(0) do TestMain sem banco. Nao consigo distinguir retroativamente porque nao capturei a linha 'Skipping tests:' nem a contagem de PASS. Passo a tratar como NAO-PROVADO, e nao afirmo que era falso: afirmo que nao sei.",
+  "tests": [
+    {
+      "command": "sha256sum dos dois arquivos 127_* no worktree",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PRESERVADOS - up 0ea3005d...6cac1 e down 74354ae2...61113, identicos a RES-ORQ13-001"
+    },
+    {
+      "command": "git log 0cb8aeb..HEAD | wc -l ; git diff --cached --name-only | wc -l ; git stash list | wc -l",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "WORKTREE INTACTO - 0 commits proprios, 0 staged, 0 stash. Nao executei stash nesta rodada"
+    },
+    {
+      "command": "which filterdiff splitdiff interdiff",
+      "exit_code": 1,
+      "assertions_or_tests": 3,
+      "result": "patchutils AUSENTE - base do fechamento de F3 por rota alternativa"
+    },
+    {
+      "command": "sed -n '30,70p' internal/handler/handler_test.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "BASE DE F5 - TestMain em :38-54 faz os.Exit(0) em dois pontos, na falha de pgxpool.New e na falha de Ping, ambos ANTES de m.Run()"
+    },
+    {
+      "command": "grep de dependencia de banco nos dois arquivos de teste novos e leitura dos imports",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "MEDIDO - os dois novos importam apenas encoding/json, strings e testing; nenhuma dependencia de banco"
+    },
+    {
+      "command": "git diff | sha256sum e sha256 por arquivo",
+      "exit_code": 0,
+      "assertions_or_tests": 11,
+      "result": "FINGERPRINT AUXILIAR REGISTRADO - diff unificado b87bc5ca...707ce, mais 7 hashes de diff por arquivo e 4 de arquivo untracked, para deteccao de deriva entre agora e o commit"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq13-sqlc-split-runbook-v3.md (EMENDA V3.1, secoes A0 a A7)",
+    ".deploy-control/p0/evidence/orq13-v3-adversarial-peer-review.md (F1..F5)",
+    ".deploy-control/p0/evidence/gtl-migration-registrar-governance.md (RES-ORQ13-001)",
+    "multica-auth-work/server/internal/handler/handler_test.go:38-54",
+    "worktree gtl-i03-orq13-phase1: 0 commits, 0 staged, 0 stash"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC), pedindo review independente final",
+  "summary": "Emenda V3.1 acrescentada ao runbook V3, fechando F1 a F5 do peer review adversarial mais a nota de governanca, tudo read-only e sem executar nada. F1 ganha gate de fingerprint como ultimo passo antes do commit B, com parada e re-associacao pelo registrar, e o registro de que renomear seria alterar o fingerprint porque o numero reservado e o 127 ja usado. F2 ganha gate de TTL contra 2026-07-28T15:37:12Z com parada e pedido de renovacao, mais a recomendacao de agrupar as oito autorizacoes em uma janela unica. F3 e fechado por rota alternativa, porque medi patchutils como ausente e instalar e proibido: publiquei git diff -U0 como invocacao canonica, identifiquei o hunk de B por ordinal mais conteudo, e propus como preferida a rota determinista de stash mais sqlc generate, que faz o conteudo de pkg/db/generated ser exclusivamente saida do gerador nos dois commits, avaliada com cinco riscos e ponto de aborto explicito e nao executada. F4 qualifica o gate de diff por momento em tres formas, incluindo a assercao positiva de que entre A e B deve restar exatamente um hunk em models.go. F5 se apoia em medicao nova e grave: o TestMain de internal/handler faz os.Exit(0) antes de m.Run quando o banco nao responde, logo ok nao prova nada sem banco, e por isso corrijo um relato meu anterior tratando aquele ok como nao-provado; o gate novo exige DATABASE_URL, prova de conectividade e verificacao nominal de PASS por teste. A nota de governanca registra a ratificacao do 127 como excecao explicita e nao precedente, com a responsabilidade pelo desvio assumida por mim.",
+  "non_claims": [
+    "Nesta emenda nao executei sqlc generate, git stash, git add, git commit, go build, go test, nao apliquei migration, nao editei codigo de produto e nao mutei board",
+    "Nao alterei os arquivos de migration: os fingerprints de RES-ORQ13-001 seguem intactos, reconferidos por sha256sum",
+    "Corrijo relato anterior: o ok de ./internal/handler pode ter sido verde vazio; trato como nao-provado e nao afirmo que era falso",
+    "patchutils esta ausente e nao instalei; por isso a rota do revisor via filterdiff nao entrou",
+    "A rota A3.2 com stash mais sqlc generate esta avaliada e NAO executada; nao sei se stash pop conflitaria em models.go na pratica",
+    "O ponto de aborto de A3.2 usa git reset --hard, que e destrutivo e exige autorizacao propria; nao e passo livre",
+    "Nao verifiquei se outro pacote alem de internal/handler usa os.Exit(0) em TestMain",
+    "O risco de lint do commit A por max_seq segue aberto: golangci-lint nao foi medido",
+    "Nao criei, atribui nem comentei issue alguma",
+    "Nao me auto-aprovo"
+  ],
+  "blocker": "Decisao pendente entre a rota determinista A3.2 (stash mais sqlc generate) e o git add -p interativo; recomendo A3.2. O ponto de aborto de A3.2 usa git reset --hard e precisa de autorizacao propria. O gate de F5 exige DATABASE_URL e banco alcancavel, sem o que os testes de internal/handler nao podem ser considerados provados. TTL de RES-ORQ13-001 expira em 2026-07-28T15:37:12Z e a cadeia tem oito autorizacoes em serie. Risco de lint do commit A por max_seq segue nao medido.",
+  "handoffs": [
+    {
+      "to_lane": "revisor independente final",
+      "reason": "Tres ataques sugeridos: julgar se a rota A3.2 com stash mais sqlc generate e aceitavel dado que o aborto usa git reset --hard destrutivo; confirmar se algum outro pacote de teste tambem mascara com os.Exit(0), o que ampliaria o problema de falso verde para alem de internal/handler; e medir o lint do commit A por max_seq, unico risco do split que segue sem medicao.",
+      "file": ".deploy-control/p0/evidence/orq13-sqlc-split-runbook-v3.md"
+    }
+  ]
+}

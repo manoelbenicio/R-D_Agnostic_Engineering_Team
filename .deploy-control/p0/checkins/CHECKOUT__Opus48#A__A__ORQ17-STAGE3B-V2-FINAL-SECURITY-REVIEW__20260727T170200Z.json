@@ -1,0 +1,55 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T17:02:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-17",
+  "stage": "Stage3B V2",
+  "task_ids": ["ORQ17-STAGE3B-V2-FINAL-SECURITY-ROLLBACK-REVIEW"],
+  "status": "DONE_BLOCK",
+  "verdict": "BLOCK - por dois defeitos de rollback/lockout. Exposicao de credencial: PASS com 2 travas. Corrupcao de usuarios/memberships: PASS.",
+  "deliverable": ".deploy-control/p0/evidence/orq17-stage3b-v2-final-security-rollback-review.md",
+  "artifact_sha256": "c68a3a7321a74e66d60ca90f5cd8124384a221bac686bc03fd349a726dbca83b",
+  "scope_honored": "Somente exposicao de credencial, corrupcao de usuarios/memberships e lockout. NAO reabri preferencias menores, estilo, nomes de token, nem os pins de build A2.x - varios seguem abertos e nada aqui os aprova.",
+  "credential_exposure_PASS": [
+    "argv fechado: o runner passa por STDIN com printf %s NUL %s NUL e o helper le os.Stdin; nenhum valor em flag",
+    "ambiente do Compose fechado: env -u OWNER_EMAIL -u OWNER_PASSWORD remove as duas do filho E da interpolacao",
+    "log/stdout/stderr fechado: o helper NAO tem nenhuma chamada de log; todos os erros sao opError com literais fixos e o desconhecido colapsa em E_INTERNAL; nenhum opError interpola email, senha ou erro do Postgres; sucesso imprime linha fixa sem identidade",
+    "DSN nunca impresso: checkDBTuple compara host/porta/banco/usuario e devolve E_DATABASE_TUPLE",
+    "arquivos de captura: diretorio 0700, arquivos 0600, trap em EXIT HUP INT TERM; mkdir -m 0700 SEM -p falha se existir, e o trap e instalado DEPOIS do mkdir, logo falha ali nao dispara limpeza em diretorio alheio",
+    "entrada limitada: LimitReader 1024, email <=320, senha <= PasswordMaxBytes, EOF exigido apos o 2o NUL, clear() dos buffers em todos os caminhos"
+  ],
+  "credential_exposure_required_guards": [
+    "S1 provar que printf e BUILTIN: se o /bin/sh da janela resolver printf para /usr/bin/printf, a senha vai ao argv daquele processo e fica em /proc/cmdline. Uma linha com command -V printf antes de qualquer expansao fecha. Sem isso, todo o desenho 'nunca em argv' depende de propriedade do shell que ninguem mediu",
+    "S2 ulimit -c 0: password := string(passwordBytes) cria string Go IMUTAVEL e o defer que zera apenas solta a referencia; os bytes ficam no heap ate o GC. Aceitavel em processo efemero DESDE QUE nao haja core dump",
+    "RESIDUAL A1.5 exige janela selada com NENHUM outro processo do UID do operador - precondicao FALSA POR CONSTRUCAO enquanto a frota roda como ec2-user, e a janela do V2 e LONGA (as variaveis ficam no ambiente durante todo o docker compose run). Exige aceite ESCRITO do owner, nao prosa"
+  ],
+  "corruption_PASS": [
+    "provision so opera em banco virgem: verifyGlobal(0,0,0) dentro da tx Serializable aborta com E_NOT_EMPTY se houver qualquer linha - o pior caso e recusa, nunca alteracao de usuario existente",
+    "catalogo de FK por IGUALDADE EXATA de conjunto: loadUserFKs decodifica confdeltype e compareFKs exige igualdade ordenada com os 16 pares; tabela nova referenciando user faz falhar com E_FK_CATALOG em vez de cascatear. Ha ainda gate de FORMA comparando count total com count FILTER array_length(conkey,1)=1, reprovando FK multi-coluna com E_FK_SHAPE",
+    "nenhum DELETE sem contagem previa: targetReferenceCounts percorre as 16 FKs exigindo 0, INCLUSIVE member, cuja FK e ON DELETE CASCADE - logo NENHUMA membership pode ser apagada por cascata (E_ROLLBACK_REFERENCED)",
+    "member congelado na janela inteira por LOCK TABLE agent_task_queue, member IN SHARE MODE na guarda, liberado so no guard.Commit final",
+    "member=0 verificado 4 vezes: guarda T1, antes da criacao, antes do commit e depois do commit pela guarda - satisfaz A5.2",
+    "gate de fila com a tabela correta agent_task_queue e os 4 estados ativos, medido duas vezes com 3s - confere com a CHECK da migration 109"
+  ],
+  "a51_literal_is_infeasible": "Registro para impedir BLOCK por leitura literal: a A5.1 pede member travado JUNTO em SHARE ROW EXCLUSIVE, mas isso e INEXEQUIVEL - a guarda ja detem SHARE sobre member em OUTRA conexao e SHARE ROW EXCLUSIVE conflita com SHARE, logo a tx de mutacao bloquearia contra a propria guarda e morreria em lock_timeout (E_TX_LOCK). O V2 exclui member com comentario explicito e esta CERTO; a intencao de A5.1 e atendida por mecanismo MAIS FORTE, com o SHARE cobrindo a janela inteira incluindo a verificacao pos-commit.",
+  "blockers": [
+    "L1 O ROLLBACK E CONDICIONADO A POSSE DA SENHA. rollbackProvision exige Login bem-sucedido antes de qualquer DELETE (E_ROLLBACK_VERIFY). Como controle contra apagar a linha errada e bom, mas se a senha for perdida, digitada diferente ou rotacionada, o rollback recusa PARA SEMPRE e o provision tambem recusa para sempre por E_NOT_EMPTY - conta de owner inutilizavel, sem reversao nem recriacao pelo ferramental aprovado. A unica saida seria DELETE manual, FORA de todas as guardas de FK, lock e contagem que o helper existe para impor: o desenho empurra o operador para a acao mais perigosa no pior momento. Correcao: modo rollback-breakglass sem Login, com autorizacao escrita do owner e TODAS as demais guardas mantidas, mais prova de custodia da senha antes do provision",
+    "L2 E_GUARD_COMMIT REPORTA FALHA DEPOIS DE UM COMMIT BEM-SUCEDIDO, SEM COMPENSAR. Se guard.Commit falhar, o helper sai com codigo 1 e o runner imprime E_COMPOSE_OR_HELPER, mas o usuario e a credencial JA ESTAO COMMITADOS. Diferente do caminho de pos-verificacao, que chama compensate e distingue E_POST_VERIFY_ROLLED_BACK de E_POST_VERIFY_ROLLBACK_FAILED, aqui nao ha compensacao NEM token distintivo. O operador ve falha, conclui que nao provisionou, tenta de novo, recebe E_NOT_EMPTY, e isso convida a intervencao manual no banco - de novo fora das guardas. Vale igual para o rollback, cujo verifyGlobal(guard,0,0,0) roda DEPOIS do Commit. Correcao: token inequivoco de mutacao COMMITADA com janela nao encerrada, passo obrigatorio de ler as contagens antes de qualquer segunda acao, proibicao explicita de DELETE manual e idealmente chamar compensate tambem neste caminho"
+  ],
+  "lockout_residual": "L3 HTTP_LOGIN=NOT_CALLED e honesto e louvavel, mas nao existe gate provando que o owner consegue entrar. O helper prova o credencial pelo provider real DENTRO da transacao, o que nao prova login por navegador - pelas medicoes do proprio ORQ-17, /auth/login|google|logout sao rotas de BACKEND enquanto /auth/callback e a unica /auth/* do Next.js, com colisao de prefixo. Exige gate de login HTTP do owner antes de declarar sucesso e antes de descartar a senha, com a janela de rollback aberta ate passar - e ha tensao com L1, porque descartar a senha cedo destroi o rollback; o runbook precisa ordenar isso.",
+  "fixes": ["F1 modo rollback-breakglass com guardas mantidas", "F2 prova de custodia da senha antes do provision", "F3 token distinto de mutacao commitada + leitura de contagens antes de segunda acao + proibicao de DELETE manual", "F4 gate de login HTTP do owner antes de declarar sucesso e antes de descartar a senha", "F5 duas linhas no runner: printf builtin e ulimit -c 0"],
+  "non_claims": [
+    "NAO executei nada: nem helper, nem runner, nem asm-exec, nem Docker/Compose, nem SQL, nem login, nem chamada AWS; nao li segredo, nao fiz stat de credencial, nao mutei quadro",
+    "analisei o TEXTO dos .txt: nao compilei o helper, nao verifiquei os hashes do source-closure e nao confirmei que o .txt corresponde ao que seria compilado na janela",
+    "nao verifiquei o schema real do banco: avaliei o catalogo de FK como MECANISMO (igualdade exata + gate de forma), nao como lista conferida contra o Postgres do ORQ1",
+    "nao li handler.PasswordMaxBytes, handler.ValidatePassword nem NewPostgresPasswordCredentialStore nesta revisao; assumi contratos pelo nome e uso, e isso pode ser fechado numa segunda passada",
+    "nao avaliei o arquivo de teste e portanto NAO afirmo ausencia de falso-verde nos testes",
+    "a colisao de prefixo /auth/* vem das minhas medicoes anteriores do ORQ-17, nao remedidas nesta rodada",
+    "nao alterei assignee, nao postei comentario, nao criei card"
+  ],
+  "coordinated_with": ["Kiro w5:p9 (revisor independente do Stage3B V1)", "Codex56-TL / GENERAL-TECH-LEAD w5:pC"],
+  "reported_to": ["w5:pC", "w5:p9"],
+  "blocker": null
+}

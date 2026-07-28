@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:29:21Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "GTL-07",
+    "ORQ-17"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Auditoria READ-ONLY GTL-07 / ORQ-17 LAN & Auth Readiness",
+  "finding": "Frontend bound to 127.0.0.1:13100. Anonymous GET /api/me returns HTTP 200. Publishing 0.0.0.0:13100 to LAN without active auth enforcement is a major security risk. Status: BLOCKED (Fail-Closed) until auth enforcement and network ACL are validated.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-orq17-lan-auth-readiness.md, sent herdr update to Codex56-TL (w5:pC) and SSH to KIRO-PRINCIPAL-TL (wB:p1), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-lan-auth-readiness.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T112921Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-07-ORQ17-READINESS__20260727T112921Z.json"
+  ],
+  "non_claims": [
+    "read-only audit, no code edit, no network edit, no env edit, no restart"
+  ],
+  "blocker": null
+}

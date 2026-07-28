@@ -1,0 +1,87 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:00:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "GTL-K06-CLI-ALIGNMENT-CARD-REGISTRATION"
+  ],
+  "orq_n": "ORQ-40",
+  "orq_uuid": "d2001a24-af70-4367-8828-2225ed43ad84",
+  "status": "DONE",
+  "mode": "REGISTRAR_UNICO_UM_CARD",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__GTL-K06-CLI-ALIGNMENT-CARD-REGISTRATION__20260727T130000Z.json"
+  ],
+  "board_mutations": [
+    "POST /api/issues -> 201, exatamente 1 card: ORQ-40 / d2001a24-af70-4367-8828-2225ed43ad84"
+  ],
+  "tests": [
+    {
+      "command": "GET /api/issues (pre-POST) com filtro cli|codex-cli|alinhar vers|version align|0.145|0.144|upgrade",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "TOTAL 29, MAX 39, HITS 0 => busca fresca de duplicata negativa"
+    },
+    {
+      "command": "POST /api/issues?workspace_id=... (uma unica vez)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP=201; id=d2001a24-af70-4367-8828-2225ed43ad84 identifier=ORQ-40 number=40 priority=low assignee=None"
+    },
+    {
+      "command": "GET /api/issues/<uuid>?workspace_id=... imediato",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS — mesmo par: id d2001a24..., number 40, identifier ORQ-40, titulo 'Alinhar Codex CLI entre ORQ1 e ORQ2 (higiene de versao)', priority low, assignee None"
+    },
+    {
+      "command": "GET /api/issues + Counter de number e de title",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "TOTAL 30, MAX 40, dup numbers {} e dup titles {}; filtro 'codex cli' = 1 unico card (ORQ-40)"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "card_content": {
+    "titulo": "Alinhar Codex CLI entre ORQ1 e ORQ2 (higiene de versao)",
+    "prioridade": "low (higiene; sem ganho de runtime hoje)",
+    "fatos": "ORQ2 ja em codex-cli 0.145.0 com executor ATIVO; ORQ1 em 0.144.6 e SEM executor ativo; Claude Code desabilitado e FORA DE ESCOPO",
+    "aceite": [
+      "pin exato @openai/codex@0.145.0 declarado antes de executar",
+      "evidencia de release note oficial: entrada Codex CLI 0.145.0 de 2026-07-21 em developers.openai.com/codex/changelog",
+      "fila zero em duas leituras: SELECT count(*) FROM agent_task_queue WHERE status IN ('queued','dispatched','running','waiting_local_directory') = 0",
+      "verificacao SOMENTE DE BINARIO no ORQ1 via codex --version = 0.145.0, sem task, sem smoke pago, sem runtime novo",
+      "rollback declarado e testavel: @openai/codex@0.144.6 reconfirmado por codex --version",
+      "nenhuma mudanca em Claude, env, config global, unit systemd ou container"
+    ],
+    "dependencias": "janela autorizada do owner (instalacao/upgrade e STOP-AND-WAIT); fila zero; escopo disjunto de ORQ-26 e ORQ-39",
+    "evidencias_citadas_no_texto": "GTL-71 (gtl-cli-version-alignment-v2.md), GTL-74 (gtl-cli-alignment-v2-peer-review.md), GTL-50 (gtl-cli-alignment-second-peer-review.md), GTL-44 (gtl-official-release-notes-watch.md)"
+  },
+  "summary": "Segundo e ultimo card autorizado criado como registrar unico. Busca fresca de duplicata antes do POST retornou HITS 0 sobre 29 issues (MAX 39), cobrindo cli, codex-cli, alinhar versao, version align, 0.145, 0.144 e upgrade. POST unico devolveu HTTP 201 com id d2001a24-af70-4367-8828-2225ed43ad84, identifier ORQ-40, number 40 e priority low; GET imediato por UUID com workspace_id confirmou o MESMO par, titulo e prioridade. Unicidade provada: TOTAL 30, MAX 40, zero number duplicado, zero titulo duplicado, e apenas 1 card casando 'codex cli'. ASSIGNEE DEIXADO VAZIO por decisao de nao inventar: a lista de agentes do workspace (10 agentes) nao contem Codex56-TL nem qualquer identidade correspondente ao integrador previsto no rascunho; o card fica sem assignee ate o GTL informar o UUID exato. O texto registra os fatos do K06 (ORQ2 ja em 0.145.0 com executor ativo, ORQ1 em 0.144.6 sem executor, Claude desabilitado e fora de escopo, sem ganho de runtime hoje) e os 6 criterios de aceite exigidos, incluindo pin exato, release note oficial, predicado de fila zero com as quatro situacoes ativas, verificacao somente de binario no ORQ1, rollback por @openai/codex@0.144.6 e proibicao de mexer em Claude, env, global ou container. As quatro evidencias do K03 NAO foram anexadas e ORQ-31, ORQ-38 e ORQ-39 nao foram tocados.",
+  "non_claims": [
+    "um unico POST, zero retry; nenhum outro card criado",
+    "ORQ-31, ORQ-38 e ORQ-39 nao tocados; nenhum card preexistente alterado",
+    "as 4 evidencias do K03 NAO foram anexadas (proibido por enquanto)",
+    "assignee vazio porque nenhum UUID de agente correspondente ao integrador existe no workspace; nao inventei identidade",
+    "nada instalado, atualizado, reiniciado ou configurado: o card apenas registra o trabalho pendente",
+    "nao previ ORQ-N: numero veio do 201 e foi reconfirmado por GET por UUID"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "ORQ-40 registrado e verificado. Pendentes: UUID exato do integrador para assignment do ORQ-40, e os 4 anexos PUT do K03 (ORQ-12/13/14/23) que seguem aguardando autorizacao",
+      "file": ".deploy-control/p0/evidence/gtl-legacy-kanban-mapping-opus48b.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

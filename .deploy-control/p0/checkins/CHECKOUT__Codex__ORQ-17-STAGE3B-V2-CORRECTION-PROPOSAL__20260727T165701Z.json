@@ -1,0 +1,66 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:57:01Z",
+  "agent": "Codex",
+  "lane": "ORQ-17",
+  "task_ids": [
+    "ORQ-17"
+  ],
+  "status": "PROPOSAL_REQUEST_INDEPENDENT_REVIEW",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-owner-credential-provisioning-runbook.md",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-bootstrap-helper.go.txt",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-bootstrap-helper_test.go.txt",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-helper-go.mod.txt",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-helper-go.sum.txt",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-sealed-runner.sh.txt",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-source-closure.sha256",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-build-evidence.md",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-independent-review-request.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex__ORQ-17-STAGE3B-V2-CORRECTION-PROPOSAL__20260727T165701Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "private-cache go test ./...",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "private-cache go vet ./... and gofmt byte comparison",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "two independent-cache readonly builds",
+      "exit_code": 0,
+      "result": "both SHA-256 7575931db63554518e42fa07331b4e167077acfcbad31374ac4dc1c797cc5b13"
+    },
+    {
+      "command": "compiled source closure verification",
+      "exit_code": 0,
+      "result": "1696 entries checked, zero failures"
+    },
+    {
+      "command": "sh -n sealed runner; git diff --check",
+      "exit_code": 0,
+      "result": "PASS"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-owner-credential-provisioning-runbook.md",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-build-evidence.md",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-independent-review-request.md"
+  ],
+  "summary": "PROPOSAL only. C1-C8 corrected with unresolved-reference child-only transport, pinned closure/build, exact ORQ1/stack/DB gates, transactional admission freeze, checked cleanup, exhaustive live-FK rollback, fixed output reduction, full-ARN version stability and one-time owner authorization. Independent PASS is still mandatory.",
+  "non_claims": [
+    "No secret value or DSN was read, resolved or printed.",
+    "No asm-exec, AWS/provider, database, Docker/Compose, container, Serve/Funnel, queue, board, login, provisioning, rollback or runtime mutation was executed.",
+    "No claim that credential provisioning is authorized."
+  ],
+  "blockers": [
+    "An independent reviewer must reproduce and approve the exact V2 package and candidate binary hash.",
+    "A fresh, exact one-time owner authorization and metadata-only secret prerequisite receipt are required after independent PASS."
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:03:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "GTL-K07-ORQ40-ASSIGN-AND-EVIDENCE-LINKS"
+  ],
+  "status": "DONE (parte A) / STOPPED-ZERO-MUTATIONS (parte B)",
+  "mode": "REGISTRAR_UNICO",
+  "orq_refs": {
+    "ORQ-40": "d2001a24-af70-4367-8828-2225ed43ad84 (atribuido a Opus48-A 2c042fdd-9a76-4da1-9b02-c2332a736a86)",
+    "ORQ-12": "8b1419f5-c9d4-466c-adff-cded98f91d29 (nao tocado)",
+    "ORQ-13": "2aefcb3d-97b3-4e70-a4b0-ae3729b7981d (nao tocado)",
+    "ORQ-14": "19ab8cfe-0a95-4a79-af99-4ee384326021 (nao tocado)",
+    "ORQ-23": "6230b5c0-c57a-4b88-a7df-84899057d0c8 (nao tocado)"
+  },
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__GTL-K07-ORQ40-ASSIGN-AND-EVIDENCE-LINKS__20260727T130300Z.json"
+  ],
+  "board_mutations": [
+    "PUT /api/issues/d2001a24-... -> HTTP 200, apenas assignee_type=agent e assignee_id=2c042fdd-9a76-4da1-9b02-c2332a736a86"
+  ],
+  "tests": [
+    {
+      "command": "GET /api/agents?workspace_id=... filtrando name == 'Opus48-A'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "MATCHES 1 -> 2c042fdd-9a76-4da1-9b02-c2332a736a86 (unico; assignment autorizado)"
+    },
+    {
+      "command": "PUT /api/issues/<ORQ-40 uuid>?workspace_id=... com apenas dois campos",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP=200"
+    },
+    {
+      "command": "GET-back /api/issues/<ORQ-40 uuid>?workspace_id=...",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "PASS — identifier ORQ-40, number 40, assignee_type=agent, assignee_id=2c042fdd..., status todo, priority low, desc_len 2286 (title/status/priority/description intactos)"
+    },
+    {
+      "command": "grep router.go por endpoint aditivo de comentario/atividade",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "EXISTE — router.go:738 POST /comments (CreateComment), :739 GET /comments, :737 POST /comments/trigger-preview; contrato em comment.go:771-777 com SuppressAgentIDs"
+    },
+    {
+      "command": "leitura de handler/comment.go:1095-1150 (enqueueCommentAgentTriggers)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "BLOQUEADOR — case commentTriggerSourceIssueAssignee chama EnqueueTaskForIssue/EnqueueTaskForSquadLeader: comentario em issue com assignee de agente ENFILEIRA task sem precisar de mencao; os 4 cards-alvo tem assignee de agente e 3 deles (ORQ-12/13/23) estao entre as nove preservadas"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md",
+    "router.go:737-739 e comment.go:771-777 provam que existe endpoint aditivo; comment.go:1122-1138 prova que o gatilho por assignee enfileira execucao",
+    "os quatro mapeamentos UUID citados: ORQ-12 8b1419f5, ORQ-13 2aefcb3d, ORQ-14 19ab8cfe, ORQ-23 6230b5c0"
+  ],
+  "summary": "Parte A concluida e verificada: nome Opus48-A resolveu para EXATAMENTE UM agente (2c042fdd-9a76-4da1-9b02-c2332a736a86), apliquei um unico PUT no ORQ-40 (d2001a24-af70-4367-8828-2225ed43ad84) enviando somente assignee_type e assignee_id, HTTP 200, e o GET-back por UUID+workspace confirma assignee_type=agent com o UUID correto, mantendo identifier ORQ-40, number 40, status todo, priority low e description intactos (UpdateIssue e parcial, issue.go:2308-2352). Nenhuma execucao iniciada. Parte B PARADA com ZERO mutacoes, e a razao nao e ausencia de endpoint: o endpoint aditivo EXISTE (router.go:738 POST /comments, :739 GET /comments, :737 trigger-preview; contrato comment.go:771-777 inclui suppress_agent_ids). O bloqueador e semantico: comment.go:1122-1138 mostra que o gatilho commentTriggerSourceIssueAssignee chama EnqueueTaskForIssue ou EnqueueTaskForSquadLeader, isto e, comentar numa issue que tem assignee de agente ENFILEIRA task mesmo sem @mencao. Os quatro cards-alvo tem assignee de agente e tres deles (ORQ-12, ORQ-13, ORQ-23) estao entre as nove issues preservadas sem rerun, logo um comentario de evidencia iniciaria execucao proibida por este proprio dispatch e poderia violar a preservacao. Existe mitigacao (suppress_agent_ids), mas usa-la sem rodar antes o trigger-preview nao me permite provar cobertura total dos gatilhos, e o custo do erro e enfileirar task em issue preservada: caso classico de contrato ambiguo previsto na condicao de parada. Deixei o caminho seguro proposto em 4 passos (trigger-preview, POST com suppress cobrindo todos os agentes retornados, verificacao de fila zero antes e depois, GET /comments para provar) e os quatro textos de evidencia ja prontos no K03 secao 4.",
+  "non_claims": [
+    "parte A: um unico PUT com dois campos; title, status, priority e description nao enviados nem alterados",
+    "parte B: zero mutacoes — nenhum POST /comments e nem sequer trigger-preview foi chamado",
+    "nenhum card criado; ORQ-31, ORQ-38 e ORQ-39 nao tocados; nada instalado, atualizado, reiniciado; repo nao editado",
+    "nao afirmo que suppress_agent_ids seja insuficiente: afirmo que sem o preview nao posso provar cobertura completa dos gatilhos",
+    "nenhuma execucao de agente iniciada e nenhuma das nove issues preservadas foi mutada"
+  ],
+  "blocker": "Parte B aguarda ruling: autorizar a sequencia trigger-preview + POST /comments com suppress_agent_ids completo (com fila zero antes e depois), ou manter o mapeamento apenas em evidencia durável. Owner do ruling: Codex56-TL (w5:pC).",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "decidir entre (a) autorizar comentario com preview+suppress e verificacao de fila zero, ou (b) deixar o mapeamento somente em evidencia durável; ORQ-40 ja atribuido a Opus48-A",
+      "file": ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

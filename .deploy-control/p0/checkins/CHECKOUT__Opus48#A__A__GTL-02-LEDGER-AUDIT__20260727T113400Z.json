@@ -1,0 +1,55 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:34:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["GTL-02-LEDGER-DURAVEL-AUDIT"],
+  "status": "DONE_REVIEW_ONLY",
+  "target": ".deploy-control/p0/evidence/ledger-durable-design.md (Antigravity w8:p2) contra o codigo em HEAD",
+  "verdict": "Design correto no diagnostico e na direcao. 2 bloqueadores de implementacao que ele declara inexistentes, 1 premissa falsa, 1 bypass automatico nao mapeado.",
+  "anchors_verified_exact": [
+    "daemon.go:301-302 NewLedgerRegistry + NewAckHandler",
+    "task.go:1666 CheckOrAllow(s.ReplayGateHook, parentTaskID)",
+    "replay_gate.go:200-204 fail-closed literal 'replay gate hook not configured; fail closed'",
+    "ledger.go:33 SchemaVersion = 1; ledger.go:39 TerminalTTL = 24h; ledger.go:481 cutoff",
+    "daemon.go:4357 RecordToolUse; 4399 RecordToolResult; 4199 MarkAllUnresolvedAmbiguous + 4200 Close"
+  ],
+  "anchor_drift": [
+    "LedgerRegistry: design diz replay_gate.go:95-99, real 104-107",
+    "DurableSummary: design diz ledger.go:111-120, real 112-119",
+    "BlocksReplay: design diz ledger.go:113, real 123-125 - invariante dos 4 booleans CONFIRMADA"
+  ],
+  "blockers": [
+    "BLOQUEADOR 1: ReplayGateHook e struct concreta (replay_gate.go:152-155) e TaskService.ReplayGateHook e *commitledger.ReplayGateHook (task.go:42); CheckOrAllow recebe o ponteiro concreto (200). DatabaseReplayGateHook NAO compila sem extrair interface (ex ReplayGateChecker), trocar a assinatura de CheckOrAllow e o tipo do campo. O design afirma 'replay_gate.go: Nenhuma mudanca' - falso, sao 3 edicoes extras.",
+    "BLOQUEADOR 2: o daemon NAO tem acesso ao Postgres. grep DATABASE_URL/pgxpool/DatabaseURL em internal/daemon/*.go sem testes = ZERO. A 'alternativa mais simples' da secao 8 nao existe; persistencia tem de ir pelo canal HTTP daemon->backend."
+  ],
+  "unmapped_bypass": "EnqueueTaskForIssue tem 8 call sites e nenhum consulta o gate: handler/comment.go:1136, handler/issue.go:2535/2559/3035/3050, handler/onboarding_shim.go:329, service/issue.go:388 e service/autopilot.go:275. Sete sao acao de usuario/comentario, cobertos pela isencao manual declarada em task.go:41. autopilot.go:275 NAO e: e replay AUTOMATICO por fora do gate. Unico ponto guardado e MaybeRetryFailedTask (task.go:1666). Precisa decisao do owner: autopilot passa a consultar o gate ou fica isencao documentada.",
+  "opportunity": "O canal daemon->backend ja existe com semantica de watermark (ack_handler.go:8-10 e 51-53 ReportTaskMessagesResponse.PersistedThroughSeq). O summary pode subir carona no ReportTaskMessages em vez de endpoint PUT novo. Recomendacao, nao exigencia: endpoint dedicado grava nos 3 pontos exatos independente do fluxo de mensagens.",
+  "migrations": "Sem colisao: grep task_ledger em migrations/ e pkg/db/ = vazio. Maior atual 126_runtime_profile_protocol_family_native_runtimes, logo a nova e 127 com par up/down. sqlc.yaml usa schema: migrations/ e queries: pkg/db/queries/, out pkg/db/generated, pgx/v5: ordem obrigatoria migration 127 -> query -> sqlc generate, senao o sqlc nao resolve a tabela. Vizinhas 123_rotation e 124_approved_accounts existem (tabelas da ponte da ORQ-21), sem conflito.",
+  "correlation_risk": "task.go:1665 passa UUID cru (util.UUIDToString(parent.ID)) mas replay_gate.go:169 declara 'Uses pseudonymous correlation ID (not raw task ID)' e :106 'keyed by pseudonymous task correlation'; daemon registra em daemon.go:4195 com taskID. NAO confirmei a derivacao desse taskID. Contradicao de contrato a resolver ANTES de gravar task_id UUID PRIMARY KEY.",
+  "ttl_note": "expires_at = recorded_at + 24h casa com TerminalTTL. Efeito permanente a aceitar explicitamente: apos o sweep, linha ausente e indistinguivel de 'nunca teve ledger' e ambos caem em fail-closed, logo task com mais de 24h nunca mais tem auto-retry. Recomendo materializar a monotonicidade (ever_x = ever_x OR novo) como CHECK/regra no SQL e nao apenas como convencao de escrita.",
+  "tests_required": [
+    "restart: registry vazio + linha com ever_had_tool_use=true bloqueia; todos ever_* falsos permite",
+    "ambiguidade: MarkAllUnresolvedAmbiguous (daemon.go:4199) persistido sobrevive ao restart e bloqueia",
+    "idempotencia: upsert repetido nao cria linha nova nem retrocede booleano; false depois de true mantem true",
+    "fail-closed: linha ausente, schema_version != commitledger.SchemaVersion (ledger.go:33) e erro de query bloqueiam",
+    "seam: fake Checker prova que CheckOrAllow com nil segue bloqueando",
+    "regressao de bypass: teste que documenta autopilot.go:275 fora do gate"
+  ],
+  "existing_tests": "ledger_test.go, replay_gate_test.go, race_test.go, ack_handler_test.go - todos em memoria, nenhum de durabilidade",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-ledger-implementation-audit.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__GTL-02-LEDGER-AUDIT__20260727T113400Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "nenhum arquivo de codigo editado; sem go build, go vet, go test, deploy, restart, commit, push, chmod, instalacao ou rerun",
+    "as 9 issues ORQ-12,13,15,16,17,18,21,22,23 permanecem PRESERVADAS; nao autorizo nem executei rerun",
+    "nao dependo de rollback do T2: respeitada a ressalva do Codex56#B de que nao existe rollback de um comando e a branch antiga reintroduziria o AGY task-incapaz",
+    "nao confirmei a derivacao do taskID usado em daemon.go:4195 - declarado como pergunta aberta, nao como fato"
+  ],
+  "next": "Aguardando redistribuicao do General-Tech-Lead em w5:pC.",
+  "blocker": null
+}

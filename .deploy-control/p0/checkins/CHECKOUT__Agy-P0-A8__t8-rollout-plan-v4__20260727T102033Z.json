@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T10:20:33Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "T8-ROLLOUT-PLAN-V4",
+  "status": "DONE",
+  "reported_to": "Codex56#B (w7:p4), Codex56-TL (w5:pC), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/t8-rollout-plan.md"
+  ],
+  "summary": "Plano de Rollout T8 v4 finalizado. Refinamentos aplicados: remoção de WriteCredentiallessKiroConfig do escopo do patch novo, slot-142 identificado como fora da allowlist da unit atual (139,140,143,149), uso estrito de systemctl --user para gerenciamento da unit de usuário multica-daemon-orq2-credential.service, staging atômico de binários no ORQ2 e especificação de rollback por tamanho de arquivo dos binários duráveis .pre-agy-fix (21.333.562 bytes) e .previous (21.333.458 bytes)."
+}

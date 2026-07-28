@@ -1,0 +1,75 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:09:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-32-HANDSHAKE-TOKEN-DISCOVERY"
+  ],
+  "orq_n": "ORQ-32",
+  "status": "DONE",
+  "verdict": "FALSO POSITIVO — recomendar FECHAR ORQ-32 (e ORQ-33) sem rotacao",
+  "mode": "READ_ONLY",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq32-handshake-token-discovery-map.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-32-HANDSHAKE-TOKEN-DISCOVERY__20260727T150900Z.json"
+  ],
+  "tests": [
+    {
+      "command": "grep -rIl por HANDSHAKE_TOKEN_PRIMARY | HANDSHAKE_TOKEN_SECONDARY | MULTICA_HANDSHAKE_TOKEN | handshake_token | prod/handshake-token em multica-auth-work (*.go,*.ts,*.yml,*.yaml,*.json)",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "hits=0 nos CINCO — nenhum consumidor de handshake token existe no produto"
+    },
+    {
+      "command": "grep RCA-HANDOVER-20260727.md por handshake/rev",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PROVA DE ORIGEM — :161 handshake-token.txt = falso positivo, string HANDSHAKE-KIROTL-131232 de teste de pane; :162 rev-token.txt = MSG-FROM-CODEX56-135612; os 24 bytes que medi as 11:02Z casam com essas strings"
+    },
+    {
+      "command": "ssh LOCAL: stat/lsof/find dos dois arquivos",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "AUSENTES os dois; LSOF_EXIT=1 (nenhum consumidor); find /tmp -name '*token*' vazio; sem ~/.private-tmp naquele host — ou seja nem artefato existe para rotacionar"
+    },
+    {
+      "command": "grep dos consumidores reais: MULTICA_TOKEN, mdt_, mat_, gateway secret file",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "MAPA — auth/jwt.go:70-76 gera mdt_; jwt.go:80-89 gera mat_ task-scoped; middleware/daemon_auth.go:79 e :106-107 validam mdt_; router.go:511 monta DaemonAuth e :391 verifica mcn_; daemon.go:3634-3643 injeta MULTICA_TOKEN; handler/agent.go:321 e handler/daemon.go:1765 descrevem o binding; cmd_agent.go:253 exige mat_; brain/config.go:16,80-92,159,174 tratam a gateway key como REFERENCIA DE ARQUIVO fail-closed"
+    },
+    {
+      "command": "leitura de orq32-handshake-token-rotation-runbook.md:20,29,39-40",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "o runbook assume segredo AWS prod/handshake-token e as tres variaveis inexistentes; converge com o BLOCK do peer review de Agy-P0-A8, mas por causa diferente: nao e falta de patch Go, e ausencia do segredo"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "summary": "Discovery cross-fleet concluido: o handshake token NAO existe como segredo de produto. Duas provas independentes. (1) Origem: RCA-HANDOVER-20260727.md:161-162 registra que handshake-token.txt e rev-token.txt eram FALSOS POSITIVOS, strings de teste de pane HANDSHAKE-KIROTL-131232 e MSG-FROM-CODEX56-135612, e os 24 bytes que eu medi as 11:02Z casam exatamente com elas. (2) Consumidor: zero hits em todo multica-auth-work para HANDSHAKE_TOKEN_PRIMARY, HANDSHAKE_TOKEN_SECONDARY, MULTICA_HANDSHAKE_TOKEN, handshake_token e prod/handshake-token. Alem disso os dois arquivos hoje estao AUSENTES no host LOCAL, sem consumidor por lsof e sem quarentena, logo nao ha nem artefato a rotacionar. Isso converge com o BLOCK do peer review do runbook, mas por causa diferente: nao e falta de patch Go, e ausencia do segredo — o runbook assume prod/handshake-token e tres env vars inexistentes. MAPA REAL do plano daemon-servidor, com arquivo:linha: daemon token mdt_ gerado em auth/jwt.go:70-76 e validado em middleware/daemon_auth.go:79 e :106-107 com a cadeia montada em router.go:511; task token mat_ gerado em jwt.go:80-89, injetado como MULTICA_TOKEN em daemon.go:3634-3643, com binding descrito em handler/agent.go:321 e handler/daemon.go:1765 e exigencia em cmd_agent.go:253; PAT mul_/mcn_ em cmd_login.go:35-52, cmd_auth.go:30 e router.go:391; e a chave de inferencia do gateway tratada como REFERENCIA DE ARQUIVO fail-closed em brain/config.go:16,80-92,159,174, com valor em /etc/agent-brain/secrets/omniroute-inference-key. Nao existe etapa de handshake com segredo compartilhado no protocolo. DECISAO DE ESCOPO recomendada: fechar ORQ-32 e ORQ-33 como falso positivo com link para este mapa e para o peer review; manter e priorizar os segredos reais ja cardados (ORQ-34 OPENAI_API_KEY, ORQ-36 MULTICA_TOKEN, ORQ-37 MCP, ORQ-35 DATABASE_URL, nesta ordem de blast radius); e criar UM card novo, sem assignee, para a lacuna nao coberta: ciclo de vida e rotacao do daemon token mdt_ e da chave de inferencia do gateway. JWT_SECRET aparece na Wave A como B2 mas nao tem card e deve entrar no mesmo lote.",
+  "non_claims": [
+    "nenhum GetSecretValue/BatchGetSecretValue, nenhum asm-exec, nenhuma rotacao, nenhum valor de segredo lido ou impresso",
+    "nao afirmo que a remocao dos dois arquivos no LOCAL foi autorizada: afirmo apenas que hoje estao ausentes e sem quarentena naquele host",
+    "nao inspecionei o interior do container omniroute nem a configuracao da chave dele",
+    "nao verifiquei a existencia de prod/handshake-token no AWS Secrets Manager: exigiria API de segredo, proibida; afirmo apenas que nenhum codigo do produto o referencia",
+    "nao mutei board: nao fechei, nao criei e nao atribui card algum"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "ruling de escopo: fechar ORQ-32 e ORQ-33 como falso positivo; confirmar ordem 34 -> 36 -> 37 -> 35; autorizar UM card para rotacao de daemon token mdt_ e da gateway inference key, mais card para JWT_SECRET",
+      "file": ".deploy-control/p0/evidence/orq32-handshake-token-discovery-map.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

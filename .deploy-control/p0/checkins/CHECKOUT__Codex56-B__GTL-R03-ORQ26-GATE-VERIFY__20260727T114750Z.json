@@ -1,0 +1,56 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:47:50Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "GTL-R03",
+  "task_ids": [
+    "GTL-R03-ORQ26-GATE-VERIFY"
+  ],
+  "status": "DONE_BLOCK",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq26-gates-independent-verify.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__GTL-R03-ORQ26-GATE-VERIFY__20260727T114750Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "READ-ONLY audit of gtl-orq26-gates-run.md and handler TestMain",
+      "exit_code": 0,
+      "result": "BLOCK: targeted go test exited 0 only because TestMain called os.Exit(0) on unreachable PostgreSQL before m.Run; zero targeted tests executed."
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/gofmt -l file.go file_test.go",
+      "exit_code": 0,
+      "result": "BLOCK: stdout lists file.go; gofmt -l exit 0 was incorrectly treated as a clean result in the audited report."
+    },
+    {
+      "command": "READ-ONLY current diff/status/hash inspection",
+      "exit_code": 0,
+      "result": "Patch changed twice after the reported gates. Final binary-diff SHA-256 is 7f6fcb963e1539fd486c32a35a3feb28f7cbe33d92d1e05802be1a884df1e4ce; git diff --check is currently clean."
+    },
+    {
+      "command": "READ-ONLY review of post-gate S5/S6 failure seam",
+      "exit_code": 0,
+      "result": "Static PASS: global DB trigger was removed and replaced with a DBTX wrapper scoped to CreateAttachment. It remains ungated because this correction postdates all reported commands."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq26-gates-independent-verify.md",
+    ".deploy-control/p0/evidence/gtl-orq26-gates-run.md",
+    "/home/ec2-user/workspace/worktrees/gtl-orq26/multica-auth-work/server/internal/handler/handler_test.go:38",
+    "/home/ec2-user/workspace/worktrees/gtl-orq26/multica-auth-work/server/internal/handler/file_test.go:1234"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run",
+  "summary": "Independent gate verification is BLOCK. The targeted test suite executed zero tests due fail-open TestMain DB skip; gofmt was not clean; the report does not bind gates to uncommitted hashes or cover consumers. The author removed the dangerous global trigger after the gates; the new DBTX seam passes static review but changed the diff twice and therefore requires fresh DB-backed gates on the final hash.",
+  "non_claims": [
+    "No Go test, vet, build, formatter write, code edit, board mutation, deploy, restart or rerun was executed.",
+    "No live service, database, credential or preserved issue was touched."
+  ],
+  "blockers": [
+    "Fresh isolated PostgreSQL-backed S1-S7 and regressions are required; any skip is failure.",
+    "file.go must have empty gofmt -l output.",
+    "All commands must be rerun on final diff hash, including consumer gates."
+  ]
+}

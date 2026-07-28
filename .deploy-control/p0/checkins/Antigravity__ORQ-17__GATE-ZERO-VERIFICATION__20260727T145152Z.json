@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T145152Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-17",
+  "lane": "GTL-R17-GATE-ZERO",
+  "task_ids": ["ORQ-17-GATE-ZERO-VERIFICATION"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-gate-zero-verification.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T145152Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-gate-zero-verification.md"
+  ],
+  "summary": "Verificacao READ-ONLY do Gate Zero para a ORQ-17 concluida com sucesso. Confirmado que HTTPS Certificates e MagicDNS estao ativados na Tailnet cloud.labs.brazil@gmail.com sob o sufixo tail96e2c0.ts.net, com o dominio FQDN orq1.tail96e2c0.ts.net mapeado para o IP 100.118.244.61.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

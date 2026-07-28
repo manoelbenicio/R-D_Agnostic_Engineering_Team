@@ -1,0 +1,100 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:48:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-13",
+  "orq_issue_id": "ORQ-13",
+  "task_ids": [
+    "ORQ13-SPLIT-RUNBOOK-V3"
+  ],
+  "status": "DONE",
+  "supersedes": ".deploy-control/p0/evidence/orq13-sqlc-split-manifest.md (V2)",
+  "verdict_sought": "PROPOSTA. Nao me auto-aprovo e nao declaro PASS.",
+  "worktree": "/home/ec2-user/workspace/worktrees/gtl-i03-orq13-phase1",
+  "branch": "agent/opus48-b/orq-13-thinking-level",
+  "base_commit": "0cb8aeb",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq13-sqlc-split-runbook-v3.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-13__ORQ13-SPLIT-RUNBOOK-V3__20260727T154800Z.json"
+  ],
+  "files_deleted": [],
+  "blocks_closed": [
+    "worktree real nomeado com path, branch, base, 0 commits, 0 staged e stat medido",
+    "inventario e split POR HUNK do drift ja misturado, com as ancoras exatas dos 5 hunks de A em models.go e dos 2 em task_message.sql.go, mais os 15 de B",
+    "gate de diff corrigido para caminho RELATIVO AO REPOSITORIO, executado da raiz do worktree com -- e path multica-auth-work/server/..., em vez do path de pacote a partir de server/",
+    "gofmt -l NAO MUTANTE, com escopo fechado na lista explicita de arquivos e proibicao de gofmt -w, para nao acusar arquivos pre-existentes que nao sao meus",
+    "set -euo pipefail em todos os blocos",
+    "chmod 0700 MAIS verificacao stat -c %a = 700 nos diretorios de cache, porque install -m nao prova o estado final se o diretorio ja existia",
+    "go build ./... na arvore inteira em vez de pacote isolado",
+    "sem auto-aprovacao: STATUS PROPOSTA e pedido de review independente",
+    "FILES_LOCKED exato por commit, com lista de fora-do-lock e non-overlap dos 23 worktrees",
+    "ordenacao ORQ-13 ANTES de codigo gerado de ORQ-41, com justificativa tecnica e estado medido do worktree de ORQ-41"
+  ],
+  "tests": [
+    {
+      "command": "for w in $(git worktree list --porcelain | awk '/^worktree /{print $2}'); do ls -1 $w/multica-auth-work/server/migrations | grep -E '^1(2[4-9]|3[0-9])_.*up.sql$'; done",
+      "exit_code": 0,
+      "assertions_or_tests": 23,
+      "result": "VARREDURA COMPLETA - 23 worktrees inspecionados. Todos tem 124, 125 e 126. APENAS gtl-i03-orq13-phase1 tem 127_task_usage_thinking_level, que e meu e nao commitado. ZERO COLISAO observada. Limite: e uma foto e NAO reserva; refs remotas nao inspecionadas"
+    },
+    {
+      "command": "git -C /home/ec2-user/workspace/worktrees/gtl-orq41-w4-autopilot diff --stat e git status --porcelain filtrado por pkg/db e migrations",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "ORDENACAO VIAVEL HOJE - worktree gtl-orq41-w4-autopilot, branch agent/opus48-d/orq41-w4-autopilot, base 0cb8aeb, diff --stat VAZIO e nenhum arquivo em pkg/db/{generated,queries} nem migrations. Nao ha conflito agora, e a janela para ORQ-13 entrar primeiro esta aberta"
+    },
+    {
+      "command": "git -C <worktree> log --oneline 0cb8aeb..HEAD | wc -l ; git diff --cached --name-only | wc -l ; git diff --stat",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "WORKTREE INTACTO - 0 commits proprios, 0 staged, 7 files changed 138 insertions 18 deletions"
+    }
+  ],
+  "migration_reservation_request": {
+    "to": "Codex56-TL (GENERAL-TECH-LEAD)",
+    "cartao": "ORQ-13 fase 1",
+    "solicitante": "Opus48#B (w6:p2)",
+    "arquivos": [
+      "migrations/<N>_task_usage_thinking_level.up.sql",
+      "migrations/<N>_task_usage_thinking_level.down.sql"
+    ],
+    "conteudo_up": "ALTER TABLE task_usage ADD COLUMN IF NOT EXISTS thinking_level TEXT, nullable, sem NOT NULL, sem DEFAULT, sem indice, UNIQUE de 032 intocada, mais COMMENT ON COLUMN",
+    "conteudo_down": "ALTER TABLE task_usage DROP COLUMN IF EXISTS thinking_level",
+    "ultimo_usado": "126 runtime_profile_protocol_family_native_runtimes",
+    "proximo_livre_observado": "127, livre em 23 de 23 worktrees, sem colisao",
+    "pedido": "reservar UM numero e informa-lo. Eu NAO atribuo numero.",
+    "bloqueio": "sem numero reservado, o commit B nao pode ser criado"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/orq13-sqlc-split-runbook-v3.md",
+    ".deploy-control/p0/evidence/orq13-sqlc-split-manifest.md (V2, superseded)",
+    ".deploy-control/p0/evidence/gtl-i03-orq13-phase1-implementation.md",
+    "varredura de 23 worktrees em multica-auth-work/server/migrations",
+    "multica-auth-work/.github/workflows/ci.yml:115-118",
+    "multica-auth-work/server/migrations/109_agent_task_waiting_local_directory.up.sql:13-15"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC), com pedido formal de reserva de numero e pedido de review independente",
+  "summary": "V3 entregue superseding o V2, fechando cada BLOCK independente e sem executar nada. Worktree real nomeado com path, branch, base 0cb8aeb, 0 commits proprios, 0 staged e stat de 7 arquivos. Split por hunk detalhado com as ancoras exatas: 5 dos 6 hunks de models.go e os 2 de task_message.sql.go no commit A, e os 15 hunks restantes no commit B, sendo models.go o unico arquivo compartilhado, o que obriga split por hunk. Gates corrigidos: diff avaliado da raiz do worktree com caminho relativo ao repositorio em vez de caminho de pacote; gofmt -l nao mutante com escopo fechado e proibicao explicita de gofmt -w; set -euo pipefail em todos os blocos; chmod 0700 mais verificacao por stat nos diretorios de cache, com justificativa de que /tmp do ORQ2 esta 100 por cento cheio; go build da arvore inteira. Varredura de TODOS os 23 worktrees encontrou zero colisao de numero, com 127 livre em todos, e o pedido formal de reserva foi emitido sem que eu atribua numero. Ordenacao ORQ-13 antes do codigo gerado de ORQ-41 justificada tecnicamente e sustentada por medicao: o worktree de ORQ-41 esta com diff vazio e sem tocar pkg/db nem migrations, logo a janela esta aberta. FILES_LOCKED exato por commit, com fora-do-lock e non-overlap. Sem auto-aprovacao: status PROPOSTA com review independente solicitada.",
+  "non_claims": [
+    "READ-ONLY: nao atribui numero de migration, nao rodei sqlc generate, nao editei codigo de produto, nao fiz stage, commit, build ou test, nao apliquei migration e nao mutei board",
+    "A unica acao executada foi leitura: git worktree list, ls de migrations nos 23 worktrees, e git diff --stat e git status no worktree de ORQ-41",
+    "A varredura e uma FOTO e nao reserva numero; NAO inspecionei refs remotas, logo nao afirmo que 127 esteja livre no remoto",
+    "Nao provei se o commit A quebra o lint por max_seq: nao existe .golangci no repo, o CI usa defaults do v2.12 e golangci-lint nao esta instalado",
+    "Nao sei por que task_message.sql.go foi editado a mao; inferi da direcao do rename, nao de historico de commit",
+    "Nao reexecutei os gates: os resultados anteriores sao de A e B JUNTOS, e os gates independentes nunca rodaram separadamente",
+    "Nao apliquei a migration, logo o COALESCE do upsert nao foi exercitado contra Postgres real",
+    "Nao criei, atribui nem comentei issue alguma",
+    "Nao alterei o V2 nem artefato de outro agente; o V3 e arquivo novo",
+    "Nao me auto-aprovo e nao declarei PASS"
+  ],
+  "blocker": "Oito autorizacoes em sequencia, nenhuma presumida: reservar numero, renomear os dois arquivos de migration, rodar sqlc generate, fazer stage por hunk, commit A, commit B, aplicar migration em banco e subir binario novo. Os dois ultimos sao STOP-AND-WAIT. Riscos abertos: lint do commit A por max_seq, nao medido; e a reserva de numero, que so a foto de 23 worktrees sustenta, sem refs remotas.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (GENERAL-TECH-LEAD)",
+      "reason": "Pedido formal de reserva de UM numero de migration esta na secao 3.2 do V3 e no campo migration_reservation_request deste check-out. Alem disso, review independente com tres ataques: medir se golangci-lint com defaults do v2.12 reprova max_seq; validar se git add -p interativo e aceitavel no fluxo ou se e preciso patch determinista; e reexecutar a varredura incluindo refs remotas, que eu nao inspecionei.",
+      "file": ".deploy-control/p0/evidence/orq13-sqlc-split-runbook-v3.md"
+    }
+  ]
+}

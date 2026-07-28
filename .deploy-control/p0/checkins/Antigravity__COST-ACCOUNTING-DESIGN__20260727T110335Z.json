@@ -1,0 +1,1 @@
+{"event":"checkout","timestamp_utc":"20260727T110335Z","agent":"Antigravity","pane_id":"w8:p1","lane":"E","task_ids":["ORQ-12","ORQ-13","ORQ-14","COST-ACCOUNTING-DESIGN"],"status":"DONE","files_changed":[],"files_created":[".deploy-control/p0/evidence/cost-accounting-design.md"],"evidence":".deploy-control/p0/evidence/cost-accounting-design.md","reported_to":"KIRO-PRINCIPAL-TL"}

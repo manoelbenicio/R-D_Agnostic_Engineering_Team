@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:02:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["IDEM-ORQ-6-AMBIGUAS"],
+  "status": "DONE",
+  "source": "GET http://127.0.0.1:18080/api/issues?workspace_slug=orq2-dev no ORQ1 (workspace 20fce817-895d-447b-965a-49f5e279314a, prefixo ORQ, 20 issues)",
+  "form_finding": "Nas seis, acceptance_criteria da API vem null; o criterio de aceite esta embutido em description, na linha 'Critério de aceite:'. Classifiquei por essa linha.",
+  "verdict": {
+    "ORQ-12": "MUTANTE - criterio exige 'persistir identidade pseudônima/conta por execução': DDL em task_usage + escrita de linhas",
+    "ORQ-13": "MUTANTE - criterio exige 'usando execuções comparáveis': tasks reais pagas em dois tiers",
+    "ORQ-17": "MUTANTE - criterio exige URL estavel com autenticacao, exposicao de rede e rollback: mudanca de infra, maior blast radius das seis",
+    "ORQ-18": "MUTANTE - criterio exige botao mais teste de UI: escreve codigo no frontend, e colide com ORQ-26 aberta",
+    "ORQ-21": "MUTANTE - criterio exige 'contas autorizadas são semeadas': INSERT em accounts, approved_accounts e assignments",
+    "ORQ-23": "MUTANTE - criterio exige 'o rollback do T2 é executado/validado por um comando': executar rollback e mutacao sobre os tres obrigatorios"
+  },
+  "summary": "0 IDEMPOTENTE, 6 MUTANTE. Nenhuma liberavel para rerun de risco zero na forma atual.",
+  "reduced_scope_recommendation": "As seis tem um prefixo investigativo idempotente que pode ser liberado como escopo REDUZIDO e explicitamente medido: desenho da coluna/chave (12), medicao da lacuna de dado sem execucao nova paga (13), desenho da opcao de exposicao (17), especificacao de componente e teste apos ORQ-26 (18), mapeamento registry->tabelas sem INSERT (21) e a metade 'Fase 3 fecha com evidencia' (23, com o gate 4.5 FORA do mesmo rerun). Recomendacao, nao autorizacao.",
+  "anchor_correction_for_writer": "ORQ-13 cita daemon.go:2101, mas essa linha hoje e o fecha-chaves de type thinkingLevelWire struct dentro de handleModelList: a referencia derivou. Ancora real de preco: internal/metrics/pricing.go, mais internal/handler/cloud_billing.go e internal/metrics/business.go. thinking_level e persistido em agent (pkg/db/queries/agent.sql:23,43,50-54), nao em task_usage.",
+  "premise_checks": [
+    "ORQ-12 confirmado: migrations/032_task_usage.up.sql:2-10 sem account_id; pkg/db/queries/runtime_usage.sql:40 diz literalmente 'task_usage only carries task_id'; UpsertTaskUsage tem ON CONFLICT (task_id, provider, model)"
+  ],
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/idem-orq-6-ambiguas.md",
+    ".deploy-control/inbox-tm/FROM_Opus48#A__TO_Kiro-PRINCIPAL-TL__20260727T110200Z__IDEM-6.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__IDEM-ORQ-6-AMBIGUAS__20260727T110200Z.json"
+  ],
+  "reported_to": ["KIRO-PRINCIPAL-TL - LOCAL 100.117.245.15 pane wB:p1", ".deploy-control/inbox-tm/FROM_Opus48#A__TO_Kiro-PRINCIPAL-TL__20260727T110200Z__IDEM-6.msg"],
+  "non_claims": [
+    "nenhuma das 9 issues preservadas foi reexecutada",
+    "nenhum codigo ou arquivo do repo editado; .env e /tmp/daemon.env.bak nao tocados",
+    "nada compilado, nada reiniciado, nenhum commit ou push",
+    "somente GET na API e leitura de fonte; removi o /tmp/issues.json que criei no ORQ1"
+  ],
+  "blocker": null
+}

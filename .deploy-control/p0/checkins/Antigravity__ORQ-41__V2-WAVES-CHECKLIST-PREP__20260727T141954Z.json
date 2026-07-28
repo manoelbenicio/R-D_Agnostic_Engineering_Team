@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T141954Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-41",
+  "lane": "GTL-R41-V2-CHECKLIST",
+  "task_ids": ["ORQ-41-V2-WAVES-CHECKLIST-PREP"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-v2-waves-re-review-checklist.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T141954Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-v2-waves-re-review-checklist.md"
+  ],
+  "summary": "Checklist independente de re-review para o Plano de Ondas V2 da ORQ-41 preparada em modo READ-ONLY. Cobre os 8 blockers do GTL-41 WAVES (sqlc ownership, placeholders Z01, ledger/HMAC secret, CancelTasksForIssue, feature flag, 32 testes/TestMain, rollback do indice 037 e teste estrutural). Aguardando entrega formal da V2 antes de revisar.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

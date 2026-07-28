@@ -1,0 +1,60 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:42:31Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "GTL-15",
+  "task_ids": [
+    "GTL-15-CROSS-GATE",
+    "GTL-15-ORQ18-FOLLOWUP",
+    "GTL-I01-ORQ26-SECOND-AUDIT"
+  ],
+  "status": "DONE",
+  "files_changed": [
+    ".deploy-control/p0/evidence/gtl-cross-gate-execution-plan.md"
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__GTL-15-CROSS-GATE__20260727T114231Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "READ-ONLY inventory and line audit of GTL-01..14 evidence",
+      "exit_code": 0,
+      "result": "Cross-gate dependency order, non-overlapping files_locked, package gates, Kanban acceptance criteria and contradictions recorded."
+    },
+    {
+      "command": "READ-ONLY audit of GTL-12 ORQ-18 worktree and real tests",
+      "exit_code": 0,
+      "result": "BLOCK: declared confirm/success/error/refetch coverage is not present; physical runtime delete also remains blocked by task history ON DELETE CASCADE."
+    },
+    {
+      "command": "READ-ONLY audit of frozen GTL-I01 ORQ-26 worktree, S1-S7 and consumers",
+      "exit_code": 0,
+      "result": "BLOCK integration: production hunks are directionally PASS, but S5/S6 install a fixed unrestricted attachment trigger in the shared DB and consumer gates C3/mobile/CLI/U1-U9 are incomplete."
+    },
+    {
+      "command": "git diff --check -- .deploy-control/p0/evidence/gtl-cross-gate-execution-plan.md",
+      "exit_code": 0,
+      "result": "PASS"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-cross-gate-execution-plan.md",
+    "/home/ec2-user/workspace/worktrees/gtl-orq26/multica-auth-work/server/internal/handler/file.go:392-506",
+    "/home/ec2-user/workspace/worktrees/gtl-orq26/multica-auth-work/server/internal/handler/file_test.go:1200-1497",
+    "/home/ec2-user/workspace/worktrees/gtl-orq26/multica-auth-work/packages/core/api/client.test.ts:729-751",
+    "/home/ec2-user/multica_workspaces/20fce817-895d-447b-965a-49f5e279314a/91e70c79/workdir/repo"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run",
+  "summary": "GTL-15 consolidated all existing GTL-01..14 artifacts into dependency waves and exclusive file locks. Independent follow-up audits block GTL-12 because the real ORQ-18 tests do not cover wrapper success, cancel, generic error, pending or real cache invalidation; and block GTL-I01 because its fixed global trigger can poison every attachment insert in the shared test database and because the frozen two-file diff omits required frontend/mobile/CLI/surface gates. The three ORQ-26 production hunks themselves are directionally correct.",
+  "non_claims": [
+    "No code, board, build, test suite, deploy, restart, credential, permission or issue rerun was changed or executed.",
+    "The nine preserved issues ORQ-12, ORQ-13, ORQ-15, ORQ-16, ORQ-17, ORQ-18, ORQ-21, ORQ-22 and ORQ-23 were not mutated.",
+    "Backups predating token-only/hardening remain known-bad and were not touched."
+  ],
+  "blockers": [
+    "GTL-12: missing real wrapper/mutation/refetch/error tests and unresolved physical-delete history semantics.",
+    "GTL-I01: unrestricted fixed DB trigger, unchecked cleanup, missing C3/mobile/CLI/U1-U9 gates."
+  ]
+}

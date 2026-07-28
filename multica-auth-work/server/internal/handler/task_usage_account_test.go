@@ -1,0 +1,492 @@
+package handler
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
+)
+
+// ORQ-12. The contract these tests pin down is the PRODUCING account:
+//
+//	ClaimAgentTask freezes agent_task_queue.credential_account_id, server-side,
+//	from the agent's APPROVED assignment, in the same atomic statement that
+//	dispatches the task. The usage upsert only COPIES that frozen value, and an
+//	already-recorded attribution is immutable.
+//
+// The distinction matters because an agent can rotate between dispatch and the
+// usage report: resolving the assignment at report time would file the spend
+// under the account the agent holds NOW, not the one that produced the tokens.
+//
+// They require the ephemeral Postgres provided by this package's TestMain.
+// Without DATABASE_URL the package exits before m.Run and none of them execute,
+// which is why the DB gate is the only place their result means anything.
+
+func uuidParam(t *testing.T, s string) pgtype.UUID {
+	t.Helper()
+	parsed, err := uuid.Parse(s)
+	if err != nil {
+		t.Fatalf("parse uuid %q: %v", s, err)
+	}
+	return pgtype.UUID{Bytes: parsed, Valid: true}
+}
+
+// createTestAccount inserts a rotation account and returns its id. The column
+// set and the status value come from migration 123_rotation: `vendor` and
+// `tenant_id` are NOT NULL, and status is constrained to
+// available|leased|exhausted|cooldown|degraded, so 'active' would violate the
+// CHECK.
+func createTestAccount(t *testing.T, vendorLabel string) string {
+	t.Helper()
+	var accountID string
+	if err := testPool.QueryRow(context.Background(), `
+		INSERT INTO accounts (vendor, tenant_id, status)
+		VALUES ($1, gen_random_uuid(), 'available')
+		RETURNING account_id
+	`, vendorLabel).Scan(&accountID); err != nil {
+		t.Fatalf("insert account: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM accounts WHERE account_id = $1`, accountID)
+	})
+	return accountID
+}
+
+// approveAccount marks the account allowed for its own tenant, which is what
+// ClaimAgentTask requires before it will freeze the account onto a task.
+func approveAccount(t *testing.T, accountID string) {
+	t.Helper()
+	if _, err := testPool.Exec(context.Background(), `
+		INSERT INTO approved_accounts (tenant_id, account_id, allowed)
+		SELECT a.tenant_id, a.account_id, true FROM accounts a WHERE a.account_id = $1
+		ON CONFLICT (tenant_id, account_id) DO UPDATE SET allowed = true
+	`, accountID); err != nil {
+		t.Fatalf("approve account: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM approved_accounts WHERE account_id = $1`, accountID)
+	})
+}
+
+// assignAgentToAccount points assignments.agent_id at the given account. The
+// staged migration makes assignments(account_id) unique, so a previous holder is
+// released first.
+func assignAgentToAccount(t *testing.T, agentID, accountID string) {
+	t.Helper()
+	ctx := context.Background()
+	if _, err := testPool.Exec(ctx,
+		`DELETE FROM assignments WHERE account_id = $1 AND agent_id <> $2`, accountID, agentID); err != nil {
+		t.Fatalf("release previous holder: %v", err)
+	}
+	if _, err := testPool.Exec(ctx, `
+		INSERT INTO assignments (agent_id, account_id)
+		VALUES ($1, $2)
+		ON CONFLICT (agent_id) DO UPDATE SET account_id = EXCLUDED.account_id
+	`, agentID, accountID); err != nil {
+		t.Fatalf("insert assignment: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM assignments WHERE agent_id = $1`, agentID)
+	})
+}
+
+// enqueueTaskForAgent seeds a QUEUED task, which is the only status
+// ClaimAgentTask will pick up. The package helper seeds 'running' instead, so it
+// cannot exercise the freeze.
+func enqueueTaskForAgent(t *testing.T, agentID string) string {
+	t.Helper()
+	var taskID string
+	if err := testPool.QueryRow(context.Background(), `
+		INSERT INTO agent_task_queue (agent_id, runtime_id, status, priority)
+		VALUES ($1, $2, 'queued', 0)
+		RETURNING id
+	`, agentID, handlerTestRuntimeID(t)).Scan(&taskID); err != nil {
+		t.Fatalf("enqueue task: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM agent_task_queue WHERE id = $1`, taskID)
+	})
+	return taskID
+}
+
+// claimTask runs the real atomic claim and returns the frozen account, if any.
+func claimTask(t *testing.T, agentID, wantTaskID string) (string, bool) {
+	t.Helper()
+	task, err := db.New(testPool).ClaimAgentTask(context.Background(), uuidParam(t, agentID))
+	if err != nil {
+		t.Fatalf("claim task: %v", err)
+	}
+	if got := uuidText(task.ID); got != wantTaskID {
+		t.Fatalf("claimed %s, want %s", got, wantTaskID)
+	}
+	if !task.CredentialAccountID.Valid {
+		return "", false
+	}
+	return uuidText(task.CredentialAccountID), true
+}
+
+func uuidText(u pgtype.UUID) string {
+	if !u.Valid {
+		return ""
+	}
+	return uuid.UUID(u.Bytes).String()
+}
+
+func upsertUsage(t *testing.T, taskID string, in, out int64) {
+	t.Helper()
+	if err := db.New(testPool).UpsertTaskUsage(context.Background(), db.UpsertTaskUsageParams{
+		TaskID:       uuidParam(t, taskID),
+		Provider:     "orq12-test-provider",
+		Model:        "orq12-test-model",
+		InputTokens:  in,
+		OutputTokens: out,
+	}); err != nil {
+		t.Fatalf("upsert task usage: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM task_usage WHERE task_id = $1`, taskID)
+	})
+}
+
+func readUsageAccount(t *testing.T, taskID string) (string, bool) {
+	t.Helper()
+	var accountID *string
+	if err := testPool.QueryRow(context.Background(),
+		`SELECT account_id::text FROM task_usage WHERE task_id = $1`, taskID).Scan(&accountID); err != nil {
+		t.Fatalf("read account_id: %v", err)
+	}
+	if accountID == nil {
+		return "", false
+	}
+	return *accountID, true
+}
+
+func readUsageTokens(t *testing.T, taskID string) (int64, int64) {
+	t.Helper()
+	var in, out int64
+	if err := testPool.QueryRow(context.Background(),
+		`SELECT input_tokens, output_tokens FROM task_usage WHERE task_id = $1`, taskID).
+		Scan(&in, &out); err != nil {
+		t.Fatalf("read tokens: %v", err)
+	}
+	return in, out
+}
+
+// Happy path: the claim freezes the approved account and the usage row copies it.
+func TestTaskUsageAccountID_FrozenAtClaimAndCopiedToUsage(t *testing.T) {
+	accountID := createTestAccount(t, "orq12-frozen")
+	approveAccount(t, accountID)
+	agentID := createHandlerTestAgent(t, "ORQ12 Frozen", nil)
+	assignAgentToAccount(t, agentID, accountID)
+	taskID := enqueueTaskForAgent(t, agentID)
+
+	frozen, ok := claimTask(t, agentID, taskID)
+	if !ok {
+		t.Fatal("claim must freeze credential_account_id when the assignment is approved")
+	}
+	if frozen != accountID {
+		t.Fatalf("frozen account = %s, want %s", frozen, accountID)
+	}
+
+	upsertUsage(t, taskID, 10, 20)
+	got, ok := readUsageAccount(t, taskID)
+	if !ok || got != accountID {
+		t.Fatalf("usage account = %q ok=%v, want %s", got, ok, accountID)
+	}
+}
+
+// THE case the review blocked on: the agent is reassigned A -> B AFTER the claim
+// but BEFORE the first usage report. The usage must still name A, because A
+// produced the tokens.
+func TestTaskUsageAccountID_ReassignmentBeforeFirstReportKeepsProducingAccount(t *testing.T) {
+	accountA := createTestAccount(t, "orq12-producer-A")
+	accountB := createTestAccount(t, "orq12-successor-B")
+	approveAccount(t, accountA)
+	approveAccount(t, accountB)
+	agentID := createHandlerTestAgent(t, "ORQ12 ReassignBeforeReport", nil)
+	assignAgentToAccount(t, agentID, accountA)
+	taskID := enqueueTaskForAgent(t, agentID)
+
+	frozen, ok := claimTask(t, agentID, taskID)
+	if !ok || frozen != accountA {
+		t.Fatalf("claim should freeze A: got %q ok=%v want %s", frozen, ok, accountA)
+	}
+
+	// The agent rotates to B before any usage is reported.
+	assignAgentToAccount(t, agentID, accountB)
+
+	upsertUsage(t, taskID, 11, 22)
+
+	got, ok := readUsageAccount(t, taskID)
+	if !ok {
+		t.Fatal("usage must carry the producing account")
+	}
+	if got == accountB {
+		t.Fatalf("usage was misattributed to the successor account %s; a live assignment lookup is the defect this test exists for", accountB)
+	}
+	if got != accountA {
+		t.Fatalf("usage account = %s, want the producing account %s", got, accountA)
+	}
+}
+
+// A recorded attribution is immutable: a later re-report cannot rewrite it, and
+// the token correction must still land.
+func TestTaskUsageAccountID_ReReportCannotRewriteRecordedAccount(t *testing.T) {
+	accountA := createTestAccount(t, "orq12-immutable-A")
+	accountB := createTestAccount(t, "orq12-immutable-B")
+	approveAccount(t, accountA)
+	approveAccount(t, accountB)
+	agentID := createHandlerTestAgent(t, "ORQ12 Immutable", nil)
+	assignAgentToAccount(t, agentID, accountA)
+	taskID := enqueueTaskForAgent(t, agentID)
+	claimTask(t, agentID, taskID)
+
+	upsertUsage(t, taskID, 5, 5)
+
+	// Force the queue snapshot to B to prove the usage row does not follow it.
+	if _, err := testPool.Exec(context.Background(),
+		`UPDATE agent_task_queue SET credential_account_id = $1 WHERE id = $2`,
+		accountB, taskID); err != nil {
+		t.Fatalf("force queue snapshot: %v", err)
+	}
+	upsertUsage(t, taskID, 7, 9)
+
+	got, ok := readUsageAccount(t, taskID)
+	if !ok || got != accountA {
+		t.Fatalf("recorded attribution must be immutable: got %q ok=%v want %s", got, ok, accountA)
+	}
+	if in, out := readUsageTokens(t, taskID); in != 7 || out != 9 {
+		t.Fatalf("tokens = (%d,%d), want (7,9)", in, out)
+	}
+}
+
+// An agent with no APPROVED assignment leaves NULL at claim, and the usage row
+// inherits NULL. Inventing an account here would misattribute spend.
+func TestTaskUsageAccountID_NullWhenNoApprovedAssignment(t *testing.T) {
+	t.Run("no_assignment_at_all", func(t *testing.T) {
+		agentID := createHandlerTestAgent(t, "ORQ12 NoAssignment", nil)
+		taskID := enqueueTaskForAgent(t, agentID)
+		if frozen, ok := claimTask(t, agentID, taskID); ok {
+			t.Fatalf("expected NULL, got %s", frozen)
+		}
+		upsertUsage(t, taskID, 1, 2)
+		if got, ok := readUsageAccount(t, taskID); ok {
+			t.Fatalf("usage must stay NULL, got %s", got)
+		}
+	})
+
+	t.Run("assigned_but_not_approved", func(t *testing.T) {
+		accountID := createTestAccount(t, "orq12-unapproved")
+		agentID := createHandlerTestAgent(t, "ORQ12 Unapproved", nil)
+		assignAgentToAccount(t, agentID, accountID) // deliberately NOT approved
+		taskID := enqueueTaskForAgent(t, agentID)
+		if frozen, ok := claimTask(t, agentID, taskID); ok {
+			t.Fatalf("an unapproved assignment must not be frozen, got %s", frozen)
+		}
+	})
+
+	t.Run("approval_revoked", func(t *testing.T) {
+		accountID := createTestAccount(t, "orq12-revoked")
+		approveAccount(t, accountID)
+		if _, err := testPool.Exec(context.Background(),
+			`UPDATE approved_accounts SET allowed = false WHERE account_id = $1`, accountID); err != nil {
+			t.Fatalf("revoke approval: %v", err)
+		}
+		agentID := createHandlerTestAgent(t, "ORQ12 Revoked", nil)
+		assignAgentToAccount(t, agentID, accountID)
+		taskID := enqueueTaskForAgent(t, agentID)
+		if frozen, ok := claimTask(t, agentID, taskID); ok {
+			t.Fatalf("a revoked approval must not be frozen, got %s", frozen)
+		}
+	})
+}
+
+// A row written before the column existed keeps NULL and is not retro-attributed
+// by a later report. The pre-migration row is simulated by writing usage for a
+// task whose queue snapshot is NULL, which is exactly the legacy shape.
+func TestTaskUsageAccountID_LegacyRowStaysNullAndIsNotRetroAttributed(t *testing.T) {
+	agentID := createHandlerTestAgent(t, "ORQ12 Legacy", nil)
+	taskID := enqueueTaskForAgent(t, agentID)
+	claimTask(t, agentID, taskID) // no assignment: snapshot stays NULL
+
+	upsertUsage(t, taskID, 3, 4)
+	if got, ok := readUsageAccount(t, taskID); ok {
+		t.Fatalf("legacy row must be NULL, got %s", got)
+	}
+
+	// The account only appears later. A legacy row must NOT be back-filled from
+	// an assignment that did not produce it.
+	accountID := createTestAccount(t, "orq12-legacy-late")
+	approveAccount(t, accountID)
+	assignAgentToAccount(t, agentID, accountID)
+	upsertUsage(t, taskID, 5, 6)
+
+	if got, ok := readUsageAccount(t, taskID); ok {
+		t.Fatalf("legacy row was retro-attributed to %s; the queue snapshot is the only source", got)
+	}
+	// A NULL queue snapshot that is later frozen DOES fill the usage row: that is
+	// the same account, just recorded late.
+	if _, err := testPool.Exec(context.Background(),
+		`UPDATE agent_task_queue SET credential_account_id = $1 WHERE id = $2`,
+		accountID, taskID); err != nil {
+		t.Fatalf("freeze late: %v", err)
+	}
+	upsertUsage(t, taskID, 7, 8)
+	if got, ok := readUsageAccount(t, taskID); !ok || got != accountID {
+		t.Fatalf("a NULL attribution must be fillable: got %q ok=%v want %s", got, ok, accountID)
+	}
+}
+
+// Deleting the account must lose only the attribution, never the tokens.
+func TestTaskUsageAccountID_AccountDeletePreservesTokens(t *testing.T) {
+	accountID := createTestAccount(t, "orq12-deleted")
+	approveAccount(t, accountID)
+	agentID := createHandlerTestAgent(t, "ORQ12 Deleted", nil)
+	assignAgentToAccount(t, agentID, accountID)
+	taskID := enqueueTaskForAgent(t, agentID)
+	claimTask(t, agentID, taskID)
+	upsertUsage(t, taskID, 42, 84)
+
+	if got, ok := readUsageAccount(t, taskID); !ok || got != accountID {
+		t.Fatalf("precondition: usage should carry %s, got %q ok=%v", accountID, got, ok)
+	}
+
+	if _, err := testPool.Exec(context.Background(),
+		`DELETE FROM accounts WHERE account_id = $1`, accountID); err != nil {
+		t.Fatalf("delete account: %v", err)
+	}
+
+	// The usage row must still exist, with its tokens, and a NULL attribution.
+	in, out := readUsageTokens(t, taskID)
+	if in != 42 || out != 84 {
+		t.Fatalf("tokens must survive the account deletion: got (%d,%d), want (42,84)", in, out)
+	}
+	if got, ok := readUsageAccount(t, taskID); ok {
+		t.Fatalf("attribution should be NULL after ON DELETE SET NULL, got %s", got)
+	}
+	// And the queue snapshot must be nulled the same way, not cascade-deleted.
+	var queueRows int
+	if err := testPool.QueryRow(context.Background(),
+		`SELECT count(*) FROM agent_task_queue WHERE id = $1 AND credential_account_id IS NULL`,
+		taskID).Scan(&queueRows); err != nil {
+		t.Fatalf("read queue row: %v", err)
+	}
+	if queueRows != 1 {
+		t.Fatalf("queue row must survive with a NULL snapshot, found %d", queueRows)
+	}
+}
+
+// The conflict target is still (task_id, provider, model): a re-report updates
+// the one row instead of adding a second one that would double-count tokens.
+func TestTaskUsageAccountID_ConflictKeepsExactlyOneRow(t *testing.T) {
+	accountID := createTestAccount(t, "orq12-onerow")
+	approveAccount(t, accountID)
+	agentID := createHandlerTestAgent(t, "ORQ12 OneRow", nil)
+	assignAgentToAccount(t, agentID, accountID)
+	taskID := enqueueTaskForAgent(t, agentID)
+	claimTask(t, agentID, taskID)
+
+	upsertUsage(t, taskID, 1, 1)
+	upsertUsage(t, taskID, 2, 2)
+	upsertUsage(t, taskID, 3, 3)
+
+	var rows int
+	if err := testPool.QueryRow(context.Background(),
+		`SELECT count(*) FROM task_usage WHERE task_id = $1`, taskID).Scan(&rows); err != nil {
+		t.Fatalf("count rows: %v", err)
+	}
+	if rows != 1 {
+		t.Fatalf("three reports must collapse into one row, found %d", rows)
+	}
+	if in, out := readUsageTokens(t, taskID); in != 3 || out != 3 {
+		t.Fatalf("last report must win on tokens: got (%d,%d), want (3,3)", in, out)
+	}
+}
+
+// The report is workspace-scoped and keeps the unattributable bucket visible.
+func TestListTaskUsageByAccount_ScopedToWorkspaceAndKeepsNullBucket(t *testing.T) {
+	accountID := createTestAccount(t, "orq12-report")
+	approveAccount(t, accountID)
+	assignedAgent := createHandlerTestAgent(t, "ORQ12 ReportAssigned", nil)
+	assignAgentToAccount(t, assignedAgent, accountID)
+	assignedTask := enqueueTaskForAgent(t, assignedAgent)
+	claimTask(t, assignedAgent, assignedTask)
+
+	unassignedAgent := createHandlerTestAgent(t, "ORQ12 ReportUnassigned", nil)
+	unassignedTask := enqueueTaskForAgent(t, unassignedAgent)
+	claimTask(t, unassignedAgent, unassignedTask)
+
+	from := pgtype.Timestamptz{Time: time.Now().Add(-time.Minute), Valid: true}
+	upsertUsage(t, assignedTask, 100, 200)
+	upsertUsage(t, unassignedTask, 3, 4)
+	to := pgtype.Timestamptz{Time: time.Now().Add(time.Minute), Valid: true}
+
+	queries := db.New(testPool)
+	ws := parseUUID(testWorkspaceID)
+	rows, err := queries.ListTaskUsageByAccount(context.Background(), db.ListTaskUsageByAccountParams{
+		WorkspaceID: ws, FromTs: from, ToTs: to,
+	})
+	if err != nil {
+		t.Fatalf("list by account: %v", err)
+	}
+	var sawAttributed, sawNull bool
+	for _, row := range rows {
+		if row.Attributable {
+			sawAttributed = true
+			continue
+		}
+		sawNull = true
+		if row.AccountID.Valid {
+			t.Fatal("the non-attributable bucket must carry a NULL account_id")
+		}
+		if row.RowCount == 0 {
+			t.Fatal("the NULL bucket must report its row count, not be collapsed")
+		}
+	}
+	if !sawAttributed || !sawNull {
+		t.Fatalf("both buckets must appear: attributed=%v null=%v", sawAttributed, sawNull)
+	}
+
+	attr, err := queries.GetTaskUsageAccountAttribution(context.Background(),
+		db.GetTaskUsageAccountAttributionParams{WorkspaceID: ws, FromTs: from, ToTs: to})
+	if err != nil {
+		t.Fatalf("attribution: %v", err)
+	}
+	if attr.TotalRows != attr.AttributedRows+attr.UnattributedRows {
+		t.Fatalf("counters must add up: %+v", attr)
+	}
+	if attr.AttributedRows < 1 || attr.UnattributedRows < 1 {
+		t.Fatalf("window should contain both kinds of row: %+v", attr)
+	}
+
+	// Another workspace must see none of it: the scope is enforced in SQL, not
+	// only in the handler.
+	var otherWorkspace string
+	// migration 001 defines workspace(id, name, slug, description, settings,
+	// created_at, updated_at). There is no owner column: ownership lives in
+	// `member`, and this check does not need a member row because it calls the
+	// query directly rather than going through the handler.
+	if err := testPool.QueryRow(context.Background(), `
+		INSERT INTO workspace (name, slug)
+		VALUES ('ORQ12 Other', 'orq12-other-' || substr(gen_random_uuid()::text, 1, 8))
+		RETURNING id
+	`).Scan(&otherWorkspace); err != nil {
+		t.Skipf("could not create a second workspace for the scope check: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM workspace WHERE id = $1`, otherWorkspace)
+	})
+	otherAttr, err := queries.GetTaskUsageAccountAttribution(context.Background(),
+		db.GetTaskUsageAccountAttributionParams{
+			WorkspaceID: parseUUID(otherWorkspace), FromTs: from, ToTs: to,
+		})
+	if err != nil {
+		t.Fatalf("attribution for the other workspace: %v", err)
+	}
+	if otherAttr.TotalRows != 0 {
+		t.Fatalf("another workspace must not see this usage: %+v", otherAttr)
+	}
+}

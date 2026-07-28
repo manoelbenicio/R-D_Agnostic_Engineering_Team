@@ -1,0 +1,30 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:27:50Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-17"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Appended accepted owner ACL evidence note SHA 1b8265de... to ORQ-17 canonical supersession index",
+  "finding": "Updated orq17-canonical-evidence-supersession-index.md purely locally. Appended SHA 1b8265de1f80de41a937964fbc99d2d1908971f24b7c8de0c9cc353b0ebd778a (orq17-tailscale-acls-owner-evidence.md) as APPROVED OWNER ACL EVIDENCE under current network scope. Stated full-mesh blast radius inside private Tailnet (src=* dst=* ip=*). Reaffirmed that ACL rule does not imply Tailscale Funnel or public internet access. Reaffirmed mandatory credential provisioning + real login gate before applying Tailscale Serve. Preserved all prior evidence hashes (V1 RETRACTED 4b227421..., V2 RETRACTED f1b30d72..., V3 APPROVED BASELINE 9447a2df..., V4 APPROVED MONITOR 14517fff...) intact. Delivered updated index SHA256 80fd5a35899bb6becec8962627cbac393938f286b8673c409ad77d545f8877e8 for agent A8.",
+  "action_taken": "Updated .deploy-control/p0/evidence/orq17-canonical-evidence-supersession-index.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only mechanical operation.",
+  "files_changed": [
+    ".deploy-control/p0/evidence/orq17-canonical-evidence-supersession-index.md"
+  ],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T162750Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ17-CANONICAL-INDEX-ACL-UPDATE__20260727T162750Z.json"
+  ],
+  "owner_acl_evidence_sha256": "1b8265de1f80de41a937964fbc99d2d1908971f24b7c8de0c9cc353b0ebd778a",
+  "updated_index_sha256": "80fd5a35899bb6becec8962627cbac393938f286b8673c409ad77d545f8877e8",
+  "non_claims": [
+    "canonical index update, no network call, no API call, no DB query, no Docker command, no SSH call, no board mutation"
+  ],
+  "blocker": "BLOCKED_ON_CREDENTIALS"
+}

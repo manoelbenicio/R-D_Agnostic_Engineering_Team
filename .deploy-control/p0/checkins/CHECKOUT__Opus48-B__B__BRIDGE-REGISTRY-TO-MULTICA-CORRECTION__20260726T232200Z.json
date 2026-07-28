@@ -1,0 +1,90 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T23:22:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "B",
+  "task_ids": [
+    "BRIDGE-REGISTRY-TO-MULTICA-CORRECTION"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/sol-bridge-registry-to-multica-correction.md",
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T232000Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__B__BRIDGE-REGISTRY-TO-MULTICA-CORRECTION__20260726T232200Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "ls -ld /home/ec2-user/.agent-cred-homes no ORQ2 e no ORQ1 (id -un = ec2-user nos dois)",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CONFIRMA FATO 1 - ORQ2: drwx------ 0700 com registry.json 13183, registry.lock, registry.json.pre-orphan-cleanup.20260722T023208Z, codex-logins, slots. ORQ1 como ec2-user: No such file or directory. Isolamento esta no ORQ2; daemon esta no ORQ1; a ponte e cross-host."
+    },
+    {
+      "command": "git show 31d50b9 -- internal/daemon/daemon.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PRECISA FATO 6 - 31d50b9 nao removeu, GATEOU: credentialAccountHome := \"\" + if !d.cfg.L2Runtime.Enabled { credentialAccountHome = d.credentialAccountHomeForTask(...) }, com runtime_router_owner=rustL2 e rotation_noop_reason=L2RouterOwn no mesmo commit"
+    },
+    {
+      "command": "git log --oneline -S'credentialAccountHomeForTask' -- .../internal/daemon/daemon.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "MEDIDO - aa62401 introduz, 9ab80a6 remove. Regressao em duas etapas: gate em 31d50b9, delecao em 9ab80a6"
+    },
+    {
+      "command": "grep -rn 'credentialAccountHomeForTask|L2Runtime' --include='*.go' . e ls -d internal/daemon/rotation",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "MEDIDO - zero ocorrencias das duas; o pacote internal/daemon/rotation NAO EXISTE no HEAD e nenhum .go importa rotation. d.rotationStore/CurrentAssignment/GetAccount/rotation.Account sumiram do lado Go"
+    },
+    {
+      "command": "git show aa62401:.../internal/daemon/daemon.go | sed -n '3838,3858p'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "RECUPERADO - wiring original devolve account.HomeDir, UM caminho unico para todos os providers; restaurar AS-IS reintroduz o defeito do FATO 3 (kiro sem credencial em silencio via kiro_home.go:73-75)"
+    },
+    {
+      "command": "cat server/migrations/123_rotation.up.sql e 124_approved_accounts.up.sql",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "MEDIDO - lado SQL sobreviveu: accounts(vendor, home_dir, config_dir, priority, status, tokens_per_window, tokens_used, cooldown_until), credentials(secret_ref, format), assignments(agent_id PK -> account_id), rotation_events(reason CHECK), approved_accounts(tenant_id, allowed, worktype_scope CHECK GENERAL/HEAVY/CHEAP/REVIEW). NAO existe coluna para xdg-data nem para codex"
+    },
+    {
+      "command": "git status --porcelain -- multica-auth-work/ | grep -c '.go$'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - 0 arquivos .go modificados"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/sol-bridge-registry-to-multica-correction.md",
+    ".deploy-control/p0/evidence/sol-tema2-execenv-accounthome-layout.md",
+    "multica-auth-work/server/migrations/123_rotation.up.sql",
+    "multica-auth-work/server/migrations/124_approved_accounts.up.sql",
+    "git 31d50b9, aa62401, 9ab80a6",
+    "multica-auth-work/server/internal/daemon/daemon.go:3448, :3476, :3492",
+    "multica-auth-work/server/internal/daemon/execenv/execenv.go:284-287, :301-307, :312-318",
+    "multica-auth-work/server/internal/daemon/execenv/kiro_home.go:73-75"
+  ],
+  "reported_to": "KIRO-PRINCIPAL-TL (100.117.245.15, pane wB:p1) via herdr pane run, exit 0 + copia duravel em .deploy-control/inbox-tm/",
+  "summary": "Correcao emitida e contrato da ponte levantado. CORRECAO: retiro meu enquadramento de que a ausencia de slots no ORQ1 seria decisao aberta; confirmo o FATO 1 por medicao propria como ec2-user nos dois hosts e reformulo o achado como o que realmente importa - o isolamento esta no ORQ2 e o daemon no ORQ1, logo a ponte e CROSS-HOST. PRECISAO no FATO 6: 31d50b9 gateou o wiring atras de if !d.cfg.L2Runtime.Enabled porque o router L2 assumiu a rotacao; a delecao efetiva foi em 9ab80a6. ACHADO NOVO: o pacote internal/daemon/rotation nao existe no HEAD e nada o importa, entao a ponte exige reintroduzir um cliente de store, nao apenas religar uma chamada. PONTO CRITICO: o wiring original devolvia account.HomeDir unico, o que reintroduziria o defeito do FATO 3; a ponte tem de mapear slot_root para subdiretorio por provider. PROPOSTA SEM MIGRATION: gravar o slot root em accounts.home_dir e derivar em Go (antigravity->home, kiro->xdg-data, codex->codex, cline->cline), mantendo vazio como comportamento global para nao regredir o FATO 8. O schema exige accounts.vendor exatamente antigravity/kiro/codex por causa de EqualFold, nao tem coluna para xdg-data nem codex, tem assignments.agent_id como PK (uma conta por agente) e worktype_scope HEAVY pronto para Opus e Gemini Pro.",
+  "non_claims": [
+    "Nao reabri nenhum dos 8 fatos: a precisao no FATO 6 vem de git show e git log, e a correcao da secao 1 e do meu proprio enquadramento, nao do FATO 1",
+    "Nao editei nenhum .go, nao rodei go build, vet ou test, nao substitui binario, nao reiniciei daemon, nao commitei",
+    "Nao li conteudo de registry.json nem de credencial: apenas ls -l de nome, tamanho e permissao",
+    "Nao consultei o Postgres do ORQ1: as zero linhas em accounts/approved_accounts/assignments sao o FATO 5, medido pelo TL",
+    "opencode fora de escopo por FATO 7; nao aparece em nenhuma proposta",
+    "Nao redesenhei isolamento: as propostas ficam do lado Multica da ponte"
+  ],
+  "blocker": "Cinco lacunas exigem decisao do owner antes de qualquer codigo: (1) cross-host, registry e slots no ORQ2 e daemon no ORQ1, um caminho de slot do ORQ2 nao existe no filesystem do ORQ1; (2) falta correspondencia terminal_id (registry) <-> agent_id (assignments); (3) seed, com as tabelas em zero o wiring restaurado devolve vazio e nada muda; (4) kiro tem credencial em apenas 5 dos 22 slots (139, 140, 142, 143, 149); (5) codex ignora AccountHome porque daemon.go:3476 passa CredentiallessGateway true e execenv.go:284-287 desvia para prepareCredentiallessCodexHome. Dono: human owner via KIRO-PRINCIPAL-TL.",
+  "handoffs": [
+    {
+      "to_lane": "KIRO-PRINCIPAL-TL",
+      "reason": "A ponte e cross-host e exige reintroduzir um cliente de store, nao religar uma chamada. Restaurar aa62401 AS-IS reintroduz o defeito do FATO 3.",
+      "file": ".deploy-control/p0/evidence/sol-bridge-registry-to-multica-correction.md"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:52:11Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-KANBAN-INTEGRITY-MONITOR-V5",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v5.md"
+  ],
+  "summary": "Design do Monitor de Integridade do Kanban V5 (GTL-56) concluído em modo READ-ONLY. Derivado o schema literal das migrations (001_init.up.sql), corrigida a anomalia 3 para utilizar status 'done', corrigida a anomalia 4 para utilizar a tabela issue_dependency com a coluna depends_on_issue_id e status 'done', preservados os pontos PASS (acoplamento ao fim do runtime_sweeper.go, lock 4247 em conexão dedicada e eventos passivos) e ajustada a suíte de testes com validação StrictReadOnly."
+}

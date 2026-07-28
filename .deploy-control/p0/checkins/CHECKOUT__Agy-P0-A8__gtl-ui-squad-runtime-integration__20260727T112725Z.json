@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:27:25Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-UI-SQUAD-RUNTIME-INTEGRATION",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-ui-squad-runtime-integration.md"
+  ],
+  "summary": "Consolidação GTL-08 concluída em modo READ-ONLY. Mapeamento consolidado das 3 frentes (Issue Assignee, Project Lead e Delete Runtime), patch map detalhado para Codex56-TL, contratos API identificados, migration 105_project_squad_lead.up.sql especificada e suíte de testes (confirm/success/error/refetch/FK409) estruturada."
+}

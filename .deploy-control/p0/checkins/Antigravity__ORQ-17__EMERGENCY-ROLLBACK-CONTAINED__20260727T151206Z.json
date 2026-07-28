@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T151206Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-17",
+  "lane": "GTL-R17-EMERGENCY-ROLLBACK",
+  "task_ids": ["ORQ-17-EMERGENCY-ROLLBACK"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-emergency-rollback.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T151206Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-emergency-rollback.md"
+  ],
+  "summary": "Rollback de emergencia do Gate A no ORQ1 executado e verificado com sucesso. tailscale serve reset rodou uma unica vez com exit code 0. Serve status limpo (No serve config), porta HTTPS 443 desativada no FQDN (000 Connection Refused), listeners locais (13100 e 18080) e tunel ORQ2 permanecem ativos.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

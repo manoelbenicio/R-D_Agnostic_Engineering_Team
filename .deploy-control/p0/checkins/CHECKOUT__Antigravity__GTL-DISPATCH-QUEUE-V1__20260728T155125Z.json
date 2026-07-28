@@ -1,0 +1,30 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T15:51:25Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-18",
+    "OPS-LIFECYCLE",
+    "ORQ-31",
+    "ORQ-39"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Execution of GTL DISPATCH QUEUE READY-20260728-V1 via Herdr as Kanban Operations Operator",
+  "finding": "Produced gtl-dispatch-receipts-20260728-v1.md. Executed dispatches via Herdr: R1 ORQ-18 -> w8:p4 (Codex56-Z, InProgress, ETA 45-90m), R2 OPS-LIFECYCLE -> w8:p2 (Opus48-D, preflight, ETA 30-60m), R3 ORQ-31 -> w7:p3 (Codex56-A, InReview, ETA 30-60m), R4 ORQ-39 -> wN:p1 (Opus46#A, InReview dc1ed12, ETA 30-45m). Verified all 4 panes returned Herdr OK. Preserved explicit exclusions ORQ-12 and ORQ-21. Generated ZERO product code changes and ZERO duplicate product tasks. Recorded receipts SHA256 d6f4fe6ebdd0d4ab77abb8c91a10b497b3b1a75a6bd650c9253a13ec21f0de1d.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-dispatch-receipts-20260728-v1.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Mechanical dispatch operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-dispatch-receipts-20260728-v1.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260728T155125Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-DISPATCH-QUEUE-V1__20260728T155125Z.json"
+  ],
+  "dispatch_receipts_sha256": "d6f4fe6ebdd0d4ab77abb8c91a10b497b3b1a75a6bd650c9253a13ec21f0de1d",
+  "non_claims": [
+    "gtl dispatch queue execution, no product code edit, no duplicate task creation, no GetSecretValue, no DB mutation, no AWS mutation"
+  ],
+  "blocker": null
+}

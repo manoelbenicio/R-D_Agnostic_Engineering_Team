@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T132226Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-41",
+  "lane": "GTL-R41",
+  "task_ids": ["ORQ-41-DECOUPLING-PEER-REVIEW"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-execution-trigger-decoupling-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T132226Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-execution-trigger-decoupling-peer-review.md"
+  ],
+  "summary": "Peer review adversarial do design de desacoplamento de gatilhos de execucao da ORQ-41 concluido. Veredito: BLOCK. Requer inclusao do caminho indireto de issue_child_done.go, eliminacao do disparo por texto de mencao, remocao do cancelamento silencioso no reassign e fechamento do bypass de replay no Autopilot.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

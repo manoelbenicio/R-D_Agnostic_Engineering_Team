@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T150712Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-17",
+  "lane": "GTL-R17-GATE-A-EXECUTION",
+  "task_ids": ["ORQ-17-GATE-A-EXECUTION"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-gate-a-execution.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T150712Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-gate-a-execution.md"
+  ],
+  "summary": "Execucao autorizada do Gate A no ORQ1 concluida com sucesso. Todos os 9 comandos tailscale serve aplicados sequencialmente sem erros. Terminacao TLS estabelecida para orq1.tail96e2c0.ts.net na porta 443 com certificado Let's Encrypt. Sondas de verificacao de rotas HTTPS/2 confirmadas. Zero credenciais expostas.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

@@ -1,0 +1,15 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T13:39:52Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "ORQ32-HANDSHAKE-TOKEN-ROTATION-RUNBOOK-PEER-REVIEW",
+  "issue_id": "ORQ-32",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/orq32-handshake-token-rotation-runbook-peer-review.md"
+  ],
+  "summary": "Peer review adversarial do runbook de rotação do Handshake Token (ORQ-32) concluído com veredito BLOCK em modo READ-ONLY. Identificada a ausência de suporte no código Go atual para as variáveis HANDSHAKE_TOKEN_PRIMARY/SECONDARY propostas no runbook, o que causaria indisponibilidade total dos daemons por rejeição 401/403. Exigida a inclusão de dependência de patch Go antes da execução do rollout de rotação."
+}

@@ -1,0 +1,42 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T17:12:00Z",
+  "agent": "Opus48#A", "pane_id": "w6:p1", "lane": "A",
+  "issue_id": "ORQ-17", "stage": "Stage3B F1-F5",
+  "gate0": "ACCEPT recebido e respeitado: revisei SOMENTE F1-F5, com ferramentas presentes; nao instalei nada; nao reabri A2.x nem ORQ-42/44/13",
+  "task_ids": ["ORQ17-STAGE3B-F1-F5-FINAL-VERIFICATION"],
+  "status": "DONE_PASS",
+  "verdict": "PASS - os cinco bloqueadores estao fechados; 4 condicoes registradas, nenhuma bloqueante",
+  "deliverable": ".deploy-control/p0/evidence/orq17-stage3b-f1-f5-final-verification.md",
+  "artifact_sha256": "9113f2a7760fa2702344cdb97fd70ea42e50c1dca7e66a53ce2eefc839e829c3",
+  "reviewed_artifact_hashes_measured_by_me": {
+    "bootstrap-helper.go.txt": "fabc8f8585449d2263fbc62cb7437726db9cae0c33c1607adbad17abebb59e82",
+    "sealed-runner.sh.txt": "c3d64f85a348fdf1d5b373b9253f0fb5bc19f5b468add7ef17072c6f253d8b42",
+    "bootstrap-helper_test.go.txt": "92f92b5a58e6efd763452dbd79eeb096d94591cd6334989fcf6b3155dc51dc97",
+    "owner-credential-provisioning-runbook.md": "dce169561dfaeb6d3751fadf1faef07b153b59cecb690f1f7aed020d9f76a2ba"
+  },
+  "hash_caveat": "NAO recebi hash do General-TL para conferir; usei os que eu mesmo medi. Se o hash oficial divergir, esta revisao se refere a outra revisao dos arquivos e precisa ser repetida.",
+  "f1": "FECHADO e acima do pedido. rollbackBreakglass preserva TODAS as guardas (assertFKCatalog, verifyGlobal(1,1,0), targetReferenceCounts incluindo member cuja FK e CASCADE, RowsAffected==1 por tabela, verifyGlobal(0,0,0), locks de beginMutation(rollback=true)) e acrescentou um controle que eu nao pedi: a identidade e PINADA por expectedOwnerEmail, logo o breakglass nao pode apagar usuario arbitrario. Autorizacao por ORQ17_BREAKGLASS_RECEIPT mais SHA256, verificados por check_receipt (prefixo de caminho, modo 600, UID do dono, igualdade de hash)",
+  "f2": "FECHADO. ORQ17_CUSTODY_RECEIPT e SHA256 exigidos ANTES de qualquer mutacao, com o runbook exigindo CUSTODY_PROVEN=1 LOGIN=<owner> no recibo; falha fecha com E_CUSTODY_PROOF",
+  "f3": "FECHADO e acima do pedido. Tokens distintos E_PROVISION_COMMITTED_GUARD_FAILED_COMPENSATED, ..._STATE_UNKNOWN e E_ROLLBACK_COMMITTED_GUARD_FAILED; e compensateWithFreshGuard READQUIRE uma guarda nova antes de compensar - correto e necessario, porque o pgx fecha a transacao quando o Commit falha e sem isso a compensacao rodaria SEM o congelamento de fila e member. No runner, read_committed_state usa o novo modo state (chamado com </dev/null, sem credencial) e traduz em tokens precisos, inclusive REQUIRES_OWNER_REVIEW; o runbook proibe DELETE manual explicitamente",
+  "f4": "FECHADO, e o transporte da senha na nova superficie esta CORRETO. O gate roda depois do provision e antes de declarar sucesso, exigindo login_code 200 em POST /auth/login e me_code 200 em GET /api/me com http_stderr vazio, e em falha le o estado e tenta rollback credenciado - o que resolve a tensao com L1, porque OWNER_* ainda estao no ambiente. Ataquei o transporte: http-body roda o helper NO HOST e sua stdout vai DIRETO para o stdin do curl por pipe com --data-binary @-, logo a senha nao vai a arquivo nem a argv; a substituicao de comando captura somente %{http_code} porque --output /dev/null; e http-body NAO e oraculo de divulgacao, pois nao le segredo de lugar nenhum, apenas re-emite o que recebeu por stdin",
+  "f5": "FECHADO. command -V printf exigindo builtin (E_PRINTF_EXTERNAL) e ulimit -c 0, ambos nas linhas 5-9, ANTES de qualquer expansao de OWNER_*",
+  "conditions_non_blocking": [
+    "C1 os recibos de custodia e breakglass sao controle DE GOVERNANCA e nao criptografico: o hash esperado chega por variavel de ambiente do proprio operador, logo recibo auto-assinado e possivel; so e forte se o hash vier do owner por canal proprio",
+    "C2 o gate F4 EMITE UMA SESSAO REAL DE OWNER - cookie multica_auth com JWT de 30 dias (defaultAuthTokenTTL), gravado em jar 0600 e removido em todos os caminhos, mas o JWT e STATELESS E NAO REVOGAVEL. O owner precisa aceitar que um token de 30 dias existiu brevemente em disco; opcionalmente chamar /auth/logout por higiene de cookie, sem efeito no servidor",
+    "C3 check_receipt encadeia test sem &&; hoje FALHA FECHADO porque o retorno e o do sha256sum comparado, mas depende de composicao - encadear com && torna a intencao explicita",
+    "C4 expectedOwnerEmail esta FIXO no fonte: e controle positivo, mas trocar o owner exige recompilar e refazer o pin de hash"
+  ],
+  "observation": "checkDBTuple agora tambem exige cc.TLSConfig == nil, isto e PROIBE TLS na conexao ao Postgres. Como o trafego e container-para-container na rede privada do Compose e o objetivo e determinismo da tupla, nao vejo risco, mas registro que a escolha e explicita",
+  "carried_forward": "Exposicao de credencial e corrupcao seguem PASS com todos os controles ja verificados. E A A5.1 LITERAL CONTINUA INEXEQUIVEL: a exclusao de member do lock da tx de mutacao esta CORRETA - repito para evitar BLOCK cruzado por leitura literal",
+  "non_claims": [
+    "NAO executei nada: nem helper, runner, Docker/Compose, SQL, curl, login, asm-exec, nem chamada AWS; nao usei o SSH ao ORQ1 nesta rodada; nao mutei AWS, segredo, DB ou quadro",
+    "revisei o TEXTO dos .txt: nao compilei o helper, nao verifiquei o source-closure e nao confirmei que o .txt corresponde ao binario que seria montado na janela",
+    "nao avaliei o arquivo de teste (fora do escopo concedido), portanto NAO afirmo ausencia de falso-verde nos testes; nao rodei go build nem go vet",
+    "nao li ValidatePassword, PasswordMaxBytes nem o store nesta rodada; assumi contratos pelo uso",
+    "nao verifiquei o schema real do Postgres do ORQ1: avaliei o catalogo de FK como MECANISMO",
+    "nao avaliei os pins A2.x nem nada das tarefas pausadas ORQ-42/44/13, conforme o GATE 0",
+    "nao alterei assignee, nao postei comentario, nao criei card"
+  ],
+  "reported_to": ["w5:pC", "w5:p9"]
+}

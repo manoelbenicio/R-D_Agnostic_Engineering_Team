@@ -1,0 +1,81 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:39:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "GTL-K03-RETROACTIVE-KANBAN-MAPPING"
+  ],
+  "orq_mapping": {
+    "GTL-03 cost audit": "ORQ-12 (reuso, UUID 8b1419f5-c9d4-466c-adff-cded98f91d29)",
+    "GTL-17 usage observability": "ORQ-14 (reuso, UUID 19ab8cfe-0a95-4a79-af99-4ee384326021)",
+    "GTL-25 versioned tier pricing": "ORQ-13 (reuso, UUID 2aefcb3d-97b3-4e70-a4b0-ae3729b7981d)",
+    "GTL-37 ORQ-23 cutover review": "ORQ-23 (reuso, UUID 6230b5c0-c57a-4b88-a7df-84899057d0c8)",
+    "GTL-I03 ORQ-13 phase1": "ORQ-13 (mesmo card, fase 1; sem card novo)",
+    "GTL-74 CLI alignment V2": "SEM CARD — criacao BLOQUEADA pelo freeze de ORQ-31; card proposto pronto na evidencia"
+  },
+  "status": "DONE (deliverable) / BLOCKED (1 criacao de card)",
+  "mode": "READ_ONLY_BOARD",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-legacy-kanban-mapping-opus48b.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__GTL-K03-RETROACTIVE-KANBAN-MAPPING__20260727T123900Z.json"
+  ],
+  "tests": [
+    {
+      "command": "GET /api/issues?workspace_id=20fce817-... (duas leituras: 12:36 e 12:37Z)",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "TOTAL 20, MAX number 30, resultado identico nas duas leituras; match de titulo para browser/qa = [] e para cli = [] => NAO existia ORQ-31 nem card de Browser QA/Security/CLI no corte"
+    },
+    {
+      "command": "GET dos 4 cards-alvo (id, status, priority, assignee_type/id, len(description))",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "ORQ-12 todo/urgent/agent 2c042fdd desc 490; ORQ-13 todo/high/agent 4dc3b1f5 desc 500; ORQ-14 blocked/urgent/agent 3db514db desc 447; ORQ-23 todo/high/agent 4dc3b1f5 desc 575 — os quatro JA tem assignee, nenhum PUT de assignment necessario"
+    },
+    {
+      "command": "leitura de headers/vereditos dos 6 artefatos legados",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "GTL-03 auditoria concluida; GTL-17/GTL-26 PASS com retificacao de premissa stale; GTL-25 design sem valor monetario; GTL-37 BLOCK; GTL-I03/GTL-68 PASS condicional a 3 criterios com split plan; GTL-74 review adversarial do plano CLI V2 (GTL-71)"
+    },
+    {
+      "command": "sed -n '2308,2360p' server/internal/handler/issue.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "UpdateIssue e PARTIAL: le body cru e so altera campo presente (if req.X != nil), pre-preenchendo nullable com valor atual => anexar description exige GET imediatamente antes para nao clobbar"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-legacy-kanban-mapping-opus48b.md (mapeamento exato, card proposto e 4 payloads PUT prontos e nao aplicados)",
+    "achado para a auditoria do incidente ORQ-31: no corte 12:36-12:37Z o board tinha MAX number 30 e ZERO card de Browser QA, logo a premissa do dispatch K03 ja era falsa e a colisao de dois UUIDs como ORQ-31 e posterior, compativel com duas criacoes concorrentes consumindo o mesmo number",
+    "5 reusos (ORQ-12, ORQ-13 em duas fases, ORQ-14, ORQ-23) + 1 criacao pendente; zero duplicacao criada; ORQ-31 nao tocado"
+  ],
+  "summary": "Mapeamento retroativo entregue sem tocar o board. Inventariei o Kanban por GET em duas leituras (TOTAL 20, MAX 30, identicas) e nao existia ORQ-31 nem card de Browser QA, Security ou CLI — a premissa do dispatch ja era falsa as 12:36-12:37Z, o que e insumo direto para a auditoria do incidente de duplicidade: a colisao de dois UUIDs como ORQ-31 e posterior ao corte e compativel com duas criacoes concorrentes consumindo o mesmo number. Justamente por isso NAO criei o card de CLI, que seria a terceira criacao concorrente. Mapeamento: GTL-03 -> ORQ-12; GTL-17 -> ORQ-14; GTL-25 -> ORQ-13; GTL-37 -> ORQ-23; GTL-I03 -> ORQ-13 como fase 1 do mesmo problema (preco por tier exige tier persistido), sem card novo; GTL-74 CLI alignment V2 -> nenhum card existente, criacao pendente com card ja redigido (titulo, prioridade, aceite em 5 itens, dependencia de fila zero e janela do owner, riscos e rollback por pin de versao). Nada foi marcado done: GTL-25 e GTL-17 sao design, GTL-I03 e patch em worktree sem commit nem migration aplicada, e GTL-37 e BLOCK que deve constar como bloqueio do ORQ-23. Deixei prontos 4 payloads PUT de anexo de evidencia, nao aplicados, apos verificar em issue.go:2308-2352 que UpdateIssue e partial e que anexar description exige GET imediatamente antes para nao clobbar o texto atual. Os quatro cards ja possuem assignee, portanto nenhum PUT de assignment e necessario. A evidencia da Wave A de seguranca nao foi alterada e o mapping K02 fica pendente porque nao existe card de seguranca identificavel no corte.",
+  "non_claims": [
+    "zero mutacao de board: nenhum POST, PUT, PATCH, delete, renumeracao ou merge; ORQ-31 nao tocado",
+    "zero mutacao de repo, codigo, teste, build, instalacao, deploy, restart, credencial ou permissao",
+    "nada marcado como done e nenhum status movido",
+    "nao afirmo que ORQ-31 nao exista agora: afirmo que as 12:36-12:37Z o MAX era 30 em duas leituras",
+    "nao inspecionei comentarios dos cards (apenas /api/issues): checagem de duplicidade por comentario fica para o agente de busca designado",
+    "nenhum valor de segredo lido ou exposto"
+  ],
+  "blocker": "Criacao do card de CLI alignment (GTL-71/GTL-74) BLOQUEADA pelo GTL KANBAN FREEZE (incidente de duplicidade de ORQ-31). Aguardo unfreeze e o ruling de unicidade para: (a) criar exatamente um card de CLI, (b) aplicar os 4 PUT de anexo de evidencia, (c) citar o ORQ-N correto na Wave A por adendo.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "unfreeze + ruling de unicidade de ORQ-31; meu corte de 12:36-12:37Z (MAX 30, sem Browser QA) e evidencia util para a auditoria; depois disso aplico o card unico de CLI e os 4 anexos PUT",
+      "file": ".deploy-control/p0/evidence/gtl-legacy-kanban-mapping-opus48b.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

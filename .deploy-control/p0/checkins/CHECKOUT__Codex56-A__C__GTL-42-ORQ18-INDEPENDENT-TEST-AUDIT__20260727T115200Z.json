@@ -1,0 +1,90 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:52:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "GTL-42-ORQ18-INDEPENDENT-TEST-AUDIT"
+  ],
+  "status": "DONE",
+  "verdict": "BLOCK",
+  "mode": "READ_ONLY_AUDIT_COM_EXECUCAO_DE_TESTE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq18-independent-test-audit.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__GTL-42-ORQ18-INDEPENDENT-TEST-AUDIT__20260727T115200Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "cd <worktree>/multica-auth-work/packages/views && timeout 150 npx vitest run runtimes/components/runtime-row-menu.test.tsx",
+      "exit_code": 124,
+      "assertions_or_tests": 0,
+      "result": "HANG — morto pelo timeout, ZERO linha de resultado emitida. Reproduzido 2x (isolado 150s e no par 420s)"
+    },
+    {
+      "command": "cd <main repo>/multica-auth-work/packages/views && timeout 150 npx vitest run runtimes/components/runtime-row-menu.test.tsx",
+      "exit_code": 0,
+      "assertions_or_tests": 7,
+      "result": "PASS — 'Test Files 1 passed (1) / Tests 7 passed (7)' em 111ms (base termina, worktree nao)"
+    },
+    {
+      "command": "cd <worktree>/multica-auth-work/packages/views && timeout 150 npx vitest run runtimes/components/delete-runtime-dialog.test.tsx",
+      "exit_code": 0,
+      "assertions_or_tests": 10,
+      "result": "PASS — 10 passed em 1079ms (arquivo NAO modificado por este worktree)"
+    },
+    {
+      "command": "cd multica-auth-work && npx vitest run <os dois arquivos>  (harness da RAIZ, sem packages/views/vitest.config.ts)",
+      "exit_code": 1,
+      "assertions_or_tests": 17,
+      "result": "16 failed / 1 passed IDENTICO no worktree E na base => falhas do harness errado (falta setupFiles ./test/setup.ts), invalidam PASS/FAIL de relatorio"
+    },
+    {
+      "command": "git status --porcelain e git log integration/dev-transition-candidate-20260719..HEAD no worktree",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "2 arquivos modificados (runtime-list.tsx, runtime-row-menu.test.tsx), ZERO commits, HEAD 0cb8aeb igual a base"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "coverage_matrix": {
+    "confirm": "PARCIAL — delete-runtime-dialog.test.tsx:213, :224-232, :409; o caso novo que clica e abre o dialog esta no arquivo que trava",
+    "cancel": "NAO COBERTO — onCancel em delete-runtime-dialog.tsx:213,220,270,275,298,301,336,348,412,415 e guarda :182-185, zero teste",
+    "success": "NAO COBERTO — toast mockado em delete-runtime-dialog.test.tsx:106 e nunca asseverado",
+    "409": "COBERTO — delete-runtime-dialog.test.tsx:248 com ApiError 409 em :251 (runtime_has_active_agents) e :276 com :278 (runtime_delete_plan_changed)",
+    "generic_error": "NAO COBERTO — toast.error em delete-runtime-dialog.tsx:175 e fallback comentado em :599",
+    "refetch": "NAO COBERTO — invalidacoes em core/runtimes/mutations.ts:12 e :38-40 e :58; core/runtimes nao tem teste de mutations.ts (so cli-version, derive-health, models)",
+    "pending": "NAO COBERTO — isPending fixado em false nos mocks (delete-runtime-dialog.test.tsx:54,59 e no vi.mock do runtime-row-menu)"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq18-independent-test-audit.md",
+    "packages/views/vitest.config.ts:7-9 (environment jsdom, setupFiles ./test/setup.ts) — harness sancionado; package.json:24 turbo test; packages/views/package.json:9 vitest run",
+    "CASCADE/historico: migrations/004_agent_runtime_loop.up.sql:73 agent.runtime_id ON DELETE RESTRICT (origem do 409) e :86 agent_task_queue.runtime_id ON DELETE CASCADE (perda silenciosa de fila); 013_runtime_usage.up.sql:3 CASCADE (tabela dropada em 046); 060_chat_session_runtime_id.up.sql:2 ON DELETE SET NULL",
+    "nenhum teste cobre tasks_cancelled > 0 (o unico uso e tasks_cancelled: 0 em delete-runtime-dialog.test.tsx:237), e a acao destrutiva deixou de ser hover-only para ficar sempre visivel"
+  ],
+  "summary": "VEREDITO BLOCK, por execucao propria e nao por relatorio. Reconciliacao: o BLOCK do Codex56#B esta correto e o PASS do GTL-12 nao e reproduzivel. Duas descobertas de metodo e de fato. (1) HARNESS: rodar vitest da raiz multica-auth-work ignora packages/views/vitest.config.ts (jsdom + setupFiles ./test/setup.ts) e produz 16 failed / 1 passed IDENTICO no worktree e na base, logo qualquer PASS/FAIL obtido assim nao prova nada. (2) COM O HARNESS SANCIONADO, o arquivo que a ORQ-18 alterou NAO TERMINA: base runtime-row-menu.test.tsx = 7 passed em 111ms com exit 0; worktree = exit 124 sem emitir uma unica linha de resultado, reproduzido duas vezes. O delete-runtime-dialog.test.tsx, que este worktree nao toca, passa 10/10 nas duas arvores. Hipotese nao provada do travamento: o novo caso faz fireEvent.click e depois getByRole heading 'Delete Runtime?', passando a montar o DeleteRuntimeDialog real num arquivo cujos mocks foram escritos sob a premissa 'the dialog never renders in these tests (open=false throughout)'. COBERTURA dos 7 comportamentos: apenas 409 plenamente coberto (dois casos, linhas 248/251 e 276/278), confirm parcial, e cancel, success, erro generico, refetch e pending SEM cobertura alguma — sendo que o botao destrutivo deixou de ser hover-only e agora fica sempre visivel na lista. RISCO DE CASCADE: agent.runtime_id e RESTRICT (004:73, origem do 409) mas agent_task_queue.runtime_id e ON DELETE CASCADE (004:86), ou seja apagar runtime remove em silencio a fila daquele runtime, e chat_session.runtime_id vira NULL (060:2); nenhum teste cobre tasks_cancelled > 0. Desbloqueio proposto: fazer o novo caso nao montar o dialog real (ou mockar DeleteRuntimeDialog/Tooltip) e provar conclusao em tempo comparavel a base, adicionar os 5 comportamentos ausentes incluindo teste de core/runtimes/mutations.ts para as 4 invalidacoes, e um caso com tasks_cancelled > 0.",
+  "non_claims": [
+    "nao editei, nao rebasei, nao commitei, nao instalei dependencia e nao alterei configuracao; executei apenas vitest run e comandos git/grep read-only",
+    "nao provei a CAUSA do travamento: o processo nao emitiu saida antes de ser morto; provei o fato binario base termina x worktree nao",
+    "nao rodei a suite completa de packages/views nem turbo test; escopo foram os dois arquivos do dominio de delete de runtime",
+    "nao validei o handler Go do delete nem executei DELETE real contra banco: a analise de cascade e por schema (migrations)",
+    "nao usei os relatorios GTL-12 nem Codex56#B como fonte de verdade"
+  ],
+  "blocker": "runtime-row-menu.test.tsx no worktree agent/codex-b/orq-18-runtime-delete-ui nao conclui sob o harness sancionado (exit 124, zero resultado) enquanto a base passa 7/7 em 111ms. Owner do conserto: Codex56#B (autor do worktree). Proxima acao: nao montar o DeleteRuntimeDialog real no arquivo, ou mocka-lo, e reprovar com tempo comparavel ao da base.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "BLOCK sustentado por execucao; inclui a correcao de metodo sobre o harness (rodar em packages/views, nao na raiz) que afeta qualquer auditoria de teste de frontend da frota",
+      "file": ".deploy-control/p0/evidence/gtl-orq18-independent-test-audit.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

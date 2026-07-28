@@ -1,0 +1,37 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T23:16:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["CORRECAO-EVIDENCIA-TEMA1"],
+  "status": "DONE_CORRECTION_ISSUED",
+  "corrections_of_my_own_prior_work": [
+    "ERRO MEU: eu afirmei que o resolver 'nunca foi escrito'. FALSO. Existiu em aa62401:daemon.go:3838 credentialAccountHomeForTask com rotationStore.CurrentAssignment, GetAccount, checagem de Vendor e return account.HomeDir, chamado direto em aa62401:daemon.go:3264. Causa da falha: grep so em HEAD, sem git log -S.",
+    "RETIRADO: minha recomendacao de carregar o valor via AgentData.RuntimeConfig. A fonte correta e o assignment de conta -> account.HomeDir, como no resolver original.",
+    "RETIRADA uma contradicao que eu quase reportei ao FATO 4: contagem por diretorio daria 10 slots com xdg-data/kiro-cli, mas diretorio nao e credencial. Contando data.sqlite3 sao exatamente 5 (139,140,142,143,149). FATO 4 correto, incluindo slot-145 sem kiro."
+  ],
+  "refinement_of_fato6": "Foram DUAS remocoes. 31d50b9 (Jul 5) NAO apagou a funcao: degradou a chamada para condicional (- chamada direta, + credentialAccountHome := \"\" e + reatribuicao condicional). 9ab80a6 (Jul 24 03:54:01, 'sync(integration): observability e2e 7-hop tracing + tier-20 capacity gate + fixes') apagou a CHAMADA E A FUNCAO. Evidencia: git log -S credentialAccountHomeForTask retorna exatamente aa62401 e 9ab80a6. A regressao final e de 24/07.",
+  "new_superior_evidence_for_the_bridge": "A camada rotation NAO EXISTE em HEAD: grep -rln 'package rotation' => 0 arquivos; grep rotationStore (sem testes) => 0 ocorrencias; nao existe internal/daemon/rotation. Logo NAO da para so restaurar a chamada: 9ab80a6 levou d.rotationStore, rotation.Account e rotation.ErrNoAssignment. A ponte precisa reintroduzir um provedor de assignment, e o resolver antigo indexava por task.AgentID enquanto o registry do ORQ2 indexa por terminal_id: e exatamente o FATO 5.",
+  "facts_confirmed_by_my_own_reading": [
+    "FATO 1 e 2: /home/ec2-user/.agent-cred-homes drwx------ ec2-user, com registry.json, registry.lock, registry.json.pre-orphan-cleanup.20260722T023208Z, slots/, codex-logins/, fallback-terminals/",
+    "FATO 3: slot-140 tem cline, cline-sandbox, codex, home, xdg-config, xdg-data; e kiro_home.go:11 const kiroCredentialRelPath = 'kiro-cli/data.sqlite3' com :48 src := filepath.Join(opts.AccountHome, kiroCredentialRelPath), logo AccountHome do kiro TEM de ser slot/xdg-data; com slot/home o src nao existe e syncCredentialFile cai em 'if srcMissing { return nil }' (73-75) = falha silenciosa",
+    "FATO 4: 5 slots com data.sqlite3 (139 69632B, 140 69632B, 142 28672B, 143 69632B, 149 69632B); vazios: 141,145,146,150,152; total 22 slots",
+    "FATO 7: opencode fora de escopo, nao analisado"
+  ],
+  "operational_note": "Segunda causa de falso 'No such file', alem do 0700 do FATO 1: agentes da frota rodam DENTRO de um slot. Meu $HOME medido e /home/ec2-user/.agent-cred-homes/slots/slot-149/home, entao ~/.agent-cred-homes expande errado. Usar sempre o caminho absoluto.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/sol-tema1-CORRECAO-Opus48A.md",
+    ".deploy-control/inbox-tm/FROM_Opus48#A__TO_Kiro-PRINCIPAL-TL__20260726T231600Z__CORRECAO.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__CORRECAO-EVIDENCIA-TEMA1__20260726T231600Z.json"
+  ],
+  "reported_to": ["KIRO-PRINCIPAL-TL - LOCAL 100.117.245.15 pane wB:p1", ".deploy-control/inbox-tm/FROM_Opus48#A__TO_Kiro-PRINCIPAL-TL__20260726T231600Z__CORRECAO.msg"],
+  "non_claims": [
+    "nenhum arquivo de codigo editado, sem go build, sem go vet, sem binario substituido",
+    "daemon e containers intocados; sem commit, push, reset, clean, checkout --",
+    "nenhum segredo lido: medi tamanho de data.sqlite3, nunca abri conteudo",
+    "nenhum fato estabelecido reaberto: onde discordei, apresentei medicao e onde errei, corrigi"
+  ],
+  "blocker": null
+}

@@ -1,0 +1,49 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:00:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-44",
+  "task_ids": ["ORQ44-E1-E8-INDEPENDENT-REREVIEW"],
+  "status": "DONE_BLOCK",
+  "verdict": "BLOCK",
+  "deliverable": ".deploy-control/p0/evidence/orq44-e1-e8-independent-rereview.md",
+  "artifact_sha256": "262b44cc64945831e46041ecbebf8d32d8b33e1fa0c8a7334d69773fd57cc2eb",
+  "independence": "Nao sou o autor (Opus48#B) nem o primeiro revisor deste cartao.",
+  "skill_loaded": "aws-secrets-manager v1 carregada integralmente antes da revisao: overview, aviso best-effort defense not a security boundary, as 3 regras MUST, sintaxe resolve com defaults SecretString e AWSCURRENT, Using asm-exec, How It Works com scan de argumentos e ordem SMA depois MCP SigV4 e re.sub single-pass, SigV4, prerequisitos, Common Patterns incluindo Configuration file templating, hook PreToolUse do aws-core e troubleshooting.",
+  "confirmed_correct": [
+    "E1: as quatro citacoes conferem - config.go:58 DefaultHealthPort=19514, :88 campo HealthPort, :571-573 override, health.go:63 addr. Fixar 19514 e de fato errado, e o proprio codigo reforca em health.go:102-105 que a porta e ligada ANTES do preflight e que callers must not treat a reachable endpoint as ready",
+    "E2: credential_file_source_windows.go com //go:build windows retorna platform_unsupported incondicional em openCredentialFile E checkCredentialOwner; existe o par _unix.go com //go:build !windows. UNIX-only esta correto",
+    "E7: logging content-free correto; validacao so por stat e codigo de saida; proibir cat/head/tail/xxd/od esta certo",
+    "E5: a MOTIVACAO esta certa - task de smoke era execucao disfarcada de validacao sob o freeze",
+    "E4: teto de uma listagem e proibicao de inferencia coerentes; /v1/models e o proprio endpoint de Readiness do cliente (brain_integration.go:327), logo o canario nao inventa trafego de natureza nova",
+    "troca atomica, ausencia de restart, gate de fila com 4 estados e distincao dos tres segredos: atacados e sem furo"
+  ],
+  "blockers": [
+    "B1 D1 e D2 sao INEXEQUIVEIS e a emenda perdeu a derivacao real. Nao existe flag --health-port nem variavel de ambiente: grep de HealthPort em cmd/ e config.go retorna so a constante, o campo, o campo de Overrides, a derivacao por perfil e a atribuicao final - logo D1 (operador declara a porta) nao tem knob. E a porta NUNCA aparece na unit, porque nao e parametro: o ExecStart real do ORQ2 tem --daemon-id e --device-name e o bloco Environment traz PATH e MULTICA_*_PATH, sem porta - logo D2 nunca resolve. A derivacao real existe e e deterministica: cmd_daemon.go:159-172 healthPortForProfile - perfil vazio da 19514, perfil nomeado da 19514+1+(soma dos bytes mod 1000) - e cmd_daemon.go:383 e o unico ponto que popula o override. Correcao: D0 canonico pela derivacao de perfil, D3 como confirmacao, e manter I1/I2. Risco de deixar como esta: quem seguir D2 conclui 'nao consta na unit, logo e 19514' e cai exatamente no falso PASS que a E1 quer evitar em host multi-perfil.",
+    "B2 V4(b) da E5 e STALE POR CONSTRUCAO e da falsa garantia. NewReadinessChecker tem UM unico chamador fora de teste, brain_integration.go:356, dentro de admitTask (brain_integration.go:269). O que o /health expoe nao e probe, e snapshot: health.go:124-138 le d.agentBrain.snapshot() e publica State, Readiness, CLIKind, RouteModel, RouterOwner e Protocol preenchidos DURANTE a admissao. Logo, apos o swap e sem nova admissao, V4(b) mostraria protocolo e modelo saudaveis referentes a chave ANTIGA - falso PASS estrutural. Reavaliar readiness de verdade exige admitTask, isto e enfileirar task paga, exatamente o que a E5 existe para evitar. Correcao: V4a identidade, V4b ausencia de regressao DECLARADA como snapshot stale, V4c a prova real e o canario L1 pre-swap; e elevar L1 a pre-condicao dura do L2.",
+    "B3 E3.1 esta marcada como PREFERIDA mas depende da pergunta 4, que a propria emenda registra como NAO RESOLVIDA - inversao de precedencia. Se AWSPREVIOUS nao existir, o executor descobre no pior instante, com a chave nova instalada e falhando. Correcao: novo gate E3.0 verificando por METADADO (list-secret-version-ids ou describe-secret, que NAO sao get-secret-value e portanto nao violam R1) se AWSPREVIOUS existe, ANTES do L2, e so entao escolher entre E3.1 e E3.2; sem verificacao, PARAR. E remover a marcacao PREFERIDA enquanto Q4 estiver aberta."
+  ],
+  "owner_questions_unresolved": [
+    "Q1 sobreposicao: o OmniRoute aceita duas chaves ativas simultaneamente, por quanto tempo e como revoga a antiga - NAO RESOLVIDA",
+    "Q2 escopo: a chave e por conta ou global, afetando as 4 Antigravity, 4 ClinePass e 2 OpenAI Codex ou so o par do cliente - NAO RESOLVIDA",
+    "Q3 introspeccao e custo: existe endpoint que valide sem consumir cota, e a listagem do canario conta em alguma cota - NAO RESOLVIDA",
+    "Q4 estagio anterior: a promocao preserva AWSPREVIOUS ou sobrescreve - NAO RESOLVIDA, e e o que decide entre E3.1 e E3.2",
+    "Q5 NOVA, decorrente do B2: aceita-se que apos o swap NAO exista validacao positiva da chave nova sem custo, vindo a garantia do canario pre-swap? Se o owner exigir prova positiva pos-swap, isso implica admitir task PAGA, colidindo com o freeze de atribuicao e exigindo autorizacao e orcamento explicitos - ABERTA"
+  ],
+  "fixes": ["C1 D0 por perfil substituindo D1/D2", "C2 manter I1/I2 citando health.go:102-105", "C3 reescrever V4 em tres sinais", "C4 L1 como pre-condicao dura de L2", "C5 gate E3.0 por metadado", "C6 remover PREFERIDA de E3.1 enquanto Q4 aberta", "C7 registrar Q5"],
+  "non_claims": [
+    "NAO li segredo e NAO fiz stat do arquivo alvo: nao sei modo, dono, tamanho nem se existe",
+    "zero get-secret-value/batch-get-secret-value, zero SMA em localhost:2773, zero asm-exec executado, zero chamada AWS ou provider",
+    "NAO executei list-secret-version-ids nem describe-secret - apenas os proponho como gate",
+    "nao troquei arquivo, nao reiniciei, nao mutei board, nao compilei, nao implementei",
+    "nao derivei a porta de nenhum perfil real; li a funcao",
+    "nao confirmei daemon_id nem PID de socket nesta rodada",
+    "confirmei existencia e build tag do _unix.go, e li o _windows.go integralmente, mas nao o corpo do _unix linha a linha",
+    "nao respondi nenhuma das quatro perguntas e adicionei uma quinta em vez de presumir",
+    "nao alterei assignee nem postei comentario; nenhum card criado"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "blocker": null
+}

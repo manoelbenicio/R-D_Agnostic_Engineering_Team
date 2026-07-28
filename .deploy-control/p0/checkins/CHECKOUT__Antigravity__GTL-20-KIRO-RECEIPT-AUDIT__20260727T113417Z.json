@@ -1,0 +1,27 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:34:17Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "GTL-20"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Auditoria READ-ONLY GTL-20 Kiro Gateway Receipt hypothesis verification",
+  "finding": "Passive capture hypothesis REJECTED. Daemon talks ACP JSON-RPC over stdin/stdout with kiro-cli (kiro.go:30-66). OmniRoute HTTP headers die inside kiro-cli process. Active capture requires Daemon Loopback Proxy (HTTP_PROXY) with X-Multica-Task-ID headers and deduplication by (task_id, omniroute_request_id).",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-kiro-gateway-receipt-audit.md, sent herdr update to General-TL Codex56-TL (w5:pC) and SSH to KIRO-PRINCIPAL-TL (wB:p1), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-kiro-gateway-receipt-audit.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T113417Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-20-KIRO-RECEIPT-AUDIT__20260727T113417Z.json"
+  ],
+  "non_claims": [
+    "read-only audit, no code edit, no runtime edit, no build edit"
+  ],
+  "blocker": null
+}

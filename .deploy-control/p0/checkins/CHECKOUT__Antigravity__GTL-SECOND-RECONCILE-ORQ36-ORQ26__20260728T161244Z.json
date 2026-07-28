@@ -1,0 +1,31 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T16:12:44Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-36",
+    "ORQ-26",
+    "ORQ-35",
+    "ORQ-37"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "target_host": "ORQ1 (100.118.244.61)",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Execution of GTL second reconcile: todo->in_progress for ORQ-36 and ORQ-26 and read-only assignee lookup for ORQ-35 and ORQ-37",
+  "finding": "Produced gtl-second-reconcile-orq36-orq26.md. Moved ORQ-36 (41645aaf) and ORQ-26 (e966922d) status-only to in_progress (GET-back verified 100%). Kept assignees intact. Performed read-only lookup of assignee names: ORQ-35 (8d9da3ab-ccc8-47fe-a1a3-429bd7766f27) is Agent Codex-D; ORQ-37 (f143017b-7b8f-4a78-be36-745d171c86e1) is Squad Navy_Seals. Preserved todo status for ORQ-35 and ORQ-37. Measured column counts: BEFORE (blocked=5, done=6, in_progress=6, in_review=3, todo=4) vs AFTER (blocked=5, done=6, in_progress=8, in_review=3, todo=2). Confirmed active task queue count is 0 (zero duplicate tasks created). Recorded reconciliation SHA256 d1264139191788e030b29fec2d2b396639ecd777b0bed16dffb3a98dbfe41aa0.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-second-reconcile-orq36-orq26.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Status-only reconciliation operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-second-reconcile-orq36-orq26.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260728T161244Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-SECOND-RECONCILE-ORQ36-ORQ26__20260728T161244Z.json"
+  ],
+  "second_reconcile_sha256": "d1264139191788e030b29fec2d2b396639ecd777b0bed16dffb3a98dbfe41aa0",
+  "non_claims": [
+    "gtl second reconcile for ORQ-36 and ORQ-26, assignee lookup for ORQ-35 and ORQ-37, no assignee change, no duplicate task creation, no GetSecretValue, no product code edit"
+  ],
+  "blocker": null
+}

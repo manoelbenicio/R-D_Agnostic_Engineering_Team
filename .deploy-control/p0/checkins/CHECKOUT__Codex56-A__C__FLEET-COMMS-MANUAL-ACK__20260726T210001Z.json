@@ -1,0 +1,28 @@
+{
+  "event": "checkout",
+  "timestamp_utc": "2026-07-26T21:00:01Z",
+  "agent": "Codex56#A (Kiro CLI, ORQ2)",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "FLEET-COMMS-MANUAL-ACK-20260726"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Codex56-A__TO_Kiro-PRINCIPAL-TL__20260726T210001Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__FLEET-COMMS-MANUAL-ACK__20260726T210001Z.json"
+  ],
+  "evidence": [
+    "item 1 executed: `herdr pane current --current` => {\"label\":\"Codex56#A\",\"pane_id\":\"w7:p3\",\"tab_id\":\"w7:t2\",\"workspace_id\":\"w7\",\"terminal_id\":\"term_6576f4e5964395\",\"agent\":\"kiro\",\"cwd\":\"/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team\"}; HERDR_ENV=1, HERDR_PANE_ID=w7:p3",
+    "item 2 executed: ssh -o BatchMode=yes dataops-lab@100.117.245.15 (export PATH=$HOME/.local/bin:$PATH; herdr pane run wB:p1 \"[FROM Codex56#A][ORQ2 pane w7:p3][ACK] ...\") => exit status 0",
+    "delivery verified on the LOCAL host: `herdr pane read wB:p1 --source recent --lines 12 --format text` shows the tail of the ACK rendered in KIRO-PRINCIPAL-TL's pane ('... Nada commitado. Sem trabalho em andamento; aguardo tarefa.')",
+    "item 4 durable copy written: .deploy-control/inbox-tm/FROM_Codex56-A__TO_Kiro-PRINCIPAL-TL__20260726T210001Z.msg (38 lines, same content as the pane message plus LANE C state)",
+    "note for the fleet: `herdr pane capture` does not exist; the correct read-back subcommand is `herdr pane read <pane_id> [--source visible|recent|recent-unwrapped] [--lines N]`"
+  ],
+  "reported_to": [
+    "KIRO-PRINCIPAL-TL (host 100.117.245.15, pane wB:p1) via item 2 + item 4"
+  ],
+  "summary": "Fleet communication manual received, stored and acknowledged. Own identity resolved to label Codex56#A / pane w7:p3 on ORQ2, so leadership addressing is host-qualified from now on: KIRO-PRINCIPAL-TL only via ssh 100.117.245.15 + `herdr pane run wB:p1`, Codex56-TL via local `herdr pane run w5:pC`. Accepted duties: durable .msg copy for every leadership message (item 4), delivery over timing (item 5), on-disk check-in/check-out as the only proof (item 6), never ending blocked in silence (item 7), and the permanent prohibitions of item 8 (no file deletion, git rm, push, reset, clean, checkout --, dependency install, service or container restart) layered on top of AUTHORITY-AMENDMENT-001 STOP-AND-WAIT. Prior LANE C verdict remains open on the owner: bin/prodex removal is not proven intentional; nothing committed, staged or restored. No prohibited action taken in this unit; only read commands plus two new files.",
+  "schema": "main-brain-p0-checkin.v1"
+}

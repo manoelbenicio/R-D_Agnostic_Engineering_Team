@@ -1,0 +1,26 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T12:35:31Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-K02-KANBAN-REGULARIZATION-SECURITY-MAPPING",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-security-regularization-mapping.md"
+  ],
+  "mappings": {
+    "GTL-42": "ORQ-18",
+    "GTL-83": "ORQ-30",
+    "GTL-18": "ORQ-24",
+    "Security_Wave_A": "ORQ-31",
+    "Wave_B_Handshake_Token": "ORQ-32",
+    "Wave_B_Rev_Token": "ORQ-33",
+    "Wave_B_OPENAI_API_KEY": "ORQ-34",
+    "Wave_B_PostgreSQL_DATABASE_URL": "ORQ-35",
+    "Wave_B_MULTICA_TOKEN": "ORQ-36",
+    "Wave_B_MCP_Authorization": "ORQ-37"
+  },
+  "summary": "Regularização do Kanban (GTL-K02) realizada com sucesso via API REST. Mapeados os legados para os cards existentes ORQ-18 (GTL-42), ORQ-30 (GTL-83/Backend JWT) e ORQ-24 (GTL-18/Skills). Criado o card retrospectivo ORQ-31 para a Wave A de Segurança e 6 cards individuais (ORQ-32 a ORQ-37) para cada classe de credencial da Wave B. Nenhum segredo exposto, nenhuma mutação em código/infra e rotações de credenciais mantidas bloqueadas (todo)."
+}

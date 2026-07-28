@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:50:23Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-SKILLS-ROLLOUT-PEER-REVIEW",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-skills-rollout-peer-review.md"
+  ],
+  "summary": "Peer Review Adversarial do Plano de Rollout de Skills GTL-53 concluído com veredito BLOCK em modo READ-ONLY. Detectado que as 98 'super-skills' hipotéticas propostas de /mnt/c/VMs/... não existem no repositório (que possui exatamente 48 skills reais sob .agents/skills/), apontado o risco de injeção de instruções por falta de hash SHA256 e proveniência, e exigido o re-mapeamento dos 10 agentes com o catálogo real de produção."
+}

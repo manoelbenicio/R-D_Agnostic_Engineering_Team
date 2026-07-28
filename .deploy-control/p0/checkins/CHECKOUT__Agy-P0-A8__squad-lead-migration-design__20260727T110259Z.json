@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:02:59Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "SQUAD-LEAD-MIGRATION-DESIGN",
+  "status": "DONE",
+  "reported_to": "Kiro-PRINCIPAL-TL (wB:p1), Codex56-TL (w5:pC)",
+  "evidence": [
+    ".deploy-control/p0/evidence/squad-lead-migration-design.md"
+  ],
+  "summary": "Desenho de migration e arquitetura concluído em modo READ-ONLY. Mapeada a migration mínima para estender project.lead_type CHECK (034_projects.up.sql:10) adicionando 'squad'. Avaliado o impacto e riscos da opção de múltiplos líderes via squad_member.role (084_squad.up.sql:22), destacando os riscos de corrida e duplicação de chamadas LLM."
+}

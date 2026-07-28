@@ -1,0 +1,98 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:50:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "GTL-37",
+  "task_ids": [
+    "GTL-37-ORQ23-CUTOVER-PEER-REVIEW"
+  ],
+  "status": "DONE",
+  "verdict": "BLOCK",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq23-cutover-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__GTL-37__GTL-37-ORQ23-CUTOVER-PEER-REVIEW__20260727T115000Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "systemctl --user cat multica-daemon-orq2-credential.service | grep ExecStart",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "BLOQUEANTE 1 - linha 37 exige 'multica-auth-credential-home-v1 daemon start --foreground --no-auto-update --server-url http://127.0.0.1:18080 --daemon-id orq2-credential-runtime-v1 --device-name \"ORQ2 Credential Runtime\"'"
+    },
+    {
+      "command": "grep -rIln 'daemon start|\"daemon\"' cmd/ e grep -rln 'func main()' cmd/server cmd/multica",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "BLOQUEANTE 1 - o subcomando daemon start esta em cmd/multica (cmd_daemon.go, cmd_login.go, help.go), NAO em cmd/server. Ambos tem func main, mas cmd/server e o backend HTTP. O plano manda buildar cmd/server/main.go"
+    },
+    {
+      "command": "ls cmd/server/*.go | grep -v _test | wc -l",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "BLOQUEANTE 1 - 15 arquivos .go nao-teste no pacote; 'go build cmd/server/main.go' aponta um unico arquivo e falharia com simbolos indefinidos"
+    },
+    {
+      "command": "git log --oneline -1 88ca4f39 e ff121b28",
+      "exit_code": 128,
+      "assertions_or_tests": 2,
+      "result": "BLOQUEANTE 2 - ambos devolvem 'unknown revision or path not in the working tree'. O plano tambem nao menciona 88ca4f39 em nenhuma linha; define rollback por artefato binario e por TAMANHO"
+    },
+    {
+      "command": "ls -l /home/ec2-user/.local/lib/multica/bin/",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "RESSALVA 2 - 6 binarios, plano lista 4. Faltam .new (21344766) e .previous (21333458). .new tem EXATAMENTE o mesmo tamanho do known-bad pre-token-only, provando que tamanho nao e identidade. mtimes 01:18, 10:28, 10:37 e 23:52 sao todos anteriores ao plano (11:29), confirmando zero mutacao executada"
+    },
+    {
+      "command": "test -f slots/slot-{139,140,142,143,149}/xdg-data/kiro-cli/data.sqlite3",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "RESSALVA 1 - 5 slots com credencial Kiro, nao 4. O plano omite o slot-142, reduzindo 20% da capacidade Kiro silenciosamente"
+    },
+    {
+      "command": "git status --porcelain -- multica-auth-work/ | grep -cE '\\.(go|ts|sql)$'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "BLOQUEANTE 3 - 20 arquivos de codigo modificados e nao commitados; a afirmacao 'Repositorio Limpo server/' do plano e falsa agora e o build nao seria reproduzivel"
+    },
+    {
+      "command": "grep -n '/api/runtimes' cmd/server/router.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS PARCIAL - rota existe em router.go:927, logo H1 e viavel e nao-live; isso sustenta a recomendacao de substituir ou gatear H2, que e chamada live de provedor sem gate"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq23-cutover-peer-review.md",
+    ".deploy-control/p0/evidence/gtl-orq23-durable-cutover-plan.md (documento revisado)",
+    ".deploy-control/p0/evidence/T3-runtime-health-audit.md",
+    ".deploy-control/p0/evidence/gtl-cost-implementation-audit.md",
+    "systemd user unit multica-daemon-orq2-credential.service linha 37",
+    "multica-auth-work/server/cmd/multica/cmd_daemon.go",
+    "multica-auth-work/server/cmd/server/router.go:927",
+    "multica-auth-work/server/migrations/095_agent_thinking_level.up.sql:8"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run no ORQ2, exit 0",
+  "summary": "Peer review independente do plano de cutover ORQ-23: VEREDITO BLOCK, com quatro bloqueantes e cinco ressalvas. Bloqueante fatal: o comando de build aponta cmd/server/main.go, mas o ExecStart da unit exige o subcomando 'daemon start', que vive em cmd/multica; o binario resultante nao executaria, e alem disso apontar um unico arquivo de um pacote de 15 arquivos nao compila. Bloqueante 2: o plano nao referencia o baseline 88ca4f39 em nenhuma linha, define rollback por tamanho de arquivo, e nem 88ca4f39 nem ff121b28 resolvem nesta arvore; dois binarios do inventario tem tamanho identico, provando que tamanho nao identifica artefato, e nao ha sha256. Bloqueante 3: a arvore tem 20 arquivos de codigo modificados, e o comando nao tem trimpath, ldflags nem checksum, logo o artefato nao e reproduzivel. Bloqueante 4: prereqs de account, tier e usage ausentes, sendo que task_usage nao tem account_id, assignments esta vazia, thinking_level nao existe em task_usage e task_usage tem zero linhas para antigravity e kiro. Ressalvas: allowlist do Kiro omite o slot-142 (sao 5 e nao 4); inventario de binarios incompleto com .new e .previous nao marcados como proibidos; H2 e chamada live de provedor fora da matriz de gates; falta gate de fila vazia antes do restart, cujo custo o T3 mediu em 6 tasks runtime_offline; e o defeito AGY de cli.log pode invalidar H2. O plano acerta seis pontos que registrei explicitamente: proibe ff121b28, marca os backups pre-token-only como known-bad com o motivo correto, usa troca atomica cp -a mais mv, classifica D1/D2/D3 como STOP-AND-WAIT, acerta o mapeamento por provider, e nao executou nenhuma mutacao (mtimes dos binarios anteriores ao plano).",
+  "non_claims": [
+    "READ-ONLY: nao editei codigo, nao compilei, nao executei nenhum comando do plano, nao fiz mv, cp, build, restart, deploy ou rerun",
+    "Nao executei go build ./cmd/multica para provar que compila: a conclusao do bloqueante 1 vem da localizacao do subcomando daemon start e do ExecStart real da unit",
+    "Nao calculei sha256 dos binarios: 112 MB de leitura que nao muda o veredito; recomendo que quem corrigir o plano o faca",
+    "Nao verifiquei se o binario live de 10:37 corrige o defeito unsupported credential path type do AGY; a ressalva 5 e risco declarado, nao defeito confirmado no artefato alvo",
+    "Nao afirmo que 88ca4f39 e ff121b28 sejam invalidos: afirmo que nao resolvem nesta arvore e que o plano nao diz onde resolvem",
+    "Nao consultei o Postgres neste ciclo: os numeros de task_usage e de tasks falhadas vem das minhas medicoes anteriores registradas em gtl-cost-implementation-audit.md e T3-runtime-health-audit.md",
+    "Nao corrigi o plano: peer review emite veredito, a correcao e do autor e a decisao do owner",
+    "Nao toquei nas 9 issues preservadas (ORQ-12, 13, 15, 16, 17, 18, 21, 22, 23) e nao disparei rerun"
+  ],
+  "blocker": "Plano de cutover ORQ-23 recebe BLOCK e nao deve ser executado como esta. Bloqueantes de mecanica: build do pacote errado (cmd/server em vez de ./cmd/multica) e rollback sem ancoragem em commit nem sha256. Bloqueantes de requisito: artefato nao reproduzivel a partir de arvore suja e prereqs de account/tier/usage ausentes. Nove condicoes para virar PASS estao listadas na evidencia. Decisao e do owner via General-Tech-Lead.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (GENERAL-TECH-LEAD)",
+      "reason": "BLOCK com 9 condicoes objetivas para virar PASS. As duas mais baratas e mais criticas: trocar o build para ./cmd/multica como pacote e validar o artefato com '<binario> daemon --help' antes de qualquer mv; e registrar sha256 dos 6 binarios amarrando o alvo de rollback a um commit.",
+      "file": ".deploy-control/p0/evidence/gtl-orq23-cutover-peer-review.md"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:23:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-43-MDT-LIFECYCLE-DESIGN"
+  ],
+  "orq_n": "ORQ-43",
+  "orq_uuid": "d1149dd3-9da8-4678-a4b7-d98f3eddca14",
+  "status": "DONE",
+  "verdict": "DESIGN entregue, condicional a 43-A (nao existe emissor de mdt_ em producao)",
+  "mode": "READ_ONLY",
+  "skill_loaded": ".agents/skills/aws-secrets-manager/SKILL.md lida integralmente antes de qualquer acao (regras 1-3, sintaxe {{resolve:secretsmanager:...}}, asm-exec resolvendo no processo filho, aviso de best-effort defense)",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq43-daemon-token-mdt-lifecycle-design.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-43-MDT-LIFECYCLE-DESIGN__20260727T152300Z.json"
+  ],
+  "tests": [
+    {
+      "command": "grep -rn GenerateDaemonToken --include=*.go (excluindo generated)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "ACHADO CRITICO — apenas a propria definicao em internal/auth/jwt.go:70-76; ZERO chamadores"
+    },
+    {
+      "command": "grep -rn CreateDaemonToken fora de pkg/db/generated",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "ZERO ocorrencias: a query daemon_token.sql:1 existe mas nao e chamada em producao"
+    },
+    {
+      "command": "grep GetDaemonTokenByHash / DaemonAuth / router",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "VALIDADOR ATIVO: middleware/daemon_auth.go:79 DaemonAuth, :106-107 ramo mdt_, :122 GetDaemonTokenByHash; cadeia em cmd/server/router.go:511"
+    },
+    {
+      "command": "leitura de internal/auth/daemon_token_cache.go",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "CACHE Redis: :31-43 construtor (nil desabilita), :50 Get, :69-75 Set com TTL clampado por TTLForExpiry, :92 Invalidate — logo token revogado sobrevive em cache ate o TTL se Invalidate nao for chamado"
+    },
+    {
+      "command": "leitura de migrations/029_daemon_token.up.sql:1-11 e queries/daemon_token.sql",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "OVERLAP SUPORTADO: unique apenas em token_hash e indice NAO unico em (workspace_id, daemon_id) => N tokens validos por daemon; revogacao em massa por DeleteDaemonTokensByWorkspaceAndDaemons (unico chamador: handler/workspace_revoke.go:105, retorna RevokedTokenHashes); DeleteExpiredDaemonTokens sem chamador"
+    },
+    {
+      "command": "grep daemon_token|DaemonToken|daemonToken em cmd/multica",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "ZERO: nao existe storage client-side do token de daemon no CLI"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "summary": "Design de ciclo de vida e rotacao do mdt_ entregue, com a skill aws-secrets-manager carregada integralmente antes de tudo e sem executar asm-exec. ACHADO QUE PRECEDE O DESIGN: nao existe emissor de mdt_ em producao — GenerateDaemonToken (auth/jwt.go:70-76) nao tem chamador, CreateDaemonToken nao tem chamador fora do generated, e nao ha storage client-side no cmd/multica; o que existe e o VALIDADOR ativo (daemon_auth.go:79, :106-107, :122, router.go:511), o CACHE Redis (daemon_token_cache.go:31-43, :50, :69-75 com TTL clampado, :92 Invalidate) e a REVOGACAO em massa (queries daemon_token.sql:10 usada em handler/workspace_revoke.go:105). Portanto ORQ-43 tem duas metades: 43-A implementacao de emissao/renovacao/persistencia e expurgo, sem a qual rotacionar significa apenas revogar e deixar o daemon sem credencial; e 43-B a operacao. OVERLAP E ACEITAVEL E CORRETO porque o schema 029 tem unique somente em token_hash e indice nao unico em (workspace_id, daemon_id), permitindo N tokens validos por daemon. Sequencia S0-S7 definida: fila zero em duas leituras nos 4 estados; emitir novo mantendo o antigo valido; entregar a referencia sem plaintext por processo filho com umask 077 e arquivo 0600 sob dir 0700 usando {{resolve:secretsmanager:...}} via asm-exec (forma citada, nao executada); recarregar daemon; provar reregistro e discovery sem task paga; revogar o antigo E invalidar o cache por hash; provar 401/403 com o antigo; fechar a janela. Ponto critico registrado: sem Invalidate, o Set com TTL clampado por TTLForExpiry mantem token revogado aceito ate o TTL. Rollback: antes de S5 basta restaurar a referencia anterior porque o token antigo continua valido, e S5 e o ponto de nao-retorno barato; nunca apagar auditoria nem task_message. Auditoria registra apenas daemon_id, workspace_id, token_hash, expires_at, timestamps e RevokedTokenHashes. Sete testes propostos, incluindo um de caracterizacao do risco de cache e um de cross-tenant. Escopo exclui explicitamente mat_/MULTICA_TOKEN (ORQ-36) e PAT mul_/mcn_. Peer review adversarial independente solicitado com 4 focos.",
+  "non_claims": [
+    "nenhum valor de segredo lido; zero GetSecretValue/BatchGetSecretValue; asm-exec NAO executado, apenas citado como forma correta; nenhuma mutacao AWS",
+    "nao editei codigo, migration, config, board ou servico; nao reiniciei nada",
+    "nao provei que a rotacao funciona: 43-A nao existe e o design e condicional a ela",
+    "nao consultei o conteudo da tabela daemon_token no banco vivo",
+    "nao afirmo que exista um segredo AWS correspondente ao mdt_ hoje: a fonte e o secret-id sao decisao do owner",
+    "escopo exclui mat_/MULTICA_TOKEN e PAT mul_/mcn_"
+  ],
+  "blocker": "43-A (emissao/renovacao/persistencia client-side e expurgo do mdt_) nao existe em producao; sem ela, rotacao vira revogacao com disrupcao total. Owner do ruling: Codex56-TL, e a implementacao exige card/lane propria com autorizacao do owner.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) — pedido de peer review independente",
+      "reason": "revisao adversarial por agente que nao escreveu ORQ-42/43/44, com foco em: (a) resistir a conclusao de que nao ha emissor; (b) seguranca da sobreposicao sob o validador atual; (c) se S5 sem Invalidate e o unico risco de cache; (d) ponto de disrupcao nao declarado na ordem S1-S7",
+      "file": ".deploy-control/p0/evidence/orq43-daemon-token-mdt-lifecycle-design.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

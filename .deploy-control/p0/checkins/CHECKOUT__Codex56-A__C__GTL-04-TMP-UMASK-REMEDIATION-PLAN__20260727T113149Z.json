@@ -1,0 +1,77 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:31:49Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "GTL-04-TMP-UMASK-REMEDIATION-PLAN"
+  ],
+  "status": "DONE",
+  "mode": "READ_ONLY_PLANO_NAO_APLICADO",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-tmp-umask-remediation-plan.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__GTL-04-TMP-UMASK-REMEDIATION-PLAN__20260727T113149Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "stat -c '%a %U:%G %s %n' nos 12 arquivos ORQ2 + 4 ORQ1 + 10 LOCAL sinalizados as 11:02Z",
+      "exit_code": 0,
+      "assertions_or_tests": 26,
+      "result": "CONFIRMADO — nada corrigido desde 11:02Z: ORQ2 os 12 seguem 664, ORQ1 mh/mcp_h 664 e test_login.html 644 root, LOCAL handshake-token.txt e rev-token.txt 644 24 bytes; /tmp/daemon.environ.20260724T110622Z.bak segue 600 (correto)"
+    },
+    {
+      "command": "grep -n 'umask' /etc/bashrc; grep -n '^UMASK|^USERGROUPS_ENAB' /etc/login.defs; grep -rn pam_umask /etc/pam.d/",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "CAUSA EXATA — /etc/bashrc:75 umask 002 e :77 umask 022 (padrao AL com login.defs:270 USERGROUPS_ENAB yes) sobrepoem login.defs:117 UMASK 022 e o pam_umask.so de /etc/pam.d/postlogin; logo mexer em login.defs/pam NAO resolve"
+    },
+    {
+      "command": "systemctl --version (3 hosts); cat /proc/3417665/cgroup; systemctl --user list-units | grep multica",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "systemd 252 no ORQ2/ORQ1 e 255 no LOCAL (WSL2 Ubuntu); daemon PID 3417665 roda em unit de USUARIO multica-daemon-orq2-credential.service sob user@1000 (corrigi minha primeira leitura de 'fora do systemd'); tambem multica-orq1-backend-tunnel.service ativo e herdr.service inativo"
+    },
+    {
+      "command": "echo GOCACHE/GOTMPDIR/TMPDIR",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "todos unset — confirma por que os 26 caches Go caem em /tmp com 664"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-tmp-umask-remediation-plan.md (10523 bytes)",
+    "ROTACAO obrigatoria (4): LOCAL /tmp/handshake-token.txt e /tmp/rev-token.txt (24 bytes, zero nome de chave dentro, valor cru exposto desde 2026-07-26 13:12 e 13:56 -03), /tmp/arch.txt (OPENAI_API_KEY= com valor, ORQ2 664 e LOCAL 644), ORQ2 /tmp/backend-recover.sh (JWT_SECRET= com valor)",
+    "chmod/move (nome de chave sem atribuicao detectada): ORQ2 sec.txt, o30.txt, ph.txt, dec.txt, f.txt, sdk.txt, proj.txt, e2eq.txt, f2-fulltest.log, mcp.json.bak; ORQ1 mh, mcp_h; LOCAL sec.txt, av.sh, raw.sh, imp.sh, sync.sh, g36.sh, idx.html",
+    "MOVE e nao chmod: 26 entradas em 13 diretorios *gocache*, unleash schema json, /tmp/uO-nHg60RfVLctF_qlu8N/client (8) e /tmp/JTFt9721FtNoKDB1Hq9-Z/client (1)",
+    "ESCALAR e nao tocar: ORQ1 /tmp/test_login.html (root:root). NAO TOCAR: ORQ1 /tmp/daemon.environ.*.bak (0600, caminho de rollback)",
+    "mecanismo duravel em 4 camadas: A TMPDIR privado 0700 por agente com GOCACHE/GOTMPDIR/XDG_CACHE_HOME redirecionados (nao depende de umask, nao quebra build); B drop-in de USUARIO ~/.config/systemd/user/multica-daemon-orq2-credential.service.d/10-umask.conf com UMask=0077; C /etc/profile.d/zz-agent-umask.sh SO com teste de aceite bash -lc/-ic umask=0077 porque /etc/bashrc:75 pode sobrepor; D login.defs/pam_umask comprovadamente insuficiente isolado"
+  ],
+  "summary": "GTL-04 entregue como plano read-only orientado a correcao, nada aplicado. (1) CONFIRMACAO: remedi os 26 caminhos as 11:27-11:33Z e nada foi corrigido desde 11:02Z; os 4 itens ALTA persistem e o unico artefato de env do daemon (ORQ1 daemon.environ.*.bak) segue 0600. (2) CAUSA EXATA do 0002 e /etc/bashrc:75 (umask 002 para UID>199 com grupo privado, login.defs:270 USERGROUPS_ENAB yes), que sobrepoe login.defs:117 UMASK 022 e o pam_umask.so de /etc/pam.d/postlogin; portanto corrigir login.defs ou PAM nao resolve. (3) CORRIGI minha propria leitura anterior: o daemon PID 3417665 NAO esta fora do systemd, roda em unit de usuario multica-daemon-orq2-credential.service sob user@1000, o que torna a Camada B aplicavel direto por drop-in de usuario com UMask=0077. (4) MECANISMO DURAVEL em 4 camadas com risco crescente, recomendando primeiro a Camada A (TMPDIR privado 0700 por agente + GOCACHE/GOTMPDIR/XDG_CACHE_HOME), que elimina a exposicao sem depender de umask e sem quebrar build, com tabela de 4 riscos concretos de umask 077 (bind mount Docker com UID diferente, cache compartilhado em /tmp, artefato consumido por root, troca entre agentes) e suas mitigacoes. (5) CLASSIFICACAO: 4 itens exigem ROTACAO porque o valor ja esteve mundo-legivel por mais de 21 h em /tmp 1777 e chmod neles e apenas contencao; 19 itens sao chmod/move; caches sao move e nao chmod; test_login.html (root) escala; daemon.environ.*.bak nao se toca. (6) COMANDOS SEGUROS propostos sem segredo em argv nem stdout: find com -printf e grep -l/-c para inventario, find -exec chmod 600 (o find seleciona, o chmod nao ve nome de chave), install -d -m 700 + mv para quarentena, asm-exec com {{resolve:secretsmanager:...}} para rotacao e curl --config de arquivo 0600 em vez de -H; com proibicao explicita de cat/echo/export/grep -o de valor e de token em linha de comando. Aceite proposto em 5 checagens verificaveis sem ler valor.",
+  "non_claims": [
+    "nada mutado: nenhuma permissao, arquivo, servico, unit, umask, .env, segredo, chmod, move ou rotacao; escrita unica foi o plano e este check-out",
+    "nenhum valor de segredo lido; onde afirmo 'com valor' a prova e contagem via grep -c",
+    "nao validei empiricamente a Camada C (ordem profile.d vs /etc/bashrc): propus teste de aceite em vez de afirmar",
+    "nao consigo distinguir sem ler valor se os itens de chmod/move contem segredo real",
+    "escopo /tmp maxdepth 3, arquivos regulares, <=4MB, 3 hosts; nao varri /var/tmp, /dev/shm, HOMEs, volumes de container nem a maquina Windows do owner",
+    "nao toquei nas 9 issues preservadas (ORQ-12,13,15,16,17,18,21,22,23), nao rodei rerun, nao mutei board"
+  ],
+  "blocker": "Execucao de qualquer item do plano (rotacao dos 4 ALTA, chmod/move dos 19, drop-in UMask, TMPDIR privado) e mudanca de permissao/credencial/servico: gate do General-Tech-Lead (Codex56-TL, w5:pC) com decisao do owner. Consta como pendente oficial do owner.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "plano pronto para gate: ordem recomendada rotacionar os 4 ALTA -> chmod/move dos 19 -> Camada A TMPDIR privado -> Camada B drop-in UMask=0077; inclui o backend-recover.sh e a rotacao do DATABASE_URL exposto no historico, ambos ja listados como pendencia do owner",
+      "file": ".deploy-control/p0/evidence/gtl-tmp-umask-remediation-plan.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

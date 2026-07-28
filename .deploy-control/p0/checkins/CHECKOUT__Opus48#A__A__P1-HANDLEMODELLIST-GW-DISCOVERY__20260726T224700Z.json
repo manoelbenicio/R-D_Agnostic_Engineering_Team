@@ -1,0 +1,46 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T22:47:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["p1-handleModelList"],
+  "status": "DONE_PREPARED_NOT_APPLIED",
+  "host": "ORQ2",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gw-discovery-p1-handleModelList.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__P1-HANDLEMODELLIST-GW-DISCOVERY__20260726T224700Z.json"
+  ],
+  "decision_predicate": "d.agentBrainGatewayRequired() (daemon.go:970-973) AND d.agentBrain != nil AND d.agentBrainInitErr == nil (daemon.go:244-245,299,3337) AND brain.LegacyProviderCLIKind(rt.Provider) sem erro (compatibility.go:116-133). Variante estrita adicional kind == d.cfg.AgentBrain.CLIKind espelha brain_integration.go:314 mas reproduz o colapso de um runtime; recomendo a permissiva.",
+  "patches_proposed": [
+    "A daemon.go apos 973: novo runtimeUsesGatewayDiscovery(rt Runtime) bool",
+    "B brain_integration.go: novo (*agentBrainRuntime).fetchGatewayModels(ctx, correlation) ([]gateway.ModelDocument, error), reusando a construcao literal de gateway.NewClient de brain_integration.go:325-329 para o segredo NAO sair de agentBrainRuntime",
+    "C daemon.go: substituir a linha 2058 agent.ListModels por branch gateway/legado, com sub-timeout de 10s dentro do discoveryCtx de 40s e correlacao brain.AdmissionCorrelation(requestID, rt.ID)",
+    "D daemon.go: nova gatewayModelsToAgentModels que DESCARTA AccountPool, Rotation, Affinity e Fallback (health_models.go:32-35) e filtra Available==false"
+  ],
+  "evidence": [
+    "daemon.go:2039-2068 literal de handleModelList com agent.ListModels na 2058 e limite de 40s na 2046",
+    "gateway/client.go:178 func (c *Client) FetchModels(ctx, correlation brain.Correlation) (ModelsDocument, error)",
+    "gateway/health_models.go:18-42 ModelsDocument/ModelDocument, campos AccountPool/Rotation/Affinity/Fallback",
+    "brain_integration.go:325-329 unica construcao de gateway.NewClient, dentro de admitTask, com r.dependencies.CredentialSource",
+    "brain/admission_observability.go:83 AdmissionCorrelation(taskID, sessionSeed)",
+    "pkg/agent/models.go:263-265 ModelSelectionSupported retorna true sempre: linha 2118 nao precisa mudar",
+    "git status --porcelain multica-auth-work/server => vazio"
+  ],
+  "open_gaps": [
+    "kiro NAO existe em LegacyProviderCLIKind (compatibility.go:117-132): com qualquer variante cai no legado e segue sem catalogo; exige case kiro + constante CLIKiro em identity.go",
+    "RISCO ADJACENTE fora do pacote: agent.ModelKnownIncompatibleWithProvider (pkg/agent/models.go:273-283) compara com catalogo estatico; IDs de rota do OmniRoute nao estao la e podem ser apagados pelo servidor",
+    "nenhum teste proposto; go build e go vet NAO executados por ordem desta rodada"
+  ],
+  "reported_to": [
+    "KIRO-PRINCIPAL-TL - LOCAL 100.117.245.15 pane wB:p1",
+    ".deploy-control/p0/evidence/gw-discovery-p1-handleModelList.md"
+  ],
+  "non_claims": [
+    "nenhum arquivo de codigo editado, nada recompilado, nenhum binario substituido",
+    "daemon e containers intocados; nenhum commit, push, reset, clean ou checkout --",
+    "nenhum valor de segredo lido ou transcrito"
+  ],
+  "blocker": "Codigo so sera escrito apos assinatura do split por Codex56-TL e decisao entre predicado permissivo e estrito."
+}

@@ -34,3 +34,20 @@ OpenSpec change, and default chat/task routing SHALL always be by squad (to the 
 #### Scenario: From-scratch work without docs is gated
 - **WHEN** a from-scratch project/task has no OpenSpec documentation
 - **THEN** the TL/Manager SHALL first initiate the OpenSpec documentation (explore/proposal), and work SHALL NOT proceed until that documentation exists
+
+### Requirement: Kanban is the only executable dispatch surface
+
+The TL SHALL start agent work through the product Kanban assignment/follow-up API. One logical
+activation SHALL enqueue exactly one product task. Herdr SHALL be supervision-only.
+
+#### Scenario: Ready card is assigned
+
+- **WHEN** the TL selects a healthy executor for a ready card
+- **THEN** the card SHALL record the assignee and enqueue exactly one task
+- **AND** no terminal-side duplicate execution SHALL be launched
+
+#### Scenario: Operator encounters ambiguity
+
+- **WHEN** scope, priority, acceptance or ownership is ambiguous
+- **THEN** the mechanical operator SHALL stop only that action and return it to the TL
+- **AND** SHALL NOT invent a decision or broaden the task

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/events"
 	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
+	"github.com/multica-ai/multica/server/pkg/protocol"
 )
 
 // mockRow implements pgx.Row, returning either a scanned task or pgx.ErrNoRows.
@@ -197,6 +199,150 @@ func TestTaskFailureClassifiers(t *testing.T) {
 				t.Fatalf("retryableReasons[%q] = %v, want %v", tc.reason, got, tc.wantRetry)
 			}
 		})
+	}
+}
+
+type issueRow struct {
+	issue db.Issue
+	err   error
+}
+
+func (r *issueRow) Scan(dest ...any) error {
+	if r.err != nil {
+		return r.err
+	}
+	values := []any{
+		r.issue.ID, r.issue.WorkspaceID, r.issue.Title, r.issue.Description,
+		r.issue.Status, r.issue.Priority, r.issue.AssigneeType, r.issue.AssigneeID,
+		r.issue.CreatorType, r.issue.CreatorID, r.issue.ParentIssueID,
+		r.issue.AcceptanceCriteria, r.issue.ContextRefs, r.issue.Position,
+		r.issue.DueDate, r.issue.CreatedAt, r.issue.UpdatedAt, r.issue.Number,
+		r.issue.ProjectID, r.issue.OriginType, r.issue.OriginID,
+		r.issue.FirstExecutedAt, r.issue.StartDate, r.issue.Metadata,
+	}
+	if len(dest) != len(values) {
+		return pgx.ErrNoRows
+	}
+	for i := range dest {
+		reflect.ValueOf(dest[i]).Elem().Set(reflect.ValueOf(values[i]))
+	}
+	return nil
+}
+
+type reconcileDBTX struct {
+	issue      db.Issue
+	resetIssue *db.Issue
+	resetCalls int
+	resetSQL   string
+	resetArgs  []any
+}
+
+func (m *reconcileDBTX) Exec(context.Context, string, ...any) (pgconn.CommandTag, error) {
+	return pgconn.NewCommandTag(""), nil
+}
+
+func (m *reconcileDBTX) Query(context.Context, string, ...any) (pgx.Rows, error) {
+	return nil, pgx.ErrNoRows
+}
+
+func (m *reconcileDBTX) QueryRow(_ context.Context, sql string, args ...any) pgx.Row {
+	switch {
+	case strings.Contains(sql, "-- name: GetIssue"):
+		return &issueRow{issue: m.issue}
+	case strings.Contains(sql, "-- name: ResetIssueToTodoIfNoActiveTask"):
+		m.resetCalls++
+		m.resetSQL = sql
+		m.resetArgs = append([]any(nil), args...)
+		if m.resetIssue != nil {
+			return &issueRow{issue: *m.resetIssue}
+		}
+		return &issueRow{err: pgx.ErrNoRows}
+	default:
+		return &issueRow{err: pgx.ErrNoRows}
+	}
+}
+
+func TestReconcileFailedIssueUsesAtomicGuard(t *testing.T) {
+	issueID := testUUID(31)
+	workspaceID := testUUID(32)
+	task := db.AgentTaskQueue{IssueID: issueID}
+
+	for _, tc := range []struct {
+		name       string
+		task       db.AgentTaskQueue
+		retried    bool
+		wantResets int
+		wantWS     string
+	}{
+		{name: "non-issue task", task: db.AgentTaskQueue{}, wantResets: 0},
+		{name: "retry remains in progress", task: task, retried: true, wantResets: 0, wantWS: util.UUIDToString(workspaceID)},
+		{name: "terminal failure attempts atomic reset", task: task, wantResets: 1, wantWS: util.UUIDToString(workspaceID)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mock := &reconcileDBTX{issue: db.Issue{
+				ID:          issueID,
+				WorkspaceID: workspaceID,
+				Status:      "in_progress",
+			}}
+			svc := &TaskService{Queries: db.New(mock)}
+
+			if got := svc.ReconcileFailedIssue(context.Background(), tc.task, tc.retried); got != tc.wantWS {
+				t.Fatalf("workspace ID = %q, want %q", got, tc.wantWS)
+			}
+			if mock.resetCalls != tc.wantResets {
+				t.Fatalf("reset calls = %d, want %d", mock.resetCalls, tc.wantResets)
+			}
+			if tc.wantResets == 0 {
+				return
+			}
+			for _, guard := range []string{
+				"i.status = 'in_progress'",
+				"NOT EXISTS",
+				"'queued', 'dispatched', 'running', 'waiting_local_directory'",
+			} {
+				if !strings.Contains(mock.resetSQL, guard) {
+					t.Fatalf("atomic reset query is missing guard %q", guard)
+				}
+			}
+			if len(mock.resetArgs) != 2 || mock.resetArgs[0] != issueID || mock.resetArgs[1] != workspaceID {
+				t.Fatalf("reset args = %#v, want issue and workspace IDs", mock.resetArgs)
+			}
+		})
+	}
+}
+
+func TestReconcileFailedIssueBroadcastsMatchedReset(t *testing.T) {
+	issueID := testUUID(33)
+	workspaceID := testUUID(34)
+	updated := db.Issue{
+		ID:          issueID,
+		WorkspaceID: workspaceID,
+		Title:       "stalled issue",
+		Status:      "todo",
+	}
+	mock := &reconcileDBTX{
+		issue: db.Issue{
+			ID:          issueID,
+			WorkspaceID: workspaceID,
+			Status:      "in_progress",
+		},
+		resetIssue: &updated,
+	}
+	bus := events.New()
+	var published []events.Event
+	bus.Subscribe(protocol.EventIssueUpdated, func(event events.Event) {
+		published = append(published, event)
+	})
+	svc := &TaskService{Queries: db.New(mock), Bus: bus}
+
+	if got := svc.ReconcileFailedIssue(context.Background(), db.AgentTaskQueue{IssueID: issueID}, false); got != util.UUIDToString(workspaceID) {
+		t.Fatalf("workspace ID = %q, want %q", got, util.UUIDToString(workspaceID))
+	}
+	if len(published) != 1 {
+		t.Fatalf("issue:updated events = %d, want 1", len(published))
+	}
+	if published[0].WorkspaceID != util.UUIDToString(workspaceID) {
+		t.Fatalf("event workspace ID = %q, want %q", published[0].WorkspaceID, util.UUIDToString(workspaceID))
 	}
 }
 

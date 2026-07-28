@@ -1,0 +1,65 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T21:02:40Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "B",
+  "task_ids": [
+    "ACK-COMMS-MANUAL"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T210009Z.msg",
+    ".deploy-control/p0/checkins/CHECKIN__Opus48-B__B__ACK-COMMS-MANUAL__20260726T210009Z.json",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__B__ACK-COMMS-MANUAL__20260726T210009Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "herdr pane current --current",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - label=Opus48#B pane_id=w6:p2 workspace=w6 tab=w6:t1 host=ORQ2"
+    },
+    {
+      "command": "ssh -o BatchMode=yes dataops-lab@100.117.245.15 'herdr pane list' (confirmar destino)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - wB:p1 existe no host LOCAL com label KIRO-PRINCIPAL-TL"
+    },
+    {
+      "command": "ssh -o BatchMode=yes dataops-lab@100.117.245.15 'herdr pane run wB:p1 \"[FROM Opus48#B][ACK] ...\"'",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS - enviado 2x, exit 0; herdr pane run nao retorna stdout"
+    },
+    {
+      "command": "ls -l .deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T210009Z.msg",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T210009Z.msg",
+    ".deploy-control/p0/evidence/review-lote_01.md"
+  ],
+  "reported_to": "KIRO-PRINCIPAL-TL (100.117.245.15, pane wB:p1) via herdr pane run + copia duravel em .deploy-control/inbox-tm/",
+  "summary": "Manual de comunicacao da frota recebido e confirmado. Identidade descoberta via herdr pane current --current: label=Opus48#B, pane_id=w6:p2, workspace=w6, host=ORQ2. ACK enviado ao KIRO-PRINCIPAL-TL em wB:p1 no host LOCAL 100.117.245.15 (destino confirmado por herdr pane list) com copia duravel em .deploy-control/inbox-tm/. Reportado tambem o estado do lote 01: KEEP 0, PURGE 48, STALE 1, OWNER 3.",
+  "non_claims": [
+    "Nenhum arquivo apagado, nenhum git rm/push/reset/clean/checkout --",
+    "Nenhuma dependencia instalada, nenhum servico ou container reiniciado",
+    "Nenhum commit criado para esta tarefa",
+    "Nenhuma decisao tomada: AUTHORITY-AMENDMENT-001, apenas ler/analisar/recomendar",
+    "herdr pane run nao emite stdout, portanto a prova de entrega e o exit 0 mais a copia duravel em disco"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "KIRO-PRINCIPAL-TL",
+      "reason": "3 itens OWNER do lote 01 aguardam decisao escrita do owner (check-outs auto-referenciais C10, C1, F10)",
+      "file": ".deploy-control/p0/evidence/review-lote_01.md"
+    }
+  ]
+}

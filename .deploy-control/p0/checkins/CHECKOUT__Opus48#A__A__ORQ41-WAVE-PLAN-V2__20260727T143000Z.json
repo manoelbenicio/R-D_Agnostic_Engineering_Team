@@ -1,0 +1,46 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T14:30:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-41",
+  "issue_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "issue_number": 41,
+  "task_ids": ["ORQ41-WAVE-PLAN-V2-BLOCK-CORRECTION"],
+  "status": "DONE_STOPPED_FOR_INDEPENDENT_REVIEW",
+  "deliverable": ".deploy-control/p0/evidence/orq41-implementation-wave-plan.md",
+  "artifact_sha256": "629163c23f9c63b804a71e59ffb00970273564a93c5dc353ea1d20fba0b8e59c",
+  "artifact_lines": 464,
+  "artifact_bytes": 26725,
+  "supersedes": "secoes 2, 4, 5 e 6 da V1 deste mesmo documento",
+  "corrections": {
+    "D1_generated_ownership": "generated deixa de ter dono por onda. migrations/ + pkg/db/queries/ + pkg/db/generated/ formam UM lane serial LANE-DB, um dono para toda a duracao do ORQ-41, com entregas sequenciais S1, S2 e S3 e nunca concorrentes. Motivo: cada sqlc generate reescreve o diretorio inteiro, entao 'mesmo dono em duas janelas' ainda e ownership duplo.",
+    "D2_migration_reservation": "Maior migration medida e 126_runtime_profile_protocol_family_native_runtimes, logo a faixa Z01 127-131 e consistente. Alocacao fixa: 127 task_execution_request (_a), 128 task_trigger_audit (_c), 129 issue_workflow_authorization (_d), 130 indice de 4 estados (_b) e 131 task_ledger_summary do ledger. Reserva exclusiva do ORQ-41; outras frentes usam 132+.",
+    "D3_W4_scope": "W4 passa a incluir migration 131, query e generated via LANE-DB, commitledger/replay_gate.go, novo service/replay_gate_db.go, daemon/config.go para o secret, daemon.go nos 3 pontos (4357, 4399, 4199+4200) e daemon/client.go. SOBREPOSICAO RESOLVIDA: service/task.go fica em W2, que declara a interface, e W4 implementa. CONFLITO EXPLICITADO: cmd/server/router.go e reivindicado por W3 (rota /runs) e por W4 (rota ledger-summary); router.go fica com W3 e W4 entrega patch de registro, ou e agendada depois de W3 - decisao do GTL, mas o arquivo nao pode ter dois donos.",
+    "D4_cancel_call_sites": "CancelTasksForIssue tem SEIS call sites, nao 2. K1 issue.go:2532 e K2 :3033 estao dentro de if assigneeChanged e devem ser REMOVIDOS; K3 :2570 e K4 :3059 estao em if statusChanged && status=='cancelled', com o comentario 2566-2568 dizendo que e acao terminal iniciada pelo usuario, e devem ser MANTIDOS; K5 :2760 e K6 :3115 estao em DeleteIssue single e batch, antes de FailAutopilotRunsByIssue e do CASCADE, e devem ser MANTIDOS senao a task fica orfa. Definicao em service/task.go:839, doc em :830; variante por agente em :855 esta fora de escopo.",
+    "D5_flag": "A flag MULTICA_EXECUTION_TRIGGER_DECOUPLED NAO EXISTE: grep retorna ZERO. Criacao atribuida a W2 em novo internal/service/execution_trigger.go, com parser de off/warn/on e valor invalido ou ausente caindo em off. 'off = byte-identical' definido em 4 clausulas verificaveis: mesmas guardas na mesma ordem nos 21 call sites; CancelTasksForIssue chamado nos 6 sites incluindo K1/K2; unico efeito novo permitido e escrita em task_trigger_audit; e a suite legada passa com off SEM alterar nenhum arquivo de teste existente - se algum teste legado precisar mudar, a premissa foi violada.",
+    "D6_test_matrix": "Matriz passa de 27 para 32 testes, com coluna de necessidade de banco, prova por call site e prefixo TestORQ41_. Dois DEVEM estar vermelhos antes da correcao: #29 Run_ActiveRunningTask_409 antes da migration 130, e #16 ChildDone_NoAuth_ZeroCost antes de W2. O #32 estrutural nao precisa de banco e por isso e o unico obrigatorio em pre-commit.",
+    "D7_W7_rollback": "Rollback de W7/S3 especifica QUAL indice recriar. Existem dois historicos: idx_one_pending_task_per_issue, ANTIGO e INCORRETO, por issue apenas, que o proprio 037 derruba explicando que fazia pending tasks de agentes diferentes se bloquearem - NUNCA recriar; e idx_one_pending_task_per_issue_agent, o VIGENTE, com chave (issue_id, agent_id) e WHERE status IN ('queued','dispatched'). O 130_*.down.sql deve recriar exatamente este ultimo.",
+    "D8_migration_harness": "Harness executavel existe: cmd/migrate/main.go:106-112, 'go run ./cmd/migrate <up|down>'. Gate de cada passo do LANE-DB em banco DESCARTAVEL, nunca no Postgres do ORQ1, com ciclo obrigatorio up, conferir objetos por metadado, down, conferir que o indice vigente de 037 voltou com 2 estados, e up de novo. cmd/migrate usa advisory lock 4246 (main.go:21), o que serializa migrations e reforca o LANE-DB serial.",
+    "D9_no_false_green": "RISCO MEDIDO: internal/handler/handler_test.go:38 define TestMain e o pacote usa t.Skip('database not available') em varios pontos, por exemplo agent_access_test.go:133, 166, 210, 234 e 280 - logo sem banco a suite fica VERDE por skip. Regra: nenhum teste da matriz pode usar t.Skip; TestMain deve FALHAR sem banco; e os testes de contagem de linhas nao podem ser satisfeitos por skip."
+  },
+  "stop_conditions": [
+    "revisao independente desta V2, de preferencia pelo mesmo revisor do GTL-41 WAVES",
+    "os cinco rulings de produto da V2.7 do design",
+    "confirmacao do GTL da reserva 127-131 contra o Z01 e outras frentes",
+    "decisao sobre o dono de cmd/server/router.go"
+  ],
+  "files_changed": [],
+  "files_created_or_appended": [
+    ".deploy-control/p0/evidence/orq41-implementation-wave-plan.md (secao V2)",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__ORQ41-WAVE-PLAN-V2__20260727T143000Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "apenas o documento read-only foi atualizado; nenhum codigo, board, API, schema, migration, build, teste, deploy ou credencial",
+    "nao alterei assignee nem postei comentario; nenhum card criado",
+    "PARADA declarada: LANE-DB nao comeca antes das condicoes acima"
+  ],
+  "blocker": null
+}

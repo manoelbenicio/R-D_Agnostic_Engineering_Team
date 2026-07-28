@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/schemas/orq-capacity-snapshot-v1.schema.json",
+  "title": "ORQ Capacity Snapshot v1",
+  "type": "object",
+  "required": ["schema_version", "snapshot_id", "data_version", "captured_at", "quality", "thresholds", "hosts", "portfolio_recommendation"],
+  "properties": {
+    "schema_version": {"const": "orq-capacity-snapshot/v1"},
+    "snapshot_id": {"type": "string", "minLength": 8},
+    "data_version": {"type": "integer", "minimum": 1},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "title": {"type": "string"},
+    "scope": {"type": "string"},
+    "collection_mode": {"type": "string"},
+    "quality": {
+      "type": "object",
+      "required": ["grade", "host_metrics", "cloudwatch_metrics", "limitations"],
+      "properties": {
+        "grade": {"type": "string"},
+        "host_metrics": {"type": "string"},
+        "cloudwatch_metrics": {"type": "string"},
+        "historical_window": {"type": "string"},
+        "limitations": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "thresholds": {
+      "type": "object",
+      "required": [
+        "disk_warning_pct", "disk_critical_pct", "cpu_busy_warning_pct", "cpu_busy_critical_pct",
+        "memory_pressure_warning_pct", "memory_pressure_critical_pct", "swap_warning_pct", "swap_critical_pct",
+        "load_per_vcpu_warning", "load_per_vcpu_critical", "cpu_psi_some_avg60_warning_pct",
+        "cpu_psi_some_avg60_critical_pct", "io_psi_full_avg60_warning_pct", "io_psi_full_avg60_critical_pct"
+      ],
+      "properties": {
+        "disk_warning_pct": {"type": "number"},
+        "disk_critical_pct": {"type": "number"},
+        "cpu_busy_warning_pct": {"type": "number"},
+        "cpu_busy_critical_pct": {"type": "number"},
+        "memory_pressure_warning_pct": {"type": "number"},
+        "memory_pressure_critical_pct": {"type": "number"},
+        "swap_warning_pct": {"type": "number"},
+        "swap_critical_pct": {"type": "number"},
+        "load_per_vcpu_warning": {"type": "number"},
+        "load_per_vcpu_critical": {"type": "number"},
+        "cpu_psi_some_avg60_warning_pct": {"type": "number"},
+        "cpu_psi_some_avg60_critical_pct": {"type": "number"},
+        "io_psi_full_avg60_warning_pct": {"type": "number"},
+        "io_psi_full_avg60_critical_pct": {"type": "number"}
+      },
+      "additionalProperties": {"type": "number"}
+    },
+    "hosts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "health", "decision", "ec2", "metrics", "recommendations"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "role": {"type": "string"},
+          "health": {"type": "string"},
+          "decision": {"type": "string"},
+          "ec2": {
+            "type": "object",
+            "required": ["instance_id", "instance_type", "availability_zone", "vcpu", "memory_bytes", "root_volume_bytes"],
+            "properties": {
+              "instance_id": {"type": "string"},
+              "instance_type": {"type": "string"},
+              "availability_zone": {"type": "string"},
+              "vcpu": {"type": "integer", "minimum": 1},
+              "memory_bytes": {"type": "number", "minimum": 0},
+              "root_volume_bytes": {"type": "number", "minimum": 0}
+            },
+            "additionalProperties": true
+          },
+          "metrics": {
+            "type": "object",
+            "required": ["cpu", "load", "memory", "swap", "root_disk", "psi"],
+            "properties": {
+              "cpu": {
+                "type": "object",
+                "required": ["busy_pct", "iowait_pct", "idle_pct"],
+                "properties": {
+                  "busy_pct": {"type": "number"}, "iowait_pct": {"type": "number"},
+                  "idle_pct": {"type": "number"}, "steal_pct": {"type": "number"},
+                  "sample_seconds": {"type": "number", "minimum": 0}
+                },
+                "additionalProperties": true
+              },
+              "load": {
+                "type": "object",
+                "required": ["load1", "load5", "load15", "load1_per_vcpu"],
+                "properties": {
+                  "load1": {"type": "number"}, "load5": {"type": "number"},
+                  "load15": {"type": "number"}, "load1_per_vcpu": {"type": "number"}
+                },
+                "additionalProperties": true
+              },
+              "memory": {
+                "type": "object",
+                "required": ["total_bytes", "available_bytes", "available_pct", "pressure_pct"],
+                "properties": {
+                  "total_bytes": {"type": "number", "minimum": 0}, "available_bytes": {"type": "number", "minimum": 0},
+                  "available_pct": {"type": "number"}, "pressure_pct": {"type": "number"}
+                },
+                "additionalProperties": true
+              },
+              "swap": {
+                "type": "object",
+                "required": ["total_bytes", "used_bytes", "used_pct"],
+                "properties": {
+                  "total_bytes": {"type": "number", "minimum": 0}, "used_bytes": {"type": "number", "minimum": 0},
+                  "used_pct": {"type": "number"}
+                },
+                "additionalProperties": true
+              },
+              "root_disk": {
+                "type": "object",
+                "required": ["total_bytes", "used_bytes", "available_bytes", "used_pct", "headroom_to_warning_bytes", "headroom_to_critical_bytes"],
+                "properties": {
+                  "total_bytes": {"type": "number", "minimum": 0}, "used_bytes": {"type": "number", "minimum": 0},
+                  "available_bytes": {"type": "number", "minimum": 0}, "used_pct": {"type": "number"},
+                  "df_display_pct": {"type": "number"}, "headroom_to_warning_bytes": {"type": "number"},
+                  "headroom_to_critical_bytes": {"type": "number"}
+                },
+                "additionalProperties": true
+              },
+              "tmp_disk": {"type": "object", "additionalProperties": true},
+              "psi": {
+                "type": "object",
+                "required": ["cpu_some_avg60_pct", "memory_some_avg60_pct", "memory_full_avg60_pct", "io_some_avg60_pct", "io_full_avg60_pct"],
+                "properties": {
+                  "cpu_some_avg60_pct": {"type": "number"}, "memory_some_avg60_pct": {"type": "number"},
+                  "memory_full_avg60_pct": {"type": "number"}, "io_some_avg60_pct": {"type": "number"},
+                  "io_full_avg60_pct": {"type": "number"}
+                },
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": true
+          },
+          "top_consumers": {
+            "type": "array",
+            "items": {
+              "type": "object", "required": ["name", "bytes", "kind"],
+              "properties": {"name": {"type": "string"}, "bytes": {"type": "number", "minimum": 0}, "kind": {"type": "string"}},
+              "additionalProperties": true
+            }
+          },
+          "top_processes": {
+            "type": "array",
+            "items": {
+              "type": "object", "required": ["name", "rss_bytes", "cpu_pct"],
+              "properties": {"name": {"type": "string"}, "rss_bytes": {"type": "number", "minimum": 0}, "cpu_pct": {"type": "number"}},
+              "additionalProperties": true
+            }
+          },
+          "recommendations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["priority", "action", "reason"],
+              "properties": {
+                "priority": {"type": "string"}, "action": {"type": "string"}, "reason": {"type": "string"}
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "portfolio_recommendation": {
+      "type": "object",
+      "required": ["verdict", "confidence", "now", "validate_next"],
+      "properties": {
+        "verdict": {"type": "string"},
+        "confidence": {"type": "string"},
+        "now": {"type": "array", "items": {"type": "string"}},
+        "validate_next": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["title", "url"],
+        "properties": {"title": {"type": "string"}, "url": {"type": "string"}, "note": {"type": "string"}},
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

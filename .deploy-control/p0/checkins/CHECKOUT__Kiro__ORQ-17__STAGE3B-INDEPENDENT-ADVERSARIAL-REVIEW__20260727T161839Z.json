@@ -1,0 +1,58 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:18:39Z",
+  "agent": "Kiro",
+  "lane": "ORQ-17",
+  "task_ids": ["ORQ-17-STAGE3B-INDEPENDENT-ADVERSARIAL-REVIEW"],
+  "orq_n": "ORQ-17",
+  "orq_uuid": "7d873133-16d5-42c6-8595-629d6fb16251",
+  "status": "DONE",
+  "verdict": "BLOCK — no credential creation authorized",
+  "mode": "READ_ONLY",
+  "reviewed_artifacts": [
+    ".deploy-control/p0/evidence/orq17-stage3b-owner-credential-provisioning-runbook.md",
+    ".deploy-control/p0/evidence/orq17-stage3b-bootstrap-helper.go.txt",
+    ".deploy-control/p0/evidence/orq17-stage3b-helper-go.mod.txt",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex__ORQ-17-STAGE-3B-CREDENTIAL-PROVISIONING-DESIGN__20260727T161040Z.json",
+    ".agents/skills/aws-secrets-manager/SKILL.md",
+    ".agents/skills/aws-secrets-manager/references/asm-exec"
+  ],
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-stage3b-independent-adversarial-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Kiro__ORQ-17__STAGE3B-INDEPENDENT-ADVERSARIAL-REVIEW__20260727T161839Z.json"
+  ],
+  "evidence": [
+    {
+      "path": ".deploy-control/p0/evidence/orq17-stage3b-independent-adversarial-review.md",
+      "sha256": "4b7ebd805171f2f11fd804501086efe2c09cba8dcdb2f2bd092fff87c99b3cf9"
+    }
+  ],
+  "narrow_passes": [
+    "Serializable locked 0|0 duplicate prevention for user and password credential",
+    "Server-authoritative password validation, bcrypt default-cost hash and provider verification",
+    "Selected provider login path does not invoke HTTP JWT issuance"
+  ],
+  "blocks": [
+    "Resolved email/password appear transiently in child env argv before stdin transport",
+    "Helper, module, asm-exec, full source closure and expected binary are not pinned; build was not performed",
+    "Exact hostname/stack/database binding and executable four-state queue gate are incomplete",
+    "Lower-level os.Exit bypasses deferred explicit rollback, close and byte clearing",
+    "Provision does not mechanically lock/prove zero membership and SESSION=NONE is not measured",
+    "Rollback guards only member despite many user foreign keys and cannot detect stateless JWT issuance",
+    "Raw Compose/helper output is not mechanically reduced to a fixed allowlist",
+    "Full-ARN region binding, AWSCURRENT stability and one-time owner authorization are ambiguous"
+  ],
+  "required_next_step": "Correct runbook/helper under C1-C8 and obtain a new independent PASS before resolving or creating any credential.",
+  "non_actions": [
+    "No GetSecretValue or BatchGetSecretValue call",
+    "No direct SMA access and no asm-exec execution",
+    "No secret, identity, password, hash or DSN read",
+    "No database query or mutation",
+    "No Docker/Compose or provider operation",
+    "No user, credential, member or session creation",
+    "No host service, queue or board mutation"
+  ],
+  "summary": "Independent Stage3B review completed with BLOCK. Core duplicate prevention and bcrypt/application compatibility are sound, but eight safety corrections are mandatory before credential creation.",
+  "schema": "main-brain-p0-checkin.v1"
+}

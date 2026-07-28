@@ -1,0 +1,29 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:15:16Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "GTL-78",
+    "ORQ-18",
+    "ORQ-19"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Retention-safe runtime lifecycle design for ORQ-18/ORQ-19",
+  "finding": "Produced gtl-runtime-retention-safe-lifecycle.md. Traced FKs (agent.runtime_id RESTRICT, agent_task_queue.runtime_id CASCADE). Proved physical DELETE destroys 123 task_usage billing records. Proposed agent reassignment pivot via PATCH /api/agents/{id} + soft-delete (archived_at TIMESTAMP WITH TIME ZONE) under migration NEXT_CANONICAL. Separated Quick UI Safety Fix from long-term schema lifecycle. Verdict: PASS.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-runtime-retention-safe-lifecycle.md, sent herdr update to General-TL Codex56-TL (w5:pC) and SSH to KIRO-PRINCIPAL-TL (wB:p1), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-runtime-retention-safe-lifecycle.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T121516Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-78-RUNTIME-RETENTION-LIFECYCLE__20260727T121516Z.json"
+  ],
+  "non_claims": [
+    "architectural design, no code edit, no db edit, no board edit"
+  ],
+  "blocker": null
+}

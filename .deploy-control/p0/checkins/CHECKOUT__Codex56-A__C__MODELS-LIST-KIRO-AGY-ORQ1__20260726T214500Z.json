@@ -1,0 +1,85 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T21:45:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "MODELS-LIST-KIRO-AGY-ORQ1"
+  ],
+  "status": "DONE",
+  "answer": "Os dois CLIs tem comando de listagem e o produto tem adaptador para os dois; ambos falham por FALTA DE LOGIN no ORQ1, nao por adaptador ausente.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Codex56-A__TO_Kiro-PRINCIPAL-TL__20260726T214500Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__MODELS-LIST-KIRO-AGY-ORQ1__20260726T214500Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "ssh 100.118.244.61 'agy models'",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "FAIL_BY_AUTH — saida literal: 'Error: Please sign in to view available models. Launch the CLI without arguments to sign in.' (agy 1.1.7)"
+    },
+    {
+      "command": "ssh 100.118.244.61 'printf initialize+session/new | kiro-cli acp' (handshake identico ao produto)",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "FAIL_BY_AUTH — stdout 0 bytes; stderr 64 bytes: 'error: You are not logged in, please log in with kiro-cli login' (kiro-cli 2.13.0)"
+    },
+    {
+      "command": "ssh 100.118.244.61 'kiro-cli --help-all | grep acp'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS — subcomando existe: 'acp           Agent Client Protocol (ACP)'"
+    },
+    {
+      "command": "ssh 100.118.244.61 'ps -o pid,user,args -p 3244391'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS — 3244391 ec2-user /tmp/multica-auth-fixed daemon start --foreground --server-url http://127.0.0.1:18080 (mesmo usuario que sondei, logo o estado de login medido e o que o daemon ve)"
+    },
+    {
+      "command": "leitura de multica-auth-work/server/pkg/agent/models.go (ListModels e funcoes de discovery)",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "REVIEWED — models.go:151 case \"antigravity\", :194 case \"kiro\", :1398 exec ... \"models\", :1041-1048 kiro-cli acp, :1135-1137 cmdArgs default {\"acp\"}, :129-134 codex estatico"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    "SAIDA LITERAL agy: 'Error: Please sign in to view available models. Launch the CLI without arguments to sign in.' exit 1",
+    "SAIDA LITERAL kiro-cli acp: stdout vazio (0 bytes), stderr 'error: You are not logged in, please log in with kiro-cli login', exit 1",
+    "models.go:151-160 — case \"antigravity\": cachedDiscovery(...) { return discoverAntigravityModels(ctx, discoveryExecutablePath) }",
+    "models.go:194-204 — case \"kiro\": models, err := discoverKiroModels(...); if err != nil { return nil, err }; annotateKiroThinking(models)",
+    "models.go:1398 — cmd := exec.CommandContext(runCtx, executablePath, \"models\")  (comando de listagem do agy)",
+    "models.go:1041-1048 — comentario 'discoverKiroModels spins up a throwaway `kiro-cli acp` process' + acpDiscoveryProvider{defaultBin: \"kiro-cli\", clientName: \"multica-model-discovery\"}",
+    "models.go:1135-1137 — cmdArgs := p.acpArgs; if len(cmdArgs) == 0 { cmdArgs = []string{\"acp\"} }",
+    "models.go:129-134 e 123-128 — codex e claude usam catalogo ESTATICO (codexStaticModels/claudeStaticModels), sem login: explica por que so codex popula",
+    "models.go:1408-1409 — if len(models) == 0 { return nil, fmt.Errorf(\"antigravity model discovery returned no models\") } (sem fallback estatico)",
+    "discoverCopilotModels (models.go) — 'Falls back to copilotStaticModels() when the binary is missing or when the ACP handshake fails (auth missing, network down, etc.) so the UI dropdown always has something to show': precedente do fallback que kiro/antigravity nao tem"
+  ],
+  "summary": "Rodei no ORQ1, direto no terminal e sem daemon, o equivalente de list-models dos dois CLIs. agy 1.1.7: 'agy models' => exit 1 com 'Error: Please sign in to view available models. Launch the CLI without arguments to sign in.'. kiro-cli 2.13.0: o subcomando existe ('acp  Agent Client Protocol (ACP)' no --help-all) e reproduzi o handshake exato do produto (initialize + session/new com clientName multica-model-discovery e cwd tmp) => exit 1, stdout 0 bytes, stderr 'error: You are not logged in, please log in with kiro-cli login'. Conclusao: os CLIs SABEM responder, o problema NAO e adaptador ausente. Correcao da premissa da ordem: ListModels tem caso proprio para os dois (models.go:151 antigravity, :194 kiro) e config.go:144-155 (agentBrainBuiltInCLIFor) so governa o modo gateway-required, desligado as 21:26. O motivo de codex popular e ser catalogo estatico (models.go:129-134), enquanto kiro/antigravity sao discovery dinamico por processo filho SEM fallback estatico (models.go:1408-1409), diferente de copilot que cai em copilotStaticModels quando o ACP falha por auth. O daemon roda como ec2-user (ps do PID 3244391), o mesmo usuario que sondei, entao o estado de login medido e o que o daemon ve.",
+  "non_claims": [
+    "nao editei arquivo, nao compilei, nao troquei binario, nao reiniciei daemon, nao commitei",
+    "nao autentiquei nada: nao rodei kiro-cli login nem agy interativo; nao li nem imprimi credencial (so mensagem de erro de login)",
+    "nao testei cline/opencode/claude/codex no terminal do ORQ1 (fora da pergunta exclusiva)",
+    "nao provei que /tmp/multica-auth-fixed (build 24/07 10:58) e identico ao models.go lido no repo em integration/dev-transition-candidate-20260719"
+  ],
+  "blocker": "Dropdown de kiro e antigravity so popula depois de autenticar os CLIs no ORQ1 como ec2-user (kiro-cli login; agy sem argumentos) — mudanca de credencial/auth, classe STOP-AND-WAIT: precisa de decisao escrita do owner. Alternativa aditiva (fallback estatico em models.go espelhando discoverCopilotModels) exige editar codigo e recompilar, proibido nesta rodada.",
+  "handoffs": [
+    {
+      "to_lane": "OWNER",
+      "reason": "escolher entre (A) autenticar kiro-cli e agy no ORQ1 (resolve sem build, reversivel) e (B) adicionar fallback estatico em models.go para dropdown resiliente a falha de auth (exige recompilar)",
+      "file": ".deploy-control/inbox-tm/FROM_Codex56-A__TO_Kiro-PRINCIPAL-TL__20260726T214500Z.msg"
+    }
+  ],
+  "reported_to": [
+    "KIRO-PRINCIPAL-TL (host 100.117.245.15, pane wB:p1) via item 2 + copia duravel em inbox-tm"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

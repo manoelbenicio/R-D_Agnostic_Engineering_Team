@@ -1,0 +1,17 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-26T22:45:13Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "P4-ALLOWLIST",
+  "task_ids": [
+    "GW-DISCOVERY-ALLOWLIST"
+  ],
+  "status": "IN_PROGRESS",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gw-discovery-p4-allowlist.md"
+  ],
+  "evidence": [],
+  "reported_to": "KIRO-PRINCIPAL-TL@100.117.245.15:wB:p1"
+}

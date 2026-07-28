@@ -1,0 +1,108 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T17:12:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "P0-KANBAN-CONTRACT",
+  "task_ids": [
+    "KANBAN-POST-LOGIN-EXECUTABLE-CONTRACT"
+  ],
+  "status": "DONE",
+  "gate0": "DELTA GATE 0 enviado e ACEITO antes de comecar. Delta declarou: nenhuma ferramenta nova, nenhuma permissao nova, nenhum servico novo, espaco praticamente zero.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/kanban-post-login-executable-contract.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__P0__KANBAN-POST-LOGIN-EXECUTABLE-CONTRACT__20260727T171200Z.json"
+  ],
+  "files_deleted": [],
+  "endpoints_mapeados": {
+    "criar_projeto": "POST /api/projects (router.go:781, h.CreateProject; grupo :778)",
+    "criar_issue": "POST /api/issues (router.go:729, h.CreateIssue; grupo :723). Payload real de CreateIssueRequest issue.go:2043-2054",
+    "listar_agentes": "GET /api/agents (router.go:866, h.ListAgents; grupo :865)",
+    "listar_runtimes": "GET /api/runtimes (router.go:928)",
+    "modelos_2_etapas": "POST /api/runtimes/{id}/models (router.go:937, h.InitiateListModels) e GET /api/runtimes/{id}/models/{requestId} (router.go:938, h.GetModelListRequest); o daemon responde por POST /api/daemon/runtimes/{runtimeId}/models/{requestId}/result (router.go:523) com orcamento de 40s",
+    "atribuir": "PUT /api/issues/{id} (h.UpdateIssue, grupo router.go:733). NAO existe rota dedicada de assign: grep por assign no router devolve apenas GET /api/assignee-frequency (:720)",
+    "observar": "GET /api/issues/{id}/active-task (h.GetActiveTaskForIssue), GET /api/issues/{id}/task-runs (h.ListTasksByIssue), GET /api/agents/{id}/tasks (router.go:879), GET /api/tasks/{taskId}/messages (router.go:764)",
+    "cancelar": "POST /api/tasks/{taskId}/cancel (router.go:971, CancelTaskByUser); POST /api/issues/{id}/tasks/{taskId}/cancel (router.go:745, CancelTask); POST /api/agents/{id}/cancel-tasks (router.go:878, CancelAgentTasks)"
+  },
+  "zero_task_guarantee": {
+    "cadeia_verificada": "O enfileiramento ocorre em exatamente dois pontos, ambos dentro de 'if assigneeChanged': issue.go:2531-2536 e issue.go:3032-3036. O predicado e shouldEnqueueAgentTask (issue.go:2663-2668), que barra status backlog e delega para isAgentAssigneeReady (issue.go:2740-2751), que exige assignee_type == 'agent', assignee_id valido, agente com runtime_id e nao arquivado.",
+    "conclusao": "Criar issue SEM assignee_type e SEM assignee_id faz isAgentAssigneeReady retornar false no primeiro if, logo zero task NA CRIACAO. Quatro barreiras independentes: tipo diferente de agent, agente sem runtime, agente arquivado, e status backlog.",
+    "limite_declarado": "assignee NAO e o unico gatilho. shouldEnqueueOnComment (issue.go:2680-2685) enfileira por COMENTARIO em issue que ja tem agente, para qualquer status incluindo done; existem tambem squad leader on assign e o caminho de @mention. Portanto a garantia vale para a criacao, nao para o ciclo de vida: a regra operacional segura e nao atribuir e nao comentar ate a etapa 4."
+  },
+  "r1_resolvido_sem_runtime": "Eu havia marcado como incerto se a atualizacao de issue era PATCH ou PUT. Fechei por leitura durante a redacao: e PUT /api/issues/{id} -> h.UpdateIssue, e NAO existe r.Patch para issue. Alem disso o corpo e PARCIAL, porque todo campo de UpdateIssueRequest (issue.go:2289-2306) e ponteiro, logo campo ausente fica nil e nao e alterado. Corrigi o contrato de PATCH para PUT em dois lugares e no checklist, e reclassifiquei R-1 como resolvido.",
+  "requer_prova_runtime": [
+    "R-2 campos aceitos por CreateProject e chave do id na resposta",
+    "R-3 chave do id na resposta de CreateIssue",
+    "R-4 nomes request_id e models no fluxo de modelos, e latencia real",
+    "R-5 se assignee_type:null e aceito para desatribuir",
+    "R-6 forma de resposta de ListAgentTasks, ListTaskMessagesByUser, GetActiveTaskForIssue e ListTasksByIssue",
+    "R-7 provar EMPIRICAMENTE que criar sem assignee nao enfileira: a cadeia de codigo esta verificada, a execucao nao",
+    "R-8 se @mention na descricao pode disparar na CRIACAO, o que furaria a garantia de uma issue 'sem assignee' com mention no corpo"
+  ],
+  "prioridade_de_prova": "R-7 e R-8 primeiro, porque atacam diretamente a garantia central de zero task.",
+  "tests": [
+    {
+      "command": "grep -nE 'r.(Post|Get|Put|Delete)' cmd/server/router.go com resolucao de prefixos ancestrais por awk",
+      "exit_code": 0,
+      "assertions_or_tests": 8,
+      "result": "PASS - rotas reais resolvidas com numero de linha para projeto, issue, agentes, runtimes, modelos, tasks, mensagens e cancel"
+    },
+    {
+      "command": "grep -A16 'type CreateIssueRequest struct' internal/handler/issue.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - 11 campos reais capturados, com title como unico obrigatorio"
+    },
+    {
+      "command": "grep shouldEnqueueAgentTask e isAgentAssigneeReady em internal/handler/issue.go",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PASS - dois call sites, ambos sob if assigneeChanged; predicado com quatro barreiras identificadas"
+    },
+    {
+      "command": "awk sobre router.go linhas 733-766 buscando r.Patch/r.Put",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "R-1 FECHADO - r.Put(\"/\", h.UpdateIssue) existe, r.Patch nao existe. Descobri tambem active-task e task-runs, que sao rotas melhores para V1 e V3 do que as que eu havia proposto"
+    },
+    {
+      "command": "grep -A20 'type UpdateIssueRequest struct' internal/handler/issue.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - todos os campos sao ponteiro, logo PUT aceita corpo parcial e nao apaga campos ausentes"
+    },
+    {
+      "command": "grep -nE 'assign|Assignee' cmd/server/router.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - confirmado que NAO existe rota dedicada de assign; a atribuicao e feita pelo PUT de issue e o gatilho e o flag assigneeChanged"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/kanban-post-login-executable-contract.md",
+    "multica-auth-work/server/cmd/server/router.go:523, 720, 723, 729, 733, 745, 764, 778, 781, 865, 866, 878, 879, 928, 937, 938, 971",
+    "multica-auth-work/server/internal/handler/issue.go:2043-2054, 2082, 2289-2306, 2531-2536, 2663-2668, 2680-2685, 2740-2751, 3032-3036",
+    "multica-auth-work/server/migrations/109_agent_task_waiting_local_directory.up.sql:13-15"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+  "summary": "Contrato executavel pos-login entregue, read-only, sem nenhuma chamada de API e sem mutacao de board. Mapeei as rotas reais com numero de linha para criar projeto, criar issue, listar agentes, listar runtimes e modelos em fluxo assincrono de duas etapas, atribuir, observar e cancelar. O achado estrutural e que NAO existe rota dedicada de assign: a atribuicao e feita por PUT de issue e o gatilho e o flag assigneeChanged, que primeiro cancela tasks da issue e depois enfileira se o predicado passar. A garantia de zero task na criacao esta ancorada em quatro barreiras do predicado, mas declarei o limite: comentario, squad leader e mention sao gatilhos adicionais, entao a garantia vale para a criacao e nao para o ciclo de vida. Fechei por leitura, ainda durante a redacao, a incerteza que eu havia marcado sobre o verbo de atualizacao: e PUT, nao existe PATCH para issue, e o corpo e parcial porque os campos sao ponteiros. Nesse processo achei active-task e task-runs, rotas melhores para as verificacoes de contagem do que as que eu havia proposto, e as incorporei. Entreguei checklist de 14 passos para o Kiro, com a atribuicao isolada como unico passo que gasta orcamento, precedida de dois gates de contagem e de um preview de elegibilidade, mais lista consolidada de sete itens que exigem prova runtime.",
+  "non_claims": [
+    "NENHUMA chamada de API foi feita, NENHUMA mutacao de board: nao criei projeto, issue, atribuicao, comentario ou task, e nao cancelei nada",
+    "Nao li CreateProject, InitiateListModels, ListAgentTasks, ListTaskMessagesByUser, GetActiveTaskForIssue nem ListTasksByIssue: os payloads sao inferidos do padrao e marcados em R-2, R-4 e R-6",
+    "A garantia de zero task vem de LEITURA de codigo, nao de execucao: e o R-7",
+    "Nao mapeei os caminhos de squad leader e de @mention alem de constatar que existem e sao gatilhos adicionais: R-8",
+    "Nao usei nem li token, PAT ou credencial: as variaveis do contrato sao placeholders do operador",
+    "Nao resolvi nenhum ID: todos os comandos resolvem em runtime, por design",
+    "Nao dupliquei bootstrap nem CFN",
+    "Nao consultei o banco nesta tarefa: as contagens de fila do checklist sao instrucoes para o operador, e ofereci alternativa por API com active-task e task-runs para quem so tiver token"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Kiro (executor do contrato)",
+      "reason": "Checklist de 14 passos pronto. Dois avisos que mudam a execucao: o passo 9 e o UNICO que gasta orcamento, porque atribuir enfileira task paga, e por isso vem depois de dois gates de contagem; e catalogo de modelos vazio para kiro ou antigravity NAO deve ser lido como falha de endpoint, porque a descoberta desses dois chama o CLI e depende de login, ao contrario de codex e claude que tem catalogo estatico.",
+      "file": ".deploy-control/p0/evidence/kanban-post-login-executable-contract.md"
+    }
+  ]
+}

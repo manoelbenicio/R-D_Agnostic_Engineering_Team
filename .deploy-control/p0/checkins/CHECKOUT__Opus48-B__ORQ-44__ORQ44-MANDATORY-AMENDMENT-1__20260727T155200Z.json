@@ -1,0 +1,107 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:52:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-44",
+  "orq_issue_id": "ORQ-44",
+  "task_ids": [
+    "ORQ44-MANDATORY-AMENDMENT-1"
+  ],
+  "status": "DONE",
+  "verdict_sought": "PROPOSTA aguardando RE-REVIEW independente. Nao me auto-aprovo.",
+  "skill_reloaded": ".agents/skills/aws-secrets-manager/SKILL.md (v1), recarregado integralmente antes desta emenda",
+  "files_changed": [
+    ".deploy-control/p0/evidence/orq44-omniroute-inference-key-lifecycle.md"
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-44__ORQ44-MANDATORY-AMENDMENT-1__20260727T155200Z.json"
+  ],
+  "files_deleted": [],
+  "findings_closed": [
+    {
+      "id": "E1",
+      "finding": "porta de health hardcoded 19514",
+      "closure": "Retirada. Medido que 19514 e apenas DefaultHealthPort (config.go:58) sobreponivel por overrides.HealthPort (config.go:571-573), e que o listener e 127.0.0.1:%d de d.cfg.HealthPort (health.go:63). Regra nova exige derivar a porta do perfil alvo por D1 parametro explicito, D2 unit systemd, ou D3 PID em LISTEN, e PARAR se nenhuma resolver. Alem disso exige PROVA DE IDENTIDADE por I1 daemon_id ou I2 PID do socket igual ao MainPID da unit. Aceite passa a ser 200 na porta derivada E identidade confirmada; um sem o outro nao vale, porque checar 19514 as cegas pode dar falso PASS de outro daemon ou falso BLOCK do daemon alvo em outra porta"
+    },
+    {
+      "id": "E2",
+      "finding": "plataforma nao declarada",
+      "closure": "Declarado UNIX-only com base em credential_file_source_windows.go:9-18, onde openCredentialFile e checkCredentialOwner retornam credentialFileError com reason platform_unsupported incondicionalmente. Gate P0 obrigatorio: confirmar host Unix e PARAR se nao for, sem adaptar, sem improvisar equivalente de O_NOFOLLOW e sem relaxar a checagem de dono. Rodar em Windows exigiria mudanca de codigo nos dois helpers, cartao proprio"
+    },
+    {
+      "id": "E3",
+      "finding": ".prev sem limpeza explicita",
+      "closure": "Reordenado: PREFERIDA e rollback por handle usando version-stage AWSPREVIOUS, sem NENHUMA copia do valor antigo em disco, aproveitando que version-stage e parametro da propria sintaxe da skill. Fallback com .prev somente se AWSPREVIOUS nao existir, com criacao em 0600, verificacao por stat, limpeza obrigatoria em trap EXIT INT TERM, proibicao de entrar em backup ou evidencia, e confirmacao final de ausencia. Registrei que nao proponho shred, porque em COW ou SSD nao garante apagamento e daria falsa seguranca"
+    },
+    {
+      "id": "E4",
+      "finding": "custo do canario no provider nao declarado",
+      "closure": "Declarado. O canario proposto e uma LISTAGEM autenticada, endpoint que responde 200 com catalogo de 327 modelos, e nao inferencia. Proibido emitir prompt ou completar tokens. Teto de UMA requisicao com timeout curto, sem loop, para nao gerar custo nem rate limit. Se validar a chave exigir inferencia real, isso muda o custo e e decisao do owner com valor estimado, nao de agente. Se a listagem conta em cota e pergunta bloqueante 3"
+    },
+    {
+      "id": "E5",
+      "finding": "smoke task conflita com o freeze de atribuicao",
+      "closure": "Substituido. O V4 original exigia uma task de smoke, o que enfileiraria task paga sob o freeze vigente. Novo V4 e PROBE DE READINESS: health na porta derivada com identidade confirmada, readiness do gateway reportando protocolo e modelo sob politica estrita fail-closed, e ausencia de novas ocorrencias de classe authentication ou authorization no log. Nenhuma issue criada, nenhuma atribuida, nenhum comentario, nenhuma task enfileirada"
+    },
+    {
+      "id": "E6",
+      "finding": "perguntas ao provider devem permanecer bloqueantes",
+      "closure": "Reafirmadas como BLOQUEANTES e NAO RESOLVIDAS, agora QUATRO: sobreposicao de duas chaves e como revogar a antiga; escopo por conta ou global dadas 4 Antigravity, 4 ClinePass e 2 OpenAI Codex; introspeccao sem consumir cota e se a listagem conta; e a NOVA pergunta 4, se a promocao preserva AWSPREVIOUS, que e o que decide entre E3.1 e E3.2. Enquanto as quatro estiverem abertas o runbook NAO pode ser executado, nem parcialmente"
+    },
+    {
+      "id": "E7",
+      "finding": "logging sem conteudo",
+      "closure": "Preservado e reafirmado como invariante: credentialFileError e content-free por construcao (credential_file_source.go:111-119), expondo apenas token de razao; toda validacao usa metadado stat ou codigo de saida grep -q; GatewayError.Detail e token sanitizado por contrato; evidencia nunca inclui valor, trecho de arquivo ou token; e a emenda proibe explicitamente cat, head, tail, xxd e od sobre o arquivo alvo, sem introduzir nenhum log novo"
+    }
+  ],
+  "tests": [
+    {
+      "command": "read .agents/skills/aws-secrets-manager/SKILL.md (recarga integral)",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "SKILL RECARREGADA - R1, R2, R3, a tabela de sintaxe com version-stage default AWSCURRENT, e a advertencia best-effort defense not a security boundary, que sustenta a preferencia por controle de filesystem 0600 mais dono em vez de confiar so no wrapper"
+    },
+    {
+      "command": "grep -rn 'HealthPort|health_port|19514' --include='*.go' internal/daemon",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PROVA DE E1 - config.go:58 DefaultHealthPort = 19514; config.go:88 comentario default 19514; config.go:571-573 sobrescreve quando overrides.HealthPort > 0; health.go:63 addr = 127.0.0.1:%d de d.cfg.HealthPort. Logo 19514 e default e nao invariante"
+    },
+    {
+      "command": "grep -rn -B3 -A6 'platform_unsupported' --include='*.go' internal/daemon e ls credential_file_*.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PROVA DE E2 - credential_file_source_windows.go:12 e :17 retornam platform_unsupported incondicionalmente em openCredentialFile e checkCredentialOwner; existem os arquivos unix e windows com build tag. Sustenta a declaracao UNIX-only e o gate de parada"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq44-omniroute-inference-key-lifecycle.md (corpo + EMENDA OBRIGATORIA 1, secoes E1 a E8)",
+    ".agents/skills/aws-secrets-manager/SKILL.md",
+    "multica-auth-work/server/internal/daemon/config.go:58, :88, :571-573",
+    "multica-auth-work/server/internal/daemon/health.go:63",
+    "multica-auth-work/server/internal/daemon/credential_file_source_windows.go:9-18",
+    "multica-auth-work/server/internal/daemon/credential_file_source.go:111-119"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC), pedindo RE-REVIEW independente",
+  "summary": "Emenda obrigatoria 1 acrescentada ao documento do ORQ-44, com a skill aws-secrets-manager recarregada integralmente antes. Fecha os dois achados mandatorios de peer review e mais cinco pontos determinados pelo owner. E1 retira a porta 19514 fixa, provando que ela e apenas DefaultHealthPort sobreponivel, e passa a exigir derivacao da porta do perfil alvo por parametro, unit ou PID em LISTEN, com parada se nenhuma resolver, mais prova de identidade do daemon por daemon_id ou por PID do socket igual ao MainPID, porque checar as cegas pode dar falso PASS de outro daemon. E2 declara o runbook UNIX-only com base no arquivo windows que falha incondicionalmente com platform_unsupported, e adiciona gate P0 de parada em host nao-Unix. E3 prefere rollback por handle com AWSPREVIOUS, sem copia do valor em disco, e mantem .prev apenas como fallback com limpeza obrigatoria em trap. E4 declara o custo do canario, limitado a uma listagem autenticada, proibindo qualquer inferencia. E5 substitui a smoke task por probe de readiness, porque criar ou atribuir task enfileiraria task paga sob o freeze. E6 reafirma as agora quatro perguntas ao provider como bloqueantes e nao resolvidas, incluindo a nova sobre AWSPREVIOUS, que decide entre as duas estrategias de rollback. E7 preserva o logging content-free e proibe cat, head, tail, xxd e od sobre o arquivo alvo.",
+  "non_claims": [
+    "Nesta emenda nao li segredo, nao fiz stat do arquivo de segredo alvo, nao chamei provider nem AWS, nao troquei arquivo, nao reiniciei nada, nao mutei board, nao compilei e nao implementei",
+    "Nao derivei a porta real de nenhum perfil: E1.1 e procedimento e eu nao executei D1, D2 nem D3",
+    "Nao confirmei daemon_id nem PID de socket de nenhuma instancia nesta rodada",
+    "Nao verifiquei se AWSPREVIOUS existe para o segredo proposto: e a pergunta bloqueante 4",
+    "Nao medi custo de nenhuma chamada ao provider; a analise de E4 e sobre a natureza do endpoint, listagem versus inferencia, nao sobre fatura observada",
+    "Nao verifiquei o conteudo de credential_file_source_unix.go: a conclusao UNIX-only vem do arquivo windows e da existencia dos dois arquivos com build tag",
+    "Nao removi nem criei nenhum .prev; E3 e desenho",
+    "Nao criei, atribui nem comentei issue alguma, e nao enfileirei task",
+    "Nao me auto-aprovo: PROPOSTA aguardando re-review independente"
+  ],
+  "blocker": "As QUATRO perguntas ao provider e ao owner permanecem BLOQUEANTES e NAO RESOLVIDAS: sobreposicao de duas chaves e revogacao da antiga; escopo por conta ou global; introspeccao sem consumo de cota e se a listagem conta; e se a promocao preserva AWSPREVIOUS. Enquanto abertas, o runbook nao pode ser executado nem parcialmente. Somam-se as quatro autorizacoes do owner para L0, L1, L2 e L4, o gate P0 de host Unix, e o gate de fila zero nos quatro estados antes de L2.",
+  "handoffs": [
+    {
+      "to_lane": "re-revisor independente (nao Agy-P0-A8, nao Antigravity w8:p2, e preferencialmente nao o revisor da primeira rodada)",
+      "reason": "Re-review da emenda. Tres ataques sugeridos: validar que a derivacao de porta em D1 a D3 mais a prova de identidade em I1 ou I2 cobrem o caso de multiplos perfis no mesmo host; confirmar com o operador do OmniRoute a pergunta nova sobre AWSPREVIOUS, que decide entre rollback por handle e fallback com .prev; e verificar se a listagem autenticada usada como canario realmente nao consome cota.",
+      "file": ".deploy-control/p0/evidence/orq44-omniroute-inference-key-lifecycle.md"
+    }
+  ]
+}

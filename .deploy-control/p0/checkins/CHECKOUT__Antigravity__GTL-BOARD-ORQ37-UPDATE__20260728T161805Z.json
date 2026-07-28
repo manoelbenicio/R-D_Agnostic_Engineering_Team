@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T16:18:05Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-37"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "target_host": "ORQ1 (100.118.244.61)",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Title correction for ORQ-37 to Security Wave B: MCP Tooling Header Credential Lifecycle and scope note publication",
+  "finding": "Produced gtl-board-orq37-title-and-scope-update.md. Corrected ORQ-37 (36d18727-f516-4147-9b0c-1cb7c2b91e83) title to Security Wave B: MCP Tooling Header Credential Lifecycle while preserving in_progress status and squad Navy_Seals assignee intact (GET-back verified 100%). Published idempotent human-only scope note ORQ37-SCOPE-V1 in comment table. Column counts: blocked=5, done=6, in_progress=6, in_review=6, todo=1. Active task queue count is 0 (zero new product tasks created). Recorded update SHA256 115ed6ac9181b8aba89da4ce4436e70fadacddc151919d6e8ab487ccf8c9dbb7.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-board-orq37-title-and-scope-update.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Title update & scope note operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-board-orq37-title-and-scope-update.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260728T161805Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-BOARD-ORQ37-UPDATE__20260728T161805Z.json"
+  ],
+  "orq37_update_sha256": "115ed6ac9181b8aba89da4ce4436e70fadacddc151919d6e8ab487ccf8c9dbb7",
+  "non_claims": [
+    "gtl ORQ-37 title and scope note update, no assignee change, no status regression, no duplicate task creation, no GetSecretValue, no product code edit"
+  ],
+  "blocker": null
+}

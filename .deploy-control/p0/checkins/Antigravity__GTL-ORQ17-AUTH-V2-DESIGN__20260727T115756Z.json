@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T115756Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-62",
+  "task_ids": ["GTL-ORQ17-AUTH-V2-DESIGN"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-remediation-v2.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T115756Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-remediation-v2.md"
+  ],
+  "summary": "Desenho V2 da remediacao de auth da ORQ-17 concluido. Topologia real ORQ1 (Next/Go/PG) vs ORQ2 (Daemon/Tunel), binds desacoplados (Next em 127.0.0.1:3000, Proxy em 13100), TLS MagicDNS FQDN, Postgres scram-sha-256, preservacao de /auth/login e JWT Bearer, CORS/CSRF/WS/Uploads, remediação de bypass em auth.go e separacao de decisoes do Owner.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

@@ -1,0 +1,13 @@
+{
+  "event": "checkout",
+  "timestamp_utc": "20260726T212548Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p1",
+  "lane": "E",
+  "task_ids": ["RUNTIME-DIFF-ANALYSIS"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/checkins/Antigravity__RUNTIME-DIFF-ANALYSIS__20260726T212548Z.json", ".deploy-control/inbox-tm/FROM_Opus48C__TO_Kiro-PRINCIPAL-TL__20260726T212548Z.msg"],
+  "evidence": ".deploy-control/p0/checkins/Antigravity__RUNTIME-DIFF-ANALYSIS__20260726T212548Z.json",
+  "reported_to": "KIRO-PRINCIPAL-TL via herdr pane run wB:p1 + inbox-tm"
+}

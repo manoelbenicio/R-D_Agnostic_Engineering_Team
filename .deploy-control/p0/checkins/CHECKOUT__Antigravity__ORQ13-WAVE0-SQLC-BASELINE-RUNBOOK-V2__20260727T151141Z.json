@@ -1,0 +1,27 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:11:41Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-13"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Revised V2 runbook preparation for Wave 0 SQLC Baseline generation for ORQ-13",
+  "finding": "Produced orq13-wave0-sqlc-baseline-runbook-v2.md. Incorporated BLOCK corrections: removed snake_case grep failure gate, formalized ST1003 lint exception for pkg/db/generated/** with manual edit prohibition, accepted deterministic generated variable changes (max_seq), defined 6 mandatory execution gates (double sqlc generate with 0 diff, diff restricted to generated, empty gofmt -l, go vet, and go build). Verdict: PASS.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq13-wave0-sqlc-baseline-runbook-v2.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq13-wave0-sqlc-baseline-runbook-v2.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T151141Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ13-WAVE0-SQLC-BASELINE-RUNBOOK-V2__20260727T151141Z.json"
+  ],
+  "non_claims": [
+    "runbook V2, no code edit, no sqlc generation, no build, no migration execution"
+  ],
+  "blocker": null
+}

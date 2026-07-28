@@ -1,0 +1,98 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:36:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "BROWSER-QA-DISPOSABLE",
+  "task_ids": [
+    "BROWSER-QA-DISPOSABLE-PLAN"
+  ],
+  "orq_issue_id": "UNASSIGNED - ver blocker de governanca",
+  "related_orq": [
+    "ORQ-26"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-browser-qa-disposable-plan.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__BROWSER-QA__BROWSER-QA-DISPOSABLE-PLAN__20260727T123600Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "cat multica-auth-work/playwright.config.ts",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "MEDIDO - :5 testDir ./e2e; :6 timeout 60000; :7 workers 1; :8 retries 0; :10 baseURL de PLAYWRIGHT_BASE_URL/FRONTEND_ORIGIN/localhost:3000; :19-21 comentario literal 'Don't auto-start servers - they must be running already', logo nao existe webServer e o runner nao sobe nada"
+    },
+    {
+      "command": "grep -n -A22 'async login(' multica-auth-work/e2e/fixtures.ts",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "ACHADO CENTRAL - o login de teste abre pg.Client(DATABASE_URL), executa DELETE FROM verification_code WHERE email=$1 e depois SELECT code FROM verification_code. Apontar o QA para o Postgres do ORQ1 usaria o DATABASE_URL exposto e pendente de rotacao E faria DELETE em tabela de producao"
+    },
+    {
+      "command": "grep package.json e pnpm-lock.yaml por @playwright/test e packageManager",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "DEFEITO DE SUPPLY CHAIN - package.json:43 usa caret '^1.58.2'; lock resolve 1.58.2 (pnpm-lock.yaml:122-123); packageManager pnpm@10.28.2. Sem --frozen-lockfile o pacote pode subir e divergir do Chromium da imagem"
+    },
+    {
+      "command": "cat multica-auth-work/e2e/env.ts",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "GUARDA NECESSARIA - :5-12 carrega .env.worktree ou .env do cwd, logo o job deve falhar se esses arquivos existirem no checkout, senao sobrescrevem o ambiente do CI em silencio"
+    },
+    {
+      "command": "find multica-auth-work -name '*.spec.ts' e grep helpers.ts",
+      "exit_code": 0,
+      "assertions_or_tests": 7,
+      "result": "MEDIDO - 7 specs existentes (auth, chat-attachments, comments, issues, navigation, onboarding-v2-smoke, settings); helpers.ts:4-8 ja isola por execucao com e2e-<worker>-<runid>@multica.ai e workspace unico"
+    },
+    {
+      "command": "grep -nE 'setInputFiles|upload|button' multica-auth-work/e2e/chat-attachments.spec.ts",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "LIMITE IDENTIFICADO - o spec exercita POST /api/upload-file e assere url e chat_session_id (linhas 132-141), mas o cabecalho declara 'Stays at the HTTP layer', logo NAO reproduz o ApiContractError do ORQ-26, que ocorre no parse do cliente em packages/core/api/schema.ts:56"
+    },
+    {
+      "command": "df -h /tmp (ORQ2) e ls docker-compose*.yml",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "RESTRICAO DE HOST - /tmp do ORQ2 esta 100% cheio (tmpfs 7.7G 7.7G 0); existem docker-compose.yml, override, selfhost e selfhost.build para a stack efemera"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-browser-qa-disposable-plan.md",
+    ".deploy-control/p0/evidence/orq26-uploadfile-root-cause.md",
+    ".deploy-control/p0/evidence/T3-runtime-health-audit.md",
+    "multica-auth-work/playwright.config.ts:5-21",
+    "multica-auth-work/e2e/fixtures.ts:29-51, :56",
+    "multica-auth-work/e2e/env.ts:5-12",
+    "multica-auth-work/e2e/helpers.ts:4-8, :37-51",
+    "multica-auth-work/package.json:43, pnpm-lock.yaml:122-123"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run no ORQ2, exit 0, com pedido explicito de designacao de revisor independente",
+  "summary": "Plano read-only de QA de browser em ambiente descartavel, sem instalar nada no ORQ1/ORQ2. Achado que decide o desenho: o ambiente descartavel precisa trazer a stack junto, porque o playwright.config nao tem webServer e porque o login de teste abre pg.Client(DATABASE_URL) e faz DELETE mais SELECT em verification_code. Apontar o QA para o Postgres do ORQ1 usaria o DATABASE_URL exposto e pendente de rotacao e executaria DELETE em tabela de producao, entao a solucao e Postgres efemero dentro do job, o que elimina o segredo do problema em vez de proteger o segredo. Topologia com postgres e imagem Playwright fixados por tag mais digest, Chromium embutido e zero download. Defeito de supply chain identificado: caret em ^1.58.2 pode divergir do Chromium da imagem, logo frozen-lockfile mais guarda de versao contra tag. Guarda adicional para env.ts, que carrega .env do cwd e sobrescreveria o ambiente do CI. Sete specs existentes reaproveitados e seis novos propostos, comecando pelo upload de chat via UI com page.route devolvendo o payload degradado sem download_url, unico caminho que reproduz o ORQ-26, ja que o spec atual fica na camada HTTP. Artefatos com trace retain-on-failure e varredura de segredo que falha o upload em vez de redigir. Ferramentas: axe recomendado com gate em critical e serious, visual diff nativo com escopo estreito, Lighthouse rejeitado porque mediria o runner e nao o produto. Custo, timeout e cleanup definidos, sem prune em host compartilhado.",
+  "governance_ack": "GTL GOVERNANCE reconhecida neste limite seguro de mensagem. A partir de agora nao inicio diagnostico, design, patch, teste, migration, rollout ou trabalho operacional sem ORQ-N atribuido; para problema novo eu PARO, peco a outro agente a busca de duplicata no Kanban, e so entao reuso, vinculo ou crio exatamente um cartao com evidencia medida, impacto, criterio de aceite, dependencias, risco/rollback e responsavel; evidencia e check-out passam a citar ORQ-N; nao duplico trabalho concluido sem antes buscar historico de cartao e evidencia duravel; e todo dispatch que eu propor seguira objetivo, contexto, FILES_LOCKED/non-overlap, restricoes, entregavel, gates exatos, condicoes de parada/autorizacao e peer review independente. Acao perigosa continua exigindo aprovacao escrita do owner.",
+  "non_claims": [
+    "READ-ONLY: nao instalei, nao rodei Playwright, nao baixei browser, nao dei push, nao executei workflow; nada instalado no ORQ1 nem no ORQ2",
+    "Nao coletei digests de imagem nem verifiquei o formato da tag noble; estao declarados como placeholders a preencher",
+    "Nao executei nenhum dos 7 specs existentes: nao sei se passam hoje",
+    "Nao li valor de segredo: DATABASE_URL e MULTICA_DEV_VERIFICATION_CODE aparecem como nomes de variavel lidos do codigo",
+    "Nao inspecionei .github/workflows/ci.yml: nao sei se ja existe job de e2e nem qual runner e usado",
+    "Nao validei que o backend do compose sobe em runner limpo; e pre-condicao do plano",
+    "Nao afirmo que os 6 testes novos reproduzem o ORQ-26; o de upload foi desenhado para reproduzir, mas so a execucao prova",
+    "Nao alterei playwright.config.ts nem package.json; as mudancas de arquivo listadas sao propostas para o escritor unico",
+    "Nao me auto-aprovo: pedi designacao de revisor independente",
+    "Nao toquei nas 9 issues preservadas (ORQ-12, 13, 15, 16, 17, 18, 21, 22, 23) e nao disparei rerun"
+  ],
+  "blocker": "GOVERNANCA: este plano foi produzido sob dispatch do General-TL sem ORQ-N atribuido, e a nova regra exige ORQ-N antes de qualquer trabalho. Nao criei cartao por conta propria, porque a propria regra manda pedir a outro agente a busca de duplicata primeiro e criar exatamente um cartao. Solicito: (1) designacao de agente para buscar duplicata de QA de browser no Kanban; (2) atribuicao ou criacao do ORQ-N que passa a cobrir este plano, vinculado ao ORQ-26; (3) designacao de revisor independente, sugerindo tres ataques - se a stack efemera sobe em runner limpo, se ja existe job e2e no ci.yml, e se os 7 specs passam hoje. Alem disso, executar o plano exige aprovacao do owner e mudanca de arquivo pelo escritor unico (pin exato de Playwright e @axe-core/playwright).",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (GENERAL-TECH-LEAD)",
+      "reason": "Plano pronto, sem auto-aprovacao. Precisa de ORQ-N sob a nova governanca, de revisor independente, e de duas mudancas de arquivo do escritor unico. O achado de maior impacto e que o QA nunca deve usar o DATABASE_URL de producao, porque o login de teste faz DELETE em verification_code.",
+      "file": ".deploy-control/p0/evidence/gtl-browser-qa-disposable-plan.md"
+    }
+  ]
+}

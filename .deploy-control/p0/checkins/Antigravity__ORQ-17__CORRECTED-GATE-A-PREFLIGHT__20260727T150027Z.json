@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T150027Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-17",
+  "lane": "GTL-R17-GATE-A-CORRECTION",
+  "task_ids": ["ORQ-17-CORRECTED-GATE-A-PREFLIGHT"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-gate-a-preflight.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T150027Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-gate-a-preflight.md"
+  ],
+  "summary": "Preflight READ-ONLY corrigido para o Gate A no ORQ1. Sintaxe do CLI ajustada para Tailscale 1.98.9 (--set-path=<path> <target>), preservacao de prefixo no target configurada para evitar remocao indesejada pelo Serve, rotas exatas e subarvores pareadas (/api/ + /api, /uploads/ + /uploads), e comandos de Apply, Status e Rollback Reset gerados.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

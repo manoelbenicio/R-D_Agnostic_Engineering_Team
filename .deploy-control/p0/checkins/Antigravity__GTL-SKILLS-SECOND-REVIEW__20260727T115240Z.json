@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T115240Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-55",
+  "task_ids": ["GTL-SKILLS-SECOND-REVIEW"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-skills-rollout-second-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T115240Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-skills-rollout-second-peer-review.md"
+  ],
+  "summary": "Segunda auditoria de skills concluida com correcao de premissa. Premissa de limite de 48 skills derrubada. Fonte mestre confirmada como SkillsHub LOCAL. Veredito: BLOCK pendente de exportacao do manifesto e hashes SHA256. Proposto protocolo seguro de transferencia em 5 etapas.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

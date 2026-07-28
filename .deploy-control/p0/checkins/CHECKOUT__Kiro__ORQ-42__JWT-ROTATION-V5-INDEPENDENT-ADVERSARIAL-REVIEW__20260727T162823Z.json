@@ -1,0 +1,60 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:28:23Z",
+  "agent": "Kiro",
+  "lane": "ORQ-42",
+  "task_ids": ["ORQ-42-JWT-ROTATION-V5-INDEPENDENT-ADVERSARIAL-REVIEW"],
+  "orq_n": "ORQ-42",
+  "orq_uuid": "64bfcae0-b867-4812-ad33-ae03ef7f25ae",
+  "status": "DONE",
+  "verdict": "BLOCK — V5 is not executable and authorizes no JWT rotation",
+  "mode": "READ_ONLY",
+  "reviewer_independence": "Reviewer is not V5 author Opus48#A, V4 author Antigravity, or the V4 reviewer.",
+  "reviewed_artifact": {
+    "path": ".deploy-control/p0/evidence/orq42-jwt-rotation-runbook-v5-design.md",
+    "sha256_expected": "2504cc3b2624ab465bfe743ca846f26713106deae148df05589a00e2de605936",
+    "sha256_observed": "2504cc3b2624ab465bfe743ca846f26713106deae148df05589a00e2de605936",
+    "hash_result": "MATCH"
+  },
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq42-jwt-rotation-runbook-v5-independent-adversarial-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Kiro__ORQ-42__JWT-ROTATION-V5-INDEPENDENT-ADVERSARIAL-REVIEW__20260727T162823Z.json"
+  ],
+  "evidence": [
+    {
+      "path": ".deploy-control/p0/evidence/orq42-jwt-rotation-runbook-v5-independent-adversarial-review.md",
+      "sha256": "4cbc4196b3509b5f39adc9c99c05e0671f7925e6fcd38097ed5fd07182e3fabf"
+    }
+  ],
+  "static_passes": [
+    "Central Compose precedence diagnosis is correct",
+    "Nonempty, unresolved-placeholder, pure-hex and exact-64-byte guards are sound",
+    "Anonymous /api/me=401 auth-bypass effect gate is sound",
+    "force-recreate --no-deps backend is the correct isolation intent",
+    "Separate forward, rollback and ORQ2 authorization intent is directionally correct"
+  ],
+  "blocks": [
+    "Direct Compose command does not pass the durable dev.env as interpolation input",
+    "Live labels are trusted without comparison to an independent ORQ1 allowlist",
+    "grep-based dev.env rewrite masks read errors and does not preserve dotenv fidelity or crash durability",
+    "Resolved secret is embedded in child sh argv and exposed through /proc cmdline",
+    "G5 uses the pre-recreate CID and can false-pass when docker inspect fails",
+    "Old token is not proved 200 before rotation and both token files are removed before rollback R4",
+    "Rollback uses an unsafe fixed temp path and non-enforced equality/durability checks",
+    "V5 falsely claims mdt_ daemon tokens depend on JWT_SECRET; only legacy JWT fallback does",
+    "Q-A through Q-F and A1 through A4 remain open or require narrowed/conditional scopes"
+  ],
+  "required_next_step": "Produce a corrected V6 or explicit V5 supersession closing B1-B9, answer Q-A through Q-F, obtain corrected A1 through A4, and receive a new independent PASS before any resolution or mutation.",
+  "non_actions": [
+    "No GetSecretValue or BatchGetSecretValue call",
+    "No direct SMA access and no asm-exec execution",
+    "No Docker/Compose or AWS command",
+    "No dev.env or Config.Env read or mutation",
+    "No token acquisition or probe",
+    "No backend recreate, rollback or daemon re-pair",
+    "No provider, database, environment or board mutation"
+  ],
+  "summary": "ORQ-42 V5 independently reviewed with matching input hash and overall BLOCK. Nine exact correction groups are recorded; no JWT rotation or related mutation is authorized.",
+  "schema": "main-brain-p0-checkin.v1"
+}

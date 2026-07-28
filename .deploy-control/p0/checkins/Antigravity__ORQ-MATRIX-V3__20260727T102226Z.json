@@ -1,0 +1,12 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T102226Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "task_ids": ["ORQ-RECOVERY-MATRIX-V3"],
+  "status": "DONE",
+  "files_changed": [".deploy-control/p0/evidence/gap-orq-recovery-matrix.md"],
+  "summary": "v3: assignee corrigido (agent em todas), postgresql17-contrib nao instalado (tentativa ambigua), tool_use-sem-result=intencao nao conclusao. ORQ-22 adicionado in_progress/OWNER.",
+  "reported_to": ["w7:p4","w5:pC"]
+}

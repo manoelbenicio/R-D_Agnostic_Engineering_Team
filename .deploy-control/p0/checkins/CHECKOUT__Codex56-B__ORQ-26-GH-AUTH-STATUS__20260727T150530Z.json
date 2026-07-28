@@ -1,0 +1,22 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:05:30Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "ORQ-26",
+  "task_ids": ["ORQ-26"],
+  "status": "DONE_BLOCK",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq26-gh-auth-status-readonly.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-26-GH-AUTH-STATUS__20260727T150530Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "gh auth status", "exit_code": 1, "result": "No GitHub hosts authenticated; identity/host/protocol/scopes unavailable."}
+  ],
+  "evidence": [".deploy-control/p0/evidence/orq26-gh-auth-status-readonly.md"],
+  "reported_to": ["GENERAL-TECH-LEAD Codex56-TL (w5:pC)"],
+  "summary": "BLOCK: gh auth status reports no authenticated GitHub hosts; single push is not ready.",
+  "non_claims": ["No token shown/read, login, push, PR or workflow action performed."]
+}

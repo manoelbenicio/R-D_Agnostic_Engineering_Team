@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:15:02Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-17"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Canonical evidence supersession index for ORQ-17",
+  "finding": "Produced orq17-canonical-evidence-supersession-index.md purely locally. Marked V1 SHA 4b22742148bbfe0052bbe26df7f66c1de32415c9c029dbf102477063a0ba2c14 as RETRACTED. Marked V2 SHA f1b30d7229b0e2b4ce0b2d2a56130669b3b8207fbd1c4cc66d13bf143849ad39 as RETRACTED. Marked V3 SHA 9447a2df1098ab44522ca765d7c174918712d6acaf9d097110216419988e0b1d as APPROVED READINESS BASELINE. Marked V4 SHA 14517fff8c4286c4fe0f75edcf1828add4463271145e45f14b8b4ce91a43152b as APPROVED STABILITY MONITOR. Linked Stage 1 backup, Stage 2 cutover preflight/gate A, auth tests fix commit 9cf3296fcf2c8d5ff72f439df16492e6cd76c1fa (parent 40909d85ee1962745e436cc540c2323f95e59820), and Stage 3B login readiness audit. Documented 7 canonical mounts. Stated exact current blocker BLOCKED_ON_CREDENTIALS. Delivered index file SHA256 54d602db16d7408817e90a40a19051a3c7a7b9870b8101a7d5c7f6ade09b4375 for agent A8.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq17-canonical-evidence-supersession-index.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Mechanical local documentation operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-canonical-evidence-supersession-index.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T161502Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ17-CANONICAL-SUPERSESSION-INDEX__20260727T161502Z.json"
+  ],
+  "index_evidence_sha256": "54d602db16d7408817e90a40a19051a3c7a7b9870b8101a7d5c7f6ade09b4375",
+  "non_claims": [
+    "canonical documentation index, no network call, no API call, no DB query, no Docker command, no SSH call, no prior evidence edit, no board mutation"
+  ],
+  "blocker": "BLOCKED_ON_CREDENTIALS"
+}

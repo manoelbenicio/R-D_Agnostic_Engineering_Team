@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T12:14:53Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-ORQ26-ROOT-CI-MANIFEST-V2-PEER-REVIEW",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq26-root-ci-manifest-v2-peer-review.md"
+  ],
+  "summary": "Peer Review Adversarial da Seção V2 do Manifesto CI da ORQ-26 (GTL-69R) concluído com veredito PASS em modo READ-ONLY. Validado o disparo via push na branch efêmera ci/orq26-db-gate conforme ruling oficial, confirmado o pinning por SHA das GitHub Actions e por digest da imagem pgvector, auditados os passos de 3-file guard e validação de migrations/8-folhas sem skips, comprovada a ausência de secrets/artifacts e estruturado o pacote de autorização B1-B4 para o Owner."
+}

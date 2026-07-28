@@ -27,6 +27,8 @@
 - [x] 4.2 Update README and self-host Compose comments for the Main Brain/OmniRoute topology.
 - [x] 4.3 Rewrite rollout and rollback runbooks to keep admission closed instead of activating a direct/alternate route.
 - [x] 4.4 Update typed deployment catalog wording and secret-reference failure policy.
+- [x] 4.5 Document and exercise Kanban-only dispatch with exactly one product task per
+  activation; prohibit parallel Herdr execution.
 
 ## 5. Verification
 

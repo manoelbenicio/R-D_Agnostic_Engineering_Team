@@ -15,11 +15,15 @@ e só então **delega** aos agentes envolvidos — sintetizando o resultado. O l
   tarefas pontuais, sem passar pelo TL.
 - **MODIFIED** setup default do workspace: existir um squad TL/Manager com leader configurado
   e o chat roteado a ele por padrão.
+- **MODIFIED** toda ativacao executavel de agente parte do Kanban por assignee/API e gera uma
+  unica task de produto; Herdr fica restrito a supervisao read-only.
 
 ## Impact
 - Config/instruções (identity do leader) + roteamento default de chat/task. Reusa primitivos
   existentes (squad leader + delegação + Squad Operating Protocol).
 - Execução: coders. **Kiro planeja e valida.**
+- O General Tech Leader continua decidindo prioridade, escopo, aceite e integracao; o operador
+  do Kanban executa somente transicoes e despachos explicitamente autorizados.
 
 ## Non-goals
 - Impedir conversa direta com um agente (o escape hatch é requisito).

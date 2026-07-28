@@ -1,0 +1,19 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T12:39:33Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-I04R-ORQ17-AUTH-REGRESSION-TEST-CORRECTIONS",
+  "issue_id": "ORQ-17",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-regression-tests-implementation.md"
+  ],
+  "hashes": {
+    "auth_test.go": "f0b9a17d5b3ba1a045ae223cd1625d0a3caa25da606ee31b36eb5b0c1a58bd2b",
+    "git_diff_fingerprint": "87ceec690c862fd2c42dc34a04950aed66c895802981b14d54de0977a06d26bc"
+  },
+  "summary": "Correções GTL-85 da suíte de regressão de auth da ORQ-17 (GTL-I04R) concluídas no worktree isolado /home/ec2-user/workspace/worktrees/gtl-orq17-auth-tests na base 0cb8aebb. Zero edições em código de produção. Adicionados testes de controle positivo (H1), asserção direta localAuthBypassEmail() no teste XFF (M2) e tabela abrangente de origens loopback/não-loopback (M4). Execução com -race -count=1 -json confirmou 100% PASS em todos os 20 sub-testes de bypass e 88 testes do pacote middleware (15 skips pré-existentes creditados)."
+}

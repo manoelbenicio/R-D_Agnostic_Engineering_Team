@@ -1,0 +1,64 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:36:46Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "ORQ-26-B1-B4",
+  "task_ids": [
+    "ORQ-26"
+  ],
+  "status": "BLOCKED_AUTH",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq26-official-ci-execution.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-26-OFFICIAL-CI-EXECUTION-BLOCKED-AUTH__20260727T123646Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "pre-push exact-three-file, frozen-hash, YAML, bash syntax, pin and structural secret-safety gates",
+      "exit_code": 0,
+      "result": "PASS; commit d2447183c5fb7d93c07ca4afdd86d4ab9ac374ee is clean, has parent 0cb8aebb5aff79cb430b3740d22fadc53c0116fd, and contains exactly the approved three files."
+    },
+    {
+      "command": "git push -u origin ci/orq26-db-gate",
+      "exit_code": 128,
+      "result": "BLOCKED before transmission: fatal: could not read Username for 'https://github.com': No such device or address"
+    },
+    {
+      "command": "git ls-remote --exit-code --heads origin ci/orq26-db-gate",
+      "exit_code": 2,
+      "result": "Remote temporary branch absent after the single authorized attempt; therefore no Actions workflow run exists."
+    },
+    {
+      "command": "post-failure preservation audit",
+      "exit_code": 0,
+      "result": "Temporary commit/worktree and both durable source worktrees are preserved; no B4 cleanup, second push, amend, rerun, PR or merge was executed."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq26-official-ci-execution.md",
+    "/home/ec2-user/workspace/worktrees/ci-orq26-db-gate@d2447183c5fb7d93c07ca4afdd86d4ab9ac374ee",
+    "/home/ec2-user/workspace/worktrees/gtl-orq26",
+    "/home/ec2-user/multica_workspaces/20fce817-895d-447b-965a-49f5e279314a/91e70c79/workdir/repo"
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run"
+  ],
+  "summary": "The single owner-authorized push was attempted once and failed locally before object transmission because HTTPS GitHub authentication was unavailable. The remote branch and workflow run do not exist. Per the accepted stop condition, no retry or B4 cleanup was performed; all worktrees remain preserved.",
+  "non_claims": [
+    "No CI run, job conclusion, eight-leaf result or immutable Actions log exists.",
+    "No credential value was read, printed, logged, persisted or passed in an argument.",
+    "No second push, alternative authentication attempt, amend, rerun, PR, merge or cleanup was performed."
+  ],
+  "blockers": [
+    "Human must provision a secret-safe GitHub authentication path.",
+    "General-TL/owner must explicitly authorize a new push attempt after authentication is available."
+  ],
+  "handoffs": [
+    {
+      "to": "w5:pC",
+      "reason": "Rule on authentication provisioning and whether a new single push attempt is authorized; do not execute B4 before a terminal CI run."
+    }
+  ]
+}

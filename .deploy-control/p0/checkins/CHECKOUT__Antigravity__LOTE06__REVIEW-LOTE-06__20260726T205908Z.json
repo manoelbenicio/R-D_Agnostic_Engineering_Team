@@ -1,0 +1,38 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T20:59:08Z",
+  "agent": "Antigravity",
+  "pane_id": "lane-G",
+  "lane": "G",
+  "task_ids": [
+    "REVIEW-LOTE-06"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Review 102 files listed in /tmp/review/lote_06 and produce review-lote_06.md",
+  "finding": "102 files in lote_06 reviewed and classified into KEEP (39), PURGE (4), STALE (56), OWNER (3). Evidence recorded.",
+  "action_taken": "Created .deploy-control/p0/evidence/review-lote_06.md with complete 3-column table.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/review-lote_06.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__LOTE06__REVIEW-LOTE-06__20260726T205908Z.json"
+  ],
+  "verdicts_summary": {
+    "total_reviewed": 102,
+    "STALE": 56,
+    "KEEP": 39,
+    "PURGE": 4,
+    "OWNER": 3
+  },
+  "owner_items": [
+    ".deploy-control/p0/evidence/T20-child-otel-security.md",
+    ".deploy-control/p0/evidence/T20-otlp-threatmodel-v2.md",
+    ".deploy-control/p0/evidence/T20-otlp-threatmodel.md"
+  ],
+  "non_claims": [
+    "no delete, no git rm, no push, no git reset, no git clean, no git checkout --"
+  ],
+  "blocker": null
+}

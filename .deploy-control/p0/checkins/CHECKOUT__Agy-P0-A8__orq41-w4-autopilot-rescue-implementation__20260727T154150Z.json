@@ -1,0 +1,18 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T15:41:50Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "ORQ41-W4-AUTOPILOT-RESCUE-IMPLEMENTATION",
+  "issue_id": "ORQ-41",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-w4-autopilot-rescue-implementation.md"
+  ],
+  "hashes": {
+    "local_commit_sha": "c047c0b7ed710f260e76a6ee50257b2a5f96dc70"
+  },
+  "summary": "Resgate e implementação autorizada do W4 Autopilot Replay Gate (ORQ-41) concluídos no worktree isolado /home/ec2-user/workspace/worktrees/gtl-orq41-w4-autopilot na branch agent/opus48-d/orq41-w4-autopilot. Criado um único commit local (c047c0b7ed710f260e76a6ee50257b2a5f96dc70). Zero alterações em migrations/, generated code ou router.go. Validadas a formatação gofmt, higiene de diff, compilação limpa, zero avisos no go vet e aprovação 100% dos testes com -race -count=1 em service, commitledger e handler."
+}

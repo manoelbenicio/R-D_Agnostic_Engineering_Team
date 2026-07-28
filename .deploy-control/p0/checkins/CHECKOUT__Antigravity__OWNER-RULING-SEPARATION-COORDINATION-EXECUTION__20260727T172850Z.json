@@ -1,0 +1,25 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T17:28:50Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Registration of direct Owner Ruling on strict separation between coordination (Codex56-TL) and technical execution (Assigned Agent)",
+  "finding": "Produced owner-ruling-coordination-execution-separation.md. Registered direct Owner Ruling: Codex56-TL guides, prioritizes, accepts Gate 0, decides ownership/integration, and monitors (steering only). The designated agent is the SOLE EXECUTOR and WRITER of task files/artifacts. General-TL does not execute in parallel on the same target or take over artifacts without explicit handoff or emergency containment. Executing agent uses unique temp output + atomic promotion (mv) and reports milestones via herdr. Recorded ruling SHA256 75feb546ec0ea5fd1a2410af5b55eab567c9447291afa75e9b82456357515d8f.",
+  "action_taken": "Created .deploy-control/p0/evidence/owner-ruling-coordination-execution-separation.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only policy registration.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/owner-ruling-coordination-execution-separation.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T172850Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__OWNER-RULING-SEPARATION-COORDINATION-EXECUTION__20260727T172850Z.json"
+  ],
+  "separation_ruling_sha256": "75feb546ec0ea5fd1a2410af5b55eab567c9447291afa75e9b82456357515d8f",
+  "non_claims": [
+    "owner ruling separation policy registration, no mutation, no code execution, no board mutation"
+  ],
+  "blocker": null
+}

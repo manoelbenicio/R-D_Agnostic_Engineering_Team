@@ -1,0 +1,33 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:02:45Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "ORQ-9-EXIT-CRITERIA",
+  "task_ids": [
+    "ORQ-12",
+    "ORQ-13",
+    "ORQ-15",
+    "ORQ-16",
+    "ORQ-17",
+    "ORQ-18",
+    "ORQ-21",
+    "ORQ-22",
+    "ORQ-23"
+  ],
+  "status": "ANALYSIS_COMPLETE_ORQ22_DONE_OTHERS_PRESERVED",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq-9-issues-exit-criteria.md",
+    ".deploy-control/inbox-tm/FROM_Codex56-B__TO_Kiro-PRINCIPAL-TL__20260727T110245Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-9-EXIT-CRITERIA__20260727T110245Z.json"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq-9-issues-exit-criteria.md",
+    ".deploy-control/p0/evidence/legacy-daemon-security-remediation-20260727.md"
+  ],
+  "reported_to": [
+    "Kiro-PRINCIPAL-TL local wB:p1",
+    "human owner via chat"
+  ]
+}

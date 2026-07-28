@@ -1,0 +1,29 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:10:42Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-17"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "target_host": "ORQ1 (100.118.244.61 / ip-172-31-18-217)",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "V3 correction of ORQ-17 auth cutover readiness with direct ORQ1 measurements",
+  "finding": "Produced orq17-auth-cutover-v3-final-readiness.md. Retracted false frontend outage claim (on ORQ1 host 100.118.244.61 / ip-172-31-18-217, frontend container 1b3b6c9ee32a is Up 13h, HTTP 200 OK; backend 75e4416f06e9 is Up 13m, HTTP 200 OK). Consolidated exact 7 canonical mounts omitting redundant trailing slashes (/auth/login, /auth/google, /auth/logout, /ws, /api, /uploads, /). Final status is BLOCKED ONLY ON CREDENTIAL PROVISIONING + REAL LOGIN VALIDATION. Preserved prior evidence as historical trace. Notified A8 with new V3 evidence SHA256 9447a2df1098ab44522ca765d7c174918712d6acaf9d097110216419988e0b1d.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq17-auth-cutover-v3-final-readiness.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-auth-cutover-v3-final-readiness.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T161042Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ17-V3-FINAL-READINESS__20260727T161042Z.json"
+  ],
+  "evidence_sha256": "9447a2df1098ab44522ca765d7c174918712d6acaf9d097110216419988e0b1d",
+  "non_claims": [
+    "V3 cutover readiness, no secret value reading, no GetSecretValue, no container restart, no Tailscale Serve apply, no env edit, no DB/AWS/board mutation"
+  ],
+  "blocker": "BLOCKED ONLY ON CREDENTIAL PROVISIONING + REAL LOGIN VALIDATION."
+}

@@ -1,0 +1,46 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:44:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-42",
+  "reviewed_artifact_card": "ORQ-33",
+  "task_ids": ["ORQ42-JWT-V3-ADVERSARIAL-PEER-REVIEW"],
+  "status": "DONE_BLOCK",
+  "verdict": "BLOCK",
+  "deliverable": ".deploy-control/p0/evidence/orq42-jwt-v3-adversarial-peer-review.md",
+  "artifact_sha256": "bcffeb15f3010a9b51b56771e9340194a4f7beb2d11da755d971ab38b43fcf3b",
+  "skill_loaded": "Carreguei .agents/skills/aws-secrets-manager/SKILL.md INTEGRALMENTE antes de revisar: frontmatter, as 3 regras MUST, sintaxe resolve, secao Using asm-exec, How It Works, SigV4, prerequisitos, Common Patterns, hook PreToolUse e troubleshooting.",
+  "credit_given": "O Ajuste 1 entendeu a semantica env/file CORRETAMENTE: asm-exec resolve em argumentos e variaveis de ambiente, nao em conteudo de arquivo - confere com 'Using asm-exec' e com How It Works passo 1. E a solucao escolhida, asm-exec -- sh -c com echo redirecionando para arquivo temporario, e LITERALMENTE o padrao 'Configuration file templating' da skill, porque o placeholder fica no ARGUMENTO do sh -c e e resolvido antes do exec. Isso fecha o Bloqueador 1 da V2 pelo caminho certo. Tambem corretos: trap EXIT INT TERM, chmod 0600, exigencia de 0700, Ajuste 4 fixando GET /api/me com old=401 e new=200, e a separacao de autorizacao do re-pair.",
+  "blockers": [
+    "B1 docker-compose NAO EXISTE no ORQ1: 'command -v docker-compose' vazio, e so existe o plugin v2 ('docker compose version' = v5.3.1). O comando central dos Ajustes 1 e 7 falha com command not found.",
+    "B2 Os 4 caminhos absolutos do Ajuste 3 estao TODOS ERRADOS: os tres sob /home/ec2-user/workspace/R-D_... e o do worktree gtl-orq26 NAO EXISTEM no ORQ1 (o prefixo workspace/ e do ORQ2). E a V3 OMITE os dois que importam: /home/ec2-user/.config/multica-transition/images.yml e backend-env.override.yml, ambos listados por 'docker compose ls' como CONFIG FILES do stack. Sem eles, o up -d recria o backend com configuracao diferente da atual, perdendo imagem pinada e overrides de ambiente. Incluir o compose do worktree de outro cartao seria pior ainda.",
+    "B3 -p multica e o projeto ERRADO: o real e multica-dev-transition (docker inspect label e docker compose ls). Com -p multica o comando cria/afeta um projeto novo e vazio enquanto o backend real continua com o segredo antigo, e os gates podem validar o container errado.",
+    "B4 O guard do Ajuste 2 CAPTURA O SEGREDO EM TEXTO CLARO: RESOLVED_SECRET=$(asm-exec -- env | grep ... ) traz o valor para variavel do shell PAI, contra o proposito declarado da skill de o valor existir somente no processo filho - aparece em set -x, em core dump e em log; e o Ajuste 6 agrava reusando a variavel. Alem disso NAO FUNCIONA como escrito: asm-exec -- env so imprimiria JWT_SECRET= se a variavel estivesse no ambiente do asm-exec com placeholder, entao o grep volta vazio e o -z aborta sempre. Correcao: verificar EFEITO e nao conteudo - docker inspect do container filtrando '{{resolve:' com criterio 0, e comprimento via asm-exec -- sh -c 'printf %s \"{{resolve:...}}\" | wc -c'. E printf %s em vez de echo -n, que em sh/dash pode imprimir literalmente -n e inflar a contagem em 2 bytes, mascarando um segredo de 30 como 32.",
+    "B5 O rollback do Ajuste 7 usa --no-recreate, que IMPEDE o rollback: como JWTSecret resolve uma vez por processo via sync.Once (jwt.go:31), so processo novo carrega a chave; com --no-recreate o container fica com a chave NOVA, os probes voltam a passar com o segredo errado e o operador declara rollback bem-sucedido. Correcao: --force-recreate --no-deps backend, os mesmos flags do avanco. E o Ajuste 1 tambem omite --no-deps e o nome do servico, entao up -d atinge TODOS os servicos, incluindo o Postgres."
+  ],
+  "additional_findings": [
+    "A1 $HOME/.private-tmp NAO EXISTE no ORQ1 (ls -ld = No such file or directory), logo o mktemp falha; o Ajuste 5 exige 0700 mas nenhum passo cria o diretorio, e -m nao corrige diretorio pre-existente",
+    "A2 umask 077 e citado no Ajuste 5 mas nao aparece no script: ordem correta e umask, mktemp, chmod, echo",
+    "A3 trap com aspas duplas deixa o caminho sem quotes no corpo: usar trap 'rm -f \"$TMP_ENV\"'",
+    "A4 o --env-file so funciona porque o compose interpola JWT_SECRET: ${JWT_SECRET:?...} em docker-compose.selfhost.yml:58 - dependencia nao declarada, e que quebra em silencio se o -f correto nao for usado",
+    "A5 nome do segredo mudou sem justificativa: V2 usava prod/multica/jwt-secret com key jwt_secret, V3 usa prod/jwt-secret com key secret, nenhum confirmado; pela skill, json-key errado resolve para VAZIO",
+    "A6 FILES_LOCKED incoerente: trava jwt.go sem prever mudanca de codigo, trava o compose que nao sera editado, e NAO trava o backend-env.override.yml que sera",
+    "A7 O Ajuste 8 transforma efeito colateral CERTO em cartao futuro: a rotacao quebra a auth de daemon por middleware/daemon_auth.go:234, e o daemon do ORQ2 e o executor da frota - sem re-pair na MESMA janela, a rotacao produz outage do executor por tempo indeterminado. Deve ser pre-condicao com autorizacao propria, nao ORQ-N depois.",
+    "A8 probes inconsistentes: Ajuste 7 cita /healthz e /readyz, e a V2 estabeleceu /health como liveness e /readyz e /healthz como readiness (router.go:443-445)",
+    "A9 veredito proprio PASS coexistindo com o Ajuste 9 que pede peer review independente - as duas coisas nao coexistem"
+  ],
+  "fixes_count": 13,
+  "non_claims": [
+    "skill carregada integralmente antes da revisao; nao chamei get-secret-value nem batch-get-secret-value; nao acessei SMA em localhost:2773; NAO executei asm-exec",
+    "nenhum segredo lido, nenhum token gerado ou usado, nenhum login, nenhuma rotacao",
+    "nenhuma mutacao de AWS, Docker, container, unit, codigo ou board; nao alterei assignee nem postei comentario",
+    "leituras no ORQ1: docker compose version, command -v, docker compose ls, docker inspect APENAS de labels (nunca .Config.Env) e ls de caminhos",
+    "nao inspecionei backend-env.override.yml (pode conter segredo), logo NAO sei onde JWT_SECRET esta definido hoje e o gate G5 da V2 continua aberto e nao mencionado pela V3",
+    "nao consultei o Secrets Manager: nao sei se prod/jwt-secret ou prod/multica/jwt-secret existem",
+    "nao revalidei os UUIDs de ORQ-33 e ORQ-42 por GET"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "blocker": null
+}

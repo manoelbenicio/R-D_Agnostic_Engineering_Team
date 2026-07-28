@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T114816Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-47",
+  "task_ids": ["GTL-ORQ23-V2-PEER-REVIEW"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq23-cutover-v2-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T114816Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq23-cutover-v2-peer-review.md"
+  ],
+  "summary": "Peer review adversarial V2 da ORQ-23 finalizado. Veredito: PASS (APROVADO). As 9 condicoes obrigatorias foram validadas: build cmd/multica, commit 0cb8aebb, hashes SHA256 (88ca4f39...), rollback seguro, inventario de 6 binarios, Kiro slot-142 como Auth Present, fila vazia pre-cutover, 4 gates desacoplados e H1/H2 separados.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

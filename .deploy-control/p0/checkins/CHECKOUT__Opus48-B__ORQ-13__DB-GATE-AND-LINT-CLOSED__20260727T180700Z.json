@@ -1,0 +1,88 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T18:07:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "P1-ORQ-13",
+  "task_ids": ["ORQ-13"],
+  "status": "DONE",
+  "verdict": "GO - sem pendencia de evidencia",
+  "escopo": "Adendo 1 ao orq13-phase1-split-execution.md: fecha as DUAS pendencias que eu havia declarado, o falso-verde do handler e o lint nao medido.",
+  "db_gate": {
+    "padrao": "ORQ-41",
+    "rodada_1": "container orq13-gate-pg 1edf9f971bf5, porta 47472 loopback-only, tunel 127.0.0.1:60709",
+    "rodada_2": "container orq13-gate-pg2 37e28e1f7456, porta 47473 loopback-only, tunel 127.0.0.1:53555, criado para atender a precisao do revisor",
+    "imagem": "pgvector/pgvector@sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0, local, sem pull",
+    "credencial": "senha aleatoria de 20 chars gerada no ORQ1, DATABASE_URL em arquivo modo 600, nunca em argv, removida no teardown",
+    "migrations": "up ate 127 somente no DB descartavel; esquema conferido com thinking_level text nullable em task_usage e 68 tabelas",
+    "producao": "NAO tocada"
+  },
+  "resultado_4_testes": "4 de 4 PASS NOMINAIS, 0 FAIL, 0 SKIP, 0 'Skipping tests:', 0 DATA RACE, com -race. Mais 5 subtestes PASS em TestThinkingLevelText. Com o regex do revisor 'ThinkingLevel|TaskUsagePayload': 8 PASS nominais, 0 skip. Log reviewer-regex.log sha256 e191a36c67325138fc97ee3e265618eb18680984ca4601040c5a5ddd77da8dd1",
+  "correcao_ao_revisor": "Dois dos quatro nomes exigidos NAO EXISTEM no repositorio: TestTaskUsageThinkingLevelNeverStoresEmptyString e TestTaskUsageDecodesThinkingLevel, ambos com 0 ocorrencias em grep -rn 'func <nome>' --include=*.go. Os nomes reais estao em internal/handler/task_usage_thinking_level_test.go linhas 12, 45, 59 e 79: TestThinkingLevelText, TestThinkingLevelTextNeverStoresEmptyString, TestTaskUsagePayloadDecodesThinkingLevel, TestTaskUsagePayloadLegacyDaemonYieldsNull. Executei pelos nomes reais. Registro para a proxima revisao nao perseguir funcao inexistente.",
+  "por_que_a_1a_rodada_mostrou_3_de_4": "-run ThinkingLevel nao seleciona TestTaskUsagePayloadLegacyDaemonYieldsNull porque o nome nao contem a substring. Era filtro, nao falha. A precisao do revisor sobre o -run estava certa mesmo com os nomes errados.",
+  "regressao_pacote": {
+    "resultado": "exit 1, 3 FAIL nominais, 0 'Skipping tests:', 0 DATA RACE",
+    "falhas": ["TestCreateChatSession_Routing", "TestCreateWorkspaceUsesRequestedSlug", "TestCreateWorkspace_DoesNotMarkOnboarded"],
+    "prova_de_pre_existencia": "NAO aleguei, provei: criei worktree temporario no baseline 0cb8aeb, banco separado multica_base no mesmo container descartavel, migrei com o codigo do baseline que parou em 126 como esperado, e rodei os mesmos 3 testes. Os 3 falham IDENTICAMENTE sem os meus commits. Log baseline-3tests.log sha256 29b841897763ed4af57cc1953bd85225d452e329218aef0a9ac95847271928eb",
+    "causa_raiz_para_cartao_de_terceiro": "squad.leader_id UUID NOT NULL vem da migration 084_squad.up.sql:7 e o handler cria o squad default sem leader. Nenhum dos 3 FAIL menciona thinking_level ou task_usage."
+  },
+  "lint": {
+    "reproducao_do_workflow": ".github/workflows/ci.yml:115-118 usa golangci/golangci-lint-action@v9 com version v2.12 e working-directory server; nao existe .golangci.yml, logo defaults. Linters default ativos: errcheck, govet, ineffassign, staticcheck, unused.",
+    "procedencia": "origem https://github.com/golangci/golangci-lint/releases/download/v2.12.0 ; sha256 oficial 6b89d77b6396f81decee882f20473486bda5ef28b160f9a13b08f24848d9003c para golangci-lint-2.12.0-linux-amd64.tar.gz ; sha256sum -c OK ; binario reporta 2.12.0 built with go1.26.2 from 7761527a em 2026-05-01T12:41:27Z",
+    "instalacao": "diretorio PRIVADO da task em modo 0700, nunca global, removido no teardown",
+    "resultado": "baseline 119 issues e HEAD 119 issues, com a mesma quebra por linter: errcheck 50, ineffassign 1, staticcheck 39, unused 29. NOVAS no HEAD: 0. RESOLVIDAS: 0. Os dois relatorios sao BYTE A BYTE identicos, mesmo sha256 e5e3b46ba3d23a3400ba3a7c155d803598ad5dbe93df7a8d1a0751794fd122d8",
+    "veredito_max_seq": "FECHADO COMO NEGATIVO e MEDIDO: o rename do commit A nao gera nenhuma issue de lint, e nao ha ocorrencia em pkg/db/generated/* no relatorio. Nao diferi para CI.",
+    "honestidade_1": "internal/daemon/daemon.go:3557 ineffectual assignment to startedTask aparece nos DOIS lados, portanto nao e meu: meus hunks em daemon.go estao em @@ -3854 e @@ -3866, longe da 3557.",
+    "honestidade_2": "golangci-lint run termina com exit 1 por causa das 119 issues PRE-EXISTENTES. Se o job de lint fosse ligado hoje, falharia por divida anterior e nao por ORQ-13. Achado do repositorio, merece cartao proprio."
+  },
+  "erro_meu_corrigido": "Na primeira comparacao de lint eu reusei o MESMO GOLANGCI_LINT_CACHE nas duas execucoes. O cache devolveu os caminhos da primeira rodada e o log do baseline saiu referenciando arquivos do MEU worktree, produzindo um diff falso de cerca de 85 novas e 85 resolvidas. Detectei pela incoerencia, porque o baseline nao podia citar gtl-i03-orq13-phase1, descartei o resultado e refiz com cache-head e cache-base separados. Registro porque o numero errado ja tinha sido gerado e um revisor que veja apenas o primeiro log concluiria regressao inexistente.",
+  "teardown": {
+    "containers": "orq13-gate-pg e orq13-gate-pg2 removidos; docker ps -a | grep -c orq13-gate = 0",
+    "tuneis": "encerrados; nenhum ssh -L 127.0.0.1 residual meu",
+    "credenciais": "/home/ec2-user/.orq13-gate-pw e .orq13-gate-pw2 removidos",
+    "caches": "orq13-gate, orq13-gate2 e orq13-lint (binario mais 3 caches de lint) removidos",
+    "worktree_temporario": "baseline removido via git worktree remove; restam 27 entradas",
+    "preservado": "logs de evidencia em /home/ec2-user/.cache/orq13-evidence/ (5 arquivos com sha256)",
+    "nao_feito": "NAO rodei docker prune. Existem 6 volumes dangling no ORQ1, um possivelmente do meu container. Divulgo em vez de agir, porque prune exige autorizacao.",
+    "prova_produto_intacto": "multica-dev-transition-backend-1 75e4416f06e9 Up 2 hours; frontend-1 1b3b6c9ee32a Up 15 hours; postgres-1 2a4a84897363 Up 6 days healthy; omniroute 2fb3fd57e885 Up 2 days healthy; disco ORQ1 4.7G livres 81 pct",
+    "worktree_orq13": "INALTERADO pelo gate: status 0 linhas, c0e93a2 sobre b1f08e3, stash de salvaguarda presente, tag intacta, fingerprint dos 7 rastreados segue b87bc5cae3e877af9a26ebe39cce7f0a90fff2a126e075c7f5d12799d04707ce"
+  },
+  "tests": [
+    {"command": "go test -race ./internal/handler -run <4 nomes ancorados> -count=1 -v (DB efemero)", "exit_code": 0, "assertions_or_tests": 4, "result": "PASS NOMINAL 4/4, 0 skip, 0 Skipping tests, 0 DATA RACE, mais 5 subtestes"},
+    {"command": "go test ./internal/handler -run 'ThinkingLevel|TaskUsagePayload' -count=1 -v (regex do revisor)", "exit_code": 0, "assertions_or_tests": 8, "result": "PASS NOMINAL 8/8, 0 skip, 0 Skipping tests"},
+    {"command": "go test -race ./internal/handler -count=1 (regressao de pacote)", "exit_code": 1, "assertions_or_tests": 3, "result": "3 FAIL nominais, 0 DATA RACE, 0 Skipping tests - PROVADOS pre-existentes no baseline"},
+    {"command": "go test ./internal/handler -run <os 3 FAIL> no baseline 0cb8aeb com banco multica_base", "exit_code": 1, "assertions_or_tests": 3, "result": "os 3 falham IDENTICAMENTE sem meus commits"},
+    {"command": "golangci-lint v2.12.0 run --timeout 10m ./... no HEAD e no baseline, caches isolados", "exit_code": 1, "assertions_or_tests": 119, "result": "119 vs 119, 0 novas, 0 resolvidas, relatorios byte a byte identicos. max_seq sem issue."}
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq13-phase1-split-execution.md (Adendo 1)",
+    "/home/ec2-user/.cache/orq13-evidence/reviewer-regex.log e191a36c67325138fc97ee3e265618eb18680984ca4601040c5a5ddd77da8dd1",
+    "/home/ec2-user/.cache/orq13-evidence/regressao-pacote.log 8031bdd70ac45dd8eb31c9df32680cf1a640e0b13d855e510c1a140fe42a2c12",
+    "/home/ec2-user/.cache/orq13-evidence/baseline-3tests.log 29b841897763ed4af57cc1953bd85225d452e329218aef0a9ac95847271928eb",
+    "/home/ec2-user/.cache/orq13-evidence/head2.log e base2.log, ambos e5e3b46ba3d23a3400ba3a7c155d803598ad5dbe93df7a8d1a0751794fd122d8"
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-13__DB-GATE-AND-LINT-CLOSED__20260727T180700Z.json"
+  ],
+  "files_changed": [".deploy-control/p0/evidence/orq13-phase1-split-execution.md"],
+  "re_review_request": "Pedido de RE-REVIEW. Nao pode ser eu. Pontos que quero que o revisor ataque, em ordem: (1) a prova de pre-existencia dos 3 FAIL, que depende do banco separado no baseline; (2) a comparacao de lint, cujo primeiro resultado eu mesmo invalidei por contaminacao de cache; (3) a correcao dos dois nomes de teste inexistentes; (4) se o teardown deixou algo, sabendo que os 6 volumes dangling foram divulgados e nao tocados.",
+  "cartoes_recomendados_nao_meus": [
+    "TestMain de internal/handler com os.Exit(0) causando falso-verde, transversal ao pacote",
+    "squad.leader_id NOT NULL da migration 084 versus handler que cria squad default sem leader, causando 3 FAIL",
+    "119 issues de lint pre-existentes que farao o job falhar quando o CI for ligado",
+    "os 4 workflows vivem em multica-auth-work/.github/workflows e nao na raiz, portanto estao inertes"
+  ],
+  "non_claims": [
+    "NENHUMA migration em banco de PRODUTO: apliquei ate 127 apenas em bancos descartaveis dentro de container efemero removido depois; multica-dev-transition-postgres-1 segue Up 6 days healthy",
+    "Nenhum push, merge, PR, mutacao de board, comentario ou atribuicao",
+    "Nenhum --amend: A e B seguem b1f08e3 e c0e93a2, e o gate nao alterou um byte do worktree",
+    "NENHUM git reset --hard",
+    "Nao dropei o stash de salvaguarda nem removi a tag",
+    "Nao removi os caches que o owner mandou preservar; removi apenas o que criei nesta rodada",
+    "NAO rodei docker prune: 6 volumes dangling divulgados, nao tocados",
+    "Nao instalei nada global: golangci-lint ficou em dir privado 0700 e foi removido",
+    "Nao li nem usei segredo, token ou credencial de produto",
+    "Nao autorizo merge e nao me autoaprovo"
+  ],
+  "blocker": null
+}

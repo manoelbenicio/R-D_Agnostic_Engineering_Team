@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:28:04Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-ORQ21-BRIDGE-REDESIGN",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq21-bridge-redesign.md"
+  ],
+  "summary": "Audit e Redesign GTL-09 da ORQ-21 Bridge concluídos em modo READ-ONLY. Definida resolução exclusiva no backend claim path (ORQ1), transmissão de identificador pseudônimo+slot sem DB no daemon ORQ2, validação física com os.Lstat, normalização de aliases agy/antigravity (execenv.go:312), travas de tarefas ativas e revogação de contas."
+}

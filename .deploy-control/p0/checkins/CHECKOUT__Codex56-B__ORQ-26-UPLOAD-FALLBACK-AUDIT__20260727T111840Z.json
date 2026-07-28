@@ -1,0 +1,25 @@
+{
+  "event": "check-out",
+  "timestamp_utc": "2026-07-27T11:18:40Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "security-qa-read-only",
+  "task_ids": [
+    "ORQ-26-UPLOAD-FALLBACK-AUDIT"
+  ],
+  "status": "DONE_READ_ONLY_CRITICAL_CORRECTION",
+  "files_changed": [
+    ".deploy-control/p0/evidence/orq-9-issues-exit-criteria.md"
+  ],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Codex56-B__TO_Kiro-PRINCIPAL-TL__20260727T111840Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-26-UPLOAD-FALLBACK-AUDIT__20260727T111840Z.json"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq-9-issues-exit-criteria.md:314"
+  ],
+  "reported_to": [
+    "Kiro-PRINCIPAL-TL@100.117.245.15:wB:p1",
+    "Codex56-TL@ORQ2:w5:pC"
+  ]
+}

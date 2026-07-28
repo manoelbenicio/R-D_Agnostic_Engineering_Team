@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-26T23:05:55Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "SOL-TEMA-8-SCOPE-UPDATE",
+  "status": "DONE",
+  "reported_to": "Kiro-PRINCIPAL-TL",
+  "evidence": [
+    ".deploy-control/p0/evidence/sol-tema-8-scope-update.md"
+  ],
+  "summary": "Atualização de escopo confirmada. Suporte verificado em execenv.go para CODEX (linha 287), KIRO (linha 303) e AGY (linha 314). Ajuste em daemon.go:3448 para preencher CredentialAccountHome a partir de ~/.agent-cred-homes/slots/slot-NNN/home desbloqueia a execução dos 3 runtimes mandatórios."
+}

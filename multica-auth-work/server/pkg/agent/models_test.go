@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -1187,7 +1188,7 @@ func TestDiscoverAntigravityModelsSurfacesCommandFailure(t *testing.T) {
 	fake := filepath.Join(t.TempDir(), "agy")
 	writeTestExecutable(t, fake, []byte("#!/bin/sh\necho broken >&2\nexit 7\n"))
 
-	_, err := discoverAntigravityModels(context.Background(), fake)
+	_, err := discoverAntigravityModels(context.Background(), fake, "")
 	if err == nil || !strings.Contains(err.Error(), "model discovery failed") {
 		t.Fatalf("expected explicit command failure, got %v", err)
 	}
@@ -1203,7 +1204,7 @@ func TestDiscoverAntigravityModelsSurfacesTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
 
-	_, err := discoverAntigravityModels(ctx, fake)
+	_, err := discoverAntigravityModels(ctx, fake, "")
 	if err == nil || !strings.Contains(err.Error(), "timed out") {
 		t.Fatalf("expected explicit timeout, got %v", err)
 	}
@@ -1244,6 +1245,41 @@ func TestListModelsAntigravityCachesPerExecutable(t *testing.T) {
 	}
 	if len(gotSecond) != 1 || gotSecond[0].ID != "Second Model" {
 		t.Fatalf("second executable models = %+v", gotSecond)
+	}
+}
+
+func TestListModelsAntigravityUsesProvidedHome(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows model discovery intentionally fails closed before process start")
+	}
+	fakeDir := t.TempDir()
+	fake := filepath.Join(fakeDir, "agy")
+	home := filepath.Join(fakeDir, "account-home")
+	if err := os.Mkdir(home, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(home, "session.marker"), []byte("present"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	writeTestExecutable(t, fake, []byte("#!/bin/sh\n[ -f \"$HOME/session.marker\" ] || exit 7\necho 'Isolated Model'\n"))
+
+	key := discoveryCacheKeyWithHome("antigravity", fake, home)
+	modelCacheMu.Lock()
+	delete(modelCache, key)
+	modelCacheMu.Unlock()
+	t.Cleanup(func() {
+		modelCacheMu.Lock()
+		delete(modelCache, key)
+		delete(modelCacheFlights, key)
+		modelCacheMu.Unlock()
+	})
+
+	got, err := ListModelsWithHome(context.Background(), "antigravity", fake, home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].ID != "Isolated Model" {
+		t.Fatalf("models = %+v", got)
 	}
 }
 

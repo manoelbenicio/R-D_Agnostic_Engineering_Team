@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:00:02Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "UI-GAPS-SQUAD-RUNTIME",
+  "status": "DONE",
+  "reported_to": "Kiro-PRINCIPAL-TL (wB:p1), Codex56-TL (w5:pC)",
+  "evidence": [
+    ".deploy-control/p0/evidence/ui-gaps-squad-runtime.md"
+  ],
+  "summary": "Análise de lacunas de UI concluída em modo READ-ONLY. Mapeado AssigneePicker (assignee-picker.tsx:76,215-234), verificado que project.lead_type NÃO aceita squad no banco (034_projects.up.sql:10 CHECK lead_type IN ('member','agent')), e mapeado a restrição do botão de deletar runtime em runtime-list.tsx:473,582 e runtime-detail.tsx:114,485."
+}

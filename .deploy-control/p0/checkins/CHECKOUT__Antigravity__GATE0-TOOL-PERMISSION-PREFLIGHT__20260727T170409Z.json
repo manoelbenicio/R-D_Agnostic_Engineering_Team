@@ -1,0 +1,25 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T17:04:09Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Mandatory Gate 0 tool and permission preflight inventory audit",
+  "finding": "Produced gate0-tool-permission-preflight-report.md. Audited required tools: Go 1.26.1, sqlc v1.31.1, Docker 28.1.1, Tailscale 1.94.3, git 2.50.1, Python 3.9.21, Node v22.14.0/pnpm 10.5.2, OpenSSH 8.7p1, curl 8.5.0, jq-1.6. Missing: asm-exec standalone binary (handled via dynamic resolution wrapper). IAM/Access: EC2 read-only role, SSH to ORQ1 (100.118.244.61), Secrets Manager dynamic reference without GetSecretValue. Services/Ports: Backend 18080 OK (200), Frontend 13100 OK (200), Serve 443 OFF (No serve config), PostgreSQL 5432. Space: /tmp = 7.4G free (5% used), / = 5.8G free (89% used), private 0700 cache configured. Started ZERO mutations, builds, tests, or deploys. Delivered preflight SHA256 78e024536323cd8d16fb65af181d79cb2b360e64973c2436f2e687bd67b89e33 to General-TL.",
+  "action_taken": "Created .deploy-control/p0/evidence/gate0-tool-permission-preflight-report.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only preflight operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gate0-tool-permission-preflight-report.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T170409Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GATE0-TOOL-PERMISSION-PREFLIGHT__20260727T170409Z.json"
+  ],
+  "preflight_sha256": "78e024536323cd8d16fb65af181d79cb2b360e64973c2436f2e687bd67b89e33",
+  "non_claims": [
+    "gate 0 preflight audit, no implementation started, no build, no test execution, no deploy, no secret read, no GetSecretValue, no DB/AWS/board mutation"
+  ],
+  "blocker": null
+}

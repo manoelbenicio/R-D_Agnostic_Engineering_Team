@@ -1,0 +1,31 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56-Z",
+  "timestamp_utc": "2026-07-27T14:00:21Z",
+  "lane": "Z03",
+  "pane_id": "w8:p4",
+  "task": "ORQ-41-UNINTENDED-TASK-FORENSIC-AUDIT",
+  "issue": {
+    "identifier": "ORQ-41",
+    "id": "666f1ead-7fe9-4051-bab9-5d0a936c4701"
+  },
+  "status": "DONE",
+  "verdict": "BLOCK",
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-unintended-task-forensic-audit.md"
+  ],
+  "evidence_sha256": {
+    ".deploy-control/p0/evidence/orq41-unintended-task-forensic-audit.md": "be8d6863678698e16eb8790e41e2a052d1fa653e65893496f399373a8191a313"
+  },
+  "roots": {
+    "ORQ-39": "f460ed12-d44d-4634-8032-ad6d6e05264e",
+    "ORQ-40": "07cdc53b-e87c-42f1-8b90-593ee545c920"
+  },
+  "containment": "VERIFIED: both roots terminal; recursive DB descendants total=0 and active=0 in two snapshots; no task-tagged process or task-local crew session active; global active queue=0 at cutoff.",
+  "effects": "ORQ-39 created a clean local branch/worktree and changed its issue todo->in_progress. ORQ-40 created an evidence file, changed todo->in_progress->blocked, created one comment and metadata key waiting_on. No Codex install/update/config, Git commit/push, build/test, deploy/restart or live upload was evidenced on observed surfaces.",
+  "blocker": "Historical effects cannot be fully bounded: ORQ-39 has 55 tool_use/2 tool_result; ORQ-40 has 30 tool_use/0 tool_result; crew author_specs has no result/child ID; command exit statuses are absent.",
+  "replay": "PROHIBITED: never replay, retry, resume or clone either root task. Any future business work must use a new authorized task and clean worktree after ORQ-41 trigger decoupling is implemented and gated.",
+  "safe_status_recommendation": "Keep ORQ-39 and ORQ-40 blocked/unassigned. Keep ORQ-41 todo/high/unassigned and do not mark done from this audit alone.",
+  "independent_review": "ACCEPT: all ten review criteria passed; no sensitive value patterns found; no correction required.",
+  "safety": "Read-only forensic audit. No replay, cancel, comment, assignment, status mutation, cleanup, reset, checkout, chmod, build, test, install, deploy, restart, push, migration or secret/env/token value access by this auditor. Only the report and this checkout were created."
+}

@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:54:30Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-ORQ17-AUTH-SECOND-PEER-REVIEW",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-second-peer-review.md"
+  ],
+  "summary": "Segunda Auditoria Adversarial de Auth e Acesso ORQ-17 (GTL-59) concluída com veredito BLOCK em modo READ-ONLY. Identificada confusão de topologia entre ORQ1 e ORQ2, detectada colisão de portas entre Next.js e Caddy em 13100, rejeitado o uso de IP cru em tailscale cert, vetada a proposta de pg_hba trust no PostgreSQL em favor de scram-sha-256 e comprovado que a API Go utiliza JWT Bearer Token em /auth/login sem a tabela fictícia user_session."
+}

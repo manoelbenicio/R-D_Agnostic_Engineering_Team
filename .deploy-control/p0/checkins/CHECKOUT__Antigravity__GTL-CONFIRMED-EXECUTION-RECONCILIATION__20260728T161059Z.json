@@ -1,0 +1,35 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T16:10:59Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-15",
+    "ORQ-23",
+    "ORQ-33",
+    "ORQ-34",
+    "ORQ-26",
+    "ORQ-35",
+    "ORQ-36",
+    "ORQ-37"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "target_host": "ORQ1 (100.118.244.61)",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Execution of GTL confirmed execution reconciliation: todo->in_progress for ORQ15, ORQ23, ORQ33, ORQ34 and todo preservation for exceptions",
+  "finding": "Produced gtl-confirmed-execution-reconciliation.md. Moved ORQ-15 (4ddb3400), ORQ-23 (6230b5c0), ORQ-33 (dfeabbdc), ORQ-34 (685524e4) status-only to in_progress (GET-back verified 100%). Preserved assignees intact. Preserved todo status for exceptions: ORQ-26 (awaiting wB:p2 effective start), ORQ-36 (awaiting wN:p2 ACK), ORQ-37 (provider monthly limit on w6:p2), ORQ-35. Preserved in_progress status for ORQ-12 and ORQ-18. Column counts: BEFORE (blocked=5, done=6, in_progress=2, in_review=3, todo=8) vs AFTER (blocked=5, done=6, in_progress=6, in_review=3, todo=4). Confirmed active task queue count is 0 (zero duplicate tasks created). Recorded reconciliation SHA256 ad424f5f5a797ac5483131c31a64842c77f16c0bbbc8696550744fdad763f89c.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-confirmed-execution-reconciliation.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Status-only reconciliation operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-confirmed-execution-reconciliation.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260728T161059Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-CONFIRMED-EXECUTION-RECONCILIATION__20260728T161059Z.json"
+  ],
+  "confirmed_reconciliation_sha256": "ad424f5f5a797ac5483131c31a64842c77f16c0bbbc8696550744fdad763f89c",
+  "non_claims": [
+    "gtl confirmed execution reconciliation, no assignee change, no duplicate task creation, no GetSecretValue, no product code edit"
+  ],
+  "blocker": null
+}

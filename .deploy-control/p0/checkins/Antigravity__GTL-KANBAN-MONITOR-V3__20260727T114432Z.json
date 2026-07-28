@@ -1,0 +1,22 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T114432Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-30R",
+  "task_ids": ["GTL-KANBAN-MONITOR-V3"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T114432Z.msg"
+  ],
+  "files_changed": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v2.md"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v2.md"
+  ],
+  "summary": "Design V3 do Kanban Integrity Monitor concluido. Paths reais (server/pkg/protocol/events.go, board-card.tsx), janela de graca para todo, jsonb_agg em dependencias blocked, de-duplicacao + evento clear, advisory lock 4247 pos-sweeper, NOT EXISTS em done, backlog/in_review fora de escopo, EXPLAIN plans e 7 testes Go.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

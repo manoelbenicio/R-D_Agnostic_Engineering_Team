@@ -1,0 +1,25 @@
+{
+  "event": "CHECKIN_DELTA_GATE0",
+  "timestamp_utc": "2026-07-27T17:26:00Z",
+  "agent": "Opus48#A", "pane_id": "w6:p1", "lane": "A",
+  "issue_id": "ORQ-26", "topic": "CI push/gate preflight",
+  "status": "AWAITING_GENERAL_TL_ACCEPTANCE",
+  "execution_started": false,
+  "push_or_pr_executed": false,
+  "blocker": "gh AUTH VERMELHO: gh 2.96.0 instalado em /usr/bin/gh mas 'gh auth status' responde 'You are not logged into any GitHub hosts'. Sem via alternativa: credential.helper NAO configurado, ~/.git-credentials inexistente, GH_TOKEN e GITHUB_TOKEN vazios. O remote e HTTPS (github.com/manoelbenicio/R-D_Agnostic_Engineering_Team.git) e nao ha remote SSH, logo NAO ha push possivel e o comando unico nao pode ser preparado como executavel.",
+  "green": {
+    "commit": "d2447183c5fb7d93c07ca4afdd86d4ab9ac374ee de Codex, 2026-07-27T12:35:04Z, 'ci(orq26): add temporary ephemeral-Postgres gate for upload contract tests', contido APENAS em ci/orq26-db-gate",
+    "worktree": "/home/ec2-user/workspace/worktrees/ci-orq26-db-gate no branch ci/orq26-db-gate, HEAD em d244718, ZERO linhas sujas",
+    "diff": "3 arquivos, 609 insercoes, 24 remocoes: .github/workflows/orq26-db-gate.yml (+227), multica-auth-work/server/internal/handler/file.go (78 alteradas), handler/file_test.go (+328)",
+    "workflow_present": ".github/workflows/orq26-db-gate.yml existe no worktree",
+    "tools": "git 2.50.1, gh 2.96.0, 16G livres em /"
+  },
+  "caveats_that_change_the_plan": [
+    "ci/orq26-db-gate NAO tem upstream e nao consegui confirmar se existe no origin (ls-remote depende da mesma credencial ausente) - o primeiro push seria CRIACAO de branch e precisa de -u",
+    "o worktree PRINCIPAL esta com 687 LINHAS SUJAS em integration/dev-transition-candidate-20260719, incluindo .deploy-control/HERDR_COMMS_GUIDE.md modificado e centenas de delecoes em agentic-prompts-hub - nada disso pertence ao ORQ-26; qualquer push deve sair DE DENTRO do worktree ci-orq26-db-gate, com remote e refspec explicitos",
+    "o commit altera CODIGO DE PRODUTO (handler/file.go), nao apenas CI - amplia o raio do gate e, na minha leitura, exige revisao do diff de file.go antes do push; NAO a fiz, esta fora deste delta"
+  ],
+  "single_command_proposed_not_executed": "git -C /home/ec2-user/workspace/worktrees/ci-orq26-db-gate push -u origin ci/orq26-db-gate:ci/orq26-db-gate  (sem force, sem --no-verify, sem tocar main nem o branch de integracao, sem abrir PR; PR seria segundo passo com autorizacao propria)",
+  "permissions_needed": "token com escopo repo para push em manoelbenicio/R-D_Agnostic_Engineering_Team, permissao de pull_request se houver PR, e Actions habilitado para o orq26-db-gate.yml disparar. Provisionamento e do General-TL ou do owner: eu nao instalo, nao logo e nao leio credencial.",
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC"]
+}

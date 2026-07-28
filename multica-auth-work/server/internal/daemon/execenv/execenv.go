@@ -530,6 +530,10 @@ func Reuse(params ReuseParams, logger *slog.Logger) *Environment {
 		agyHome := filepath.Join(env.RootDir, "antigravity-home")
 		if err := prepareAntigravityHome(agyHome, AntigravityHomeOptions{AccountHome: params.CredentialAccountHome}, logger); err != nil {
 			logger.Warn("execenv: refresh antigravity-home failed", "error", err)
+			// Fail closed on reuse. Returning nil makes the caller run the
+			// full Prepare path, which either creates a fresh isolated HOME
+			// from the same validated source or returns an explicit error.
+			return nil
 		} else {
 			env.AntigravityHome = agyHome
 		}

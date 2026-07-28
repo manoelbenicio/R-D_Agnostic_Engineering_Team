@@ -1,0 +1,18 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T12:23:31Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-I04-ORQ17-AUTH-REGRESSION-TESTS-IMPLEMENTATION",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-regression-tests-implementation.md"
+  ],
+  "hashes": {
+    "auth_test.go": "63836ab863d02e66bd01c94c8871154374b2efae63f200725cbe25ff6c001ee9",
+    "git_diff_fingerprint": "800bedb6e2d86c56263033c67ca89e6f923b5fc48d1c6ec144d7e96942888754"
+  },
+  "summary": "Implementação dos testes de regressão de auth da ORQ-17 (GTL-I04) concluída em worktree isolado /home/ec2-user/workspace/worktrees/gtl-orq17-auth-tests na base 0cb8aebb. Zero edições em código de produção. 5 novos testes em auth_test.go provando o comportamento atual do backend Go (BYPASS=true com FRONTEND_ORIGIN FQDN desativa bypass e requisições proxied retornam 401 sem JWT). Todos os 6 gates (gofmt, go test, go vet, go build, git diff --check) executados com 100% de aprovação."
+}

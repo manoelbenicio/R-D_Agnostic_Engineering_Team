@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T113512Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-12",
+  "task_ids": ["GTL-ORQ18-READINESS"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq18-runtime-delete-readiness.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T113512Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq18-runtime-delete-readiness.md"
+  ],
+  "summary": "Audit READ-ONLY da ORQ-18 Runtime Delete UI finalizado. Worktree isolado na Lane B. Plano de rebase pos-ORQ26 com zero conflito de mesclagem. Cobertura de testes confirm/cancel/pending/success/409 pivot/409 plan changed/error toast/banners validada. Veredito: PRONTO.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

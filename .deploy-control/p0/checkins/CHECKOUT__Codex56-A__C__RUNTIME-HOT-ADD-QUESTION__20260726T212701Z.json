@@ -1,0 +1,88 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T21:27:01Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "RUNTIME-HOT-ADD-QUESTION"
+  ],
+  "status": "DONE",
+  "answer": "NO",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Codex56-A__TO_Kiro-PRINCIPAL-TL__20260726T212701Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__RUNTIME-HOT-ADD-QUESTION__20260726T212701Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "grep -rn \"agentBrainGatewayRequired\" multica-auth-work/server/internal/daemon/*.go",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "REVIEWED (5 call sites: daemon.go:970 definicao, 1090 appendProfileRuntimes, 1451 refreshWorkspaceRuntimeProfiles, 3227 resolveTaskAgentEntry, 4045 obs)"
+    },
+    {
+      "command": "sed -n '405,450p' multica-auth-work/server/internal/daemon/config.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "REVIEWED (config.go:425-430 substitui o mapa: agents = map[string]AgentEntry{provider: entry})"
+    },
+    {
+      "command": "grep -rn \"func agentBrainBuiltInCLIFor\" -A 30 multica-auth-work/server/internal/daemon/*.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "REVIEWED (config.go:144-155: apenas claude-code->claude, codex->codex, openai-compatible->cline; default = erro)"
+    },
+    {
+      "command": "grep -rn \"SIGHUP|reloadConfig|hot reload\" multica-auth-work/server/internal/daemon/*.go cmd_daemon*.go",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "PASS (zero hits: nao existe reload de config sem novo processo)"
+    },
+    {
+      "command": "grep -n 'Use:   \"' multica-auth-work/server/cmd/multica/cmd_runtime.go cmd_runtime_profile.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "REVIEWED (runtime: list/usage/activity/update/delete, sem add; runtime profile: create/update/delete/set-path/unset-path)"
+    },
+    {
+      "command": "curl -s -o /dev/null -w %{http_code} http://100.118.244.61:{18080,8080,3100}/health e /api/runtimes",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "000 em todas (backend do ORQ1 nao alcancavel do ORQ2); http://100.118.244.61:20128/ = 307 (gateway alcancavel)"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    "config.go:425-430 — em DevelopmentEnabled && Gateway.Required o mapa de agents e SUBSTITUIDO por um unico provider derivado de CLIKind; explica 'Agents: claude' com 6 CLIs instalados",
+    "daemon.go:1090 — appendProfileRuntimes retorna antes de buscar perfis: 'Gateway-required mode exposes only the frozen built-in CLIKind runtime. Do not fetch, resolve, register, or remember workspace executable paths.'",
+    "daemon.go:1451 — refreshWorkspaceRuntimeProfiles (o caminho a quente documentado, 'instead of requiring a daemon restart') e no-op em gateway-required; wakeup.go:287-316 EventDaemonRuntimeProfilesChanged cai no mesmo no-op",
+    "daemon.go:3227-3248 — resolveTaskAgentEntry rejeita runtime custom (custom_runtime_not_allowed) e provider != built-in (builtin_runtime_provider_mismatch) no launch",
+    "daemon.go:970 — agentBrainGatewayRequired() = DevelopmentEnabled && Gateway.Required; cmd_daemon.go:136 e 420 leem --agent-brain-cli-kind/AGENT_BRAIN_CLI_KIND so no start",
+    "config.go:144-155 — CLIKind tem apenas 3 mapeamentos built-in: claude-code->claude, codex->codex, openai-compatible->cline; kiro-cli, agy e opencode nao tem mapeamento",
+    "cmd_daemon.go:82-83 — flags --daemon-id e --device-name existem, viabilizando processos de daemon paralelos (1 processo = 1 runtime neste modo)"
+  ],
+  "summary": "RESPOSTA: NAO. Com AGENT_BRAIN_GATEWAY_REQUIRED=true (+ DEVELOPMENT_ENABLED=true) nao existe caminho a quente para registrar runtime novo. O conjunto de runtimes e congelado no LoadConfig (config.go:425-430 troca o mapa de agents por UM provider derivado do CLIKind), o fetch de perfis custom e desligado (daemon.go:1090), o proprio hot-refresh que existiria para evitar restart e no-op (daemon.go:1451 + wakeup.go:287-316), e o launch rejeita runtime custom/provider divergente (daemon.go:3227-3248). Nao ha SIGHUP/reload (zero hits). 'multica runtime' nao tem subcomando add; 'multica runtime profile create' e mutacao inutil neste modo. Achado adicional decisivo: so 3 CLIKinds tem built-in (claude-code->claude, codex->codex, openai-compatible->cline); kiro-cli, agy e opencode nao ficam online neste modo nem com restart, e cada processo expoe 1 runtime, entao a squad exigiria 3 daemons com --daemon-id/--device-name distintos. Restart e 2o processo sao STOP-AND-WAIT: escalado, nao executado.",
+  "non_claims": [
+    "nao provei que /tmp/multica-auth-fixed (build de 24/07 10:58) e identico ao codigo lido em integration/dev-transition-candidate-20260719; recomendei 2 comandos read-only no ORQ1 (tr '\\0' '\\n' < /proc/1744675/environ | grep ^AGENT_BRAIN_ e daemon status) para fechar esse gap",
+    "nao executei nada no ORQ1; backend 18080/8080/3100 nao alcancavel do ORQ2 (000)",
+    "nao investiguei 'No models available' (gate de readiness/route-model, distinto do registro de runtime)",
+    "nao reiniciei daemon, nao matei processo, nao instalei, nao apaguei, nao commitei, nao criei runtime profile"
+  ],
+  "blocker": "Colocar codex/cline online exige novo processo de daemon (restart ou daemon paralelo) — PROIBIDO para mim e classe STOP-AND-WAIT. Owner: decisao escrita do dono. Next action: autorizar 1 processo por CLIKind com --daemon-id/--device-name distintos e AGENT_BRAIN_ROUTE_MODEL valido; kiro-cli/agy/opencode exigem decisao separada (nao ha mapeamento built-in).",
+  "handoffs": [
+    {
+      "to_lane": "OWNER",
+      "reason": "autorizacao para novo processo de daemon por CLIKind, e decisao sobre kiro-cli/agy/opencode que nao tem mapeamento built-in em modo gateway-required",
+      "file": ".deploy-control/inbox-tm/FROM_Codex56-A__TO_Kiro-PRINCIPAL-TL__20260726T212701Z.msg"
+    }
+  ],
+  "reported_to": [
+    "KIRO-PRINCIPAL-TL (host 100.117.245.15, pane wB:p1) via item 2 + copia duravel em inbox-tm"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

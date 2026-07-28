@@ -1,0 +1,56 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:44:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-41",
+  "issue_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "issue_number": 41,
+  "task_ids": ["ORQ41-IMPLEMENTATION-WAVE-OWNERSHIP-PLAN"],
+  "status": "DONE_PLAN_ONLY",
+  "deliverable": ".deploy-control/p0/evidence/orq41-implementation-wave-plan.md",
+  "eta": "dentro do alvo de 25 min",
+  "waves": {
+    "W1": "LANE EXCLUSIVA de schema: migrations NEXT_CANONICAL_a/_c/_d, pkg/db/queries/{task_execution_request,task_trigger_audit,issue_workflow_authorization}.sql e pkg/db/generated/** como SAIDA de sqlc generate. Justificativa medida: sqlc.yaml usa schema: migrations/ e queries: pkg/db/queries/ com out pkg/db/generated, logo a ordem migration->query->generate e obrigatoria, e codigo gerado em dois worktrees da conflito puro. NEXT_CANONICAL_b fica FORA de W1 de proposito",
+    "W2": "Refactor de gatilho: issue.go (C1 2535, C2 2559, C3 3035, C4 3050), comment.go (C6 1127, C7 1136, C8 1140, C9 1147), issue_child_done.go (C10 302, C11 357 + fan-out 259/266/268), squad.go (C5 1007), onboarding_shim.go (C12 329), service/issue.go (C13 388, C14 466), service/autopilot.go (C15 271, C16 275), service/task.go e novo service/execution_trigger.go como unico ponto autorizado de enqueue. Nao toca commitledger nem router.go",
+    "W3": "API/RBAC: router.go, novo handler/issue_run.go, novo handler/cancel_task.go, novo middleware/rbac_execute.go",
+    "W4": "Ledger/HMAC em lane separada, paralela a W2/W3: daemon/config.go para popular CommitLedgerHMACSecret, commitledger/replay_gate.go para a interface e novo service/replay_gate_db.go",
+    "W5": "Testes adversariais com dono INDEPENDENTE de quem escreveu W2/W3: 6 arquivos de teste cobrindo os 27 casos da V2.8",
+    "W6": "Frontend: board-card.tsx, issue-actions-dropdown.tsx, issue-actions-context-menu.tsx, use-issue-actions.ts e novo run-now-dialog.tsx",
+    "W7": "SOZINHA e por ultimo: NEXT_CANONICAL_b, o indice de 4 estados, executado pelo MESMO dono de W1 porque regenera pkg/db/generated"
+  },
+  "critical_dependency": "W4 amarra W2: config.go:115 declara CommitLedgerHMACSecret e daemon.go:4145 le, mas NAO existe atribuicao em lugar algum, logo todo ledger nasce NewFailClosed com EverSaturated=true. Se o gate do Autopilot entrar antes de W4, o Autopilot PARA - fail-closed correto, efeito indesejado. Exige decisao escrita do owner sobre o intervalo.",
+  "forensic_conflict": "W2 toca os mesmos quatro arquivos que a auditoria forense esta lendo (issue.go, comment.go, issue_child_done.go, autopilot.go). W2 nao comeca antes de a forense liberar, OU roda em worktree isolado. RECOMENDO worktree isolado: nao serializa a frota e nao contamina a evidencia.",
+  "integration_order": "W1 e W4 em paralelo no inicio; W1->W2->W3 serial; W5 e W6 em paralelo apos W3; W7 sempre por ultimo e sozinho, para o rollback ser atribuivel.",
+  "flag_defaults": "off em W1-W5 (com W5 rodando a suite nova em on), warn em staging na W6, on na W7. Invariante em toda fase on: campo omitido = NAO executa.",
+  "rollback": "W2 e W3 revertem por flag em segundos; W1 por down das migrations aditivas; W4 remover o secret volta ao estado atual mas PARA o Autopilot; W6 exige rebuild; W7 e o unico nao trivial (recriar o indice de 2 estados) e por isso nunca compartilha janela.",
+  "squad_parallelism": "W7 mantem chave (issue_id, agent_id) e nao (issue_id), preservando a intencao registrada no comentario de 037_fix_pending_task_unique_index.up.sql; a unica mudanca e o predicado de 2 para 4 estados.",
+  "preceding_gates": [
+    "G-a os cinco rulings de produto da V2.7 - sem eles W2 nao tem contrato",
+    "G-b P2: existe fluxo legitimo que enfileira durante running? bloqueia W7",
+    "G-c divergencia de titulo do ORQ-41, ruling do GTL",
+    "G-d decisao sobre o Autopilot parar no intervalo entre gate e W4",
+    "G-e autorizacao escrita do owner por onda",
+    "G-f liberacao da forense nos quatro arquivos de W2 ou aprovacao do worktree isolado"
+  ],
+  "open_questions_not_asserted": [
+    "se o modelo de papeis permite separar executar e cancelar de editar issue",
+    "nomes dos arquivos NOVOS sao sugestao, nao fato; podem ser renomeados desde que o conjunto siga disjunto",
+    "numeros de migration mantidos como NEXT_CANONICAL_*",
+    "estado atual da forense nos quatro arquivos de W2 - nao consultei"
+  ],
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-implementation-wave-plan.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__ORQ41-IMPLEMENTATION-WAVE-PLAN__20260727T134400Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "nenhuma implementacao; nenhum codigo, board, API, schema, build, teste, deploy ou credencial tocado",
+    "nao alterei assignee nem postei comentario (freeze vigente); nao sou registrar, nenhum card criado",
+    "NAO reexecutei ORQ-39, ORQ-40 nem qualquer issue preservada"
+  ],
+  "next": "Aguardando G-a a G-f e distribuicao das ondas pelo General-Tech-Lead.",
+  "blocker": null
+}

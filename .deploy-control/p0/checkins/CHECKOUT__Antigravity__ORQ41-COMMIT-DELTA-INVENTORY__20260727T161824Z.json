@@ -1,0 +1,30 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:18:24Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-41"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "worktree": "/home/ec2-user/workspace/worktrees/gtl-orq41-w4-autopilot",
+  "branch": "agent/opus48-d/orq41-w4-autopilot",
+  "assigned_scope": "Mechanical commit delta inventory of ORQ-41 c047c0b..e0b0155",
+  "finding": "Produced machine-readable TSV orq41-commit-delta-inventory.tsv and Markdown orq41-commit-delta-inventory.md. Direct parent of e0b0155 is c047c0b7ed710f260e76a6ee50257b2a5f96dc70. Changed files: 4 (+297/-109 across daemon_ledger_summary.go, daemon_ledger_summary_test.go, autopilot.go, autopilot_replay_test.go). Worktree status is 100% CLEAN. git show --check returned PASS (0 formatting errors). Forbidden path check: zero changes to router, migrations, generated, or queries. Delivered SHA256 fb7ef4819ba49f735041bd1ac48cd36f30d666c49778bd62b4b996bff6e9d7d9 for independent reviewer.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq41-commit-delta-inventory.tsv, .deploy-control/p0/evidence/orq41-commit-delta-inventory.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only mechanical operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-commit-delta-inventory.tsv",
+    ".deploy-control/p0/evidence/orq41-commit-delta-inventory.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T161824Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ41-COMMIT-DELTA-INVENTORY__20260727T161824Z.json"
+  ],
+  "delta_inventory_sha256": "fb7ef4819ba49f735041bd1ac48cd36f30d666c49778bd62b4b996bff6e9d7d9",
+  "non_claims": [
+    "commit delta inventory, no correctness interpretation, no test execution, no file editing, no Git mutation, no board mutation"
+  ],
+  "blocker": null
+}

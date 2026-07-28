@@ -1,0 +1,114 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:27:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "GTL-83-Z01-MASTER-PEER-REVIEW"
+  ],
+  "status": "DONE",
+  "verdict": "BLOCK (amendavel com 7 amendments)",
+  "mode": "READ_ONLY",
+  "audited_artifact": {
+    "path": ".deploy-control/p0/evidence/gtl-z01-master-integration-control.md",
+    "sha256": "14b988c1306aaa8cc51484f41aeb6c65335ef91921c850da4491263cf15f042b",
+    "bytes": 46018,
+    "lines": 562,
+    "mtime": "12:19"
+  },
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-z01-master-integration-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__GTL-83-Z01-MASTER-PEER-REVIEW__20260727T122700Z.json"
+  ],
+  "tests": [
+    {
+      "command": "sha256sum + wc -l do master",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "SHA 14b988c1... confirma o informado no dispatch; 46018 bytes, 562 linhas"
+    },
+    {
+      "command": "ls server/migrations | grep ^12 ; grep -c ^127",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "base termina em 126_runtime_profile_protocol_family_native_runtimes; ZERO 127 na base"
+    },
+    {
+      "command": "varredura dos 18 worktrees por migrations ^12[789]",
+      "exit_code": 0,
+      "assertions_or_tests": 18,
+      "result": "unico 127 materializado: /workspace/worktrees/gtl-i03-orq13-phase1 -> 127_task_usage_thinking_level.{up,down}.sql"
+    },
+    {
+      "command": "git worktree list | wc -l",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "18 (confere com root + 7 recentes + 10 P0 do master)"
+    },
+    {
+      "command": "ls -lt .deploy-control/p0/evidence + leitura de cabecalhos/vereditos dos artefatos mais novos",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "GTL-69R PASS 12:14:53Z (push em branch efemera e o mecanismo oficial); GTL-73 correcao do manifesto 12:11Z; GTL-77 BLOCK do V7 12:17; GTL-79 V8 12:18 sem peer; GTL-68 PASS condicional com split plan 12:05; GTL-82 retention V2 PASS 12:20 + peer review PASS 12:22"
+    },
+    {
+      "command": "nl -ba gtl-orq23-durable-cutover-plan.md | sed -n '16,21p'",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "known-bad confere: green 88ca4f39..., .new/.pre-token-only 5f9ec49e..., .pre-agy-fix f3463086..., .previous e0510d7d..."
+    },
+    {
+      "command": "grep -c 'orq18-independent-test-audit' no master; nl no gtl-tmp-umask-remediation-plan.md:13 e :127",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "master NAO cita o GTL-42 (0 ocorrencias) apesar de ser 12:12, anterior a ele; as citacoes de seguranca do master conferem linha a linha"
+    }
+  ],
+  "amendments": [
+    "A1 ORQ-26 CI: master mantem BLOCK e chama V2 push-only de nao autorizada, mas GTL-69R (12:14:53Z) e PASS com ruling oficial de que workflow_dispatch e impossivel fora da default branch e push em branch efemera ci/orq26-db-gate e o mecanismo correto; pendencia real sao as autorizacoes B1-B4 do owner, nao security review",
+    "A2 Kanban: V7 nao esta sem peer review (GTL-77 = BLOCK) e V8/GTL-79 e o artefato mais novo, pendente de GTL-80; a reserva de numero nao pode ficar amarrada ao V7",
+    "A3 Fundir ORQ-21+ORQ-12+ORQ-13 em um 128 atomico esta errado: viola o split plan do GTL-68 (:55-61, :69), nao ha constraint compartilhada porque as duas colunas sao snapshots nullable e UNIQUE(task_id,provider,model) fica inalterado, e faz o unico item com PASS esperar um patch REJECT",
+    "A4 Contradicao interna: §1.2 poe material medido acima de design, mas §3.1 da 127 ao ledger (design sem patch) e renumera o unico 127 existente (ORQ-13)",
+    "A5 ORQ-18 subclassificado: o master ignora o GTL-42 (12:12) que prova exit 124 sem terminar no worktree contra 7/7 em 111ms na base, e que o harness da raiz da 16 failed identico nas duas arvores; ORQ-18 deve virar PATCH BLOCK e §7.1 ganhar harness por pacote e exit code como criterio",
+    "A6 Retention: spec V2 tem PASS duplo (GTL-82 12:20 e peer review 12:22, posterior ao master); a pendencia e so o ruling de prazo do owner",
+    "A7 Reserva nao durable: o proprio master admite estar untracked; TL deve registrar o mapa com fingerprint antes de liberar qualquer L-RED-*"
+  ],
+  "canonical_map_proposed": {
+    "127": "task_usage_thinking_level (ORQ-13, ja materializado; GTL-68 criterios 2 e 3 pendentes)",
+    "128": "task_ledger_summary (ledger; P0 do segredo HMAC)",
+    "129": "task_usage_account_id (ORQ-12 snapshot no claim; depois da ORQ-21 reescrita)",
+    "130": "project_squad_lead",
+    "131": "runtime_history_retention (spec V2 PASS; ruling de retencao do owner)",
+    "132": "kanban_integrity somente apos GTL-80 PASS do V8"
+  },
+  "confirmed_without_amendment": [
+    "(3) 18 worktrees, owners, overlap root x ORQ-23 nos dois helpers execenv, root nao e staging, DAG de 6 frentes",
+    "(4) known-bad e a distincao da copia gate1 como baseline valido mas nao rollback",
+    "(5) nove issues ORQ-12/13/15/16/17/18/21/22/23 preservadas, zero rerun, tool_use prova inicio",
+    "(6) owner decide billing/retencao/exposicao/replay/custodiante; engenharia decide numero, SQLC, locks, trigger — reforcado pelo GTL-68 endereçar a renumeracao a lideranca tecnica",
+    "(7) Skills PENDING PROOF por falta de skills-manifest.json + SHA-256; /tmp e umask com contencao pendente e sem leitura de valor",
+    "veredito global do master (BLOCK para cutover unico agora) — eu confirmo"
+  ],
+  "non_claims": [
+    "nao editei o master nem o repo; nenhum build, teste, migration, SQL, deploy, restart ou chmod nesta auditoria",
+    "nao reexecutei gates de ORQ-26, Kanban, ledger, retention ou CLI: avaliei precedencia documental contra timestamp/fingerprint mais os fatos de schema e worktree que medi",
+    "nao afirmo que o V8 esteja correto, apenas que existe, e posterior ao V7 e esta sem peer review",
+    "nao afirmo que a CI possa rodar: push segue STOP-AND-WAIT do owner (B1-B4)",
+    "nenhum valor de segredo lido"
+  ],
+  "blocker": "Master control esta stale em 5 rulings (GTL-73, GTL-69R, GTL-77, GTL-79, GTL-82) e propoe mapa de migration que inverte a propria regra de precedencia e contraria o split plan do GTL-68. Owner do conserto: Codex56#Z (w8:p4) com ratificacao do General-TL (w5:pC).",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (w5:pC) e Codex56#Z (w8:p4)",
+      "reason": "aplicar os 7 amendments e ratificar o mapa canonico 127-132 com fingerprint durável antes de liberar qualquer L-RED-*",
+      "file": ".deploy-control/p0/evidence/gtl-z01-master-integration-peer-review.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)",
+    "Codex56#Z (ORQ2 pane w8:p4)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

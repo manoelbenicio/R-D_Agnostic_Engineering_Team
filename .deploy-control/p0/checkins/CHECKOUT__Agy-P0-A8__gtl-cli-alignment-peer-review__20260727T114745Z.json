@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:47:45Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-CLI-ALIGNMENT-PEER-REVIEW",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-cli-alignment-peer-review.md"
+  ],
+  "summary": "Peer Review Adversarial do Plano de Alinhamento de Versões de CLI (GTL-46) concluído com veredito PASS em modo READ-ONLY. Auditados os alvos de versão Codex 0.145.0 e Claude Code 2.1.220 contra o release watch, corrigida a associação de topologia dos smoke tests no ORQ1, expandidos os contextos de lançamento da variável CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1, validada a migração do config.toml do Codex e aprovado o procedimento de rollback limpo via pinning npm."
+}

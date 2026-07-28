@@ -1,0 +1,96 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:04:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-39",
+  "orq_issue_id": "ORQ-39",
+  "orq_issue_uuid": "c03941bc-3bde-4de1-ab19-1ba93de0ad51",
+  "orq_assignee": "Opus48-B",
+  "orq_depends_on": [
+    "ORQ-26"
+  ],
+  "orq_related": [
+    "ORQ-38"
+  ],
+  "task_ids": [
+    "ORQ39-CITATION-REPAIR-ONLY"
+  ],
+  "status": "DONE",
+  "scope": "REPARO DE CITACAO SOMENTE. Nenhuma implementacao, nenhum workflow, nenhum teste, nenhum cartao, nenhum commit, push, PR ou merge. Nao me auto-revisei.",
+  "files_changed": [
+    ".deploy-control/p0/evidence/gtl-browser-qa-disposable-plan.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-31__GTL-ORQ31-V2-PLAN-CORRECTION__20260727T125200Z.json",
+    ".deploy-control/p0/checkins/HOLD__Opus48-B__BROWSER-QA__ORQ31-CITATION-INVALID__20260727T124700Z.json"
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-39__ORQ39-CITATION-REPAIR-ONLY__20260727T130400Z.json"
+  ],
+  "files_deleted": [],
+  "hashes": {
+    "plan_before_sha256": "4b3bbaf23bc9e8aee13589ad4cc11a164d1d4f5783cd3c9d2f445e47d7a4d348",
+    "plan_before_bytes": 39070,
+    "plan_before_lines": 680,
+    "plan_after_sha256": "9a4f51413840b8f68cb4ca0da87dc9fdbaf6c3729bdded5dd1b37a4e1d4d95b9",
+    "plan_after_bytes": 40166,
+    "plan_after_lines": 696,
+    "delta_bytes": 1096,
+    "delta_lines": 16,
+    "frozen_hash_now": "9a4f51413840b8f68cb4ca0da87dc9fdbaf6c3729bdded5dd1b37a4e1d4d95b9"
+  },
+  "citation_only_diff": [
+    {
+      "location": "linha 290, titulo da secao V2",
+      "before": "# V2 - CORRECAO PARA FECHAR GTL-R31A (ORQ-31)",
+      "after": "# V2 - CORRECAO PARA FECHAR GTL-R31A (ORQ-39)",
+      "kind": "citacao"
+    },
+    {
+      "location": "linha 293, cabecalho de metadados",
+      "before": "Cartao: **ORQ-31** (ver secao V2.13 - ambiguidade de identificador declarada)",
+      "after": "Cartao: **ORQ-39** · UUID `c03941bc-3bde-4de1-ab19-1ba93de0ad51` · assignee Opus48-B / Dependencia: **ORQ-26** (root cause do ApiContractError em uploadFile) / Citacao anterior: `ORQ-31` era provisoria e invalida e foi corrigida (ver secao V2.14)",
+      "kind": "citacao (3 linhas onde havia 1)"
+    },
+    {
+      "location": "secao V2.14",
+      "before": "## V2.14 AMBIGUIDADE DE IDENTIFICADOR - declarada, nao resolvida por mim (11 linhas descrevendo a ambiguidade dos dois ORQ-31)",
+      "after": "## V2.14 IDENTIFICADOR - RESOLVIDO (reparo de citacao, ORQ-39): cartao verificado ORQ-39 + UUID + assignee + dependencia ORQ-26; historico do identificador preservado (ORQ-31 provisorio/invalido, ORQ-31 real e Security Wave A, ORQ-38 registra o incidente); reafirmacao de que nao criei/deletei/renumerei/mesclei/mutei cartao e nao sou registrar; e nota de que os identificadores tecnicos com prefixo orq31- NAO foram renomeados",
+      "kind": "citacao"
+    }
+  ],
+  "technical_content_preserved": {
+    "assertion": "Nenhuma secao tecnica alterada: V2.0 a V2.13, V2.15 e V2.16 intactas.",
+    "spot_check": "grep -c dos 7 identificadores imutaveis (2 digests de imagem + 5 SHAs de action) devolve 14 ocorrencias no arquivo apos o reparo, iguais as de antes.",
+    "deliberately_not_renamed": [
+      ".github/workflows/orq31-browser-qa.yml (nome de arquivo proposto)",
+      "concurrency group orq31-browser-qa-${{ github.ref }}",
+      "artifact name orq31-playwright-trace"
+    ],
+    "reason": "Renomear identificador tecnico e mudanca de CONTEUDO, nao de citacao, e este dispatch autoriza apenas reparo de citacao. Recomendo renomear para orq39- quando o plano sair do congelamento, com autorizacao propria."
+  },
+  "metadata_corrected_elsewhere": [
+    "CHECKOUT__Opus48-B__ORQ-31__...20260727T125200Z.json: lane, orq_issue_id, orq_issue_uuid, orq_assignee, orq_depends_on e orq_issue_id_caveat atualizados. O NOME do arquivo mantem ORQ-31 por ser identificador de artefato ja gravado; renomear arquivo de check-out seria mutacao de historico e nao foi feito.",
+    "HOLD__Opus48-B__BROWSER-QA__ORQ31-CITATION-INVALID__20260727T124700Z.json: status RESOLVED_CITATION_REPAIRED, orq_citation_status CORRECTED, e bloco de resolucao com o novo hash congelado. O baseline sha256 anterior permanece registrado como prova do estado pre-reparo."
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC), com pedido de peer reviewer DIFERENTE de Agy-P0-A7",
+  "summary": "Reparo de citacao aplicado no plano de browser QA e nos dois artefatos de metadados. O plano passa a citar ORQ-39 com UUID c03941bc-3bde-4de1-ab19-1ba93de0ad51, assignee Opus48-B, e ORQ-26 como dependencia; a secao V2.14 foi reescrita de ambiguidade declarada para identificador resolvido, preservando o historico que explica a correcao, incluindo que o unico ORQ-31 real e Security Wave A e que ORQ-38 registra o incidente de nivel de reporte. Hash antes 4b3bbaf2...d348 com 39070 bytes e 680 linhas; hash depois 9a4f5141...95b9 com 40166 bytes e 696 linhas; delta de 1096 bytes e 16 linhas, todo ele nas tres localizacoes de citacao listadas. Conteudo tecnico preservado: as secoes V2.0 a V2.13, V2.15 e V2.16 nao foram tocadas, e a contagem dos sete identificadores imutaveis continua em 14 ocorrencias. Identificadores tecnicos com prefixo orq31- foram deliberadamente NAO renomeados, porque renomear e mudanca de conteudo e nao de citacao.",
+  "non_claims": [
+    "Nao implementei nada: nenhum workflow criado, nenhum teste escrito, nenhum comando do plano executado",
+    "Nao criei, deletei, renumerei, mesclei nem mutei cartao algum; nao sou o registrar e nunca chamei POST /api/issues",
+    "Nao previ numero de cartao: ORQ-39 e o UUID foram fornecidos pelo GTL",
+    "Nao commitei, nao dei push, nao abri PR, nao fiz merge, nao fiz deploy, nao acessei ambiente live",
+    "Nao me auto-revisei e nao declaro PASS: o veredito continua sendo do peer reviewer",
+    "Nao alterei conteudo tecnico do V2 e nao renomeei os identificadores orq31- no design",
+    "Nao renomeei os arquivos de check-out e hold ja gravados: apenas corrigi campos internos",
+    "Os dois criterios de PASS-readiness que exigem execucao continuam abertos: env minimo do backend e custo do next build",
+    "Habilitar o primeiro workflow do GitHub Actions na raiz permanece gate de governanca separado do owner"
+  ],
+  "blocker": "Permanece: execucao depende das cinco autorizacoes separadas do owner (criar arquivo, push, PR, merge, primeiro dispatch), e o merge liga o Actions no repositorio pela primeira vez, gate de governanca proprio. Dois criterios de PASS-readiness so fecham com execucao autorizada. O pin exato de Playwright e a adicao de @axe-core/playwright seguem fora do meu FILES_LOCKED.",
+  "handoffs": [
+    {
+      "to_lane": "peer reviewer independente, DIFERENTE de Agy-P0-A7",
+      "reason": "Revisar o V2 agora citando ORQ-39. Quatro ataques sugeridos, todos exigindo execucao que eu nao fiz: se o backend sobe com o env minimo proposto; qual o custo real do next build dentro do teto de 25 minutos; se os 7 specs existentes passam hoje; e confirmacao independente de que os workflows aninhados em multica-auth-work/.github/workflows estao inertes, porque esse achado muda o risco do merge. Verificar tambem que o reparo foi somente de citacao, comparando os hashes registrados.",
+      "file": ".deploy-control/p0/evidence/gtl-browser-qa-disposable-plan.md"
+    }
+  ]
+}

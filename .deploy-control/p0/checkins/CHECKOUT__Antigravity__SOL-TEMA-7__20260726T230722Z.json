@@ -1,0 +1,27 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T23:07:22Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "SOL-TEMA-7"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Tema 7 - Measure account slot matrix vs CLI vs models and verify execenv.go / daemon.go bug",
+  "finding": "All 4 AGY accounts respond with 11 models OK in slot-141, slot-145, slot-146, slot-150. OPENCODE returns 7 models across 10 slots. KIRO present in 5 slots. execenv.go L300-349 already has all adapters; bug is hardcoded credentialAccountHome := \"\" in daemon.go L3448.",
+  "action_taken": "Measured model availability per slot, inspected execenv.go and daemon.go lines, created .deploy-control/p0/evidence/sol-tema-7.md, sent SSH update, created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/sol-tema-7.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Kiro-PRINCIPAL-TL__20260726T230722Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__SOL-TEMA-7__20260726T230722Z.json"
+  ],
+  "non_claims": [
+    "read-only measurement, no code edit, no recompile, no daemon restart, no commit"
+  ],
+  "blocker": null
+}

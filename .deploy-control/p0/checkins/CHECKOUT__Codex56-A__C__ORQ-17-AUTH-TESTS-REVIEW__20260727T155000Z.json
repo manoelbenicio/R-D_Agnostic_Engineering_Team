@@ -1,0 +1,94 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:50:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-17-AUTH-TESTS-COMMIT-REVIEW"
+  ],
+  "orq_n": "ORQ-17",
+  "commit_reviewed": "40909d85ee1962745e436cc540c2323f95e59820 (test(auth): add focused ORQ-17 auth regression test suite, 1 arquivo, +190/-0)",
+  "status": "DONE",
+  "verdict": "BLOCK",
+  "mode": "READ_ONLY_COM_EXECUCAO_DE_TESTE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-auth-tests-commit-40909d8-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-17-AUTH-TESTS-REVIEW__20260727T155000Z.json"
+  ],
+  "tests": [
+    {
+      "command": "go test ./internal/middleware/ -run 'LocalAuthBypass|SetAuthCookies_HTTPS|ValidateJWTConfiguration_Production' -count=1 -v (TMPDIR/GOCACHE/GOTMPDIR privados 0700)",
+      "exit_code": 0,
+      "assertions_or_tests": 7,
+      "result": "PASS nos 7 testes novos, incluindo os 13 subcasos da tabela de origem"
+    },
+    {
+      "command": "go test ./internal/middleware/ -count=1 (pacote completo, worktree com o commit)",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "FAIL — TestRefreshCloudFrontCookies_UsesAuthTokenTTL (teste PRE-EXISTENTE) quebra"
+    },
+    {
+      "command": "go test ./internal/middleware/ -race -count=1 (worktree com o commit)",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "FAIL pela mesma causa; nenhum data race reportado"
+    },
+    {
+      "command": "go test ./internal/middleware/ -count=1 na BASE (repo principal, sem o commit)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "ok 0.112s — prova que a regressao e introduzida pelo commit"
+    },
+    {
+      "command": "go test -run 'TestRefreshCloudFrontCookies_UsesAuthTokenTTL' isolado no worktree",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "ok — confirma acoplamento de ORDEM, nao defeito do teste antigo"
+    },
+    {
+      "command": "leitura de internal/auth/cookie.go:23,74-88 e internal/middleware/cloudfront_test.go:47,68",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "CAUSA RAIZ: AuthTokenTTL() e cacheado em sync.Once com default 30 dias; o novo teste seta AUTH_TOKEN_TTL=24h e dispara o Once primeiro (log 'seconds=86400'), envenenando o valor para o teste antigo que seta 1h e espera ~1h; erro observado: 'expires in 23h59m59s; expected ~1h'"
+    },
+    {
+      "command": "leitura de internal/middleware/auth.go:38-55 e :112, internal/auth/cookie.go:149-179",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "implementacao confere com os testes: bypass exige BYPASS=true E origem loopback via url.Parse + net.ParseIP().IsLoopback(); 503 em queries nil; SetAuthCookies emite 2 cookies com CSRFCookieName real (HttpOnly false no CSRF), Secure derivado de FRONTEND_ORIGIN https, MaxAge de AuthTokenTTL()"
+    },
+    {
+      "command": "git diff --check; git show 40909d8 --check; git status --porcelain",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "exit 0 nos dois checks; worktree limpo"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "summary": "BLOCK reproduzido: o commit 40909d8 e 100% teste (+190/-0) e quebra um teste PRE-EXISTENTE do proprio pacote. Pacote completo no worktree FALHA (plain e -race) em TestRefreshCloudFrontCookies_UsesAuthTokenTTL, enquanto a base sem o commit passa (ok 0.112s) e o teste antigo isolado no worktree tambem passa — logo e acoplamento de ordem, nao defeito do antigo. Causa raiz provada: AuthTokenTTL() e cacheado em sync.Once (internal/auth/cookie.go:74-88, default 30 dias em :23); o novo TestSetAuthCookies_HTTPS_SecureAndTTL24h faz t.Setenv AUTH_TOKEN_TTL=24h e dispara o Once primeiro (log 'auth token TTL configured seconds=86400'), de modo que o teste antigo, que seta 1h em cloudfront_test.go:47, recebe 24h e falha com 'expires in 23h59m59s; expected ~1h' nas tres cookies CloudFront. Fix minimo: remover do teste novo a asserção de MaxAge/TTL e o t.Setenv de AUTH_TOKEN_TTL, preservando Secure, SameSite, HttpOnly e a contagem de cookies, que nao dependem do Once; alternativas sao cobrir TTL no pacote internal/auth que e dono do Once, ou eliminar o Once, que e mudanca de producao e outro card. QUALIDADE DOS TESTES, no restante, e boa e comportamental: o 503 com queries nil casa com auth.go:112; a desativacao do bypass em origem MagicDNS com XFF ataca exatamente a raiz do incidente (config de producao copiada virando instancia anonima, conforme o comentario auth.go:34-37); a tabela de 13 origens inclui 127.0.0.1.evil.com e LAN privada, casos que pegariam um HasPrefix ingenuo, e casa com a implementacao url.Parse + net.ParseIP().IsLoopback(); XFF e X-Forwarded-Host nao reabilitam bypass; e o teste de JWT valida politica (default rejeitado, curto rejeitado, 43 bytes aceito). Rotas sao reais (/api/me existe), nao ha credencial real, e a asserção de 2 cookies e legitima porque CSRFCookieName existe de fato em cookie.go:167-179 — o teste nao afirma validacao de CSRF em requisicao, que seria o erro. Sobre 'falhar antes do fix': nao se aplica, porque o commit nao contem fix e a protecao de loopback ja esta na base; os testes sao de regressao com poder de deteccao real, verificado por inspecao e nao por mutacao. Higiene: git diff --check e git show --check exit 0, worktree limpo, e usei caches privados 0700 fora de /tmp porque o tmpfs esta em 99%.",
+  "non_claims": [
+    "nao editei, amendei, rebasei, commitei nem pushei; nao toquei board nem deploy",
+    "nao rodei a suite completa do servidor, apenas ./internal/middleware/ (focado, completo e -race)",
+    "nao provei por mutacao que os testes falhariam sem a protecao de loopback: exigiria editar codigo",
+    "nao avaliei os testes pre-existentes das linhas 1-507 do arquivo, fora do escopo do diff",
+    "nenhum valor de segredo real lido ou impresso"
+  ],
+  "blocker": "Commit 40909d8 nao deve ser integrado como esta: quebra TestRefreshCloudFrontCookies_UsesAuthTokenTTL no mesmo pacote por envenenamento do sync.Once de AuthTokenTTL. Owner do conserto: autor do commit (kiro-lead).",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) e autor kiro-lead",
+      "reason": "aplicar o fix minimo (remover asserção de TTL e o t.Setenv AUTH_TOKEN_TTL do teste novo) ou mover a cobertura de TTL para internal/auth, e reprovar o pacote completo com -count=1 e -race antes de qualquer integracao",
+      "file": ".deploy-control/p0/evidence/orq17-auth-tests-commit-40909d8-review.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

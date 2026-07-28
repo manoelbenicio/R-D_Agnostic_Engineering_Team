@@ -1,0 +1,94 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T14:21:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-41-INDEPENDENT-AUDIT-MIGRATION-RESERVE-VS-SQLC-SPLIT"
+  ],
+  "orq_n": "ORQ-41",
+  "orq_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "status": "DONE",
+  "verdict": "PASS com 4 emendas",
+  "mode": "READ_ONLY",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-independent-audit-migration-reserve-vs-sqlc-split.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-41-INDEPENDENT-AUDIT-MIGRATION-SQLC__20260727T142100Z.json"
+  ],
+  "tests": [
+    {
+      "command": "ls server/migrations/*.up.sql | wc -l; *.down.sql; min/max; uniq -d de prefixos",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "CONFIRMA a auditoria de reserva: up=163, down=163, min=001, max=126, e 26 prefixos duplicados com lista identica"
+    },
+    {
+      "command": "grep em cmd/migrate/main.go e internal/migrations/migrations.go",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "CONFIRMA semantica do runner: ExtractVersion por basename, schema_migrations, pg_advisory_lock (main.go:206)"
+    },
+    {
+      "command": "grep 105_project_squad_lead em squad-lead-migration-design.md",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CONFIRMA reserva invalida: linhas 19 e 60 propoem 105_project_squad_lead com tronco em 126"
+    },
+    {
+      "command": "grep -c '^type X struct' em pkg/db/generated/models.go para os 6 structs de drift + ls migrations/12[345]",
+      "exit_code": 0,
+      "assertions_or_tests": 7,
+      "result": "CONFIRMA o drift do split: Account, ApprovedAccount, Assignment, Credential, RotationEvent e UserPasswordCredential = 0 ocorrencias no models.go canonico, embora 123/124/125 existam em disco"
+    },
+    {
+      "command": "grep maxSeq|max_seq em pkg/db/generated/task_message.sql.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "CONFIRMA edicao manual: :56 alias SQL 'AS max_seq' mas :63-65 variavel Go 'maxSeq' — o gerador nao emitiria isso"
+    },
+    {
+      "command": "find -maxdepth 3 -name .golangci*; ls .github/workflows (raiz) e multica-auth-work/.github/workflows",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "CONFIRMA: nenhum .golangci (defaults v2); raiz SEM .github/workflows; inner com ci.yml, desktop-smoke.yml, mobile-verify.yml"
+    },
+    {
+      "command": "df -h /tmp; echo TMPDIR/GOCACHE",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CONFIRMA e ainda vigente: /tmp tmpfs 7.7G com 7.6G usados, 114M livres, 99%; TMPDIR e GOCACHE seguem unset"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "amendments": [
+    "C-1 (alta) a tabela de reserva nao tem slot para o commit A do split, que precede TODAS as waves e nao tem migration; emenda: criar wave 0 chore(db) baseline SQLC sem numero, como pre-condicao de 127, 128, 129 e 130",
+    "C-2 (alta) a regra 'generated nunca e mergeado, apenas regenerado apos integracao' contradiz o commit A, que E um commit de generated sem query correspondente; emenda: permitir UM commit de generated por lane cujo conteudo seja exatamente a saida de sqlc generate no HEAD integrado, provado por segunda execucao diff-zero",
+    "C-3 (alta) models.go e compartilhado entre A e B (5 hunks vs 1), logo o split e por HUNK, mas a reserva trata generated como lane exclusiva por ARQUIVO; emenda: lock por arquivo com owner unico e sequencia temporal A->B, proibindo outra lane em generated no intervalo; nao dividir lock por hunk",
+    "C-4 (media) o risco de lint do commit A (max_seq vs ST1003, sem .golangci) e bloqueador de cadeia e esta ausente da reserva; emenda: golangci-lint run entra no gate da wave 0 e a decisao de excluir pkg/db/generated do linter passa a pre-requisito declarado"
+  ],
+  "summary": "Auditoria independente concluida com veredito PASS e 4 emendas. Reverifiquei por medicao propria as afirmacoes centrais dos dois documentos e TODAS conferem: 163 up/163 down com min 001 e max 126; 26 prefixos duplicados ja existentes no tronco com lista identica; semantica do runner por basename com pg_advisory_lock; reserva invalida 105_project_squad_lead confirmada nas linhas 19 e 60 do design de squad; drift do generated confirmado com os 6 structs ausentes do models.go canonico apesar de 123/124/125 existirem; edicao manual do task_message.sql.go confirmada pelo par alias max_seq versus variavel maxSeq; ausencia de .golangci; raiz sem .github/workflows; e /tmp ainda em 99% com TMPDIR e GOCACHE unset. Nao encontrei divergencia factual entre os documentos e o disco. As colisoes sao de COERENCIA entre eles: (C-1) a tabela de reserva comeca em 127 e nao acomoda o commit A, que o split exige antes de B e que na verdade precede todas as waves porque qualquer sqlc generate posterior arrasta o mesmo drift; (C-2) a regra de que generated nunca e mergeado contradiz o proprio commit A, que e um commit de generated, e a formulacao precisa mudar para permitir a materializacao do gerador provada por idempotencia; (C-3) models.go compartilhado forca split por hunk enquanto a reserva assume lane exclusiva por arquivo, o que quebra o mecanismo de lock e deve ser resolvido por owner unico com sequencia temporal; (C-4) o risco de lint do commit A e bloqueador de cadeia e nao aparece na reserva, e como o ci.yml vive no inner .github o gate nem roda automaticamente hoje. Endosso 6 pontos de concordancia, entre eles 127 ficar com o ORQ-13 (coincide com a emenda A4 do meu GTL-83, feita antes e de forma independente), a renumeracao ledger 127->128, custo->129, squad 105->130, retencao condicional em 131, Kanban sem numero, e a ordem migration antes do binario. Ordem segura consolidada em 7 waves comecando pela wave 0, com invariantes por wave e a exigencia explicita de TMPDIR/GOCACHE/GOTMPDIR fora de /tmp por causa dos 99%. Acrescentei E-5 aos itens nao fechaveis sem execucao: se o golangci-lint v2 default reprova max_seq, o que decide a viabilidade da wave 0.",
+  "non_claims": [
+    "nao rodei migration, sqlc, build, teste, linter, DB live nem li schema_migrations",
+    "nao editei codigo, migration, query, generated, board nem os dois documentos auditados",
+    "nao renomeei nem reservei numero: a reserva segue proposta ate ruling do GTL",
+    "nao reexecutei os gates reportados pelo split (build/vet/testes com A+B juntos): cito como relato do autor",
+    "nao avaliei o merito dos designs de ledger, custo, squad, retencao ou Kanban, apenas numeracao e ordem"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "ruling necessario em 3 pontos: (1) aceitar a wave 0 como pre-condicao de todas as waves; (2) reformular a regra de generated para permitir a materializacao do gerador provada por idempotencia; (3) decidir a exclusao de pkg/db/generated no linter antes da wave 0, dado o risco max_seq/ST1003",
+      "file": ".deploy-control/p0/evidence/orq41-independent-audit-migration-reserve-vs-sqlc-split.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

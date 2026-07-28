@@ -1,0 +1,93 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:47:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-17-STAGE3B-V2-ACCEPTANCE-MATRIX"
+  ],
+  "orq_n": "ORQ-17",
+  "status": "DONE_STANDBY_FOR_V2",
+  "verdict": "MATRIZ DE ACEITE PRONTA — nenhuma V2 recebida ainda; permaneco de prontidao como revisor independente",
+  "mode": "READ_ONLY",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-acceptance-matrix.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-17-STAGE3B-V2-ACCEPTANCE-MATRIX__20260727T164700Z.json"
+  ],
+  "tests": [
+    {
+      "command": "ssh 100.118.244.61 'hostname -f; tailscale ip -4; go version; docker compose version --short'",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "hostname ip-172-31-18-217.sa-east-1.compute.internal; IPv4 100.118.244.61; go1.26.1 linux/amd64; compose 5.3.1 — o runbook V1 pina somente o IP (linha 82), portanto o hostname medido e criterio novo A3.1"
+    },
+    {
+      "command": "sed migrations/109_agent_task_waiting_local_directory.up.sql",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "tabela da fila e agent_task_queue e a CHECK lista queued, dispatched, running, waiting_local_directory, completed, failed, cancelled — os 4 primeiros sao os ativos, confirmando o gate de 4 estados"
+    },
+    {
+      "command": "grep child_env e args em .agents/skills/aws-secrets-manager/references/asm-exec",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "asm-exec:373 resolve referencias em argv; :378-381 resolve tambem as variaveis do proprio ambiente para child_env, com comentario 'documented behavior'; :383 executa subprocess.run(args, env=child_env) — confirma C1: colocar a referencia em variavel do asm-exec e nao em argumento"
+    },
+    {
+      "command": "extracao do catalogo de FKs para user(id) nas migrations",
+      "exit_code": 0,
+      "assertions_or_tests": 15,
+      "result": "15 tabelas referenciam user(id): user_password_credential, member, chat_session, feedback, notification_preference, personal_access_token, pinned_item, task_token (CASCADE); daemon_pairing_session e github_installation (SET NULL); lark_installation (RESTRICT); agent, agent_runtime, skill, workspace_invitation (NO ACTION). daemon_pairing_session e skill NAO constam da lista do C6 original, logo a allowlist do review precisa ser ampliada"
+    },
+    {
+      "command": "grep no runbook por build/host/queue",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "runbook:106 usa GOWORK=off CGO_ENABLED=0 go build -trimpath, sem -mod=readonly; runbook:82 aceita apenas o IP; nao existe consulta a agent_task_queue no runbook, so mencao em prosa a 'active task queue'"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_APPLICABLE",
+    "git_diff_check": "NOT_APPLICABLE"
+  },
+  "matrix_summary": {
+    "C1_transporte_seguro": "7 criterios (A1.1-A1.7): referencia so em variavel do asm-exec e nunca em argv; valor resolvido vai ao container por stdin com NUL e o docker compose recebe env -u; set +x obrigatorio; risco residual de /proc/<pid>/environ declarado com janela selada; uma unica resolucao de AWSCURRENT; zero GetSecretValue",
+    "C2_fechamento_e_build": "8 criterios (A2.1-A2.8): hashes ESPERADOS de helper, go.mod, go.sum e asm-exec; sem replace para checkout mutavel; manifesto de fechamento de compilacao; flags exatas incluindo -mod=readonly que hoje falta; Go pinado por versao e hash casando go1.26.1 linux/amd64; hash esperado do binario por build independente previo; prova de que as entradas nao mudaram durante o build; gofmt e vet executados",
+    "C3_host_stack_banco_fila": "7 criterios (A3.1-A3.7): hostname E IPv4; labels project=multica-dev-transition e service=backend com IDs comparados ao Stage2; Serve e Funnel vazios e health/readiness 200 como bloqueio; helper valida host, database e usuario do DSN antes de BeginTx sem imprimir DSN; gate de fila com nome correto agent_task_queue e os 4 estados; duas leituras com 3 s e freeze de admissao mecanico; passo de descongelamento",
+    "C4_rollback_explicito": "6 criterios (A4.1-A4.6): nenhum os.Exit fora de main e apos cleanup; erros tipados E_*; defers de rollback, pool e limpeza de bytes em todo caminho; Rollback chamado e verificado explicitamente; memberRefs retorna (int64, error) e nunca termina o processo; limpeza de bytes tambem no caminho de sucesso",
+    "C5_membership_e_sessao": "6 criterios (A5.1-A5.6): member no mesmo lock de user e credential; member=0 exigido tres vezes (antes da criacao, antes do commit e depois do commit); linha de sucesso afirma somente o medido; SESSION=NONE substituido por HTTP_LOGIN=NOT_CALLED ancorado no source pinado; declaracao de que JWT e stateless e nao detectavel; janela pos-commit coberta pelo freeze",
+    "C6_rollback_simetrico": "8 criterios (A6.1-A6.8): catalogo FK VIVO via pg_constraint comparado a allowlist; allowlist cobrindo as 15 tabelas medidas, incluindo daemon_pairing_session e skill; FK desconhecida e BLOCK; zero linhas em toda tabela referenciante exceto a credencial, sob lock; delecao explicita de 1 credencial e 1 usuario na mesma transacao serializavel com RowsAffected==1 e sem depender de cascade; correcao da afirmacao falsa de E_ROLLBACK_REFERENCED; todos os gates repetidos no rollback; retencao e escalonamento se algum login pode ter ocorrido",
+    "C7_saida_fixa": "6 criterios (A7.1-A7.6): captura em arquivos 0600; comparacao byte a byte do stdout com a unica linha aprovada; stderr vazio ou allowlist explicita; nenhuma saida bruta de Compose no contexto de agente ou chat; em falha apenas codigo fixo sem argv, env ou DSN; arquivos capturados apagados ou em quarentena 0700",
+    "C8_identidade_do_segredo": "6 criterios (A8.1-A8.6): ARN completo com conta e regiao, nunca ID nu; coerencia com a regiao de workload sa-east-1; AWSCURRENT resolvido uma vez mais congelamento de rotacao ate o fim da janela; exatamente dois inputs humanos, nenhum sensivel; frase de autorizacao literal amarrada a host, stack, banco e janela selada; pre-requisitos fora do Stage3B declarados com evidencia"
+  },
+  "judgment_rules": [
+    "C1 a C8 sao CONJUNTIVOS: 7 PASS e 1 FAIL resulta em BLOCK",
+    "prosa nao e gate: exige comando, comparacao e codigo de erro",
+    "hash esperado nao e igual a hash observado; valor calculado na execucao nao e procedencia",
+    "revisarei sem executar: leitura mais verificacoes read-only de hash, migrations, hostname e labels",
+    "se a V2 exigir execucao para ser avaliada, isso ja e FAIL de desenho"
+  ],
+  "summary": "Preparei a matriz de aceite binaria para a V2 corrigida do Stage3B, com 54 criterios distribuidos nos oito defeitos C1 a C8, cada um com forma de verificacao read-only e condicao explicita de FAIL. Antes de escrever a matriz medi os fatos que a V2 tera de casar: hostname de ORQ1 e ip-172-31-18-217.sa-east-1.compute.internal contra o runbook V1 que pina apenas o IP 100.118.244.61 na linha 82; Go do host e go1.26.1 linux/amd64 e Compose e 5.3.1; a tabela da fila e agent_task_queue com os quatro estados ativos confirmados pela CHECK da migration 109; e o asm-exec resolve referencias tanto em argv (linha 373) quanto nas variaveis do proprio ambiente para child_env (linhas 378 a 381, comentadas como comportamento documentado), o que confirma o remedio do C1. Extrai tambem o catalogo de FKs para user(id) direto das migrations e encontrei 15 tabelas, duas das quais, daemon_pairing_session (SET NULL) e skill (NO ACTION), NAO constam da lista do C6 original, de modo que a allowlist de rollback do review precisa ser ampliada; oito tabelas sao CASCADE e apagariam dados em silencio, enquanto lark_installation com RESTRICT e agent, agent_runtime, skill e workspace_invitation com NO ACTION fariam a delecao falhar, o que e protetor. Registrei ainda que o comando de build do runbook na linha 106 nao usa -mod=readonly e que nao existe consulta alguma a agent_task_queue no runbook, apenas mencao em prosa a fila ativa. As regras de julgamento sao conjuntivas: um unico FAIL bloqueia a V2, prosa nao conta como gate, hash observado nao substitui hash esperado, e se a V2 so puder ser avaliada mediante execucao isso ja e falha de desenho. Permaneco de prontidao para revisar imediatamente quando a V2 chegar.",
+  "non_claims": [
+    "nao editei nenhum artefato do autor: runbook, helper, go.mod ou o check-out dele",
+    "nao chamei GetSecretValue nem BatchGetSecretValue, nao acessei o SMA, nao executei asm-exec, nao resolvi referencia dinamica, nao li email, senha, hash ou DSN",
+    "nao consultei nem mutei banco: o catalogo de FKs vem das migrations em disco e nao de pg_constraint, portanto a V2 ainda precisa comparar com o catalogo vivo",
+    "nao rodei Docker ou Compose, nao alterei Serve ou Funnel, nao criei usuario, credencial, sessao ou membro, nao mexi em fila nem em board",
+    "as unicas acoes remotas foram leituras em ORQ1: hostname -f, tailscale ip -4, go version e docker compose version --short",
+    "nao vi a V2: a matriz e anterior a ela e nao presume nenhuma correcao"
+  ],
+  "next_action": "revisar a V2 no instante em que chegar, aplicando a matriz criterio a criterio e emitindo PASS ou BLOCK com evidencia linha a linha",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) e autor do Stage3B (Codex56#B, w7:p4)",
+      "reason": "a matriz e o contrato de aceite: o autor pode us la como checklist antes de entregar a V2; destaco que a allowlist de FK do C6 esta incompleta (faltam daemon_pairing_session e skill) e que o hostname exato precisa entrar no gate de host",
+      "file": ".deploy-control/p0/evidence/orq17-stage3b-v2-acceptance-matrix.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

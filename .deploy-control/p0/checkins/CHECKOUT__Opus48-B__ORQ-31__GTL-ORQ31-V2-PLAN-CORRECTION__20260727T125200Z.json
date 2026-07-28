@@ -1,0 +1,110 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:52:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-39",
+  "orq_issue_id": "ORQ-39",
+  "orq_issue_id_caveat": "CORRIGIDO em 2026-07-27T13:02Z por reparo de citacao autorizado: a citacao ORQ-31 deste check-out era PROVISORIA E INVALIDA. O unico ORQ-31 real e Security Wave A; o Browser QA nao tinha cartao persistido. ORQ-38 registra o incidente de nivel de reporte. O cartao verificado e ORQ-39 UUID c03941bc-3bde-4de1-ab19-1ba93de0ad51, fornecido pelo GTL e nao previsto por mim. O nome do arquivo deste check-out mantem ORQ-31 por ser identificador de artefato ja gravado; a correcao esta nos campos e no check-out de reparo.",
+  "task_ids": [
+    "GTL-ORQ31-V2-PLAN-CORRECTION"
+  ],
+  "status": "DONE",
+  "verdict_sought": "PASS-readiness: 12 de 14 criterios atendidos no desenho; 2 dependem de execucao autorizada. NAO me auto-aprovo.",
+  "files_changed": [
+    ".deploy-control/p0/evidence/gtl-browser-qa-disposable-plan.md"
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-31__GTL-ORQ31-V2-PLAN-CORRECTION__20260727T125200Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "git ls-files | grep -E '^\\.github/workflows/' e git ls-files | grep -cE '^multica-auth-work/\\.github/workflows/'",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "ACHADO ESTRUTURAL - raiz do repo NAO tem .github/workflows; os 4 workflows estao em multica-auth-work/.github/workflows/, que o Actions nao le. Logo ci.yml, desktop-smoke, mobile-verify e release estao INERTES, e orq31-browser-qa.yml seria o primeiro workflow ativo do repositorio"
+    },
+    {
+      "command": "curl -I -H 'Accept: <oci index/manifest list>' https://mcr.microsoft.com/v2/playwright/manifests/v1.58.2-noble",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "DIGEST VERIFICADO - HTTP/2 200, docker-content-digest: sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d. Requisicao HEAD de metadado, sem docker pull"
+    },
+    {
+      "command": "curl https://mcr.microsoft.com/v2/playwright/tags/list | grep v1.58.2-noble",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "TAG CONFIRMADA - a lista oficial contem v1.58.2, v1.58.2-noble, v1.58.2-noble-amd64 e v1.58.2-noble-arm64, fechando a nao-afirmacao do V1 sobre o formato da tag"
+    },
+    {
+      "command": "curl -I -H 'Authorization: Bearer <token de leitura>' https://registry-1.docker.io/v2/pgvector/pgvector/manifests/pg17",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "DIGEST VERIFICADO - HTTP/2 200, docker-content-digest: sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0. Mesma imagem que docker-compose.selfhost.yml:23 usa"
+    },
+    {
+      "command": "git ls-remote --tags https://github.com/{actions/checkout,setup-node,setup-go,upload-artifact,pnpm/action-setup}.git",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "SHAs IMUTAVEIS OBTIDOS - checkout v6.1.0 d23441a48e516b6c34aea4fa41551a30e30af803; setup-node v6.5.0 249970729cb0ef3589644e2896645e5dc5ba9c38; setup-go v5.6.0 40f1582b2485089dde7abd97c1529aa768e1baff; upload-artifact v4.6.2 ea165f8d65b6e75b540449e92b4886f43607fa02; pnpm/action-setup v4.4.0 a15d269cd4658e1107c09f1fabf4cbd7bd1f308a"
+    },
+    {
+      "command": "grep packageManager/engines em package.json, go 1.26.1 em server/go.mod, node-version em ci.yml, specifier em pnpm-lock.yaml",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "VERSOES EXATAS - pnpm 10.28.2; Go 1.26.1; Node 22 (ci.yml:43, workflow inerte); Playwright lock 1.58.2 com specifier caret ^1.58.2. package.json NAO tem campo engines, logo Node precisa ser fixado no workflow"
+    },
+    {
+      "command": "grep -n DATABASE_URL/PORT em docker-compose.selfhost.yml, os.Getenv em server/cmd/migrate/main.go, scripts em apps/web/package.json",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "COMANDOS EXTRAIDOS - migrate le DATABASE_URL (main.go:120); compose define DATABASE_URL com host 'postgres:5432' e PORT 8080 (linhas 10-11); web tem build 'next build' e start 'next start'"
+    },
+    {
+      "command": "cat multica-auth-work/e2e/env.ts",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "GUARDA JUSTIFICADA - :5-12 carrega .env.worktree ou .env do cwd e sobrescreveria o env do CI; V2.3 falha o job e NUNCA apaga o arquivo"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-browser-qa-disposable-plan.md (secoes V2.0 a V2.16 acrescentadas)",
+    "mcr.microsoft.com/v2/playwright/manifests/v1.58.2-noble (digest sha256:6446946a...65d63d)",
+    "registry-1.docker.io/v2/pgvector/pgvector/manifests/pg17 (digest sha256:d2ef61f4...3bad0)",
+    "git ls-remote de actions/checkout, setup-node, setup-go, upload-artifact e pnpm/action-setup",
+    "multica-auth-work/playwright.config.ts:5-21",
+    "multica-auth-work/e2e/env.ts:5-12, fixtures.ts:29-56, helpers.ts:4-8",
+    "multica-auth-work/docker-compose.selfhost.yml:10-11, :23",
+    "multica-auth-work/server/cmd/migrate/main.go:120, server/go.mod",
+    "multica-auth-work/package.json:43, pnpm-lock.yaml:122-123, apps/web/package.json"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run no ORQ2, com pedido de peer reviewer DIFERENTE do revisor do V1",
+  "summary": "V2 do plano de browser QA acrescentado para fechar o BLOCK do GTL-R31A, tudo read-only. Achado estrutural que muda a avaliacao: a raiz do repositorio nao tem .github/workflows, e os 4 workflows existentes vivem em multica-auth-work/.github/workflows, que o Actions nao le, portanto estao INERTES e o orq31-browser-qa.yml seria o primeiro workflow ativo do repositorio, o que torna o merge uma decisao de governanca. Correcoes entregues: workflow na raiz com defaults.run.working-directory multica-auth-work, e ressalva de que defaults.run nao alcanca uses nem services; DATABASE_URL com host postgres:5432 e sem bloco ports; guarda que FALHA se .env ou .env.worktree existir e nunca apaga; identificadores imutaveis todos verificados agora por consulta de metadado, com digest do Playwright v1.58.2-noble e do pgvector pg17 e SHA completo das cinco actions; versoes exatas de pnpm 10.28.2, Node 22, Go 1.26.1 e Playwright 1.58.2 com setup pinado mais um passo Prove toolchain, em vez de assumir o conteudo da imagem; frozen-lockfile mais guard que compara pacote instalado com a tag da imagem e desabilita download de browser; comandos de migration, backend, build e start extraidos dos manifestos; nenhuma credencial ou dado de producao, com auth efemera de runner; estrategia de gatilho escalonada em cinco passos, cada um rotulado como autorizacao separada, explicando que workflow_dispatch nao existe antes de o arquivo estar em main; FILES_LOCKED com non-overlap; teto de 25 minutos com max-failures 5; cleanup sem prune; varredura de segredo que falha o upload em vez de redigir; 7 specs existentes mais 6 testes de browser; e condicoes de parada. Dos 14 criterios de PASS-readiness, 12 estao atendidos no desenho e 2 dependem de execucao autorizada: o conjunto minimo de env do backend e o custo real do next build.",
+  "non_claims": [
+    "Nao criei workflow, nao editei codigo, nao instalei, nao baixei, nao dei docker pull, nao rodei teste, nao commitei, nao dei push, nao abri PR, nao fiz merge, nao fiz deploy, nao acessei ambiente live",
+    "Digests obtidos por requisicao HEAD de metadado a mcr.microsoft.com e registry-1.docker.io, e SHAs por git ls-remote a github.com; nenhuma camada de imagem foi materializada em disco",
+    "Nao verifiquei o conteudo interno da imagem Playwright: nao sei se traz Node 22, pnpm ou Go, por isso o V2 adiciona setup pinado e um passo de prova em vez de assumir",
+    "Nao executei nenhum dos 7 specs existentes; nao sei se passam hoje",
+    "Nao provei que o backend sobe apenas com DATABASE_URL e PORT; o compose lista outras variaveis e o conjunto minimo exige execucao",
+    "Nao medi o tempo do next build, que e o custo dominante suspeito",
+    "Nao consultei o Kanban e nao criei, deletei, renumerei, mesclei nem mutei cartao algum, conforme o freeze",
+    "Nao movi nem propus mover os workflows aninhados; apenas registrei que estao inertes",
+    "Nao alterei package.json, pnpm-lock.yaml, playwright.config.ts nem os 7 specs existentes: estao fora do FILES_LOCKED e pertencem a outro dono",
+    "Nao me auto-aprovo e nao declarei PASS",
+    "Nao toquei nas 9 issues preservadas (ORQ-12, 13, 15, 16, 17, 18, 21, 22, 23) e nao disparei rerun"
+  ],
+  "blocker": "Execucao depende de cinco autorizacoes separadas do owner (criar arquivo, push, PR, merge, primeiro dispatch), nenhuma presumida. Alem disso: (a) o UUID canonico de ORQ-31 precisa ser fixado pela auditoria independente, porque dois UUIDs foram reportados sob o mesmo numero e o freeze de Kanban esta ativo; (b) dois criterios de PASS-readiness exigem execucao e nao podem ser fechados por desenho, o env minimo do backend e o custo do next build; (c) o pin exato de Playwright e a adicao de @axe-core/playwright sao mudancas em package.json, fora do meu FILES_LOCKED; (d) o merge liga o Actions no repositorio pela primeira vez, o que e decisao de governanca do owner e nao detalhe tecnico.",
+  "handoffs": [
+    {
+      "to_lane": "peer reviewer independente (DIFERENTE do revisor do V1)",
+      "reason": "Tres ataques sugeridos, todos exigindo execucao que eu nao fiz: se o backend sobe com o conjunto minimo de env proposto; qual o custo real do next build dentro do teto de 25 minutos; e se os 7 specs existentes passam hoje. Quarto ponto de auditoria: confirmar independentemente o achado de que os workflows aninhados estao inertes, porque ele muda a avaliacao de risco do merge.",
+      "file": ".deploy-control/p0/evidence/gtl-browser-qa-disposable-plan.md"
+    }
+  ],
+  "orq_issue_uuid": "c03941bc-3bde-4de1-ab19-1ba93de0ad51",
+  "orq_assignee": "Opus48-B",
+  "orq_depends_on": [
+    "ORQ-26"
+  ]
+}

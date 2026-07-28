@@ -1,0 +1,46 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:22:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-33",
+  "issue_uuid_as_cited": "dfeabbdc-33e1-4ab8-9460-27b43df227db",
+  "uuid_not_revalidated": "usei o UUID citado no artefato; nao revalidei por GET. Quem executar deve confirmar o par UUID+numero.",
+  "task_ids": ["ORQ33-JWT-V2-INDEPENDENT-PEER-REVIEW"],
+  "status": "DONE_BLOCK",
+  "verdict": "BLOCK",
+  "independence": "Nao sou autor da V1 (Agy-P0-A8), nao sou o GTL-87, nao sou o autor da V2 (Opus48#B). Primeira revisao minha deste artefato.",
+  "deliverable": ".deploy-control/p0/evidence/orq33-jwt-rotation-v2-independent-peer-review.md",
+  "artifact_sha256": "478e0eacdde7f9b680049d15996d6c0f3851ba1986fe495d45727e979b2e9a93",
+  "confirmed_8_of_10": [
+    "alvo JWT_SECRET e chave unica com sync.Once: jwt.go:25-40 literal confere; ValidateJWTConfiguration jwt.go:46-58 recusa placeholder (knownInsecureJWTSecrets, :20) e len < 32 exceto APP_ENV dev/development/test",
+    "CINCO consumidores exatos: handler/auth.go:213 e :226 assinam; middleware/auth.go:295, middleware/daemon_auth.go:234 e realtime/hub.go:691 verificam - 2 de assinatura e 3 superficies de verificacao",
+    "recreate vs restart: correto pelo sync.Once, a chave nova so entra em processo novo",
+    "fila com os 4 estados ativos: correto, derivado do CHECK de 109:15",
+    "old=401/new=200 e o gate certo, e a justificativa de resolucao lazy em jwt.go:31 e o melhor insight do documento",
+    "log secret-safe: middleware/auth.go:298 loga path e error, nunca o token; grep -c da secao 8 e seguro",
+    "segredo nunca em argv: R4 corrigida com --generate-secret-string server-side ou fileb:///dev/stdin; G2 (test -n) e G4 (wc -c) nao imprimem valor",
+    "rollback disruptivo nos dois sentidos, reload nao reverte, e segredo antigo nao deletado antes da validacao"
+  ],
+  "blocker_1_critical": "asm-exec NAO resolve placeholder dentro de ARQUIVO. Skill linhas 53-55: resolve em 'command arguments and environment variables'. O Passo 2 escreve JWT_SECRET={{resolve:...}} no backend-env.override.yml e o Passo 3 roda asm-exec -- docker compose; o compose LE o arquivo, entao o placeholder LITERAL de 74 bytes seria injetado como JWT_SECRET. E pior que falhar: passa len>=32 (jwt.go:55), nao esta em knownInsecureJWTSecrets (jwt.go:19-21), ValidateJWTConfiguration retorna nil, o backend SOBE, e os CINCO criterios da secao 6 PASSAM - health 200, readyz 200, old_token 401 porque a chave mudou de fato, e new_token 200 porque assina e verifica com a mesma string. Resultado: rotacao declarada bem-sucedida com JWT assinado por string previsivel e publica, estritamente pior que o estado atual. Correcoes: (a) por o {{resolve}} em env/argumento do proprio asm-exec e o compose apenas interpolar, (b) --env-file gerado no filho em 0600 e apagado, ou (c) provar em ambiente descartavel que esta instalacao resolve em arquivo - nao afirmo que nao resolve, afirmo que a skill documenta so argumento e ambiente e runbook nao pode depender de comportamento nao documentado. GATE NOVO: docker inspect do container filtrando por '{{resolve:' com criterio ZERO, sem imprimir valor.",
+  "blocker_2_operational": "Os -f do Passo 3 sao RELATIVOS, e a arvore correta nao e a esperada. Label real do container no ORQ1: /home/ec2-user/R-D_Agnostic_Engineering_Team/multica-auth-work/docker-compose.selfhost.yml, .../docker-compose.selfhost.build.yml, /home/ec2-user/.config/multica-transition/images.yml e .../backend-env.override.yml, project/service multica-dev-transition/backend. Caminho relativo depende do cwd e, do diretorio errado, pode recriar com configuracao de OUTRA arvore. E verifiquei que /home/ec2-user/workspace/R-D_Agnostic_Engineering_Team NAO EXISTE no ORQ1 - esse caminho e do ORQ2, onde a frota trabalha; um operador acostumado ao caminho do ORQ2 erraria. Correcao: os quatro caminhos ABSOLUTOS do label, mais -p multica-dev-transition, mais gate de releitura do label antes de executar. A V2 admite na secao 10 que a ordem precisa ser confirmada, mas o comando escrito contradiz a propria ressalva, e executor apressado copia o comando e nao a ressalva.",
+  "route_finding": "Fecha uma nao-afirmacao da V2: GET /api/me EXISTE e e autenticada (router.go:552, com PATCH em :553), servindo ao teste. E PROIBIR /api/config (router.go:492), que esta FORA do grupo autenticado e responderia 200 com token invalido, produzindo falso sucesso no old_token=401.",
+  "minor_findings": [
+    "M1 G5 sem criterio executavel: sugerido grep por NOME de chave, sem imprimir linha",
+    "M2 Passo 4 de re-emparelhamento subespecificado: sem procedimento nem criterio, e provavelmente exige mutacao no OUTRO host (unit do ORQ2), merecendo autorizacao propria",
+    "M3 gatilho de rollback por taxa de 401 e autocontraditorio, porque old_token=401 e o comportamento DESEJADO; reescrever em termos de falha de NOVO login",
+    "M4 tokens em /run/secrets-tmp: nao verifiquei existencia nem modo; exigir 0700/0600 e rm por trap, senao curl que falhe deixa token em disco",
+    "M5 defaultJWTSecret (jwt.go:34) e fallback quando JWT_SECRET esta vazio: se o Passo 2 apagar a variavel por engano, com APP_ENV nao-production o backend sobe com o default de desenvolvimento; exigir gate de presenca e nao-vazio"
+  ],
+  "required_corrections": ["C1 eliminar dependencia de resolucao em arquivo + gate grep {{resolve: = 0", "C2 caminhos absolutos + -p + gate de releitura do label", "C3 fixar GET /api/me e proibir /api/config", "C4 criterio executavel para G5", "C5 especificar o Passo 4", "C6 reescrever gatilho de rollback", "C7 trap/0600 e gate de JWT_SECRET nao-vazio"],
+  "non_claims": [
+    "nenhum segredo lido; zero GetSecretValue/BatchGetSecretValue; zero asm-exec executado",
+    "nao inspecionei backend-env.override.yml, pelo mesmo motivo da V2: pode conter segredo - logo NAO sei onde JWT_SECRET e definido, e G5 segue sendo gate",
+    "nao consultei o Secrets Manager; nao sei se prod/multica/jwt-secret existe",
+    "nao gerei token, nao reiniciei nem recriei container, nenhuma mutacao de AWS, codigo, banco, unit ou board",
+    "leituras no ORQ1: docker inspect apenas de labels e nomes de arquivo, SEM .Config.Env, e ls -d de diretorio",
+    "nao alterei assignee nem postei comentario; nenhum card criado"
+  ],
+  "blocker": null
+}

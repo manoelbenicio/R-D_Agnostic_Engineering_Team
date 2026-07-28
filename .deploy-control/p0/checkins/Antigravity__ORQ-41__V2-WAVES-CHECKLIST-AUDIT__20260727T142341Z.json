@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T142341Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-41",
+  "lane": "GTL-R41-V2-AUDIT",
+  "task_ids": ["ORQ-41-V2-WAVES-CHECKLIST-AUDIT"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-v2-waves-checklist-audit-results.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T142341Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-v2-waves-checklist-audit-results.md"
+  ],
+  "summary": "Aplicacao da checklist de 8 pontos sobre a versao V2 da ORQ-41 concluida em modo READ-ONLY. Veredito: PASS. Confirmado ZERO CONFLITO de reserva de migrations com ORQ-13/Z01 (migrations usam placeholders NEXT_CANONICAL_a..d preservando 127 do Ledger e 128 do SQLC Split). Todos os 8 blockers aprovados.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

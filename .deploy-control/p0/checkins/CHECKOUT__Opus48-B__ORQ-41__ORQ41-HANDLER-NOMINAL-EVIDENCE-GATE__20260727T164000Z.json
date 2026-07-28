@@ -1,0 +1,105 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:40:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-41",
+  "orq_issue_id": "ORQ-41",
+  "task_ids": [
+    "ORQ41-HANDLER-NOMINAL-EVIDENCE-GATE"
+  ],
+  "status": "DONE",
+  "verdict": "EVIDENCE_BLOCK FECHADO. Veredito do ORQ-41 passa de CODE_PASS/EVIDENCE_BLOCK para CODE_PASS/EVIDENCE_PASS.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-41__ORQ41-HANDLER-NOMINAL-EVIDENCE-GATE__20260727T164000Z.json"
+  ],
+  "files_deleted": [
+    "/home/ec2-user/.cache/orq41-gate (cache privado NOVO, criado e removido nesta rodada, conforme instrucao)"
+  ],
+  "gate_result": {
+    "comando": "go test -race ./internal/handler -run 'PutDaemonLedgerSummary' -count=1 -v",
+    "exit_code": 0,
+    "skipping_tests_ocorrencias": 0,
+    "data_race_ocorrencias": 0,
+    "pass_nominais": [
+      "--- PASS: TestPutDaemonLedgerSummary_WellFormedPayloadFailsClosedWithoutClaimingPersistence (0.00s)",
+      "--- PASS: TestPutDaemonLedgerSummary_InvalidUUID (0.00s)",
+      "--- PASS: TestPutDaemonLedgerSummary_IDMismatch (0.00s)"
+    ],
+    "resumo": "PASS / ok github.com/multica-ai/multica/server/internal/handler 1.821s",
+    "aceite": "3 de 3 PASS nominais exigidos, ZERO skip, ZERO data race. Gate CUMPRIDO exatamente como retido."
+  },
+  "ephemeral_infra": {
+    "tentativa_1_orq2_local": "Criei cluster PostgreSQL 17 privado no ORQ2 em /home/ec2-user/.cache/orq41-gate/pgdata, 0700, porta efemera 42661 em 127.0.0.1 com socket privado. FALHOU na migration 001: 'extension pgcrypto is not available'. postgresql17-contrib nao esta instalado e instalar pacote e proibido. Cluster parado e removido.",
+    "tentativa_2_usada": "Container efemero no ORQ1 com a imagem pgvector JA PRESENTE localmente (sem pull), pinada por digest sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0, nome orq41-gate-pg, flag --rm, publicada SOMENTE em 127.0.0.1:47471, credencial descartavel orq41gate. Acesso do ORQ2 por tunel SSH privado 127.0.0.1:45603 -> 127.0.0.1:47471, sem expor porta em tailnet.",
+    "schema": "go run ./cmd/migrate up aplicado ao banco EFEMERO: 68 tabelas em public. Nenhuma migration aplicada a banco de produto.",
+    "caches": "GOCACHE, GOTMPDIR e TMPDIR em /home/ec2-user/.cache/orq41-gate, criados com install -d -m 0700 e VERIFICADOS por stat -c %a = 700, todos FORA de /tmp.",
+    "teardown": "cluster local parado, tunel SSH fechado, container efemero removido com docker rm -f, e o cache privado novo removido com rm -rf. Confirmado por ls que o diretorio nao existe mais."
+  },
+  "tests": [
+    {
+      "command": "install -d -m 0700 e stat -c %a nos 5 diretorios privados",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "PASS - todos 700, todos fora de /tmp"
+    },
+    {
+      "command": "psql \"$DATABASE_URL\" -Atqc 'select 1' antes de rodar teste",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - banco efemero alcancavel; pre-condicao do gate satisfeita"
+    },
+    {
+      "command": "go run ./cmd/migrate up contra o banco efemero",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - 68 tabelas em public. Necessario porque o TestMain do pacote cria fixtures com INSERT em \"user\" e workspace (handler_test.go:73, :97-110)"
+    },
+    {
+      "command": "go test -race ./internal/handler -run 'PutDaemonLedgerSummary' -count=1 -v",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "PASS - 3 PASS nominais, 0 'Skipping tests:', 0 WARNING DATA RACE. Contraste com a medicao anterior sem banco, que dava ok com 0 PASS e 1 Skipping tests: e por isso foi classificada como falso verde"
+    },
+    {
+      "command": "docker ps no ORQ1 apos o teardown",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PASS - produto intacto: backend 75e4416f06e9, frontend 1b3b6c9ee32a, omniroute 2fb3fd57e885, postgres-1 2a4a84897363. Nenhum container de produto criado, recriado, parado ou removido"
+    },
+    {
+      "command": "df -h apos teardown",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "MEDIDO - ORQ2 raiz 89% com 5.8G livres e /tmp 5% com 7.4G livres, iguais ao estado do sinal de limpeza; ORQ1 raiz 80% com 4.9G livres. O gate nao consumiu espaco residual"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-w4-e0b0155-adversarial-review.md (secao 11, a ressalva agora fechada)",
+    "/home/ec2-user/.cache/orq41_gate_evidence.log (saida integral do gate, preservada fora do cache removido)",
+    "multica-auth-work/server/internal/handler/handler_test.go:38-54, :73, :97-110"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+  "summary": "Gate de evidencia retido do ORQ-41 executado exatamente como especificado, apos o sinal de limpeza. Os tres testes de handler agora EXECUTARAM e passaram nominalmente, com zero skip e zero data race, o que fecha a ressalva de falso verde da secao 11 da minha revisao. Duas notas de execucao: o cluster PostgreSQL privado que eu montei primeiro no proprio ORQ2 falhou porque a migration 001 exige a extensao pgcrypto e o pacote contrib nao esta instalado, e instalar e proibido; a alternativa usada foi um container efemero com --rm no ORQ1, com a imagem pgvector ja presente localmente e pinada por digest, publicada somente em loopback e alcancada do ORQ2 por tunel SSH privado, sem expor porta em tailnet. Foi necessario aplicar migrations ao banco efemero, porque o TestMain do pacote cria fixtures com INSERT em user e workspace; nenhuma migration tocou banco de produto. Teardown completo: cluster parado, tunel fechado, container removido e apenas o cache privado novo apagado. Containers de produto verificados intactos apos o teardown e disco de volta ao estado do sinal.",
+  "non_claims": [
+    "Nao toquei banco de PRODUCAO: todas as operacoes de schema e de teste foram contra o banco efemero descartavel",
+    "Nao editei codigo, nao commitei, nao dei push e nao mutei board",
+    "Nao criei, recriei, parei nem removi nenhum container de produto; criei e removi apenas o orq41-gate-pg, que era meu e efemero",
+    "Nao instalei nenhum pacote: a falta de pgcrypto no ORQ2 foi contornada mudando de host, nao instalando contrib",
+    "Nao fiz docker pull: a imagem pgvector ja existia no ORQ1 e foi referenciada por digest",
+    "Nao expus nenhuma porta em tailnet: o container publicou apenas em 127.0.0.1 do ORQ1 e o acesso foi por tunel SSH",
+    "Removi APENAS o cache privado novo /home/ec2-user/.cache/orq41-gate; nao toquei nos caches anteriores go-build-i03, go-build-orq41 e sqlcbuild, que seguem aguardando decisao sua",
+    "Nao rodei a suite completa de internal/handler, apenas o filtro PutDaemonLedgerSummary exigido pelo gate",
+    "Nao revisei nem alterei o veredito de codigo do ORQ-41: CODE_PASS permanece como entregue",
+    "A saida integral do gate esta preservada em /home/ec2-user/.cache/orq41_gate_evidence.log, fora do diretorio removido"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (GENERAL-TECH-LEAD)",
+      "reason": "EVIDENCE_BLOCK do ORQ-41 fechado: 3 PASS nominais, zero skip, zero race. Duas pendencias transversais permanecem, nenhuma delas do ORQ-41: o TestMain de internal/handler continua fazendo os.Exit(0) sem banco, o que produz falso verde para qualquer lane e merece cartao proprio; e os tres caches antigos que eu declarei, somando cerca de 1.7G, seguem no disco aguardando sua decisao de remocao.",
+      "file": ".deploy-control/p0/evidence/orq41-w4-e0b0155-adversarial-review.md"
+    }
+  ]
+}

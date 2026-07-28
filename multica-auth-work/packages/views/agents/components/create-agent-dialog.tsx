@@ -36,6 +36,7 @@ import {
   VISIBILITY_LABEL,
 } from "@multica/core/agents";
 import { CharCounter } from "./char-counter";
+import { CreateThinkingField } from "./create-thinking-field";
 import { useT } from "../../i18n";
 
 export function CreateAgentDialog({
@@ -53,7 +54,7 @@ export function CreateAgentDialog({
   members: MemberWithUser[];
   currentUserId: string | null;
   // When provided, the dialog opens in "Duplicate" mode: the visible
-  // fields (name / description / runtime / visibility / model) are
+  // fields (name / description / runtime / visibility / model / thinking) are
   // pre-populated from this agent, and the hidden fields
   // (instructions / custom_args / custom_env / max_concurrent_tasks)
   // are forwarded to the create call so the new agent is a true clone.
@@ -87,6 +88,9 @@ export function CreateAgentDialog({
     template?.visibility ?? "workspace",
   );
   const [model, setModel] = useState(template?.model ?? "");
+  const [thinkingLevel, setThinkingLevel] = useState(
+    template?.thinking_level ?? "",
+  );
   const [instructions, setInstructions] = useState(template?.instructions ?? "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(template?.avatar_url ?? null);
   const [selectedSkillIds, setSelectedSkillIds] = useState<Set<string>>(
@@ -160,6 +164,7 @@ export function CreateAgentDialog({
         runtime_id: selectedRuntime.id,
         visibility,
         model: model.trim() || undefined,
+        thinking_level: thinkingLevel || undefined,
         instructions: trimmedInstructions || undefined,
         avatar_url: avatarUrl ?? undefined,
       };
@@ -331,7 +336,11 @@ export function CreateAgentDialog({
               members={members}
               currentUserId={currentUserId}
               selectedRuntimeId={selectedRuntimeId}
-              onSelect={setSelectedRuntimeId}
+              onSelect={(runtimeId) => {
+                setSelectedRuntimeId(runtimeId);
+                setModel("");
+                setThinkingLevel("");
+              }}
             />
 
             <ModelDropdown
@@ -340,6 +349,14 @@ export function CreateAgentDialog({
               value={model}
               onChange={setModel}
               disabled={!selectedRuntime}
+            />
+
+            <CreateThinkingField
+              runtimeId={selectedRuntime?.id ?? null}
+              runtimeOnline={selectedRuntime?.status === "online"}
+              model={model}
+              value={thinkingLevel}
+              onChange={setThinkingLevel}
             />
 
             {/* --- Optional sections (instructions / skills) ---

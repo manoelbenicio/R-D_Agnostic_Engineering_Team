@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-26T22:45:15Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "P8-CUTOVER-PLAN",
+  "status": "DONE",
+  "reported_to": "Kiro-PRINCIPAL-TL",
+  "evidence": [
+    ".deploy-control/p0/evidence/gw-discovery-p8-cutover.md"
+  ],
+  "summary": "PACOTE 8 (p8-cutover) elaborado no modo PREPARAR. Plano de cutover em 4 etapas (Pre-flight, Canário Dual-Discovery, Restauração de HOME/Limpeza Zero-Trust e Auditoria Final) com critérios de sucesso e pontos de rollback (R1-R3) gravado em disco. Nenhuma alteração de código ou daemon foi realizada."
+}

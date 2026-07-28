@@ -1,0 +1,93 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T10:22:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "T3",
+  "task_ids": [
+    "T3-RUNTIME-HEALTH"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/T3-runtime-health-audit.md",
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260727T102000Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__T3__T3-RUNTIME-HEALTH__20260727T102200Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "systemctl --user is-active / show multica-daemon-orq2-credential.service multica-orq1-backend-tunnel.service",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS - daemon active/running MainPID 3240496 NRestarts 0 desde 2026-07-27 01:18:53 UTC; tunnel active/running MainPID 3211411 NRestarts 0 desde 2026-07-26 23:47:47 UTC"
+    },
+    {
+      "command": "curl http://127.0.0.1:19514/health e http://127.0.0.1:18080/health",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS - health do daemon 200; backend ORQ1 via tunnel 200"
+    },
+    {
+      "command": "journalctl --user -u multica-daemon-orq2-credential.service | grep starting daemon/registered runtime",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PASS - agents=[codex kiro antigravity] e 3 registered runtime no start de 01:18:53"
+    },
+    {
+      "command": "psql select provider,status,daemon_id,now()-last_seen_at from agent_runtime",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "PASS - antigravity/codex/kiro online em orq2-credential-runtime-v1 com last_seen 2s; claude e kiro offline pertencem ao daemon antigo 019f8aa9 (residuo esperado, nao incidente)"
+    },
+    {
+      "command": "psql select status,count(*) from agent_task_queue group by status",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "MEDIDO - completed 132, failed 71, cancelled 6; ZERO queued e ZERO running"
+    },
+    {
+      "command": "psql select distinct left(error,400) from agent_task_queue where status='failed' and created_at > now()-interval '12 hours' and failure_reason like 'agent_error%'",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "DEFEITO - agy: 'unsupported credential path type .../slot-145/home/.gemini/antigravity-cli/cli.log' (idem slot-146); kiro: 'session/prompt: Internal error (code=-32603 ... The request was throttled by the service (request_id 07bdd779-de10-475b-91c6-c2ac737260d7))'"
+    },
+    {
+      "command": "ls -la /home/ec2-user/.agent-cred-homes/slots/slot-145/home/.gemini/antigravity-cli/",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "CAUSA CONFIRMADA - cli.log e symlink para log/cli-20260726_215058.log; antigravity_home.go copyCredentialDir ramo default (92-103) aborta em path que nao e dir nem arquivo regular"
+    },
+    {
+      "command": "psql left join lateral entre issue e ultima agent_task_queue por issue_id",
+      "exit_code": 0,
+      "assertions_or_tests": 7,
+      "result": "MEDIDO - 6 inconsistencias: 3 blocked com task completed; 1 in_progress com task failed; 1 in_progress sem task; 1 in_progress com task completed nao promovida; 1 in_review parada ha 10h. Issues: todo 8, in_progress 3, blocked 3, in_review 1, done 1"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/T3-runtime-health-audit.md",
+    "systemd user units multica-daemon-orq2-credential.service e multica-orq1-backend-tunnel.service (ORQ2)",
+    "journalctl --user do unit do daemon, start de 2026-07-27T01:18:53Z",
+    "postgres multica-dev-transition-postgres-1 (ORQ1), db/user multica_transition, tabelas agent_runtime, agent_task_queue, issue",
+    "multica-auth-work/server/internal/daemon/execenv/antigravity_home.go:92-103"
+  ],
+  "reported_to": "Codex56-TL (w5:pC) e Codex56#B (w7:p4) via herdr pane run no ORQ2, ambos exit 0 + copia duravel em .deploy-control/inbox-tm/",
+  "summary": "Auditoria T3 read-only refeita na topologia correta (daemon no ORQ2 via systemd user unit, tunnel unit no ORQ2, backend Docker ORQ1:18080). INFRA OK: daemon MainPID 3240496 active/running NRestarts 0, tunnel MainPID 3211411 active/running, health 19514 = 200, backend 18080 via tunnel = 200. RUNTIMES OBRIGATORIOS OK: codex, kiro e antigravity online em orq2-credential-runtime-v1 com heartbeat de 2s. Zero tasks queued e zero running, com 3 runtimes online ociosos. DOIS DEFEITOS: (1) AGY quebrado de forma reproduzivel, copyCredentialDir em antigravity_home.go:92-103 aborta com 'unsupported credential path type' porque o agy cria cli.log como symlink dentro de .gemini/antigravity-cli, confirmado nos slots 145 e 146; (2) KIRO degradado por throttle do provedor (code=-32603, request_id 07bdd779). Os 6 runtime_offline e 1 runtime_recovery datam da janela de troca do daemon velho para o novo. Seis inconsistencias issue x task, incluindo 3 issues blocked cuja ultima task ja completou e 1 issue in_progress sem nenhuma task.",
+  "non_claims": [
+    "READ-ONLY: nao editei arquivo, nao fiz deploy, restart, rerun, kill, commit ou push",
+    "Nenhum segredo lido: apenas POSTGRES_USER e POSTGRES_DB (nomes nao sensiveis); nunca POSTGRES_PASSWORD, secret_ref ou token; antigravity-oauth-token nao foi aberto, apenas ls -l",
+    "Nao tratei o daemon antigo /tmp/multica-auth-fixed do ORQ1 como incidente, conforme correcao de topologia",
+    "Nao apliquei nem testei correcao para o defeito do agy; nao ha patch nesta entrega",
+    "Nao auditei cline (sem linha em agent_runtime) nem opencode (fora de escopo)",
+    "Nao confirmei se o throttle do kiro persiste agora: a evidencia e da task de 02:42"
+  ],
+  "blocker": "Dois pontos precisam de decisao e nao foram tocados: (1) o defeito do agy exige alterar antigravity_home.go para tratar symlink (copiar o alvo, ignorar, ou allow-list de arquivos de credencial) mais recompilar e relancar o daemon, classe STOP-AND-WAIT; (2) as 6 inconsistencias issue x task exigem definir quem reconcilia status apos task terminal, e nenhuma mutacao de status foi feita por mim. Dono: human owner via Codex56-TL.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL",
+      "reason": "AGY nao e task-capable hoje por defeito de tipo de arquivo em copyCredentialDir, com erro literal e slots afetados identificados; kiro esta online mas com throttle upstream rastreavel por request_id",
+      "file": ".deploy-control/p0/evidence/T3-runtime-health-audit.md"
+    }
+  ]
+}

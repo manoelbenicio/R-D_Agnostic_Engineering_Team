@@ -1,0 +1,64 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:47:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["GTL-32-PEER-REVIEW-KANBAN-V2"],
+  "status": "DONE_BLOCK",
+  "verdict": "BLOCK",
+  "target": ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v2.md (Antigravity w8:p2, GTL-30)",
+  "confirmed_correct": [
+    "issue.status 'done' e valido e 'completed' nao existe: 001_init.up.sql:57-58 CHECK (backlog, todo, in_progress, in_review, done, blocked, cancelled)",
+    "waiting_local_directory valido: 109_agent_task_waiting_local_directory.up.sql:15",
+    "issue_dependency com type blocked_by: 001_init.up.sql:89-94",
+    "assignee_type 'squad' valido desde 084_squad.up.sql:31",
+    "completed_at existe (001_init.up.sql:136) e status completed existe (001_init.up.sql:132)",
+    "NOT EXISTS resolve o problema de historico do V1",
+    "zero rerun: nenhuma chamada a EnqueueTaskForIssue, CreateRetryTask ou MaybeRetryFailedTask",
+    "indice de suporte ao NOT EXISTS: 035_task_queue_issue_id_index.up.sql:4"
+  ],
+  "blockers": [
+    "BLOQUEADOR 1 - 2 dos 7 arquivos_locked NAO EXISTEM: server/internal/protocol/events.go nao existe (real e server/pkg/protocol/events.go) e packages/views/issues/components/kanban-card.tsx nao existe (find -iname *kanban* fora de node_modules = ZERO; os reais sao board-card.tsx, board-column.tsx, board-view.tsx)",
+    "BLOQUEADOR 2 - a graca de 10s olha i.created_at, mas a corrida e entre ATRIBUIR e enfileirar: issue criada dias atras e atribuida agora passa a graca na hora e e reportada durante o enqueue normal. Usar updated_at, ou declarar necessidade de coluna de atribuicao (nao existe hoje)",
+    "BLOQUEADOR 3 - Anomalia 4 duplica por linha: issue_dependency nao tem UNIQUE (001_init.up.sql:89-94, PK so em id), entao pai resolvido + 2 deps resolvidas = 3 linhas = 3 eventos e 3 badges para a MESMA issue; o COALESCE mascara. Agregar por issue"
+  ],
+  "additional_findings": [
+    "DUPLICACAO ENTRE TICKS: sem estado, dedup ou watermark, uma anomalia persistente gera 2 eventos por minuto por issue indefinidamente (~26 mil/dia com as 9 issues preservadas). E o padrao do repo e evento no bus virar activity_log e notificacao (activity_listeners.go:51, autopilot_listeners.go:20, notification_listeners.go:583, subscriber_listeners.go:48) - exigir explicitamente que kanban:integrity_anomaly nao entre nesses listeners",
+    "CUSTO DE QUERY: o unico indice de status e idx_issue_status ON issue(workspace_id, status) (001_init.up.sql:170) e a coluna lider e workspace_id; os 4 SQLs nao filtram workspace, logo tendem a Seq Scan em issue a cada 30s, 4x por tick. Recomendo varrer por workspace (zero migration, casa com a sala WebSocket). Anomalia 3 e a mais cara (LATERAL ordenado por issue done, conjunto que so cresce) e precisa janela temporal",
+    "MULTIPLAS INSTANCIAS: sem eleicao de lider nem lock; grep de pg_try_advisory_lock/advisory/leader em cmd/server acha apenas main.go:382 (advisory 4246, de outra funcao) e nomes de squad leader. Com 2 replicas, eventos em dobro",
+    "ORDEM VS SWEEPER: a garantia da secao 5.3 nao existe. runtime_sweeper.go:21 sweepInterval = 30s e :77 NewTicker(sweepInterval): dois tickers independentes de MESMO periodo, defasagem arbitraria, podendo intercalar no meio de HandleFailedTasks e gerar falso positivo transitorio. Acoplar o monitor ao fim do tick do sweeper",
+    "FALSO POSITIVO NA ANOMALIA 3: ORDER BY created_at DESC LIMIT 1 elege a task mais nova, entao task completed seguida de retry queued marca a issue done como anomalia. O predicado correto e EXISTS task completed com completed_at NOT NULL, nao 'a ultima esta completed'. Segundo caminho: conclusao humana legitima apos falha de agente - decisao de produto",
+    "ESCOPO NAO DECLARADO: o enum tem backlog e in_review e nenhuma das 4 invariantes os cobre; declarar como fora de escopo deliberado"
+  ],
+  "tests_required": [
+    "TestAnomaly1_OldIssueAssignedNow_NoAnomalyDuringEnqueue - falha com o SQL atual, prova o bloqueador 2",
+    "TestAnomaly4_MultipleResolvedDependencies_EmitsSingleEvent - 1 evento, nao 3",
+    "TestMonitor_SameAnomalyAcrossTicks_EmitsOnce - 1 na aparicao, 0 nos demais, 1 clear ao resolver",
+    "TestAnomaly3_CompletedThenRetryQueued_NoAnomaly",
+    "TestMonitor_NoNotificationListenerSubscribes",
+    "TestMonitor_SingleInstanceGuard - dois monitores, so um emite",
+    "TestMonitor_RunsAfterSweeper_NoTransientFalsePositive",
+    "TestQueries_UseWorkspaceScopedIndex - EXPLAIN sem Seq Scan em issue",
+    "reforco no TestMonitor_StrictReadOnlyInvariance: comparar tambem updated_at, nao so contagem e valores"
+  ],
+  "minimum_for_PASS": "corrigir os 2 caminhos locked; graca em updated_at; dedup da Anomalia 4 por issue; supressao entre ticks e isolamento de notificacao; escopo por workspace e janela na Anomalia 3; instancia unica e acoplamento ao sweeper; predicado da Anomalia 3 para EXISTS completed",
+  "open_questions_not_asserted": [
+    "se o backend roda em replica unica no deploy atual - nao verifiquei",
+    "se o runtime_sweeper tem guarda de instancia unica - nao verifiquei",
+    "se o badge deve nascer em board-card.tsx ou board-view.tsx - nao inspecionei os componentes"
+  ],
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-kanban-monitor-v2-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__GTL-32-KANBAN-V2-PEER-REVIEW__20260727T114700Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "nenhum codigo editado; sem build, vet, test, deploy, restart, commit, push ou rerun",
+    "as 9 issues seguem PRESERVADAS; zero rerun autorizado ou executado",
+    "nao alterei estado de banco nem de board"
+  ],
+  "next": "Aguardando redistribuicao do General-Tech-Lead em w5:pC.",
+  "blocker": null
+}

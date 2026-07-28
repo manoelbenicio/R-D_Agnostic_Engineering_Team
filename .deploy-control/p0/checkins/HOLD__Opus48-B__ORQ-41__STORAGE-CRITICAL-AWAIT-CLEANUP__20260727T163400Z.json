@@ -1,0 +1,57 @@
+{
+  "event": "HOLD_RECORD",
+  "timestamp_utc": "2026-07-27T16:34:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-41",
+  "orq_issue_id": "ORQ-41",
+  "status": "HELD_AWAITING_STORAGE_CLEANUP_SIGNAL",
+  "verdict_accepted": "CODE_PASS / EVIDENCE_BLOCK",
+  "hold_terms_acknowledged": [
+    "NAO rodar mais nenhum gate de banco ou de build enquanto o armazenamento do ORQ2 estiver critico",
+    "Aguardar o sinal de limpeza de armazenamento do GTL antes de qualquer reexecucao",
+    "Ao reexecutar: SOMENTE o gate nominal exato do handler, nada mais",
+    "Banco: PostgreSQL efemero e privado. PROIBIDO banco de producao",
+    "Cache: privado e FORA de /tmp",
+    "Aceite: 3 PASS nominais e ZERO skip",
+    "Sem edicao de codigo e sem mutacao de board"
+  ],
+  "pending_gate_exact": {
+    "escopo": "somente internal/handler, filtro PutDaemonLedgerSummary",
+    "pre_condicao": "DATABASE_URL apontando para PostgreSQL efemero privado, alcancavel, verificado antes de rodar",
+    "cache": "GOCACHE, GOTMPDIR e TMPDIR em diretorio privado fora de /tmp, criados com modo 0700",
+    "comando": "go test -race ./internal/handler -run 'PutDaemonLedgerSummary' -count=1 -v",
+    "aceite_1": "ZERO ocorrencias da linha 'Skipping tests:' na saida",
+    "aceite_2": "--- PASS: TestPutDaemonLedgerSummary_WellFormedPayloadFailsClosedWithoutClaimingPersistence",
+    "aceite_3": "--- PASS: TestPutDaemonLedgerSummary_InvalidUUID",
+    "aceite_4": "--- PASS: TestPutDaemonLedgerSummary_IDMismatch",
+    "regra": "'ok' NUNCA e aceito como evidencia neste pacote, porque handler_test.go:38-54 faz os.Exit(0) antes de m.Run() quando o banco nao responde",
+    "limpeza": "remover o cache privado ao final do gate, para nao repetir o consumo de disco"
+  },
+  "disk_disclosure": {
+    "motivo": "O armazenamento do ORQ2 esta critico e parte do consumo e MEU. Declaro em vez de esperar que alguem descubra.",
+    "medido_agora": {
+      "raiz": "48G total, 45G usados, 3.5G livres, 93%",
+      "tmp": "7.7G total, 7.4G usados, 295M livres, 97%"
+    },
+    "caches_que_eu_criei_nesta_sessao": {
+      "/home/ec2-user/.cache/go-build-i03": "817M",
+      "/home/ec2-user/.cache/go-build-orq41": "812M",
+      "/home/ec2-user/.cache/sqlcbuild": "76M",
+      "/home/ec2-user/.cache/gotmp-i03": "0",
+      "/home/ec2-user/.cache/gotmp-orq41": "0",
+      "total_aproximado": "~1.7G"
+    },
+    "acao_tomada": "NENHUMA. Nao removi nada: apagar arquivo e classe STOP-AND-WAIT e o cartao de limpeza pertence ao GTL. Estes cinco caminhos sao candidatos seguros de recuperacao de espaco, todos recriaveis, sem nenhum dado de produto e sem segredo.",
+    "recomendacao": "Se o GTL autorizar, os dois go-build-* somam ~1.6G e sao puro cache de compilacao, reconstruivel. O sqlcbuild guarda o binario sqlc compilado do module cache local, tambem reconstruivel. Nao proponho tocar em /tmp, que nao e meu."
+  },
+  "non_claims": [
+    "Nao executei nenhum gate de banco ou de build depois do sinal de hold",
+    "Nao removi, apaguei nem podei nada: nenhum rm, nenhum prune, nenhum docker rmi",
+    "Nao toquei banco de producao em momento algum desta sessao; as leituras anteriores foram SELECT read-only",
+    "Nao editei codigo, nao mutei board, nao criei, atribui nem comentei issue",
+    "O veredito CODE_PASS / EVIDENCE_BLOCK do ORQ-41 permanece como entregue; nao o revisei nem o alterei",
+    "Nao afirmo que os ~1.7G sejam a causa principal do estado critico: e apenas a parcela que eu posso atribuir a mim"
+  ],
+  "unblocks_on": "Sinal de limpeza de armazenamento do GTL. Somente entao executo o gate nominal do handler descrito em pending_gate_exact, com banco efemero privado e cache privado fora de /tmp."
+}

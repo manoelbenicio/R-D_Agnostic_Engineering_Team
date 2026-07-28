@@ -1,0 +1,43 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:12:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-41",
+  "issue_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "issue_number": 41,
+  "task_ids": ["ORQ41-WAVE-PLAN-V3-MIGRATION-RESERVATION-FIX"],
+  "status": "DONE_STOPPED_FOR_PEER_REVIEW",
+  "deliverable": ".deploy-control/p0/evidence/orq41-implementation-wave-plan.md",
+  "artifact_sha256": "687cf3c4d4c0b404b495e65ce3f611decad7ae784b7ee594e280e0de9b71629f",
+  "artifact_lines": 668,
+  "artifact_bytes": 36927,
+  "supersedes": "secao V2.2 integralmente; emenda V2.1, V2.3 e V2.8",
+  "self_correction": "A V2 reivindicou 127-131 e ESTAVA ERRADA - a reivindicacao ja estava colidida quando foi escrita. Prova medida: git worktree list mostra 10+ worktrees ativos, e no worktree do ORQ-13 (/home/ec2-user/workspace/worktrees/gtl-i03-orq13-phase1) a migration 127_task_usage_thinking_level.up.sql e .down.sql JA EXISTEM. Na branch de integracao o maior numero continua 126, e foi essa leitura parcial que me levou ao erro: a integracao NAO e fonte de verdade para alocacao de numero, porque cada frente cria a migration no proprio worktree e o numero so aparece no merge. Ha ainda ORQ-12 (account_id em task_usage) e ORQ-21 (accounts/approved_accounts/assignments) com worktree aberto e migrations paradas em 126, que quase certamente vao precisar de numero.",
+  "E1_reservation_cancelled": "Nenhuma onda do ORQ-41 reivindica numero de migration. A faixa 127-131 pedida na V2 esta CANCELADA.",
+  "E2_placeholders": "Cinco placeholders simbolicos, sem digito: MIG_EXEC_REQUEST, MIG_TRIGGER_AUDIT, MIG_WORKFLOW_AUTH, MIG_LEDGER_SUMMARY e MIG_ACTIVE_TASK_INDEX. O plano nunca escreve digito; o numero e pedido ao registrador central imediatamente antes de criar o arquivo e registrado na evidencia DEPOIS de atribuido.",
+  "E3_discovery_method": "Descoberta do proximo numero livre passa a varrer TODOS os worktrees: for w in $(git worktree list --porcelain | awk '/^worktree /{print $2}'); do ls $w/multica-auth-work/server/migrations/*.up.sql; done | sed 's/.*\///' | cut -d_ -f1 | sort -n | tail -1. Este e o UNICO metodo aceitavel: ele encontra o 127 do ORQ-13, que a leitura da integracao nao encontra.",
+  "E4_renumber_policy": "Se o numero colidir no merge, a renumeracao e do ORQ-41 - somos os ultimos a chegar e nao pedimos exclusividade de faixa.",
+  "E5_single_lane": "S1/S2/S3 deixam de parecer entregas paralelizaveis e passam a ser posicoes de uma FILA SERIAL UNICA do LANE-DB, com dono unico para toda a duracao, detendo exclusivamente migrations/, pkg/db/queries/ e pkg/db/generated/ em TODOS os passos. Ordem: as tres aditivas, depois MIG_LEDGER_SUMMARY, e MIG_ACTIVE_TASK_INDEX por ultimo e sozinho apos W5 verde.",
+  "E6_router_owner": "cmd/server/router.go pertence a W3 e somente a W3. W4 nao o edita: especifica a rota, e W3 registra na PR dele; o handler de ledger-summary fica em arquivo proprio de W4 (internal/handler/daemon_ledger_summary.go), com apenas UMA linha de registro em router.go pertencendo a W3. Se W4 ficar pronta antes, espera - a rota nao e caminho critico, porque ate ela existir o gate opera com registry em memoria falhando fechado.",
+  "E7_executable_gates": "Seis gates viraram comandos com criterio: G-DB (descoberta de numero em todos os worktrees, ciclo up/down/up, sqlc com diff contido em generated, go build), G-W2 (off=byte-identical verificado por suite legada verde SEM alterar nenhum _test.go pre-existente, provado por git diff --stat), G-W5 (grep t.Skip = ZERO e a matriz FALHA sem banco em vez de skipar), G-W5-negativo (os dois testes que DEVEM falhar antes da correcao), e G-ROLLBACK (psql indexdef confirmando que voltou idx_one_pending_task_per_issue_agent com 2 estados e chave (issue_id, agent_id), e que idx_one_pending_task_per_issue NAO existe).",
+  "stop_conditions": [
+    "peer review independente desta V3 aprovado",
+    "os cinco rulings de produto da V2.7 do design",
+    "confirmacao de QUEM e o registrador central de migrations - hoje nao sei se existe, e se nao existir isso e pre-requisito do ORQ-41 e afeta igualmente ORQ-12, ORQ-13 e ORQ-21",
+    "veto ou aceite do GTL sobre router.go pertencer a W3"
+  ],
+  "files_changed": [],
+  "files_created_or_appended": [
+    ".deploy-control/p0/evidence/orq41-implementation-wave-plan.md (secao V3)",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__ORQ41-WAVE-PLAN-V3__20260727T151200Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "apenas o documento read-only; nenhum codigo, board, API, schema, migration, build, teste, deploy ou credencial",
+    "nao alterei assignee nem postei comentario; nenhum card criado",
+    "leitura de worktrees limitada a git worktree list e ls de diretorio de migrations"
+  ],
+  "blocker": null
+}

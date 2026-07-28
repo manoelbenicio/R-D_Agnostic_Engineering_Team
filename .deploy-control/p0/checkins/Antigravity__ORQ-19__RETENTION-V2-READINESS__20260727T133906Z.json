@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T133906Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-19",
+  "lane": "GTL-ORQ19",
+  "task_ids": ["ORQ-19-RETENTION-V2-READINESS"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/orq19-retention-v2-readiness.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T133906Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq19-retention-v2-readiness.md"
+  ],
+  "summary": "Matriz de prontidao para implementacao de retencao e lifecycle V2 de runtimes para ORQ-19 entregue. Migration placeholders Z01, 16 FILES_LOCKED, transacao atomica POST /reassign-and-archive, trava de ressurreicao por heartbeat (HTTP 409), preservacao de 100% do historico task_usage, backfill dos 8 agentes e suite de 7 testes.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

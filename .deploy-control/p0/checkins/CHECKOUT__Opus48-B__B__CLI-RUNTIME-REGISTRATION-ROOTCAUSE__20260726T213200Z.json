@@ -1,0 +1,90 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T21:32:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "B",
+  "task_ids": [
+    "CLI-RUNTIME-REGISTRATION-ROOTCAUSE"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T213000Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__B__CLI-RUNTIME-REGISTRATION-ROOTCAUSE__20260726T213200Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "ssh ec2-user@100.118.244.61 'head -70 /tmp/multica-daemon.relaunch.log'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - L1 agents=[claude]; L8 agent_count=1; L9 agent version detected name=claude; L11 registered runtime provider=claude"
+    },
+    {
+      "command": "ssh ... 'grep -nE \"starting daemon|registering runtimes|agent version detected|register response|registered runtime|watching workspace\" /tmp/multica-daemon.relaunch.log'",
+      "exit_code": 0,
+      "assertions_or_tests": 16,
+      "result": "PASS - somente 2 linhas 'agent version detected' em 23726 linhas, ambas para claude (L9 e L2657)"
+    },
+    {
+      "command": "ssh ... 'for a in claude codex kiro-cli kiro agy cline opencode; do grep -ciE ... /tmp/multica-daemon.relaunch.log; done'",
+      "exit_code": 0,
+      "assertions_or_tests": 7,
+      "result": "PASS - claude=8, codex=0, kiro-cli=0, kiro=0, agy=0, cline=0, opencode=0"
+    },
+    {
+      "command": "ssh ... 'tr \"\\0\" \"\\n\" < /proc/1744675/cmdline' e '... /proc/1744675/environ | grep AGENT_BRAIN'",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS - cmdline tem --agent-brain-development --agent-brain-gateway-required; env AGENT_BRAIN_CLI_KIND=claude-code, LEGACY_EXECUTION_ENABLED=false"
+    },
+    {
+      "command": "ssh ... 'PATH=<PATH do daemon> command -v claude codex kiro-cli cline opencode agy'",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "PASS - 6/6 resolvem no PATH do proprio daemon; PATH nao e a causa"
+    },
+    {
+      "command": "ssh ... 'strings -a /tmp/multica-auth-fixed | grep -c MULTICA_{KIRO,CLINE,OPENCODE,CODEX,ANTIGRAVITY}_PATH'",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "PASS - 1 ocorrencia cada; probe multi-CLI esta compilado no binario"
+    },
+    {
+      "command": "ssh ... '/tmp/multica-auth-fixed daemon start --help | grep -iE \"agent|cli-kind\"'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - nao existe flag --agent/--agents; so --agent-brain-cli-kind (claude-code ou codex)"
+    },
+    {
+      "command": "grep -n -B10 -A18 'resolveAgentBrainBuiltInEntry(' multica-auth-work/server/internal/daemon/config.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - config.go:425-431 substitui agents por mapa de 1 entrada; config.go:145-154 mapeia so 3 CLIKinds"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T213000Z.msg",
+    "/tmp/multica-daemon.relaunch.log (ORQ1 100.118.244.61) linhas 1,8,9,10,11,12,13,2649,2656,2657,2659",
+    "multica-auth-work/server/internal/daemon/config.go:145-154 e :425-431",
+    "multica-auth-work/server/internal/daemon/daemon.go:772-781"
+  ],
+  "reported_to": "KIRO-PRINCIPAL-TL (100.117.245.15, pane wB:p1) via herdr pane run, exit 0 + copia duravel em .deploy-control/inbox-tm/",
+  "summary": "Causa raiz do 'Agents: claude': o daemon nunca sondou os outros cinco CLIs. config.go:425-431, quando DevelopmentEnabled && Gateway.Required, substitui o mapa dos 15 agentes por UMA entrada derivada de AGENT_BRAIN_CLI_KIND (=claude-code). daemon.go:772-781 monta o campo de log 'agents' depois dessa substituicao, por isso o log nasce agents=[claude]. Nao e PATH (6/6 CLIs resolvem no PATH do daemon) nem instalacao nem falha de probe (probe multi-CLI presente no binario). Limite extra: agentBrainBuiltInCLIFor (config.go:145-154) mapeia apenas claude-code, codex e openai-compatible->cline; kiro-cli, agy e opencode nao tem mapeamento em modo gateway-required.",
+  "non_claims": [
+    "Nao reiniciei, nao parei e nao matei o daemon; nao instalei nada; nao reiniciei container",
+    "Nenhum arquivo apagado; nenhum git rm/push/reset/clean/checkout --",
+    "Nenhuma alteracao de codigo feita: a correcao multi-CLI e refactor+rebuild+relaunch = STOP-AND-WAIT",
+    "Nenhum valor de segredo lido ou impresso; AGENT_BRAIN_GATEWAY_SECRET_FILE tratado como referencia",
+    "Nao validei que registrar os 6 CLIs resolve 'No models available': readiness estrita de modelos e defeito separado"
+  ],
+  "blocker": "Decisao escrita do owner necessaria em dois pontos: (a) qual daemon e o caminho oficial agora, pois o PID 1744675 morreu as 21:26:16 e outro agente subiu o PID 3244391 com AGENT_BRAIN_LEGACY_EXECUTION_ENABLED=true e sem as flags agent-brain; (b) autorizar ou nao a mudanca em config.go:425-431 e :145-154 para permitir multi-CLI em modo gateway-required, unica via para kiro-cli, agy e opencode. Dono do bloqueio: human owner via KIRO-PRINCIPAL-TL. Proxima acao: ruling escrito.",
+  "handoffs": [
+    {
+      "to_lane": "KIRO-PRINCIPAL-TL",
+      "reason": "Colisao ao vivo no ORQ1: dois caminhos de daemon em disputa no mesmo host durante a investigacao. Reportado, nao tocado.",
+      "file": ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T213000Z.msg"
+    }
+  ]
+}

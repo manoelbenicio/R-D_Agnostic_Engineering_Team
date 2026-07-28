@@ -1,0 +1,29 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T15:51:59Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-31",
+    "ORQ-21"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Adjustment of GTL dispatch queue sequence for R3 ORQ-31 and ORQ-21 feccee4 priority",
+  "finding": "Updated gtl-dispatch-receipts-20260728-v1.md with Addendum. Notified pane w7:p3 (Codex56-A) via Herdr to prioritize re-review of ORQ-21 feccee4 over PASS stack before executing ORQ-31. Marked ORQ-31 as PAUSED_SEQUENCE and queued-after-critical-review. Preserved InReview state without regression. Generated ZERO duplicate tasks or product code edits. Recorded updated receipts SHA256 d92a939a72180a8b15f2bd219e1e4e3abfc79d87b2bfb450ca8d7f8d6c98ee73.",
+  "action_taken": "Updated .deploy-control/p0/evidence/gtl-dispatch-receipts-20260728-v1.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Mechanical queue adjustment operation.",
+  "files_changed": [
+    ".deploy-control/p0/evidence/gtl-dispatch-receipts-20260728-v1.md"
+  ],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260728T155159Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-DISPATCH-QUEUE-V1-ADJUSTMENT__20260728T155159Z.json"
+  ],
+  "updated_receipts_sha256": "d92a939a72180a8b15f2bd219e1e4e3abfc79d87b2bfb450ca8d7f8d6c98ee73",
+  "non_claims": [
+    "gtl queue sequence adjustment, no duplicate task, no product code edit, no GetSecretValue, no DB mutation"
+  ],
+  "blocker": null
+}

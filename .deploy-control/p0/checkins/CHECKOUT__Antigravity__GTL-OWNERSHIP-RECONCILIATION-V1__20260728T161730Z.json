@@ -1,0 +1,34 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T16:17:30Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-12",
+    "ORQ-15",
+    "ORQ-23",
+    "ORQ-34",
+    "ORQ-36",
+    "ORQ-37",
+    "ORQ-26"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "target_host": "ORQ1 (100.118.244.61)",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Execution of GTL ownership reconciliation V1: ORQ-12 to in_review, EXT-OWNER-V1 note insertion for in-progress cards, and future dispatch policy registration",
+  "finding": "Produced gtl-ownership-reconciliation-v1.md. Moved ORQ-12 (8b1419f5-c9d4-466c-adff-cded98f91d29) status-only in_progress->in_review (GET-back verified 100%). Published idempotent human-only notes EXT-OWNER-V1:<card>:<pane> for ORQ15, ORQ23, ORQ34, ORQ36, ORQ37 declaring external Herdr execution and prohibiting duplicate task assignment. Confirmed ORQ26 assignee Agy-P0-A8 without duplicate note. Column counts: BEFORE (blocked=5, done=6, in_progress=7, in_review=5, todo=1) vs AFTER (blocked=5, done=6, in_progress=6, in_review=6, todo=1). Active task queue count is 0 (zero duplicate tasks created). Registered future dispatch policy for API-based assignee assignment and single product task creation. Recorded reconciliation SHA256 39596ab3272c58927786eb8a41dfaf94a00fcc2943da03a5dcecc44d3d98979b.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-ownership-reconciliation-v1.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Status-only & note publishing reconciliation operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-ownership-reconciliation-v1.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260728T161730Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-OWNERSHIP-RECONCILIATION-V1__20260728T161730Z.json"
+  ],
+  "ownership_reconciliation_sha256": "39596ab3272c58927786eb8a41dfaf94a00fcc2943da03a5dcecc44d3d98979b",
+  "non_claims": [
+    "gtl ownership reconciliation V1, no DB assignee mutation, no duplicate task creation, no GetSecretValue, no product code edit"
+  ],
+  "blocker": null
+}

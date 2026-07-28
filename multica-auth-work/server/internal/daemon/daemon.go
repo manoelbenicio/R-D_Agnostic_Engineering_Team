@@ -2055,7 +2055,29 @@ func (d *Daemon) handleModelList(ctx context.Context, rt Runtime, requestID stri
 		return
 	}
 
-	models, err := agent.ListModels(discoveryCtx, rt.Provider, entry.Path)
+	discoveryHomes := []string{""}
+	if canonical, required := canonicalCredentialProvider(rt.Provider); required && canonical == "antigravity" {
+		homes, resolveErr := resolveCredentialModelDiscoveryHomes(rt.Provider)
+		if resolveErr != nil {
+			d.reportModelListResult(ctx, rt, requestID, map[string]any{
+				"status": "failed",
+				"error":  resolveErr.Error(),
+			})
+			return
+		}
+		discoveryHomes = homes
+	}
+
+	var (
+		models []agent.Model
+		err    error
+	)
+	for _, discoveryHome := range discoveryHomes {
+		models, err = agent.ListModelsWithHome(discoveryCtx, rt.Provider, entry.Path, discoveryHome)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		if discoveryCtx.Err() != nil {
 			err = fmt.Errorf("model discovery exceeded the 40 second daemon limit: %w", discoveryCtx.Err())
@@ -3446,6 +3468,12 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// path; this call is a pure JSON parse over the same task payload.
 	localAssignment, _ := findLocalDirectoryAssignment(task.ProjectResources, d.cfg.DaemonID)
 	credentialAccountHome := ""
+	if agentBrainPlan == nil {
+		credentialAccountHome, err = resolveCredentialAccountHome(task.AgentID, provider)
+		if err != nil {
+			return TaskResult{}, err
+		}
+	}
 	startedTask := false
 	// Reuse intentionally skipped for local_directory tasks: the prior
 	// WorkDir is the user's own path (always present) but the reuse path
@@ -3473,7 +3501,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 			McpConfig:             agentMcpConfig,
 			OpenclawGateway:       openclawGateway,
 			CredentialAccountHome: credentialAccountHome,
-			CredentiallessGateway: true,
+			CredentiallessGateway: agentBrainPlan != nil,
 			Task:                  taskCtx,
 		}, d.logger)
 	}
@@ -3490,7 +3518,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 			McpConfig:             agentMcpConfig,
 			OpenclawGateway:       openclawGateway,
 			CredentialAccountHome: credentialAccountHome,
-			CredentiallessGateway: true,
+			CredentiallessGateway: agentBrainPlan != nil,
 			Task:                  taskCtx,
 		}
 		if localAssignment != nil {
@@ -3649,6 +3677,14 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 		binDir := filepath.Dir(selfBin)
 		agentEnv["PATH"] = binDir + string(os.PathListSeparator) + os.Getenv("PATH")
 	}
+	if agentBrainPlan == nil {
+		for key, value := range env.CredentialEnv(provider) {
+			agentEnv[key] = value
+		}
+		if _, required := canonicalCredentialProvider(provider); required && len(env.CredentialEnv(provider)) == 0 {
+			return TaskResult{}, fmt.Errorf("credential isolation: prepared environment is missing provider-native variables for %s", provider)
+		}
+	}
 	// Point Cursor at per-task project state when managed MCP is present.
 	// The workdir .cursor/mcp.json carries the managed server list, while
 	// CURSOR_DATA_DIR isolates the matching project approvals from the user's
@@ -3679,10 +3715,18 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// malicious override of daemon-set values.
 	var customEnvironment map[string]string
 	var exactAgentEnvironment []string
-	if task.Agent != nil {
+	if task.Agent != nil && agentBrainPlan == nil {
+		for key, value := range task.Agent.CustomEnv {
+			if isBlockedEnvKey(key) {
+				d.logger.Warn("custom_env: blocked key skipped", "key", key)
+				continue
+			}
+			agentEnv[key] = value
+		}
+	} else if task.Agent != nil {
 		customEnvironment = task.Agent.CustomEnv
 	}
-	{
+	if agentBrainPlan != nil {
 		if task.Agent != nil && len(task.Agent.McpConfig) > 0 {
 			return TaskResult{}, &agentBrainAdmissionError{class: "managed_mcp_not_accepted_in_g3_slice"}
 		}
@@ -3854,6 +3898,11 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	)
 
 	// Convert agent usage map to task usage entries.
+	// The reasoning tier is read from the agent record, not derived from the
+	// model id: a `-high`/`-thinking` suffix is not a dependable tier signal.
+	// It stays empty when the agent declares none, which the backend persists
+	// as NULL ("not declared") rather than as the base tier.
+	usageThinkingLevel := usageThinkingLevelFor(task)
 	var usageEntries []TaskUsageEntry
 	for model, u := range result.Usage {
 		if u.InputTokens == 0 && u.OutputTokens == 0 && u.CacheReadTokens == 0 && u.CacheWriteTokens == 0 {
@@ -3866,6 +3915,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 			OutputTokens:     u.OutputTokens,
 			CacheReadTokens:  u.CacheReadTokens,
 			CacheWriteTokens: u.CacheWriteTokens,
+			ThinkingLevel:    usageThinkingLevel,
 		})
 	}
 

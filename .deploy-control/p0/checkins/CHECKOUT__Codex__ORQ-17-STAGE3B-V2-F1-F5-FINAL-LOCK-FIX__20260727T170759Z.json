@@ -1,0 +1,46 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T17:07:59Z",
+  "agent": "Codex",
+  "lane": "ORQ-17",
+  "task_ids": ["ORQ-17"],
+  "status": "PROPOSAL_REQUEST_REREVIEW",
+  "files_changed": [
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-owner-credential-provisioning-runbook.md",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-bootstrap-helper.go.txt",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-bootstrap-helper_test.go.txt",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-sealed-runner.sh.txt",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-source-closure.sha256",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-build-evidence.md",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-independent-review-request.md"
+  ],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-f1-f5-correction.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex__ORQ-17-STAGE3B-V2-F1-F5-FINAL-LOCK-FIX__20260727T170759Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "private-cache go test ./...", "exit_code": 0, "result": "PASS"},
+    {"command": "private-cache go vet ./...", "exit_code": 0, "result": "PASS"},
+    {"command": "gofmt byte comparison and sh -n runner", "exit_code": 0, "result": "PASS"},
+    {"command": "two readonly builds with separate caches", "exit_code": 0, "result": "both SHA-256 1710e01001440c82e12a4326d18d49e8905d72ea6b97dabe5d482a24934af87b"},
+    {"command": "compiled closure verification", "exit_code": 0, "result": "1696 entries; zero failures"},
+    {"command": "final lock structural scan", "exit_code": 0, "result": "guard queue-only SHARE; member in both mutation lock lists"},
+    {"command": "git diff --check", "exit_code": 0, "result": "PASS"}
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-f1-f5-correction.md",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-build-evidence.md",
+    ".deploy-control/p0/evidence/orq17-stage3b-v2-independent-review-request.md"
+  ],
+  "summary": "F1-F5 and final self-deadlock ruling applied. Fixed owner login binding, owner-authorized breakglass, custody proof, committed-state tokens/count-before-retry/safe compensation, contained HTTP login gate, printf builtin/core-dump gates, and queue-only guard with member locked in both mutation transactions. Local build/test only.",
+  "non_claims": [
+    "No secret or DSN was read, resolved, printed or passed to a process.",
+    "No AWS/IAM/provider/DB/Docker/Compose/Tailscale/Serve/Funnel/runtime/board mutation or login occurred.",
+    "Provisioning remains unauthorized pending independent re-review."
+  ],
+  "blockers": [
+    "Kiro independent re-review must issue PASS against the final hashes.",
+    "Fresh owner authorization and all runtime gates remain required after PASS."
+  ]
+}

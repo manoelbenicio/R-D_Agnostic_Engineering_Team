@@ -1,0 +1,104 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T14:28:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-33",
+  "orq_issue_id": "ORQ-33",
+  "orq_issue_uuid": "dfeabbdc-33e1-4ab8-9460-27b43df227db",
+  "task_ids": [
+    "ORQ33-REV-TOKEN-INDEPENDENT-REVIEW"
+  ],
+  "status": "DONE",
+  "verdict": "BLOCK MANTIDO e ampliado",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq33-rev-token-independent-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-33__ORQ33-REV-TOKEN-INDEPENDENT-REVIEW__20260727T142800Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "sed -n '1,70p' server/internal/auth/jwt.go e grep -rniE 'kid|secondary|previous.*secret|keys\\[' internal/auth/*.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CONFIRMA ACHADO 1 do GTL-87 - jwt.go:25-40 tem uma unica var jwtSecret com jwtSecretOnce sync.Once e um unico os.Getenv(JWT_SECRET). Zero kid, zero conjunto de chaves, zero chave secundaria"
+    },
+    {
+      "command": "sed -n '288,300p' internal/middleware/auth.go e grep SigningMethod internal/handler/auth.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "REFORCA ACHADO 1 - o keyfunc devolve UMA chave e nao inspeciona token.Header[kid]; assinatura usa jwt.SigningMethodHS256 (HMAC simetrico), logo a janela de sobreposicao do runbook e impossivel no codigo atual"
+    },
+    {
+      "command": "sed -n '13,15p' server/migrations/109_agent_task_waiting_local_directory.up.sql",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "CONFIRMA ACHADO 3 - constraint lista 7 status, 3 terminais, logo 4 ativos. O Gate 1 do runbook filtra apenas queued e running. Defeito REINCIDENTE: e o mesmo que eu apontei no GTL-37 contra o parecer GTL-46"
+    },
+    {
+      "command": "grep -rn 'JWTSecret()' --include='*.go' . | grep -v _test",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "ACHADO NOVO 4 - existem 5 call sites: handler/auth.go:213 e :226 assinam; middleware/auth.go:295, middleware/daemon_auth.go:234 e realtime/hub.go:691 verificam. O runbook nao menciona realtime/hub.go, logo subestima o raio: a troca invalida API, auth de daemon E WebSocket no mesmo instante"
+    },
+    {
+      "command": "grep -rniE 'rev_token|revToken|REV_TOKEN' --include='*.go' . e grep JWT_SECRET/REV_TOKEN/APP_ENV no docker-compose.selfhost.yml",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "ACHADO NOVO 5 - zero ocorrencias de rev_token no codigo Go; o compose define JWT_SECRET (obrigatorio, guarda de 32 bytes, linha 58) e APP_ENV (linha 84), e NAO define REV_TOKEN. A nomenclatura do runbook e ficcional: seguir o runbook literalmente giraria um segredo que ninguem consome e produziria FALSO SUCESSO"
+    },
+    {
+      "command": "grep TTL internal/auth/pat_cache.go internal/auth/membership_cache.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CORRECAO 6 - AuthCacheTTL = 10 * time.Minute (pat_cache.go:19) e MembershipCacheTTL = 5 * time.Minute (membership_cache.go:19). Valores citados pelo GTL-87 corretos, mas o CAMINHO nos dois documentos esta errado: os arquivos estao em internal/auth/, nao em internal/handler/"
+    },
+    {
+      "command": "revisao da topologia de backend (container Docker ORQ1) contra o systemctl reload proposto",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "CORRECAO 7 - nao existe unit multica-backend.service; o backend e o container multica-dev-transition-backend-1 no ORQ1 em 127.0.0.1:18080. O 'systemctl reload multica-backend' do Passo 2 e inoperante por sync.Once E aponta para alvo inexistente"
+    }
+  ],
+  "minimal_corrections_proposed": {
+    "jwt_single_key": "Correcao minima e de RUNBOOK, nao de codigo: declarar que a rotacao de JWT_SECRET e evento disruptivo unico, sem sobreposicao, atingindo simultaneamente API, auth de daemon e WebSocket; remover as 4 fases da secao 3 e o Passo 4 de drenagem, que descrevem capacidade inexistente. Dual-key, se desejado, e RFC aditiva propria (JWTVerificationKeys retornando [][]byte consumido pelos 3 keyfunc), fora do ORQ-33.",
+    "sync_once": "NAO remover o sync.Once, que e correto para hot path. Correcao minima e de procedimento: trocar systemctl reload pela recriacao do container real do backend no ORQ1, marcada como STOP-AND-WAIT, e adicionar gate pos-restart que PROVA a carga da chave (200 com token novo e 401 com token antigo), necessario porque JWTSecret resolve na primeira chamada e nao no boot, logo 'o processo reiniciou' nao prova nada.",
+    "queue_states": "Trocar o predicado do Gate 1 por status IN ('queued','dispatched','running','waiting_local_directory') com aceite active_tasks = 0 e saida anexada. Como o defeito e reincidente (GTL-46 e agora GTL-87), recomendo derivar o predicado de uma fonte unica ancorada na constraint de migrations/109:15, em vez de reescrever a lista em cada runbook."
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/orq33-rev-token-independent-review.md",
+    ".deploy-control/p0/evidence/orq33-rev-token-rotation-runbook.md (revisado)",
+    ".deploy-control/p0/evidence/gtl-orq33-rev-token-rotation-peer-review.md (GTL-87, revisado)",
+    "multica-auth-work/server/internal/auth/jwt.go:14-40",
+    "multica-auth-work/server/internal/middleware/auth.go:291-296",
+    "multica-auth-work/server/internal/middleware/daemon_auth.go:234",
+    "multica-auth-work/server/internal/realtime/hub.go:691",
+    "multica-auth-work/server/internal/handler/auth.go:206, :213, :218, :226",
+    "multica-auth-work/server/internal/auth/pat_cache.go:19, membership_cache.go:19",
+    "multica-auth-work/server/internal/auth/cloud_pat.go:43",
+    "multica-auth-work/server/migrations/109_agent_task_waiting_local_directory.up.sql:13-15",
+    "multica-auth-work/docker-compose.selfhost.yml:58, :84"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+  "summary": "Revisao independente confirma o BLOCK do GTL-87 nos tres achados, por medicao propria: chave JWT unica (jwt.go:25-40, HS256 simetrico, keyfunc sem kid), sync.Once impedindo recarga sem novo processo, e Gate 1 omitindo dispatched e waiting_local_directory contra a constraint de migrations/109:15. Acrescento dois achados novos que ampliam o BLOCK. Primeiro: existem cinco call sites de JWTSecret, e o runbook nao menciona internal/realtime/hub.go:691 nem trata middleware/daemon_auth.go:234, logo subestima o raio, porque a troca de chave invalida no mesmo instante API HTTP, auth de daemon e sessoes WebSocket. Segundo: nao existe subsistema de rev token no codigo Go, zero ocorrencias de rev_token, e o compose define JWT_SECRET e APP_ENV mas nao REV_TOKEN, o que torna a nomenclatura do runbook ficcional e cria risco de falso sucesso, com o operador girando um segredo orfao e deixando JWT_SECRET intacto. Corrijo ainda duas imprecisoes: pat_cache.go e membership_cache.go estao em internal/auth e nao em internal/handler, embora os TTLs de 10 e 5 minutos citados estejam certos; e systemctl reload multica-backend aponta para unit inexistente, pois o backend e container Docker no ORQ1. Propus as tres correcoes minimas pedidas, todas sem implementar, e listei oito condicoes para virar PASS. Registrei tambem o que o runbook acerta, com uma ressalva propria: o Passo 1 passa valor de segredo em argumento de linha de comando, visivel em ps, contrariando a Regra 3 do proprio runbook.",
+  "non_claims": [
+    "READ-ONLY: nenhum segredo lido, nenhum GetSecretValue, nenhum asm-exec executado, nenhum restart, nenhuma mutacao de codigo, banco, container ou unit",
+    "Nao implementei nenhuma das tres correcoes minimas: sao propostas",
+    "Nao executei o Gate 1 corrigido nem qualquer comando do runbook",
+    "Nao verifiquei se o endpoint /healthz existe; medi /health respondendo 200 em outra auditoria",
+    "Nao inspecionei o Secrets Manager: nao sei se prod/multica/rev-token/primary existe. Afirmo apenas que nenhuma variavel de ambiente do backend le esse nome",
+    "Nao verifiquei se realtime/hub.go:691 esta em caminho ativo hoje; ele existe e chama JWTSecret, e por isso entra na lista de superficies afetadas",
+    "Nao avaliei o restante de cloud_pat.go: a revogacao por TTL de PAT de Cloud e mecanismo distinto e fora do escopo",
+    "Nao contestei o UUID citado nos dois artefatos e nao consultei o board, que segue sob restricao",
+    "Nao criei, atribui nem comentei issue alguma"
+  ],
+  "blocker": "Runbook segue BLOCK. Oito condicoes para PASS estao listadas na evidencia. As duas de maior consequencia sao novas: (1) renomear o objeto de rotacao de rev-token para JWT_SECRET, ou justificar com referencia a codigo, porque hoje o runbook giraria um segredo que ninguem consome; (2) declarar as tres superficies de verificacao afetadas, incluindo WebSocket, porque o runbook descreve como zero-downtime um evento que e disruptivo simultaneo. A recriacao do container do backend no ORQ1 e classe STOP-AND-WAIT e exige autorizacao do owner.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (GENERAL-TECH-LEAD)",
+      "reason": "BLOCK confirmado e ampliado, com correcao minima proposta para os tres itens pedidos. Recomendo ainda uma acao transversal: o predicado de fila ativa foi escrito errado duas vezes (GTL-46 e GTL-87), logo deveria ter fonte unica ancorada na constraint de migrations/109:15 em vez de ser reescrito por runbook.",
+      "file": ".deploy-control/p0/evidence/orq33-rev-token-independent-review.md"
+    }
+  ]
+}

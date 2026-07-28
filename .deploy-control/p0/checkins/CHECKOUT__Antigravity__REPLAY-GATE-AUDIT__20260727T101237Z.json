@@ -1,0 +1,27 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T10:12:37Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "REPLAY-GATE-AUDIT"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Auditoria READ-ONLY da lacuna ReplayGateHook e server durable state",
+  "finding": "In-memory LedgerRegistry loses state on daemon restart. ReplayGateHook correctly fails closed (CheckOrAllow). Telemetry tool_result is non-transactional and must never be treated as commit proof. Minimal fix requires persisting commit_ledger_events in Postgres with strict fail-closed policy on ambiguous state.",
+  "action_taken": "Audited code in replay_gate.go L149-206 and task.go L1658-1673, created evidence file .deploy-control/p0/evidence/audit-replay-gate-durable-state.md, notified Codex56-TL (w5:pC), Codex56#B (w7:p4), and KIRO-PRINCIPAL-TL (wB:p1), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/audit-replay-gate-durable-state.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T101237Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__REPLAY-GATE-AUDIT__20260727T101237Z.json"
+  ],
+  "non_claims": [
+    "read-only audit, no code edit, no deploy, no restart, no rerun"
+  ],
+  "blocker": null
+}

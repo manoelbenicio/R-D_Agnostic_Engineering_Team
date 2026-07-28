@@ -21,8 +21,18 @@ código de email) por um login limpo no mesmo design do app.
 ## Impact
 - Código: `server/pkg/agent/*`, `server/internal/daemon/*`, `apps/web/app/(auth|landing)`, `packages/views/auth`, design-system.
 - Execução: **coders experts (codex & cia)**. **Kiro apenas orquestra e valida** (não produz código).
-- Decisão do dono PENDENTE: modelo de auth final (login/senha simples vs sem-fricção) — não implementar antes de confirmar.
+- Decisão do dono RESOLVIDA em 2026-07-12: login/senha simples agora, com interface
+  Firebase-ready para evolucao posterior sem rework.
 
 ## Non-goals
 - Usar NIM via opencode (explicitamente rejeitado pelo dono).
 - Telemetria de token/quota do antigravity (backlog separado, limitação do fabricante).
+
+## Implementation status — 2026-07-28
+
+- Backend NIM, isolamento NIM, backend Cline ACP, model discovery e auth backend estao
+  implementados; wiring compartilhado de NIM/Cline tambem esta marcado concluido.
+- Frontend de onboarding, paridade visual, rebuild/restart dos runtimes, smoke real e UAT
+  permanecem abertos e nao devem ser inferidos como prontos a partir dos avanços AGY.
+- Os agentes AGY criados no workspace e o reparo de model selection pertencem a outra frente;
+  eles nao comprovam que NIM/Cline estejam online ou que o onboarding novo esteja aceito.

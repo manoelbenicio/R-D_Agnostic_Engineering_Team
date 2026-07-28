@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:43:04Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "GTL-G01",
+    "ORQ-26"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "agent/kiro-opus5/orq-26-contract-fix",
+  "assigned_scope": "Execution of ORQ-26 preflight gates in worktree /home/ec2-user/workspace/worktrees/gtl-orq26",
+  "finding": "Executed git diff --check (exit 0), gofmt -l (exit 0), go vet (exit 0), go test -c (exit 0), targeted unit tests TestUploadFile|TestDownloadAttachment (PASS, exit 0), and go build ./cmd/server/... (exit 0) under private $HOME/.private-tmp 0700 cache. Verdict: PASS.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-orq26-gates-run.md, sent herdr update to General-TL Codex56-TL (w5:pC) and SSH to KIRO-PRINCIPAL-TL (wB:p1), created inbox msg and check-out JSON. Non-mutating gate execution.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq26-gates-run.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T114304Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-G01-ORQ26-GATES-RUN__20260727T114304Z.json"
+  ],
+  "non_claims": [
+    "gate execution, no code edit, no gofmt -w, no live DB touch, no deploy, no commit"
+  ],
+  "blocker": null
+}

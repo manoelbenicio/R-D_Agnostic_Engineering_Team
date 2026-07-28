@@ -1,0 +1,71 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:23:14Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "GTL-80",
+  "task_ids": [
+    "GTL-80-RE-REVIEW-KANBAN-V8"
+  ],
+  "status": "DONE_BLOCK",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-kanban-v8-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__GTL-80-RE-REVIEW-KANBAN-V8__20260727T122314Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "READ-ONLY V8 versus GTL-77 SQL/transaction/revision audit",
+      "exit_code": 0,
+      "result": "PostgreSQL syntax is statically plausible, but upsert returns conflicts via xmax, revision is row-local while API requires workspace-global ordering, and the transaction implementation is absent."
+    },
+    {
+      "command": "READ-ONLY pgx lock, router, migration runner, event bus and frontend source inspection",
+      "exit_code": 0,
+      "result": "Confirmed Hijack requires caller Close, member route placement is correct, migration placeholder remains required, and mount/reconnect hydration does not close commit-crash without periodic poll/outbox."
+    },
+    {
+      "command": "FILES_LOCKED existence/completeness audit",
+      "exit_code": 0,
+      "result": "20 entries enumerated: 9 existing and 11 planned-new; set omits API client, type export, query/store/revision-buffer, WS reconnect and required gate files."
+    },
+    {
+      "command": "git diff --check and secret-pattern scan",
+      "exit_code": 0,
+      "result": "PASS; no secret assignment or credential value pattern."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-v8-peer-review.md",
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v8.md:37",
+    ".deploy-control/p0/evidence/gtl-kanban-v7-peer-review.md:1",
+    ".deploy-control/p0/evidence/gtl-z01-master-integration-control.md:161",
+    "/home/ec2-user/go/pkg/mod/github.com/jackc/pgx/v5@v5.9.2/pgxpool/conn.go:70",
+    "multica-auth-work/server/cmd/server/router.go:582",
+    "multica-auth-work/server/internal/events/bus.go:27",
+    "multica-auth-work/packages/core/api/ws-client.ts:27"
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run"
+  ],
+  "summary": "BLOCK. V8 improves DDL, scan marker, retention intent, member route and transaction direction, but leaks a hijacked connection/lock, compares per-row revisions as a nonexistent workspace revision, returns every upsert instead of only new/reactivated semantics, does not show executable transaction/error flow or keyset SQL, and leaves commit-crash, hydration, locks and tests incomplete. Migration remains placeholder; no Wave 1 package is released.",
+  "non_claims": [
+    "No SQL parser, SQL statement, migration, build, test or database connection was executed.",
+    "No code, board, service, deploy, credential or permission was changed.",
+    "No canonical migration number was assigned or materialized."
+  ],
+  "blockers": [
+    "Replace row-local revision ordering with a workspace-global transactional revision or ordered outbox.",
+    "Replace xmax upsert signaling with explicit insert/reactivate/mark-seen queries.",
+    "Implement and test RepeatableRead transaction, rollback and post-commit publish flow.",
+    "Close hijacked pgx connection and fail closed on ambiguous lock acquisition.",
+    "Provide real keyset/hydration SQL, polling-or-outbox recovery, complete locks and exact tests."
+  ],
+  "handoffs": [
+    {
+      "to": "w5:pC",
+      "reason": "Return V8 for a V9 design; do not release Kanban Wave 1."
+    }
+  ]
+}

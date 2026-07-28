@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T151653Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-41",
+  "lane": "GTL-R41-V3-WAVE-PLAN-REVIEW",
+  "task_ids": ["ORQ-41-V3-WAVE-PLAN-PEER-REVIEW"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-v3-wave-plan-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T151653Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-v3-wave-plan-peer-review.md"
+  ],
+  "summary": "Re-review adversarial do Plano de Ondas V3 da ORQ-41 (SHA256 687cf3c4d4c0b404b495e65ce3f611decad7ae784b7ee594e280e0de9b71629f) concluido com PASS. Reserva 127-131 cancelada, 5 placeholders sem digitos adotados, scan global de worktrees definido, LANE-DB serial com dono unico, router.go exclusivo de W3, gates executaveis G-DB/G-W2/G-W5/G-ROLLBACK configurados e 32 testes anti-falso-verde validados. Zero mutacoes realizadas.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T12:21:52Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-RUNTIME-RETENTION-SAFE-LIFECYCLE-V2-PEER-REVIEW",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-runtime-retention-safe-lifecycle-v2-peer-review.md"
+  ],
+  "summary": "Peer Review Adversarial da Especificação V2 do Lifecycle de Retenção de Runtimes (GTL-84) concluído com veredito PASS em modo READ-ONLY. Validada a inclusão da trava HTTP 409 runtime_archived em heartbeats e registrador, comprovado o uso de Índices Únicos Parciais (WHERE archived_at IS NULL) na migration DDL, aprovada a conversão da rota DELETE em Soft-Delete alias e validada a execução atômica em transação pgx.Tx para a reatribuição de agentes."
+}

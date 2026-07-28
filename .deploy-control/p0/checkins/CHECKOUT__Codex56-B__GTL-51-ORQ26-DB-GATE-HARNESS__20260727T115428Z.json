@@ -1,0 +1,62 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:54:28Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "GTL-51",
+  "task_ids": [
+    "GTL-51-ORQ26-DB-GATE-HARNESS"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq26-db-gate-harness.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__GTL-51-ORQ26-DB-GATE-HARNESS__20260727T115428Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "READ-ONLY map of internal/handler TestMain and fixtures",
+      "exit_code": 0,
+      "result": "Mapped DATABASE_URL fallback, pre-m.Run os.Exit(0) false-green, fixture lifecycle and fixed slug/email cleanup."
+    },
+    {
+      "command": "READ-ONLY map of migrations, Makefile, scripts and CI DB service",
+      "exit_code": 0,
+      "result": "Mapped canonical migrate-up path, dynamic schema_migrations verification, official pgvector/pgvector:pg17 CI service and local pgcrypto absence."
+    },
+    {
+      "command": "bash -n on proposed gate code block",
+      "exit_code": 0,
+      "result": "Proposed shell gate is syntactically valid; it was not executed."
+    },
+    {
+      "command": "secret-pattern and markdown diff validation",
+      "exit_code": 0,
+      "result": "No embedded DSN credential pattern; git diff --check PASS for evidence."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq26-db-gate-harness.md",
+    "/home/ec2-user/workspace/worktrees/gtl-orq26/multica-auth-work/server/internal/handler/handler_test.go:38",
+    "/home/ec2-user/workspace/worktrees/gtl-orq26/multica-auth-work/server/cmd/migrate/main.go:120",
+    "/home/ec2-user/workspace/worktrees/gtl-orq26/multica-auth-work/.github/workflows/ci.yml:69"
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run",
+    "GTL gate executor (w5:p9) via herdr pane run"
+  ],
+  "summary": "Mapped a reproducible ORQ-26 DB-backed gate using only the official ephemeral CI PostgreSQL service. The gate rejects TestMain's exit-0 DB skip, applies and verifies every migration, requires run+pass and zero skip for eight S1-S7 leaf names, pins the diff before/after, and never exposes DATABASE_URL or PGPASSWORD. Local ORQ2 PostgreSQL cannot run migration 001 because pgcrypto contrib is absent, so no local/live DB path is recommended.",
+  "non_claims": [
+    "No database connection, migration, build, vet, Go test or live probe was executed.",
+    "No .env, DSN, password, token or secret value was read or printed.",
+    "No code, board, service, container, package, permission or credential was changed."
+  ],
+  "blockers": [],
+  "handoffs": [
+    {
+      "to": "w5:pC and w5:p9",
+      "reason": "Authorize and run the proposed gate only in an ephemeral CI job; publish only final leaf count and diff SHA-256."
+    }
+  ]
+}

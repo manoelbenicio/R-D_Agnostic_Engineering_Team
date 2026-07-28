@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import type { RuntimeModelThinkingLevel } from "@multica/core/types";
 import {
   PickerItem,
@@ -27,6 +28,7 @@ export function ThinkingPicker({
   value,
   levels,
   canEdit = true,
+  variant = "chip",
   onChange,
 }: {
   /** Persisted thinking_level — "" means "follow local CLI config". */
@@ -38,6 +40,9 @@ export function ThinkingPicker({
   levels: RuntimeModelThinkingLevel[];
   /** When false, render a static read-only display and skip the popover. */
   canEdit?: boolean;
+  /** Inspector uses a compact property chip; create/duplicate uses a
+   *  full-width form field while sharing the exact same value semantics. */
+  variant?: "chip" | "field";
   onChange: (next: string) => Promise<void> | void;
 }) {
   const { t } = useT("agents");
@@ -81,14 +86,29 @@ export function ThinkingPicker({
       triggerRender={
         <button
           type="button"
-          className={CHIP_CLASS}
+          className={
+            variant === "field"
+              ? "flex w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted"
+              : CHIP_CLASS
+          }
           aria-label={triggerTitle}
         />
       }
       trigger={
-        <span className="min-w-0 truncate font-mono text-[11px]">
-          {triggerLabel}
-        </span>
+        <>
+          <span
+            className={
+              variant === "field"
+                ? "min-w-0 flex-1 truncate font-medium"
+                : "min-w-0 truncate font-mono text-[11px]"
+            }
+          >
+            {triggerLabel}
+          </span>
+          {variant === "field" && (
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
+        </>
       }
     >
       {levels.map((l) => (

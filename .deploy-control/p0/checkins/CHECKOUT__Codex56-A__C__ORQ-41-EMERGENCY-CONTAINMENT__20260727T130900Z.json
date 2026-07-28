@@ -1,0 +1,89 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:09:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-41-EMERGENCY-CONTAINMENT"
+  ],
+  "orq_n": "ORQ-41",
+  "orq_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "status": "DONE",
+  "mode": "CONTENCAO_AUTORIZADA_PELO_GTL",
+  "files_changed": [
+    ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md (adendo de contencao, arquivo proprio)"
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-41-EMERGENCY-CONTAINMENT__20260727T130900Z.json"
+  ],
+  "board_mutations": [
+    "POST /api/tasks/f460ed12-d44d-4634-8032-ad6d6e05264e/cancel?workspace_id=... -> HTTP 200 (uma emissao efetiva)",
+    "PUT /api/issues/c03941bc-3bde-4de1-ab19-1ba93de0ad51 -> HTTP 200 {assignee_type:null, assignee_id:null}",
+    "PUT /api/issues/d2001a24-af70-4367-8828-2225ed43ad84 -> HTTP 200 {assignee_type:null, assignee_id:null}"
+  ],
+  "tests": [
+    {
+      "command": "psql read-only: status das duas tasks + contagem de task_message por tipo (13:07:40Z)",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "f460ed12 running (ORQ-39, created 12:53:27.431+00) com tool_use 54, tool_result 2, thinking 99, text 7 = 175; 07cdc53b JA completed (ORQ-40, created 13:00:10.635+00) com tool_use 30, thinking 51, text 11 = 92; ACTIVE_TOTAL global = 1"
+    },
+    {
+      "command": "POST /api/tasks/<id>/cancel (sem workspace_id)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP 400 workspace_id or workspace_slug is required — sem efeito; contrato aprendido, nao foi retry cego"
+    },
+    {
+      "command": "POST /api/tasks/f460ed12-.../cancel?workspace_id=20fce817-... (uma vez)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP 200; GET-back: f460ed12 = cancelled (terminal); 07cdc53b permanece completed e NAO foi tocada"
+    },
+    {
+      "command": "leitura de handler/issue.go:2368-2385",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "contrato confirmado: explicit null em assignee_type/assignee_id = unassign (pgtype Valid:false); nao adivinhei"
+    },
+    {
+      "command": "PUT nos dois issues com {assignee_type:null, assignee_id:null} + GET-back",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "HTTP 200 nos dois; ORQ-39 e ORQ-40 com assignee_type=None e assignee_id=None; title e priority preservados"
+    },
+    {
+      "command": "psql: fila ativa global e por issue apos a contencao (13:08:49Z)",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "GLOBAL = 0; ORQ39_40 ativo = 0; historico dos dois cards = cancelled 1 + completed 1; mensagens preservadas 175 e 92"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "residual": "ZERO fila ativa global e ZERO por issue. Residual nao-fila: 267 mensagens ja produzidas (84 tool_use) cujos efeitos colaterais no ambiente sao desconhecidos daqui; status dos cards alterado pelos proprios agentes durante a execucao (ORQ-39 in_progress, ORQ-40 blocked), nao revertido.",
+  "summary": "Contencao executada conforme autorizacao. Pre-estado read-only capturado as 13:07:40Z: f460ed12 running no ORQ-39 com 175 mensagens (54 tool_use, 2 tool_result) e 07cdc53b JA completed no ORQ-40 com 92 mensagens (30 tool_use) — como esta ja estava terminal, nao emiti cancel para ela. A primeira chamada de cancel retornou 400 por exigir workspace_id e nao teve efeito; a emissao efetiva foi uma unica, com workspace_id, HTTP 200, e o GET-back confirma f460ed12 = cancelled. Depois limpei o assignee dos dois cards com o contrato verificado em handler/issue.go:2368-2385 (explicit null = unassign), HTTP 200 nos dois, e o GET-back prova assignee_type=None e assignee_id=None em ORQ-39 e ORQ-40, com title e priority preservados. Verificacao final as 13:08:49Z: fila ativa GLOBAL = 0 e por issue = 0; historico das duas tasks = cancelled 1 + completed 1; mensagens preservadas (175 e 92), nada apagado. CAVEATS registrados: as duas tasks produziram 267 mensagens com 84 tool_use antes da contencao, e tool_use prova acao executada e nao conclusao, logo efeitos colaterais no ambiente nao sao conhecidos daqui e nao devem ser presumidos nulos; o status dos dois cards foi alterado pelos PROPRIOS agentes durante a execucao (ORQ-39 in_progress, ORQ-40 blocked) e eu NAO revertí, porque reverter seria mutacao nao autorizada e apagaria evidencia; e a task do ORQ-40 completou antes da ordem, portanto seu custo ja foi incorrido. Nenhum comentario, delete, edicao de codigo, escrita SQL direta, deploy ou restart; nenhuma das nove preservadas tocada; ORQ-39 e ORQ-40 NAO rerodadas.",
+  "non_claims": [
+    "nao emiti cancel para 07cdc53b: ja estava completed (terminal) no momento da leitura",
+    "nao revertí status dos cards nem apaguei mensagens ou historico",
+    "nao afirmo que os efeitos colaterais dos 84 tool_use sejam nulos: nao sao observaveis deste host",
+    "nenhum comentario postado, nenhuma escrita SQL direta, nenhum delete, deploy, restart ou edicao de codigo",
+    "nao rerodei ORQ-39 nem ORQ-40 e nao toquei nas nove issues preservadas",
+    "a chamada 400 inicial nao produziu efeito; nao houve retry cego, apenas correcao de contrato"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "contencao concluida com fila zero; decidir se o status de ORQ-39 (in_progress) e ORQ-40 (blocked), alterado pelos agentes durante o incidente, deve ser normalizado e por quem; e se o defeito on-assign do ORQ-41 recebe prioridade de correcao",
+      "file": ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

@@ -1,0 +1,86 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T21:20:29Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "REVIEW-LOTE_02"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/review-lote_02.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__REVIEW-LOTE_02__20260726T212029Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "while read -r f; do [ -f \"$f\" ] || echo MISSING; python3 -c \"import json;json.load(open('$f'))\"; done < /tmp/review/lote_02",
+      "exit_code": 0,
+      "assertions_or_tests": 100,
+      "result": "PASS (50/50 existem, 50/50 JSON valido, MISSING_TOTAL=0 BADJSON_TOTAL=0)"
+    },
+    {
+      "command": "git ls-files --error-unmatch <cada um dos 50>",
+      "exit_code": 0,
+      "assertions_or_tests": 50,
+      "result": "PASS (TRACKED=50 UNTRACKED=0; remocao exigiria git rm, proibido)"
+    },
+    {
+      "command": "grep -c '^| `.deploy-control/p0/checkins/' .deploy-control/p0/evidence/review-lote_02.md",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS (50 linhas de tabela, uma por arquivo)"
+    },
+    {
+      "command": "cobertura: para cada path do lote, grep do basename no review-lote_02.md",
+      "exit_code": 0,
+      "assertions_or_tests": 50,
+      "result": "PASS (zero NOT_IN_TABLE)"
+    },
+    {
+      "command": "ls -l .deploy-control/p0/evidence/review-lote_02.md",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS (-rw-rw-r--. 1 ec2-user ec2-user 17107 Jul 26 21:20; saida colada na secao 'Verificacao do artefato' do proprio md)"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "verdict_counts": {
+    "KEEP": 43,
+    "OWNER": 7,
+    "STALE": 0,
+    "PURGE": 0
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/review-lote_02.md",
+    "SIX_HOUR_CHECKIN_CONTRACT.md secao 1 verificada por leitura direta: titulo 'Convencao de arquivos imutaveis' + 'Nao sobrescreva receipt existente' => confirma o achado do Opus48#A e bloqueia purge sem emenda escrita do owner",
+    "duplicata F7 provada por diff JSON normalizado: CHECKOUT__Agy-P0-A7__F7__...114018Z.json vs CHECKOUT__Agy-P0-F7__F7__...113917Z.json divergem apenas em 'agent' e 'timestamp_utc'",
+    "citacoes por NOME: monitor.jsonl -> P0-L7-WS-UI; CHECKOUT C3 122820Z -> C3 122010Z; CHECKOUT F3 113740Z -> F3 113040Z; CHECKIN Codex56-A__P0-L3-RUNTIMEENV__040526Z -> CHECKOUT L3; CHECKIN Opus48-A__F1-DAEMON-ORDERING__112956Z -> CHECKOUT F1",
+    "ancoragem por task-id em handoffs/ e evidence/ registrada linha a linha na tabela (ex.: C8-credsource-review-handoff.md, L8-verifier-handoff.md, R8-post-t360-handoff.md, L1-integration-convergence.md, L7-ws-ui-delivery.md)",
+    "REVIEW_ATTRIBUTION.md cita os 50 pelo nome, mas e o manifesto desta revisao (543 arquivos, 8 revisores); premissa declarada no md: nao conta como dependencia substantiva"
+  ],
+  "summary": "LOTE_02 revisado integralmente: os 50 arquivos sao receipts CHECKOUT__*.json em .deploy-control/p0/checkins/, todos existentes, JSON valido, versionados no git e sem segredo. Conteudo real inspecionado campo a campo (event/status/agent/lane/task_ids/timestamp/tests/evidence/handoffs/non_claims/summary/blocker). Vereditos: 43 KEEP, 7 OWNER, 0 STALE, 0 PURGE. PURGE=0 nao e omissao: o proprio contrato §1 chama a convencao de 'arquivos imutaveis' e proibe sobrescrever receipt, o que contradiz a retencao de 1 dia do owner e exige emenda escrita antes de qualquer purga deste lote. Os 7 OWNER sao: (1)(2) a duplicata exata F7 Agy-P0-A7 x Agy-P0-F7 (diff so em agent e timestamp, 61s), (3) P0-L7-WS-UI citado pelo nome em monitor.jsonl e com 2 blockers abertos, (4) C3-CHAT-CORE-API 122010Z superado e citado pelo nome pelo sucessor, (5) F3-DEPLOYED-READINESS 113040Z factualmente corrigido pelo sucessor que o cita pelo nome, (6) P0-L3-RUNTIMEENV e (7) F1-DAEMON-ORDERING citados pelo nome nos respectivos CHECKIN, cuja purga romperia o par CHECKIN/CHECKOUT do §1. Unico desvio de schema encontrado: FIX-BUILD-TEST sem 'files_created' (corrigir exigiria reescrever receipt, vedado pelo §1).",
+  "non_claims": [
+    "nao reexecutei go build/go test/probes de rede/openspec para auditar o merito tecnico interno de cada receipt; avaliei existencia, schema, unicidade, proveniencia e referencias",
+    "nao apaguei, movi, reescrevi nem commitei arquivo algum; sem git rm, push, reset, clean, checkout --, instalacao ou restart",
+    "nao decidi retencao: a emenda do contrato, a escolha do receipt F7 autoritativo e o destino dos pares superseded sao do owner",
+    "nao avaliei arquivos fora de /tmp/review/lote_02"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "OWNER",
+      "reason": "5 rulings pedidos no fim do review-lote_02.md: emenda da retencao vs §1 imutavel, duplicata F7, pares superseded C3/F3, pares CHECKIN/CHECKOUT L3/F1, e o critério de citacao (se REVIEW_ATTRIBUTION.md contar, os 50 viram OWNER)",
+      "file": ".deploy-control/p0/evidence/review-lote_02.md"
+    }
+  ],
+  "reported_to": [
+    "KIRO-PRINCIPAL-TL (host 100.117.245.15, pane wB:p1) via item 2 + copia duravel em .deploy-control/inbox-tm/"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

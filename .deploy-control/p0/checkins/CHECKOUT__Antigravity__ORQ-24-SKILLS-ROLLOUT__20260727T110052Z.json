@@ -1,0 +1,27 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:00:52Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-24-SKILLS-ROLLOUT"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "ORQ-24 Skills Rollout Plan definition based on local_skills.go limits and Windows source",
+  "finding": "Defined curated selection of 98 super-skills in 112 files fitting within local_skills.go L15-22 limits (128 files, 1MB/file, 8MB bundle, depth 4). Mapped target paths (~/.agents/skills/ and per-runtime dirs) and PUT /api/agents/{id}/skills payloads for 10 agents.",
+  "action_taken": "Created .deploy-control/p0/evidence/skills-rollout-plan.md, sent herdr update to Codex56-TL (w5:pC) and SSH to KIRO-PRINCIPAL-TL (wB:p1), created inbox msg and check-out JSON. Read-only planning operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/skills-rollout-plan.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Kiro-PRINCIPAL-TL__20260727T110052Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ-24-SKILLS-ROLLOUT__20260727T110052Z.json"
+  ],
+  "non_claims": [
+    "read-only plan, no code edit, no file copy, no deploy, no restart"
+  ],
+  "blocker": null
+}

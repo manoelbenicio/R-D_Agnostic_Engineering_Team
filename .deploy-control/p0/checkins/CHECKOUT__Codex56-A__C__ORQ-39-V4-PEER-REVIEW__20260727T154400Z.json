@@ -1,0 +1,97 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:44:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-39-BROWSER-QA-V4-PEER-REVIEW"
+  ],
+  "orq_n": "ORQ-39",
+  "orq_uuid": "c03941bc-3bde-4de1-ab19-1ba93de0ad51",
+  "status": "DONE",
+  "verdict": "BLOCK — 6 defeitos com fix exato",
+  "mode": "READ_ONLY",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq39-browser-qa-v4-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-39-V4-PEER-REVIEW__20260727T154400Z.json"
+  ],
+  "tests": [
+    {
+      "command": "sed migrations/009_verification_code.up.sql + grep e2e/fixtures.ts",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CONFIRMADO: coluna code existe (id,email,code,expires_at,used,created_at + indice email/used/expires_at); ciclo real no fixture = DELETE por email (:35) -> POST /auth/send-code (:38) -> SELECT code WHERE used=FALSE AND expires_at>now() ORDER BY created_at DESC LIMIT 1 (:47-51) -> POST /auth/verify-code (:59)"
+    },
+    {
+      "command": "existencia de apps/web, packages/views, server, e2e, playwright.config.ts + nome do pacote",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "CONFIRMADO: os 4 paths do filtro existem e apps/web/package.json name = @multica/web com scripts build e start"
+    },
+    {
+      "command": "grep cmd/migrate/main.go:109-115 e cmd/server/main.go:125",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "CONFIRMADO: migrate exige os.Args[1] in {up,down}; APP_ENV e consumido em ValidateJWTConfiguration; JWT_SECRET proposto tem 39 chars (>=32)"
+    },
+    {
+      "command": "grep playwright.config.ts e e2e/fixtures.ts:13 e e2e/env.ts",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "CONFIRMADO: baseURL le PLAYWRIGHT_BASE_URL, API_BASE le NEXT_PUBLIC_API_URL, timeout 60000/workers 1/retries 0 conferem; env.ts carrega .env.worktree ou .env via dotenv a partir de process.cwd()"
+    },
+    {
+      "command": "grep os.Exit em cmd/server/main.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "os.Exit(1) em :127, :155, :161, :345, :414, :434 — nenhum deles reprova um step que roda o servidor em background com &"
+    },
+    {
+      "command": "ls .github/workflows na raiz",
+      "exit_code": 1,
+      "assertions_or_tests": 1,
+      "result": "raiz nao tem .github/workflows; colocar o arquivo la e correto e e o unico local lido pelo GitHub"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "blocks": [
+    "BLOCK-1 guarda de zero-segredos com caminhos errados: defaults.run.working-directory=multica-auth-work faz '-f multica-auth-work/.env' resolver para multica-auth-work/multica-auth-work/.env (nunca existe) e deixa .env e .env.worktree da RAIZ sem cobertura, apesar de e2e/env.ts:5-13 carregar esses arquivos via dotenv. Fix: working-directory: . e loop pelos quatro caminhos",
+    "BLOCK-2 servico postgres sem options --health-cmd: o GitHub nao espera readiness e 'go run ./cmd/migrate up' pode falhar por connection refused intermitente. Fix: options com pg_isready, interval 5s, retries 10",
+    "BLOCK-3 backend e web em background com & sem readiness e sem propagacao de falha: step sai 0 mesmo com os.Exit(1) do servidor e o Playwright pode comecar antes de 8080/3000 escutarem. Fix: capturar PID e log, barreira de readiness por curl -fsS /health e por 3000, e falhar o job se o processo morreu",
+    "BLOCK-4 pins chamados imutaveis que sao TAGS mutaveis: mcr.microsoft.com/playwright:v1.58.2-noble e pgvector/pgvector:pg17. As Actions estao corretamente por SHA de 40 chars. Fix: usar image@sha256:<digest> nas duas imagens, com digest registrado na evidencia no momento da autorizacao",
+    "BLOCK-5 setup-node e pnpm/action-setup dentro de container: a imagem Playwright ja traz Node, e action-setup sem version depende de packageManager na RAIZ do repo, que nao e multica-auth-work. Fix: caminho A remover as duas actions e usar corepack com versao exata, ou caminho B fixar version e validar suporte na imagem",
+    "BLOCK-6 gatilho contradiz o ruling GTL-69R: V4 usa on: pull_request com merge em main e 4 portas, enquanto o ruling oficial estabeleceu push em branch efemera como mecanismo de gate, sem PR nem merge. Fix: on: push restrito a branches [ci/orq39-browser-qa] mantendo paths, reduzindo a 2 portas; se o owner quiser PR/merge, exige ruling que supersede o GTL-69R"
+  ],
+  "minor": [
+    "RESEND_API_KEY/SMTP_HOST vazios geram aviso em main.go:129; declarar como esperado, pois o E2E le o codigo do banco",
+    "MULTICA_DEV_VERIFICATION_CODE ausente e correto: fixtures.ts:56-57 daria preferencia a ele e mascararia o fluxo real",
+    "acrescentar permissions explicitas actions: none e id-token: none",
+    "fetch-depth 1 basta para o filtro de paths; declarar que nenhum teste compara contra base",
+    "FILES_LOCKED reivindica file.go e file_test.go que pertencem ao ORQ-26: colisao de lock; ORQ-39 deve referenciar o congelamento, nao reivindicar"
+  ],
+  "summary": "Peer review adversarial com veredito BLOCK e 6 defeitos, cada um com fix exato. O que o V4 acerta e verificavel: coluna code existe na migration 009 e o ciclo real do fixture e DELETE por email, send-code, SELECT code com used=false e expires_at>now(), verify-code; os quatro paths do filtro existem; o pacote e mesmo @multica/web com scripts build e start; migrate exige argumento up; APP_ENV e consumido em ValidateJWTConfiguration e o JWT_SECRET proposto tem 39 chars; PLAYWRIGHT_BASE_URL e NEXT_PUBLIC_API_URL sao exatamente as variaveis que a config e o fixture leem; timeout 60000, workers 1 e retries 0 conferem com playwright.config.ts; e a raiz e o unico lugar que o GitHub le, logo a colocacao esta certa, assim como go-version-file resolvido a partir do workspace e nao do working-directory. Os seis blocks: (1) a guarda de segredos aponta para caminhos errados por causa do working-directory e deixa a raiz descoberta, exatamente onde env.ts carrega dotenv; (2) o servico postgres nao tem health check, entao a migration corre contra banco possivelmente indisponivel; (3) backend e web sobem com & sem readiness e sem propagacao de falha, e o servidor tem seis os.Exit(1) que nao reprovariam o step; (4) os pins chamados imutaveis sao tags mutaveis para Playwright e pgvector, embora as Actions estejam corretamente por SHA; (5) setup-node e pnpm/action-setup dentro de container sao redundantes e fragis, com action-setup dependendo de packageManager na raiz do repo que nao e multica-auth-work; (6) o gatilho pull_request com merge em main contradiz o ruling GTL-69R que fixou push em branch efemera como mecanismo de gate, o que criaria dois mecanismos divergentes na frota e exigiria mudanca permanente na default branch. Cinco observacoes menores, incluindo a colisao de FILES_LOCKED com o ORQ-26.",
+  "non_claims": [
+    "nao editei nem criei workflow, nao rodei teste, pnpm, go, Playwright ou migration; nenhum push, PR, merge, deploy ou mutacao de board",
+    "nao resolvi digests de imagem: apenas exijo que sejam usados",
+    "nao verifiquei sincronia do pnpm-lock.yaml nem presenca de packageManager: apontado como condicao de gate",
+    "os defeitos 2 a 5 sao deduzidos do contrato do GitHub Actions e do codigo do produto, nao de execucao observada",
+    "nao avaliei flakiness dos specs E2E"
+  ],
+  "blocker": "V4 nao deve ser autorizado para push/PR/execucao antes dos 6 fixes; alem disso o gatilho precisa ser alinhado ao GTL-69R ou receber ruling que o supersede.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) e autor Antigravity (w8:p2)",
+      "reason": "aplicar os 6 fixes exatos e decidir o gatilho (push em branch efemera conforme GTL-69R versus pull_request com merge em main); resolver a colisao de FILES_LOCKED com ORQ-26",
+      "file": ".deploy-control/p0/evidence/orq39-browser-qa-v4-peer-review.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

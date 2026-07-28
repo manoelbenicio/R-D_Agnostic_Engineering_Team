@@ -1,0 +1,50 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:52:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["GTL-43-PEER-REVIEW-KANBAN-V3"],
+  "status": "DONE_BLOCK",
+  "verdict": "BLOCK",
+  "target": "secao CORRECAO V3 de gtl-kanban-integrity-monitor-v2.md, linhas 188-325",
+  "scoreboard_vs_my_7_findings": {
+    "1_paths": "RESOLVIDO - pkg/protocol/events.go e board-card.tsx/board-view.tsx, ambos existem",
+    "2_grace": "RESOLVIDO - updated_at < now() - 15s; bonus: ResetIssueToTodoIfNoActiveTask seta updated_at=now(), dando graca automatica a issue recem reconciliada e suprimindo o falso positivo transitorio",
+    "3_aggregate_dependency": "PARCIAL + DEFEITO NOVO - jsonb_agg resolve duplicacao de linha, mas o COALESCE dentro do objeto mascara as dependencias e duplica o pai",
+    "4_dedup_clear": "RESOLVIDO EM DESENHO com lacuna de estado volatil; modelo map[issue_id]AnomalyType e suficiente porque os 4 status sao mutuamente exclusivos no CHECK de 001_init.up.sql:57-58",
+    "5_no_listeners": "NAO ENDERECADO - a secao V3 nao menciona isolamento frente a notification_listeners.go:583, activity_listeners.go:51, autopilot_listeners.go:20, subscriber_listeners.go:48",
+    "6_workspace_perf": "NAO RESOLVIDO - e agora com afirmacao incorreta em cima",
+    "7_advisory_sweeper": "RESOLVIDO no mecanismo, incompleto no locked",
+    "extra_completed_EXISTS": "RESOLVIDO - NOT EXISTS com status completed e completed_at NOT NULL, exatamente o predicado pedido",
+    "extra_scope": "RESOLVIDO - backlog e in_review declarados fora de escopo com justificativa"
+  },
+  "advisory_4247_check": "NAO COLIDE, confirmado. 4246 e o UNICO id em uso no repo inteiro (cmd/backfill_codex_usage_cache/main.go:26 const rollupAdvisoryLockID = 4246; cmd/backfill_task_usage_hourly/main.go:107; cmd/migrate/main.go:21; cmd/server/main.go:382; internal/scheduler/jobs_task_usage.go:22,60; internal/taskusagebackfill/backfill.go:19,128), sempre da mesma familia rollup/migrate/scheduler. 4245 e 4247 nao aparecem em lugar algum. RESSALVAS nao bloqueantes: nao existe registro central de ids, 4246 esta hardcoded em 6 arquivos e const em 1 - 4247 deve nascer como const unica; e pg_try_advisory_lock e session-level, exigindo unlock na MESMA conexao (precedente correto em cmd/backfill_task_usage_hourly/main.go:107-114 com lockConn dedicada e defer), senao o lock fica preso e trava o monitor para sempre - alternativa mais segura e pg_try_advisory_xact_lock.",
+  "blocking_items": [
+    "DEFEITO NOVO do V3, o unico de correcao funcional: no jsonb_agg da Anomalia 4 o COALESCE(parent.id, dep_issue.id) sempre escolhe o pai quando ele esta resolvido, entao pai resolvido + 2 deps resolvidas produz [pai, pai] e as dependencias NUNCA aparecem; com 3 deps e 1 resolvida produz [pai, pai, pai]. Trocou 3 eventos por 1 evento com array errado, e agora o erro e silencioso. Agregar pai e deps como fontes distintas (UNION ou jsonb_agg com FILTER); DISTINCT nao resolve porque o problema e a escolha da fonte",
+    "FINDING 6 INTACTO: o V3 afirma 'Index Scan em issue(status, assignee_type)' e esse indice NAO EXISTE. Os reais sao idx_issue_workspace(workspace_id), idx_issue_assignee(assignee_type, assignee_id), idx_issue_status(workspace_id, status), idx_issue_parent, idx_issue_workspace_number, idx_issue_project e GIN. Nenhum tem status como coluna LIDER, e as 4 queries seguem sem predicado de workspace, entao Anomalia 2 tende a Seq Scan em issue 4x por tick a cada 30s. O V3 escreveu um plano que o planner nao pode executar e removeu justamente o teste de EXPLAIN que refutaria isso",
+    "LOCKED INCOMPLETO: o V3 diz que main.go agenda o tick apos a conclusao do runtime_sweeper, mas o sweeper roda em goroutine com ticker proprio (runtime_sweeper.go:21 sweepInterval 30s, :77 NewTicker). main.go nao sequencia algo dentro daquele loop sem hook; a mudanca e EM runtime_sweeper.go, que nao esta nos 7 arquivos_locked. Corrigir para 8 itens ou reformular",
+    "ESTADO DE DEDUP VOLATIL sob advisory lock: ActiveAnomalies e mapa em memoria, mas o executor e escolhido por 4247. Na troca de detentor a replica B assume com mapa vazio e reemite tudo, e a replica A nunca emite o cleared - badge orfao sem sinal. Exigir decisao escrita: instancia unica como pre-condicao, ou estado persistido",
+    "ISOLAMENTO DE EVENTO nao declarado (finding 5)"
+  ],
+  "tests_regression": "O GTL-32 exigiu 8 testes; o V3 lista 7 e 5 dos meus desapareceram: OldIssueAssignedNow (unico que prova a graca), MultipleResolvedDependencies (o V3 so tem BlockedWithDoneParent_JSONAgg, que e justamente o caso que NAO expoe o bug), SameAnomalyAcrossTicks_EmitsOnce (so o cleared foi testado), NoNotificationListenerSubscribes e o EXPLAIN sem Seq Scan. CompletedThenRetryQueued ficou desnecessario pelo NOT EXISTS. Exijo 7 testes: ParentAndDependenciesResolved_ArrayContainsAll (falha com o SQL atual e prova o defeito), OldIssueAssignedNow, SameAnomalyAcrossTicks_EmitsOnce, NoSeqScanOnIssue, AdvisoryLockReleasedOnSameConn, LockHandoverDoesNotOrphanBadge e NoNotificationListenerSubscribes; mais o reforco de comparar updated_at no StrictReadOnlyInvariance",
+  "minimum_for_PASS": "1 corrigir o jsonb_agg; 2 escopar por workspace ou entregar migration e MEDIR o EXPLAIN removendo a afirmacao sobre issue(status, assignee_type); 3 incluir runtime_sweeper.go no locked; 4 declarar conexao dedicada + unlock do 4247 ou usar xact_lock; 5 declarar dedup na troca de detentor; 6 declarar isolamento dos eventos; 7 recolocar os 4 testes removidos e adicionar os 3 novos",
+  "open_questions_not_asserted": [
+    "se o backend roda em replica unica hoje - nao verifiquei",
+    "se o runtime_sweeper tem guarda de instancia - nao verifiquei; com 4247 o monitor passa a ter guarda propria",
+    "se o badge pertence a board-card.tsx ou board-view.tsx - o V3 cita os dois na secao 1 e so board-card.tsx no locked"
+  ],
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-kanban-monitor-v3-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__GTL-43-KANBAN-V3-PEER-REVIEW__20260727T115200Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "nenhum codigo editado; sem build, vet, test, deploy, restart, commit, push ou rerun",
+    "as 9 issues seguem PRESERVADAS; zero rerun",
+    "nao alterei estado de banco nem de board"
+  ],
+  "next": "Aguardando redistribuicao do General-Tech-Lead em w5:pC.",
+  "blocker": null
+}

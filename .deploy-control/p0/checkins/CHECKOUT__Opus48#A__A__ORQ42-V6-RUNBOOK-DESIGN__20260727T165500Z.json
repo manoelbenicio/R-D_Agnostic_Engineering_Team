@@ -1,0 +1,48 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:55:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-42",
+  "issue_uuid_cited_unverified": "64bfcae0-b867-4812-ad33-ae03ef7f25ae",
+  "task_ids": ["ORQ42-V6-CORRECTION-DESIGN"],
+  "status": "DONE_PROPOSAL",
+  "verdict": "PROPOSTA - nao aprovada, nao executavel; NAO me auto-aprovo",
+  "deliverable": ".deploy-control/p0/evidence/orq42-jwt-rotation-runbook-v6-design.md",
+  "artifact_sha256": "8f6e649531e08d78c676a4fe68338fd22d3d0cce54aa2fafc5b38156224a07ce",
+  "supersedes": "orq42-jwt-rotation-runbook-v5-design.md (sha 2504cc3b...)",
+  "closes": "orq42-jwt-rotation-runbook-v5-independent-adversarial-review.md B1-B9",
+  "skill_loaded": "aws-secrets-manager v1 INTEGRAL nesta rodada, incluindo a frase de Using asm-exec de que ele resolve referencias em command arguments AND environment variables - que e a base da correcao do B4",
+  "self_correction_admitted": "O revisor esta certo no B8 e minha V5 afirmou algo FACTUALMENTE FALSO. Verifiquei eu mesmo: daemon_auth.go trata mdt_ em :107 com auth.HashToken :108 e GetDaemonTokenByHash :122, marcando DaemonAuthPathDaemonToken em :113 e :143, e NAO chama JWTSecret em nenhum ponto; depois mcn_ :150 cloud, mul_ :190 PAT, e SO o fallback final :229-234 (comentario literal Fallback: JWT tokens) chama auth.JWTSecret(). Portanto rotacionar o JWT_SECRET NAO invalida um token mdt_ real, e a exigencia incondicional de re-pareamento do ORQ2 estava mal fundamentada. Registrei isso explicitamente em vez de reescrever em silencio.",
+  "refinements_beyond_the_review": [
+    "O WEBSOCKET DO DAEMON TAMBEM ESTA NO CAMINHO HASH: wakeup.go:81-83 envia o mesmo token do cliente como Bearer e wakeup.go:343 monta /api/daemon/ws, registrado em router.go:516 DENTRO do grupo /api/daemon protegido por DaemonAuth - logo o WS do daemon nao quebra com a rotacao",
+    "MAS O WEBSOCKET DE USUARIO QUEBRA: a rota de usuario e /ws em router.go:468 e a verificacao e hub.go:676-691 authenticateToken, que trata APENAS mul_ e para todo o resto faz jwt.Parse com auth.JWTSecret() - o realtime de usuario cai com a rotacao. Isso gerou a nova pergunta Q-G",
+    "LIMITACAO DE OBSERVABILIDADE DO ROTULO DE CAMINHO: os rotulos existem (daemon_auth.go:27-30 daemon_token/pat/cloud_pat/jwt) e sao lidos por DaemonAuthPathFromContext :48, mas o UNICO consumidor fora de teste e handler/daemon.go:747, que passa authPath para logHeartbeatEndpointSlow - ou seja o rotulo so aparece em log de heartbeat LENTO e nao e exposto em nenhuma resposta de API. Por isso propus E-1 (log, inconclusivo se nao houver heartbeat lento) e E-2 preferida (SELECT de colunas NOMEADAS em daemon_token, nunca a coluna de hash e nunca SELECT *)"
+  ],
+  "b1_to_b9_closure": [
+    "B1 fonte de interpolacao: caminho executavel unico passa a ser o helper ORQ-30 com IGUALDADE EXATA de hash como gate (fa1dae20... e 0e42c65e...), mais revisao do FONTE dos helpers provando que passam o arquivo duravel como entrada de interpolacao e usam somente --force-recreate --no-deps backend - hash igual prova imutabilidade, nao comportamento. Se o owner superseder, o comando direto passa a exigir --project-directory FIXADO e --env-file explicito, e essa variante exige revisao propria",
+    "B2 derive-and-compare contra allowlist independente (host, project, service, env file e os 4 config paths), com STOP em divergencia, rejeicao de caminho relativo/duplicado/vazio/symlink/fora da allowlist, quinto arquivo tendo de ser NOMEADO com evidencia do owner e nunca inferido, testes NUMERICOS de modo e dono em vez de impressao, e CID fresco com NEW_CID != OLD_CID",
+    "B3 editor byte-preserving fixado por hash: retirado o grep -v || true, que mascarava erro de leitura e poderia deixar arquivo contendo APENAS o JWT novo. Politica canonica estrita de uma unica atribuicao JWT_SECRET=<64hex> sem aspas, zero ou multiplas = STOP, sem seguir symlink, lock exclusivo, falha em erro de leitura e em byte NUL, temporario O_EXCL no mesmo diretorio, fsync do arquivo E do diretorio (rename da visibilidade atomica, nao durabilidade de crash), trap EXIT/INT/TERM, status fixo e prova mecanica por cmp de que os bytes nao-alvo nao mudaram",
+    "B4 referencia pelo AMBIENTE e nao pelo argv, apoiado na frase da skill; valor entregue ao editor por STDIN, nem em argumento do filho; G1-G4 preservadas como o parecer aprovou. Exposicao residual passa de /proc/cmdline para /proc/environ - TROCADA, nao eliminada - e exige a nova autorizacao A5",
+    "B5 G5 com CID fresco filtrando pelos DOIS labels aprovados, exigindo NEW_CID != OLD_CID, e capturando os DOIS status do pipeline por PIPESTATUS com aceitacao ins=0 e grp=1 - o defeito reconhecido era que com CID velho o inspect falha, o grep nao ve nada, devolve 1 e o runbook imprime o rc=1 ESPERADO",
+    "B6 prova do token ANTES da mutacao (anonimo 401 e antigo 200, porque um token ja expirado daria 401 depois e seria lido como invalidacao provada), pos-forward antigo=401 e token recem-emitido=200, rollback antigo=200 e novo=401, arquivos de credencial do curl criados pelo OWNER com verificacao numerica de tipo/symlink/dono/modo 0600 em diretorio 0700, e PRESERVACAO dos dois configs ate a janela ser aceita - a remocao passa a ser passo final autorizado e nao efeito colateral do forward",
+    "B7 backup e restore mecanicamente simetricos: mktemp aleatorio no mesmo diretorio sem clobber, rejeicao de symlink e dono/modo inesperados, cmp -s como gate mecanico em vez de hash impresso, fsync, restore pelo mesmo helper fixado, recreate pelo helper de rollback fixado, CID re-derivado com G5 corrigido, retencao dos configs de token ate R4, --no-recreate proibido nas duas direcoes e STOP sem segunda mutacao",
+    "B8 modelo do daemon CONDICIONAL com arvore de quatro ramos: daemon_token sem re-pareamento e apenas verificacao de heartbeat e runtimes online; pat ou cloud_pat com verificacao especifica; jwt e SO ENTAO com card proprio, procedimento revisado e autorizacao separada na mesma janela; indeterminado = STOP. Removida a afirmacao falsa da V5",
+    "B9 Q-A a Q-G reescritas (ARN COMPLETO em vez de id ambiguo, estagio congelado na janela, metadado sem mutacao, procedimento de token somente-owner, Q-F condicional, e a nova Q-G de aceite da queda de sessoes e do realtime de usuario) e A1 a A5 com escopos corrigidos (A1 so metadado, mutacao de segredo fora de escopo; A4 condicional; A5 nova para o residual de /proc/environ)"
+  ],
+  "non_claims": [
+    "NAO li valor de segredo; zero GetSecretValue/BatchGetSecretValue, zero SMA, zero asm-exec executado, zero AWS, zero Docker/Compose, NAO li nem escrevi dev.env, zero .Config.Env, zero token emitido ou testado, zero acao em daemon/unit/DB/provider/quadro",
+    "NAO executei nenhum passo de V6.1-V6.10; nao verifiquei hash de helper, nao li o FONTE dos helpers (estao no ORQ1 e nao os abri), nao executei E-2 nem consultei o DB",
+    "NAO reli as labels do ORQ1 nesta rodada: a allowlist de V6.2 e TRANSCRITA do parecer e precisa de confirmacao do owner - eu nao a validei contra o host",
+    "o UUID 64bfcae0 vem do parecer; nao confirmei por GET e nao predigo numero de card",
+    "verifiquei diretamente nesta rodada: ordem de prefixos e uso de JWTSecret em daemon_auth.go, wakeup.go:81-83 e :343, router.go:468 e :516, hub.go:676-691, daemon_auth.go:27-30 e handler/daemon.go:747. NAO verifiquei o corpo de logHeartbeatEndpointSlow nem o schema da tabela daemon_token, e por isso E-2 exige revisao",
+    "NAO adivinho nome de segredo e nao sei se o segredo existe",
+    "NAO elimino a exposicao residual de /proc: troco cmdline por environ e peco aceite explicito em A5",
+    "nao alterei assignee, nao postei comentario, nao criei card"
+  ],
+  "review_requested_from": "agente independente que NAO seja Opus48#A (autor da V5/V6), nem o autor da V4, nem o revisor da V4",
+  "review_attack_priorities": ["se a referencia pelo AMBIENTE e de fato resolvida pelo asm-exec como a skill afirma, e se environ e melhor que cmdline no modelo de ameaca do owner", "se a politica canonica de uma linha JWT_SECRET=<64hex> sem aspas com STOP no resto e operacionalmente aceitavel ou se o editor precisa de parser dotenv completo", "se E-2 com SELECT de colunas nomeadas em daemon_token e admissivel como evidencia de caminho", "se a queda do realtime de usuario que identifiquei em /ws tem outros consumidores que eu nao mapeei"],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "blocker": null
+}

@@ -1,0 +1,23 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T22:49:32Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "P4-ALLOWLIST",
+  "task_ids": [
+    "GW-DISCOVERY-ALLOWLIST"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gw-discovery-p4-allowlist.md",
+    ".deploy-control/inbox-tm/FROM_Codex56-B__TO_Kiro-PRINCIPAL-TL__20260726T224916Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gw-discovery-p4-allowlist.md",
+    ".deploy-control/inbox-tm/FROM_Codex56-B__TO_Kiro-PRINCIPAL-TL__20260726T224916Z.msg"
+  ],
+  "reported_to": "KIRO-PRINCIPAL-TL@100.117.245.15:wB:p1",
+  "summary": "Proposta P4 concluída: allowlist JSON versionada, estrita e embutida no binário; LookupModel passa a aceitar apenas a interseção de revisão aprovada, estado approved, presença e disponibilidade atuais, incluindo validação de fallback. Remoção, revogação e revisão divergente falham fechado.",
+  "validation": "Evidência contém trecho literal antes/depois ancorado em registry.go:68-87 e 176-190, estrutura/persistência/versionamento, fluxo owner approve/revoke, caso de remoção e dez testes de aceite. Diretório de código gateway permaneceu sem novas alterações desta rodada; nenhum build, deploy ou restart."
+}

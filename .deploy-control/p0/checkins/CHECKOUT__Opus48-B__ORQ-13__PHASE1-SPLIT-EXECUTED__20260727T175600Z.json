@@ -1,0 +1,77 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T17:56:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "P1-ORQ-13",
+  "task_ids": ["ORQ-13"],
+  "status": "DONE",
+  "verdict": "GO",
+  "ownership": "Owner exclusivo do worktree gtl-i03-orq13-phase1 e da reserva RES-ORQ13-001. Unico writer dos arquivos e processos desta tarefa. Nao toquei nenhum outro worktree.",
+  "gates_pre_execucao": {
+    "ttl": "VALIDO - agora 2026-07-27T17:47:01Z contra expiracao 2026-07-28T15:37:12Z, restam 21h",
+    "base": "HEAD == 0cb8aeb",
+    "limpeza": "staged=0, commits_ahead=0, stash=0",
+    "fingerprint": "b87bc5cae3e877af9a26ebe39cce7f0a90fff2a126e075c7f5d12799d04707ce - identico ao registrado",
+    "migration_127_up": "0ea3005da0ee257618062552cf8792f9c2e6ed478dce3ba174bf08692486cac1 confere com a reserva",
+    "migration_127_down": "74354ae28dee526c7dbc6bc6733471a59c2f3dabfe5a7fe609fe20d747e61113 confere com a reserva",
+    "colisao": "nenhuma outra migration 127; vizinhas 125 e 126",
+    "dependencias": "sqlc v1.31.1 local, go 1.26.1, gofmt, git 2.50.1 - todas presentes"
+  },
+  "rollback_seguro": {
+    "reset_hard": "ELIMINADO. Nao usei git reset --hard em nenhum momento, nem como ponto de aborto planejado.",
+    "rede_1": "tag orq13-safeguard-base -> 0cb8aeb",
+    "rede_2": "snapshot 0700 em /home/ec2-user/.cache/orq13-safeguard: full-tracked.patch, tree/ com os 11 arquivos, tree.sha256",
+    "rede_3": "stash@{0} 'ORQ13-SAFEGUARD-V31 20260727T174731Z' criado com -u, NUNCA dropado",
+    "procedimento": "git branch orq13-attempt-1 HEAD; git switch -C <branch> orq13-safeguard-base; git stash apply stash@{0} - apply e nao pop, nada e apagado",
+    "unstage": "git restore --staged quando necessario, nunca reset"
+  },
+  "descoberta_que_simplifica_a_v31": "NAO foi preciso split por hunk, nem git add -p interativo, nem filterdiff. Com a arvore no baseline limpo, sqlc generate sobre as queries NAO modificadas reproduz exatamente o drift pre-existente: models.go 5 hunks e task_message.sql.go 2 hunks, que e precisamente o conteudo previsto para o commit A. O gerador passa a ser a fonte da verdade e o split fica reproduzivel por qualquer um com o mesmo sqlc v1.31.1.",
+  "commits": {
+    "A": "b1f08e3f0615f63d238a51a81a5b821917b433da parent 0cb8aeb - chore(sqlc): regenerate baseline output with sqlc v1.31.1 - 2 arquivos gerados, drift puro incluindo o revert maxSeq para max_seq",
+    "B": "c0e93a2 parent b1f08e3 - feat(cost): record thinking_level on task usage end to end - 10 arquivos, 6 modificados mais 2 migrations mais 2 testes",
+    "amend": "NENHUM. Ambos sao commits novos com parentesco verificado.",
+    "push": "NENHUM"
+  },
+  "prova_de_determinismo": {
+    "via_1": "git diff 0cb8aeb HEAD restrito aos 7 arquivos que ja eram rastreados na base devolve b87bc5cae3e877af9a26ebe39cce7f0a90fff2a126e075c7f5d12799d04707ce, byte a byte igual ao fingerprint registrado",
+    "via_2": "os 4 arquivos novos, hash no HEAD contra hash da salvaguarda: 4 de 4 OK",
+    "via_3": "somatorio dos 11 arquivos, HEAD contra salvaguarda: 018f1b8fd4615193a0b69cecd71425e6f5962d90061b625449726e41c3b7c27a nos dois lados",
+    "nota_metodologica": "git diff 0cb8aeb HEAD SEM escopo devolve 94905f9a12bd08e6, diferente do esperado, e isso NAO e divergencia: o git diff original nao continha os 4 arquivos nao rastreados, entao o unico escopo comparavel e o dos 7 rastreados. Registrei o hash divergente na evidencia de proposito, para que ninguem o encontre depois e concluia deriva."
+  },
+  "tests": [
+    {"command": "gofmt -l nos 7 arquivos Go tocados", "exit_code": 0, "assertions_or_tests": 7, "result": "PASS - saida vazia"},
+    {"command": "go build ./...", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go vet ./internal/daemon ./internal/handler ./pkg/db/generated", "exit_code": 0, "assertions_or_tests": 3, "result": "PASS"},
+    {"command": "go test -race ./internal/daemon -run ThinkingLevel -count=1 -v", "exit_code": 0, "assertions_or_tests": 4, "result": "PASS NOMINAL - 4 --- PASS, 0 fail, 0 skip, 0 DATA RACE"},
+    {"command": "go test ./internal/handler -run ThinkingLevel -count=1 -v", "exit_code": 0, "assertions_or_tests": 0, "result": "FALSO-VERDE, NAO ACEITO COMO EVIDENCIA - exit 0 e ok impresso, mas 0 PASS nominais, porque TestMain em handler_test.go:38-54 chama os.Exit(0) com banco inalcancavel antes de m.Run(). Os 4 testes sao HERMETICOS, exercitam helpers puros, e mesmo assim foram engolidos."}
+  ],
+  "pendencias_declaradas": {
+    "handler_nominal": "NAO reivindico teste do pacote internal/handler: contagem nominal foi ZERO. Fica pendente de banco efemero, e nao apliquei migration em banco nenhum conforme a ordem.",
+    "lint": "golangci-lint ausente, sem binario e sem fonte no cache. Por ordem explicita NAO bloqueio: registro o veredito do rename max_seq como NAO MEDIDO e diferido para CI. Ressalva pertinente: os 4 workflows vivem em multica-auth-work/.github/workflows e nao na raiz, logo estao INERTES hoje, entao diferir para o CI so vale depois que existir CI ativo."
+  },
+  "proximo_passo_nao_executado": "Aplicar a migration 127 num banco EFEMERO e re-rodar internal/handler com DATABASE_URL para converter o falso-verde em PASS nominal. Requer autorizacao especifica. O padrao validado no ORQ-41 serve: container efemero com imagem fixada por digest, ligado a loopback, alcancado por tunel SSH privado, com teardown verificado.",
+  "evidence": [
+    ".deploy-control/p0/evidence/orq13-phase1-split-execution.md",
+    "/home/ec2-user/.cache/orq13-safeguard/ (tag, patch, tree, tree.sha256, logs de teste)"
+  ],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq13-phase1-split-execution.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-13__PHASE1-SPLIT-EXECUTED__20260727T175600Z.json"
+  ],
+  "recomendacao_transversal": "O falso-verde de TestMain atinge TODO o pacote internal/handler, nao so o ORQ-13, e ja me custou uma retratacao nesta sessao. Merece cartao proprio: segregar os testes hermeticos ou fazer TestMain falhar em vez de sair com 0. NAO sou o registrador, entao apenas recomendo.",
+  "reviewer_request": "Preciso de revisor independente para o split. NAO pode ser eu. Sugiro que tambem NAO seja quem escreveu a V3.1 original com o reset --hard, para que a troca do ponto de aborto seja avaliada por terceiro.",
+  "non_claims": [
+    "NENHUMA migration aplicada a banco algum; nenhuma conexao a banco, container, daemon ou rede",
+    "Nenhum push, merge, PR, mutacao de board, comentario ou atribuicao",
+    "Nenhum --amend",
+    "NENHUM git reset --hard em momento algum",
+    "Nao dropei o stash de salvaguarda nem removi a tag",
+    "Nao removi cache algum, conforme a ordem de nao limpar",
+    "Nao reivindico teste do pacote internal/handler: nominal zero",
+    "Nao reivindico veredito de lint",
+    "Nao toquei gtl-orq41-w4-autopilot nem qualquer outro dos 22 worktrees",
+    "Nao li nem usei segredo, token ou credencial"
+  ],
+  "blocker": null
+}

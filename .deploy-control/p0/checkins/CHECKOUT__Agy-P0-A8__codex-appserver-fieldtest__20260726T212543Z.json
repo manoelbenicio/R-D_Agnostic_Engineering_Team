@@ -1,0 +1,16 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-26T21:25:43Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "CODEX-APPSERVER-FIELD-TEST",
+  "status": "DONE",
+  "reported_to": "Kiro-PRINCIPAL-TL",
+  "evidence": [
+    "codex app-server --help -> exit 0 (printed stdio:// default transport option)",
+    "OPENAI_BASE_URL=http://100.118.244.61:20128/v1 OPENAI_API_KEY=$(cat /etc/agent-brain/secrets/omniroute-inference-key) timeout 15s codex app-server -> process ran continuously for 15s (exit 124 timeout)",
+    "JSON-RPC initialize test -> received immediate JSON-RPC 2.0 response {\"id\":1,\"result\":{\"userAgent\":\"test/0.145.0...\"}}"
+  ],
+  "summary": "Campo codex app-server testado com sucesso. Binário sobe em stdio JSON-RPC, imprime aviso de untrusted folder em stderr e responde a chamadas JSON-RPC 2.0. Processo encerrado clean sem afetar o daemon."
+}

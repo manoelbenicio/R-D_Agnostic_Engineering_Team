@@ -1,0 +1,27 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T13:13:14Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-2"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "P0 ORQ2 storage and lifecycle monitoring post-SharePoint upload",
+  "finding": "Produced orq2-storage-lifecycle-post-sharepoint-monitor.md. Measured live df on ORQ2: / (60G nvme0n1p1) = 86% (8.7GB avail), /tmp (7.7G tmpfs) = 7% (7.2GB avail), sharepoint upload directory (/home/ec2-user/workspace/sharepoint) = 573MB intact. Measured top consumers: .agent-cred-homes (14GB), workspace (6.8GB), .cache (6.1GB), .private-tmp (5.0GB). Verified lifecycle timer orq2-agent-cache-lifecycle.timer: last run 2026-07-28 05:16:46Z UTC (SUCCESS), next 2026-07-29 05:28:12Z UTC. Confirmed 100% preservation of explicit exclusions (worktrees, evidence, backups, credential homes, sharepoint upload). Evaluated daily policy effectiveness and established alert thresholds (Warning >88%, Critical >92%). Zero deletions or file content reads performed. Recorded monitor SHA256 ae73f82f39a37e1e18530ea1245a79887e09bd8fb5954ecbe5aaccae9a42d05a.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq2-storage-lifecycle-post-sharepoint-monitor.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only monitoring operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq2-storage-lifecycle-post-sharepoint-monitor.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260728T131314Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ2-STORAGE-SHAREPOINT-MONITOR__20260728T131314Z.json"
+  ],
+  "monitor_sha256": "ae73f82f39a37e1e18530ea1245a79887e09bd8fb5954ecbe5aaccae9a42d05a",
+  "non_claims": [
+    "post-sharepoint storage and lifecycle monitor, no deletion, no truncation, no file content reading, no board mutation"
+  ],
+  "blocker": null
+}

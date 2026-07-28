@@ -1,0 +1,29 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:13:58Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-17"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "target_host": "ORQ1 (100.118.244.61 / ip-172-31-18-217)",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Mechanical safety lane monitor V4 on actual ORQ1 host via SSH 100.118.244.61 for ORQ-17",
+  "finding": "Produced orq17-mechanical-monitor-v4.md. Captured 3 UTC samples on actual ORQ1 host via SSH (16:12:33Z, 16:12:38Z, 16:12:43Z). Serve/Funnel status: reset (No serve config). Frontend 13100: HTTP 200 OK (container 1b3b6c9ee32a Up 13h, invariant). Backend 18080 healthz and readyz: HTTP 200 OK / 200 OK (container 75e4416f06e9 Up 13m, invariant). Anonymous probes /api/me and /api/issues: HTTP 401 Unauthorized (text/plain). Active task queue 4-state count: 0. Status stays BLOCKED_ON_CREDENTIALS (not PASS-to-enable). Complied with aws-secrets-manager skill (zero plaintext, zero GetSecretValue/SMA). Recorded evidence SHA256 14517fff8c4286c4fe0f75edcf1828add4463271145e45f14b8b4ce91a43152b for agent A8.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq17-mechanical-monitor-v4.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-mechanical-monitor-v4.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T161358Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ17-MECHANICAL-MONITOR-V4__20260727T161358Z.json"
+  ],
+  "evidence_sha256": "14517fff8c4286c4fe0f75edcf1828add4463271145e45f14b8b4ce91a43152b",
+  "non_claims": [
+    "mechanical monitor V4, no body/identity/secret logging, no rebuild, no container restart, no env edit, no Tailscale Serve apply, no DB/AWS/board mutation"
+  ],
+  "blocker": "BLOCKED_ON_CREDENTIALS (awaiting owner credential provisioning in Secrets Manager)."
+}

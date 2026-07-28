@@ -1,0 +1,53 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:58:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["GTL-50-SECOND-AUDIT-CLI-ALIGNMENT"],
+  "status": "DONE_BLOCK",
+  "verdict": "BLOCK para o plano GTL-45 e para o peer review GTL-46",
+  "decisive_finding": "Claude Code NAO e invocado por nenhum executor de task. O unit do daemon executor no ORQ2 tem Environment=MULTICA_CLAUDE_PATH=/run/multica-disabled/claude; habilitados sao codex (nvm), kiro-cli e agy. Nenhum dos 10 panes Herdr roda claude (kiro/codex/agy apenas). Nao existe smoke de Claude: ORQ-27 AGY, ORQ-28 Kiro, ORQ-29 Codex, todos done em orq2-dev. Logo toda a Secao A do plano e a trava de subagent depth incidem sobre CLI fora do caminho de execucao.",
+  "topology_measured": [
+    "ORQ1 ip-172-31-18-217: NENHUMA unit multica (system e user vazios) e NENHUM processo daemon; roda 4 containers - multica-backend:agy-status-20260727T102815Z, multica-web:transition-6a2aba3, diegosouzapw/omniroute:latest, pgvector/pgvector:pg17",
+    "ORQ2 ip-172-31-30-9: user unit multica-daemon-orq2-credential.service active running, processo 3417665 ~/.local/lib/multica/bin/multica-auth-credential-home-v1 daemon start --foreground --no-auto-update --server-url http://127.0.0.1:18080 --daemon-id orq2-credential-runtime-v1",
+    "TUNEL: multica-orq1-backend-tunnel.service e user unit NO ORQ2 ('Multica ORQ2 to ORQ1 backend tunnel'); o review GTL-46 colocou no ORQ1 - ERRADO",
+    "CLI nao exercitado no ORQ1: nao existe ~/.claude; ~/.codex mtime 2026-07-20 06:25:12; ~/.claude/projects e ~/.codex/sessions com 0 entradas"
+  ],
+  "versions_measured": "ORQ2 claude 2.1.215 / codex-cli 0.145.0 (@anthropic-ai/claude-code@2.1.215, @openai/codex@0.145.0); ORQ1 claude 2.1.218 / codex-cli 0.144.6 (@openai/codex@0.144.6). A tabela do plano esta CORRETA e bate com gtl-official-release-notes-watch.md:17-18",
+  "targets_substantiated": "Alvos vem de fonte oficial ja coletada: watch:46 nao ha Codex posterior a 0.145.0 (2026-07-21); watch:53 2.1.220 'Bug fixes and reliability improvements'; watch:54 traz o texto oficial do depth 1->3 com CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1. Nao houve invencao de versao. RESSALVA: o plano OMITE dois itens de 2.1.219 que viajam no mesmo salto e sao decisao de custo do owner - claude-opus-5 como default a 10/50 por Mtok (watch:55) e workflowSizeGuideline (watch:60)",
+  "errors_in_first_review": [
+    "colocou o tunel no ORQ1; e user unit do ORQ2",
+    "propos validar canary do ORQ1 via GET /api/runtimes - topologicamente invalido, porque esse endpoint reflete registro do daemon do ORQ2 e responderia 200 mesmo com binario do ORQ1 corrompido",
+    "mandou expandir a env var para /etc/environment, profile.d e env do container Docker do backend - poluicao global e ineficaz, porque o container nunca lanca claude e o unit tem claude desabilitado",
+    "aprovou rollback com @openai/codex-cli; o pacote real e @openai/codex (npm ls -g)",
+    "declarou fila vazia 'confirmada' sem evidencia de count=0, e com SQL que omite dispatched e waiting_local_directory (109_agent_task_waiting_local_directory.up.sql:15)"
+  ],
+  "exact_corrections": [
+    "C1 env var somente no contexto que lanca claude; hoje inexistente. Nao tocar /etc/environment, profile.d nem Docker. Quando/se claude for reabilitado, drop-in ~/.config/systemd/user/multica-daemon-orq2-credential.service.d/10-claude-depth.conf na MESMA mudanca que troca MULTICA_CLAUDE_PATH (hoje nao existe dir .d/)",
+    "C2 smoke por host: no ORQ2 reexecutar ORQ-27/28/29 apos upgrade de codex, porque atravessam o daemon real; no ORQ1 validar so binario (--version e npm ls -g), nunca /api/runtimes",
+    "C3 rollback com @openai/codex@0.144.6; @anthropic-ai/claude-code@2.1.218 esta correto",
+    "C4 registrar que o tunel e user unit do ORQ2: janela de upgrade que reinicie sessao de usuario derruba o acesso do daemon a 127.0.0.1:18080",
+    "C5 reescrever justificativa: o codex exercitado ja esta no alvo, claude nao tem invocador, logo o plano e higiene de paridade no ORQ1 e nao mitigacao de risco de custo",
+    "C6 fila vazia: medir e anexar count real, incluindo dispatched e waiting_local_directory",
+    "C7 decidir claude-opus-5 default e workflowSizeGuideline antes de 2.1.220"
+  ],
+  "open_questions_not_asserted": [
+    "por que claude foi desabilitado no unit - medi o efeito, nao a decisao",
+    "uso de claude fora de daemon e fora de pane (cron, script) - nao varri o sistema",
+    "se codex exec no ORQ1 consome cota paga - nao verifiquei o auth daquele host"
+  ],
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-cli-alignment-second-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__GTL-50-CLI-ALIGNMENT-SECOND-AUDIT__20260727T115800Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "nenhum plano, config, unit, container, binario ou codigo alterado; sem instalacao, upgrade, restart ou rerun",
+    "somente leitura: hostname, systemctl list-units/cat, ps, docker ps, --version, npm ls -g, stat, GET /api/issues, herdr pane list",
+    "nenhum valor de segredo lido; as 9 issues preservadas seguem intactas"
+  ],
+  "next": "Aguardando redistribuicao do General-Tech-Lead em w5:pC.",
+  "blocker": null
+}

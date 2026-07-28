@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T12:12:27Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-ORQ17-AUTH-CODE-PREFLIGHT-PEER-REVIEW",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-code-preflight-peer-review.md"
+  ],
+  "summary": "Peer Review Adversarial do Preflight de Código Backend-Auth (GTL-76) concluído com veredito BLOCK em modo READ-ONLY. Identificado que a proposta de checagem r.RemoteAddr.IsLoopback é insegura atrás do reverse proxy Caddy (onde r.RemoteAddr é sempre 127.0.0.1), comprovado pelo código real (auth.go:43-52) que o bypass desativa automaticamente via FRONTEND_ORIGIN FQDN sem necessidade de patch em Go ('Zero Code Change'), e corrigidos os erros de inclusão da ORQ-26 em FILES_LOCKED."
+}

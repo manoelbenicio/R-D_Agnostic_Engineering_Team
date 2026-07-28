@@ -1,0 +1,55 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T21:41:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["PREPARE-PATCH-KIRO-ANTIGRAVITY-ADAPTER"],
+  "status": "DONE_WITH_BLOCKING_GAP",
+  "host": "ORQ2",
+  "question": "Colar o literal de agentBrainBuiltInCLIFor e trustedAdapterEntries e dizer quais linhas adicionar para kiro e antigravity, sem editar",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Opus48#A__TO_Kiro-PRINCIPAL-TL__20260726T214100Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__PREPARE-PATCH-KIRO-ANTIGRAVITY-ADAPTER__20260726T214100Z.json"
+  ],
+  "literal_snippets_delivered": [
+    "internal/daemon/config.go:141-155 agentBrainBuiltInCLIFor (3 cases + default fmt.Errorf 'agent brain CLI has no accepted built-in executable mapping')",
+    "internal/daemon/runtimeenv/env.go:302-350 trustedAdapterEntries (3 cases + default ErrAdapterFailClosed)"
+  ],
+  "proposed_patch": {
+    "A_identity.go": "internal/daemon/brain/identity.go: adicionar 'CLIKiro CLIKind = \"kiro\"' no bloco const apos a linha 16 e 'CLIKiro: {},' no supportedCLIKinds apos a linha 25. OBRIGATORIO: kiro nao tem CLIKind hoje, 'case brain.CLIKiro' nao compila. antigravity ja tem CLIAntigravity.",
+    "B_config.go": "internal/daemon/config.go: inserir 4 linhas entre 151 e 152 -> 'case brain.CLIKiro: return agentBrainBuiltInCLI{Provider: \"kiro\", Command: \"kiro-cli\"}, nil' e 'case brain.CLIAntigravity: return agentBrainBuiltInCLI{Provider: \"antigravity\", Command: \"agy\"}, nil'. Provider casa com config.go:401 agents[\"kiro\"] e config.go:414 agents[\"antigravity\"].",
+    "C_env.go": "INCOMPLETO POR FALTA DE FATO. Case kiro exigiria campo novo KiroDataHome em AdapterEnvironment (env.go:108-124), constante KiroOmniRouteAPIKeyEnv=\"KIRO_API_KEY\" no estilo de cline.go:38, XDG_DATA_HOME trusted-local, e a variavel de BASE URL do kiro, que NAO EXISTE no repo. Para antigravity nao proponho case: sem vetor de segredo e sem endpoint."
+  },
+  "blocking_gaps": [
+    "kiro nao possui constante CLIKind em brain/identity.go:13-28 (existem claude-code, codex, kimi, openai-compatible, antigravity, nim)",
+    "nao existe variavel de base URL para kiro nem para agy: as unicas no codigo sao ANTHROPIC_BASE_URL, OPENAI_BASE_URL, NIM_BASE_URL, MODEL_BASE_URL - sem isso o root nao chega ao processo filho",
+    "antigravity nao tem variavel de API key: a credencial e diretorio OAuth, execenv/antigravity_home.go:10 antigravityCredentialRelDir = '.gemini/antigravity-cli', isolado por HOME - StableSecret nao tem vetor de entrega",
+    "escrever case antigravity agora produziria sucesso sem rotear ao OmniRoute: fail-OPEN vestido de fail-closed, pior que o ErrAdapterFailClosed atual"
+  ],
+  "caveat_priority": "O daemon vivo roda SEM --agent-brain-gateway-required, entao trustedAdapterEntries/ErrAdapterFailClosed nao estao no caminho atual. O dropdown vem de pkg/agent/models.go:1043 discoverKiroModels -> discoverACPModels (defaultBin kiro-cli, tmpdirPrefix multica-kiro-discovery-), que NAO tem fallback estatico, diferente do cline (models.go:1035-1038 clineStaticModels) e do copilot (1057-1059). pkg/agent/antigravity.go nao tem func de listagem de modelos. Logo A+B+C podem nao popular o dropdown.",
+  "evidence": [
+    "sed -n '138,158p' internal/daemon/config.go",
+    "awk NR 295-355 internal/daemon/runtimeenv/env.go",
+    "grep -rn 'trustedAdapterEntries|ErrAdapterFailClosed' => runtimeenv/adapter.go:26, env.go:280, env.go:302, env.go:348",
+    "internal/daemon/brain/identity.go:13-28 conjunto de CLIKind sem kiro",
+    "runtimeenv/policy.go:41 KIRO_API_KEY DenyProviderCredential e policy.go:73 prefixo KIRO_ (mesmo padrao do CLINE_, que funciona via originTrustedSecret)",
+    "execenv/execenv.go:70 'Kiro: XDG_DATA_HOME / KIRO_API_KEY'; execenv/kiro_home.go:16 Kiro ignora KIRO_HOME",
+    "execenv/antigravity_home.go:10 antigravityCredentialRelDir = '.gemini/antigravity-cli'",
+    "grep de BASE_URL/_ENDPOINT em runtimeenv e pkg/agent => ANTHROPIC_BASE_URL, OPENAI_BASE_URL, NIM_BASE_URL, MODEL_BASE_URL, OTEL_EXPORTER_OTLP_LOGS_ENDPOINT apenas",
+    "pkg/agent/models.go:1043-1048 discoverKiroModels sem fallback estatico; grep 'func.*Models' em pkg/agent/antigravity.go => vazio"
+  ],
+  "reported_to": [
+    "KIRO-PRINCIPAL-TL - LOCAL 100.117.245.15 pane wB:p1 (herdr pane run via ssh)",
+    ".deploy-control/inbox-tm/FROM_Opus48#A__TO_Kiro-PRINCIPAL-TL__20260726T214100Z.msg"
+  ],
+  "non_claims": [
+    "nenhum arquivo de codigo editado",
+    "go build e go vet NAO executados nesta rodada",
+    "nenhum binario substituido, nenhum daemon reiniciado, nenhum container reiniciado",
+    "nenhum commit, push, reset, clean, checkout --, nenhuma instalacao",
+    "nenhum valor de segredo lido ou transcrito"
+  ],
+  "blocker": "Patch C nao pode ser finalizado sem o fato ausente: qual variavel de ambiente kiro-cli le como base URL, e como entregar segredo/endpoint ao agy. Aplicar qualquer coisa em codigo-fonte segue STOP-AND-WAIT sem autorizacao escrita do owner."
+}

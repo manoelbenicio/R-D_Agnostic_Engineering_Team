@@ -1,0 +1,64 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T16:03:18Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "ORQ-31",
+  "task_ids": [
+    "ORQ-31"
+  ],
+  "status": "DONE_PASS_WAVE_A_ONLY",
+  "mode": "READ_ONLY_INDEPENDENT_BINARY_REVIEW",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq31-wave-a-independent-binary-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-31-WAVE-A-INDEPENDENT-BINARY-REVIEW__20260728T160318Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "ORQ2 local identity, stat, quarantine count/mode/owner, source absence and umask/count checks",
+      "exit_code": 0,
+      "result": "4/4 in-place targets at 0600; quarantine 0700 with exactly 9 files all 0600; zero original paths; umask 0002; permissive level-one count 237"
+    },
+    {
+      "command": "ORQ1 SSH BatchMode metadata-only verification",
+      "exit_code": 0,
+      "result": "Host/IP/user proved; mh/mcp_h and two backups 0600; root artifact unchanged; umask 0002; permissive count 69"
+    },
+    {
+      "command": "LOCAL SSH BatchMode exact target presence/count verification",
+      "exit_code": 0,
+      "result": "Host/IP/user proved; original targets missing=16 present=0; umask 0022; permissive count 0"
+    },
+    {
+      "command": "original evidence and current-state SHA-256 verification",
+      "exit_code": 0,
+      "result": "Current-state SHA matched b755015d45b74bb9 prefix; original execution/check-out hashes recorded"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq31-wave-a-independent-binary-review.md",
+    ".deploy-control/p0/evidence/orq31-wave-a-current-state-verification.md",
+    ".deploy-control/p0/evidence/gtl-security-remediation-wave-a-execution.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__SECURITY-WAVE-A-CONTAINMENT__20260727T123300Z.json"
+  ],
+  "reported_to": [
+    "GENERAL-TECH-LEAD Codex56-TL (w5:pC)",
+    "original executor Codex56#A (w7:p3)"
+  ],
+  "summary": "PASS for declared Wave A containment only. ORQ2 4 in-place plus 9 quarantined targets, ORQ1 protected targets/backups, and LOCAL absence were independently reproduced. Wave B rotations and structural umask remediation remain explicitly open; ORQ2 permissive file count grew 209 to 237.",
+  "non_claims": [
+    "No sensitive file content or secret value was read, hashed, resolved, printed or transmitted.",
+    "No chmod, move, removal, target-host write, AWS call, service operation, board mutation, rotation or restart was performed.",
+    "Missing LOCAL files do not prove secure deletion or credential invalidation.",
+    "This PASS does not close Wave B or structural umask remediation."
+  ],
+  "followups": [
+    "B1 OPENAI credential rotation and consumer/store validation under separate authorization.",
+    "B4 handshake-token invalidation/reissue and B5 rev-token invalidation/reissue under separate authorizations.",
+    "Durable umask 077 and private temporary/cache roots, independently gated.",
+    "Separately inventory the ORQ2 permissive population before any bulk remediation."
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

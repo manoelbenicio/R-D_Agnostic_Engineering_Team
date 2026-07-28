@@ -1,0 +1,23 @@
+{
+  "event": "CHECKIN_DELTA_GATE0",
+  "timestamp_utc": "2026-07-27T17:44:00Z",
+  "agent": "Opus48#A", "pane_id": "w6:p1", "lane": "A",
+  "issue_id": "ORQ-26", "topic": "implementacao F1/F2 no worktree isolado",
+  "status": "AWAITING_GENERAL_TL_ACCEPTANCE",
+  "execution_started": false,
+  "tools_sufficient_for_code": "go 1.26.1, gofmt, jq 1.8.1, psql, git 2.50.1; 16G livres em /, cache 850M, estimativa 1.5-2.5G para build e -race",
+  "decisive_absence": "docker AUSENTE no ORQ2 e porta 5432 FECHADA: nao existe Postgres alcancavel. E o TestMain em internal/handler/handler_test.go:40-53 le DATABASE_URL e, sem conexao ou Ping, imprime 'Skipping tests: could not connect to database' ou 'database not reachable' e faz os.Exit(0). Logo rodar go test ./internal/handler no ORQ2 produziria EXATAMENTE O FALSO-VERDE que o gate existe para detectar - sairia 0 sem executar teste. NAO apresentarei execucao local como prova; 'run targeted gate locally' fica NAO DISPONIVEL.",
+  "locally_executable_with_real_value": "go build ./..., go vet ./..., gofmt -l, e go test -run de testes que NAO dependam de DB, escritos com Storage mockado - tanto a chave exata quanto o contexto cancelado sao observaveis num fake sem banco. Prova em Postgres real so pelo workflow no runner, apos push autorizado.",
+  "ownership_confirmation_requested": "Existem outros dois worktrees de ORQ-26 vivos: /home/ec2-user/workspace/worktrees/gtl-orq26 (agent/kiro-opus5/orq-26-contract-fix) e /home/ec2-user/workspace/worktrees/gtl-orq26-consumer-tests (agent/agy-a7/orq26-consumer-tests), ambos em 0cb8aeb. O commit d2447183 e de Codex e carrega o patch de contrato CONGELADO de file.go e file_test.go. Como vou alterar esses dois arquivos, pode COLIDIR com o dono do patch congelado e com o contract-fix do Kiro. Pela separacao coordenacao/execucao preciso de HANDOFF EXPLICITO antes de escrever.",
+  "target_worktree": "/home/ec2-user/workspace/worktrees/ci-orq26-db-gate, branch ci/orq26-db-gate, HEAD d244718, ZERO linhas sujas",
+  "plan_new_commit_no_amend": [
+    "F1: trocar deleteS3Object(r.Context(), link) por Delete com a CHAVE EXATA ja em escopo, eliminando o round-trip por KeyFromURL cujo fallback pega so o ultimo segmento",
+    "F2: cleanupCtx com context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)",
+    "testes focados provando (a) chave exata com prefixo completo entregue ao Delete e (b) limpeza ocorrendo com o contexto da requisicao JA CANCELADO, ambos via fake de Storage sem DB",
+    "atualizar LOCKED_FILE_SHA256 e LOCKED_TEST_SHA256 no workflow, mais a lista de folhas exigidas e o total (hoje 8)"
+  ],
+  "scope": "TRES arquivos preservados: file.go, file_test.go e o workflow - os mesmos que a guarda de arquivos alterados permite. Se o fake de Storage exigir arquivo novo, PARO e reporto, porque um quarto arquivo faria a propria guarda do gate falhar.",
+  "permissions_needed": "nenhuma nova; apenas escrita local no worktree. Sem push, PR, merge, quadro, AWS, segredo ou mutacao de runtime.",
+  "method": "saida temporaria unica e promocao atomica por arquivo; milestone reportado a cada etapa",
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC"]
+}

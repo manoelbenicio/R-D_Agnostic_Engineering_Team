@@ -11,6 +11,9 @@ func TestPrepareKiroHomePerAccountIsolatesDataStore(t *testing.T) {
 	accountB := filepath.Join(t.TempDir(), "accountB")
 	writeTestCredential(t, filepath.Join(accountA, kiroCredentialRelPath), "kiro-account-A")
 	writeTestCredential(t, filepath.Join(accountB, kiroCredentialRelPath), "kiro-account-B")
+	if err := os.Chmod(filepath.Join(accountA, kiroCredentialRelPath), 0o644); err != nil {
+		t.Fatalf("chmod source Kiro store: %v", err)
+	}
 
 	homeA := filepath.Join(t.TempDir(), "xdg-data-A")
 	homeB := filepath.Join(t.TempDir(), "xdg-data-B")
@@ -28,6 +31,8 @@ func TestPrepareKiroHomePerAccountIsolatesDataStore(t *testing.T) {
 	assertFileContent(t, storeB, "kiro-account-B")
 	assertNotSymlink(t, storeA)
 	assertNotSymlink(t, storeB)
+	assertFileMode(t, storeA, 0o600)
+	assertFileMode(t, storeB, 0o600)
 
 	if err := os.WriteFile(storeA, []byte("kiro-account-A-refreshed"), 0o600); err != nil {
 		t.Fatalf("simulate kiro refresh on A: %v", err)

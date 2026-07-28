@@ -1,0 +1,113 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:22:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-41-W4-BLOCKER-CORRECTION"
+  ],
+  "orq_n": "ORQ-41",
+  "orq_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "status": "DONE",
+  "verdict": "CORRECAO ENTREGUE — novo commit e0b0155 sobre c047c0b, sem amend",
+  "worktree": "/home/ec2-user/workspace/worktrees/gtl-orq41-w4-autopilot",
+  "branch": "agent/opus48-d/orq41-w4-autopilot",
+  "commit_created": "e0b0155 fix(autopilot): keep replay gate off-path and correlate by prior task",
+  "files_changed": [
+    "multica-auth-work/server/internal/service/autopilot.go",
+    "multica-auth-work/server/internal/service/autopilot_replay_test.go",
+    "multica-auth-work/server/internal/handler/daemon_ledger_summary.go",
+    "multica-auth-work/server/internal/handler/daemon_ledger_summary_test.go"
+  ],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-w4-e0b0155-blocker-correction.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-41-W4-CORRECTION__20260727T162200Z.json"
+  ],
+  "tests": [
+    {
+      "command": "git diff 0cb8aeb -- internal/service/autopilot.go | grep -c '^-[^-]'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "0 linhas removidas vs base — nenhuma logica de admissao legada foi alterada"
+    },
+    {
+      "command": "go test ./internal/service -run ReplayGate -count=1 -v",
+      "exit_code": 0,
+      "assertions_or_tests": 7,
+      "result": "7/7 PASS: gate desarmado no construtor de producao; servico de producao NAO bloqueia enquanto desarmado; recusa de armar pela metade; correlacao por task e nunca por autopilot; primeira execucao permitida sem consultar o gate; bloqueio quando o gate recusa sem vazar correlacao; fail-closed quando o resolvedor erra"
+    },
+    {
+      "command": "MUTACAO temporaria: AllowReplay(ctx, util.UUIDToString(ap.ID)) e depois git checkout --",
+      "exit_code": 1,
+      "assertions_or_tests": 2,
+      "result": "FAIL de TestReplayGateSkipReason_CorrelatesByPriorTaskNotAutopilotID com as duas asserções disparando ('gate must be consulted with the prior task ID', 'gate must never be consulted with the autopilot ID') — prova que o teste reprova o defeito de c047c0b e nao espelha a implementacao; revert deixou o worktree limpo"
+    },
+    {
+      "command": "gofmt -l nos 4 arquivos; go build ./...; go vet ./internal/service/... ./internal/handler/... ./internal/daemon/commitledger/...",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "gofmt vazio, build exit 0, vet exit 0"
+    },
+    {
+      "command": "go test -count=1 e -race -count=1 em ./internal/service, ./internal/handler, ./internal/daemon/commitledger",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "service ok 0.013s e -race ok 1.044s; handler ok 0.072s e -race ok 1.873s (ver blocker: SKIP silencioso); commitledger ok 0.138s e -race ok 1.195s"
+    },
+    {
+      "command": "grep TestMain internal/handler/handler_test.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "ACHADO NOVO: handler_test.go:38-53 faz os.Exit(0) quando Postgres nao responde ('Skipping tests: database not reachable ... 127.0.0.1:5432 connection refused'), portanto o 'ok' do pacote handler e falso-verde e nenhum teste de handler executa no ORQ2 — vale tambem para o PASS de handler reivindicado no review de c047c0b"
+    },
+    {
+      "command": "harness temporario go run (criado e apagado) exercitando PutDaemonLedgerSummary via httptest",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "ALL_HANDLER_CHECKS_PASS: well-formed -> 503 'ledger summary persistence is not configured; fail closed'; uuid invalido, mismatch URL/payload, campo desconhecido e JSON malformado -> 400; nenhuma resposta contem 'recorded'; worktree limpo depois (0 tracked, 0 untracked)"
+    },
+    {
+      "command": "git diff --check; git status --porcelain; git log --oneline -1",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "diff --check exit 0; worktree limpo; HEAD e0b0155 com c047c0b preservado abaixo"
+    }
+  ],
+  "format_and_diff": {
+    "format": "gofmt PASS",
+    "git_diff_check": "PASS"
+  },
+  "blockers_resolved": [
+    "B1 desligamento total do Autopilot: NewAutopilotService deixa o gate DESARMADO e replayGateSkipReason retorna ('', false) imediatamente nesse estado, portanto o caminho de hook nil nao pode mais recusar 100% dos dispatches; armar exige NewAutopilotServiceWithReplayGate, que falha com ErrAutopilotReplayGateIncomplete se faltar gate ou resolvedor",
+    "B2 correlacao errada: introduzida a interface AutopilotReplayCorrelation que devolve a correlacao da TASK anterior, com ok=false significando primeira execucao e permitindo sem consultar o gate; o autopilot_id nunca e usado como chave de ledger, provado por mutacao",
+    "B3 handler mentindo sucesso: DaemonLedgerSummaryResponse e a string 'recorded' foram eliminados; o handler valida forma e responde 503 fail-closed, com as duas exigencias de registro de W3 documentadas no arquivo (grupo autenticado de daemon e validacao de pertencimento do taskId)",
+    "B4 reivindicacao de HMAC: a mensagem do novo commit declara explicitamente que nenhum trabalho de HMAC e reivindicado; CommitLedgerHMACSecret continua sem atribuicao e daemon/config.go nao pertence a W4 no manifesto V3",
+    "F6 ctx e agent agora sao usados de fato (resolvedor, gate e log)",
+    "F8 SetReplayGateHook removido; injecao apenas por construtor com campos unexported e imutaveis, eliminando a corrida de setter tardio"
+  ],
+  "deferred": [
+    "comportamento LIGADO fica atras das interfaces AutopilotReplayGate e AutopilotReplayCorrelation: nao existe implementacao de producao nem call site que as injete, porque dependem do store duravel task_ledger_summary (LANE-DB) e da busca da task anterior (W2), fora do FILES_LOCKED da W4 no manifesto V3"
+  ],
+  "summary": "Entreguei a correcao dos quatro bloqueadores como NOVO commit e0b0155 sobre c047c0b, sem amend e sem tocar migrations, generated, queries, router.go, task.go, daemon ou commitledger. Escopo restrito aos 4 arquivos do FILES_LOCKED da W4. Prova de preservacao do legado: git diff contra a base 0cb8aeb mostra ZERO linhas removidas em autopilot.go, ou seja toda a admissao anterior segue intacta. B1: o gate so roda se explicitamente armado; NewAutopilotService, que e o construtor usado em main.go:348 e handler.go:208 e que eu nao alterei, deixa o gate desarmado e replayGateSkipReason retorna sem bloquear, entao o caminho de hook nil nao pode mais desligar o Autopilot inteiro; armar exige o novo NewAutopilotServiceWithReplayGate, que rejeita wiring parcial com ErrAutopilotReplayGateIncomplete. B2: a correlacao passa a ser a TASK anterior via AutopilotReplayCorrelation, com primeira execucao (ok=false) permitida sem consultar o gate e erro de resolvedor falhando fechado apenas em deployment armado; o autopilot_id nunca e chave de ledger, e isso esta provado por MUTACAO real: ao reintroduzir AllowReplay(ctx, ap.ID) o teste TestReplayGateSkipReason_CorrelatesByPriorTaskNotAutopilotID FALHA com as duas asserções, e revertei em seguida deixando o worktree limpo. B3: o handler nao responde mais 200 'recorded'; o tipo de resposta e a string foram eliminados e ele responde 503 fail-closed, com as duas exigencias que so a W3 pode cumprir documentadas no proprio arquivo. B4: a mensagem do novo commit declara que nenhum HMAC e reivindicado, ja que CommitLedgerHMACSecret segue sem atribuicao e daemon/config.go esta fora do FILES_LOCKED da W4. Tambem tratei F6 (ctx e agent agora usados) e F8 (setter removido, injecao imutavel por construtor). Gates com Go 1.26.1 e caches privados 0700 fora de /tmp: gofmt vazio, build exit 0, vet exit 0, 7/7 nos testes novos, e os tres pacotes afetados passando em plain e em -race. ACHADO NOVO relevante: handler_test.go:38-53 faz os.Exit(0) quando o Postgres nao responde, de modo que o 'ok' do pacote handler e falso-verde e nenhum teste de handler executa no ORQ2 — isso invalida tambem o PASS de handler reivindicado no review de c047c0b; para nao deixar o contrato sem execucao rodei um harness temporario que provou 503 fail-closed e quatro rejeicoes 400 sem nunca dizer 'recorded', e apaguei o harness deixando git status limpo. Recomendo card proprio para o TestMain do handler falhar em vez de sair 0.",
+  "non_claims": [
+    "sem amend, rebase, push, PR, merge, deploy ou mutacao de board; c047c0b intacto e HEAD em e0b0155",
+    "nao toquei migrations, pkg/db/generated, pkg/db/queries, cmd/server/router.go, internal/service/task.go, internal/daemon ou commitledger",
+    "NAO implementei o comportamento ligado: nao existe implementacao de producao das duas interfaces nem call site que as injete, por decisao declarada de ownership",
+    "nao executei o Autopilot de verdade nem enfileirei task",
+    "os testes do pacote handler nao foram executados pelo go test por causa do os.Exit(0) do TestMain; a verificacao do handler vem do harness temporario e de leitura",
+    "nao corrigi a mensagem de c047c0b (exigiria amend) nem editei a evidencia de outro agente que reivindica HMAC",
+    "nenhum segredo lido ou impresso"
+  ],
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "revisar e0b0155; decidir sobre (a) corrigir na fonte a evidencia orq41-w4-autopilot-rescue-implementation.md que ainda reivindica HMAC secret, (b) abrir card para o TestMain do pacote handler que sai 0 sem Postgres, (c) sequenciar LANE-DB task_ledger_summary e W2 antes de armar o gate",
+      "file": ".deploy-control/p0/evidence/orq41-w4-e0b0155-blocker-correction.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

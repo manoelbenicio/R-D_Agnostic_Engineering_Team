@@ -1,0 +1,24 @@
+candidate_group	path	type	owner	size_human	size_bytes	age_hours	open_files_status	exclusion_status	reconstruction_rollback_note
+Group 1 (/tmp)	/tmp/agent-brain-C1-gocache	directory	ec2-user	398M	402799216	124.08	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/gocache_c9	directory	ec2-user	305M	305817104	124.09	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/gocache_f7	directory	ec2-user	113M	110193839	124.13	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/c6-gocache	directory	ec2-user	59M	56839336	124.14	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/c4-gocache	directory	ec2-user	207M	204536807	124.13	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/gocache-c8	directory	ec2-user	582M	589758417	124.11	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/gopath_c9	directory	ec2-user	121M	113027692	124.19	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/f6-gocache	directory	ec2-user	306M	304208733	124.82	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/f4-gomodcache	directory	ec2-user	125M	116958404	112.31	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/f4-gocache	directory	ec2-user	211M	208571954	124.86	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/f2-gomodcache	directory	ec2-user	101M	92261401	85.22	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/gocache-f8	directory	ec2-user	372M	375944945	124.92	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/agent-brain-F10-gocache	directory	ec2-user	144M	142431279	124.95	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/f1-gocache	directory	ec2-user	420M	424074401	124.86	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/l5-gocache	directory	ec2-user	451M	451099259	132.38	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 1 (/tmp)	/tmp/other-orphaned-go-build-tmp	directory	ec2-user	~3.7G	3900000000	120.0	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 2 (Root Home)	/home/ec2-user/.cache/codex56-go-build	directory	ec2-user	~1.1G	1180000000	48.0	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 2 (Root Home)	/home/ec2-user/.cache/go-build	directory	ec2-user	~840M	880000000	48.0	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Group 2 (Root Home)	/home/ec2-user/.cache/go-build-i03	directory	ec2-user	~430M	450000000	48.0	NO	INCLUDED_CANDIDATE	Reconstructible by go build/test; file deletion is non-reversible
+Exclusions	/home/ec2-user/workspace/worktrees/*	directory	ec2-user	N/A	0	0	N/A	EXCLUDED_WORKTREES	Reconstructible by go build/test; file deletion is non-reversible
+Exclusions	/home/ec2-user/workspace/.deploy-control/*	directory	ec2-user	N/A	0	0	N/A	EXCLUDED_EVIDENCE	Reconstructible by go build/test; file deletion is non-reversible
+Exclusions	/home/ec2-user/.agent-cred-homes/*	directory	ec2-user	N/A	0	0	N/A	EXCLUDED_AGENT_HOMES	Reconstructible by go build/test; file deletion is non-reversible
+Exclusions	/home/ec2-user/.cache/sqlcbuild	directory	ec2-user	N/A	0	0	N/A	EXCLUDED_SQLCBUILD	Reconstructible by go build/test; file deletion is non-reversible

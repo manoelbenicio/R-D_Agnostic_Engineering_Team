@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:08:24Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-17"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Mechanical safety lane: sustained post-cutover monitor and 7-mount re-enable checklist for ORQ-17",
+  "finding": "Produced orq17-sustained-post-cutover-monitor-and-7mount-checklist.md. Sampled Serve/Funnel status: reset (No serve config). Sampled port 443: no listener. Sampled backend 18080 healthz and readyz: 200 OK (application/json). Sampled frontend 13100: Connection refused (HTTP 000). Sampled anonymous probes /api/me and /api/issues: 401 Unauthorized (text/plain). Sampled active task queue 4-state count: 0. Recorded 7-mount re-enable checklist (/, /api, /ws, /health, /readyz, /auth/login, /auth/verify). Recorded evidence SHA256 4b22742148bbfe0052bbe26df7f66c1de32415c9c029dbf102477063a0ba2c14 for agent A8 worklog registration. Verdict: PASS.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq17-sustained-post-cutover-monitor-and-7mount-checklist.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-sustained-post-cutover-monitor-and-7mount-checklist.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T160824Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ17-SUSTAINED-POST-CUTOVER-MONITOR__20260727T160824Z.json"
+  ],
+  "evidence_sha256": "4b22742148bbfe0052bbe26df7f66c1de32415c9c029dbf102477063a0ba2c14",
+  "non_claims": [
+    "sustained monitor, no body/identity/secret logging, no Tailscale Serve enable, no login, no env edit, no container restart, no board mutation"
+  ],
+  "blocker": null
+}

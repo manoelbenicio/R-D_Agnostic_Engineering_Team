@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T121853Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-79",
+  "task_ids": ["GTL-KANBAN-V8-DESIGN"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v8.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T121853Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v8.md"
+  ],
+  "summary": "Desenho V8 do Kanban Integrity Monitor concluido baseado integralmente no audit GTL-77. Reconciliacao transacional por workspace (BeginTx/Rollback/Commit), SQL real de Upsert/Reconcile com scan_id e revision, migration UP/DOWN placeholders, fonte autoritativa HTTP GET com membership guard, lock 4247 com Hijack se unlock falhar, paginação keyset, retention de 7 dias, 20 FILES_LOCKED e roteiro em 6 Waves.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

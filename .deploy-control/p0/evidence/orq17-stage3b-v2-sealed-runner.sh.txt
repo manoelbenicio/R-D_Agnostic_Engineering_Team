@@ -1,0 +1,220 @@
+#!/bin/sh
+set -eu
+set +x
+umask 077
+case "$(command -V printf 2>/dev/null)" in
+  *builtin*) ;;
+  *) printf '%s\n' 'E_PRINTF_EXTERNAL'; exit 1 ;;
+esac
+ulimit -c 0
+
+mode=${1-}
+case "$mode" in
+  provision)
+    expected='PROVISION=PASS USERS=1 CREDENTIALS=1 MEMBERS=0 HTTP_LOGIN=NOT_CALLED'
+    ;;
+  rollback)
+    expected='ROLLBACK=PASS USERS=0 CREDENTIALS=0 MEMBERS=0'
+    ;;
+  rollback-breakglass)
+    expected='ROLLBACK=PASS USERS=0 CREDENTIALS=0 MEMBERS=0'
+    ;;
+  *)
+    printf '%s\n' 'E_RUNNER_MODE'
+    exit 1
+    ;;
+esac
+
+: "${ORQ17_HELPER_BIN:?E_HELPER_BIN}"
+: "${ORQ17_PRIVATE_STATE:?E_PRIVATE_STATE}"
+
+case "$ORQ17_PRIVATE_STATE" in
+  /home/ec2-user/.local/state/orq17-stage3b-v2-*) ;;
+  *) printf '%s\n' 'E_PRIVATE_STATE'; exit 1 ;;
+esac
+
+mkdir -m 0700 "$ORQ17_PRIVATE_STATE"
+stdout_file="$ORQ17_PRIVATE_STATE/compose.stdout"
+stderr_file="$ORQ17_PRIVATE_STATE/compose.stderr"
+expected_file="$ORQ17_PRIVATE_STATE/expected.stdout"
+rollback_stdout="$ORQ17_PRIVATE_STATE/rollback.stdout"
+rollback_stderr="$ORQ17_PRIVATE_STATE/rollback.stderr"
+http_stderr="$ORQ17_PRIVATE_STATE/http.stderr"
+cookie_jar="$ORQ17_PRIVATE_STATE/http-cookie.jar"
+cleanup() {
+  unset OWNER_EMAIL OWNER_PASSWORD
+  chmod 0600 "$stdout_file" "$stderr_file" "$expected_file" \
+    "$rollback_stdout" "$rollback_stderr" "$http_stderr" "$cookie_jar" 2>/dev/null || :
+  rm -f "$stdout_file" "$stderr_file" "$expected_file" \
+    "$rollback_stdout" "$rollback_stderr" "$http_stderr" "$cookie_jar"
+}
+trap cleanup EXIT HUP INT TERM
+: >"$stdout_file"
+: >"$stderr_file"
+chmod 0600 "$stdout_file" "$stderr_file"
+
+compose_run() {
+  run_mode=$1
+  env -u OWNER_EMAIL -u OWNER_PASSWORD \
+    docker compose --ansi never --progress quiet \
+      --env-file /home/ec2-user/.config/multica-transition/dev.env \
+      --project-name multica-dev-transition \
+      --file /home/ec2-user/R-D_Agnostic_Engineering_Team/multica-auth-work/docker-compose.selfhost.yml \
+      --file /home/ec2-user/R-D_Agnostic_Engineering_Team/multica-auth-work/docker-compose.selfhost.build.yml \
+      --file /home/ec2-user/.config/multica-transition/images.yml \
+      --file /home/ec2-user/.config/multica-transition/backend-env.override.yml \
+      --file /home/ec2-user/.config/multica-transition/orq17-auth-cutover.override.yml \
+      run --rm --no-deps --pull never -T \
+      --volume "$ORQ17_HELPER_BIN:/run/orq17-stage3b/helper:ro" \
+      --entrypoint /run/orq17-stage3b/helper \
+      backend "$run_mode"
+}
+
+check_receipt() {
+  receipt_path=$1
+  expected_hash=$2
+  case "$receipt_path" in
+    "$ORQ17_PRIVATE_STATE".*.receipt) ;;
+    *) return 1 ;;
+  esac
+  test -f "$receipt_path"
+  test "$(stat -c '%a' "$receipt_path")" = 600
+  test "$(stat -c '%u' "$receipt_path")" = "$(id -u)"
+  test "$(sha256sum "$receipt_path" | awk '{print $1}')" = "$expected_hash"
+}
+
+attempt_credential_rollback() {
+  : >"$rollback_stdout"
+  : >"$rollback_stderr"
+  chmod 0600 "$rollback_stdout" "$rollback_stderr"
+  if ! printf '%s\0%s\0' "$OWNER_EMAIL" "$OWNER_PASSWORD" |
+    compose_run rollback >"$rollback_stdout" 2>"$rollback_stderr"
+  then
+    return 1
+  fi
+  printf '%s\n' 'ROLLBACK=PASS USERS=0 CREDENTIALS=0 MEMBERS=0' >"$expected_file"
+  cmp -s "$expected_file" "$rollback_stdout" && test ! -s "$rollback_stderr"
+}
+
+read_committed_state() {
+  : >"$rollback_stdout"
+  : >"$rollback_stderr"
+  chmod 0600 "$rollback_stdout" "$rollback_stderr"
+  if ! compose_run state </dev/null >"$rollback_stdout" 2>"$rollback_stderr"; then
+    return 2
+  fi
+  test ! -s "$rollback_stderr" || return 2
+  if grep -qx 'STATE USERS=0 CREDENTIALS=0 MEMBERS=0' "$rollback_stdout"; then
+    return 0
+  fi
+  if grep -qx 'STATE USERS=1 CREDENTIALS=1 MEMBERS=0' "$rollback_stdout"; then
+    return 1
+  fi
+  return 2
+}
+
+if test "$mode" = rollback-breakglass; then
+  : "${ORQ17_BREAKGLASS_RECEIPT:?E_BREAKGLASS_RECEIPT}"
+  : "${ORQ17_BREAKGLASS_RECEIPT_SHA256:?E_BREAKGLASS_RECEIPT_HASH}"
+  if ! check_receipt "$ORQ17_BREAKGLASS_RECEIPT" "$ORQ17_BREAKGLASS_RECEIPT_SHA256"; then
+    printf '%s\n' 'E_BREAKGLASS_AUTH'
+    exit 1
+  fi
+  if ! compose_run rollback-breakglass </dev/null >"$stdout_file" 2>"$stderr_file"; then
+    printf '%s\n' 'E_BREAKGLASS_HELPER'
+    exit 1
+  fi
+else
+  : "${OWNER_EMAIL:?E_REFERENCE_ENV}"
+  : "${OWNER_PASSWORD:?E_REFERENCE_ENV}"
+  if test "$mode" = provision; then
+    : "${ORQ17_CUSTODY_RECEIPT:?E_CUSTODY_RECEIPT}"
+    : "${ORQ17_CUSTODY_RECEIPT_SHA256:?E_CUSTODY_RECEIPT_HASH}"
+    if ! check_receipt "$ORQ17_CUSTODY_RECEIPT" "$ORQ17_CUSTODY_RECEIPT_SHA256"; then
+      printf '%s\n' 'E_CUSTODY_PROOF'
+      exit 1
+    fi
+  fi
+  # OWNER_* are resolved only in this asm-exec child shell. printf is proven
+  # builtin above; Compose/Docker receive neither variable and never see argv.
+  if ! printf '%s\0%s\0' "$OWNER_EMAIL" "$OWNER_PASSWORD" |
+    compose_run "$mode" >"$stdout_file" 2>"$stderr_file"
+  then
+    if test "$mode" = provision; then
+      if read_committed_state; then
+        if grep -qx 'E_PROVISION_COMMITTED_GUARD_FAILED_COMPENSATED' "$stderr_file"; then
+          printf '%s\n' 'E_PROVISION_COMMITTED_GUARD_FAILED_COMPENSATED'
+        else
+          printf '%s\n' 'E_PROVISION_FAILED_STATE_EMPTY'
+        fi
+      else
+        state_rc=$?
+        if test "$state_rc" = 1 && attempt_credential_rollback; then
+          if grep -qx 'E_PROVISION_COMMITTED_GUARD_FAILED_STATE_UNKNOWN' "$stderr_file"; then
+            printf '%s\n' 'E_PROVISION_COMMITTED_GUARD_FAILED_ROLLED_BACK_AFTER_COUNTS'
+          else
+            printf '%s\n' 'E_PROVISION_FAILED_ROLLED_BACK_AFTER_COUNTS'
+          fi
+        else
+          printf '%s\n' 'E_PROVISION_FAILURE_STATE_REQUIRES_OWNER_REVIEW'
+        fi
+      fi
+    else
+      read_committed_state || :
+      printf '%s\n' 'E_ROLLBACK_FAILURE_COUNTS_CAPTURED_REQUIRES_OWNER_REVIEW'
+    fi
+    exit 1
+  fi
+fi
+
+printf '%s\n' "$expected" >"$expected_file"
+chmod 0600 "$expected_file"
+if ! cmp -s "$expected_file" "$stdout_file"; then
+  printf '%s\n' 'E_STDOUT_CONTRACT'
+  exit 1
+fi
+if test -s "$stderr_file"; then
+  printf '%s\n' 'E_STDERR_CONTRACT'
+  exit 1
+fi
+
+if test "$mode" = provision; then
+  : >"$http_stderr"
+  : >"$cookie_jar"
+  chmod 0600 "$http_stderr" "$cookie_jar"
+  login_code=$(
+    printf '%s\0%s\0' "$OWNER_EMAIL" "$OWNER_PASSWORD" |
+      env -u OWNER_EMAIL -u OWNER_PASSWORD \
+        "$ORQ17_HELPER_BIN" http-body 2>>"$http_stderr" |
+      curl --silent --show-error --output /dev/null \
+        --cookie-jar "$cookie_jar" \
+        --header 'Content-Type: application/json' \
+        --data-binary @- \
+        --write-out '%{http_code}' \
+        http://127.0.0.1:18080/auth/login 2>>"$http_stderr"
+  )
+  me_code=$(
+    curl --silent --show-error --output /dev/null \
+      --cookie "$cookie_jar" \
+      --write-out '%{http_code}' \
+      http://127.0.0.1:18080/api/me 2>>"$http_stderr"
+  )
+  if test "$login_code" != 200 || test "$me_code" != 200 || test -s "$http_stderr"; then
+    rm -f "$cookie_jar"
+    if read_committed_state; then
+      printf '%s\n' 'E_HTTP_LOGIN_GATE_STATE_EMPTY'
+    else
+      state_rc=$?
+      if test "$state_rc" = 1 && attempt_credential_rollback; then
+        printf '%s\n' 'E_HTTP_LOGIN_GATE_ROLLED_BACK_AFTER_COUNTS'
+      else
+        printf '%s\n' 'E_HTTP_LOGIN_GATE_STATE_REQUIRES_OWNER_REVIEW'
+      fi
+    fi
+    exit 1
+  fi
+  rm -f "$cookie_jar"
+fi
+
+unset OWNER_EMAIL OWNER_PASSWORD
+printf '%s\n' 'ORQ17_STAGE3B_V2=PASS'

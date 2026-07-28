@@ -1,0 +1,25 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "agent": "Antigravity",
+  "slot": "slot-145",
+  "pane_id": "f8838c09-6286-455c-8fee-64b80dff9999",
+  "lane": "REVIEW-LOTE05",
+  "task": "REVIEW-LOTE05",
+  "status": "DONE",
+  "activity": "checkout",
+  "check_in_at": "2026-07-26T20:38:36Z",
+  "check_out_at": "2026-07-26T20:59:07Z",
+  "summary": "Revisão completa dos 66 arquivos do lote_05. Vereditos: KEEP=9, PURGE=54, STALE=0, OWNER=3. Itens OWNER: Opus48-D__KANBAN-WATCH (BLOCKED sem checkout), Opus48-D__P0-LANE-F-INDEP-VERIFY (IN_PROGRESS sem checkout), Opus48-Kiro__P0-RECOVERY-SUPERVISION (IN_PROGRESS sem checkout). Zero deleção. Zero push. Apenas veredito.",
+  "evidence": [
+    ".deploy-control/p0/evidence/review-lote_05.md"
+  ],
+  "validation": "ls -l .deploy-control/p0/evidence/review-lote_05.md => -rw-rw-r--. 1 ec2-user ec2-user 12843 Jul 26 20:41",
+  "constraints_honored": "sem git rm, sem push, sem reset, sem deleção; somente leitura e emissão de veredito",
+  "counts": {
+    "total": 66,
+    "KEEP": 9,
+    "PURGE": 54,
+    "STALE": 0,
+    "OWNER": 3
+  }
+}

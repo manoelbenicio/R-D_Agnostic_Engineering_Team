@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T115014Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-48",
+  "task_ids": ["GTL-ORQ26-CONSUMER-TESTS-PEER-REVIEW"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq26-consumer-tests-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T115014Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq26-consumer-tests-peer-review.md"
+  ],
+  "summary": "Peer review adversarial dos testes de consumidores da ORQ-26 finalizado. Veredito: PASS (APROVADO). Confirmados FILES_LOCKED intactos, fixtures contextless com id=\"\" e download_url, fail-closed em schemas truncados, 95/95 vitest e tsc sem erros.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

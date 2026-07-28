@@ -1,0 +1,80 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:07:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "GTL-K08-DOC-COMMENT-SAFETY-CARD"
+  ],
+  "orq_n": "ORQ-41",
+  "orq_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "status": "DONE",
+  "mode": "REGISTRAR_UNICO_UM_CARD",
+  "files_changed": [
+    ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md (adendo do incidente on-assign, arquivo proprio)"
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__GTL-K08-DOC-COMMENT-SAFETY-CARD__20260727T130700Z.json"
+  ],
+  "board_mutations": [
+    "POST /api/issues -> 201: ORQ-41 / 666f1ead-7fe9-4051-bab9-5d0a936c4701, SEM assignee"
+  ],
+  "tests": [
+    {
+      "command": "GET /api/issues + filtro comment|comentario|trigger|enqueue|documenta",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "TOTAL 30, MAX 40, HITS 0 => nenhuma issue existente cobre o problema"
+    },
+    {
+      "command": "POST /api/issues (uma vez, sem assignee)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP=201; id=666f1ead-7fe9-4051-bab9-5d0a936c4701 identifier=ORQ-41 number=41 priority=high assignee_type=None assignee_id=None"
+    },
+    {
+      "command": "GET /api/issues/<uuid>?workspace_id=... imediato",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS — mesmo par ORQ-41/41, priority high, assignee vazio, titulo 'Add safe non-triggering documentation comments to assigned...'"
+    },
+    {
+      "command": "GET /api/issues + Counter de number/title",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "TOTAL 31, MAX 41, dup_numbers {} dup_titles {}; titulo alvo = 1 unico card (ORQ-41)"
+    },
+    {
+      "command": "psql: agent_task_queue por status ativo, apos o POST",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "running|2 — as MESMAS duas tasks de 12:53:27 (ORQ-39) e 13:00:10 (ORQ-40); o POST do ORQ-41 SEM assignee NAO enfileirou nada (contagem nao subiu para 3)"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "summary": "Card unico criado e verificado: ORQ-41 / 666f1ead-7fe9-4051-bab9-5d0a936c4701, number 41, priority high, status todo, ASSIGNEE VAZIO. Busca de duplicata antes do POST: TOTAL 30, MAX 40, HITS 0 para comment/comentario/trigger/enqueue/documenta. GET imediato por UUID+workspace confirmou o mesmo par e o assignee vazio; unicidade provada (TOTAL 31, MAX 41, zero number e zero titulo duplicados, titulo alvo com 1 unico hit). PROVA COLATERAL VALIOSA: a fila ativa permaneceu em running|2, exatamente as duas tasks de 12:53:27 (ORQ-39) e 13:00:10 (ORQ-40), isto e, criar card SEM assignee NAO enfileira — o que confirma por experimento que o gatilho e o assignee (issue.go:2530-2536), nao a criacao do card. O card registra o problema com linhas exatas (comment.go:1122-1138 para o gatilho por assignee sem mencao; comment.go:771-777 e :1099-1120 para suppress_agent_ids nao comprovado; issue.go:2530-2536 para o on-assign) e os 5 criterios de aceite pedidos, incluindo modo documentacao com falha fechada OU contrato preview+suppress comprovado, fila zero antes e depois, testes para agent assignee, squad leader, mencao e issue preservada, recuperacao aditiva por GET /comments e proibicao de rerun. Nao comentei em ORQ-12/13/14/23, nao rodei trigger-preview, nao diagnostiquei nem testei o comportamento, e nao criei outro card.",
+  "non_claims": [
+    "um unico POST, zero retry; nenhum outro card criado",
+    "nao comentei em ORQ-12/13/14/23 e nao chamei trigger-preview",
+    "ORQ-31, ORQ-38, ORQ-39 e ORQ-40 nao mutados neste passo; nenhuma issue preservada tocada",
+    "nao diagnostiquei, patcheei nem testei o comportamento de comentario: apenas registrei o problema com citacao de linha",
+    "assignee deixado vazio por instrucao e tambem porque assignee dispara execucao (medido)",
+    "nao cancelei as duas tasks running de ORQ-39 e ORQ-40: cancelamento e mutacao de task nao autorizada"
+  ],
+  "blocker": "Duas tasks running iniciadas involuntariamente pelo gatilho on-assign (ORQ-39 as 12:53:27 e ORQ-40 as 13:00:10) aguardam ruling do GTL: deixar concluir, cancelar via servico, ou adotar politica de registro sempre sem assignee.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "ORQ-41 registrado; decidir sobre as duas tasks running do gatilho on-assign e sobre qual opcao do aceite 1 sera implementada",
+      "file": ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

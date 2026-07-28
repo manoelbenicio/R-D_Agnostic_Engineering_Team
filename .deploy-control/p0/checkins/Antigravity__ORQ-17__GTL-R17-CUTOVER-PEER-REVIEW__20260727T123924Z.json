@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T123924Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-17",
+  "lane": "GTL-R17",
+  "task_ids": ["ORQ-17-CUTOVER-V3-PEER-REVIEW"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-cutover-v3-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T123924Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-cutover-v3-peer-review.md"
+  ],
+  "summary": "Peer review adversarial do plano de cutover V3 da ORQ-17 concluido. Veredito: BLOCK. Exige inclusao do mapeamento da rota /auth no tailscale serve, regra de ACL no Tailnet para a porta 443 e isolamento da expiracao por inatividade (Idle 4h) para o Gate B devido a quebra no token CSRF.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

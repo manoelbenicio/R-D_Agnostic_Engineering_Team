@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T151750Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-41",
+  "lane": "GTL-R41-OWNERSHIP-MANIFEST",
+  "task_ids": ["ORQ-41-IMPLEMENTATION-OWNERSHIP-MANIFEST"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-implementation-ownership-manifest.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T151750Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-implementation-ownership-manifest.md"
+  ],
+  "summary": "Manifesto factual de propriedade e nao-sobreposicao de arquivos para as ondas V3 da ORQ-41 entregue em modo READ-ONLY. Mapeamento de frentes ativas (ORQ-12/13/21/Z01/18/26/17), dono serial unico para LANE-DB, posse exclusiva de router.go em W3, primeiras ondas seguras (LANE-DB P1 + W4 em paralelo), ETAs e STOP conditions detalhados.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

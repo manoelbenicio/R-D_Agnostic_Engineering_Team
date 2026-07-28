@@ -1,0 +1,13 @@
+{
+  "event": "checkout",
+  "timestamp_utc": "20260726T224705Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p1",
+  "lane": "E",
+  "task_ids": ["P5-INITIAL-MODEL-SET"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/gw-discovery-p5-initial-model-set.md", ".deploy-control/p0/checkins/Antigravity__P5-INITIAL-MODEL-SET__20260726T224705Z.json"],
+  "evidence": ".deploy-control/p0/evidence/gw-discovery-p5-initial-model-set.md",
+  "reported_to": "KIRO-PRINCIPAL-TL"
+}

@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:37:27Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-ORQ26-GATE-PREFLIGHT",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq26-gate-preflight.md"
+  ],
+  "summary": "Descoberta de Ambiente e Plano Preflight GTL-29 (ORQ-26) concluído em modo READ-ONLY. Identificada a versão Go 1.26.1 pré-instalada em /home/ec2-user/goroot/go/bin/go, verificado o acesso ao worktree /home/ec2-user/workspace/worktrees/gtl-orq26, comprovado que file_test.go possui guard if testPool == nil t.Skip para pular testes com dependência DB de forma limpa, estruturado o isolamento em $HOME/.private-tmp e elaborados os comandos de preflight (go vet e go test) sem execução."
+}

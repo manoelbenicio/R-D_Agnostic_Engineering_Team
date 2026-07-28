@@ -1,0 +1,74 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T13:40:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "role": "integration captain do ORQ-13 sob GTM R2",
+  "lane": "P0-ORQ-13-INTEGRATION",
+  "task_ids": ["ORQ-13"],
+  "status": "AWAITING_ORQ21_PASS",
+  "verdict": "CODE_PASS / EVIDENCE_PASS",
+  "ressalva_de_papel": "Eu escrevi os 4 commits. Ser capitao de integracao NAO me da poder de decisao nem de autoaprovacao: sob AUTHORITY-AMENDMENT-001 nenhum agente decide. Nao mergeio, nao autorizo merge e continuo pedindo revisor independente.",
+  "parametros_atualizados": {
+    "linguagem_de_evidencia": "EVIDENCE_PASS, substituindo o BLOCK evidence-only, com base no gate da arvore combinada real de 13:35Z",
+    "reserva_R1": "migration 127 valida ate 2026-07-29T13:21:29Z; medido em 13:36Z restavam 23h45m. Supersede a janela anterior de 2026-07-28T15:37:12Z",
+    "sequencia_canonica": "ORQ-21 -> ORQ-13 (127) -> ORQ-12 (128). ORQ-13 deixa de ser o primeiro da fila e passa a ser o segundo."
+  },
+  "estado_da_sequencia_medido_1336Z": {
+    "ORQ-21": "agent/codex-b/orq-21 em 0cb8aeb com ZERO commits. Worktree existe em .../e39199ed/workdir/repo, tambem em 0cb8aeb. Ha check-out anterior de fase de desenho: CHECKOUT__Agy-P0-A8__gtl-orq21-bridge-redesign__20260727T112804Z.json e gtl-orq21-bridge-redesign.md",
+    "ORQ-13": "pronto, c0e93a2 e 67e9a4c, EVIDENCE_PASS",
+    "ORQ-12": "agent/opus48-a/orq-12-task-usage-account-id em 0cb8aeb com ZERO commits. Worktree em .../d4f7f744/workdir/repo. Check-out anterior de auditoria: CHECKOUT__Codex56-B__ORQ-12-ACCOUNT-SNAPSHOT-AUDIT__20260727T112753Z.json",
+    "consequencia": "NAO EXISTE output de ORQ-21 para revisar neste momento, porque a branch nao tem commit algum. Migration 128 nao existe em nenhuma branch, e a varredura de hoje confirma que 127 e a unica reivindicada e e minha."
+  },
+  "colisao_anunciada_orq12": {
+    "achado": "ORQ-12 e task_usage.account_id e ORQ-13 e task_usage.thinking_level: a MESMA tabela. O sqlc generate do ORQ-12 vai reescrever exatamente pkg/db/generated/models.go, pkg/db/generated/task_usage.sql.go e pkg/db/queries/task_usage.sql, que sao os arquivos do ORQ-13. Conflito textual GARANTIDO se o ORQ-12 for desenvolvido sobre 0cb8aeb e integrado depois.",
+    "recomendacao_nao_ordem": [
+      "ORQ-12 rebaseia sobre o alvo JA com ORQ-13 dentro, e so entao roda sqlc generate",
+      "resolucao de conflito em models.go e task_usage.sql.go deve ser feita REGERANDO com o mesmo sqlc v1.31.1, nunca a mao: foi a licao do split A/B do ORQ-13",
+      "reservar o 128 formalmente antes de materializar o arquivo; eu NAO sou o registrador e nao emito reserva"
+    ],
+    "se_a_ordem_for_invertida": "o mesmo conflito acontece do outro lado, e a numeracao 127/128 fica fora de ordem no historico de migrations"
+  },
+  "script_de_integracao": {
+    "arquivo": ".deploy-control/p0/evidence/orq13-integration-script.sh",
+    "sha256": "5f6e235164f196155bdb87b71b98984c8cc00847eb153b1b1b6f0cd3cf5910f4",
+    "estado": "NAO EXECUTADO. Sem bit de execucao (modo 664), validado apenas com bash -n, que passou.",
+    "gates": [
+      "G0 exige check-out de ORQ-21 com veredito PASS no board; G0b exige que ORQ-21 ja esteja CONTIDO no alvo",
+      "G1 reserva R1 dentro da validade 2026-07-29T13:21:29Z",
+      "G2 repo limpo e branches exatamente em 67e9a4c e c0e93a2",
+      "G3 migration 127 ainda exclusiva, varrendo todas as branches",
+      "G4 imutabilidade: fingerprint dos 7 rastreados b87bc5ca e hashes das migrations up 0ea3005d e down 74354ae2",
+      "G5 merge-tree limpo contra o alvo, sem tocar o alvo",
+      "G6 gate funcional na arvore combinada com banco EFEMERO: migrations, gofmt nos alterados, build, vet, e go test -race -count=1 -json exigindo package pass, fail 0, os 7 testes obrigatorios em pass, sem DATA RACE e sem 'Skipping tests:'; skip NAO e exigido zero, aceita ate os 37 externos documentados",
+      "G7 lint v2.12.0 com checksum conferido e caches isolados, exigindo ZERO issues novas contra o alvo"
+    ],
+    "ponto_de_parada": "O script PARA antes do merge e apenas IMPRIME os comandos exatos. O merge continua exigindo revisao independente e autorizacao do owner.",
+    "seguranca": "trap de cleanup remove container, tunel, worktrees e cache; nenhum git reset --hard, nenhum push, nenhum amend, nenhum docker prune"
+  },
+  "atualizacoes_de_documento": [
+    "cabecalho GTM R2 com EVIDENCE_PASS, reserva R1 e sequencia canonica",
+    "nova secao 0 com o estado medido das tres lanes e a colisao anunciada do ORQ-12",
+    "secao 5 marcada SUPERSEDED: a condicao dura deixou de ser apenas temporal e passou a incluir dependencia de sequencia",
+    "nota de Kanban v2, com a v1 marcada SUPERSEDED e NAO COPIAR para ninguem usar a versao velha",
+    "divida D6 acrescentada: 44 arquivos nao formatados no modulo, nenhum dos 4 commits"
+  ],
+  "monitoramento_de_orq21": "Vou revisar o output de ORQ-21 quando existir. Hoje nao existe: branch em 0cb8aeb com zero commits. O primeiro sinal observavel sera commit na branch agent/codex-b/orq-21 ou check-out novo em .deploy-control/p0/checkins com ORQ-21 no nome.",
+  "evidence": [
+    ".deploy-control/p0/evidence/orq13-squad-integration-readiness.md",
+    ".deploy-control/p0/evidence/orq13-integration-script.sh"
+  ],
+  "non_claims": [
+    "NAO mergeei nada e NAO autorizo merge: o alvo segue em 0cb8aeb",
+    "O script NAO foi executado: sem bit de execucao, apenas bash -n",
+    "NAO revisei output de ORQ-21 porque NAO EXISTE output: zero commits na branch",
+    "NAO reservei nem renovei migration 128 nem 127: nao sou o registrador",
+    "NAO toquei os worktrees de ORQ-21 nem de ORQ-12: apenas li HEAD e branch, sem escrita",
+    "NAO contornei governanca: ORQ-21 e ORQ-12 preservadas, nenhuma reexecucao",
+    "NAO afirmo skip=0: 37 skips externos seguem como divida documentada",
+    "NAO varri o frontend Next.js: lacuna aberta, e 11ef715 muda comportamento de produto",
+    "Nao criei, atribui nem comentei cartao: a nota de Kanban e texto pronto",
+    "Nao li nem usei segredo, token ou credencial"
+  ],
+  "blocker": "Dependencia de sequencia: ORQ-21 sem PASS e sem commits. ORQ-13 fica retido, com evidencia completa."
+}

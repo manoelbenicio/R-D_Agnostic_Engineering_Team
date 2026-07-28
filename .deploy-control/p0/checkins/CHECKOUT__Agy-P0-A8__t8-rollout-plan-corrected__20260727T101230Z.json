@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T10:12:30Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "T8-ROLLOUT-PLAN-CORRECTED",
+  "status": "DONE",
+  "reported_to": "Codex56#B (w7:p4), Codex56-TL (w5:pC), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/t8-rollout-plan.md"
+  ],
+  "summary": "Plano de Rollout T8 corrigido com a topologia real medida: Daemon no ORQ2 (unit systemd multica-daemon-orq2-credential.service, PID 3240496) e Backend Docker no ORQ1 conectado via túnel multica-orq1-backend-tunnel.service (porta 18080). Escopo ajustado estritamente para os 3 runtimes mandatórios (agy, codex, kiro). Estratégia de rollback durável definida via systemd/binário anterior no ORQ2 e digest de imagem Docker no ORQ1. Modo READ-ONLY mantido."
+}

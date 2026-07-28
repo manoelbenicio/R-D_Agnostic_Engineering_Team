@@ -1,0 +1,18 @@
+{
+  "event": "checkout",
+  "timestamp_utc": "20260727T111501Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "SECURITY-QA",
+  "task_ids": ["ORQ-18", "ORQ-26", "ORQ-9-ISSUES-EXIT-CRITERIA"],
+  "status": "DONE_READ_ONLY",
+  "files_changed": [
+    ".deploy-control/p0/evidence/orq-9-issues-exit-criteria.md"
+  ],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Codex56-B__TO_Kiro-PRINCIPAL-TL__20260727T111501Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-18-PATCH-AUDIT__20260727T111501Z.json"
+  ],
+  "evidence": ".deploy-control/p0/evidence/orq-9-issues-exit-criteria.md:222",
+  "reported_to": "KIRO-PRINCIPAL-TL; Codex56-TL"
+}

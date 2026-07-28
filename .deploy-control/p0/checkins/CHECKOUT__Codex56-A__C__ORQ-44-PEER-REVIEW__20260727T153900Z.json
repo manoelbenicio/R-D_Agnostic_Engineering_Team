@@ -1,0 +1,99 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:39:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-44-INFERENCE-KEY-LIFECYCLE-PEER-REVIEW"
+  ],
+  "orq_n": "ORQ-44",
+  "orq_uuid": "abd12d6a-16a5-439b-bc52-74ec4bb6b231",
+  "status": "DONE",
+  "verdict": "PASS com 2 emendas obrigatorias e 4 perguntas de owner abertas",
+  "mode": "READ_ONLY",
+  "skill_loaded": ".agents/skills/aws-secrets-manager/SKILL.md relida integralmente antes da revisao (R1 get-secret-value/batch proibidos, R2 SMA localhost:2773 proibida, R3 {{resolve:secretsmanager:...}} via asm-exec, aviso best-effort defense)",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq44-inference-key-lifecycle-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-44-PEER-REVIEW__20260727T153900Z.json"
+  ],
+  "tests": [
+    {
+      "command": "leitura de internal/daemon/credential_file_source.go (const, doc-comment e fluxo)",
+      "exit_code": 0,
+      "assertions_or_tests": 8,
+      "result": "CONFIRMADO: leitura por chamada sem cache (comentario verbatim 'never cached, logged, or returned outside the callback scope'); credentialFileMaxBytes=4096; credentialMinTrimmedLen=8; credentialAllowedModeMask=0o077 aceitando 0600 ou 0400; Fstat no mesmo descritor; IsRegular; checkCredentialOwner; utf8.ValidString; ContainsAny ' \\t\\n\\r'; unicode.IsControl; erros com razao simbolica content-free"
+    },
+    {
+      "command": "leitura de credential_file_source_unix.go e credential_file_source_windows.go",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "Unix: os.OpenFile(path, O_RDONLY|syscall.O_NOFOLLOW, 0) e isELOOP, build tag !windows. WINDOWS: openCredentialFile e checkCredentialOwner retornam credentialFileError{reason: 'platform_unsupported'} => fail-closed TOTAL no Windows (o doc admitia nao ter verificado)"
+    },
+    {
+      "command": "leitura de internal/daemon/brain/config.go:84-92 e :163-181",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "CONFIRMADO verbatim: referencia obrigatoria e absoluta com filepath.Clean; gateway-required exige secret file e strict fail-closed readiness"
+    },
+    {
+      "command": "leitura de migrations/109_agent_task_waiting_local_directory.up.sql",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "CONFIRMADO: CHECK com 7 status; os 4 ativos citados (queued, dispatched, running, waiting_local_directory) estao corretos"
+    },
+    {
+      "command": "leitura de internal/auth/jwt.go:25-35",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "CONFIRMADO o contraste: jwtSecretOnce sync.Once captura JWT_SECRET uma vez, logo JWT exige processo novo enquanto a inference key nao"
+    },
+    {
+      "command": "config.go:58, cmd_daemon.go:160-168, CONTRIBUTING.md:501 + probe read-only 19514/19515",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "EMENDA 1 — DefaultHealthPort=19514 mas healthPortForProfile da perfil NOMEADO = base+1+(hash%1000); hoje o daemon do ORQ2 responde 200 em 19514 e 000 em 19515, entao o comando do doc funciona NESTE host, porem porta fixa produz falso verde/vermelho em perfil nomeado"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "amendments": [
+    "EMENDA 1 (obrigatoria): o gate V2 usa porta fixa 19514; deve derivar a porta do perfil (ou receber a porta como parametro obrigatorio) e provar que quem responde e o daemon-alvo (casar daemon_id na resposta ou o PID dono do socket) antes de aceitar 200 como evidencia",
+    "EMENDA 2 (obrigatoria): declarar o runbook Unix-only e registrar platform_unsupported como comportamento esperado no Windows; acrescentar 'host-alvo nao e Unix' as condicoes de parada, porque credential_file_source_windows.go faz fail-closed total"
+  ],
+  "minor_observations": [
+    ".prev duplica o segredo em disco: alternativa e re-resolver AWSPREVIOUS via asm-exec no rollback; se mantiver .prev, a remocao ao fim da janela deve ser passo obrigatorio com verificacao",
+    "L1 (canario) e chamada a provider e pode consumir cota: declarar custo esperado antes de executar",
+    "V4 'task de smoke' colide com o freeze de atribuicao: reformular como probe de readiness sem task",
+    "V5 pode anexar log com seguranca porque credentialFileError e content-free por construcao (confirmado); vale declarar isso na evidencia"
+  ],
+  "open_owner_questions": [
+    "1. OmniRoute aceita duas chaves ativas simultaneamente? Por quanto tempo e como revogar a antiga? Se NAO, L4 vira janela disruptiva e exige gate de fila zero imediatamente antes de L4",
+    "2. A chave e por conta ou global? Rotacionar afeta as 4 contas Antigravity, 4 ClinePass e 2 OpenAI Codex ou apenas o par do cliente?",
+    "3. Existe introspeccao que valide a chave sem consumir cota? Sem isso, L1 tem custo e precisa de orcamento declarado",
+    "4. Qual e o secret-id real? prod/multica/omniroute-inference-key e PROPOSTA do autor; se a fonte nao for Secrets Manager, a sintaxe {{resolve:...}} nao se aplica e e preciso mecanismo handle-only equivalente"
+  ],
+  "summary": "Peer review independente com veredito PASS mais 2 emendas obrigatorias e 4 perguntas de owner abertas. Reverifiquei no codigo, por conta propria, todos os itens do meu escopo e o desenho acerta onde afirma: leitura por chamada sem cache (comentario verbatim em credential_file_source.go), O_NOFOLLOW real via os.OpenFile com syscall.O_NOFOLLOW no helper unix, Fstat no mesmo descritor, mascara 0o077 aceitando 0600 ou 0400, checkCredentialOwner, limites 4096 e minimo 8, UTF-8, rejeicao de espaco e de caractere de controle, erros content-free, referencia absoluta obrigatoria e gateway-required exigindo secret file com strict fail-closed, os 4 estados ativos de 7 no CHECK da migration 109, e o contraste correto com o JWT preso em sync.Once. O raciocinio de swap atomico por rename no mesmo filesystem e coerente com a leitura por chamada, e a conclusao de que nao e preciso restart, exceto se o CAMINHO mudar, se sustenta. EMENDA 1: o gate V2 usa porta fixa 19514, mas healthPortForProfile da a perfis NOMEADOS base+1+(hash%1000); hoje o daemon do ORQ2 responde 200 em 19514 (e 000 em 19515), entao o comando funciona neste host, porem em perfil nomeado o V2 daria falso verde ou falso vermelho sem relacao com a chave; o gate deve derivar a porta e provar que quem responde e o daemon-alvo. EMENDA 2: o proprio doc admitia nao ter verificado os helpers com build tag, e eu verifiquei: no Windows tanto openCredentialFile quanto checkCredentialOwner retornam platform_unsupported, ou seja fail-closed TOTAL, logo o runbook e Unix-only e host Windows da frota fica fora de escopo e deve ser escalado. Quatro observacoes menores: .prev duplica o segredo em disco e a alternativa e re-resolver AWSPREVIOUS no rollback; L1 e chamada a provider com custo possivel; V4 como task colide com o freeze de atribuicao e deve virar probe de readiness; e V5 pode anexar log porque os erros sao content-free. As quatro perguntas de owner seguem bloqueantes para execucao.",
+  "non_claims": [
+    "nao li segredo, nao chamei GetSecretValue/BatchGetSecretValue, nao toquei a SMA, NAO executei asm-exec, nao chamei o provider, nao troquei arquivo, nao reiniciei nada, nao mutei AWS nem board",
+    "NAO fiz stat do arquivo-alvo do segredo: nao sei modo, dono, tamanho ou existencia de /etc/agent-brain/secrets/omniroute-inference-key",
+    "o unico probe que fiz foi /health local em 19514 e 19515, sem credencial e sem inferencia",
+    "nao validei empiricamente atomicidade de rename neste filesystem nem comportamento do provider",
+    "nao avaliei ORQ-37 (MCP) nem ORQ-43 (mdt_), corretamente excluidos pelo doc"
+  ],
+  "blocker": "Execucao do ORQ-44 permanece bloqueada pelas 4 perguntas de owner/operador (sobreposicao, escopo da chave, introspeccao sem cota, secret-id real) e pelas 2 emendas obrigatorias no gate V2 e no escopo de plataforma.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) e autor Opus48#B (w6:p2)",
+      "reason": "aplicar as 2 emendas (porta de health derivada do perfil com prova de identidade do daemon; runbook Unix-only com platform_unsupported declarado) e obter as 4 respostas do operador do OmniRoute e do owner antes de qualquer estagio L0-L4",
+      "file": ".deploy-control/p0/evidence/orq44-inference-key-lifecycle-peer-review.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

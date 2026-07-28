@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:10:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["GTL-71-CLI-ALIGNMENT-V2"],
+  "status": "DONE_PLAN_ONLY",
+  "deliverable": ".deploy-control/p0/evidence/gtl-cli-version-alignment-v2.md",
+  "supersedes": ["gtl-cli-version-alignment-plan.md (GTL-45)", "gtl-cli-alignment-peer-review.md (GTL-46, PASS)"],
+  "reclassification": "HIGIENE, PRIORIDADE BAIXA. Tres medicoes sustentam: Claude desabilitado no unit executor (MULTICA_CLAUDE_PATH=/run/multica-disabled/claude, habilitados codex/kiro/agy; nenhum dos 10 panes roda claude; nao existe smoke de Claude, ORQ-27 AGY, ORQ-28 Kiro, ORQ-29 Codex); Codex do ORQ2 ja em 0.145.0 e e o binario apontado pelo unit; ORQ1 sem executor, sem unit multica, sem ~/.claude e com 0 sessoes em ~/.codex. Ganho de runtime esperado: zero. Corolario escrito: o blast radius do 2.1.219 nao pode se materializar hoje.",
+  "scope": "EM ESCOPO: apenas @openai/codex de 0.144.6 para 0.145.0 no ORQ1. FORA: Claude em qualquer host (sem invocador), Codex no ORQ2 (ja no alvo), e qualquer env global ou de container.",
+  "env_var_policy": "PROIBIDO tocar /etc/environment, /etc/profile.d e env do container Docker: nesses contextos a variavel e INERTE e criaria falsa impressao de trava ativa. Unico local correto, e so no futuro: drop-in ~/.config/systemd/user/multica-daemon-orq2-credential.service.d/10-claude-depth.conf com Environment=CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1, na MESMA janela em que MULTICA_CLAUDE_PATH deixar de apontar para /run/multica-disabled/claude, antes do restart, e com versao >= 2.1.219. Medido: o diretorio .d/ dessa unit nao existe hoje.",
+  "smokes": "ORQ2: somente quando houver upgrade real de CLI exercitado, reexecutar ORQ-27 AGY, ORQ-28 Kiro e ORQ-29 Codex, que atravessam o daemon; nenhum smoke de Claude enquanto Claude estiver desabilitado. Hoje nao ha upgrade previsto no ORQ2. ORQ1: apenas codex --version, claude --version e npm ls -g --depth=0, antes e depois. PROIBIDO usar GET /api/runtimes como validacao do ORQ1, porque reflete o daemon do ORQ2 e responderia 200 com binario do ORQ1 corrompido.",
+  "rollback": "npm install -g @openai/codex@0.144.6 (o pacote real, confirmado por npm ls -g nos dois hosts; @openai/codex-cli do V1 nao e o pacote da frota) e npm install -g @anthropic-ai/claude-code@2.1.218 se Claude entrar em escopo. Sem rollback de env var, porque o plano nao cria env var global. Ressalva do Codex56#B mantida: rollback nunca reaplica branch antiga nem copia bruta de diretorio de credencial.",
+  "tunnel_topology": "multica-orq1-backend-tunnel.service e USER UNIT DO ORQ2 ('Multica ORQ2 to ORQ1 backend tunnel'). Acao no ORQ2 que encerre a sessao de usuario derruba o tunel e o acesso do daemon a 127.0.0.1:18080; exigir systemctl --user is-active das duas units antes e depois. ORQ1 nao tem unit multica alguma.",
+  "queue_precondition": "SELECT count(*) FROM agent_task_queue WHERE status IN ('queued','dispatched','running','waiting_local_directory'); MEDIR e anexar a saida real, count = 0. Os quatro estados conforme 109_agent_task_waiting_local_directory.up.sql:15; o parecer GTL-46 omitia dispatched e waiting_local_directory.",
+  "owner_decisions_before_claude": "claude-opus-5 como novo default de Opus a 10/50 por Mtok (watch:55) e workflowSizeGuideline com menos de 15 agentes (watch:60), ambos de 2.1.219. Subir para 2.1.220 sem decidir e trocar default de modelo e de paralelismo por efeito colateral de patch de manutencao. Correcao de redacao: manter a trava =1 e inerte em 2.1.215/2.1.218 por INEXISTENCIA da variavel, nao por retrocompatibilidade declarada.",
+  "no_canary": "Sem fase canary: um host, um CLI, fora do caminho de execucao - canary nao agrega sinal. O V1 propunha canary no ORQ1 com a suite ORQ-27/28/29, impossivel por ausencia de daemon la.",
+  "targets_source": "Somente fontes oficiais ja coletadas: watch:46 nao ha Codex posterior a 0.145.0 de 2026-07-21; watch:53 2.1.220 'Bug fixes and reliability improvements'. Nenhuma versao fora dessas duas fontes entrou no plano.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-cli-version-alignment-v2.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__GTL-71-CLI-ALIGNMENT-V2__20260727T121000Z.json"
+  ],
+  "open_questions_not_asserted": [
+    "por que Claude foi desabilitado no unit - medi o efeito, nao a decisao",
+    "uso de claude fora de daemon e de pane Herdr - nao varri o sistema",
+    "se codex exec no ORQ1 consome cota paga - por isso a validacao do ORQ1 nao inclui execucao"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "nenhuma instalacao, upgrade, restart, config, unit, container, binario ou codigo alterado",
+    "nao reabilitei nem propus reabilitar Claude",
+    "as 9 issues seguem PRESERVADAS; zero rerun; nenhuma credencial, permissao ou slot tocado"
+  ],
+  "next": "Aguardando redistribuicao do General-Tech-Lead em w5:pC.",
+  "blocker": null
+}

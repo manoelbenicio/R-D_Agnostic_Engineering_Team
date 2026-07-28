@@ -1,0 +1,45 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:40:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["GTL-19-LEDGER-V2-CORRECTED-DESIGN"],
+  "status": "DONE_DESIGN_ONLY",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-ledger-v2-corrected-design.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__GTL-19-LEDGER-V2__20260727T114000Z.json"
+  ],
+  "blocking_precondition_P0": "HOJE TODO LEDGER NASCE FAIL-CLOSED. config.go:115 declara CommitLedgerHMACSecret e daemon.go:4145 le, mas grep do campo em *.go sem testes retorna SO essas 2 linhas: nunca ha atribuicao, nao ha env, nao ha flag; grep COMMIT_LEDGER = vazio; e o processo vivo do ORQ1 nao tem variavel com COMMIT nem LEDGER no nome (filtrado por NOME, nenhum valor lido). Logo commitLedgerSecret() sempre devolve nil, cai em daemon.go:4192 NewFailClosed, e ledger.go:176 grava DurableSummary{EverSaturated: true}. Persistir isso antes de popular o secret escreveria ever_saturated=true para TODAS as tasks com bloqueio que SOBREVIVE ao restart: estritamente pior que hoje. P0 antes de P1.",
+  "correlation_proved": "types.go:42-43 Task.ID string -> daemon.go:3842 passa task.ID -> daemon.go:4168 param taskID -> daemon.go:4184 Config.TaskID -> daemon.go:4195 Register(taskID). No backend task.go:1665 usa util.UUIDToString(parent.ID). AS DUAS PONTAS USAM O MESMO UUID CRU: task_id UUID PRIMARY KEY casa. A pergunta aberta do GTL-02 esta RESPONDIDA. O errado e a wording: replay_gate.go:106 e :169 dizem 'pseudonymous correlation ID (not raw task ID)' e sao falsos; a pseudonimizacao real e o token de tool via HMAC (ledger.go:180-183). Corrigir os comentarios, NAO a chave.",
+  "interface_changes": "replay_gate.go: ADICIONAR type ReplayGateChecker interface{ Check(string) error } + var _ ReplayGateChecker = (*ReplayGateHook)(nil); ALTERAR so a assinatura de CheckOrAllow (200) para receber a interface; ReplayGate, LedgerRegistry, Check e BlocksReplay inalterados. task.go:42 troca *commitledger.ReplayGateHook por commitledger.ReplayGateChecker; task.go:1666 nao muda. Novo service/replay_gate_db.go com DatabaseReplayGateChecker. ARMADILHA documentada: ponteiro tipado nil dentro de interface nao satisfaz hook == nil, mas cai em Check que e nil-safe por replay_gate.go:174 - fail-closed garantido pelos dois caminhos, com teste explicito exigido.",
+  "transport_decision": "ENDPOINT DEDICADO PUT /api/daemon/tasks/{id}/ledger-summary, nao carona no ReportTaskMessages. Fator eliminatorio: o ponto 4199 MarkAllUnresolvedAmbiguous roda em defer, inclusive quando o backend morreu sem emitir mensagem; carona no report perderia exatamente o sinal de ambiguidade, o unico que nao pode ser perdido. AckHandler permanece intocado no papel de watermark de output. Autenticacao: mesmo middleware das demais rotas /api/daemon/*.",
+  "sql_monotonicity": "ON CONFLICT DO UPDATE com OR nos 4 booleanos e GREATEST nos 2 contadores, imposto pelo BANCO e nao por convencao; expires_at NAO e tocado no UPDATE, para task longa nao renovar a janela; GetTaskLedgerGate retorna SOMENTE schema_version + 4 booleanos e tem expires_at > now() no WHERE, tornando a expiracao logica e independente do sweep. Migration 127 (maior atual 126; grep task_ledger = sem colisao). Ordem obrigatoria: migration -> query -> sqlc generate (sqlc.yaml usa schema: migrations/).",
+  "ttl_semantics": "Linha ausente e linha expirada sao indistinguiveis e ambas bloqueiam: nenhuma task com mais de 24h volta a ter auto-retry. Alinhado a ledger.go:39 TerminalTTL e ao cutoff de ledger.go:481. E POLITICA, exige aceite explicito do owner, nao detalhe de limpeza.",
+  "autopilot_gate": "EnqueueTaskForIssue tem 8 call sites sem gate; 7 sao acao de usuario e cabem na isencao de task.go:41; service/autopilot.go:275 NAO cabe, e replay automatico. Proposta: CheckOrAllow imediatamente antes da 275. DEPENDENCIA DECLARADA, nao afirmada: NAO confirmei que existe um priorTaskID em escopo na linha 275; se nao existir, o integrador decide a referencia, ou formaliza a isencao com teste. Recomendo o gate.",
+  "patch_map": "P0 secret; P1 migration 127; P2 queries; P3 sqlc generate; P4 replay_gate.go (interface + assinatura + 2 comentarios); P5 task.go:42; P6 service/replay_gate_db.go; P7 handler da rota; P8 daemon.go 4357/4399/4199; P9 metodo cliente; P10 wiring em main.go; P11 autopilot; P12 sweep horario. NAO habilitar P10 antes de P0.",
+  "files_locked_proposal": "replay_gate.go, service/task.go e cmd/server/main.go com Codex56-TL; migration 127 + query no MESMO executor; service/replay_gate_db.go, rota nova, daemon.go e autopilot.go um executor cada; pkg/db/generated/* NINGUEM edita a mao e nunca em dois worktrees ao mesmo tempo.",
+  "tests_required": [
+    "7.4 restart: registry vazio + linha no banco -> bloqueia com ever_had_tool_use=true, permite com os 4 falsos dentro da janela",
+    "7.5 fail-closed em 7 bocas: hook nil, ponteiro tipado nil na interface, Queries nil, ErrNoRows, erro de query, schema_version divergente, expires_at no passado",
+    "7.6 ambiguidade persistida sobrevive ao restart, inclusive com ctx do defer cancelado",
+    "7.7 idempotencia e monotonicidade: sem segunda linha, false nao rebaixa true, GREATEST nos contadores, expires_at imovel no UPDATE",
+    "7.8 invariante de escopo: query de gate nao expoe total_tool_use_count nem highest_seq_seen",
+    "7.9 bypass do autopilot fixado por teste, com gate ou com isencao declarada"
+  ],
+  "open_questions_not_asserted": [
+    "retention de agent_task_queue pode ser menor que 24h e encurtar o TTL efetivo via FK ON DELETE CASCADE - nao verifiquei",
+    "existencia de priorTaskID em escopo em autopilot.go:275 - nao verifiquei",
+    "nome exato do helper string->UUID usado no checker - conferir no repo"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "nenhum arquivo de codigo editado; sem build, vet, test, deploy, restart, commit, push, chmod, instalacao ou rerun",
+    "as 9 issues seguem PRESERVADAS; nao autorizo nem executei rerun",
+    "nenhum valor de segredo lido, impresso ou transcrito: no ORQ1 li apenas NOMES de variaveis de ambiente",
+    "nada depende de rollback do T2"
+  ],
+  "next": "Aguardando redistribuicao do General-Tech-Lead em w5:pC.",
+  "blocker": null
+}

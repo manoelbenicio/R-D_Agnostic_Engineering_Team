@@ -1,0 +1,86 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T23:14:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "B",
+  "task_ids": [
+    "TEMA2-EXECENV-ACCOUNTHOME-LAYOUT"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/sol-tema2-execenv-accounthome-layout.md",
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T231200Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__B__TEMA2-EXECENV-ACCOUNTHOME-LAYOUT__20260726T231400Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "cat -n internal/daemon/execenv/kiro_home.go e antigravity_home.go (leitura integral)",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS - kiro_home.go:11 kiroCredentialRelPath=kiro-cli/data.sqlite3, AccountHome e XDG_DATA_HOME (:15-17), arquivo regular exigido (:63-65); antigravity_home.go:10 .gemini/antigravity-cli, AccountHome e HOME (:14-17), diretorio exigido (:54-56)"
+    },
+    {
+      "command": "sed -n '275,350p' internal/daemon/execenv/execenv.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - prepareKiroHome em :303, prepareAntigravityHome em :314, ambos guardados por CredentialAccountHome != \"\""
+    },
+    {
+      "command": "sed -n '3440,3480p' internal/daemon/daemon.go + grep -rIn CredentialAccountHome --include=*.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS - daemon.go:3448 credentialAccountHome := \"\" e a UNICA fonte; consumido em :3475 e :3492; nenhuma leitura de env ou config em todo o repo"
+    },
+    {
+      "command": "inventario dos 22 slots em /home/ec2-user/.agent-cred-homes/slots (ORQ2)",
+      "exit_code": 0,
+      "assertions_or_tests": 22,
+      "result": "MEDIDO - 22/22 com home/.gemini/antigravity-cli; apenas 5 com xdg-data/kiro-cli/data.sqlite3 (139, 140, 142, 143, 149); slot-145 tem AGY e NAO tem KIRO"
+    },
+    {
+      "command": "ls -l slot-140/xdg-data/kiro-cli/data.sqlite3 e slot-145/home/.gemini/antigravity-cli/antigravity-oauth-token",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "MEDIDO - ambos 0600; diretorios do slot 0700; layout do slot e container com raizes por provider (home, xdg-data, xdg-config, codex, cline, cline-sandbox)"
+    },
+    {
+      "command": "find /home/ec2-user/.agent-cred-homes/slots no ORQ1",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "MEDIDO - diretorio de slots NAO existe no ORQ1; credenciais estao no HOME global e em cred-bak-20260726/"
+    },
+    {
+      "command": "git status --porcelain -- multica-auth-work/ | grep -c '.go$'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - 0 arquivos .go modificados"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/sol-tema2-execenv-accounthome-layout.md",
+    "multica-auth-work/server/internal/daemon/execenv/kiro_home.go:11, :15-17, :30-53, :63-65, :73-75, :90",
+    "multica-auth-work/server/internal/daemon/execenv/antigravity_home.go:10, :14-17, :24-44, :54-56, :64-66, :71-79",
+    "multica-auth-work/server/internal/daemon/execenv/execenv.go:284-287, :301-307, :312-318",
+    "multica-auth-work/server/internal/daemon/daemon.go:3448, :3475, :3476, :3492"
+  ],
+  "reported_to": "KIRO-PRINCIPAL-TL (100.117.245.15, pane wB:p1) via herdr pane run, exit 0 + copia duravel em .deploy-control/inbox-tm/",
+  "summary": "AGY casa exato, KIRO nao casa com slot/home. prepareAntigravityHome espera <AccountHome>/.gemini/antigravity-cli como DIRETORIO e trata AccountHome como HOME, logo AccountHome = slot-NNN/home e o layout real bate. prepareKiroHome espera <AccountHome>/kiro-cli/data.sqlite3 como ARQUIVO REGULAR e trata AccountHome como XDG_DATA_HOME, logo AccountHome = slot-NNN/xdg-data; o real e slot-NNN/xdg-data/kiro-cli/data.sqlite3. Passar um unico slot/home para os dois faz agy funcionar e kiro falhar EM SILENCIO, porque kiro_home.go:73-75 retorna nil quando a origem nao existe. Permissoes ja casam (slot 0700/0600; copyCredentialFile preserva srcInfo.Mode().Perm()), nada a ajustar. Patch proposto: daemon.go:3448 passa a chamar resolveCredentialAccountHome(provider, slotRoot) com raiz por provider; nenhum preparer muda. Nao existe caminho sem recompilar: daemon.go:3448 e a unica fonte, sem env e sem config. Alertas: so 5 dos 22 slots tem credencial kiro; codex ignora AccountHome porque daemon.go:3476 passa CredentiallessGateway true e execenv.go:284-287 desvia para prepareCredentiallessCodexHome; os slots existem no ORQ2 e nao no ORQ1.",
+  "non_claims": [
+    "Nao editei nenhum .go; nao rodei go build, go vet ou go test; nao substitui binario; nao reiniciei daemon; nao commitei",
+    "Nao li conteudo de credencial: apenas ls -l de caminho, tamanho e permissao",
+    "Nao validei por medicao os caminhos de codex e cline; slot-140/codex e slot-140/cline estao vazios no ORQ2",
+    "opencode excluido do escopo por determinacao do owner; opencode_home.go nao analisado nesta entrega",
+    "Nao executei o patch nem estimei risco de runtime: apenas preparei"
+  ],
+  "blocker": "Aplicar o patch exige editar daemon.go e recompilar, ambos fora do modo desta rodada e classe STOP-AND-WAIT. Alem disso duas decisoes independentes: (1) restringir alocacao de slot para kiro aos 5 slots com credencial (139, 140, 142, 143, 149) ou logar os outros 17; (2) definir o caminho do codex, que hoje ignora AccountHome por CredentiallessGateway=true. Dono: human owner via KIRO-PRINCIPAL-TL.",
+  "handoffs": [
+    {
+      "to_lane": "KIRO-PRINCIPAL-TL",
+      "reason": "Raiz por provider e obrigatoria: slot/home serve agy, slot/xdg-data serve kiro. Um valor unico quebra kiro sem erro visivel.",
+      "file": ".deploy-control/p0/evidence/sol-tema2-execenv-accounthome-layout.md"
+    }
+  ]
+}

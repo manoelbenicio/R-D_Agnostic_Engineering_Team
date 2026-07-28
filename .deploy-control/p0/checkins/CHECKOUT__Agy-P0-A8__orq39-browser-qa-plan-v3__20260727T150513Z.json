@@ -1,0 +1,15 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T15:05:13Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "ORQ39-BROWSER-QA-PLAN-V3",
+  "issue_id": "ORQ-39",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/orq39-browser-qa-plan-v3.md"
+  ],
+  "summary": "Plano corrigido V3 de Browser QA efêmero e Playwright CI (ORQ-39) finalizado em modo READ-ONLY. Integradas 100% das 4 correções GTL-R39 (renomeação C1 para orq39, subcomando C2 migrate up, C3 APP_ENV=test obrigatorio no backend Go, e C4 exigencia de DATABASE_URL e SELECT em verification_code). Solicitada revisão independente."
+}

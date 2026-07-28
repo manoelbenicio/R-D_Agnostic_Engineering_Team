@@ -1,0 +1,27 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:33:56Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-2"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Mechanical post-cleanup evidence and verification report for ORQ2 storage relief",
+  "finding": "Produced orq2-post-cleanup-verification-report.md. Recorded owner authorization and safety rejection of first unguided rm attempt with zero file deletion. Verified semantic go clean method (-cache and -modcache) applied to 29 build caches and 4 module caches. Measured before/after space: /tmp used dropped from 97% (294M avail) to 5% (7.4GB avail, +7.05GB freed); / used dropped from 93% (3.5GB avail) to 89% (5.8GB avail, +2.3GB freed). Recorded memory (7.17GB/15.7GB used, 7.87GB avail) and swap (1.55GB/4GB used) metrics. Confirmed 100% preservation of all explicit exclusions (worktrees, evidence, backups, credential homes, sqlcbuild, active ORQ38/41/Kiro caches, journals, product data). Confirmed no material target cache contents remain. Declared NO FURTHER CLEANUP. Recorded report SHA256 579bf84c6560771e986a378182ecfc6b0bda8c763cb92b22ec6228ffd5c560a1.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq2-post-cleanup-verification-report.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only verification operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq2-post-cleanup-verification-report.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T163356Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ2-POST-CLEANUP-VERIFICATION__20260727T163356Z.json"
+  ],
+  "post_cleanup_sha256": "579bf84c6560771e986a378182ecfc6b0bda8c763cb92b22ec6228ffd5c560a1",
+  "non_claims": [
+    "post-cleanup evidence, no further cleanup, no deletion, no truncation, no file removal, no board mutation"
+  ],
+  "blocker": null
+}

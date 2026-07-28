@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:29:40Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-ORQ23-DURABLE-CUTOVER-PLAN",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq23-durable-cutover-plan.md"
+  ],
+  "summary": "Plano de Cutover Durável e Rollback ORQ-23 (GTL-11) concluído em modo READ-ONLY. Especificada compilação a partir de repositório limpo (excluindo worktree ff121b28), definido rollback estrito para o binário do Gate 1 (15.053.065 bytes), bloqueados os backups pre-token-only/pre-agy-fix (21MB+), mapeados os healthchecks dos 3 runtimes mandatórios (antigravity, codex, kiro) e estabelecidos os comandos-gate §0.1 sem execução."
+}

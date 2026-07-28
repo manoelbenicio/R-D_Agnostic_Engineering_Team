@@ -1,0 +1,100 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:38:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-44",
+  "orq_issue_id": "ORQ-44",
+  "orq_distinct_from": [
+    "ORQ-37 (MCP Authorization, UUID 36d18727-f516-4147-9b0c-1cb7c2b91e83)",
+    "ORQ-33 (JWT_SECRET)"
+  ],
+  "task_ids": [
+    "ORQ44-OMNIROUTE-INFERENCE-KEY-LIFECYCLE"
+  ],
+  "status": "DONE",
+  "verdict_sought": "PROPOSTA aguardando review independente. Nao me auto-aprovo.",
+  "skill_loaded": ".agents/skills/aws-secrets-manager/SKILL.md (v1), lido integralmente antes de qualquer trabalho",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq44-omniroute-inference-key-lifecycle.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__ORQ-44__ORQ44-OMNIROUTE-INFERENCE-KEY-LIFECYCLE__20260727T153800Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "read .agents/skills/aws-secrets-manager/SKILL.md (integral)",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "SKILL APLICADA - R1 sem get-secret-value, R2 sem SMA em localhost:2773, R3 apenas {{resolve:...}} via asm-exec. Dois pontos explorados: version-stage e parametro da propria sintaxe com default AWSCURRENT e exemplo AWSPENDING, o que viabiliza preparar sem promover; e a skill se declara best-effort e nao fronteira, logo o controle real aqui e 0600 mais dono validado pelo consumidor"
+    },
+    {
+      "command": "grep SecretFile em internal/daemon/brain/config.go e sed -n '155,181p'",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "FAIL-CLOSED DE CONFIG - EnvGatewaySecretFile em :16; NewSecretFileRef :84-92 exige caminho absoluto e nao vazio; GatewayConfig.Validate :174-179 exige secret file e readiness estrita fail-closed em modo Required"
+    },
+    {
+      "command": "read internal/daemon/credential_file_source.go integral",
+      "exit_code": 0,
+      "assertions_or_tests": 9,
+      "result": "ACHADO DECISIVO - leitura POR CHAMADA, valor NUNCA cacheado (comentario :26-39). O_NOFOLLOW no open, Fstat no MESMO fd, rejeita nao-regular, mode & 0o077 != 0 rejeitado (aceita 0600 ou 0400), dono deve ser o UID do processo, tamanho <= 4096, minimo 8 apos trim, UTF-8 valido, sem whitespace, sem caractere de controle, e credentialFileError content-free"
+    },
+    {
+      "command": "grep validCredential em internal/daemon/gateway/client.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - cliente valida nao vazio, <= 4096, sem espaco nas bordas, sem CR LF ou NUL, injeta Authorization Bearer dentro do callback e remove o header em seguida; credencial invalida vira ErrorAuthentication"
+    },
+    {
+      "command": "sed -n '13,15p' server/migrations/109_agent_task_waiting_local_directory.up.sql",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "GATE DE FILA - 7 status, 3 terminais, logo 4 ativos: queued, dispatched, running, waiting_local_directory"
+    },
+    {
+      "command": "grep mdt_ em internal/auth/jwt.go e grep ORQ-37 nas evidencias",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "DISTINCAO - mdt_ e crypto/rand com 40 hex validado no BANCO (jwt.go:70-76), nao assinado por chave alguma; ORQ-37 e MCP Authorization com UUID 36d18727-f516-4147-9b0c-1cb7c2b91e83 e cartao proprio"
+    }
+  ],
+  "key_conclusions": {
+    "no_restart_needed": "Como FileCredentialSource le por chamada e nunca cacheia, trocar o CONTEUDO do arquivo passa a valer na proxima requisicao ao gateway, sem reload e sem restart. Isso e o oposto do JWT_SECRET do ORQ-33, preso em jwtSecretOnce.Do. Confundir os dois causaria restart desnecessario do daemon, que pelo T3 custou 6 tasks runtime_offline e 1 runtime_recovery.",
+    "atomic_swap_is_mandatory": "Justamente porque a leitura e por chamada, escrever no lugar com truncamento faria uma requisicao concorrente ler conteudo parcial e ser rejeitada por secret_file_content_too_short, gerando 401 espurio. rename(2) no mesmo filesystem e obrigatorio: quem abriu o inode antigo segue lendo o antigo.",
+    "provider_overlap_unknown": "A sobreposicao de duas chaves e capacidade do OmniRoute, nao do daemon. O daemon envia uma credencial por requisicao e suporta a janela SE o provider aceitar as duas. Tres perguntas bloqueantes ao operador do gateway ficaram sem resposta.",
+    "blast_radius_is_narrow": "Nada em middleware, handler/auth.go ou realtime/hub.go consome AGENT_BRAIN_GATEWAY_SECRET_FILE. Rotacionar essa chave nao desloga usuario, nao derruba WebSocket e nao invalida mdt_; afeta somente a admissao de inferencia.",
+    "path_vs_content": "Trocar o CONTEUDO nao exige restart; trocar o CAMINHO da referencia muda o ambiente da unit e exige restart, virando outro cartao."
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/orq44-omniroute-inference-key-lifecycle.md",
+    ".agents/skills/aws-secrets-manager/SKILL.md",
+    "multica-auth-work/server/internal/daemon/credential_file_source.go:16-24, :26-39, :45-108, :111-119",
+    "multica-auth-work/server/internal/daemon/brain/config.go:16, :80-92, :156-181",
+    "multica-auth-work/server/internal/daemon/gateway/client.go (validCredential e injecao do Bearer)",
+    "multica-auth-work/server/internal/auth/jwt.go:70-76",
+    "multica-auth-work/server/migrations/109_agent_task_waiting_local_directory.up.sql:13-15"
+  ],
+  "reported_to": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC), pedindo review independente",
+  "summary": "Desenho read-only do ciclo de vida e rotacao da chave de inferencia do OmniRoute, com a skill aws-secrets-manager carregada integralmente antes do trabalho. O achado que estrutura tudo e que FileCredentialSource le o arquivo POR CHAMADA e nunca cacheia, com O_NOFOLLOW, Fstat no mesmo descritor, rejeicao de qualquer bit de grupo ou mundo, dono igual ao UID do processo, teto de 4096 bytes e validacao de forma do conteudo, falhando fechado com razoes sem conteudo. Disso decorre que a rotacao nao precisa de reload nem restart, ao contrario do JWT_SECRET do ORQ-33, e que a troca precisa ser atomica por rename no mesmo filesystem, porque truncar o arquivo faria uma requisicao concorrente ler conteudo parcial e virar 401 espurio. Propus swap em cinco estagios com canario antes da instalacao, validacao apenas por metadado e codigo de saida sem imprimir valor, gate de fila com os quatro estados ativos derivados da constraint da migration 109, rollback simetrico por rename de volta e proibicao de deletar o segredo antigo antes do aceite, e auditoria por CloudTrail mais stat antes e depois. A viabilidade de sobreposicao e capacidade do provider e nao do daemon, com tres perguntas bloqueantes ao operador do OmniRoute. Delimitei o raio: nada em middleware, handler de auth ou realtime consome a referencia do gateway, logo a rotacao nao desloga usuario nem invalida mdt_, e ORQ-37 de MCP permanece cartao separado.",
+  "non_claims": [
+    "READ-ONLY: nenhum segredo lido, zero GetSecretValue e BatchGetSecretValue, ZERO execucao de asm-exec, zero mutacao de codigo, board, config, container, provider ou AWS. Nenhum comando do documento foi executado",
+    "Nao inspecionei o arquivo /etc/agent-brain/secrets/omniroute-inference-key, nem por stat: as exigencias citadas vem do codigo do consumidor, nao de medicao do arquivo",
+    "Nao sei se o segredo prod/multica/omniroute-inference-key existe: o nome e proposto e nao consultei o Secrets Manager",
+    "NAO SEI se o OmniRoute suporta sobreposicao de duas chaves: as tres perguntas ao operador sao bloqueantes e nao foram respondidas",
+    "Nao verifiquei checkCredentialOwner nem openCredentialFile nos arquivos com build tag de plataforma; li o contrato pelos comentarios e pelas chamadas",
+    "Nao verifiquei o comportamento do provider diante de chave revogada em requisicao em voo",
+    "Nao executei o gate de fila nem nenhuma das validacoes V1 a V5",
+    "Nao toquei em ORQ-37 nem em qualquer artefato de MCP",
+    "Nao criei, atribui nem comentei issue alguma",
+    "Nao me auto-aprovo: o documento e proposta"
+  ],
+  "blocker": "Dois bloqueios. Primeiro, tres perguntas ao operador do OmniRoute sem resposta e sem as quais nao se sabe se a rotacao e sobreposta ou disruptiva: o provider aceita duas chaves ativas simultaneamente e como revoga a antiga; a chave e por conta ou global, dado que o gateway tem 4 contas Antigravity, 4 ClinePass e 2 OpenAI Codex; e existe introspeccao de validade sem consumir cota. Segundo, quatro autorizacoes escritas do owner para os estagios L0 criar segredo, L1 canario, L2 swap de arquivo e L4 promover e revogar. Fila deve fechar em zero nos quatro estados antes de L2.",
+  "handoffs": [
+    {
+      "to_lane": "revisor independente (nao Agy-P0-A8 e nao Antigravity w8:p2)",
+      "reason": "Revisar o desenho. Tres ataques sugeridos: confirmar com o operador do OmniRoute a viabilidade de sobreposicao, que e a unica premissa que eu nao pude verificar; validar por stat, sem ler valor, o modo e o dono atuais do arquivo no host, que eu deliberadamente nao inspecionei; e confirmar que openCredentialFile realmente aplica O_NOFOLLOW na plataforma em uso, lendo o arquivo com build tag.",
+      "file": ".deploy-control/p0/evidence/orq44-omniroute-inference-key-lifecycle.md"
+    }
+  ]
+}

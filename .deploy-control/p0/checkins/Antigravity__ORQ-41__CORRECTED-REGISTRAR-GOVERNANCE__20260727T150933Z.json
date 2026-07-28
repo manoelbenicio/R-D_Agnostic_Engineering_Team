@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T150933Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-41",
+  "lane": "GTL-R41-CORRECTED-REGISTRAR",
+  "task_ids": ["ORQ-41-CORRECTED-REGISTRAR-GOVERNANCE"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-migration-registrar-governance.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T150933Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-migration-registrar-governance.md"
+  ],
+  "summary": "Proposta operacional corrigida da governanca do Registrar Central de Migrations sob Codex56-TL entregue (SHA256 f940d3946841ff30e1937aa1b4637d01f9e2238f96137a1425fa772b8b240b00). Mantidos os protocolos de scan global, TTL 24h, fingerprints SHA256, placeholders e fila LANE-DB. Corrigido estado factual: base max 126, nenhuma reserva canonica e valida ate scan global + ruling do Registrar. Zero migrations criadas, zero mutacoes.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

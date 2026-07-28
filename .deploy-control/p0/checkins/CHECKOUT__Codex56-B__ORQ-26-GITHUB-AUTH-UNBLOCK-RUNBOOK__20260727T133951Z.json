@@ -1,0 +1,56 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:39:51Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "ORQ-26",
+  "task_ids": [
+    "ORQ-26"
+  ],
+  "status": "DONE_READ_ONLY_RUNBOOK",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq26-github-auth-unblock-runbook.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-26-GITHUB-AUTH-UNBLOCK-RUNBOOK__20260727T133951Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "read-only local remote/worktree verification",
+      "exit_code": 0,
+      "result": "Temporary branch ci/orq26-db-gate at d2447183c5fb7d93c07ca4afdd86d4ab9ac374ee; HTTPS remote is manoelbenicio/R-D_Agnostic_Engineering_Team; no login or push executed."
+    },
+    {
+      "command": "official GitHub documentation review",
+      "exit_code": 0,
+      "result": "Reviewed gh auth login/status/setup-git/logout, PAT permissions, workflow permissions, Actions settings, and contents/workflow permission requirements; sources are linked in the evidence."
+    },
+    {
+      "command": "secret-safety boundary review",
+      "exit_code": 0,
+      "result": "Runbook forbids token/OAuth code/credential-store values in agent context and forbids --with-token, --insecure-storage, --show-token, gh auth token, GH_TOKEN/GITHUB_TOKEN and shell tracing."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq26-github-auth-unblock-runbook.md"
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)"
+  ],
+  "summary": "Read-only, official-GitHub-docs-only runbook prepared for human authentication and exactly one retry of the blocked ORQ-26 push. No token was read/pasted, no login or push occurred, and no worktree or remote state was changed.",
+  "non_claims": [
+    "The browser login was not executed.",
+    "The single retry was not executed.",
+    "No workflow run, permissions setting, credential store, token, or GitHub account state was probed by the agent."
+  ],
+  "blockers": [
+    "Human must complete secure browser authentication and confirm exact-repository write access before the one retry.",
+    "Any failure or missing workflow trigger consumes the stop condition; no second attempt is authorized by this runbook."
+  ],
+  "handoffs": [
+    {
+      "to": "w5:pC",
+      "reason": "Human-only runbook is ready; decide whether to authorize the single retry after secure auth preflight passes."
+    }
+  ]
+}

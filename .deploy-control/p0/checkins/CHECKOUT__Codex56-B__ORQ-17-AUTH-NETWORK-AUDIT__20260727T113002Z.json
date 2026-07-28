@@ -1,0 +1,26 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:30:02Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "security-qa-read-only",
+  "task_ids": ["ORQ-17", "ORQ-9-ISSUES-EXIT-CRITERIA"],
+  "status": "DONE",
+  "files_changed": [
+    ".deploy-control/p0/evidence/orq-9-issues-exit-criteria.md"
+  ],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Codex56-B__TO_Kiro-PRINCIPAL-TL__20260727T113002Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-17-AUTH-NETWORK-AUDIT__20260727T113002Z.json"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq-9-issues-exit-criteria.md"
+  ],
+  "reported_to": [
+    "Kiro-PRINCIPAL-TL wB:p1",
+    "Codex56-TL w5:pC"
+  ],
+  "summary": "ORQ-17 static/read-only auth and exposure audit completed. Publishing the raw loopback service is unsafe while local bypass makes anonymous browser API requests run as the owner. Exit gates require owner-approved HTTPS/ACL, real password session, anonymous /api/me=401, loopback backend/Postgres, same-origin proxy validation and one-command proxy rollback. Nine historical issues remain preserved. Pre-token-only backups are known-bad and must not be used as rollback.",
+  "mutations": "Only own evidence, durable report, and checkout protocol files; no code/live/board/credential mutation.",
+  "blocker": null
+}

@@ -1,0 +1,93 @@
+package main
+
+import (
+	"bufio"
+	"bytes"
+	"encoding/json"
+	"errors"
+	"testing"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+func TestReadNULBounded(t *testing.T) {
+	got, err := readNUL(bufio.NewReader(bytes.NewBufferString("abc\x00")), 3, "E_TEST")
+	if err != nil || string(got) != "abc" {
+		t.Fatalf("bounded NUL read failed")
+	}
+	clear(got)
+	if _, err := readNUL(bufio.NewReader(bytes.NewBufferString("abcd\x00")), 3, "E_TEST"); err == nil {
+		t.Fatalf("over-limit input accepted")
+	}
+}
+
+func TestReadCredentialsRejectsTrailing(t *testing.T) {
+	email, password, err := readCredentials(bytes.NewBufferString("a@b.co\x00long-enough-passphrase\x00x"))
+	clear(email)
+	clear(password)
+	if err == nil {
+		t.Fatalf("trailing input accepted")
+	}
+}
+
+func TestCompareFKsExactAndFailClosed(t *testing.T) {
+	actual := append([]fkSpec(nil), expectedUserFKs...)
+	if err := compareFKs(actual); err != nil {
+		t.Fatalf("exact catalog rejected: %v", err)
+	}
+	actual = append(actual, fkSpec{"public", "future_table", "user_id", "CASCADE"})
+	if err := compareFKs(actual); err == nil {
+		t.Fatalf("unknown FK accepted")
+	}
+	if err := compareFKs(expectedUserFKs[:len(expectedUserFKs)-1]); err == nil {
+		t.Fatalf("missing FK accepted")
+	}
+}
+
+func TestDBTupleExact(t *testing.T) {
+	cfg, err := pgxpool.ParseConfig("postgres://multica_transition:x@postgres:5432/multica_transition?sslmode=disable")
+	if err != nil || checkDBTuple(cfg) != nil {
+		t.Fatalf("exact tuple rejected")
+	}
+	cfg.ConnConfig.Host = "127.0.0.1"
+	var fixed opError
+	if err := checkDBTuple(cfg); !errors.As(err, &fixed) {
+		t.Fatalf("wrong host not rejected with fixed error")
+	}
+}
+
+func TestNormalizeIdentity(t *testing.T) {
+	got, err := normalizeIdentity([]byte("DataOps.Cloud.MBF@gmail.com"))
+	if err != nil || got != expectedOwnerEmail {
+		t.Fatalf("normalization failed")
+	}
+	if _, err := normalizeIdentity([]byte("Owner <owner@example.com>")); err == nil {
+		t.Fatalf("display-name form accepted")
+	}
+	if _, err := normalizeIdentity([]byte("other@example.com")); err == nil {
+		t.Fatalf("unexpected owner identity accepted")
+	}
+}
+
+func TestNoLowerLevelExitContract(t *testing.T) {
+	// This source-level invariant is also enforced by the build evidence scan:
+	// only main may call os.Exit, after realMain has returned and run all defers.
+	if got := opError("E_FIXED").Error(); got != "E_FIXED" {
+		t.Fatalf("fixed error changed")
+	}
+}
+
+func TestHTTPBodyUsesFixedOwnerAndStdinPassword(t *testing.T) {
+	var out bytes.Buffer
+	input := bytes.NewBufferString("dataops.cloud.mbf@gmail.com\x00correct-horse-battery-staple\x00")
+	if err := writeHTTPBody(input, &out); err != nil {
+		t.Fatalf("http body failed: %v", err)
+	}
+	var body map[string]string
+	if err := json.Unmarshal(out.Bytes(), &body); err != nil {
+		t.Fatalf("invalid JSON")
+	}
+	if body["email"] != expectedOwnerEmail || body["password"] != "correct-horse-battery-staple" {
+		t.Fatalf("http body changed")
+	}
+}

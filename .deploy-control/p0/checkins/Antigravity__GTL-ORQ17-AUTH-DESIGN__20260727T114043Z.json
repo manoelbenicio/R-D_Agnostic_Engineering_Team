@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T114043Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-34",
+  "task_ids": ["GTL-ORQ17-AUTH-DESIGN"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-remediation-design.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T114043Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-remediation-design.md"
+  ],
+  "summary": "Design de remediacao de auth e acesso LAN estavel do owner para ORQ-17 concluido. Reverse proxy HTTPS + IP ACL, auth por session/cookie HttpOnly, CORS/CSRF/WS/uploads, binds 127.0.0.1 para Next.js/Go API/Postgres, rollout/rollback e secret safety.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

@@ -1243,3 +1243,59 @@ func (q *Queries) UpdateIssueStatus(ctx context.Context, arg UpdateIssueStatusPa
 	)
 	return i, err
 }
+
+const resetIssueToTodoIfNoActiveTask = `-- name: ResetIssueToTodoIfNoActiveTask :one
+UPDATE issue i SET
+    status = 'todo',
+    updated_at = now()
+WHERE i.id = $1
+  AND i.workspace_id = $2
+  AND i.status = 'in_progress'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM agent_task_queue t
+      WHERE t.issue_id = i.id
+        AND t.status IN ('queued', 'dispatched', 'running', 'waiting_local_directory')
+  )
+RETURNING i.id, i.workspace_id, i.title, i.description, i.status, i.priority, i.assignee_type, i.assignee_id, i.creator_type, i.creator_id, i.parent_issue_id, i.acceptance_criteria, i.context_refs, i.position, i.due_date, i.created_at, i.updated_at, i.number, i.project_id, i.origin_type, i.origin_id, i.first_executed_at, i.start_date, i.metadata
+`
+
+type ResetIssueToTodoIfNoActiveTaskParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+}
+
+// Atomically reconciles a failed issue without racing a concurrent retry or
+// another task claim. Other issue states are deliberate user/agent choices
+// and must remain untouched.
+func (q *Queries) ResetIssueToTodoIfNoActiveTask(ctx context.Context, arg ResetIssueToTodoIfNoActiveTaskParams) (Issue, error) {
+	row := q.db.QueryRow(ctx, resetIssueToTodoIfNoActiveTask, arg.ID, arg.WorkspaceID)
+	var i Issue
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.Priority,
+		&i.AssigneeType,
+		&i.AssigneeID,
+		&i.CreatorType,
+		&i.CreatorID,
+		&i.ParentIssueID,
+		&i.AcceptanceCriteria,
+		&i.ContextRefs,
+		&i.Position,
+		&i.DueDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Number,
+		&i.ProjectID,
+		&i.OriginType,
+		&i.OriginID,
+		&i.FirstExecutedAt,
+		&i.StartDate,
+		&i.Metadata,
+	)
+	return i, err
+}

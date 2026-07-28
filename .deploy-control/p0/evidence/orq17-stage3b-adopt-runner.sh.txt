@@ -1,0 +1,60 @@
+#!/bin/sh
+set -eu
+set +x
+umask 077
+case "$(command -V printf 2>/dev/null)" in *builtin*) ;; *) printf '%s\n' E_PRINTF_EXTERNAL; exit 1;; esac
+ulimit -c 0
+: "${OWNER_EMAIL:?E_REFERENCE_ENV}"
+: "${OWNER_PASSWORD:?E_REFERENCE_ENV}"
+: "${ORQ17_HELPER_BIN:?E_HELPER_BIN}"
+: "${ORQ17_PRIVATE_STATE:?E_PRIVATE_STATE}"
+case "$ORQ17_PRIVATE_STATE" in /home/ec2-user/.local/state/orq17-stage3b-adopt-*) ;; *) printf '%s\n' E_PRIVATE_STATE; exit 1;; esac
+mkdir -p -m 0700 "$ORQ17_PRIVATE_STATE"
+backup="$ORQ17_PRIVATE_STATE/adopt-backup.json"
+out="$ORQ17_PRIVATE_STATE/helper.stdout"
+err="$ORQ17_PRIVATE_STATE/helper.stderr"
+http_err="$ORQ17_PRIVATE_STATE/http.stderr"
+cookie="$ORQ17_PRIVATE_STATE/http-cookie.jar"
+: >"$out"; : >"$err"; : >"$http_err"; : >"$cookie"
+chmod 0600 "$out" "$err" "$http_err" "$cookie"
+compose_run() {
+  mode=$1
+  env -u OWNER_EMAIL -u OWNER_PASSWORD docker compose --ansi never --progress quiet \
+    --env-file /home/ec2-user/.config/multica-transition/dev.env \
+    --project-name multica-dev-transition \
+    --file /home/ec2-user/R-D_Agnostic_Engineering_Team/multica-auth-work/docker-compose.selfhost.yml \
+    --file /home/ec2-user/R-D_Agnostic_Engineering_Team/multica-auth-work/docker-compose.selfhost.build.yml \
+    --file /home/ec2-user/.config/multica-transition/images.yml \
+    --file /home/ec2-user/.config/multica-transition/backend-env.override.yml \
+    --file /home/ec2-user/.config/multica-transition/orq17-auth-cutover.override.yml \
+    run --rm --no-deps --pull never -T \
+    --env ORQ17_BACKUP_FILE=/run/orq17/adopt-backup.json \
+    --volume "$ORQ17_HELPER_BIN:/run/orq17/helper:ro" \
+    --volume "$ORQ17_PRIVATE_STATE:/run/orq17:rw" \
+    --entrypoint /run/orq17/helper backend "$mode"
+}
+rollback() {
+  : >"$out"; : >"$err"
+  if compose_run rollback </dev/null >"$out" 2>"$err" && grep -qx 'ROLLBACK=PASS USERS=1 CREDENTIALS=0 MEMBERS=1 UUID=PRESERVED' "$out" && test ! -s "$err"; then
+    printf '%s\n' ORQ17_STAGE3B_ADOPT_ROLLED_BACK
+  else
+    printf '%s\n' E_ADOPT_ROLLBACK_REQUIRES_OWNER_REVIEW
+  fi
+}
+if ! printf '%s\0%s\0' "$OWNER_EMAIL" "$OWNER_PASSWORD" | compose_run adopt >"$out" 2>"$err"; then
+  if test -f "$backup"; then rollback; else printf '%s\n' E_ADOPT_FAILED_BEFORE_BACKUP; fi
+  exit 1
+fi
+if ! grep -qx 'ADOPT=PASS USERS=1 CREDENTIALS=1 MEMBERS=1 UUID=PRESERVED' "$out" || test -s "$err"; then
+  rollback
+  exit 1
+fi
+login_code=$(printf '%s\0%s\0' "$OWNER_EMAIL" "$OWNER_PASSWORD" | env -u OWNER_EMAIL -u OWNER_PASSWORD "$ORQ17_HELPER_BIN" http-body 2>>"$http_err" | curl --silent --show-error --output /dev/null --cookie-jar "$cookie" --header 'Content-Type: application/json' --data-binary @- --write-out '%{http_code}' http://127.0.0.1:18080/auth/login 2>>"$http_err")
+me_code=$(curl --silent --show-error --output /dev/null --cookie "$cookie" --write-out '%{http_code}' http://127.0.0.1:18080/api/me 2>>"$http_err")
+if test "$login_code" != 200 || test "$me_code" != 200 || test -s "$http_err"; then
+  rm -f "$cookie"
+  rollback
+  exit 1
+fi
+unset OWNER_EMAIL OWNER_PASSWORD
+printf '%s\n' 'ORQ17_STAGE3B_ADOPT=PASS LOGIN=200 ME=200'

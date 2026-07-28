@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Kiro-CLI-Lote07",
+  "timestamp_utc": "2026-07-26T20:59:08Z",
+  "lane": "LOTE-07",
+  "task": "REVIEW-LOTE-07",
+  "status": "DONE",
+  "evidence_file": ".deploy-control/p0/evidence/review-lote_07.md",
+  "total_reviewed": 94,
+  "verdicts": {
+    "KEEP": 14,
+    "PURGE": 79,
+    "STALE": 0,
+    "OWNER": 1
+  },
+  "owner_items": [
+    {
+      "path": "bin/prodex",
+      "reason": "Exigido pela spec rotation-parity-polyglot, mas consta deletado no git index; requer decisão direta do owner para restaurar ou alterar a spec."
+    }
+  ],
+  "summary": "Revisão completa de 94 arquivos do lote_07 realizada sem deleções, git rm, push ou alterações destrutivas. Tabela emitida em .deploy-control/p0/evidence/review-lote_07.md com vereditos KEEP (14), PURGE (79), STALE (0) e OWNER (1)."
+}

@@ -1,0 +1,59 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:02:02Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "GTL-60",
+  "task_ids": [
+    "GTL-60-DEEP-SQL-AUDIT-KANBAN-V5"
+  ],
+  "status": "DONE_BLOCK",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-kanban-v5-deep-sql-audit.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__GTL-60-DEEP-SQL-AUDIT-KANBAN-V5__20260727T120202Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "READ-ONLY SQL and source audit",
+      "exit_code": 0,
+      "result": "Confirmed latest-task false positive, UNION ALL duplicate, unproved blocks direction, two additional false positives and missing adversarial gates."
+    },
+    {
+      "command": "git diff --check -- .deploy-control/p0/evidence/gtl-kanban-v5-deep-sql-audit.md",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "secret-pattern scan of evidence",
+      "exit_code": 0,
+      "result": "No credential URI, JWT_SECRET assignment or DATABASE_URL assignment."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-v5-deep-sql-audit.md",
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v5.md:37",
+    ".deploy-control/p0/evidence/gtl-kanban-v5-peer-review.md:12",
+    ".deploy-control/p0/evidence/gtl-kanban-monitor-v2-peer-review.md:147",
+    "multica-auth-work/server/migrations/001_init.up.sql:89",
+    "multica-auth-work/server/migrations/109_agent_task_waiting_local_directory.up.sql:1"
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run"
+  ],
+  "summary": "BLOCK: V5 latest_task flags completed+new queued retry; UNION ALL duplicates a dependency present as parent and relationship; blocks direction is unsupported by any real consumer; suite omits temporal, dedup, listener, same-connection, post-sweeper and EXPLAIN gates. Minimal SQL and test corrections documented.",
+  "non_claims": [
+    "No SQL was executed and no database was connected.",
+    "No code, board, build, test, service, deploy, credential or permission was changed."
+  ],
+  "blockers": [
+    "Revoke V5 peer PASS until the SQL corrections and adversarial gates in the evidence are incorporated and independently rerun."
+  ],
+  "handoffs": [
+    {
+      "to": "w5:pC",
+      "reason": "Return V5 to design author for minimal correction; do not authorize implementation under current PASS."
+    }
+  ]
+}

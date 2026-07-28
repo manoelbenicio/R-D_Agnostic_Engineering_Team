@@ -1,0 +1,58 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:35:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": [
+    "GTL-ORQ17-APPROVED-CUTOVER-PLAN-V3"
+  ],
+  "status": "DONE_PLAN_ONLY_AWAITING_PEER_REVIEW",
+  "deliverable": ".deploy-control/p0/evidence/gtl-orq17-approved-cutover-plan.md",
+  "fqdn_discovered": "orq1.tail96e2c0.ts.net (Self.DNSName=orq1.tail96e2c0.ts.net., HostName=orq1, MagicDNSSuffix=tail96e2c0.ts.net, MagicDNSEnabled=true, tailnet cloud.labs.brazil@gmail.com, IPs 100.118.244.61 e fd7a:115c:a1e0::5034:f43e). Origin canonico https://orq1.tail96e2c0.ts.net",
+  "gate_zero_blocker": "HTTPS do tailnet esta DESLIGADO: CertDomains=None e 'tailscale serve status' responde 'No serve config'. Sem HTTPS Certificates habilitado no admin console, tailscale cert e serve --https FALHAM e nao ha certificado possivel para o FQDN. NAO se resolve no host: e toggle do tailnet sob a identidade do owner. Primeiro item do gate e acao do owner.",
+  "edge_decision": "tailscale serve, nao Caddy. Medido no ORQ1: caddy, nginx e traefik NAO INSTALADOS; tailscaled presente e autenticado. Serve da zero instalacao e cert automatico com renovacao. Caddy exigiria gate proprio de instalacao de pacote. FUNNEL PROIBIDO: expoe na internet publica e viola a politica de acesso somente por dispositivo/identidade Tailscale.",
+  "topology": "ORQ1 hoje escuta APENAS 127.0.0.1:18080 (backend) e 127.0.0.1:13100 (frontend); nada em 0.0.0.0 nem 443. Loopback deve permanecer. Alvo: borda em :443 roteando / para 13100 e /api e /ws para 18080. RESSALVA declarada: nao validei a sintaxe exata de tailscale serve --set-path nesta versao.",
+  "access_restriction": "tailscale serve publica para TODO o tailnet, nao para um dispositivo. A restricao por identidade exige ACL do tailnet (acao do owner) limitando orq1:443 ao dispositivo/identidade dele, negando inclusive os agentes. Sem ACL, qualquer no do tailnet alcanca a UI. NAO proponho depender de headers Tailscale-User-Login: nao encontrei leitura deles no backend.",
+  "ttl_absolute_24h": "SUPORTADO sem codigo novo. internal/auth/cookie.go:23 default e 30 dias; :36-61 parseAuthTokenTTL aceita '24h' ou segundos; :74 AuthTokenTTL le AUTH_TOKEN_TTL com sync.Once; :152-165 SetAuthCookies aplica em MaxAge e Expires. Acao: AUTH_TOKEN_TTL=24h. CUIDADO: sync.Once exige processo novo, logo recriar container.",
+  "idle_4h_verdict": "NAO SUPORTADO pelo JWT stateless atual. Evidencia negativa: grep de refresh/rolling/sliding/renew em internal/auth e handler/auth.go = VAZIO; nao existe tabela de sessao (migrations tem apenas 005_daemon_pairing e 029_drop_daemon_pairing, de pairing de daemon). Sem estado de ultima atividade, expirar por inatividade e impossivel sem introduzir estado ou reemissao.",
+  "idle_4h_minimal_design": "Cookie deslizante com dois relogios no proprio token, sem inventar user_session: expiracao efetiva = min(iat_original + 24h, last_seen + 4h), com reemissao do cookie a cada N minutos de atividade e TETO DURO no iat original, senao sliding vira sessao eterna. ARMADILHA PRINCIPAL: o CSRF e hmac(authToken) (cookie.go:141-145), portanto toda reemissao do auth deve reemitir o CSRF, senao requests mutantes passam a falhar. Limites declarados: sem revogacao imediata (o teto de 24h e o unico limite duro) e o Set-Cookie precisa atravessar a borda sem buffering. Alternativa com revogacao real exigiria tabela de sessao: FORA deste plano.",
+  "gate_separation": "Gate A (cutover de rede) usa AUTH_TOKEN_TTL=24h, que ja e suportado, e NAO depende do idle. Gate B (idle 4h) exige codigo novo, review, testes e build, e nao bloqueia o A. Enquanto B nao existir, a politica efetiva e 'absoluto 24h, sem idle' e isso deve estar ESCRITO para o owner.",
+  "ordering_interlock": "middleware/auth.go:38-55 desativa o bypass sozinho quando FRONTEND_ORIGIN deixa de ser loopback (checagem de host localhost/IsLoopback), com o comentario :36-37 dizendo que isso impede que config copiada torne um deploy publico nao autenticado. Mesmo assim exijo remover o bypass explicitamente. Sequencia irreversivel: 1 bypass=false e remover MULTICA_LOCAL_AUTH_EMAIL; 2 FRONTEND_ORIGIN e MULTICA_APP_URL = https FQDN; 3 AUTH_TOKEN_TTL=24h; 4 recriar containers; 5 CONFIRMAR login real por loopback ANTES de expor; 6 so entao habilitar a borda. Inverter significaria expor instancia sem autenticacao durante a janela.",
+  "cors_csrf_ws_uploads": [
+    "CORS: router.go:42-62 usa CORS_ALLOWED_ORIGINS senao FRONTEND_ORIGIN senao defaults; se CORS_ALLOWED_ORIGINS existir, ele GANHA e precisa conter o FQDN",
+    "Cookie Secure: cookie.go:115-119 deriva do SCHEME de FRONTEND_ORIGIN; http:// causaria downgrade silencioso sobre HTTPS",
+    "SameSite Strict (cookie.go:164) exige frontend e API no MESMO host, senao o login quebra: requisito de desenho e host unico",
+    "WS: realtime/hub.go:158-180 checkOrigin aceita same-origin por r.Host e usa X-Forwarded-Host SOMENTE se isTrustedProxy(RemoteAddr); atras da borda isso provavelmente exige MULTICA_TRUSTED_PROXIES com 127.0.0.1/32 e ::1/128 - item de teste obrigatorio",
+    "daemonws/hub.go:182 CheckOrigin retorna true sempre (clientes nativos): a borda nao deve expor /daemon-ws sem necessidade",
+    "uploads: limite de body na borda nao medido; testar arquivo acima de 10 MB para evitar 413"
+  ],
+  "health_rollback": "Health: curl loopback 18080/health e 13100, mais HTTPS do FQDN apos a borda, com saidas antes e depois, tailscale serve status e ss -tln grep 443. Rollback da borda: 'tailscale serve reset', um comando, sem reiniciar backend, frontend ou daemon. Rollback de env: restaurar origin loopback e recriar containers. TUNEL: multica-orq1-backend-tunnel.service e user unit do ORQ2 e serve o DAEMON, nao o browser - NAO desligar no cutover, desligar quebraria o executor. E NAO e rollback reabilitar o bypass com origin publico.",
+  "gate_checklist": "G0 owner habilita HTTPS Certificates; G1 ACL do tailnet; G2 login real por loopback com bypass ainda ativo; G3 fila vazia com os 4 estados; G4 env e recriacao; G5 health e login com bypass OFF; G6 borda e 443; G7 testes de login, WS, upload e CSRF; G8 evidencia na ORQ-17 e daemon/tunel ativos; G9 Gate B do idle, separado.",
+  "open_questions_not_asserted": [
+    "sintaxe exata de tailscale serve --set-path nesta versao: nao executei --help",
+    "se o backend le Tailscale-User-Login: nao encontrei, e por isso nao dependo disso",
+    "valores atuais de MULTICA_TRUSTED_PROXIES e CORS_ALLOWED_ORIGINS: nao li",
+    "se existe senha configurada para o usuario do owner: 125_user_password_credential existe, mas nao consultei o banco",
+    "limites de body/upload na borda: nao medidos"
+  ],
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-approved-cutover-plan.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__GTL-ORQ17-CUTOVER-PLAN-V3__20260727T123500Z.json"
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"
+  ],
+  "non_claims": [
+    "nada instalado, configurado, reiniciado ou exposto; nenhuma ACL, env, unit, container ou codigo alterado",
+    "somente leitura: tailscale status --json, tailscale serve status, command -v, ss -tln e leitura de fonte",
+    "o plano nao autoriza nada: G4 a G8 sao mutacao e exigem autorizacao escrita do owner",
+    "as 9 issues seguem PRESERVADAS; zero rerun"
+  ],
+  "next": "Peer review obrigatorio antes de qualquer execucao. Aguardando w5:pC.",
+  "blocker": "G0: HTTPS Certificates do tailnet desligado (CertDomains=None) - acao do owner no admin console, fora do host.",
+  "issue_id": "ORQ-17",
+  "issue_title": "Publicar frontend 13100 com acesso LAN estavel",
+  "governance_ack": "GTL GOVERNANCE recebida e adotada: trabalho vinculado ao card EXISTENTE ORQ-17 (status todo em orq2-dev, lido via GET /api/issues no GTL-30), nao criei card novo e nao ha trabalho sem numero nesta entrega. Evidencia e check-out citam ORQ-N. Reuso verificado contra evidencia duravel: este plano V3 substitui e cita o material anterior em vez de refazer."
+}

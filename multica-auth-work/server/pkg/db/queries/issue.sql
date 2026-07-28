@@ -107,6 +107,24 @@ UPDATE issue SET
 WHERE id = $1 AND workspace_id = $3
 RETURNING *;
 
+-- name: ResetIssueToTodoIfNoActiveTask :one
+-- Atomically reconciles a failed issue without racing a concurrent retry or
+-- another task claim. Other issue states are deliberate user/agent choices
+-- and must remain untouched.
+UPDATE issue i SET
+    status = 'todo',
+    updated_at = now()
+WHERE i.id = @id
+  AND i.workspace_id = @workspace_id
+  AND i.status = 'in_progress'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM agent_task_queue t
+      WHERE t.issue_id = i.id
+        AND t.status IN ('queued', 'dispatched', 'running', 'waiting_local_directory')
+  )
+RETURNING i.*;
+
 -- name: CreateIssueWithOrigin :one
 INSERT INTO issue (
     workspace_id, title, description, status, priority,

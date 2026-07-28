@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T132712Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-41",
+  "lane": "GTL-R41-V2",
+  "task_ids": ["ORQ-41-V2-DECOUPLING-RE-REVIEW"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/orq41-execution-trigger-decoupling-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T132712Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq41-execution-trigger-decoupling-peer-review.md"
+  ],
+  "summary": "Re-review da secao V2 do design de desacoplamento da ORQ-41 concluido. Veredito: PASS. Todos os 21 call sites validados, mencoes e reassign metadados puros, child_done autorizada com key deterministica, Autopilot fail-closed, paralelismo de squads preservado no indice de 4 estados e roteiro em 6 Waves detalhado.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

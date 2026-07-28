@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:39:05Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "GTL-R02",
+    "ORQ-26"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Consumer review of frozen gtl-orq26 patch (file.go) for web/mobile/CLI uploadFile contracts",
+  "finding": "Validated fixes P1, P2, P3 in file.go. P3 (L391) rejects entity refs without workspace_id with HTTP 400 before S3. P1 (L468) cleans S3 and returns 500 on DB error (prevents ApiContractError). P2 (L490) returns id=\"\", download_url, and markdown_url for contextless uploads. Specified C1-C3/U1-U9 test coverage. Verdict: PASS.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-orq26-consumer-review.md, sent herdr update to General-TL Codex56-TL (w5:pC) and SSH to KIRO-PRINCIPAL-TL (wB:p1), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq26-consumer-review.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T113905Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-R02-ORQ26-CONSUMER-REVIEW__20260727T113905Z.json"
+  ],
+  "non_claims": [
+    "read-only consumer review, no code edit, no db edit, no build edit"
+  ],
+  "blocker": null
+}

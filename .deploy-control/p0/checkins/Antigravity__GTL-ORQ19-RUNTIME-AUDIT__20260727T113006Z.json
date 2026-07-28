@@ -1,0 +1,1 @@
+{"event":"checkout","timestamp_utc":"20260727T113006Z","agent":"Antigravity","pane_id":"w8:p1","lane":"E","task_ids":["ORQ-19","GTL-05"],"status":"DONE","files_changed":[],"files_created":[".deploy-control/p0/evidence/gtl-orq19-stale-runtime-audit.md"],"evidence":".deploy-control/p0/evidence/gtl-orq19-stale-runtime-audit.md","reported_to":"Codex56-TL w5:pC"}

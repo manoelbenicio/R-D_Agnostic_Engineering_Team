@@ -1,0 +1,91 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:57:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-17-AUTH-TESTS-FIX-REREVIEW"
+  ],
+  "orq_n": "ORQ-17",
+  "commit_reviewed": "9cf3296fcf2c8d5ff72f439df16492e6cd76c1fa (test(auth): align cookie test AUTH_TOKEN_TTL with sync.Once contract, 1 arquivo, +2/-5) sobre 40909d8",
+  "status": "DONE",
+  "verdict": "PASS",
+  "mode": "READ_ONLY_COM_EXECUCAO_DE_TESTE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-auth-tests-commit-9cf3296-rereview.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-17-FIX-REREVIEW__20260727T155700Z.json"
+  ],
+  "tests": [
+    {
+      "command": "git show 9cf3296 --stat e diff completo do auth_test.go",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "diff e o minimo pedido: removida a asserção MaxAge != 86400, env AUTH_TOKEN_TTL alterado de 24h para 1h, e teste renomeado de _SecureAndTTL24h para _SecureFlags. Nenhum outro arquivo, nenhuma linha de producao, nenhum teste removido"
+    },
+    {
+      "command": "grep -rn AUTH_TOKEN_TTL --include=*_test.go internal/middleware",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "os dois unicos escritores agora concordam em 1h (auth_test.go:652 e cloudfront_test.go:47) e cloudfront_test.go:68 espera ~1h, portanto qualquer ordem produz o mesmo valor no authTokenTTLOnce (internal/auth/cookie.go:74-88): envenenamento eliminado"
+    },
+    {
+      "command": "go test ./internal/middleware/ -count=1 (caches privados 0700 fora de /tmp)",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "ok 0.120s — pacote completo passa (antes, com 40909d8, FALHAVA)"
+    },
+    {
+      "command": "go test ./internal/middleware/ -race -count=1",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "ok 1.111s — nenhum data race, nenhuma falha"
+    },
+    {
+      "command": "go test ./internal/middleware/ -race -count=2",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "ok 1.718s — duas rodadas, sem flake por ordem"
+    },
+    {
+      "command": "grep dos testes ORQ-17 remanescentes e das asserções do teste de cookie",
+      "exit_code": 0,
+      "assertions_or_tests": 8,
+      "result": "os 7 testes ORQ-17 seguem presentes (:511 nil-queries 503, :535 MagicDNS com XFF, :565 bypass off, :589 tabela de 13 origens, :623 XFF nao habilita bypass, :650 cookies, :677 JWT producao) mais o pre-existente :80; no teste de cookies sobrevivem len(cookies)!=2, c.Secure, SameSite=StrictMode e HttpOnly no cookie de auth"
+    },
+    {
+      "command": "git show 9cf3296 --check; git status --porcelain; stat dos caches",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "show --check exit 0; worktree limpo e HEAD em 9cf3296; os tres diretorios de cache em 0700"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "summary": "PASS. O BLOCK que eu havia levantado em 40909d8 esta resolvido pelo commit 9cf3296, e o diff e exatamente o minimo: apenas +2/-5 no auth_test.go, com a asserção MaxAge != 86400 removida, o env AUTH_TOKEN_TTL alinhado de 24h para 1h e o teste renomeado de _SecureAndTTL24h para _SecureFlags, o que tambem resolve o achado secundario de que o nome prometia 24h como contrato quando o default real e 30 dias. Nenhum arquivo de producao foi tocado e nenhum teste foi removido. O envenenamento do sync.Once foi de fato eliminado: os dois unicos escritores de AUTH_TOKEN_TTL no pacote agora concordam em 1h (auth_test.go:652 e cloudfront_test.go:47), logo qualquer ordem de execucao produz o mesmo valor cacheado em authTokenTTLOnce e a falha anterior 'expires in 23h59m59s; expected ~1h' nas tres cookies CloudFront nao e mais reproduzivel. Execucao com Go 1.26.1 e caches privados 0700 fora de /tmp: pacote completo plain ok 0.120s, -race ok 1.111s e -race -count=2 ok 1.718s sem flake, contra FAIL em ambos no commit anterior e ok 0.112s na base. A cobertura util permaneceu integra: os sete testes ORQ-17 seguem presentes e no teste de cookies sobrevivem as asserções de contagem de 2 cookies, Secure, SameSite=StrictMode e HttpOnly, ou seja saiu apenas a asserção que dependia de estado global. Nada de CSRF em requisicao e afirmado e a contagem de 2 cookies continua legitima porque cookie.go:167-179 emite mesmo o CSRFCookieName. git show --check exit 0 e worktree limpo em 9cf3296. Observacao residual sem bloqueio: o t.Setenv AUTH_TOKEN_TTL=1h permaneceu no teste de cookies embora ele nao asserte mais nada sobre TTL, funcionando apenas porque coincide com o valor esperado por cloudfront_test.go — vale remover a linha ou comentar a dependencia; e a causa estrutural, TTL global cacheado em sync.Once sem hook de reset, continua no produto e merece card proprio.",
+  "non_claims": [
+    "nao editei, amendei, rebasei, commitei nem pushei; nao toquei board nem deploy; HEAD segue 9cf3296 e git status vazio",
+    "rodei apenas ./internal/middleware/, nao a suite completa do servidor",
+    "nao verifiquei o pacote internal/auth nesta rodada, pois o diff nao o tocou",
+    "nao provei por mutacao o poder de deteccao dos testes de bypass; mantenho a avaliacao por inspecao de auth.go:43-52",
+    "nenhum valor de segredo real lido ou impresso"
+  ],
+  "recommendations": [
+    "opcional: remover auth_test.go:652 (t.Setenv AUTH_TOKEN_TTL) ou comentar que o valor precisa coincidir com cloudfront_test.go:47 por causa do sync.Once",
+    "abrir card proprio para eliminar o sync.Once global de AuthTokenTTL ou expor reset/injecao para teste — mudanca de producao, fora deste commit"
+  ],
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "ORQ-17 liberado do meu lado; decidir sobre a observacao residual e sobre abrir card para o sync.Once de producao",
+      "file": ".deploy-control/p0/evidence/orq17-auth-tests-commit-9cf3296-rereview.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

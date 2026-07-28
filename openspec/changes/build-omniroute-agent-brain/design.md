@@ -58,6 +58,18 @@ Rollback holds new admissions, drains/cancels according to tool/commit safety, s
 
 Capacity tiers are explicit and evidence-based. Cancellation releases slots exactly once. Metadata-only spans correlate ingress, queue, daemon admission, CLI process, OmniRoute, terminal persistence and UI delivery without prompts, tool payloads, repository content, credentials or account identity.
 
+### 8. Kanban is the dispatch authority
+
+New executable work starts by assigning or following up on a product issue through the
+supported Kanban API. Each logical activation must create exactly one `agent_task_queue` row.
+Herdr may inspect panes and runtime state but must not launch, retry or duplicate product work.
+The TL remains the sole priority, scope, acceptance and integration authority; the assigned
+agent is the sole writer for its bounded branch/worktree/files.
+
+A terminal task is an execution record, not proof that the issue is done. The TL reconciles
+the result to `in_review`, `blocked` or `done` from evidence. Provider/auth/runtime failure is
+reported as infrastructure failure and can be reassigned without misclassifying the code.
+
 ## Risks / Trade-offs
 
 - **OmniRoute outage blocks new model work:** intentional fail-closed behavior; non-model product/control-plane operations continue.

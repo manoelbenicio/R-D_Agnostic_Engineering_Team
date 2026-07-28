@@ -1,0 +1,47 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:57:03Z",
+  "agent": "Codex",
+  "lane": "ORQ-17",
+  "task_ids": ["ORQ-17"],
+  "status": "DONE_PASS",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-stage2-auth-config-cutover-execution.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex__ORQ-17-STAGE-2-AUTH-CONFIG-CUTOVER__20260727T155703Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "allowlisted effective auth preflight",
+      "exit_code": 0,
+      "result": "Cutover required: bypass true, local email present, loopback/empty origins, empty TTL/proxy and APP_ENV development."
+    },
+    {
+      "command": "two aggregate active-queue reads",
+      "exit_code": 0,
+      "result": "queued=0, dispatched=0, running=0, waiting_local_directory=0 in both readings."
+    },
+    {
+      "command": "backend-only Compose force-recreate",
+      "exit_code": 0,
+      "result": "Only backend recreated using exact four live-label files plus the non-secret auth override; backend image unchanged."
+    },
+    {
+      "command": "post-cutover auth, isolation and stability gates",
+      "exit_code": 0,
+      "result": "health/ready=200, anonymous me/issues=401 without data read, frontend=200, other IDs unchanged, queue zero, Serve/Funnel empty."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq17-stage2-auth-config-cutover-execution.md",
+    ".deploy-control/p0/evidence/orq17-stage2-safety-monitor.md",
+    "/home/ec2-user/.local/state/orq17-stage1-frontend-recovery-20260727T155000Z"
+  ],
+  "summary": "PASS: backend-only auth cutover applied on ORQ1 with the same image. Bypass is false, local email empty, canonical HTTPS origins active, TTL 24h, trusted proxy loopback, APP_ENV production, anonymous endpoints reject access, other containers unchanged, queue zero and Serve/Funnel empty.",
+  "non_claims": [
+    "No secret value, GetSecretValue, full Config.Env or secret-bearing override content was read.",
+    "No frontend, PostgreSQL or OmniRoute container was recreated.",
+    "No login, AWS, DB write, board, Serve/Funnel, image prune, push or PR action occurred."
+  ]
+}

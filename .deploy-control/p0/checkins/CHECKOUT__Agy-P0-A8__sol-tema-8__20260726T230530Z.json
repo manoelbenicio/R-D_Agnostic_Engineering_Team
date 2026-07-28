@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-26T23:05:30Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "SOL-TEMA-8",
+  "status": "DONE",
+  "reported_to": "Kiro-PRINCIPAL-TL",
+  "evidence": [
+    ".deploy-control/p0/evidence/sol-tema-8.md"
+  ],
+  "summary": "Investigação do Tema 8 concluída no modo PREPARAR. Confirmado que daemon.go:3448 hardcoda credentialAccountHome := \"\", forçando comportamento global em execenv.go:301, 312, 322, 341. Proposto resolvedor de slot por afinidade (hash de task.AgentID) ou rotação round-robin sobre ~/.agent-cred-homes/slots/slot-NNN/home."
+}

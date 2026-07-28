@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/review-lote_03.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/review-lote_03.md"
+  ],
+  "finished_at": "2026-07-26T20:59:30Z",
+  "lane": "REVIEW",
+  "last_heartbeat_at": "2026-07-26T20:59:30Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-26T20:38:05Z",
+  "status": "DONE",
+  "summary": "Lote 03 revisado integralmente: 54 de 54 caminhos classificados, com KEEP=0, PURGE=54, STALE=0 e OWNER=0; nenhuma remoção ou alteração dos arquivos revisados foi executada.",
+  "task": "REVIEW-LOTE-03",
+  "validation": "Relatório presente em disco; tabela com três colunas; 54 linhas de arquivos; cobertura 54/54 contra /tmp/review/lote_03; vereditos válidos KEEP/PURGE/STALE/OWNER."
+}

@@ -1,0 +1,34 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:17:35Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-13",
+    "ORQ-17",
+    "ORQ-26",
+    "ORQ-38",
+    "ORQ-39",
+    "ORQ-41"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Mechanical READ-ONLY Git inventory for ORQ-13, 17, 26, 38, 39, 41",
+  "finding": "Produced machine-readable TSV orq-git-inventory-matrix.tsv and Markdown orq-git-inventory-matrix.md. Enumerated worktree paths, branches, HEAD SHAs, merge-bases, clean/dirty status, staged/untracked counts, changed-file lists, and local commit flags. Cross-referenced commit claims: ORQ-17 9cf3296fcf2c8d5ff72f439df16492e6cd76c1fa (MATCHED_EXACT), ORQ-26 d2447183c5fb7d93c07ca4afdd86d4ab9ac374ee (MATCHED_EXACT), ORQ-41 c047c0b7ed710f260e76a6ee50257b2a5f96dc70 (SUPERSEDED by e0b0155d0f0d46a9da3724ecbfc51a5167bd2ebe). ORQ-13, ORQ-38, and ORQ-39 have no card commit yet. Recorded matrix SHA256 fa909b9508cd8aa79f214228ccca3fb65cfcce0e1cfe064830ec1b509718671d for Kiro release control.",
+  "action_taken": "Created .deploy-control/p0/evidence/orq-git-inventory-matrix.tsv, .deploy-control/p0/evidence/orq-git-inventory-matrix.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq-git-inventory-matrix.tsv",
+    ".deploy-control/p0/evidence/orq-git-inventory-matrix.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T161735Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ-GIT-INVENTORY-MATRIX__20260727T161735Z.json"
+  ],
+  "inventory_matrix_sha256": "fa909b9508cd8aa79f214228ccca3fb65cfcce0e1cfe064830ec1b509718671d",
+  "non_claims": [
+    "git inventory, no checkout, no stash, no add, no commit, no fetch, no push, no file edit, no board mutation"
+  ],
+  "blocker": null
+}

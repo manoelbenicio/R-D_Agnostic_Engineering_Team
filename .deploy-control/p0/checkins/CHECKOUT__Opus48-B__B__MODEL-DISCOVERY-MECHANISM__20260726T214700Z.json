@@ -1,0 +1,87 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T21:47:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "B",
+  "task_ids": [
+    "MODEL-DISCOVERY-MECHANISM"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T214500Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-B__B__MODEL-DISCOVERY-MECHANISM__20260726T214700Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "grep -n 'case \"codex\":|case \"kiro\":|case \"antigravity\":|func ListModels' server/pkg/agent/models.go",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PASS - ListModels:120, codex:129, antigravity:151, kiro:194"
+    },
+    {
+      "command": "sed -n '129,134p' e '194,205p' server/pkg/agent/models.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS - codex usa codexStaticModels() (estatico, models.go:510); kiro usa discoverKiroModels via cachedDiscovery"
+    },
+    {
+      "command": "grep -A32 'func discoverKiroModels' e 'func discoverAntigravityModels' server/pkg/agent/models.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS - kiro: discoverACPModels defaultBin=kiro-cli, argv default {\"acp\"} em models.go:1134-1137; antigravity: exec.CommandContext(runCtx, executablePath, \"models\") em models.go:1398"
+    },
+    {
+      "command": "head -6 server/pkg/agent/proc_other.go / proc_unsupported.go",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS - proc_other.go tem build tag linux e requireDiscoveryProcessContainment retorna nil; containment nao bloqueia em Linux"
+    },
+    {
+      "command": "ssh ec2-user@100.118.244.61 '/home/ec2-user/.local/bin/agy models'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "FALHA FUNCIONAL - 'Error: Please sign in to view available models. Launch the CLI without arguments to sign in.'"
+    },
+    {
+      "command": "ssh ec2-user@100.118.244.61 'printf initialize-jsonrpc | /home/ec2-user/.local/bin/kiro-cli acp'",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "FALHA FUNCIONAL - 'error: You are not logged in, please log in with kiro-cli login'"
+    },
+    {
+      "command": "sed -n '2048,2078p' server/internal/daemon/daemon.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS - daemon.go:2058 agent.ListModels; erro -> reportModelListResult status=failed; limite de 40s"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T214500Z.msg",
+    "multica-auth-work/server/pkg/agent/models.go:120, :129-134, :151-160, :194-205, :510, :1043-1049, :1134-1137, :1384-1411",
+    "multica-auth-work/server/internal/daemon/daemon.go:2058-2067",
+    "multica-auth-work/server/cmd/server/router.go:937",
+    "multica-auth-work/server/internal/handler/runtime_models.go:288",
+    "multica-auth-work/server/pkg/agent/proc_other.go:21"
+  ],
+  "reported_to": "KIRO-PRINCIPAL-TL (100.117.245.15, pane wB:p1) via herdr pane run, exit 0 + copia duravel em .deploy-control/inbox-tm/",
+  "summary": "Mecanismo de lista de modelos: router.go:937 POST /models -> runtime_models.go:288 InitiateListModels -> daemon.go:2058 agent.ListModels(provider, entry.Path) -> dispatch em pkg/agent/models.go:120. CODEX (models.go:129-134) usa codexStaticModels() (models.go:510), catalogo estatico compilado, NENHUM comando executado no CLI, por isso sempre popula. KIRO (models.go:194-205 -> :1043-1049 -> :1134-1137) executa `kiro-cli acp`, handshake ACP JSON-RPC initialize+session/new, catalogo em models.availableModels, timeout 15s, sem fallback estatico. ANTIGRAVITY (models.go:151-160 -> :1384-1411) executa `agy models` (models.go:1398), uma linha por nome, timeout 30s, 0 modelos vira erro, sem fallback. CORRECAO DE PREMISSA: config.go:144-155 nao participa desse caminho; kiro e antigravity JA tem caso proprio em ListModels. CAUSA REAL do dropdown vazio, medida ao vivo no ORQ1: os dois CLIs nao estao autenticados ('Please sign in to view available models' / 'You are not logged in, please log in with kiro-cli login'). Nao e defeito de codigo.",
+  "non_claims": [
+    "Nao editei arquivo de codigo, nao recompilei, nao substitui binario",
+    "Nao reiniciei, parei ou alterei o daemon; nao instalei nada",
+    "Nenhum commit, push, git rm, reset, clean ou checkout --",
+    "Nao autentiquei os CLIs: login e mudanca de credencial = STOP-AND-WAIT",
+    "Nao verifiquei se cline e opencode populam; nao estavam no escopo da pergunta",
+    "Nao afirmo que o login resolve o objetivo de 6 CLIs COM gateway-required ligado: esse e problema separado que sim exige config.go:144-155"
+  ],
+  "blocker": "Autenticar kiro-cli e agy no ORQ1 sob HOME=/home/ec2-user e mudanca de credencial/auth, classe STOP-AND-WAIT do AUTHORITY-AMENDMENT-001 §0.1. Dono do bloqueio: human owner via KIRO-PRINCIPAL-TL. Proxima acao necessaria: ruling escrito autorizando `kiro-cli login` e o sign-in do `agy` na conta do daemon. Depois disso o dropdown popula sem alterar Go.",
+  "handoffs": [
+    {
+      "to_lane": "KIRO-PRINCIPAL-TL",
+      "reason": "Premissa da ordem corrigida: o dropdown vazio de kiro/agy nao vem de config.go:144-155 e sim de falta de login nos CLIs. Evita refactor desnecessario.",
+      "file": ".deploy-control/inbox-tm/FROM_Opus48#B__TO_Kiro-PRINCIPAL-TL__20260726T214500Z.msg"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T15:09:43Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "ORQ13-WAVE0-BASELINE-PEER-REVIEW-CORRECTION",
+  "issue_id": "ORQ-13",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/orq13-wave0-baseline-peer-review.md"
+  ],
+  "summary": "Correção do peer review do runbook e preflight Wave 0 SQLC baseline (ORQ-13) concluída em modo READ-ONLY. Veredito corrigido para BLOCK devido à medição empírica comprovando a existência de variáveis locais em snake_case geradas pelo sqlc (var started_at, var token_hash, var max_position, etc.) que violariam a regra ST1003 do golangci-lint. Fornecido gate nativo equivalente via grep para validação determinística sem instalação de ferramentas."
+}

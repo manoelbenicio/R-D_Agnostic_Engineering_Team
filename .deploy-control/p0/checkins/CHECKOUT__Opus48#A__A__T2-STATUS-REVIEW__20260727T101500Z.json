@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T10:15:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "task_ids": ["T2-STATUS-REVIEW"],
+  "status": "DONE_REVIEW_ONLY",
+  "scope": "SOMENTE ResetIssueToTodoIfNoActiveTask + reconcileFailedIssue em issue.sql, issue.sql.go gerado, internal/service/task.go e testes",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/t2-status-review-Opus48A-20260727.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__T2-STATUS-REVIEW__20260727T101500Z.json"
+  ],
+  "findings": [
+    "F1 ALTA RACE ABERTA: cmd/server/runtime_sweeper.go:307-317 NAO migrado, mantem check-then-act em 3 round-trips (GetIssue 308, HasActiveTaskForIssue 313, UpdateIssueStatus 314) e UpdateIssueStatus nao tem guarda de task ativa nem de status; o retorno da 314 e descartado sem err nem log. A classe de bug do ORQ-22 segue alcancavel pelo processo do sweeper. Trocar por ResetIssueToTodoIfNoActiveTask e tratar erro.",
+    "F2 MEDIA EVENTO UI: FailTask agora muta status da issue (task.go:1546) mas so publica evento de TASK (task.go:1594 EventTaskFailed). Nenhum caminho emite evento com escopo de ISSUE na transicao in_progress->todo. Antes FailTask nao tocava a issue (comentario removido: 'Issue status is NOT changed here'), logo e transicao nova sem evento. Verificar se o frontend refaz fetch de issues em task:failed, senao o card fica in_progress na UI com todo no banco.",
+    "F3 SEGURA: remover retriedIssues nao abriu buraco. CreateRetryTask (pkg/db/queries/agent.sql) insere o filho com status literal 'queued', que esta na guarda IN ('queued','dispatched','running','waiting_local_directory'). O NOT EXISTS subsume a supressao cruzada. O parametro retried bool virou defesa redundante, nao carga.",
+    "F4 BAIXA: dedup processedIssues removido de HandleFailedTasks; N tasks da mesma issue geram N GetIssue e N UPDATE. Sem perda de correcao porque a partir da 2a o WHERE status='in_progress' nao casa, o :one devolve zero linhas e o codigo trata errors.Is(err, pgx.ErrNoRows). Custo e round-trip extra apenas.",
+    "F5 SEM DIVERGENCIA SQLC: issue.sql usa @id/@workspace_id, gerado usa $1/$2 na mesma ordem; RETURNING i.* expandido em 24 colunas na mesma ordem da expansao pre-existente de updateIssueStatus e o row.Scan acompanha; prefixo i. e esperado em UPDATE com alias. Saida coerente com sqlc generate.",
+    "F6 POSITIVO: sem TOCTOU dentro de reconcileFailedIssue. O GetIssue da 1893 so obtem workspaceID e nao e guarda de status; toda a decisao esta no WHERE. GetIssue com erro retorna \"\" e nao tenta reset, fail-closed."
+  ],
+  "evidence": [
+    "git diff de internal/service/task.go mostrando remocao de processedIssues/retriedIssues e o novo reconcileFailedIssue 1888-1916",
+    "task.go:1546 chamada em FailTask; task.go:1852 chamada no lote; task.go:1906 ResetIssueToTodoIfNoActiveTask",
+    "pkg/db/queries/issue.sql guarda NOT EXISTS com 4 status ativos; pkg/db/generated/issue.sql.go:1247-1272",
+    "cmd/server/runtime_sweeper.go:307-317 caminho nao atomico remanescente",
+    "pkg/db/queries/agent.sql CreateRetryTask insere 'queued'",
+    "internal/service/autopilot.go:578 outro consumidor de HasActiveTaskForIssue, nao revisado (fora de escopo)"
+  ],
+  "reported_to": ["Codex56-TL w5:pC (ORQ2)", "Codex56#B w7:p4 (ORQ2)"],
+  "non_claims": [
+    "nada editado, nenhum deploy, restart, rerun",
+    "nenhum commit, push, reset, clean, checkout --",
+    "go test/vet/build NAO executados por mim nesta revisao",
+    "nao alterei estado de nenhum card do Kanban"
+  ],
+  "blocker": null
+}

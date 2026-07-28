@@ -1,0 +1,75 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-26T21:00:30Z",
+  "agent": "Agy-Lane-B",
+  "pane_id": null,
+  "lane": "B",
+  "task_ids": [
+    "REVIEW-LOTE-01"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/review-lote_01.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "while read p; do grep -qF \"| \\`$p\\` |\" .deploy-control/p0/evidence/review-lote_01.md || echo NO ROW; done < /tmp/review/lote_01",
+      "exit_code": 0,
+      "assertions_or_tests": 52,
+      "result": "PASS"
+    },
+    {
+      "command": "grep -c '^| `\\.deploy-control' .deploy-control/p0/evidence/review-lote_01.md",
+      "exit_code": 0,
+      "assertions_or_tests": 52,
+      "result": "PASS"
+    },
+    {
+      "command": "python3 -c 'json.load' over all 52 batch files",
+      "exit_code": 0,
+      "assertions_or_tests": 52,
+      "result": "PASS"
+    },
+    {
+      "command": "grep -EiHc '(AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9]{20,}|xox[baprs]-|BEGIN [A-Z ]*PRIVATE KEY)' over all 52 batch files",
+      "exit_code": 0,
+      "assertions_or_tests": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "ls -l .deploy-control/p0/evidence/review-lote_01.md",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/review-lote_01.md"
+  ],
+  "requirements": [
+    "REVIEW-LOTE-01"
+  ],
+  "openspec_tasks": [],
+  "summary": "Reviewed all 52 files of /tmp/review/lote_01 (all under .deploy-control/p0/checkins/: 44 CHECKIN + 8 CHECKOUT). Verdicts transcribed to .deploy-control/p0/evidence/review-lote_01.md, one row per path, 52/52 covered, zero missing. Counts: KEEP 0, PURGE 48, STALE 1, OWNER 3. File verified on disk at 17321 bytes.",
+  "non_claims": [
+    "No file deleted, moved or unversioned",
+    "No git rm / push / reset / clean / checkout --",
+    "No commit made for this task",
+    "No decision taken: verdicts are recommendations only, owner decides after all 8 lotes report",
+    "No secret value read or emitted (scan over 52 files returned 0 hits)"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "OWNER",
+      "reason": "3 OWNER items: self-referential CHECKOUT records for lanes C10, C1 and F10 are the sole evidence artifact (evidence field points at the JSON itself, no matching .md) and carry AB-REQ-39/AB-REQ-40 traceability; purging them under the 1-day churn rule destroys requirement evidence",
+      "file": ".deploy-control/p0/evidence/review-lote_01.md"
+    }
+  ]
+}

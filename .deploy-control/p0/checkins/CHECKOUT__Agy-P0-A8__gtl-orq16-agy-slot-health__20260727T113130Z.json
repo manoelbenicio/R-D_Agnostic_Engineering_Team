@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:31:30Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-ORQ16-AGY-SLOT-HEALTH",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq16-agy-slot-health.md"
+  ],
+  "summary": "Design de Elegibilidade Dinâmica de Saúde de Slots (GTL-16) concluído em modo READ-ONLY. Especificada a substituição de allowlists estáticas por validação física os.Lstat (regular file, sem symlinks), probe não-destrutivo em memória sem comandos login/delete, cache em memória com TTL de 60s sob RWMutex, semântica fail-closed para revogações e suíte de testes sem exposição de segredos."
+}

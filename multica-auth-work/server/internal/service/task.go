@@ -1447,7 +1447,8 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, resu
 }
 
 // FailTask marks a task as failed.
-// Issue status is NOT changed here — the agent manages it via the CLI.
+// If no retry or other active task remains, an issue still in progress is
+// atomically reconciled to todo. Other issue states remain agent/user-owned.
 //
 // sessionID/workDir are optional: when the agent established a real session
 // before failing (e.g. crashed mid-conversation, was cancelled, or hit a
@@ -1542,6 +1543,7 @@ func (s *TaskService) FailTask(ctx context.Context, taskID pgtype.UUID, errMsg, 
 	// runtime_recovery). The helper itself enforces attempt < max_attempts
 	// and only triggers for issue/chat tasks.
 	retried, _ := s.MaybeRetryFailedTask(ctx, task)
+	s.ReconcileFailedIssue(ctx, task, retried != nil)
 
 	// Skip the per-failure system comment when we'll immediately retry —
 	// the new task will surface its own status to the user, and we don't
@@ -1822,27 +1824,23 @@ func (s *TaskService) enqueueRerunTask(ctx context.Context, issue db.Issue, agen
 // task and isn't being retried) resetting the issue back to todo so the
 // daemon can pick it up again.
 //
-// All callers that surface a task as failed — sweepers, FailTask,
-// recover-orphans — funnel through here so the same UI-consistency
-// guarantees apply on every code path.
+// Batch failure callers (sweepers and recover-orphans) funnel through here.
+// FailTask performs the same issue reconciliation directly after its retry
+// decision because its comments and chat side effects are request-specific.
 func (s *TaskService) HandleFailedTasks(ctx context.Context, tasks []db.AgentTaskQueue) int {
 	if len(tasks) == 0 {
 		return 0
 	}
 
 	affectedAgents := make(map[string]pgtype.UUID)
-	processedIssues := make(map[string]bool)
-	retriedIssues := make(map[string]bool)
 	retried := 0
 
 	for _, t := range tasks {
 		// Auto-retry first so the issue stays in_progress rather than
 		// flapping todo → in_progress within a tick.
-		if child, _ := s.MaybeRetryFailedTask(ctx, t); child != nil {
+		child, _ := s.MaybeRetryFailedTask(ctx, t)
+		if child != nil {
 			retried++
-			if t.IssueID.Valid {
-				retriedIssues[util.UUIDToString(t.IssueID)] = true
-			}
 		}
 
 		failureReason := "agent_error"
@@ -1851,36 +1849,7 @@ func (s *TaskService) HandleFailedTasks(ctx context.Context, tasks []db.AgentTas
 		}
 		s.captureTaskFailed(ctx, t)
 
-		workspaceID := ""
-		if t.IssueID.Valid {
-			if issue, err := s.Queries.GetIssue(ctx, t.IssueID); err == nil {
-				workspaceID = util.UUIDToString(issue.WorkspaceID)
-				// Reset stuck in_progress issues only when no other active
-				// task exists for the issue and no retry was just enqueued.
-				issueKey := util.UUIDToString(t.IssueID)
-				if issue.Status == "in_progress" && !processedIssues[issueKey] && !retriedIssues[issueKey] {
-					processedIssues[issueKey] = true
-					hasActive, checkErr := s.Queries.HasActiveTaskForIssue(ctx, t.IssueID)
-					if checkErr != nil {
-						slog.Warn("handle failed tasks: active check failed",
-							"issue_id", issueKey,
-							"error", checkErr,
-						)
-					} else if !hasActive {
-						if _, updateErr := s.Queries.UpdateIssueStatus(ctx, db.UpdateIssueStatusParams{
-							ID:          t.IssueID,
-							Status:      "todo",
-							WorkspaceID: issue.WorkspaceID,
-						}); updateErr != nil {
-							slog.Warn("handle failed tasks: reset stuck issue failed",
-								"issue_id", issueKey,
-								"error", updateErr,
-							)
-						}
-					}
-				}
-			}
-		}
+		workspaceID := s.ReconcileFailedIssue(ctx, t, child != nil)
 		if workspaceID == "" {
 			workspaceID = s.ResolveTaskWorkspaceID(ctx, t)
 		}
@@ -1907,6 +1876,50 @@ func (s *TaskService) HandleFailedTasks(ctx context.Context, tasks []db.AgentTas
 		s.ReconcileAgentStatus(ctx, agentID)
 	}
 	return retried
+}
+
+// ReconcileFailedIssue resets an in-progress issue to todo after its final
+// active task fails. The SQL mutation is atomic with the active-task check,
+// so a concurrent retry or task claim cannot be overwritten. A successful
+// retry deliberately leaves the issue in progress.
+//
+// The returned workspace ID lets callers publish the task event without
+// loading the issue a second time.
+func (s *TaskService) ReconcileFailedIssue(ctx context.Context, task db.AgentTaskQueue, retried bool) string {
+	if !task.IssueID.Valid {
+		return ""
+	}
+
+	issue, err := s.Queries.GetIssue(ctx, task.IssueID)
+	if err != nil {
+		slog.Warn("reconcile failed issue: load issue failed",
+			"issue_id", util.UUIDToString(task.IssueID),
+			"error", err,
+		)
+		return ""
+	}
+	workspaceID := util.UUIDToString(issue.WorkspaceID)
+	if retried {
+		return workspaceID
+	}
+
+	updated, err := s.Queries.ResetIssueToTodoIfNoActiveTask(ctx, db.ResetIssueToTodoIfNoActiveTaskParams{
+		ID:          task.IssueID,
+		WorkspaceID: issue.WorkspaceID,
+	})
+	switch {
+	case err == nil:
+		s.broadcastIssueUpdated(updated)
+	case errors.Is(err, pgx.ErrNoRows):
+		// The issue is no longer in progress or another task became active.
+		// Both are expected no-op outcomes of the atomic guard.
+	default:
+		slog.Warn("reconcile failed issue: atomic reset failed",
+			"issue_id", util.UUIDToString(task.IssueID),
+			"error", err,
+		)
+	}
+	return workspaceID
 }
 
 // runInTx executes fn inside a single DB transaction. If TxStarter is nil

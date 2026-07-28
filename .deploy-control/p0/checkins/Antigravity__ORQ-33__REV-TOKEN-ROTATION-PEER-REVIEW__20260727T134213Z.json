@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T134213Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-33",
+  "lane": "GTL-ORQ33",
+  "task_ids": ["ORQ-33-REV-TOKEN-ROTATION-PEER-REVIEW"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq33-rev-token-rotation-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T134213Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq33-rev-token-rotation-peer-review.md"
+  ],
+  "summary": "Peer review adversarial do runbook de rotacao do Rev Token da ORQ-33 concluido. Skill aws-secrets-manager ativada com zero leitura de plaintext. Veredito: BLOCK. Exige ajuste do procedimento para alinhar com o codigo Go de chave unica (JWT_SECRET via sync.Once) e inclusao dos 4 estados ativos no Gate 1 de fila zero.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

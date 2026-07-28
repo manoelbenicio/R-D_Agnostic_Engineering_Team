@@ -1,0 +1,48 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T14:22:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-32",
+  "issue_uuid": "b01925fe-e914-422a-812e-f63cada274dc",
+  "issue_number": 32,
+  "card_identity_verified": "GET /api/issues?workspace_slug=orq2-dev: number 32, id b01925fe-e914-422a-812e-f63cada274dc, status todo, assignee_type null, titulo 'Security Wave B: Handshake Token Rotation & Lifecycle'. O UUID citado no peer review CONFERE.",
+  "task_ids": ["ORQ32-SECOND-INDEPENDENT-REVIEW"],
+  "status": "DONE_BLOCK_UPHELD_AND_ESCALATED",
+  "verdict": "BLOCK mantido e AGRAVADO",
+  "deliverable": ".deploy-control/p0/evidence/orq32-handshake-rotation-second-review.md",
+  "block1_understated": "O peer review diz que falta HANDSHAKE_TOKEN_SECONDARY, o que implica que o primario existe. NAO EXISTE NENHUM DOS DOIS. grep -rniE 'handshake_token|HANDSHAKE_TOKEN|MULTICA_HANDSHAKE|CLOUD_FLEET_HANDSHAKE' em server/ sem testes retorna ZERO. Todo 'handshake' no server e TLS ou WebSocket: dbstats.go:33, router.go:343 (QR-scan), cli/client.go:94, cli/errors.go:31, gateway/client.go:127 TLSHandshakeTimeout, daemon/wakeup.go:95, lark/ws_connector.go:73 e 550. Logo a tabela de consumidores da secao 2 nao corresponde a NENHUMA variavel lida por este codigo: nao e falta da versao secundaria, e um runbook para rotacionar segredo que este software nao consome. Mecanismo real: internal/auth/jwt.go:70-71 GenerateDaemonToken produz 'mdt_' + 40 hex, e o daemon carrega MULTICA_TOKEN no ambiente.",
+  "block2_ok_but_insufficient": "Exigir deploy do Go com dual-token ANTES de mexer em estagio do Secrets Manager e correto e eu mantenho, mas ganha um passo ZERO: identificar segredo e consumidor reais. Ordem certa aplicada ao alvo errado nao produz seguranca.",
+  "block3_half_corrected": "Runbook usava status = running; o peer review ampliou para ('queued','running'), AINDA INCOMPLETO. Correto sao os QUATRO estados ativos conforme 109_agent_task_waiting_local_directory.up.sql:15 - faltam dispatched, que ja foi entregue ao daemon, e waiting_local_directory, que esta viva aguardando path. E o Gate 1 nao diz como impedir que nova task entre entre a verificacao e o reinicio: sem pausar admissao, e leitura instantanea sem garantia. Terceira vez que este predicado incompleto aparece (GTL-32, GTL-43 e agora): sugiro padronizar uma constante/consulta unica.",
+  "new_defect_A": "{{resolve:...:VersionId:...}} NAO EXISTE. Skill linha 41-49: {{resolve:secretsmanager:<secret-id>:<field-type>:<json-key>:<version-stage>}} e a tabela lista field-type com UM valor, SecretString. VersionId nao e field-type, e asm-exec resolve VALORES e nao metadado de versao. Efeito: a Fase 4 entrega a string literal {{resolve:...}} ao --move-to-version-id; melhor caso erro de validacao, pior caso o operador cola VersionId a mao e a fase vira passo manual sem trilha. VersionId e METADADO: obter por list-secret-version-ids, sem asm-exec.",
+  "new_defect_B": "A Fase 1 VIOLA a regra de ouro do proprio runbook. Tres problemas no mesmo comando: (1) {{generate:token}} nao existe na skill, so resolve, entao o placeholder ficaria LITERAL, gravando o texto {{generate:token}} como token novo - falha silenciosa que cria segredo previsivel; (2) --secret-string com valor inline poe segredo em ARGV, exatamente o que a secao 1.1 regra 2 do runbook proibe, e apareceria em ps, history e log de auditoria; (3) o JSON esta malformado, com aspas internas nao escapadas. Correcao: gerar dentro do processo filho sem argv, ou usar rotacao gerenciada do Secrets Manager.",
+  "confirmed_correct": "Eixo de LEITURA de segredo esta aderente: zero get-secret-value e batch-get-secret-value, uso correto de asm-exec -- e de {{resolve:secretsmanager:...}} para consumo, e version-stage e suportado pela skill (linha 49). asm-exec existe de fato em /home/ec2-user/.local/bin/asm-exec. Dual-token como estrategia de corte sem downtime e o desenho certo e o rollback por AWSPREVIOUS com servidor em modo dual e coerente. Gate 3 valido: /readyz existe em cmd/server/router.go:444. Gate 2 pertinente, com a ressalva de que deve validar a role que executa o asm-exec e nao a do agente.",
+  "required_corrections": [
+    "C1 identificar segredo e consumidor REAIS com arquivo:linha; candidato provavel e o daemon token mdt_ (internal/auth/jwt.go:70-71)",
+    "C2 declarar dependencia de PR Go de dual-token DO SEGREDO CORRETO, com deploy antes de qualquer mudanca de estagio",
+    "C3 Gate 1 com os quatro estados ativos e definicao de como a admissao e pausada na janela",
+    "C4 remover {{resolve:...:VersionId:...}} e obter VersionId por list-secret-version-ids",
+    "C5 reescrever a Fase 1 sem valor em argv e sem {{generate:token}}",
+    "C6 confirmar existencia e conta/regiao do segredo - eu NAO verifiquei, e o nome provavelmente muda por C1"
+  ],
+  "open_questions_not_asserted": [
+    "se existe consumidor de handshake_token FORA de multica-auth-work/server (outro repo, imagem do gateway, OmniRoute): varri o server, nao a frota",
+    "se prod/handshake-token existe no Secrets Manager: nao consultei",
+    "se a role que roda asm-exec tem a permissao do Gate 2: nao testei",
+    "se o 'Multica Fleet Gateway' da secao 2 e componente real: nao encontrei CLOUD_FLEET_HANDSHAKE_TOKEN no codigo"
+  ],
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq32-handshake-rotation-second-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__ORQ32-HANDSHAKE-ROTATION-SECOND-REVIEW__20260727T142200Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "nenhum segredo lido, resolvido, impresso, salvo ou passado em comando; zero get-secret-value e batch-get-secret-value",
+    "nenhuma rotacao, promocao de estagio ou mutacao de AWS, codigo, board ou config",
+    "nao alterei assignee nem postei comentario (freeze vigente); nenhum card criado"
+  ],
+  "next": "Aguardando ruling do GTL sobre C1, que decide se o runbook e reescrito ou descartado.",
+  "blocker": null
+}

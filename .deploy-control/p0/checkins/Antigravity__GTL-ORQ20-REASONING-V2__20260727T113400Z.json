@@ -1,0 +1,22 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T113400Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-06R",
+  "task_ids": ["GTL-ORQ20-REASONING-V2"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T113400Z.msg"
+  ],
+  "files_changed": [
+    ".deploy-control/p0/evidence/gtl-orq20-reasoning-contract.md"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq20-reasoning-contract.md"
+  ],
+  "summary": "GTL-06R refeito READ-ONLY: adicionada SECAO CORRECAO GTL-06R. Retificado que task_usage NAO persiste thinking_level (lacuna ORQ-13/GTL-03). Modelos alinhados estritamente ao catalogo live 11/19/11. Separacao rigida entre estado implementado vs proposto. Defaults dos 10 agentes baseados em modelos reais.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

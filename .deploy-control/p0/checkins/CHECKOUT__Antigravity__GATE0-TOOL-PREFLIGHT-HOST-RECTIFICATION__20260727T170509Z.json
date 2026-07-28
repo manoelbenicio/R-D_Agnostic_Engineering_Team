@@ -1,0 +1,26 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T17:05:09Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Factual host-by-host rectification of Gate 0 tool and permission preflight report",
+  "finding": "Updated gate0-tool-permission-preflight-report.md with explicit per-host attribution on every line. Retracted ambiguous mixed-host snapshot. Recorded live ORQ2 storage post-expansion: / = 60GB total, 16GB free (74% used); /tmp = 7.7GB total, 7.4GB free (5% used). Recorded live ORQ1 storage: / = 24GB total, 4.9GB free (80% used); /tmp = 3.8GB total, 3.6GB free (8% used). Mapped Docker version 25.0.14 to ORQ1, Tailscale 1.98.9 to both ORQ1 and ORQ2, Go 1.26.1 to both. Started ZERO mutations, builds, tests, or deploys. Recorded updated preflight SHA256 b1ca766158b25bf85eed20574b40fb37e02899de2a2bf58c9d7add942a3b2233.",
+  "action_taken": "Updated .deploy-control/p0/evidence/gate0-tool-permission-preflight-report.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only preflight rectification.",
+  "files_changed": [
+    ".deploy-control/p0/evidence/gate0-tool-permission-preflight-report.md"
+  ],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T170509Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GATE0-TOOL-PREFLIGHT-HOST-RECTIFICATION__20260727T170509Z.json"
+  ],
+  "updated_preflight_sha256": "b1ca766158b25bf85eed20574b40fb37e02899de2a2bf58c9d7add942a3b2233",
+  "non_claims": [
+    "gate 0 preflight host rectification, no mixed hosts, no implementation started, no build, no test execution, no deploy, no secret read, no GetSecretValue, no DB/AWS/board mutation"
+  ],
+  "blocker": null
+}

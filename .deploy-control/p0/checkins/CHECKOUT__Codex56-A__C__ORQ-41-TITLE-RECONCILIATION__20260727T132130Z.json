@@ -1,0 +1,78 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:21:30Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "ORQ-41-TITLE-RECONCILIATION"
+  ],
+  "orq_n": "ORQ-41",
+  "orq_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "status": "DONE",
+  "mode": "MUTACAO_MINIMA_AUTORIZADA_CAMPO_UNICO",
+  "files_changed": [
+    ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md (secao de reconciliacao de titulo, arquivo proprio)"
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__ORQ-41-TITLE-RECONCILIATION__20260727T132130Z.json"
+  ],
+  "board_mutations": [
+    "PUT /api/issues/666f1ead-7fe9-4051-bab9-5d0a936c4701?workspace_id=... -> HTTP 200, body {\"title\":\"Decouple Kanban metadata from paid task execution\"} (campo unico)"
+  ],
+  "tests": [
+    {
+      "command": "leitura de handler/issue.go:2493, 2495, 2530, 2555, 2569, 2577",
+      "exit_code": 0,
+      "assertions_or_tests": 6,
+      "result": "CONFIRMADO — assigneeChanged e statusChanged sao derivados de req.AssigneeType/AssigneeID/Status nao-nil; com body contendo apenas title ambos sao falsos, logo nenhum enqueue (2530, 2555), nenhum cancel (2530, 2569) e nenhum comentario de sistema (2577) pode ocorrer"
+    },
+    {
+      "command": "GET pre-estado do ORQ-41 com workspace_id",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "title antigo 'Add safe non-triggering documentation comments to assigned...', status todo, priority high, assignee None, desc_len 2209, number 41"
+    },
+    {
+      "command": "PUT com {\"title\":\"Decouple Kanban metadata from paid task execution\"}",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "HTTP 200"
+    },
+    {
+      "command": "GET-back do ORQ-41 com workspace_id",
+      "exit_code": 0,
+      "assertions_or_tests": 7,
+      "result": "PASS — uuid 666f1ead-7fe9-4051-bab9-5d0a936c4701 e number 41 preservados; title novo aplicado; status todo, priority high, assignee_type None, assignee_id None e desc_len 2209 IDENTICOS ao pre-estado"
+    },
+    {
+      "command": "psql: fila ativa global e por issue (13:21:13Z)",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "GLOBAL_ACTIVE = 0 · ORQ41_ACTIVE = 0"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "summary": "Titulo do ORQ-41 reconciliado com uma unica mutacao de campo unico, apos verificacao de contrato. Provei em codigo que um PUT contendo apenas title nao pode enfileirar nem cancelar: assigneeChanged (issue.go:2493) e statusChanged (2495) derivam de req.AssigneeType/AssigneeID/Status nao-nil, e todos os gatilhos dependem de um dos dois — enqueue por assignee (2530), enqueue por saida de backlog (2555), cancel por status cancelled (2569) e notificacao de pai (2577); com body somente title, ambos sao falsos. Pre-estado: title 'Add safe non-triggering documentation comments to assigned...', status todo, priority high, assignee None, desc_len 2209, number 41. PUT com {title: 'Decouple Kanban metadata from paid task execution'} retornou HTTP 200 e o GET-back com workspace_id confirma UUID 666f1ead-7fe9-4051-bab9-5d0a936c4701 e number 41 preservados, titulo novo aplicado, e status todo, priority high, assignee vazio e desc_len 2209 identicos ao pre-estado. Fila as 13:21:13Z: GLOBAL_ACTIVE = 0 e ORQ41_ACTIVE = 0. Nenhum comentario, atribuicao, criacao de card, mudanca de status ou descricao, e nenhum patch de codigo.",
+  "non_claims": [
+    "enviei exclusivamente o campo title; status, description, priority, assignee e project nao foram enviados e permanecem identicos por medicao",
+    "nao comentei, nao atribui, nao criei card, nao mudei status nem descricao e nao patchiei codigo",
+    "nao toquei ORQ-39, ORQ-40 nem qualquer issue preservada neste passo",
+    "nao afirmo que o defeito de fundo esteja corrigido: o ORQ-41 apenas rastreia o problema; nada foi implementado"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC)",
+      "reason": "ORQ-41 agora titulado 'Decouple Kanban metadata from paid task execution', todo/high/unassigned, fila zero. Proximo passo depende de ruling: qual das duas opcoes do aceite 1 (modo documentacao fail-closed ou contrato preview+suppress comprovado) sera implementada, e por quem",
+      "file": ".deploy-control/p0/evidence/gtl-k07-orq40-assignment-and-evidence-links.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

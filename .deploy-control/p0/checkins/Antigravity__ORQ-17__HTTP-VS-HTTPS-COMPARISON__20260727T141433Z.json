@@ -1,0 +1,21 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T141433Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "issue_id": "ORQ-17",
+  "lane": "GTL-ORQ17",
+  "task_ids": ["ORQ-17-HTTP-VS-HTTPS-COMPARISON"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq17-http-vs-https-comparison.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T141433Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-http-vs-https-comparison.md"
+  ],
+  "summary": "Analise comparativa tecnica entre HTTP privado sobre Tailscale e HTTPS Tailscale Serve entregue sob a governanca ORQ-17. Recomendacao definitiva: Opcao B (HTTPS Tailscale Serve na porta 443). HTTP privado e inviavel devido a rejeicao de cookies Secure pelo browser e exigencia de HTTPS no Google OAuth 2.0. Custo de infraestrutura e zero em ambas.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

@@ -1,0 +1,99 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:33:00Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "SECURITY-WAVE-A-CONTAINMENT"
+  ],
+  "status": "DONE",
+  "mode": "EXECUCAO_AUTORIZADA_NAO_DISRUPTIVA",
+  "authorization": "OWNER APPROVED SECURITY REMEDIATION — WAVE A CONTAINMENT (chmod 0600 + quarentena 0700 + move sem consumidor; sem delete, sem rotacao, sem restart)",
+  "files_changed": [
+    "modo alterado (chmod 0600) em 16 arquivos no LOCAL, 4 mantidos in place no ORQ2, 2 no ORQ1 — nenhum arquivo de repo alterado"
+  ],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-security-remediation-wave-a-execution.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__SECURITY-WAVE-A-CONTAINMENT__20260727T123300Z.json",
+    "/home/ec2-user/.private-tmp (0700) e /home/ec2-user/.private-tmp/quarantine-20260727T123153Z (0700)"
+  ],
+  "files_deleted": [],
+  "files_moved": [
+    "/tmp/sec.txt, o30.txt, ph.txt, dec.txt, f.txt, sdk.txt, proj.txt, e2eq.txt, f2-fulltest.log -> /home/ec2-user/.private-tmp/quarantine-20260727T123153Z/ (mv -n, todos 0600 antes do move)"
+  ],
+  "tests": [
+    {
+      "command": "lsof <12 alvos ORQ2>; varredura /proc/*/fd; stat de dono",
+      "exit_code": 1,
+      "assertions_or_tests": 12,
+      "result": "PASS — LSOF_EXIT=1 (nenhum descritor aberto), open_fds=0 nos 12, todos ec2-user:ec2-user igual ao executor; os 4 hits de cmdline eram o proprio shell (pid=self)"
+    },
+    {
+      "command": "install -d -m 700 /home/ec2-user/.private-tmp e quarantine-20260727T123153Z; stat",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "PASS — 700 ec2-user:ec2-user nos dois; NAO criada sob $HOME porque $HOME e o slot-139 e existe reap-cred-slots.service que reapa slots >24h"
+    },
+    {
+      "command": "chmod 0600 + stat antes/depois (ORQ2)",
+      "exit_code": 0,
+      "assertions_or_tests": 13,
+      "result": "PASS — 12 alvos 664->600, mais /tmp/end.txt 664->600 (artefato novo de 11:28:33Z detectado durante a execucao)"
+    },
+    {
+      "command": "mv -n para quarentena + ls -l destino",
+      "exit_code": 0,
+      "assertions_or_tests": 9,
+      "result": "PASS — 9 arquivos movidos, todos -rw------- no destino, tamanhos e mtimes preservados, zero overwrite"
+    },
+    {
+      "command": "ORQ1: lsof + chmod + stat de root-owned",
+      "exit_code": 0,
+      "assertions_or_tests": 5,
+      "result": "PASS — mh e mcp_h 664->600; /tmp/test_login.html 644 root:root NAO TOCADO (gate de parada); daemon.environ.*.bak seguem 600 inalterados"
+    },
+    {
+      "command": "LOCAL: lsof + chmod nos 16",
+      "exit_code": 0,
+      "assertions_or_tests": 16,
+      "result": "PASS — 16 arquivos 644->600 incluindo handshake-token.txt e rev-token.txt; nenhum move neste host (maquina de outro operador)"
+    },
+    {
+      "command": "pos-verificacao: find -perm /077 | xargs grep -l <NOMES DE CHAVE>",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "ORQ2 residual = 1 (unleash-repo-schema json, BAIXA/cache, fora do escopo); ORQ1 residual = 0; totais sem nome de chave: 209 ORQ2 e 193 LOCAL"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-security-remediation-wave-a-execution.md (manifest origem->destino, modos antes/depois, gates de parada e plano Wave B por segredo)",
+    "gtl-umask-security-peer-review.md:8 PASS com sequencia segura recomendada (Camada A, contencao, rotacao, Camada B)",
+    "prova de recorrencia: /tmp/end.txt nasceu 664 em 2026-07-27T11:28:33Z, depois do inventario de 11:02 e antes desta contencao, confirmando que sem umask 077 (/etc/bashrc:75) cada novo artefato renasce mundo-legivel"
+  ],
+  "summary": "Wave A executada nos tres hosts, somente contencao nao disruptiva. Pre-gates read-only aprovados: dono igual ao executor em todos os alvos tocados, zero consumidor ativo (lsof exit 1 e open_fds=0), e os 4 supostos consumidores por cmdline eram o proprio shell. Criei quarentena durável 0700 em /home/ec2-user/.private-tmp/quarantine-20260727T123153Z e registro a decisao tecnica de NAO usa-la sob $HOME, porque $HOME do pane e o slot-139 e existe reap-cred-slots.service que reapa slots com mais de 24h. ORQ2: 12 alvos 664->600 mais /tmp/end.txt (artefato novo de 11:28:33Z) tambem contido; 9 arquivos de diagnostico sem consumidor movidos para a quarentena com mv -n, todos ja em 0600 antes do move, tamanhos e mtimes preservados; arch.txt, backend-recover.sh e mcp.json.bak ficaram in place em 0600 porque tem rotacao pendente e papel operacional/rollback. ORQ1: mh e mcp_h 664->600; /tmp/test_login.html (root) NAO tocado conforme gate de parada; backups daemon.environ.*.bak seguem 0600. LOCAL: 16 arquivos 644->600, incluindo os dois tokens crus handshake-token.txt e rev-token.txt, sem nenhum move por ser host de outro operador. Pos-verificacao: zero residual com nome de chave no ORQ1 e apenas 1 no ORQ2 (catalogo de language server, classe BAIXA cujo tratamento correto e TMPDIR privado, nao chmod item a item). Nada deletado, nada rotacionado, nenhum serviço reiniciado, nenhum valor de segredo lido. Plano da Wave B entregue com 7 itens por segredo (OPENAI_API_KEY, JWT_SECRET, POSTGRES_PASSWORD/DATABASE_URL, dois tokens crus, MULTICA_TOKEN e Authorization de MCP), cada um com dependencias, gate de fila zero via agent_task_queue nas quatro situacoes ativas, procedimento fechado, rollback e uso obrigatorio de asm-exec com referencia dinamica; ordem recomendada B4/B5 -> B1 -> B2 -> B3, e cada item permanece STOP-AND-WAIT.",
+  "non_claims": [
+    "nada deletado, nada rotacionado, nenhum serviço/container reiniciado, .env e units nao tocados, umask de sistema nao alterado",
+    "nenhum valor de segredo lido ou impresso: apenas stat, lsof, grep -l, grep -c e grep -o restrito a NOMES de chave",
+    "arquivo de outro dono nao tocado (/tmp/test_login.html root) e backups 0600 de rollback preservados",
+    "os 209 (ORQ2) e 193 (LOCAL) arquivos >0600 sem nome de chave nao foram contidos: fora do escopo 'artefatos sensiveis confirmados'",
+    "nao afirmo que os valores contidos sejam segredos vivos: classificacao por marcador de nome e contagem de atribuicao",
+    "nenhum item da Wave B executado"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) e owner",
+      "reason": "Wave B por segredo precisa de autorizacao por janela (credencial + recreate). Prioridade: B4/B5 tokens crus, B1 OPENAI_API_KEY, B2 JWT_SECRET com fila zero, B3 POSTGRES_PASSWORD/DATABASE_URL com fila zero e task sintetica por runtime. Estrutural em paralelo: umask 077 por drop-in de unit e TMPDIR/GOCACHE privados, sem os quais novos artefatos renascem 664 (prova: /tmp/end.txt)",
+      "file": ".deploy-control/p0/evidence/gtl-security-remediation-wave-a-execution.md"
+    }
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

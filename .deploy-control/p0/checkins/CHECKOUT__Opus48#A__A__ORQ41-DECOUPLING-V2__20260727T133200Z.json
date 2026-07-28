@@ -1,0 +1,46 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T13:32:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "issue_id": "ORQ-41",
+  "issue_uuid": "666f1ead-7fe9-4051-bab9-5d0a936c4701",
+  "issue_number": 41,
+  "task_ids": ["ORQ41-DECOUPLING-DESIGN-V2"],
+  "status": "DONE_DESIGN_ONLY_AWAITING_SAME_REVIEWER_REREVIEW",
+  "deliverable": ".deploy-control/p0/evidence/orq41-execution-trigger-decoupling-design.md (secao V2 apendada, supersede secoes 1, 4 e 8 da V1)",
+  "closes": "BLOCK do GTL-R41",
+  "inventory_corrected": "21 itens, nao 17. A V1 tinha QUATRO lacunas: issue_child_done.go:302 EnqueueTaskForMention e :357 EnqueueTaskForSquadLeader (conclusao de filha gera trabalho pago no PAI), service/issue.go:466 EnqueueTaskForSquadLeader (criacao com assignee squad) e squad.go:1007, que e o call site real do helper enqueueSquadLeaderTask que issue.go 2541/2562/3038/3053 apenas invocam. Tambem corrigi comment.go:1147, que a V1 citava como 1146.",
+  "indirect_paths": "Quatro entradas indiretas de child-done nomeadas no inventario: issue.go:2579 (update single), issue.go:3065 (batch), github.go:1331 (webhook, com actorType='system', ou seja SEM ator humano para confirmar custo) e o fan-out interno dispatchParentAssigneeTrigger em issue_child_done.go:259 chamando :266 e :268. Guarda existente e apenas HasPendingTaskForIssueAndAgent (:294 e :349), o mesmo predicado fraco do indice de 037: cobre pendente, nao running.",
+  "child_done_contract": "Conclusao de filha NAO gera trabalho pago por default. Exige NEXT_CANONICAL_d issue_workflow_authorization com on_child_done e cost_ack, ambos fail-closed por default, mais Idempotency-Key derivada deterministicamente de (parent_id, child_id, child_done_at) para que reentrega de webhook ou duplo PATCH nao gere duas tasks. trigger_kind passa a explicit_run|onboarding|autopilot|retry|child_done.",
+  "mention_reversal": "RETIRADO da V1: mencao de texto NAO e mais execucao implicita. Motivo: texto livre nao carrega cost_ack, nem Idempotency-Key, nem confirmacao de modelo/conta, e e trivialmente produzido por copiar-colar, template, agente ou reentrega de webhook - tratar texto como autorizacao de gasto e a propria classe de defeito do ORQ-41. C6, C7, C8 e C9 tornam-se metadata-only; quem quiser executar usa /runs ou anexa cost_ack + Idempotency-Key no mesmo request, e o gatilho passa a ser o CAMPO e nunca o texto.",
+  "reassign_reversal": "RETIRADO da V1: reatribuir NAO cancela por default. Cancelar e destrutivo - mata trabalho em andamento e interage com o commit-ledger, que pode ter tool_use ja commitado - logo cancelamento implicito e a face espelhada do enqueue implicito. Exige cancel_active_task=true explicito, RBAC proprio de cancelar distinto de editar e de executar, confirmacao na UI nomeando task e agente, linha de auditoria com decision='cancelled', idempotencia pela mesma chave, e rollback: cancel e reassign na MESMA transacao.",
+  "autopilot_gate": "Autopilot passa a consultar o gate ANTES de C15/C16, com correlacao definida como a task mais recente em estado TERMINAL (completed/failed/cancelled) do par (issue_id, agent_id). Fail-closed em estado ausente para task anterior existente, ambiguo e expirado. Unico caso de permissao por ausencia: nao existir task anterior, que significa primeira execucao. Sem bypass: o teste estrutural passa a exigir chamada ao gate no mesmo bloco de TODO call site fora de /runs. RESSALVA declarada: enquanto o checker duravel nao existir, o autopilot falha fechado apos restart - precisa ser dito ao owner e nao descoberto em producao.",
+  "squad_parallelism_preserved": "O indice ampliado mantem a chave (issue_id, agent_id) e NAO (issue_id), portanto agentes diferentes do mesmo squad seguem paralelos na mesma issue - preservando a intencao de 037_fix_pending_task_unique_index.up.sql, cujo comentario diz que o indice antigo por issue fazia pending tasks de agentes diferentes se bloquearem. A unica mudanca e ampliar o predicado de 2 para 4 estados ativos.",
+  "preserved_from_v1": "POST /api/issues/{id}/runs canonico; Idempotency-Key UUIDv4 obrigatoria; RBAC de executar separado de editar e agora tambem de cancelar; transacao unica request+task+audit; auditoria imutavel por PERMISSAO de role e nao por trigger; account_ref como referencia e nunca credencial; fases de feature flag.",
+  "owner_rulings_needed": [
+    "mencao deixa de executar: confirma a perda do fluxo conversacional por default?",
+    "child-done deixa de encadear: confirma que cadeia serial passa a exigir on_child_done por issue-pai, mudando o comportamento documentado em issue.go:2545-2554?",
+    "reassign deixa de cancelar: confirma que trocar assignee deixa a task viva rodando?",
+    "onboarding continua executando?",
+    "autopilot fail-closed apos restart enquanto o ledger duravel nao existir: aceita?"
+  ],
+  "tests_required_count": 27,
+  "tests_highlights": "9 de metadata zero-custo, incluindo TestCreateWithSquadAssignee_ZeroCost (lacuna C14) e TestMentionAgent_ZeroCost (invertido pela V2.3); 5 regressoes de child-done, incluindo TestChildDone_WebhookRedelivery_Idempotent para a entrada I3; 5 de autopilot no gate, com fail-closed em ausente, ambiguo e expirado; TestExplicitRun_ActiveRunningTask_409, que falha hoje; TestSquadParallelism_DifferentAgents_SameIssue_BothAllowed, que prova que o indice ampliado nao quebrou paralelismo; 4 de cancelamento incluindo rollback do reassign; e TestNoUnauthorizedEnqueueCallSites com lista branca literal.",
+  "pass_gates": "P1 re-review pelo MESMO revisor conferindo os 21 itens; P2 levantar fluxo que enfileira durante running; P3 os cinco rulings; P4 divergencia de titulo do ORQ-41 ainda aberta; P5 dependencia declarada - V2.5 depende do checker duravel, que depende de popular CommitLedgerHMACSecret, hoje NUNCA atribuido, o que faz todo ledger nascer fail-closed e portanto pararia o autopilot: e escolha, nao bug; P6 implementacao por fases com review por fase.",
+  "rollback": "Flag volta ao valor anterior; migrations _a, _c e _d sao aditivas e inertes com flag off; _b (indice) e o unico com rollback nao trivial, recriar o antigo, e vem por ultimo e sozinho.",
+  "files_changed": [],
+  "files_created_or_appended": [
+    ".deploy-control/p0/evidence/orq41-execution-trigger-decoupling-design.md (secao V2)",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48#A__A__ORQ41-DECOUPLING-V2__20260727T133200Z.json"
+  ],
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC (ORQ2)"],
+  "non_claims": [
+    "nenhum codigo, board, API, schema, build, teste, deploy ou credencial tocado; nenhuma implementacao",
+    "nao alterei assignee nem postei comentario (freeze vigente); nao sou registrar, nenhum card criado",
+    "NAO reexecutei ORQ-39, ORQ-40 nem qualquer issue preservada"
+  ],
+  "next": "Re-review pelo mesmo revisor antes de qualquer implementacao.",
+  "blocker": null
+}

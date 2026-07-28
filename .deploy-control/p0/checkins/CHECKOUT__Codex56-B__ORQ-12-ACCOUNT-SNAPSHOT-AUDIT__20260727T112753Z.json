@@ -1,0 +1,25 @@
+{
+  "event": "check-out",
+  "timestamp_utc": "2026-07-27T11:27:53Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "security-qa-read-only",
+  "task_ids": [
+    "ORQ-12-ACCOUNT-SNAPSHOT-AUDIT"
+  ],
+  "status": "DONE_READ_ONLY_DESIGN_READY",
+  "files_changed": [
+    ".deploy-control/p0/evidence/orq-9-issues-exit-criteria.md"
+  ],
+  "files_created": [
+    ".deploy-control/inbox-tm/FROM_Codex56-B__TO_Kiro-PRINCIPAL-TL__20260727T112753Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-12-ACCOUNT-SNAPSHOT-AUDIT__20260727T112753Z.json"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq-9-issues-exit-criteria.md:517"
+  ],
+  "reported_to": [
+    "Kiro-PRINCIPAL-TL@100.117.245.15:wB:p1",
+    "Codex56-TL@ORQ2:w5:pC"
+  ]
+}

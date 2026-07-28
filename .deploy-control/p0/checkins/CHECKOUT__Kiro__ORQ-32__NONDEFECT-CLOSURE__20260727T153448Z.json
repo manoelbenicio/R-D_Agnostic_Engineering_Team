@@ -1,0 +1,94 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:34:48Z",
+  "agent": "Kiro",
+  "task_ids": [
+    "ORQ-32-NONDEFECT-CLOSURE"
+  ],
+  "mode": "ONE_BOUNDED_KANBAN_MUTATION",
+  "issue": {
+    "uuid": "b01925fe-e914-422a-812e-f63cada274dc",
+    "identifier": "ORQ-32",
+    "number": 32
+  },
+  "authorization": "User explicitly authorized one status-only Kanban mutation after exact identity and no-task gates.",
+  "approved_reason_source": {
+    "path": ".deploy-control/p0/evidence/orq32-independent-closure-audit.md",
+    "sha256": "c4172fb1fb0f1067c7256bcf3354a319d80a66d9c696f68e570b9f21132eef09",
+    "verdict": "PASS",
+    "recommended_status": "cancelled",
+    "classification": "non-defect; no handshake/rev secret defined or consumed by the inspected product"
+  },
+  "preflight": {
+    "get_http": 200,
+    "uuid_exact": true,
+    "identifier_exact": true,
+    "number_exact": true,
+    "status": "todo",
+    "assignee_id": null,
+    "cancelled_supported_by_versioned_api_contract": true,
+    "task_total": 0,
+    "task_active": 0
+  },
+  "mutation": {
+    "method": "PUT",
+    "endpoint": "/api/issues/b01925fe-e914-422a-812e-f63cada274dc?workspace_id=<authorized-workspace>",
+    "attempts": 1,
+    "retries": 0,
+    "body": {
+      "status": "cancelled"
+    },
+    "http": 200,
+    "response_identity_exact": true,
+    "response_status": "cancelled",
+    "response_assignee_id": null
+  },
+  "postconditions": {
+    "get_back_http": 200,
+    "uuid": "b01925fe-e914-422a-812e-f63cada274dc",
+    "identifier": "ORQ-32",
+    "number": 32,
+    "status": "cancelled",
+    "assignee_id": null,
+    "task_total": 0,
+    "task_active": 0,
+    "task_runs_api_count": 0,
+    "comments_api_count": 0
+  },
+  "protected_cards": [
+    {
+      "identifier": "ORQ-42",
+      "uuid": "64bfcae0-b867-4812-ad33-ae03ef7f25ae",
+      "number": 42,
+      "status": "todo",
+      "assignee_id": null,
+      "untouched": true
+    },
+    {
+      "identifier": "ORQ-43",
+      "uuid": "d1149dd3-9da8-4678-a4b7-d98f3eddca14",
+      "number": 43,
+      "status": "todo",
+      "assignee_id": null,
+      "untouched": true
+    },
+    {
+      "identifier": "ORQ-44",
+      "uuid": "abd12d6a-16a5-439b-bc52-74ec4bb6b231",
+      "number": 44,
+      "status": "todo",
+      "assignee_id": null,
+      "untouched": true
+    }
+  ],
+  "safety_attestation": [
+    "Exactly one write request was sent to the Kanban API.",
+    "The request contained only the status field; no assignee or comment field was sent.",
+    "No comment API, assignment API, task API, retry, rerun, build, test, deploy or restart was invoked.",
+    "No other issue was mutated and no task execution was created."
+  ],
+  "files_created": [
+    ".deploy-control/p0/checkins/CHECKOUT__Kiro__ORQ-32__NONDEFECT-CLOSURE__20260727T153448Z.json"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

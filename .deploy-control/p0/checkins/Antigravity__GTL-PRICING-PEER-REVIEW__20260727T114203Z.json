@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T114203Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-36",
+  "task_ids": ["GTL-PRICING-PEER-REVIEW"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-versioned-pricing-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T114203Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-versioned-pricing-peer-review.md"
+  ],
+  "summary": "Peer review do documento gtl-versioned-tier-pricing-design.md finalizado. Veredito: PASS (APROVADO). Ancoragem perfeita Go-vs-DB, modelo append-only EffectiveFrom, resolucao provider:model:tier sem fallback silencioso, miss_reason observavel, preservacao de rollups DB, rollback seguro e 13 testes Go definidos.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

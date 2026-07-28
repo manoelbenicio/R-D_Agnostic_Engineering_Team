@@ -1,0 +1,20 @@
+{
+  "schema": "main-brain-p0-control.v1",
+  "event": "CHECK_OUT",
+  "timestamp_utc": "20260727T115456Z",
+  "agent": "Antigravity",
+  "pane_id": "w8:p2",
+  "label": "Opus48#D",
+  "lane": "GTL-58",
+  "task_ids": ["GTL-KANBAN-V5-PEER-REVIEW"],
+  "status": "DONE",
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-kanban-v5-peer-review.md",
+    ".deploy-control/inbox-tm/FROM_Antigravity-w8p2__TO_GeneralTL-w5pC__20260727T115456Z.msg"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-v5-peer-review.md"
+  ],
+  "summary": "Peer review adversarial do Kanban Monitor V5 finalizado. Veredito: PASS (APROVADO). Confirmados issue_dependency(depends_on_issue_id, type), status 'done' em issue, idx_issue_status, agregação parent+deps sem duplicatas, lock 4247 em conexão dedicada, acoplamento no sweeper e 7 testes Go.",
+  "reported_to": ["w5:pC", "100.117.245.15 wB:p1"]
+}

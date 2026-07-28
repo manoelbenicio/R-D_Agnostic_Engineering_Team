@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T12:06:27Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-ORQ17-AUTH-V2-PEER-REVIEW",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-v2-peer-review.md"
+  ],
+  "summary": "Peer Review Adversarial da Arquitetura V2 de Auth e Acesso ORQ-17 (GTL-70) concluído com veredito PASS em modo READ-ONLY. Confirmada a correção de todas as falhas do GTL-59: topologia factual ORQ1 vs ORQ2 validada, colisão de portas eliminada (Next.js em 127.0.0.1:3000 e Proxy em 13100), exigido FQDN MagicDNS (*.ts.net), banido pg_hba trust em favor de scram-sha-256, alinhado o contrato de auth com POST /auth/login e JWT Bearer token real e formulado o pacote de implantação em 4 etapas."
+}

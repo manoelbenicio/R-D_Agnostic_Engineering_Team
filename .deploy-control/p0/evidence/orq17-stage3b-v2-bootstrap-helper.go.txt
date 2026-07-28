@@ -1,0 +1,735 @@
+package main
+
+import (
+	"bufio"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/mail"
+	"os"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/multica-ai/multica/server/internal/handler"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
+)
+
+const (
+	expectedDBHost     = "postgres"
+	expectedDBPort     = uint16(5432)
+	expectedDBName     = "multica_transition"
+	expectedDBUser     = "multica_transition"
+	expectedOwnerEmail = "dataops.cloud.mbf@gmail.com"
+)
+
+type opError string
+
+func (e opError) Error() string { return string(e) }
+
+type rower interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+type fkSpec struct {
+	schema   string
+	table    string
+	column   string
+	onDelete string
+}
+
+var expectedUserFKs = []fkSpec{
+	{"public", "agent", "archived_by", "NO ACTION"},
+	{"public", "agent", "owner_id", "NO ACTION"},
+	{"public", "agent_runtime", "owner_id", "NO ACTION"},
+	{"public", "chat_session", "creator_id", "CASCADE"},
+	{"public", "feedback", "user_id", "CASCADE"},
+	{"public", "github_installation", "connected_by_id", "SET NULL"},
+	{"public", "lark_installation", "installer_user_id", "RESTRICT"},
+	{"public", "member", "user_id", "CASCADE"},
+	{"public", "notification_preference", "user_id", "CASCADE"},
+	{"public", "personal_access_token", "user_id", "CASCADE"},
+	{"public", "pinned_item", "user_id", "CASCADE"},
+	{"public", "skill", "created_by", "NO ACTION"},
+	{"public", "task_token", "user_id", "CASCADE"},
+	{"public", "user_password_credential", "user_id", "CASCADE"},
+	{"public", "workspace_invitation", "invitee_user_id", "NO ACTION"},
+	{"public", "workspace_invitation", "inviter_id", "NO ACTION"},
+}
+
+func readNUL(r *bufio.Reader, limit int, code opError) ([]byte, error) {
+	out := make([]byte, 0, limit)
+	for i := 0; i <= limit; i++ {
+		b, err := r.ReadByte()
+		if err != nil {
+			clear(out)
+			return nil, code
+		}
+		if b == 0 {
+			return out, nil
+		}
+		if i == limit {
+			clear(out)
+			return nil, code
+		}
+		out = append(out, b)
+	}
+	clear(out)
+	return nil, code
+}
+
+func readCredentials(r io.Reader) (emailBytes, passwordBytes []byte, err error) {
+	br := bufio.NewReader(io.LimitReader(r, 1024))
+	emailBytes, err = readNUL(br, 320, "E_IDENTITY_INPUT")
+	if err != nil {
+		return nil, nil, err
+	}
+	passwordBytes, err = readNUL(br, handler.PasswordMaxBytes, "E_PASSWORD_INPUT")
+	if err != nil {
+		clear(emailBytes)
+		return nil, nil, err
+	}
+	if _, trailingErr := br.ReadByte(); !errors.Is(trailingErr, io.EOF) {
+		clear(emailBytes)
+		clear(passwordBytes)
+		return nil, nil, opError("E_TRAILING_INPUT")
+	}
+	return emailBytes, passwordBytes, nil
+}
+
+func normalizeIdentity(raw []byte) (string, error) {
+	email := strings.ToLower(strings.TrimSpace(string(raw)))
+	parsed, err := mail.ParseAddress(email)
+	if err != nil || parsed.Address != email || strings.ContainsAny(email, "\r\n\x00") {
+		return "", opError("E_IDENTITY_FORMAT")
+	}
+	if email != expectedOwnerEmail {
+		return "", opError("E_IDENTITY_BINDING")
+	}
+	return email, nil
+}
+
+func checkDBTuple(cfg *pgxpool.Config) error {
+	cc := cfg.ConnConfig
+	if cc.Host != expectedDBHost || cc.Port != expectedDBPort ||
+		cc.Database != expectedDBName || cc.User != expectedDBUser || cc.TLSConfig != nil {
+		return opError("E_DATABASE_TUPLE")
+	}
+	return nil
+}
+
+func globalCounts(ctx context.Context, q rower) (users, credentials, members int64, err error) {
+	err = q.QueryRow(ctx, `
+		SELECT
+		  (SELECT count(*) FROM "user"),
+		  (SELECT count(*) FROM user_password_credential),
+		  (SELECT count(*) FROM member)
+	`).Scan(&users, &credentials, &members)
+	return
+}
+
+func activeQueueCount(ctx context.Context, q rower) (int64, error) {
+	var count int64
+	err := q.QueryRow(ctx, `
+		SELECT count(*) FROM agent_task_queue
+		WHERE status IN ('queued','dispatched','running','waiting_local_directory')
+	`).Scan(&count)
+	return count, err
+}
+
+func beginGuard(ctx context.Context, pool *pgxpool.Pool) (pgx.Tx, error) {
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	if err != nil {
+		return nil, opError("E_GUARD_BEGIN")
+	}
+	if _, err = tx.Exec(ctx, `SET LOCAL lock_timeout = '5s'`); err != nil {
+		return nil, rollbackWithCode(ctx, tx, opError("E_GUARD_TIMEOUT"))
+	}
+	// The guard freezes queue admission only. member is locked by the mutation
+	// transaction itself, avoiding any cross-connection self-deadlock.
+	if _, err = tx.Exec(ctx, `LOCK TABLE agent_task_queue IN SHARE MODE`); err != nil {
+		return nil, rollbackWithCode(ctx, tx, opError("E_ADMISSION_FREEZE"))
+	}
+	first, err := activeQueueCount(ctx, tx)
+	if err != nil || first != 0 {
+		return nil, rollbackWithCode(ctx, tx, opError("E_QUEUE_T1"))
+	}
+	var members int64
+	if err = tx.QueryRow(ctx, `SELECT count(*) FROM member`).Scan(&members); err != nil || members != 0 {
+		return nil, rollbackWithCode(ctx, tx, opError("E_MEMBER_T1"))
+	}
+	timer := time.NewTimer(3 * time.Second)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return nil, rollbackWithCode(ctx, tx, opError("E_QUEUE_WAIT"))
+	case <-timer.C:
+	}
+	second, err := activeQueueCount(ctx, tx)
+	if err != nil || second != 0 {
+		return nil, rollbackWithCode(ctx, tx, opError("E_QUEUE_T2"))
+	}
+	return tx, nil
+}
+
+func beginMutation(ctx context.Context, pool *pgxpool.Pool, rollback bool) (pgx.Tx, error) {
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+	if err != nil {
+		return nil, opError("E_TX_BEGIN")
+	}
+	if _, err = tx.Exec(ctx, `SET LOCAL lock_timeout = '5s'; SET LOCAL statement_timeout = '40s'`); err != nil {
+		return nil, rollbackWithCode(ctx, tx, opError("E_TX_TIMEOUT"))
+	}
+	lockSQL := `LOCK TABLE "user", user_password_credential, member IN SHARE ROW EXCLUSIVE MODE`
+	if rollback {
+		lockSQL = `LOCK TABLE "user", user_password_credential, agent, agent_runtime,
+			chat_session, feedback, github_installation, lark_installation,
+			member, notification_preference, personal_access_token, pinned_item, skill,
+			task_token, workspace_invitation IN SHARE ROW EXCLUSIVE MODE`
+	}
+	if _, err = tx.Exec(ctx, lockSQL); err != nil {
+		return nil, rollbackWithCode(ctx, tx, opError("E_TX_LOCK"))
+	}
+	return tx, nil
+}
+
+func fkKey(f fkSpec) string {
+	return f.schema + "." + f.table + "." + f.column + ":" + f.onDelete
+}
+
+func compareFKs(actual []fkSpec) error {
+	expected := make([]string, 0, len(expectedUserFKs))
+	got := make([]string, 0, len(actual))
+	for _, f := range expectedUserFKs {
+		expected = append(expected, fkKey(f))
+	}
+	for _, f := range actual {
+		got = append(got, fkKey(f))
+	}
+	sort.Strings(expected)
+	sort.Strings(got)
+	if len(expected) != len(got) {
+		return opError("E_FK_CATALOG")
+	}
+	for i := range expected {
+		if expected[i] != got[i] {
+			return opError("E_FK_CATALOG")
+		}
+	}
+	return nil
+}
+
+func loadUserFKs(ctx context.Context, tx pgx.Tx) ([]fkSpec, error) {
+	rows, err := tx.Query(ctx, `
+		SELECT ns.nspname, rel.relname, att.attname,
+		  CASE con.confdeltype
+		    WHEN 'a' THEN 'NO ACTION'
+		    WHEN 'r' THEN 'RESTRICT'
+		    WHEN 'c' THEN 'CASCADE'
+		    WHEN 'n' THEN 'SET NULL'
+		    WHEN 'd' THEN 'SET DEFAULT'
+		    ELSE 'UNKNOWN'
+		  END
+		FROM pg_constraint con
+		JOIN pg_class target ON target.oid = con.confrelid
+		JOIN pg_namespace target_ns ON target_ns.oid = target.relnamespace
+		JOIN pg_class rel ON rel.oid = con.conrelid
+		JOIN pg_namespace ns ON ns.oid = rel.relnamespace
+		JOIN LATERAL unnest(con.conkey) WITH ORDINALITY ck(attnum, ord) ON true
+		JOIN LATERAL unnest(con.confkey) WITH ORDINALITY fk(attnum, ord)
+		  ON fk.ord = ck.ord
+		JOIN pg_attribute att ON att.attrelid = rel.oid AND att.attnum = ck.attnum
+		JOIN pg_attribute target_att
+		  ON target_att.attrelid = target.oid AND target_att.attnum = fk.attnum
+		WHERE con.contype = 'f'
+		  AND target_ns.nspname = 'public' AND target.relname = 'user'
+		  AND target_att.attname = 'id'
+		  AND array_length(con.conkey, 1) = 1
+		ORDER BY ns.nspname, rel.relname, att.attname
+	`)
+	if err != nil {
+		return nil, opError("E_FK_QUERY")
+	}
+	defer rows.Close()
+	var out []fkSpec
+	for rows.Next() {
+		var f fkSpec
+		if err := rows.Scan(&f.schema, &f.table, &f.column, &f.onDelete); err != nil {
+			return nil, opError("E_FK_SCAN")
+		}
+		out = append(out, f)
+	}
+	if rows.Err() != nil {
+		return nil, opError("E_FK_SCAN")
+	}
+	// Catch a future multi-column FK that the single-column query intentionally
+	// cannot represent in the reviewed deletion allowlist.
+	var all, single int64
+	if err := tx.QueryRow(ctx, `
+		SELECT count(*), count(*) FILTER (WHERE array_length(con.conkey,1)=1)
+		FROM pg_constraint con
+		JOIN pg_class target ON target.oid=con.confrelid
+		JOIN pg_namespace ns ON ns.oid=target.relnamespace
+		WHERE con.contype='f' AND ns.nspname='public' AND target.relname='user'
+	`).Scan(&all, &single); err != nil || all != single {
+		return nil, opError("E_FK_SHAPE")
+	}
+	return out, nil
+}
+
+func assertFKCatalog(ctx context.Context, tx pgx.Tx) error {
+	actual, err := loadUserFKs(ctx, tx)
+	if err != nil {
+		return err
+	}
+	return compareFKs(actual)
+}
+
+func targetReferenceCounts(ctx context.Context, tx pgx.Tx, id pgtype.UUID) error {
+	for _, f := range expectedUserFKs {
+		if f.table == "user_password_credential" {
+			continue
+		}
+		sql := "SELECT count(*) FROM " +
+			pgx.Identifier{f.schema, f.table}.Sanitize() +
+			" WHERE " + pgx.Identifier{f.column}.Sanitize() + " = $1"
+		var n int64
+		if err := tx.QueryRow(ctx, sql, id).Scan(&n); err != nil || n != 0 {
+			return opError("E_ROLLBACK_REFERENCED")
+		}
+	}
+	return nil
+}
+
+func explicitRollback(ctx context.Context, tx pgx.Tx) error {
+	if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+		return opError("E_EXPLICIT_ROLLBACK")
+	}
+	return nil
+}
+
+func rollbackWithCode(ctx context.Context, tx pgx.Tx, primary error) error {
+	if err := explicitRollback(ctx, tx); err != nil {
+		return err
+	}
+	return primary
+}
+
+func verifyGlobal(ctx context.Context, q rower, users, credentials, members int64) error {
+	u, c, m, err := globalCounts(ctx, q)
+	if err != nil || u != users || c != credentials || m != members {
+		return opError("E_GLOBAL_COUNTS")
+	}
+	return nil
+}
+
+func compensate(ctx context.Context, pool *pgxpool.Pool, id pgtype.UUID) (retErr error) {
+	tx, err := beginMutation(ctx, pool, true)
+	if err != nil {
+		return opError("E_COMPENSATE_BEGIN")
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			retErr = rollbackWithCode(ctx, tx, retErr)
+		}
+	}()
+	if err := assertFKCatalog(ctx, tx); err != nil {
+		return opError("E_COMPENSATE_FK")
+	}
+	if err := targetReferenceCounts(ctx, tx, id); err != nil {
+		return opError("E_COMPENSATE_REFERENCED")
+	}
+	tag, err := tx.Exec(ctx, `DELETE FROM user_password_credential WHERE user_id=$1`, id)
+	if err != nil || tag.RowsAffected() != 1 {
+		return opError("E_COMPENSATE_CREDENTIAL")
+	}
+	tag, err = tx.Exec(ctx, `DELETE FROM "user" WHERE id=$1`, id)
+	if err != nil || tag.RowsAffected() != 1 {
+		return opError("E_COMPENSATE_USER")
+	}
+	if err := verifyGlobal(ctx, tx, 0, 0, 0); err != nil {
+		return opError("E_COMPENSATE_POST")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return opError("E_COMPENSATE_COMMIT")
+	}
+	committed = true
+	return nil
+}
+
+func provision(ctx context.Context, pool *pgxpool.Pool, guard pgx.Tx, email, password string) (userID pgtype.UUID, retErr error) {
+	tx, err := beginMutation(ctx, pool, false)
+	if err != nil {
+		return pgtype.UUID{}, err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			retErr = rollbackWithCode(ctx, tx, retErr)
+		}
+	}()
+	if err := assertFKCatalog(ctx, tx); err != nil {
+		return pgtype.UUID{}, err
+	}
+	if err := verifyGlobal(ctx, tx, 0, 0, 0); err != nil {
+		return pgtype.UUID{}, opError("E_NOT_EMPTY")
+	}
+	name := strings.SplitN(email, "@", 2)[0]
+	user, err := db.New(tx).CreateUser(ctx, db.CreateUserParams{Name: name, Email: email})
+	if err != nil {
+		return pgtype.UUID{}, opError("E_CREATE_USER")
+	}
+	store := handler.NewPostgresPasswordCredentialStore(tx)
+	if err := store.ProvisionPassword(ctx, user.ID, password); err != nil {
+		return pgtype.UUID{}, opError("E_PROVISION_PASSWORD")
+	}
+	identity, err := handler.NewPasswordAuthProvider(store).Login(ctx, email, password)
+	if err != nil || identity.UserID != user.ID {
+		return pgtype.UUID{}, opError("E_IN_TX_VERIFY")
+	}
+	if err := verifyGlobal(ctx, tx, 1, 1, 0); err != nil {
+		return pgtype.UUID{}, opError("E_IN_TX_COUNTS")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return pgtype.UUID{}, opError("E_COMMIT")
+	}
+	committed = true
+
+	// The guard uses READ COMMITTED, so this statement observes the committed row
+	// while its SHARE locks still freeze queue admission and member creation.
+	if err := verifyGlobal(ctx, guard, 1, 1, 0); err != nil {
+		if compensate(ctx, pool, user.ID) == nil {
+			return pgtype.UUID{}, opError("E_POST_VERIFY_ROLLED_BACK")
+		}
+		return user.ID, opError("E_POST_VERIFY_ROLLBACK_FAILED")
+	}
+	return user.ID, nil
+}
+
+func rollbackProvision(ctx context.Context, pool *pgxpool.Pool, email, password string) (retErr error) {
+	tx, err := beginMutation(ctx, pool, true)
+	if err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			retErr = rollbackWithCode(ctx, tx, retErr)
+		}
+	}()
+	if err := assertFKCatalog(ctx, tx); err != nil {
+		return err
+	}
+	if err := verifyGlobal(ctx, tx, 1, 1, 0); err != nil {
+		return opError("E_ROLLBACK_COUNTS")
+	}
+	user, err := db.New(tx).GetUserByEmail(ctx, email)
+	if err != nil {
+		return opError("E_ROLLBACK_IDENTITY")
+	}
+	store := handler.NewPostgresPasswordCredentialStore(tx)
+	identity, err := handler.NewPasswordAuthProvider(store).Login(ctx, email, password)
+	if err != nil || identity.UserID != user.ID {
+		return opError("E_ROLLBACK_VERIFY")
+	}
+	if err := targetReferenceCounts(ctx, tx, user.ID); err != nil {
+		return err
+	}
+	tag, err := tx.Exec(ctx, `DELETE FROM user_password_credential WHERE user_id=$1`, user.ID)
+	if err != nil || tag.RowsAffected() != 1 {
+		return opError("E_ROLLBACK_CREDENTIAL")
+	}
+	tag, err = tx.Exec(ctx, `DELETE FROM "user" WHERE id=$1`, user.ID)
+	if err != nil || tag.RowsAffected() != 1 {
+		return opError("E_ROLLBACK_USER")
+	}
+	if err := verifyGlobal(ctx, tx, 0, 0, 0); err != nil {
+		return opError("E_ROLLBACK_POSTCOUNT")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return opError("E_ROLLBACK_COMMIT")
+	}
+	committed = true
+	return nil
+}
+
+func rollbackBreakglass(ctx context.Context, pool *pgxpool.Pool) (retErr error) {
+	tx, err := beginMutation(ctx, pool, true)
+	if err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			retErr = rollbackWithCode(ctx, tx, retErr)
+		}
+	}()
+	if err := assertFKCatalog(ctx, tx); err != nil {
+		return err
+	}
+	if err := verifyGlobal(ctx, tx, 1, 1, 0); err != nil {
+		return opError("E_BREAKGLASS_COUNTS")
+	}
+	var userID pgtype.UUID
+	var email string
+	if err := tx.QueryRow(ctx, `SELECT id, email FROM "user"`).Scan(&userID, &email); err != nil {
+		return opError("E_BREAKGLASS_IDENTITY")
+	}
+	if strings.ToLower(strings.TrimSpace(email)) != expectedOwnerEmail {
+		return opError("E_BREAKGLASS_IDENTITY")
+	}
+	if err := targetReferenceCounts(ctx, tx, userID); err != nil {
+		return err
+	}
+	tag, err := tx.Exec(ctx, `DELETE FROM user_password_credential WHERE user_id=$1`, userID)
+	if err != nil || tag.RowsAffected() != 1 {
+		return opError("E_BREAKGLASS_CREDENTIAL")
+	}
+	tag, err = tx.Exec(ctx, `DELETE FROM "user" WHERE id=$1`, userID)
+	if err != nil || tag.RowsAffected() != 1 {
+		return opError("E_BREAKGLASS_USER")
+	}
+	if err := verifyGlobal(ctx, tx, 0, 0, 0); err != nil {
+		return opError("E_BREAKGLASS_POSTCOUNT")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return opError("E_BREAKGLASS_COMMIT")
+	}
+	committed = true
+	return nil
+}
+
+func compensateWithFreshGuard(ctx context.Context, pool *pgxpool.Pool, id pgtype.UUID) (retErr error) {
+	guard, err := beginGuard(ctx, pool)
+	if err != nil {
+		return opError("E_FRESH_GUARD")
+	}
+	closed := false
+	defer func() {
+		if !closed {
+			retErr = rollbackWithCode(ctx, guard, retErr)
+		}
+	}()
+	if err := compensate(ctx, pool, id); err != nil {
+		return err
+	}
+	if err := verifyGlobal(ctx, guard, 0, 0, 0); err != nil {
+		return opError("E_FRESH_GUARD_VERIFY")
+	}
+	if err := guard.Commit(ctx); err != nil {
+		closed = true
+		return opError("E_FRESH_GUARD_COMMIT")
+	}
+	closed = true
+	return nil
+}
+
+func writeHTTPBody(stdin io.Reader, stdout io.Writer) error {
+	emailBytes, passwordBytes, err := readCredentials(stdin)
+	if err != nil {
+		return err
+	}
+	defer clear(emailBytes)
+	defer clear(passwordBytes)
+	email, err := normalizeIdentity(emailBytes)
+	if err != nil {
+		return err
+	}
+	password := string(passwordBytes)
+	defer func() {
+		email = ""
+		password = ""
+	}()
+	if err := handler.ValidatePassword(password); err != nil {
+		return opError("E_PASSWORD_POLICY")
+	}
+	// This JSON is intentionally emitted only into the runner's pipe to curl
+	// stdin. It must never be redirected to evidence or diagnostic output.
+	if err := json.NewEncoder(stdout).Encode(map[string]string{
+		"email": email, "password": password,
+	}); err != nil {
+		return opError("E_HTTP_BODY")
+	}
+	return nil
+}
+
+func writeState(ctx context.Context, stdout io.Writer) error {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		return opError("E_DATABASE_HANDLE")
+	}
+	cfg, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		return opError("E_DATABASE_CONFIG")
+	}
+	if err := checkDBTuple(cfg); err != nil {
+		return err
+	}
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		return opError("E_DATABASE_CONNECT")
+	}
+	defer pool.Close()
+	var users, credentials, members int64
+	users, credentials, members, err = globalCounts(ctx, pool)
+	if err != nil {
+		return opError("E_STATE_COUNTS")
+	}
+	fmt.Fprintf(stdout, "STATE USERS=%d CREDENTIALS=%d MEMBERS=%d\n", users, credentials, members)
+	return nil
+}
+
+func execute(ctx context.Context, mode string, stdin io.Reader) (retErr error) {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		return opError("E_DATABASE_HANDLE")
+	}
+	cfg, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		return opError("E_DATABASE_CONFIG")
+	}
+	if err := checkDBTuple(cfg); err != nil {
+		return err
+	}
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		return opError("E_DATABASE_CONNECT")
+	}
+	defer pool.Close()
+	if err := pool.Ping(ctx); err != nil {
+		return opError("E_DATABASE_PING")
+	}
+
+	guard, err := beginGuard(ctx, pool)
+	if err != nil {
+		return err
+	}
+	guardClosed := false
+	defer func() {
+		if !guardClosed {
+			retErr = rollbackWithCode(ctx, guard, retErr)
+		}
+	}()
+
+	var committedID pgtype.UUID
+	if mode == "rollback-breakglass" {
+		err = rollbackBreakglass(ctx, pool)
+	} else {
+		emailBytes, passwordBytes, inputErr := readCredentials(stdin)
+		if inputErr != nil {
+			return inputErr
+		}
+		defer clear(emailBytes)
+		defer clear(passwordBytes)
+		email, inputErr := normalizeIdentity(emailBytes)
+		if inputErr != nil {
+			return inputErr
+		}
+		password := string(passwordBytes)
+		defer func() {
+			email = ""
+			password = ""
+		}()
+		if inputErr := handler.ValidatePassword(password); inputErr != nil {
+			return opError("E_PASSWORD_POLICY")
+		}
+		if mode == "provision" {
+			committedID, err = provision(ctx, pool, guard, email, password)
+		} else {
+			err = rollbackProvision(ctx, pool, email, password)
+		}
+	}
+	if err == nil && mode != "provision" {
+		err = verifyGlobal(ctx, guard, 0, 0, 0)
+	}
+	if err != nil {
+		return err
+	}
+	if err := guard.Commit(ctx); err != nil {
+		// pgx closes a transaction on Commit failure. Mark the old guard closed
+		// before acquiring a fresh freeze for safe compensation.
+		guardClosed = true
+		if cleanupErr := explicitRollback(ctx, guard); cleanupErr != nil {
+			if mode == "provision" {
+				return opError("E_PROVISION_COMMITTED_GUARD_FAILED_STATE_UNKNOWN")
+			}
+			return opError("E_ROLLBACK_COMMITTED_GUARD_FAILED")
+		}
+		if mode == "provision" {
+			if compensateWithFreshGuard(ctx, pool, committedID) == nil {
+				return opError("E_PROVISION_COMMITTED_GUARD_FAILED_COMPENSATED")
+			}
+			return opError("E_PROVISION_COMMITTED_GUARD_FAILED_STATE_UNKNOWN")
+		}
+		return opError("E_ROLLBACK_COMMITTED_GUARD_FAILED")
+	}
+	guardClosed = true
+	return nil
+}
+
+func realMain(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	if len(args) != 2 {
+		fmt.Fprintln(stderr, "E_MODE")
+		return 1
+	}
+	if args[1] == "http-body" {
+		if err := writeHTTPBody(stdin, stdout); err != nil {
+			var fixed opError
+			if errors.As(err, &fixed) {
+				fmt.Fprintln(stderr, fixed.Error())
+			} else {
+				fmt.Fprintln(stderr, "E_INTERNAL")
+			}
+			return 1
+		}
+		return 0
+	}
+	if args[1] == "state" {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := writeState(ctx, stdout); err != nil {
+			var fixed opError
+			if errors.As(err, &fixed) {
+				fmt.Fprintln(stderr, fixed.Error())
+			} else {
+				fmt.Fprintln(stderr, "E_INTERNAL")
+			}
+			return 1
+		}
+		return 0
+	}
+	if args[1] != "provision" && args[1] != "rollback" && args[1] != "rollback-breakglass" {
+		fmt.Fprintln(stderr, "E_MODE")
+		return 1
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
+	defer cancel()
+	if err := execute(ctx, args[1], stdin); err != nil {
+		var fixed opError
+		if errors.As(err, &fixed) {
+			fmt.Fprintln(stderr, fixed.Error())
+		} else {
+			fmt.Fprintln(stderr, "E_INTERNAL")
+		}
+		return 1
+	}
+	if args[1] == "provision" {
+		fmt.Fprintln(stdout, "PROVISION=PASS USERS=1 CREDENTIALS=1 MEMBERS=0 HTTP_LOGIN=NOT_CALLED")
+	} else {
+		fmt.Fprintln(stdout, "ROLLBACK=PASS USERS=0 CREDENTIALS=0 MEMBERS=0")
+	}
+	return 0
+}
+
+func main() {
+	// realMain returns only after its cleanup defers have completed. os.Exit is
+	// intentionally confined to this outermost boundary.
+	os.Exit(realMain(os.Args, os.Stdin, os.Stdout, os.Stderr))
+}

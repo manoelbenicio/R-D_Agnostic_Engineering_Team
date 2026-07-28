@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T10:17:47Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "T8-ROLLOUT-PLAN-V3",
+  "status": "DONE",
+  "reported_to": "Codex56#B (w7:p4), Codex56-TL (w5:pC), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/t8-rollout-plan.md"
+  ],
+  "summary": "Plano de Rollout T8 v3 alinhado 100% com a topologia e correções solicitadas: separação estrita de patches novos (execenv token-only + hardening helper em ORQ2; task.go atômico + issue events em ORQ1), Kiro allowlist restrita aos slots 139,140,143,149, descoberta AGY nativa via CLI, endpoint real /api/runtimes?workspace_id=... e rollback durável do daemon utilizando os binários .pre-agy-fix / .previous medidos no ORQ2."
+}

@@ -1,0 +1,25 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T17:26:12Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "assigned_scope": "Registration of direct Owner Ruling on cost, tokens, and card execution policy",
+  "finding": "Produced owner-ruling-cost-and-execution-policy.md. Registered direct Owner Ruling: costs and tokens are NOT a blocker; any authorized real task can be executed using required agents/models without asking for cost approval. Reaffirmed only true blockers: duplicate/accidental work, ownership conflicts, secret exposure, out-of-scope mutations, and data risk without backup/rollback. Pure status cards remain unassigned; real actionable cards can and should trigger execution immediately. Recorded ruling SHA256 33be18a2ae0d268d2deafbaa0f95c0e18a118a8f7db41efce4ccbf20dedbd4e5.",
+  "action_taken": "Created .deploy-control/p0/evidence/owner-ruling-cost-and-execution-policy.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only policy registration.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/owner-ruling-cost-and-execution-policy.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T172612Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__OWNER-RULING-COST-EXECUTION-POLICY__20260727T172612Z.json"
+  ],
+  "owner_ruling_sha256": "33be18a2ae0d268d2deafbaa0f95c0e18a118a8f7db41efce4ccbf20dedbd4e5",
+  "non_claims": [
+    "owner ruling policy registration, no mutation, no code execution, no board mutation"
+  ],
+  "blocker": null
+}

@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T12:19:21Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-RUNTIME-RETENTION-SAFE-LIFECYCLE-PEER-REVIEW",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-runtime-retention-safe-lifecycle-peer-review.md"
+  ],
+  "summary": "Peer Review Adversarial do Lifecycle de Retenção de Runtimes (GTL-81) concluído com veredito BLOCK em modo READ-ONLY. Identificada a falta de trava contra ressurreição por heartbeat de daemons em runtimes arquivados, apontada a necessidade de índices únicos parciais (WHERE archived_at IS NULL) na migration, recomendada a substituição total do DELETE físico por Soft-Delete na UI/API para retenção perpétua de task_usage e validado o faseamento em Wave 1 (UI Guard) e Wave 2 (DB Schema Guard)."
+}

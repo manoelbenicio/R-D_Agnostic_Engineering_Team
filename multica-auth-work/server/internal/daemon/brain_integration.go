@@ -518,6 +518,12 @@ func (r *agentBrainRuntime) buildLaunch(ctx context.Context, plan *agentBrainTas
 }
 
 func (r *agentBrainRuntime) validateThinking(plan *agentBrainTaskPlan, thinking string) error {
+	// Native execution has no Agent Brain launch plan. Its provider-specific
+	// backend validates the persisted thinking level, so the gateway allowlist
+	// must not run (or dereference a nil plan) on this path.
+	if plan == nil {
+		return nil
+	}
 	if strings.TrimSpace(thinking) != "" {
 		return runtimeenv.ErrThinkingNotApproved
 	}

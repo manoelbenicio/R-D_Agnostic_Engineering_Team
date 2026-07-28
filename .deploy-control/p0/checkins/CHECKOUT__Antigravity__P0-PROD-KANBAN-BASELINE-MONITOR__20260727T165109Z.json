@@ -1,0 +1,29 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T16:51:09Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-17"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "target_host": "ORQ1 (100.118.244.61 / ip-172-31-18-217)",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "P0 PROD KANBAN baseline preservation and post-execution verification checklist preparation",
+  "finding": "Produced p0-prod-kanban-baseline-and-post-verification-checklist.md. Measured live baseline on ORQ1: Frontend 1b3b6c9ee32a (Up 13h, :13100 HTTP 200), Backend 75e4416f06e9 (Up 13m, :18080/healthz & /readyz HTTP 200), Tailscale Serve/Funnel: No serve config (OFF), Active 4-state task queue count: 0. Preserved all backups and evidence. Touched zero secrets, zero database tables, zero configs. Prepared post-execution verification checklist (containers, HTTP status codes, 7 canonical mounts, evidence log). Recorded checklist SHA256 089b8e740ff1d1fc79ff778e9cb7c1a7d4bd7d55b7b00d621e6a01b284f7d109. Awaiting signal from Kiro.",
+  "action_taken": "Created .deploy-control/p0/evidence/p0-prod-kanban-baseline-and-post-verification-checklist.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/p0-prod-kanban-baseline-and-post-verification-checklist.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T165109Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__P0-PROD-KANBAN-BASELINE-MONITOR__20260727T165109Z.json"
+  ],
+  "baseline_checklist_sha256": "089b8e740ff1d1fc79ff778e9cb7c1a7d4bd7d55b7b00d621e6a01b284f7d109",
+  "non_claims": [
+    "baseline preservation, no secret touching, no GetSecretValue, no DB mutation, no config mutation, no Tailscale Serve apply now"
+  ],
+  "blocker": "Awaiting signal from Kiro to run post-execution verification."
+}

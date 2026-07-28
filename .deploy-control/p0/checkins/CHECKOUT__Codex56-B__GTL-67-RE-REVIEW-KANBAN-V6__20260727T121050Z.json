@@ -1,0 +1,61 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T12:10:50Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "GTL-67",
+  "task_ids": [
+    "GTL-67-RE-REVIEW-KANBAN-V6"
+  ],
+  "status": "DONE_BLOCK",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-kanban-v6-peer-review.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__GTL-67-RE-REVIEW-KANBAN-V6__20260727T121050Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "READ-ONLY item-by-item comparison of V6 against GTL-60",
+      "exit_code": 0,
+      "result": "Four core SQL corrections pass relational review; lifecycle, tenant/index, workspace traversal, lock cleanup, frontend hydration, exact gates and FILES_LOCKED remain blocking."
+    },
+    {
+      "command": "Offline PostgreSQL parser availability check",
+      "exit_code": 0,
+      "result": "Only psql client available; no authorized ephemeral PostgreSQL/parser. No database connection or SQL execution attempted."
+    },
+    {
+      "command": "git diff --check and secret-pattern scan",
+      "exit_code": 0,
+      "result": "PASS; no credential URI or secret assignment pattern."
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-kanban-v6-peer-review.md",
+    ".deploy-control/p0/evidence/gtl-kanban-integrity-monitor-v6.md:40",
+    ".deploy-control/p0/evidence/gtl-kanban-v5-deep-sql-audit.md:231",
+    "multica-auth-work/server/cmd/server/runtime_sweeper.go:80",
+    "multica-auth-work/server/pkg/db/generated/db.go:14",
+    "multica-auth-work/packages/core/types/events.ts:10"
+  ],
+  "reported_to": [
+    "Codex56-TL / GENERAL-TECH-LEAD (w5:pC) via herdr pane run"
+  ],
+  "summary": "BLOCK. V6 fixes grace, active statuses, completed-history and relational dedup, but per-process state plus per-tick lock cannot guarantee dedup/clear across replicas or restart. Further blockers: fail-open clear on partial query failure, no initial/reconnect hydration, incomplete tenant guards and workspace enumeration, absent issue_dependency index, cancellable unlock, insufficient exact assertions and incomplete FILES_LOCKED.",
+  "non_claims": [
+    "No SQL was executed and no database was connected.",
+    "No code, board, build, test, service, deploy, credential or permission was changed."
+  ],
+  "blockers": [
+    "Choose shared durable anomaly state or versioned full snapshots; volatile per-process deltas cannot pass.",
+    "Add tenant guards, dependency index, workspace traversal and safe same-connection lock cleanup.",
+    "Complete frontend hydration/reconnect, exact test assertions and FILES_LOCKED."
+  ],
+  "handoffs": [
+    {
+      "to": "w5:pC",
+      "reason": "Return V6 for a V7 lifecycle/index/frontend correction before authorizing implementation."
+    }
+  ]
+}

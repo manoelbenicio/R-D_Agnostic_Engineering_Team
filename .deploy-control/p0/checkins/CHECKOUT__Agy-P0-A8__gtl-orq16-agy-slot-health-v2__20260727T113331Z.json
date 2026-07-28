@@ -1,0 +1,14 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T11:33:31Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-ORQ16-AGY-SLOT-HEALTH-V2",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq16-agy-slot-health.md"
+  ],
+  "summary": "Design de Elegibilidade Dinâmica GTL-16R reescrito e corrigido em modo READ-ONLY. Mapeado o caminho real de credencial do Kiro (kiro-cli/data.sqlite3), eliminada qualquer leitura de tokens em memória, estabelecida a validação exclusiva por metadados físicos (os.Lstat, O_NOFOLLOW, IsRegular, Size > 0), diferenciado Auth Present de Session Alive e estruturado cache TTL 60s sob RWMutex com semântica fail-closed."
+}

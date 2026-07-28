@@ -1,0 +1,56 @@
+{
+  "event": "GOVERNANCE_ACK",
+  "timestamp_utc": "2026-07-27T13:09:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "ORQ-39",
+  "orq_issue_id": "ORQ-39",
+  "orq_issue_uuid": "c03941bc-3bde-4de1-ab19-1ba93de0ad51",
+  "orq_related": [
+    "ORQ-41",
+    "ORQ-38",
+    "ORQ-26"
+  ],
+  "status": "IDLE_ACKNOWLEDGED",
+  "governance": "GTL EMERGENCY GOVERNANCE - ASSIGNMENT/COMMENT FREEZE",
+  "acknowledged_facts": [
+    "Atribuir agente a uma issue ENFILEIRA TASK PAGA: assignment nao e metadado administrativo, e gatilho de execucao",
+    "Comentario em issue atribuida tambem pode enfileirar",
+    "Nenhum agente pode definir ou alterar assignee nem postar comentario sem autorizacao explicita de execucao do GTL",
+    "Cartao novo deve permanecer SEM assignee",
+    "ORQ-41 rastreia o defeito",
+    "Nao reexecutar ORQ-39 nem ORQ-40"
+  ],
+  "my_compliance_position": {
+    "assignee_writes": "NUNCA executei. Nao chamei nenhum endpoint de atribuicao; nao existe PATCH de issue, /assignee nem assignee_id em nenhum artefato meu (verificado por grep).",
+    "issue_comments": "NUNCA postei comentario em issue alguma.",
+    "issue_creation": "NUNCA chamei POST /api/issues; nao sou o registrar nomeado.",
+    "board_reads": "A unica leitura de board que fiz foi SELECT read-only no Postgres, para as auditorias T3 e GTL-03. Nenhuma escrita.",
+    "assignee_citation_clarified": "Meus artefatos registram 'assignee Opus48-B' para ORQ-39 porque esse par me foi FORNECIDO pelo GTL no dispatch de reparo de citacao. E CITACAO de um fato informado, nao acao minha: eu nao atribui esse cartao a mim nem a ninguem. Se a atribuicao de ORQ-39 ja enfileirou task paga, isso ocorreu fora de mim e antes do meu conhecimento.",
+    "rerun": "Nao reexecutei e nao reexecutarei ORQ-39 nem ORQ-40."
+  },
+  "frozen_artifact": {
+    "path": ".deploy-control/p0/evidence/gtl-browser-qa-disposable-plan.md",
+    "sha256": "9a4f51413840b8f68cb4ca0da87dc9fdbaf6c3729bdded5dd1b37a4e1d4d95b9",
+    "bytes": 40166,
+    "lines": 696,
+    "state": "CONGELADO apos o reparo de citacao ORQ-39; reconferido neste ack e identico. Nao mutei nada nesta rodada."
+  },
+  "open_items_unchanged": [
+    "Pedido de peer reviewer diferente de Agy-P0-A7 segue pendente",
+    "Dois criterios de PASS-readiness exigem execucao autorizada: env minimo do backend e custo do next build",
+    "Cinco autorizacoes separadas do owner para criar arquivo, push, PR, merge e primeiro dispatch",
+    "Habilitar o primeiro workflow do GitHub Actions na raiz permanece gate de governanca separado do owner",
+    "Identificadores tecnicos com prefixo orq31- no design nao foram renomeados: renomear e mudanca de conteudo e precisa de autorizacao"
+  ],
+  "observation_for_gtl": "Consequencia do fato medido que vale registrar: se atribuir enfileira task paga, entao qualquer dispatch futuro que ja venha com assignee preenchido gasta orcamento no instante da criacao, antes de qualquer revisao humana. Recomendo que o fluxo passe a criar o cartao sem assignee e atribuir somente na janela de execucao autorizada. Recomendacao, nao decisao minha.",
+  "non_claims": [
+    "Nao defini nem alterei assignee de nenhuma issue, em nenhum momento",
+    "Nao postei comentario em nenhuma issue",
+    "Nao criei, deletei, renumerei, mesclei nem mutei cartao algum",
+    "Nao reexecutei ORQ-39 nem ORQ-40",
+    "Nao mutei a evidencia congelada nesta rodada: o sha256 acima foi reconferido",
+    "Nao pedi review novamente nesta rodada; o pedido anterior segue valido e pendente",
+    "Nao verifiquei o mecanismo que transforma atribuicao em task enfileirada: aceito o fato medido pelo GTL e nao o reconfirmei por conta propria"
+  ]
+}

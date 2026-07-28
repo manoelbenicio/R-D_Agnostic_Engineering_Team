@@ -1,0 +1,104 @@
+{
+  "event": "PREFLIGHT_GATE0",
+  "timestamp_utc": "2026-07-27T17:05:00Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "host": "ORQ2 ip-172-31-30-9",
+  "status": "ACEITO_COMO_INVENTARIO__IDLE_HOLD",
+  "rule_acknowledged": "TOOL/PERMISSION PREFLIGHT e GATE 0, antes de qualquer implementacao, build, teste, deploy ou mutation. Execucao NAO comeca ate o General-TL receber e aceitar o inventario. Limite de 2 minutos, sem dry-run tecnico e sem revisao longa. Excecao unica: contencao emergencial preautorizada, com o desvio documentado depois.",
+  "context": "Nenhuma tarefa minha em execucao: idle pos-closeout do ORQ-41. Este e o inventario de base do slot, medido agora.",
+  "1_ferramentas_presentes": {
+    "go": "1.26.1 (/home/ec2-user/goroot/go/bin)",
+    "gofmt": "presente",
+    "git": "2.50.1",
+    "psql": "17.10",
+    "pg_ctl": "17.10 (PostgreSQL 17 server local)",
+    "python3": "3.9.25",
+    "node": "v22.23.1",
+    "pnpm": "11.17.0",
+    "herdr": "presente",
+    "aws": "presente",
+    "asm-exec": "presente (NUNCA executado por mim)",
+    "jq": "presente"
+  },
+  "2_ferramentas_ausentes": [
+    {
+      "tool": "sqlc",
+      "impacto_real": "ausente do PATH; contornei compilando v1.31.1 do module cache LOCAL, offline, para /home/ec2-user/.cache/sqlcbuild/sqlc (79 MB), que ainda existe"
+    },
+    {
+      "tool": "golangci-lint",
+      "impacto_real": "ausente e sem fonte no module cache; por isso o risco de lint do commit A do ORQ-13 por max_seq segue NAO MEDIDO"
+    },
+    {
+      "tool": "docker (no ORQ2)",
+      "impacto_real": "obrigou a rodar o PostgreSQL efemero do gate do ORQ-41 em container no ORQ1 com tunel SSH privado"
+    },
+    {
+      "tool": "patchutils (filterdiff, splitdiff, interdiff)",
+      "impacto_real": "invalidou a rota de split por hunk sugerida pelo revisor do ORQ-13; forcou a proposta alternativa com stash mais sqlc generate"
+    },
+    {
+      "tool": "playwright CLI",
+      "impacto_real": "relevante se o browser QA do ORQ-39 sair do congelamento"
+    }
+  ],
+  "3_dependencia_de_banco": {
+    "postgresql17-contrib": "AUSENTE no ORQ2",
+    "consequencia": "pgcrypto nao existe, logo a migration 001 FALHA em cluster PostgreSQL local. Foi a causa direta de eu ter de usar container no ORQ1 para o gate do ORQ-41.",
+    "pedido": "se o General-TL quiser gate de banco rodando localmente no ORQ2, contrib e o pacote a preparar"
+  },
+  "4_permissoes_e_acessos": {
+    "tenho": [
+      "SSH BatchMode para ec2-user@100.118.244.61 (ORQ1) e dataops-lab@100.117.245.15 (LOCAL)",
+      "docker no ORQ1",
+      "leitura read-only do Postgres do produto via docker exec psql",
+      "MCP AWS em modo read-only por padrao",
+      "asm-exec disponivel, nunca executado"
+    ],
+    "nao_tenho_e_nao_pedi": [
+      "mutacao AWS",
+      "secretsmanager GetSecretValue ou BatchGetSecretValue",
+      "POST /api/issues",
+      "alteracao de assignee ou comentario em issue",
+      "push, merge e PR"
+    ]
+  },
+  "5_servicos_e_portas": {
+    "ORQ2": "user units multica-daemon-orq2-credential.service e multica-orq1-backend-tunnel.service ativas; health do daemon em 19514",
+    "ORQ1": "backend 18080, frontend 13100, postgres 15433, omniroute 20128",
+    "invariantes_monitorados": "nenhum listener em 443; tailscale serve e funnel vazios"
+  },
+  "6_espaco_estimado": {
+    "cache_go_por_arvore": "~800 MB (medido 817 MB e 812 MB nas duas arvores que compilei)",
+    "cluster_pg_efemero_com_schema": "~100 a 150 MB",
+    "binario_sqlc_compilado": "76 MB",
+    "regra_declarada": "GOCACHE, GOTMPDIR e TMPDIR SEMPRE fora de /tmp, em diretorio 0700 verificado por stat, porque /tmp e tmpfs de 7.7G e chegou a 100% nesta sessao",
+    "estado_agora": "raiz 60G com 44G usados e 16G livres, 74%; /tmp 353M de 7.7G, 5%"
+  },
+  "divida_de_disco_minha": {
+    "caminhos": {
+      "/home/ec2-user/.cache/go-build-i03": "817M",
+      "/home/ec2-user/.cache/go-build-orq41": "812M",
+      "/home/ec2-user/.cache/sqlcbuild": "76M"
+    },
+    "total": "~1.7G",
+    "acao": "NAO removi: apagar e classe STOP-AND-WAIT e a decisao e do GTL. Todos reconstruiveis, sem dado de produto e sem segredo."
+  },
+  "non_claims": [
+    "Este preflight NAO autoriza segredo, mutation, pacote nem acesso; qualquer instalacao segue a autorizacao aplicavel",
+    "Nao instalei nem baixei nada para produzir este inventario: apenas consultei versoes e caminhos",
+    "Nao iniciei nenhuma implementacao, build, teste, deploy ou mutation apos a regra entrar em vigor",
+    "Nao removi nenhum cache; a divida de ~1.7G permanece declarada e intacta",
+    "Nao criei, atribui nem comentei issue alguma",
+    "Nao limpei cache algum e nao instalei nada apos o aceite; a oferta anterior de remover os ~1.7G foi retirada por ordem do GTL"
+  ],
+  "unblocks_on": "Atribuicao de tarefa especifica pelo General-TL. Resposta minha sera um delta preflight restrito aos requisitos daquela tarefa.",
+  "gtl_response_20260727T1704Z": {
+    "aceite": "Inventario ACEITO como base pelo General-TL.",
+    "autorizacao_de_tarefa": "NENHUMA tarefa nova autorizada. Permaneco idle/hold no P0.",
+    "caches": "PROIBIDO limpar. A divida de ~1.7G fica como esta; 16GiB livres foram declarados suficientes. Retiro minha oferta de remocao.",
+    "instalacao": "PROIBIDO instalar ferramenta. As ausencias listadas (sqlc no PATH, golangci-lint, docker no ORQ2, patchutils, playwright, postgresql17-contrib) permanecem como estao.",
+    "proximo_protocolo": "Ao receber tarefa especifica, enviar DELTA preflight apenas do que ela exige, nao o inventario completo de novo."
+  }
+}

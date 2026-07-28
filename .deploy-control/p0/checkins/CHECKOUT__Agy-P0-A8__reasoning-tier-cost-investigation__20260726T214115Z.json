@@ -1,0 +1,16 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-26T21:41:15Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "REASONING-TIER-COST-INVESTIGATION",
+  "status": "DONE",
+  "reported_to": "Kiro-PRINCIPAL-TL",
+  "evidence": [
+    "curl -s -i http://100.118.244.61:20128/api/pricing -> HTTP 403 Forbidden AUTH_001 Invalid management token",
+    "curl -s http://100.118.244.61:20128/v1/models -> HTTP 200 (327 models), effort tiers exposed as separate IDs (e.g. gpt-5.6-sol-low vs gpt-5.6-sol-xhigh) and capabilities.effort_tiers array",
+    "/v1/models returns model capabilities but omits rate tables ($/token). Cost changes with effort tier due to output token volume multiplier (3x-10x)."
+  ],
+  "summary": "Consulta de precificação realizada no OmniRoute. /api/pricing devolveu 403 (requer token de gerência). /v1/models expõe variantes de esforço (effort_tiers) como IDs de modelos separados. Alterar tier altera o custo final pelo volume de tokens de raciocínio gerados."
+}

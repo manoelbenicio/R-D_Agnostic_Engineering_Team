@@ -1,0 +1,94 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:02:31Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C",
+  "task_ids": [
+    "AUDIT-TMP-ARTIFACTS-PERMISSIONS"
+  ],
+  "status": "DONE",
+  "mode": "READ_ONLY_ANALISE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/audit-tmp-artifacts-kiro-tl.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__C__AUDIT-TMP-ARTIFACTS-PERMISSIONS__20260727T110231Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "stat de /tmp/daemon.env.bak e /tmp/daemon.cmd.bak nos 3 hosts",
+      "exit_code": 1,
+      "assertions_or_tests": 6,
+      "result": "ABSENT nos 3 (ORQ2, ORQ1, LOCAL). No ORQ1 existem /tmp/daemon.environ.20260724T110622Z.bak e ...034949Z.bak, ambos modo 600 (corretos). Premissa do 0664 nao se confirma em host algum que eu alcanco."
+    },
+    {
+      "command": "umask; stat -c '%A %a' /tmp nos 3 hosts",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "CAUSA RAIZ — ORQ2 umask=0002, ORQ1 umask=0002, LOCAL umask=0022; /tmp = drwxrwxrwt (1777) nos tres: arquivo nasce 664/644 e qualquer processo local le"
+    },
+    {
+      "command": "find /tmp -maxdepth 3 -type f -size -4M -perm /077 | wc -l (ORQ2 e ORQ1)",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "ORQ2 = 74537 candidatos, ORQ1 = 127"
+    },
+    {
+      "command": "find ... -perm /077 -print0 | xargs -0 grep -l -I -E '<nomes de chave>' + stat por arquivo (3 hosts)",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "ORQ2: 14 arquivos nao-cache + ~26 caches/gocache; ORQ1: 3 arquivos (mh, mcp_h, test_login.html); LOCAL: 16 arquivos 0644"
+    },
+    {
+      "command": "grep -c -E '(JWT_SECRET|POSTGRES_PASSWORD|MULTICA_TOKEN|DATABASE_URL|OPENAI_API_KEY|...)[=:][^espaco]' por arquivo",
+      "exit_code": 0,
+      "assertions_or_tests": 23,
+      "result": "ALTA — apenas /tmp/arch.txt (ORQ2 e LOCAL) com OPENAI_API_KEY= e /tmp/backend-recover.sh (ORQ2) com JWT_SECRET= tem atribuicao com valor (contagem 1 cada). Todo o resto: nome de chave sem atribuicao detectada."
+    },
+    {
+      "command": "stat + grep -c '[A-Z_]{4,}=' em /tmp/handshake-token.txt e /tmp/rev-token.txt (LOCAL)",
+      "exit_code": 0,
+      "assertions_or_tests": 2,
+      "result": "ALTA — 644 dataops-lab:root, 24 bytes cada, zero nome de chave dentro: pelo nome e tamanho o arquivo E o proprio valor do token, mundo-legivel. Nao abri."
+    },
+    {
+      "command": "grep -c -E 'Bearer[ \"]+[A-Za-z0-9_.-]{8}' /tmp/mh /tmp/mcp_h (ORQ1) + sha256 comparativo",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "bearer_with_value=0 nos dois; 1 linha authorization cada; sha256 diferentes entre si"
+    }
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/audit-tmp-artifacts-kiro-tl.md (lista completa com modo, dono, bytes, mtime e nomes de chave por arquivo, nos 3 hosts)",
+    "ALTA: LOCAL /tmp/handshake-token.txt e /tmp/rev-token.txt (644, 24 bytes, token cru); ORQ2+LOCAL /tmp/arch.txt (OPENAI_API_KEY= com valor); ORQ2 /tmp/backend-recover.sh (JWT_SECRET= com valor)",
+    "MEDIA (nome de chave, zero atribuicao com valor detectada): sec.txt, o30.txt, ph.txt, dec.txt, f.txt, sdk.txt, proj.txt, e2eq.txt, f2-fulltest.log, mcp.json.bak no ORQ2; os mesmos + av.sh, raw.sh, imp.sh, sync.sh, g36.sh, idx.html no LOCAL",
+    "assimetria reveladora: av.sh, raw.sh, imp.sh, sync.sh sao 0600 no ORQ1 e 0644 no LOCAL — mesmo script, dois modos, efeito direto do umask por host",
+    "BAIXA: 26 entradas de cache Go replicadas em 13 diretorios *gocache* (mesmo par de hashes d9b41f03/c848a2a5), unleash schema json, e caches de client em /tmp/uO-nHg60RfVLctF_qlu8N/client (8 arquivos) e /tmp/JTFt9721FtNoKDB1Hq9-Z/client (1)"
+  ],
+  "summary": "Auditoria de permissao concluida por varredura por NOME DE CHAVE nos 3 hosts alcancaveis, sem ler nenhum valor. CORRECAO DA PREMISSA: /tmp/daemon.env.bak nao existe no ORQ2, no ORQ1 nem no host LOCAL; o que existe no ORQ1 sao /tmp/daemon.environ.20260724T110622Z.bak e ...034949Z.bak, ambos 0600 e portanto corretos. Ou o arquivo 0664 foi removido/renomeado, ou esta em host que eu nao alcanco. CAUSA RAIZ SISTEMICA: umask 0002 no ORQ2 e no ORQ1 e 0022 no LOCAL, com /tmp em 1777 nos tres, logo todo artefato nasce legivel por qualquer processo local; no ORQ2 isso da 74537 arquivos com bit de grupo/outros contra 127 no ORQ1. ACHADOS ALTA, os unicos onde provei padrao CHAVE=valor por contagem: LOCAL /tmp/handshake-token.txt e /tmp/rev-token.txt (644, 24 bytes, sem nome de chave dentro, isto e o proprio token cru mundo-legivel), /tmp/arch.txt em ORQ2 e LOCAL com OPENAI_API_KEY= e ORQ2 /tmp/backend-recover.sh com JWT_SECRET=. MEDIA: 10 arquivos no ORQ2 e 14 no LOCAL com nome de chave sensivel e nenhuma atribuicao detectada, que podem ser prosa de auditoria mas eu nao posso distinguir sem ler valor. ORQ1 esta bem melhor: so mh, mcp_h (Authorization, bearer_with_value=0) e test_login.html de dono root. Assimetria reveladora: av.sh, raw.sh, imp.sh e sync.sh sao 0600 no ORQ1 e 0644 no LOCAL. RECOMENDACAO ao Codex56-TL, que e o escritor unico: para token cru chmod 600 nao basta, se o valor esta vivo o correto e rotacionar e remover; corrigir umask para 077 no ambiente dos agentes antes de arrumar arquivo por arquivo, senao o proximo artefato nasce 664 de novo; ordem sugerida rotacionar, chmod, umask, remover. Nao alterei permissao alguma.",
+  "non_claims": [
+    "nao alterei permissao, nao removi, nao editei arquivo algum fora do meu proprio documento de evidencia e deste check-out",
+    "nao li valor de nenhum segredo: usei grep -l, grep -c e grep -o restrito ao NOME da chave; onde afirmo 'atribuicao com valor' a prova e contagem",
+    "nao consigo distinguir sem ler valor se os arquivos de prioridade MEDIA tem segredo real ou apenas nome de chave em prosa",
+    "escopo limitado a /tmp maxdepth 3, arquivos regulares, <=4MB, nos 3 hosts alcancaveis: nao varri /var/tmp, /dev/shm, HOMEs, volumes de container nem a maquina Windows do owner",
+    "nao compilei, nao reiniciei nada, nao toquei .env nem /tmp/daemon.env.bak (inexistente), nao editei codigo (regra de escritor unico respeitada)"
+  ],
+  "blocker": "chmod/remocao/rotacao dos 4 itens ALTA e do umask sao mudanca de permissao/credencial: classe STOP-AND-WAIT, executor e o Codex56-TL com decisao do owner. Eu apenas listei.",
+  "handoffs": [
+    {
+      "to_lane": "Codex56-TL (w5:pC)",
+      "reason": "executar rotacao/chmod/umask sobre a lista, comecando pelos 4 itens ALTA; e resolver onde esta o /tmp/daemon.env.bak citado, que nao existe em nenhum host alcancavel",
+      "file": ".deploy-control/p0/evidence/audit-tmp-artifacts-kiro-tl.md"
+    }
+  ],
+  "reported_to": [
+    "KIRO-PRINCIPAL-TL (host 100.117.245.15, pane wB:p1) via item 2 + copia duravel em inbox-tm",
+    "Codex56-TL (ORQ2 pane w5:pC)"
+  ],
+  "schema": "main-brain-p0-checkin.v1"
+}

@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T11:31:43Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "GTL-13",
+    "ORQ-14"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Auditoria READ-ONLY GTL-13 / ORQ-14 Token Accounting across AGY, Codex, and Kiro",
+  "finding": "AGY requires dual-format camelCase/snake_case stream parser (antigravity.go:165). Codex relies on JSON-RPC + session log scanner (codex.go:1926). Kiro alternative reliable source is OmniRoute Gateway Receipts (usage payload + x-omniroute-tokens-* headers). Decision: Gateway Receipt Interceptor in daemon + httptest.Server suite.",
+  "action_taken": "Created .deploy-control/p0/evidence/gtl-orq14-token-accounting-audit.md, sent herdr update to General-TL Codex56-TL (w5:pC) and SSH to KIRO-PRINCIPAL-TL (wB:p1), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/gtl-orq14-token-accounting-audit.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T113143Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__GTL-13-ORQ14-TOKEN-ACCOUNTING__20260727T113143Z.json"
+  ],
+  "non_claims": [
+    "read-only audit, no code edit, no db edit, no build edit"
+  ],
+  "blocker": null
+}

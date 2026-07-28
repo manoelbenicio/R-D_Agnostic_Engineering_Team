@@ -1,0 +1,19 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "timestamp_utc": "2026-07-27T12:51:51Z",
+  "lane": "A8",
+  "pane_id": "wB:p2",
+  "task": "GTL-I04R2-ORQ17-AUTH-REGRESSION-TEST-CLEANUP",
+  "issue_id": "ORQ-17",
+  "status": "DONE",
+  "reported_to": "Codex56-TL (w5:pC), Codex56#B (w7:p4), Kiro-PRINCIPAL-TL (wB:p1)",
+  "evidence": [
+    ".deploy-control/p0/evidence/gtl-orq17-auth-regression-tests-implementation.md"
+  ],
+  "hashes": {
+    "auth_test.go": "aa84df9ebea043dd3059ee9440a4da48a1ba3bf35c75ec792a2bb4df6d0d8c94",
+    "git_diff_fingerprint": "ea6ff6450d60e4f5d53783157ae9d0c7f9420fefa3e8bc6346d861c2e352b2d5"
+  },
+  "summary": "Limpeza final de testes (GTL-I04R2) para a ORQ-17 concluída no worktree isolado /home/ec2-user/workspace/worktrees/gtl-orq17-auth-tests na base 0cb8aebb. Zero edições em código de produção. Removido o teste redundante WithQueriesResolvesUserAndCallsNext per GTL-85R e mantido o controle positivo NilQueriesEmits503. Execução com -race -count=1 -json confirmou 100% PASS em todas as 19 folhas direcionadas e 87 testes do pacote middleware (15 skips pré-existentes creditados)."
+}

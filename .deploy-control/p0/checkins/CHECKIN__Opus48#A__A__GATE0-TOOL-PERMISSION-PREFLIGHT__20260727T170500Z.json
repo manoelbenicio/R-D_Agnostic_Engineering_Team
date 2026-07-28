@@ -1,0 +1,48 @@
+{
+  "event": "CHECKIN_GATE0_PREFLIGHT",
+  "timestamp_utc": "2026-07-27T17:05:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "A",
+  "host": "ORQ2 ip-172-31-30-9",
+  "status": "AWAITING_GENERAL_TL_ACCEPTANCE",
+  "execution_started": false,
+  "gate": "GATE 0 - execucao NAO comeca antes do aceite do General-TL",
+  "tools_present": {
+    "go": "1.26.1 linux/amd64 (/home/ec2-user/goroot/go/bin)",
+    "gofmt": "presente no mesmo dir, NAO no PATH default",
+    "git": "2.50.1", "python3": "3.9.25", "curl": "8.17.0", "jq": "1.8.1",
+    "aws-cli": "2.36.5", "herdr": "0.7.5", "asm-exec": "~/.local/bin/asm-exec",
+    "coreutils": "sha256sum, sed, awk, grep, cmp, stat"
+  },
+  "tools_missing_and_impact": {
+    "ss": "AUSENTE - exigido pelo passo D3 do ORQ-44 V5 (confirmacao porta->PID). Alternativas: iproute2, lsof, ou /proc/net/tcp + readlink /proc/*/fd",
+    "docker": "AUSENTE no ORQ2 - toda verificacao de container/Compose do ORQ-42 e do ORQ-17 Stage3B so pode rodar no ORQ1 via ssh; cmp de hash de helper e leitura de label NAO sao possiveis localmente",
+    "golangci-lint": "AUSENTE - CI usa v2.12 via action, logo lint local nao e reproduzivel",
+    "sqlc": "AUSENTE do PATH E o binario antes registrado em ~/.cache/sqlcbuild/sqlc NAO EXISTE MAIS - qualquer regeneracao ou verificacao de baseline do ORQ-13 esta sem ferramenta",
+    "patchutils": "AUSENTE (filterdiff/splitdiff/interdiff) - split determinista de diff indisponivel",
+    "docker-compose_v1": "AUSENTE - DESEJADO, confirma a exigencia de plugin docker compose",
+    "psql": "AUSENTE - a evidencia E-2 que propus no ORQ-42 V6 (SELECT de colunas nomeadas em daemon_token) NAO pode ser executada por mim"
+  },
+  "permissions": {
+    "aws_identity": "arn:aws:sts::809809509961:assumed-role/cw-agent-orquestradores/i-0af937456e125143d (role de instancia, nao credencial de owner)",
+    "measured_history": "DescribeSecret em sa-east-1 retornou AccessDenied para esta identidade",
+    "needed_for_pending_gates": "secretsmanager:DescribeSecret e ListSecretVersionIds no segredo alvo, por identidade autorizada, para o E3.0 do ORQ-44 V5 e o Q-C do ORQ-42 V6. NAO peco GetSecretValue e continuo proibido de chamar",
+    "db_read_for_E2": "SELECT em colunas NOMEADAS de daemon_token no Postgres do ORQ1, jamais SELECT *",
+    "orq1_access": "ssh BatchMode ec2-user@100.118.244.61 funcionando"
+  },
+  "services_ports": {
+    "orq2_listening_relevant": "nada em 19514, 18080, 13100 nem 2773",
+    "consequence": "nao ha SMA local em 2773, logo resolucao por asm-exec dependeria do endpoint MCP com SigV4, tornando a permissao AWS ainda mais determinante",
+    "orq1": "backend 127.0.0.1:18080, frontend 127.0.0.1:13100",
+    "orq2_units": "multica-daemon-orq2-credential.service, multica-orq1-backend-tunnel.service"
+  },
+  "space": {
+    "root": "60G total, 44G usados, 16G livres, 74% - melhora relevante desde a medicao anterior",
+    "tmp": "tmpfs 7.7G com 7.4G livres - o /tmp CHEIO anterior nao esta mais cheio, mas mantenho caches privados 0700 por seguranca",
+    "current_review_cache": "850M em ~/.cache/go-build-review-a, 0 em ~/.cache/gotmp-review-a",
+    "next_cycle_estimate": "1.5G a 2.5G de GOCACHE mais ~300M de temporarios; folga suficiente"
+  },
+  "scope_disclaimer": "Este preflight NAO autoriza segredo, mutacao, instalacao ou acesso - so relata. Instalacao dos ausentes e do General-TL sob a autorizacao aplicavel; eu nao instalo nada.",
+  "reported_to": ["Codex56-TL / GENERAL-TECH-LEAD w5:pC"]
+}

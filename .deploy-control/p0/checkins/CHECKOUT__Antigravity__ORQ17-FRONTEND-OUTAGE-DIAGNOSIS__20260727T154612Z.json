@@ -1,0 +1,27 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-27T15:46:12Z",
+  "agent": "Antigravity",
+  "pane_id": "wB:p1",
+  "lane": "G",
+  "task_ids": [
+    "ORQ-17"
+  ],
+  "status": "DONE",
+  "host": "ORQ2",
+  "repo": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+  "branch": "integration/dev-transition-candidate-20260719",
+  "assigned_scope": "Read-only urgent live security audit of ORQ1 production environment for ORQ-17",
+  "finding": "Produced orq17-urgent-live-security-audit.md. Measured Tailscale Serve/Funnel status: reset (No serve config, JSON {}). Measured port 443: no listener. Measured external FQDN https://orq1.tail96e2c0.ts.net: HTTP 000 (unreachable). Measured unauthenticated GET /api/issues: HTTP 404 (application/json, zero body reading). Measured MULTICA_LOCAL_AUTH_BYPASS: UNSET/DISABLED. Complied with aws-secrets-manager skill (zero plaintext, zero Config.Env wholesale printing). Verdict: SAFE (Zero Active Unauth Exposure).",
+  "action_taken": "Created .deploy-control/p0/evidence/orq17-urgent-live-security-audit.md, sent herdr update to General-TL Codex56-TL (w5:pC), created inbox msg and check-out JSON. Read-only operation.",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq17-urgent-live-security-audit.md",
+    ".deploy-control/inbox-tm/FROM_Agy-P0-A7__TO_Codex56-TL__20260727T154612Z.msg",
+    ".deploy-control/p0/checkins/CHECKOUT__Antigravity__ORQ17-URGENT-LIVE-SECURITY-AUDIT__20260727T154612Z.json"
+  ],
+  "non_claims": [
+    "live security audit, no secret reading, no response body reading, no Config.Env printing, no login, no env edit, no container restart/recreate, no tailscale serve apply, no DB/AWS/board mutation"
+  ],
+  "blocker": null
+}

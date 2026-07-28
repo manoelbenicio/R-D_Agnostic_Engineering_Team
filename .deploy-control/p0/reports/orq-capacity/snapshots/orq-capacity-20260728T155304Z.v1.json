@@ -1,0 +1,239 @@
+{
+  "schema_version": "orq-capacity-snapshot/v1",
+  "snapshot_id": "orq-capacity-20260728T155304Z",
+  "data_version": 1,
+  "captured_at": "2026-07-28T15:53:04Z",
+  "title": "ORQ1 + ORQ2 Capacity Snapshot",
+  "scope": "Current direct-host capacity and pressure snapshot for growth decisions",
+  "collection_mode": "read-only direct host measurement",
+  "quality": {
+    "grade": "B",
+    "host_metrics": "verified",
+    "cloudwatch_metrics": "unavailable",
+    "historical_window": "unavailable",
+    "limitations": [
+      "cloudwatch:GetMetricData was denied to the current instance role, so 24-hour CPU, network and status-check aggregates are not included.",
+      "ec2:DescribeInstances was denied; instance identity and type were verified through IMDSv2 without exposing the token.",
+      "CPU busy and iowait use an aligned 30-second /proc/stat window. Process CPU is a nearby point-in-time sample.",
+      "Recommendations are operational sizing guidance, not an AWS mutation authorization or a cost quote."
+    ]
+  },
+  "thresholds": {
+    "disk_warning_pct": 88,
+    "disk_critical_pct": 92,
+    "cpu_busy_warning_pct": 70,
+    "cpu_busy_critical_pct": 85,
+    "memory_pressure_warning_pct": 75,
+    "memory_pressure_critical_pct": 90,
+    "swap_warning_pct": 25,
+    "swap_critical_pct": 50,
+    "load_per_vcpu_warning": 1.0,
+    "load_per_vcpu_critical": 1.5,
+    "cpu_psi_some_avg60_warning_pct": 10,
+    "cpu_psi_some_avg60_critical_pct": 25,
+    "io_psi_full_avg60_warning_pct": 5,
+    "io_psi_full_avg60_critical_pct": 10
+  },
+  "hosts": [
+    {
+      "id": "ORQ1",
+      "role": "Multica containers, PostgreSQL and OmniRoute",
+      "health": "WATCH_STORAGE",
+      "decision": "NO_COMPUTE_GROWTH__STORAGE_ACTION",
+      "ec2": {
+        "instance_id": "i-0d9d441dd364039f9",
+        "instance_type": "m7i-flex.large",
+        "availability_zone": "sa-east-1b",
+        "vcpu": 2,
+        "memory_bytes": 8157511680,
+        "root_volume_bytes": 25769803776
+      },
+      "metrics": {
+        "cpu": {
+          "busy_pct": 1.88,
+          "iowait_pct": 0.05,
+          "idle_pct": 98.07,
+          "steal_pct": 0.02,
+          "sample_seconds": 30
+        },
+        "load": {
+          "load1": 0.05,
+          "load5": 0.09,
+          "load15": 0.05,
+          "load1_per_vcpu": 0.025
+        },
+        "memory": {
+          "total_bytes": 8157511680,
+          "available_bytes": 4902043648,
+          "available_pct": 60.0924,
+          "pressure_pct": 39.9076
+        },
+        "swap": {
+          "total_bytes": 4294963200,
+          "used_bytes": 21094400,
+          "used_pct": 0.4911
+        },
+        "root_disk": {
+          "total_bytes": 25690091520,
+          "used_bytes": 21650132992,
+          "available_bytes": 4039958528,
+          "used_pct": 84.2743,
+          "df_display_pct": 85,
+          "headroom_to_warning_bytes": 957147546,
+          "headroom_to_critical_bytes": 1984751206
+        },
+        "tmp_disk": {
+          "total_bytes": 4078755840,
+          "used_bytes": 304529408,
+          "available_bytes": 3774226432,
+          "used_pct": 7.4662
+        },
+        "psi": {
+          "cpu_some_avg60_pct": 0.27,
+          "memory_some_avg60_pct": 0.0,
+          "memory_full_avg60_pct": 0.0,
+          "io_some_avg60_pct": 0.0,
+          "io_full_avg60_pct": 0.0
+        }
+      },
+      "top_consumers": [
+        {"name": "/var", "bytes": 12183977984, "kind": "directory"},
+        {"name": "Docker images reclaimable", "bytes": 3910000000, "kind": "estimated_reclaimable"},
+        {"name": "/home/ec2-user", "bytes": 4396212224, "kind": "directory"},
+        {"name": "/home/ec2-user/.nvm", "bytes": 1242742784, "kind": "directory"},
+        {"name": "/home/ec2-user/.local", "bytes": 1221652480, "kind": "directory"},
+        {"name": "Docker volumes reclaimable", "bytes": 978000000, "kind": "estimated_reclaimable"},
+        {"name": "Docker build cache reclaimable", "bytes": 863200000, "kind": "estimated_reclaimable"}
+      ],
+      "recommendations": [
+        {
+          "priority": "P1",
+          "action": "Do not increase compute now",
+          "reason": "CPU busy 1.88%, load1/vCPU 0.025, memory pressure 39.91% and swap 0.49% show substantial compute headroom."
+        },
+        {
+          "priority": "P1",
+          "action": "Perform a target-by-target Docker retention review or expand root EBS from 24 GiB to 40 GiB",
+          "reason": "Root is 84.27%, with only 0.96 GB of growth before the 88% warning. Docker reports reclaimable images/cache/volumes, but generic prune is not authorized."
+        }
+      ]
+    },
+    {
+      "id": "ORQ2",
+      "role": "Agent execution, worktrees, credential homes and local gates",
+      "health": "CRITICAL_CAPACITY",
+      "decision": "GROW_STORAGE_NOW__VALIDATE_COMPUTE_SCALE",
+      "ec2": {
+        "instance_id": "i-0af937456e125143d",
+        "instance_type": "m7i-flex.xlarge",
+        "availability_zone": "sa-east-1b",
+        "vcpu": 4,
+        "memory_bytes": 16468017152,
+        "root_volume_bytes": 64424509440
+      },
+      "metrics": {
+        "cpu": {
+          "busy_pct": 69.77,
+          "iowait_pct": 16.22,
+          "idle_pct": 14.01,
+          "steal_pct": 0.0,
+          "sample_seconds": 30
+        },
+        "load": {
+          "load1": 7.0,
+          "load5": 8.4,
+          "load15": 7.43,
+          "load1_per_vcpu": 1.75
+        },
+        "memory": {
+          "total_bytes": 16468017152,
+          "available_bytes": 4982775808,
+          "available_pct": 30.2573,
+          "pressure_pct": 69.7427
+        },
+        "swap": {
+          "total_bytes": 4294963200,
+          "used_bytes": 2656317440,
+          "used_pct": 61.8473
+        },
+        "root_disk": {
+          "total_bytes": 64344797184,
+          "used_bytes": 58027597824,
+          "available_bytes": 6317199360,
+          "used_pct": 90.1823,
+          "df_display_pct": 91,
+          "headroom_to_warning_bytes": -1404176302,
+          "headroom_to_critical_bytes": 1169615585
+        },
+        "tmp_disk": {
+          "total_bytes": 8234008576,
+          "used_bytes": 657375232,
+          "available_bytes": 7576633344,
+          "used_pct": 7.9848
+        },
+        "psi": {
+          "cpu_some_avg60_pct": 26.12,
+          "memory_some_avg60_pct": 0.72,
+          "memory_full_avg60_pct": 0.42,
+          "io_some_avg60_pct": 29.96,
+          "io_full_avg60_pct": 14.24
+        }
+      },
+      "top_processes": [
+        {"name": "agy", "rss_bytes": 1038331904, "cpu_pct": 55.9},
+        {"name": "bun", "rss_bytes": 637894656, "cpu_pct": 1.0},
+        {"name": "bun", "rss_bytes": 573079552, "cpu_pct": 1.2},
+        {"name": "bun", "rss_bytes": 570920960, "cpu_pct": 4.4},
+        {"name": "agy", "rss_bytes": 399814656, "cpu_pct": 13.7},
+        {"name": "agy", "rss_bytes": 346664960, "cpu_pct": 13.8}
+      ],
+      "top_consumers": [
+        {"name": "/home/ec2-user/.agent-cred-homes", "bytes": 17599598592, "kind": "directory"},
+        {"name": "/home/ec2-user/workspace", "bytes": 8020070400, "kind": "directory"},
+        {"name": "/home/ec2-user/multica_workspaces", "bytes": 5309263872, "kind": "directory"},
+        {"name": "/home/ec2-user/.local", "bytes": 4875673600, "kind": "directory"},
+        {"name": "/home/ec2-user/.private-tmp", "bytes": 3788931072, "kind": "directory"},
+        {"name": "/home/ec2-user/.nvm", "bytes": 2937692160, "kind": "directory"},
+        {"name": "/home/ec2-user/.cache", "bytes": 2539167744, "kind": "directory"}
+      ],
+      "recommendations": [
+        {
+          "priority": "P0",
+          "action": "Expand root EBS from 60 GiB to at least 100 GiB; use 120 GiB if agent credential homes and local caches remain on root",
+          "reason": "Root is 90.18%, already above warning, and only 1.17 GB remains before the 92% critical threshold. At the same used bytes, 100 GiB would be about 54% used and 120 GiB about 45%."
+        },
+        {
+          "priority": "P0",
+          "action": "Restore the durable cache lifecycle and impose concurrency/cache budgets",
+          "reason": "The filesystem moved from the post-cleanup mid-80s to 90% while active agent work resumed; .agent-cred-homes alone uses 17.60 GB."
+        },
+        {
+          "priority": "P1",
+          "action": "Validate an 8 vCPU / 32 GiB target immediately; prefer fixed-performance M7i when sustained CPU above the M7i-flex 40% baseline is normal",
+          "reason": "CPU busy is 69.77% plus 16.22% iowait, load1 is 1.75 per vCPU, CPU PSI some avg60 is 26.12%, IO full PSI avg60 is 14.24%, and swap is 61.85% used. m7i-flex.2xlarge provides 8 vCPU and 32 GiB, but a 24-hour history is still required for a permanent right-size decision."
+        }
+      ]
+    }
+  ],
+  "portfolio_recommendation": {
+    "verdict": "GROW_ORQ2__HOLD_ORQ1_COMPUTE",
+    "confidence": "medium",
+    "now": [
+      "Increase ORQ2 storage capacity and restore lifecycle controls.",
+      "Cap agent concurrency until ORQ2 CPU, IO and swap pressure fall.",
+      "Do not add ORQ1 compute; resolve its storage warning through scoped cleanup or a small EBS expansion."
+    ],
+    "validate_next": [
+      "Grant least-privilege cloudwatch:GetMetricData for these two instance IDs or provide a 24-hour export.",
+      "Re-measure ORQ2 after lifecycle restoration and during representative gate concurrency.",
+      "Compare 24-hour p50/p95 CPU, disk queue/IO latency, memory available and swap activity before committing to a permanent instance-size change."
+    ]
+  },
+  "references": [
+    {
+      "title": "Amazon EC2 M7i instance specifications",
+      "url": "https://aws.amazon.com/ec2/instance-types/m7i/",
+      "note": "m7i-flex.2xlarge: 8 vCPU, 32 GiB, 40% baseline CPU per vCPU."
+    }
+  ]
+}
