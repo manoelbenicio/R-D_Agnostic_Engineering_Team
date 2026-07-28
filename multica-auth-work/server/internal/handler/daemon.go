@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/analytics"
 	"github.com/multica-ai/multica/server/internal/auth"
+	"github.com/multica-ai/multica/server/internal/credentialregistry"
 	"github.com/multica-ai/multica/server/internal/daemonws"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	"github.com/multica-ai/multica/server/internal/middleware"
@@ -1154,6 +1155,21 @@ func logClaimEndpointSlow(runtimeID, outcome string, start time.Time, authMs, cl
 	)
 }
 
+func credentialAssignmentReason(err error) string {
+	switch {
+	case errors.Is(err, credentialregistry.ErrNoApprovedAssignment):
+		return "not_approved"
+	case errors.Is(err, credentialregistry.ErrProviderMismatch):
+		return "provider_mismatch"
+	case errors.Is(err, credentialregistry.ErrAccountUnavailable):
+		return "account_unavailable"
+	case errors.Is(err, credentialregistry.ErrInvalidMetadata):
+		return "invalid_metadata"
+	default:
+		return "resolver_error"
+	}
+}
+
 // ClaimTaskByRuntime atomically claims the next queued task for a runtime.
 // The response includes the agent's name and skills, fetched fresh from the DB.
 func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
@@ -1257,6 +1273,45 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 			ThinkingLevel: agent.ThinkingLevel.String,
 			RuntimeConfig: runtimeConfig,
 		}
+	}
+
+	// Credential-bearing providers must have one persisted, tenant-approved
+	// account assignment before the task leaves the server. The resolver reads
+	// routing metadata only; it never joins credentials or returns secret_ref.
+	// Cancel the just-claimed task on any missing/invalid assignment so a
+	// daemon cannot fall back to a shared provider home.
+	if credentialregistry.RequiresApprovedAssignment(runtime.Provider) {
+		if resp.Agent == nil || h.CredentialAssignments == nil {
+			outcome = "error_credential_assignment"
+			if _, cerr := h.TaskService.CancelTask(r.Context(), task.ID); cerr != nil {
+				slog.Error("task claim: cancel after unavailable credential resolver failed",
+					"task_id", uuidToString(task.ID), "error", cerr)
+			}
+			writeError(w, http.StatusServiceUnavailable, "approved credential assignment unavailable")
+			return
+		}
+		assignment, resolveErr := h.CredentialAssignments.Resolve(
+			r.Context(),
+			uuidToString(task.AgentID),
+			runtime.Provider,
+		)
+		if resolveErr != nil {
+			outcome = "error_credential_assignment"
+			slog.Warn("task claim: approved credential assignment rejected",
+				"task_id", uuidToString(task.ID),
+				"agent_id", uuidToString(task.AgentID),
+				"provider", credentialregistry.CanonicalProvider(runtime.Provider),
+				"reason", credentialAssignmentReason(resolveErr),
+			)
+			if _, cerr := h.TaskService.CancelTask(r.Context(), task.ID); cerr != nil {
+				slog.Error("task claim: cancel after rejected credential assignment failed",
+					"task_id", uuidToString(task.ID), "error", cerr)
+			}
+			writeError(w, http.StatusConflict, "approved credential assignment unavailable")
+			return
+		}
+		resp.Agent.CredentialAccountHome = assignment.HomeDir
+		resp.Agent.CredentialAssignmentRequired = true
 	}
 
 	// Resolve the runtime owner's profile description so the daemon can

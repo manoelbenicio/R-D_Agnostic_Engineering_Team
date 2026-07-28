@@ -3445,7 +3445,16 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// LocalWorkDir into execenv. handleTask already validated + locked the
 	// path; this call is a pure JSON parse over the same task payload.
 	localAssignment, _ := findLocalDirectoryAssignment(task.ProjectResources, d.cfg.DaemonID)
-	credentialAccountHome := ""
+	rawCredentialAccountHome := ""
+	credentialAssignmentRequired := false
+	if task.Agent != nil {
+		rawCredentialAccountHome = task.Agent.CredentialAccountHome
+		credentialAssignmentRequired = task.Agent.CredentialAssignmentRequired
+	}
+	credentialAccountHome, credentialHomeErr := validateCredentialAccountHome(provider, rawCredentialAccountHome, credentialAssignmentRequired)
+	if credentialHomeErr != nil {
+		return TaskResult{}, credentialHomeErr
+	}
 	startedTask := false
 	// Reuse intentionally skipped for local_directory tasks: the prior
 	// WorkDir is the user's own path (always present) but the reuse path
