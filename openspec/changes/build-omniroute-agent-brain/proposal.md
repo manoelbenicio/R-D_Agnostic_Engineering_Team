@@ -39,6 +39,8 @@ task, follow-up correction created one task only after the prior task was termin
 Herdr execution was launched. A task being terminal does not close its issue; acceptance is
 driven by the technical result and independent review.
 
-The reasoning-admission correction exists on branch commit `f5660e9` but is not yet deployed.
-Production behavior must not be described as fixed until integration, image rollout and a
-controlled post-deploy smoke prove a non-empty supported level dispatches successfully.
+The reasoning-admission correction derived from `f5660e9` is integrated in the current
+backend image. A production Kiro canary with `thinking_level=high` reached ACP, emitted
+messages and executed tools without `thinking_not_approved`; this proves the supported
+non-empty admission path for Kiro. Codex and Kiro agents read back `high`, while AGY agents
+remain `NULL` because their reasoning tier is embedded in the model identifier.

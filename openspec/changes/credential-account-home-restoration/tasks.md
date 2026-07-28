@@ -25,13 +25,13 @@
 ## Fase 2 — Aceitacao de isolamento
 - [x] 2.1 Testes unitarios do resolver, traversal/symlink, afinidade e slot inelegivel
 - [x] 2.2 Testes de Prepare e Reuse para antigravity, codex e kiro
-- [ ] 2.3 GATE F2: duas tasks em contas distintas sem sobreposicao
+- [x] 2.3 GATE F2: quatro tasks concorrentes em contas AGY distintas, cada uma com
+  `credential_account_id` congelado e sem sobreposicao
 - [x] 2.4 GATE F2: Kiro sem `data.sqlite3` falha explicitamente
 
 ## Fase 3 — Contabilizacao (pos-cutover, bloqueia producao financeira)
 - [x] 3.1 Persistir slot pseudonimo/account_id em `task_usage` — implementado em
-  `785a8ac` + `ea1eee7`, migration 128 e gate combinado verde; integracao conjunta com
-  ORQ-21 e revisao independente permanecem gates de release
+  `785a8ac` + `ea1eee7`, migration 128, gate combinado e revisao independente verdes
 - [ ] 3.2 Adicionar preco por tier de reasoning
 - [ ] 3.3 Extrair uso real de agy e kiro
 - [ ] 3.4 GATE F3: custo por conta e tier validado

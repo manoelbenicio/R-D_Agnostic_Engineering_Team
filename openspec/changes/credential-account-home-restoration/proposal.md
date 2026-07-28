@@ -3,9 +3,9 @@
 ## Why
 
 Os runtimes **agy**, **codex** e **kiro** sao obrigatorios em todo cenario (decisao do owner).
-Hoje eles operam apenas com **uma conta por provider**, usando o HOME global do processo do
-daemon no ORQ1. Nao existe isolamento por conta, nao existe rotacao e nao existe atribuicao
-de custo por conta.
+No diagnostico inicial eles operavam apenas com **uma conta por provider**, usando o HOME
+global do processo do daemon no ORQ1. Nao havia isolamento por conta, rotacao nem atribuicao
+de custo por conta. As secoes de implementacao abaixo registram a restauracao posterior.
 
 A causa nao e feature ausente: e **regressao**. O wiring correto existiu no commit `aa62401`
 (2026-07-02). O commit `31d50b9` (2026-07-05) condicionou esse wiring ao antigo L2; a remocao
@@ -45,8 +45,8 @@ Vendors: **agy/antigravity, codex e kiro**.
 
 - Isolamento e afinidade por conta passam a existir no executor T2.
 - Exige rebuild Go e relancamento do daemon (classe STOP-AND-WAIT).
-- A persistencia financeira foi implementada e passou no gate combinado ORQ-12/ORQ-21 em
-  `ea1eee7`; a integracao conjunta e a revisao independente continuam sendo gates de release.
+- A persistencia financeira foi implementada, passou no gate combinado ORQ-12/ORQ-21 e
+  recebeu revisao independente; a stack continua indivisivel para integracao e rollback.
 
 ## Implementation update — 2026-07-28
 
@@ -58,3 +58,5 @@ Vendors: **agy/antigravity, codex e kiro**.
   `orq21db`, integracao 19+2+2, todos sob race, zero skips; build, vet e gofmt limpos.
 - Os commits nao devem ser integrados isoladamente: ORQ-12 depende do cancelamento fail-closed
   do stack ORQ-21 compativel.
+- O pool AGY foi reconstruido com quatro contas distintas e passou o gate concorrente com um
+  snapshot de conta produtora exclusivo por task. Evidencia consolidada: `evidence.md`.

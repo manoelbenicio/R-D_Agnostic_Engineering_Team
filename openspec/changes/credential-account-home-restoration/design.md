@@ -3,7 +3,7 @@
 > Regra: nada inventado. Cada afirmacao abaixo foi medida. Onde nao foi, esta marcado
 > NAO VERIFICADO.
 
-## 1. Fatos estabelecidos (medidos)
+## 1. Fatos estabelecidos no diagnostico inicial (medidos)
 
 | # | Fato | Evidencia |
 |---|---|---|
@@ -11,7 +11,7 @@
 | F2 | Isolamento **existe e funciona** | `registry.json` 13183 B com `next_slot: 153`; `registry.lock`; backup `pre-orphan-cleanup.20260722T023208Z`; scripts em `~/.local/lib/agent-credential-isolation/scripts` |
 | F3 | Slot tem **raizes por provider**, nao e um HOME | `slot-140` contem `cline cline-sandbox codex home xdg-config xdg-data` |
 | F4 | 22/22 slots tem agy; **so 5 tem kiro** | slots 139, 140, 142, 143, 149. `slot-145` nao tem kiro |
-| F5 | Tabelas de conta do Multica estao **vazias** | Postgres ORQ1: `accounts=0 approved_accounts=0 assignments=0 agent=14` |
+| F5 | As tabelas de conta estavam **vazias no diagnostico inicial** | Snapshot de 2026-07-26 no Postgres ORQ1: `accounts=0 approved_accounts=0 assignments=0 agent=14`; estado atual fica registrado na secao 12 |
 | F6 | `daemon.go:3448` tem literal vazio | `credentialAccountHome := ""`, 3 ocorrencias no daemon, nenhuma atribuicao |
 | F7 | Regressao datada | `aa62401` criou o resolver; `31d50b9` o condicionou ao L2; `9ab80a6` removeu resolver/rotation store e tornou o gateway incondicional |
 | F8 | Preparadores **existem** | `execenv.go:287` codex, `:303` kiro, `:314` antigravity |
@@ -114,3 +114,17 @@ nao atribuivel.
 - Migration 128 e o stack ORQ-21 precisam entrar juntos; integrar ORQ-12 sozinho deixaria a
   semantica de recusa das linhas legadas incompleta.
 - Binario do daemon roda de `/tmp/multica-auth-fixed`, volatil.
+
+## 12. Atualizacao operacional — 2026-07-28
+
+- O pool AGY foi reconstruido do zero com quatro logins distintos e isolados nos slots
+  `162`, `163`, `168` e `169`; os arquivos nativos permanecem `0600` sob diretorios `0700`.
+- Quatro tasks de produto executaram concorrentemente via Kanban com
+  `credential_account_id` congelado e distinto, sem sobreposicao entre as quatro contas.
+- O Postgres de producao registra `accounts=7`, `approved_accounts=7` e `assignments=7`.
+  Portanto, o antigo estado vazio e somente evidencia da causa inicial, nao do estado atual.
+- A stack ORQ-12/ORQ-21 e a migration 128 passaram pelo gate combinado e pela revisao
+  independente. O snapshot da conta produtora permanece server-side e imutavel por tentativa.
+- Uma nova autenticacao Codex foi criada em pasta fisica privada e isolada; sua ativacao como
+  conta de produto exige apenas registrar o metadado e executar um canario controlado, sem
+  copiar ou ler o valor da credencial.
