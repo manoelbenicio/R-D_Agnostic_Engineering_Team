@@ -517,18 +517,109 @@ func (r *agentBrainRuntime) buildLaunch(ctx context.Context, plan *agentBrainTas
 	return launch, nil
 }
 
-func (r *agentBrainRuntime) validateThinking(plan *agentBrainTaskPlan, thinking string) error {
-	if strings.TrimSpace(thinking) != "" {
-		return runtimeenv.ErrThinkingNotApproved
+// gatewayApprovedThinkingLevels is the gateway-side allowlist of reasoning
+// levels, keyed by the built-in provider that agentBrainBuiltInCLIFor resolves
+// for an accepted CLIKind. Only the three accepted gateway frontends appear
+// here; every other CLI (Antigravity, Kimi, NIM, anything unmapped) has no
+// entry and therefore fails closed.
+//
+// The lists mirror pkg/agent's provider enums, which remain the authority for
+// what a level means. TestGatewayThinkingLevelsMatchProviderEnums compares the
+// two in BOTH directions over a closed token universe, so a level added to or
+// removed from pkg/agent's enum for these providers breaks the build. The
+// comparison is not exhaustive: a token nobody listed in that universe would
+// escape it. Closing that hole requires pkg/agent to export its enum, which is
+// another package's file and is requested as a formal handoff rather than taken
+// silently. Antigravity is deliberately absent from both, and the reason is
+// product wiring rather than CLI capability: `agy` 1.1.7 does expose
+// `--effort low|medium|high`, but nothing in the product passes a level to it —
+// pkg/agent/antigravity.go never reads opts.ThinkingLevel and `antigravity` has
+// no entry in pkg/agent's providerThinkingEnums, so the API rejects the field
+// for antigravity runtimes. Adding it here would advertise a level the child
+// never receives. Wiring it is a scoped change to the Antigravity runtime and
+// needs its own approval; until then this map must stay as it is.
+var gatewayApprovedThinkingLevels = map[string][]string{
+	"claude": {"low", "medium", "high", "xhigh", "max"},
+	"codex":  {"none", "minimal", "low", "medium", "high", "xhigh"},
+	"cline":  {"none", "low", "medium", "high", "xhigh"},
+}
+
+// gatewayThinkingLevelsFor resolves the approved level list for a CLIKind. An
+// unmapped CLI, or a CLI whose built-in provider has no reasoning contract, is
+// a fail-closed condition rather than an empty allowlist.
+func gatewayThinkingLevelsFor(kind brain.CLIKind) ([]string, error) {
+	builtIn, err := agentBrainBuiltInCLIFor(kind)
+	if err != nil {
+		return nil, runtimeenv.ErrThinkingNotApproved
 	}
+	levels, ok := gatewayApprovedThinkingLevels[builtIn.Provider]
+	if !ok || len(levels) == 0 {
+		return nil, runtimeenv.ErrThinkingNotApproved
+	}
+	return levels, nil
+}
+
+// gatewayReasoningCapabilityAuthoritative reports whether
+// brain.ModelCapability.Reasoning carries an observed value.
+//
+// It does not, in the deployment that runs today. With
+// OMNIROUTE_DEV_MODELS_COMPAT=1 the registry is fed by
+// gateway.ProjectOmniRouteModels, whose rows hardcode Reasoning=false for every
+// model (gateway/model_projection.go:130 for the approved row, :146 for the
+// unavailable one) because raw OmniRoute /v1/models carries only ids. In that
+// mode `false` means "not advertised", not "cannot reason", so treating it as a
+// veto would refuse every configured level in production — the exact bug this
+// change exists to remove. Assuming `true` instead would be equally wrong, so
+// the flag is read and the model-level gate is declared unavailable, leaving the
+// per-provider allowlist as the operative check.
+//
+// When the flag is unset the enriched schema passes through untouched, the bit
+// is an observation, and reasoning becomes a hard requirement.
+func gatewayReasoningCapabilityAuthoritative() bool {
+	return os.Getenv("OMNIROUTE_DEV_MODELS_COMPAT") != "1"
+}
+
+func (r *agentBrainRuntime) validateThinking(plan *agentBrainTaskPlan, thinking string) error {
+	// Native execution has no Agent Brain launch plan. Its provider-specific
+	// backend validates the persisted thinking level, so the gateway allowlist
+	// must not run (or dereference a nil plan) on this path.
+	if plan == nil {
+		return nil
+	}
+
+	// Only the empty string means "runtime default". A whitespace-only value is
+	// a misconfiguration and is validated like any other token, so it fails
+	// closed: daemon.go hands the persisted string to the child unchanged, and
+	// " " is not an effort level for any provider.
+	requested := thinking
+	var approved []string
+	if requested != "" {
+		// The model-level gate applies only when the capability bit is an
+		// observation (see gatewayReasoningCapabilityAuthoritative). When it is
+		// a projection placeholder the check is skipped rather than inverted,
+		// and admission still depends on the provider allowlist below.
+		if gatewayReasoningCapabilityAuthoritative() && !plan.Capability.Reasoning {
+			return runtimeenv.ErrThinkingNotApproved
+		}
+		levels, err := gatewayThinkingLevelsFor(plan.Task.Request.CLIKind)
+		if err != nil {
+			return err
+		}
+		approved = levels
+	}
+
 	policy, err := runtimeenv.NewGatewayModelPolicy([]runtimeenv.ApprovedGatewayModel{{
 		Model: plan.Task.Request.RouteModel, Protocol: plan.Task.RoutePolicy.Protocol,
-		CLIs: []brain.CLIKind{plan.Task.Request.CLIKind},
+		CLIs: []brain.CLIKind{plan.Task.Request.CLIKind}, ThinkingLevels: approved,
 	}})
 	if err != nil {
 		return err
 	}
-	return policy.ValidateSelection(plan.Task.Request.CLIKind, plan.Task.Request.RouteModel, "")
+	// The persisted level is what the child process will actually receive, so it
+	// is what gets validated. Passing "" here (the previous behaviour) left the
+	// allowlist unreachable and forced an unconditional rejection of every
+	// configured level.
+	return policy.ValidateSelection(plan.Task.Request.CLIKind, plan.Task.Request.RouteModel, requested)
 }
 
 func (r *agentBrainRuntime) newCorrelation(task Task) brain.Correlation {
