@@ -706,5 +706,3 @@ func TestClaimFreeze_RetryAttemptFreezesIndependently(t *testing.T) {
 		t.Fatalf("retry attempt usage = %s, want %s", got, accountB)
 	}
 }
-
-func strPtr(s string) *string { return &s }
