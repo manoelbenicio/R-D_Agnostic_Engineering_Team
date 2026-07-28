@@ -324,9 +324,21 @@ SET status = 'dispatched',
               ON acc.account_id = asg.account_id
              AND acc.tenant_id = ag.workspace_id
              AND acc.status IN ('available', 'leased')
-             AND lower(acc.vendor) = CASE
-                     WHEN lower(rt.provider) = 'agy' THEN 'antigravity'
-                     ELSE lower(rt.provider)
+             -- Canonicalise BOTH sides, exactly like
+             -- credentialregistry.CanonicalProvider does in ORQ-21 R3
+             -- (resolver.go:53-60), which compares
+             -- CanonicalProvider(vendor) against CanonicalProvider(provider).
+             -- Canonicalising only the runtime side would reject an account
+             -- whose vendor happens to be stored as 'agy': ORQ-21 would let the
+             -- task execute while this freeze returned NULL, producing spend
+             -- that runs but cannot be attributed.
+             AND CASE
+                     WHEN lower(btrim(acc.vendor)) = 'agy' THEN 'antigravity'
+                     ELSE lower(btrim(acc.vendor))
+                 END
+               = CASE
+                     WHEN lower(btrim(rt.provider)) = 'agy' THEN 'antigravity'
+                     ELSE lower(btrim(rt.provider))
                  END
             JOIN approved_accounts AS ap
               ON ap.account_id = acc.account_id
