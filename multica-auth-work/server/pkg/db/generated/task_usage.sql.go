@@ -90,12 +90,16 @@ SELECT
     (COUNT(*) - COUNT(tu.account_id))::int                         AS unattributed_rows,
     COUNT(DISTINCT tu.account_id)::int                             AS distinct_accounts
 FROM task_usage tu
-WHERE tu.updated_at >= $1 AND tu.updated_at < $2
+JOIN agent_task_queue q ON q.id = tu.task_id
+JOIN agent a ON a.id = q.agent_id
+WHERE a.workspace_id = $1
+  AND tu.updated_at >= $2 AND tu.updated_at < $3
 `
 
 type GetTaskUsageAccountAttributionParams struct {
-	FromTs pgtype.Timestamptz `json:"from_ts"`
-	ToTs   pgtype.Timestamptz `json:"to_ts"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	FromTs      pgtype.Timestamptz `json:"from_ts"`
+	ToTs        pgtype.Timestamptz `json:"to_ts"`
 }
 
 type GetTaskUsageAccountAttributionRow struct {
@@ -109,8 +113,9 @@ type GetTaskUsageAccountAttributionRow struct {
 // many do not. A rotation window can be accepted only if the attributable share
 // behaves as expected, so the two numbers are returned together and never as a
 // single ratio that would hide a zero denominator.
+// WORKSPACE-SCOPED for the same reason as ListTaskUsageByAccount.
 func (q *Queries) GetTaskUsageAccountAttribution(ctx context.Context, arg GetTaskUsageAccountAttributionParams) (GetTaskUsageAccountAttributionRow, error) {
-	row := q.db.QueryRow(ctx, getTaskUsageAccountAttribution, arg.FromTs, arg.ToTs)
+	row := q.db.QueryRow(ctx, getTaskUsageAccountAttribution, arg.WorkspaceID, arg.FromTs, arg.ToTs)
 	var i GetTaskUsageAccountAttributionRow
 	err := row.Scan(
 		&i.TotalRows,
@@ -444,14 +449,18 @@ SELECT
     COUNT(DISTINCT tu.task_id)::int                          AS task_count,
     COUNT(*)::int                                            AS row_count
 FROM task_usage tu
-WHERE tu.updated_at >= $1 AND tu.updated_at < $2
+JOIN agent_task_queue q ON q.id = tu.task_id
+JOIN agent a ON a.id = q.agent_id
+WHERE a.workspace_id = $1
+  AND tu.updated_at >= $2 AND tu.updated_at < $3
 GROUP BY tu.account_id
 ORDER BY attributable DESC, total_input_tokens DESC, tu.account_id
 `
 
 type ListTaskUsageByAccountParams struct {
-	FromTs pgtype.Timestamptz `json:"from_ts"`
-	ToTs   pgtype.Timestamptz `json:"to_ts"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	FromTs      pgtype.Timestamptz `json:"from_ts"`
+	ToTs        pgtype.Timestamptz `json:"to_ts"`
 }
 
 type ListTaskUsageByAccountRow struct {
@@ -473,8 +482,11 @@ type ListTaskUsageByAccountRow struct {
 // from unassigned agents silently vanished, which is the exact misreading this
 // column exists to prevent. `attributable` lets a caller separate the two
 // without inspecting NULL semantics itself.
+// WORKSPACE-SCOPED. The join to agent is not decorative: task_usage has no
+// workspace column, so without it this query would sum every tenant's spend and
+// hand it to whoever called. Scope first, aggregate second.
 func (q *Queries) ListTaskUsageByAccount(ctx context.Context, arg ListTaskUsageByAccountParams) ([]ListTaskUsageByAccountRow, error) {
-	rows, err := q.db.Query(ctx, listTaskUsageByAccount, arg.FromTs, arg.ToTs)
+	rows, err := q.db.Query(ctx, listTaskUsageByAccount, arg.WorkspaceID, arg.FromTs, arg.ToTs)
 	if err != nil {
 		return nil, err
 	}
@@ -506,12 +518,7 @@ const upsertTaskUsage = `-- name: UpsertTaskUsage :exec
 INSERT INTO task_usage (task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, thinking_level, account_id, updated_at)
 VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8,
-    (
-        SELECT asg.account_id
-        FROM agent_task_queue q
-        JOIN assignments asg ON asg.agent_id = q.agent_id
-        WHERE q.id = $1
-    ),
+    (SELECT q.credential_account_id FROM agent_task_queue q WHERE q.id = $1),
     now()
 )
 ON CONFLICT (task_id, provider, model)
@@ -521,7 +528,7 @@ DO UPDATE SET
     cache_read_tokens = EXCLUDED.cache_read_tokens,
     cache_write_tokens = EXCLUDED.cache_write_tokens,
     thinking_level = COALESCE(EXCLUDED.thinking_level, task_usage.thinking_level),
-    account_id = COALESCE(EXCLUDED.account_id, task_usage.account_id),
+    account_id = COALESCE(task_usage.account_id, EXCLUDED.account_id),
     updated_at = now()
 `
 
@@ -543,16 +550,19 @@ type UpsertTaskUsageParams struct {
 // thinking_level is nullable and reported by the daemon; COALESCE on conflict
 // keeps a previously recorded tier when a later report omits it, so a partial
 // re-report can never erase the tier that produced the tokens.
-// account_id is resolved SERVER-SIDE, never accepted from the caller: the daemon
-// reports tokens, and the account that produced them is derived here by walking
-// agent_task_queue.agent_id -> assignments.account_id. A reporter therefore
-// cannot attribute its spend to another account.
-// The subquery yields NULL when the task has no agent, when the agent has no
-// assignment, or when the task row is already gone; NULL means "not
-// attributable" and is stored as such rather than guessed.
-// On conflict the snapshot is COALESCEd the same way thinking_level is: a later
-// partial re-report can never erase an attribution that was already recorded,
-// and it can fill one in that was previously unknown.
+// account_id is COPIED from the task, never accepted from the caller and never
+// re-resolved here. agent_task_queue.credential_account_id is frozen at
+// claim/dispatch (see ClaimAgentTask), so this row records the account that
+// ACTUALLY produced the tokens even if the agent has rotated since. Resolving
+// assignments at report time would file the spend under whatever account the
+// agent happens to hold now.
+// The subquery yields NULL when the task predates the column, when the agent had
+// no approved assignment, or when the task row is gone; NULL means "producing
+// account unknown" and is stored as such rather than guessed.
+// On conflict the EXISTING value wins: COALESCE(task_usage.account_id,
+// EXCLUDED.account_id) fills a NULL and is otherwise a no-op, so a recorded
+// attribution is immutable. The reverse order would let a later report rewrite
+// history after a rotation.
 func (q *Queries) UpsertTaskUsage(ctx context.Context, arg UpsertTaskUsageParams) error {
 	_, err := q.db.Exec(ctx, upsertTaskUsage,
 		arg.TaskID,

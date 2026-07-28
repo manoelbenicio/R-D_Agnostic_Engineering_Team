@@ -919,6 +919,10 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 			r.Route("/api/dashboard", func(r chi.Router) {
 				r.Get("/usage/daily", h.GetDashboardUsageDaily)
 				r.Get("/usage/by-agent", h.GetDashboardUsageByAgent)
+				// ORQ-12: token totals per producing provider account. Inside
+				// the same authenticated group and the same workspace-member
+				// check as the rest of /api/dashboard.
+				r.Get("/usage/by-account", h.GetDashboardUsageByAccount)
 				r.Get("/agent-runtime", h.GetDashboardAgentRunTime)
 				r.Get("/runtime/daily", h.GetDashboardRunTimeDaily)
 			})
