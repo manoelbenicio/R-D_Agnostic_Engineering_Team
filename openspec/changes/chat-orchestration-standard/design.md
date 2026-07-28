@@ -33,3 +33,15 @@ Chat direto ─▶ @agente/runtime específico ─▶ executa a tarefa pontual (
 
 ## Validação (Kiro)
 - Smoke: chat sem destino → cai no TL; TL faz pergunta, delega, sintetiza. Chat `@codex` → direto.
+
+## Despacho mecanico oficial — 2026-07-28
+
+- O TL define card, prioridade, escopo, acceptance, executor e ETA.
+- O operador atribui o card pelo Kanban/API; a mudanca de assignee cria exatamente uma task.
+- Follow-up ocorre por comentario normal no card somente depois de a task anterior estar
+  terminal; `/note` e content-only e nunca dispara agente.
+- Herdr pode ser usado para leitura de estado, nunca para iniciar ou repetir trabalho.
+- Status visual sem assignee/task nao representa execucao; `in_progress` exige ownership
+  visivel e uma execucao real ou milestone ativo verificavel.
+- O leader ajuda, direciona, revisa e integra, mas nao escreve em paralelo nos arquivos do
+  executor designado.

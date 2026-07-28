@@ -27,3 +27,21 @@ Projects, squads, Kanban issues/tasks, sessions, terminal results and related co
 #### Scenario: Daemon restarts after terminal persistence
 - **WHEN** Main Brain restarts after a result was persisted
 - **THEN** the product state and terminal result remain available and are not recreated as synthetic success
+
+### Requirement: Kanban-only executable dispatch
+
+Every new agent execution SHALL originate from the supported product Kanban assignment or
+follow-up path and SHALL create exactly one product task. Terminal supervision tools SHALL NOT
+start parallel work outside that queue.
+
+#### Scenario: TL assigns one issue
+
+- **WHEN** the TL assigns a ready issue to one healthy agent through Kanban
+- **THEN** exactly one task SHALL be enqueued for that issue/agent activation
+- **AND** no Herdr execution SHALL be launched for the same work
+
+#### Scenario: Task terminates without completing acceptance
+
+- **WHEN** a task completes with a diagnostic, review block or infrastructure failure
+- **THEN** the issue SHALL remain open in the truthful workflow state
+- **AND** it SHALL NOT be marked done solely because the task is terminal

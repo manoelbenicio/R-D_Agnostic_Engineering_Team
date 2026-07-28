@@ -43,7 +43,8 @@ Agent-6 Frontend-QA   -> design-system (paridade de cores kanban/agentes), i18n,
 - Wave 2 depende de Wave 1. Wave 3 valida tudo.
 
 ## Decisões / riscos
-- **Auth do onboarding**: decisão do dono PENDENTE (login/senha vs sem-fricção) — bloqueia Agent-5.
+- **Auth do onboarding**: decisão do dono RESOLVIDA em 2026-07-12 — login/senha simples
+  agora, por interface `AuthProvider` Firebase-ready. Agent-5 nao esta mais bloqueado por decisao.
 - **NIM auth**: validar credencial/fluxo do gateway antes de codar o loop; documentar fonte.
 - **Compatibilidade Cline 3.x**: usar somente `cline --acp` para o transporte ACP. Apesar de
   as mensagens ACP serem JSON-RPC 2.0, o flag CLI `--json` seleciona outro modo headless e
