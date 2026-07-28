@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -148,20 +149,120 @@ func TestProbeFirstFrame_RequiresAuthAckAndDeniesOld(t *testing.T) {
 	}
 
 	code, out, errOut = probe(t, oldToken, "-url", u, "-mode", "first-frame")
-	if code != 3 || out != labelAuthDenied {
+	if code != 3 || out != labelRejected {
 		t.Fatalf("old first-frame: expected %s exit 3, got code=%d out=%q err=%q",
-			labelAuthDenied, code, out, errOut)
+			labelRejected, code, out, errOut)
 	}
 }
 
-func TestProbe_MissingWorkspaceIsBadRequest(t *testing.T) {
+// A 400 means the request was wrong, not the token: it must be exit 1, never a
+// rejection verdict.
+func TestProbe_MissingWorkspaceIsAStopNotAVerdict(t *testing.T) {
 	srv := fakeHub(t, goodToken)
 	defer srv.Close()
 	for _, mode := range []string{"cookie", "first-frame"} {
-		code, out, _ := probe(t, goodToken, "-url", srv.URL+"/ws", "-mode", mode)
-		if code != 3 || out != labelBadRequest {
-			t.Fatalf("%s: expected %s exit 3, got code=%d out=%q", mode, labelBadRequest, code, out)
+		code, out, errOut := probe(t, goodToken, "-url", srv.URL+"/ws", "-mode", mode)
+		if code != 1 || out != "" || errOut != labelBadRequest {
+			t.Fatalf("%s: expected %s exit 1 on stderr, got code=%d out=%q err=%q",
+				mode, labelBadRequest, code, out, errOut)
 		}
+	}
+}
+
+// Only a numeric loopback host is allowed, and the check happens BEFORE stdin is
+// read, so a token is never consumed for a refused destination.
+func TestProbe_RefusesNonLoopbackTargetsBeforeReadingStdin(t *testing.T) {
+	for _, raw := range []string{
+		"http://example.com/ws?workspace_id=x",
+		"http://localhost:18080/ws?workspace_id=x", // a name, not an address
+		"http://10.0.0.5:18080/ws?workspace_id=x",
+		"http://100.118.244.61:18080/ws?workspace_id=x", // the real ORQ1 tailnet IP
+		"http://[2001:db8::1]:18080/ws?workspace_id=x",
+	} {
+		// Empty stdin: if the target were validated after the token read, this
+		// would fail with WS_STOP_TOKEN instead.
+		code, out, errOut := probe(t, "", "-url", raw)
+		if code != 2 || out != "" || errOut != labelTarget {
+			t.Fatalf("%s: expected %s exit 2, got code=%d out=%q err=%q",
+				raw, labelTarget, code, out, errOut)
+		}
+	}
+	// Both loopback literals are accepted by the guard itself.
+	for _, raw := range []string{"http://127.0.0.1:18080/ws", "http://[::1]:18080/ws"} {
+		u, err := url.Parse(raw)
+		if err != nil {
+			t.Fatalf("parse %s: %v", raw, err)
+		}
+		if err := requireNumericLoopback(u); err != nil {
+			t.Fatalf("%s should be accepted, got %v", raw, err)
+		}
+	}
+}
+
+// A 101 that is not a real upgrade must not be reported as acceptance.
+func TestProbe_RejectsFake101WithoutUpgradeHeaders(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Fatal("no hijack")
+		}
+		conn, rw, err := hj.Hijack()
+		if err != nil {
+			t.Fatalf("hijack: %v", err)
+		}
+		defer conn.Close()
+		// 101 with no Upgrade/Connection/Accept headers at all.
+		rw.WriteString("HTTP/1.1 101 Switching Protocols\r\nContent-Length: 0\r\n\r\n")
+		rw.Flush()
+	}))
+	defer srv.Close()
+	code, out, errOut := probe(t, goodToken, "-url", srv.URL+"/ws?workspace_id=x")
+	if code != 1 || out != "" || errOut != labelHandshake {
+		t.Fatalf("expected %s exit 1, got code=%d out=%q err=%q", labelHandshake, code, out, errOut)
+	}
+}
+
+// An error frame that is not exactly `invalid token` is inconclusive, and a close
+// or an EOF before any verdict likewise. None may be exit 3.
+func TestProbeFirstFrame_InconclusiveOutcomesAreExitOne(t *testing.T) {
+	cases := []struct {
+		name  string
+		reply func(conn net.Conn)
+		want  string
+	}{
+		{"other_error", func(c net.Conn) {
+			writeServerText(c, []byte(`{"error":"not a member of this workspace"}`))
+		}, labelAuthError},
+		{"auth_timeout_error", func(c net.Conn) {
+			writeServerText(c, []byte(`{"error":"auth timeout or read error"}`))
+		}, labelAuthError},
+		{"close_frame", func(c net.Conn) {
+			c.Write([]byte{0x88, 0x00})
+		}, labelClosed},
+		{"eof", func(c net.Conn) { c.Close() }, labelEOF},
+		{"malformed_json", func(c net.Conn) { writeServerText(c, []byte("not json")) }, labelMalformed},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				conn, br := upgradeRaw(t, w, r)
+				if conn == nil {
+					return
+				}
+				defer conn.Close()
+				if _, _, err := readFrame(br); err != nil {
+					return
+				}
+				tc.reply(conn)
+				time.Sleep(20 * time.Millisecond)
+			}))
+			defer srv.Close()
+			code, out, errOut := probe(t, goodToken,
+				"-url", srv.URL+"/ws?workspace_id=x", "-mode", "first-frame", "-timeout", "3s")
+			if code != 1 || out != "" || errOut != tc.want {
+				t.Fatalf("expected %s exit 1, got code=%d out=%q err=%q", tc.want, code, out, errOut)
+			}
+		})
 	}
 }
 
@@ -209,7 +310,7 @@ func TestProbe_UsageAndDialFailures(t *testing.T) {
 	for _, args := range [][]string{
 		{},
 		{"-url", "http://127.0.0.1:1/ws", "-mode", "bogus"},
-		{"-url", "ftp://host/ws"},
+		{"-url", "ftp://127.0.0.1/ws"},
 		{"-url", "http://127.0.0.1:18080/ws", "-timeout", "0"},
 	} {
 		code, _, errOut := probe(t, goodToken, args...)

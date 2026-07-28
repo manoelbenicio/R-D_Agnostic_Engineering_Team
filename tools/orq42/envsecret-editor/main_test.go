@@ -87,7 +87,9 @@ func TestEdit_PreservesCRLFAndMissingTerminalNewline(t *testing.T) {
 func TestEdit_RefusesZeroOrDuplicateAssignments(t *testing.T) {
 	for _, tc := range []struct{ name, before, want string }{
 		{"none", "A=1\n#JWT_SECRET=commented\n", labelNone},
-		{"indented_is_not_an_assignment", "  JWT_SECRET=indented\n", labelNone},
+		// An indented line is now a refused VARIANT rather than "absent": the
+		// stricter contract stops instead of ignoring a spelling it will not edit.
+		{"indented_is_a_refused_variant", "  JWT_SECRET=indented\n", labelVariant},
 		{"duplicate", "JWT_SECRET=one\nJWT_SECRET=two\n", labelMulti},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -205,10 +207,12 @@ func TestEdit_PreservesFileModeAndInodeReplacement(t *testing.T) {
 	}
 }
 
-func TestRun_RejectsRelativePathAndBadKey(t *testing.T) {
+// A bad key now has its own label, STOP_KEY, asserted in
+// TestRun_RefusesNonIdentifierKey. STOP_USAGE covers only the path itself.
+func TestRun_RejectsRelativePath(t *testing.T) {
 	for _, args := range [][]string{
 		{"-file", "relative/dev.env"},
-		{"-file", "/tmp/x", "-key", "BAD=KEY"},
+		{"-file", "./dev.env"},
 		{},
 	} {
 		code, _, stderr := runEditor(t, newVal, args...)
@@ -216,5 +220,102 @@ func TestRun_RejectsRelativePathAndBadKey(t *testing.T) {
 			t.Fatalf("args %v: expected %s exit 2, got code=%d stderr=%q",
 				args, labelUsage, code, stderr)
 		}
+	}
+}
+
+// A dotenv spelling this tool refuses to interpret must stop the run, never be
+// edited and never be silently ignored. `export KEY=`, indentation and space
+// around `=` are legitimate in other dotenv tooling, which is exactly why an
+// editor that only understands `KEY=value` has to refuse them.
+func TestEdit_RefusesSemanticVariants(t *testing.T) {
+	for _, tc := range []struct{ name, before string }{
+		{"export_only", "export JWT_SECRET=old\n"},
+		{"export_uppercase", "EXPORT JWT_SECRET=old\n"},
+		{"space_before_equals", "JWT_SECRET =old\n"},
+		{"tab_before_equals", "JWT_SECRET\t=old\n"},
+		{"indented_space", "  JWT_SECRET=old\n"},
+		{"indented_tab", "\tJWT_SECRET=old\n"},
+		{"mixed_canonical_plus_export", "JWT_SECRET=old\nexport JWT_SECRET=other\n"},
+		{"mixed_canonical_plus_indented", "JWT_SECRET=old\n   JWT_SECRET=other\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeEnv(t, tc.before)
+			code, _, stderr := runEditor(t, newVal, "-file", path)
+			if code == 0 {
+				t.Fatalf("variant %q must not be edited", tc.before)
+			}
+			got := strings.TrimSpace(stderr)
+			if got != labelVariant && got != labelNone {
+				t.Fatalf("expected %s or %s, got %q", labelVariant, labelNone, got)
+			}
+			after, _ := os.ReadFile(path)
+			if string(after) != tc.before {
+				t.Fatalf("file must be untouched\n got: %q", after)
+			}
+		})
+	}
+}
+
+// A key that is not a dotenv identifier is refused before the file is opened.
+func TestRun_RefusesNonIdentifierKey(t *testing.T) {
+	path := writeEnv(t, "JWT_SECRET=old\n")
+	for _, key := range []string{"", "BAD KEY", "BAD=KEY", "bad-key", "bad.key", "1BAD", `K"Q`, "K\n"} {
+		code, _, stderr := runEditor(t, newVal, "-file", path, "-key", key)
+		if code != 2 || strings.TrimSpace(stderr) != labelKey {
+			t.Fatalf("key %q: expected %s exit 2, got code=%d stderr=%q", key, labelKey, code, stderr)
+		}
+	}
+	// A valid identifier still works.
+	if code, _, stderr := runEditor(t, newVal, "-file", path, "-key", "JWT_SECRET"); code != 0 {
+		t.Fatalf("valid key rejected: code=%d stderr=%q", code, stderr)
+	}
+}
+
+// The preflight is content-free: it accepts only the exact canonical line, never
+// writes, and never reads stdin.
+func TestPreflight_AcceptsOnlyTheCanonicalLine(t *testing.T) {
+	canonical := "OTHER=x\nJWT_SECRET=" + newVal + "\n# tail\n"
+	for _, tc := range []struct {
+		name, before, want string
+	}{
+		{"canonical", canonical, labelPreflight},
+		{"canonical_crlf", "JWT_SECRET=" + newVal + "\r\n", labelPreflight},
+		{"double_quoted", `JWT_SECRET="` + newVal + `"` + "\n", labelNotCanon},
+		{"single_quoted", "JWT_SECRET='" + newVal + "'\n", labelNotCanon},
+		{"inline_comment", "JWT_SECRET=" + newVal + " # rotated\n", labelNotCanon},
+		{"trailing_space", "JWT_SECRET=" + newVal + " \n", labelNotCanon},
+		{"short_value", "JWT_SECRET=deadbeef\n", labelNotCanon},
+		{"uppercase_hex_ok", "JWT_SECRET=" + strings.ToUpper(newVal) + "\n", labelPreflight},
+		{"non_hex", "JWT_SECRET=" + strings.Repeat("z", 64) + "\n", labelNotCanon},
+		{"export_variant", "export JWT_SECRET=" + newVal + "\n", labelVariant},
+		{"absent", "OTHER=x\n", labelNone},
+		{"duplicate", "JWT_SECRET=" + newVal + "\nJWT_SECRET=" + newVal + "\n", labelMulti},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeEnv(t, tc.before)
+			// Stdin is deliberately poisoned: the preflight must not read it.
+			var out, errBuf bytes.Buffer
+			code := run([]string{"-file", path, "-check-only"},
+				strings.NewReader("THIS-MUST-NOT-BE-READ"), &out, &errBuf)
+
+			if tc.want == labelPreflight {
+				if code != 0 || strings.TrimSpace(out.String()) != labelPreflight {
+					t.Fatalf("expected %s exit 0, got code=%d out=%q err=%q",
+						labelPreflight, code, out.String(), errBuf.String())
+				}
+			} else {
+				if code != 1 || strings.TrimSpace(errBuf.String()) != tc.want {
+					t.Fatalf("expected %s exit 1, got code=%d out=%q err=%q",
+						tc.want, code, out.String(), errBuf.String())
+				}
+			}
+			after, _ := os.ReadFile(path)
+			if string(after) != tc.before {
+				t.Fatalf("preflight must never write\n got: %q", after)
+			}
+			if strings.Contains(out.String(), newVal) || strings.Contains(errBuf.String(), newVal) {
+				t.Fatal("preflight leaked file content")
+			}
+		})
 	}
 }

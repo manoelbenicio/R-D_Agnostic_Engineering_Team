@@ -42,7 +42,9 @@ import (
 // Fixed labels. Nothing else is ever printed to stdout.
 const (
 	labelOK          = "OK_EDIT"
+	labelPreflight   = "OK_PREFLIGHT"
 	labelUsage       = "STOP_USAGE"
+	labelKey         = "STOP_KEY"
 	labelSymlink     = "STOP_SYMLINK"
 	labelNotRegular  = "STOP_NOT_REGULAR"
 	labelPerm        = "STOP_PERM"
@@ -51,6 +53,8 @@ const (
 	labelNUL         = "STOP_NUL"
 	labelNone        = "STOP_NONE"
 	labelMulti       = "STOP_MULTI"
+	labelVariant     = "STOP_VARIANT"
+	labelNotCanon    = "STOP_NOT_CANONICAL"
 	labelValueEmpty  = "STOP_VALUE_EMPTY"
 	labelValueBad    = "STOP_VALUE_SHAPE"
 	labelValueNL     = "STOP_VALUE_NEWLINE"
@@ -68,7 +72,13 @@ const maxFileBytes = 1 << 20
 // the cap only stops an unbounded read.
 const maxValueBytes = 4096
 
-var hex64 = regexp.MustCompile(`^[0-9a-fA-F]{64}$`)
+var (
+	hex64 = regexp.MustCompile(`^[0-9a-fA-F]{64}$`)
+	// dotenvKey is the accepted assignment name: a POSIX-style identifier. A key
+	// carrying whitespace, a dot, a dash or a quote is refused outright rather
+	// than matched loosely against file content.
+	dotenvKey = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+)
 
 type stopError struct{ label string }
 
@@ -76,40 +86,98 @@ func (e *stopError) Error() string { return e.label }
 
 func stop(label string) error { return &stopError{label: label} }
 
-// assignmentSpan locates the single active `key=` assignment and returns the
-// byte offsets of the value: everything before valueStart is the prefix, and
-// everything from valueEnd on is the suffix. Commented and indented lines are
-// not assignments. Any duplicate is refused rather than guessed at.
-func assignmentSpan(data []byte, key string) (valueStart, valueEnd int, err error) {
-	prefix := []byte(key + "=")
-	found := 0
+// lineIterator calls fn for every line, giving the byte offsets of the line
+// itself so callers can slice prefix and suffix without copying.
+func lineIterator(data []byte, fn func(line []byte, start, end int)) {
 	offset := 0
-	for offset <= len(data) {
+	for {
 		lineEnd := bytes.IndexByte(data[offset:], '\n')
-		var line []byte
-		var next int
 		if lineEnd < 0 {
-			line = data[offset:]
-			next = len(data) + 1
-		} else {
-			line = data[offset : offset+lineEnd]
-			next = offset + lineEnd + 1
+			fn(data[offset:], offset, len(data))
+			return
 		}
+		end := offset + lineEnd
+		fn(data[offset:end], offset, end)
+		offset = end + 1
+		if offset > len(data) {
+			return
+		}
+	}
+}
+
+// isSemanticVariant reports whether a line refers to the key in a spelling this
+// tool refuses to touch: indented, `export`-prefixed, or with whitespace around
+// the `=`. Those forms are legitimate dotenv in other tooling, which is exactly
+// why they must stop the run instead of being edited or silently ignored.
+func isSemanticVariant(line []byte, key string) bool {
+	s := string(line)
+	trimmed := strings.TrimLeft(s, " \t")
+	indented := trimmed != s
+	if strings.HasPrefix(trimmed, "#") {
+		return false // a comment refers to nothing
+	}
+	body := trimmed
+	exported := false
+	if rest, ok := cutPrefixFold(body, "export"); ok && (strings.HasPrefix(rest, " ") || strings.HasPrefix(rest, "\t")) {
+		body = strings.TrimLeft(rest, " \t")
+		exported = true
+	}
+	if !strings.HasPrefix(body, key) {
+		return false
+	}
+	after := body[len(key):]
+	spaced := strings.HasPrefix(after, " ") || strings.HasPrefix(after, "\t")
+	afterTrim := strings.TrimLeft(after, " \t")
+	if !strings.HasPrefix(afterTrim, "=") {
+		return false // e.g. JWT_SECRETX=... is a different key
+	}
+	return indented || exported || spaced
+}
+
+// isCanonical reports whether the line is exactly `KEY=<64hex>`: no quoting, no
+// inline comment, no surrounding whitespace.
+func isCanonical(line []byte, key string) bool {
+	prefix := key + "="
+	if !bytes.HasPrefix(line, []byte(prefix)) {
+		return false
+	}
+	return hex64.Match(line[len(prefix):])
+}
+
+func cutPrefixFold(s, prefix string) (string, bool) {
+	if len(s) >= len(prefix) && strings.EqualFold(s[:len(prefix)], prefix) {
+		return s[len(prefix):], true
+	}
+	return "", false
+}
+
+// assignmentSpan locates the single active `key=` assignment and returns the
+// byte offsets of the value. It refuses zero, duplicates, and any semantic
+// variant elsewhere in the file, so a mixed file (one canonical line plus an
+// `export` line) stops instead of being half-edited.
+func assignmentSpan(data []byte, key string) (valueStart, valueEnd int, err error) {
+	found := 0
+	variants := 0
+	prefix := []byte(key + "=")
+	lineIterator(data, func(line []byte, start, end int) {
 		if bytes.HasPrefix(line, prefix) {
 			found++
 			if found == 1 {
-				valueStart = offset + len(prefix)
-				valueEnd = offset + len(line)
+				valueStart = start + len(prefix)
+				valueEnd = end
 				// Keep a trailing CR with the suffix so CRLF files survive.
 				if valueEnd > valueStart && data[valueEnd-1] == '\r' {
 					valueEnd--
 				}
 			}
+			return
 		}
-		if lineEnd < 0 {
-			break
+		if isSemanticVariant(line, key) {
+			variants++
 		}
-		offset = next
+	})
+	if variants > 0 {
+		return 0, 0, stop(labelVariant)
 	}
 	switch found {
 	case 0:
@@ -288,18 +356,63 @@ func edit(path, key string, expectHex64 bool, stdin io.Reader) (retErr error) {
 	return nil
 }
 
+// preflight opens the file, applies the same structural gates as edit, and
+// additionally requires the single assignment to be exactly canonical. It reads
+// stdin not at all and reports nothing about content beyond a fixed label, so it
+// is safe to run before a rotation window.
+func preflight(path, key string) error {
+	f, _, err := openNoFollow(path)
+	if err != nil {
+		return err
+	}
+	data, err := io.ReadAll(io.LimitReader(f, maxFileBytes+1))
+	closeErr := f.Close()
+	if err != nil || closeErr != nil || len(data) > maxFileBytes {
+		return stop(labelRead)
+	}
+	if bytes.IndexByte(data, 0) >= 0 {
+		return stop(labelNUL)
+	}
+	valueStart, _, err := assignmentSpan(data, key)
+	if err != nil {
+		return err
+	}
+	// Recover the whole line to assert the canonical shape.
+	lineStart := bytes.LastIndexByte(data[:valueStart], '\n') + 1
+	lineEnd := lineStart + bytes.IndexByte(data[lineStart:], '\n')
+	if lineEnd < lineStart {
+		lineEnd = len(data)
+	}
+	line := bytes.TrimRight(data[lineStart:lineEnd], "\r")
+	if !isCanonical(line, key) {
+		return stop(labelNotCanon)
+	}
+	return nil
+}
+
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("envsecret-editor", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	file := fs.String("file", "", "absolute path of the dotenv file")
 	key := fs.String("key", "JWT_SECRET", "assignment name to replace")
 	expectHex64 := fs.Bool("expect-hex64", false, "require a 64-character hex value")
-	if err := fs.Parse(args); err != nil || *file == "" || *key == "" ||
-		!filepath.IsAbs(*file) || strings.ContainsAny(*key, "=\r\n") {
+	checkOnly := fs.Bool("check-only", false, "content-free preflight; never writes and never reads stdin")
+	if err := fs.Parse(args); err != nil || *file == "" || !filepath.IsAbs(*file) {
 		fmt.Fprintln(stderr, labelUsage)
 		return 2
 	}
-	if err := edit(*file, *key, *expectHex64, stdin); err != nil {
+	if !dotenvKey.MatchString(*key) {
+		fmt.Fprintln(stderr, labelKey)
+		return 2
+	}
+
+	var err error
+	if *checkOnly {
+		err = preflight(*file, *key)
+	} else {
+		err = edit(*file, *key, *expectHex64, stdin)
+	}
+	if err != nil {
 		var s *stopError
 		if errors.As(err, &s) {
 			fmt.Fprintln(stderr, s.label)
@@ -308,7 +421,11 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		}
 		return 1
 	}
-	fmt.Fprintln(stdout, labelOK)
+	if *checkOnly {
+		fmt.Fprintln(stdout, labelPreflight)
+	} else {
+		fmt.Fprintln(stdout, labelOK)
+	}
 	return 0
 }
 
