@@ -1,17 +1,9 @@
 -- ORQ-12: snapshot the provider account that produced each usage row.
 --
--- Expected version once the registrar assigns one: 128 (127 is the highest
--- materialized migration in this lineage). That number is an EXPECTATION
--- recorded in prose, NOT a materialization: the filename still carries the
--- NEXT_CANONICAL_ placeholder, and only the registrar turns it into a number.
---
--- VERSION NUMBER IS DELIBERATELY ABSENT. The file lives under
--- migrations/staging/ with the placeholder name
--- NEXT_CANONICAL_task_usage_account_id, and it acquires a number only after the
--- central registrar scans for the next free version above 127
--- (127_task_usage_thinking_level is the highest materialized migration in this
--- lineage). internal/migrations.Files globs "<dir>/*.up.sql" NON-RECURSIVELY,
--- so nothing here is ever applied by `migrate up` while it stays staged.
+-- Version 128, assigned after a fresh collision scan confirmed it as the next
+-- free version above 127 (127_task_usage_thinking_level is the previous
+-- migration in this lineage): no local branch, no fetched remote head and no
+-- other checkout carries a 128_ migration.
 --
 -- NULLABLE on purpose, and additive only:
 --   * legacy rows keep NULL: they predate the column and no account can be
