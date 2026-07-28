@@ -96,3 +96,54 @@ The following are excluded from cleanup:
 
 This first pass is expected to restore enough headroom for builds, race tests and
 ephemeral database gates while the permanent lifecycle policy is completed.
+
+## Executed cleanup receipt — 2026-07-28T20:40Z
+
+The two active Kanban executions reached terminal state and a workspace-wide task
+scan found zero queued, dispatched, running or `waiting_local_directory` tasks.
+Cleanup then ran in two bounded waves.
+
+### Wave 1 — completed task caches
+
+Seven exact directories under `.cache` and `.private-tmp` were checked for:
+
+- regular directory and not a symlink;
+- newest contained file older than 24 hours;
+- zero open files according to `lsof`;
+- path constrained to the approved cache/private-temp roots.
+
+They were deleted by bounded `find -depth -delete` traversal. Recovered bytes:
+**3,292,479,488**.
+
+### Wave 2 — regenerable credential-slot caches
+
+Only complete directories matching these patterns were eligible:
+
+- `slot-*/home/.cache/go-build`;
+- `slot-*/home/go/pkg/mod`;
+- `slot-*/home/.npm/_cacache`;
+- `slot-*/home/.private-tmp/gocache`;
+- `slot-*/home/.cache/uv`.
+
+Eligibility additionally required the newest file to be older than 24 hours and
+zero open files. Read-only Go module files were made user-writable only inside the
+selected cache directory before deletion. Five UV caches, about 1.2 GiB total,
+were detected open and preserved automatically. The direct before/after filesystem
+delta for this wave was **8,944,656,384 bytes**. The small difference between the
+sum of wave deltas and the overall delta is concurrent normal filesystem activity.
+
+### Final filesystem result
+
+| Metric | Before | After |
+|---|---:|---:|
+| Root available bytes | 3,598,041,088 | 15,844,499,456 |
+| Root available (human) | 3.4 GiB | 15 GiB |
+| Root utilization | 95% | 76% |
+| Total recovered | — | **12,246,458,368 bytes (11.4 GiB)** |
+
+No credential/token/session database, login snapshot, SharePoint file, evidence,
+worktree, Multica task workspace, product database or Docker volume was deleted.
+The additional approximately 7.3 GiB remains conditional because its safe removal
+requires per-object proof of no live session, no unpromoted deliverable and no
+unintegrated Git state. With 15 GiB now free, those destructive integrity checks
+are deferred rather than accepting avoidable data-loss risk.
