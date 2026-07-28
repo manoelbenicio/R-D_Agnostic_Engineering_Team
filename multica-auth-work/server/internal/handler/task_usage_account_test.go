@@ -39,14 +39,31 @@ func uuidParam(t *testing.T, s string) pgtype.UUID {
 // `tenant_id` are NOT NULL, and status is constrained to
 // available|leased|exhausted|cooldown|degraded, so 'active' would violate the
 // CHECK.
-func createTestAccount(t *testing.T, vendorLabel string) string {
+// handlerTestRuntimeProvider returns the provider of the runtime the package
+// fixtures attach every task to. The claim compares it against accounts.vendor,
+// so a fixture that hardcodes a vendor would silently stop matching if the
+// package runtime ever changes provider.
+func handlerTestRuntimeProvider(t *testing.T) string {
+	t.Helper()
+	var provider string
+	if err := testPool.QueryRow(context.Background(),
+		`SELECT provider FROM agent_runtime WHERE id = $1`, handlerTestRuntimeID(t)).
+		Scan(&provider); err != nil {
+		t.Fatalf("read runtime provider: %v", err)
+	}
+	return provider
+}
+
+// createTestAccountFull inserts an account with an explicit tenant, vendor and
+// status, which is what the authoritative predicates compare against.
+func createTestAccountFull(t *testing.T, tenantID, vendor, status string) string {
 	t.Helper()
 	var accountID string
 	if err := testPool.QueryRow(context.Background(), `
 		INSERT INTO accounts (vendor, tenant_id, status)
-		VALUES ($1, gen_random_uuid(), 'available')
+		VALUES ($1, $2, $3)
 		RETURNING account_id
-	`, vendorLabel).Scan(&accountID); err != nil {
+	`, vendor, tenantID, status).Scan(&accountID); err != nil {
 		t.Fatalf("insert account: %v", err)
 	}
 	t.Cleanup(func() {
@@ -55,20 +72,41 @@ func createTestAccount(t *testing.T, vendorLabel string) string {
 	return accountID
 }
 
+// createTestAccount inserts an account that SATISFIES every predicate: the
+// workspace as tenant, the task runtime's provider as vendor, status available.
+// The column set and the status value come from migration 123_rotation, where
+// vendor and tenant_id are NOT NULL and the CHECK does not accept 'active'.
+func createTestAccount(t *testing.T, _ string) string {
+	t.Helper()
+	accountID := createTestAccountFull(t, testWorkspaceID, handlerTestRuntimeProvider(t), "available")
+	return accountID
+}
+
 // approveAccount marks the account allowed for its own tenant, which is what
 // ClaimAgentTask requires before it will freeze the account onto a task.
-func approveAccount(t *testing.T, accountID string) {
+// approveAccountFull writes the approval with an explicit tenant, allowed flag
+// and worktype scope. scope is passed as a pointer so a test can store SQL NULL,
+// which the authoritative policy REJECTS.
+func approveAccountFull(t *testing.T, accountID, tenantID string, allowed bool, scope *string) {
 	t.Helper()
 	if _, err := testPool.Exec(context.Background(), `
-		INSERT INTO approved_accounts (tenant_id, account_id, allowed)
-		SELECT a.tenant_id, a.account_id, true FROM accounts a WHERE a.account_id = $1
-		ON CONFLICT (tenant_id, account_id) DO UPDATE SET allowed = true
-	`, accountID); err != nil {
+		INSERT INTO approved_accounts (tenant_id, account_id, allowed, worktype_scope)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (tenant_id, account_id)
+		DO UPDATE SET allowed = EXCLUDED.allowed, worktype_scope = EXCLUDED.worktype_scope
+	`, tenantID, accountID, allowed, scope); err != nil {
 		t.Fatalf("approve account: %v", err)
 	}
 	t.Cleanup(func() {
 		testPool.Exec(context.Background(), `DELETE FROM approved_accounts WHERE account_id = $1`, accountID)
 	})
+}
+
+// approveAccount approves for the test workspace with the only accepted scope.
+func approveAccount(t *testing.T, accountID string) {
+	t.Helper()
+	general := "GENERAL"
+	approveAccountFull(t, accountID, testWorkspaceID, true, &general)
 }
 
 // assignAgentToAccount points assignments.agent_id at the given account. The
@@ -490,3 +528,183 @@ func TestListTaskUsageByAccount_ScopedToWorkspaceAndKeepsNullBucket(t *testing.T
 		t.Fatalf("another workspace must not see this usage: %+v", otherAttr)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Refusal matrix: one case per authoritative predicate.
+//
+// Source of truth: adr-orq21-orq12-producing-account-snapshot.md, sha256
+// f34e6dcc69112292c782294b857df419790f1a2ff1ef87f53150529bcc49139b, plus the
+// ORQ-21 R3 rulings. Every case below asserts that a predicate MISS leaves the
+// snapshot NULL rather than borrowing an account. The policy is deliberately
+// unforgiving: an unimported or mislabelled approval is non-executable, not
+// silently promoted.
+// ---------------------------------------------------------------------------
+
+// freezeAttempt wires one agent + assignment + task and returns the frozen
+// account after a real claim.
+func freezeAttempt(t *testing.T, name, accountID string) (agentID, taskID, frozen string, ok bool) {
+	t.Helper()
+	agentID = createHandlerTestAgent(t, name, nil)
+	assignAgentToAccount(t, agentID, accountID)
+	taskID = enqueueTaskForAgent(t, agentID)
+	frozen, ok = claimTask(t, agentID, taskID)
+	return agentID, taskID, frozen, ok
+}
+
+func TestClaimFreeze_RefusesTenantMismatchOnAccount(t *testing.T) {
+	// The account is approved and usable, but it belongs to another workspace.
+	other := uuid.NewString()
+	accountID := createTestAccountFull(t, other, handlerTestRuntimeProvider(t), "available")
+	general := "GENERAL"
+	approveAccountFull(t, accountID, testWorkspaceID, true, &general)
+
+	if _, _, frozen, ok := freezeAttempt(t, "ORQ12 TenantMismatchAccount", accountID); ok {
+		t.Fatalf("an account from another workspace must not be frozen, got %s", frozen)
+	}
+}
+
+func TestClaimFreeze_RefusesTenantMismatchOnApproval(t *testing.T) {
+	// The account is in this workspace, but the approval was granted elsewhere.
+	accountID := createTestAccountFull(t, testWorkspaceID, handlerTestRuntimeProvider(t), "available")
+	general := "GENERAL"
+	approveAccountFull(t, accountID, uuid.NewString(), true, &general)
+
+	if _, _, frozen, ok := freezeAttempt(t, "ORQ12 TenantMismatchApproval", accountID); ok {
+		t.Fatalf("an approval from another tenant must not be frozen, got %s", frozen)
+	}
+}
+
+func TestClaimFreeze_RefusesVendorMismatch(t *testing.T) {
+	accountID := createTestAccountFull(t, testWorkspaceID, "orq12-not-the-runtime-vendor", "available")
+	approveAccount(t, accountID)
+
+	if _, _, frozen, ok := freezeAttempt(t, "ORQ12 VendorMismatch", accountID); ok {
+		t.Fatalf("a vendor that does not match the task runtime must not be frozen, got %s", frozen)
+	}
+}
+
+// The one alias the policy canonicalises: a runtime reporting `agy` must match a
+// vendor recorded as `antigravity`. This is the positive half of the mapping, and
+// it is also the case that would silently break if the SQL CASE and the Go
+// canonicaliser ever diverge.
+func TestClaimFreeze_CanonicalisesAgyToAntigravity(t *testing.T) {
+	ctx := context.Background()
+	runtimeID := handlerTestRuntimeID(t)
+	var original string
+	if err := testPool.QueryRow(ctx,
+		`SELECT provider FROM agent_runtime WHERE id = $1`, runtimeID).Scan(&original); err != nil {
+		t.Fatalf("read provider: %v", err)
+	}
+	if _, err := testPool.Exec(ctx,
+		`UPDATE agent_runtime SET provider = 'agy' WHERE id = $1`, runtimeID); err != nil {
+		t.Fatalf("set provider to agy: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(),
+			`UPDATE agent_runtime SET provider = $1 WHERE id = $2`, original, runtimeID)
+	})
+
+	accountID := createTestAccountFull(t, testWorkspaceID, "antigravity", "available")
+	approveAccount(t, accountID)
+
+	_, _, frozen, ok := freezeAttempt(t, "ORQ12 AgyAlias", accountID)
+	if !ok || frozen != accountID {
+		t.Fatalf("agy must canonicalise to antigravity: got %q ok=%v want %s", frozen, ok, accountID)
+	}
+}
+
+func TestClaimFreeze_AccountStatusPolicy(t *testing.T) {
+	// Only available and leased can produce work.
+	for _, status := range []string{"exhausted", "cooldown", "degraded"} {
+		t.Run("refuses_"+status, func(t *testing.T) {
+			accountID := createTestAccountFull(t, testWorkspaceID, handlerTestRuntimeProvider(t), status)
+			approveAccount(t, accountID)
+			if _, _, frozen, ok := freezeAttempt(t, "ORQ12 Status "+status, accountID); ok {
+				t.Fatalf("status %s must not be frozen, got %s", status, frozen)
+			}
+		})
+	}
+	t.Run("accepts_leased", func(t *testing.T) {
+		accountID := createTestAccountFull(t, testWorkspaceID, handlerTestRuntimeProvider(t), "leased")
+		approveAccount(t, accountID)
+		_, _, frozen, ok := freezeAttempt(t, "ORQ12 Status leased", accountID)
+		if !ok || frozen != accountID {
+			t.Fatalf("leased must be usable: got %q ok=%v want %s", frozen, ok, accountID)
+		}
+	})
+}
+
+func TestClaimFreeze_WorktypeScopePolicy(t *testing.T) {
+	provider := handlerTestRuntimeProvider(t)
+	for _, tc := range []struct {
+		name  string
+		scope *string
+	}{
+		{"refuses_heavy", strPtr("HEAVY")},
+		{"refuses_cheap", strPtr("CHEAP")},
+		{"refuses_review", strPtr("REVIEW")},
+		// NULL is rejected on purpose: no implicit NULL -> GENERAL, no backfill.
+		{"refuses_null", nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			accountID := createTestAccountFull(t, testWorkspaceID, provider, "available")
+			approveAccountFull(t, accountID, testWorkspaceID, true, tc.scope)
+			if _, _, frozen, ok := freezeAttempt(t, "ORQ12 Scope "+tc.name, accountID); ok {
+				t.Fatalf("scope %v must not be frozen, got %s", tc.scope, frozen)
+			}
+		})
+	}
+}
+
+func TestClaimFreeze_RefusesRevokedApproval(t *testing.T) {
+	accountID := createTestAccountFull(t, testWorkspaceID, handlerTestRuntimeProvider(t), "available")
+	general := "GENERAL"
+	approveAccountFull(t, accountID, testWorkspaceID, false, &general)
+
+	if _, _, frozen, ok := freezeAttempt(t, "ORQ12 RevokedApproval", accountID); ok {
+		t.Fatalf("allowed=false must not be frozen, got %s", frozen)
+	}
+}
+
+// ADR item 6: an agent_task_queue row is one ATTEMPT. A retry inserts a fresh row
+// that starts unfrozen and freezes the account valid at ITS OWN claim, so the two
+// attempts can legitimately name different accounts and each usage row stays
+// correct.
+func TestClaimFreeze_RetryAttemptFreezesIndependently(t *testing.T) {
+	provider := handlerTestRuntimeProvider(t)
+	accountA := createTestAccountFull(t, testWorkspaceID, provider, "available")
+	accountB := createTestAccountFull(t, testWorkspaceID, provider, "available")
+	approveAccount(t, accountA)
+	approveAccount(t, accountB)
+
+	agentID, firstTask, frozen, ok := freezeAttempt(t, "ORQ12 RetryAttempt", accountA)
+	if !ok || frozen != accountA {
+		t.Fatalf("first attempt should freeze A: got %q ok=%v", frozen, ok)
+	}
+	upsertUsage(t, firstTask, 10, 10)
+
+	// The agent rotates to B, then a retry attempt is enqueued and claimed.
+	assignAgentToAccount(t, agentID, accountB)
+	secondTask := enqueueTaskForAgent(t, agentID)
+
+	// The first attempt must be out of the way for the serialisation guard.
+	if _, err := testPool.Exec(context.Background(),
+		`UPDATE agent_task_queue SET status = 'completed' WHERE id = $1`, firstTask); err != nil {
+		t.Fatalf("complete first attempt: %v", err)
+	}
+	secondFrozen, ok := claimTask(t, agentID, secondTask)
+	if !ok || secondFrozen != accountB {
+		t.Fatalf("the retry attempt must freeze B: got %q ok=%v want %s", secondFrozen, ok, accountB)
+	}
+	upsertUsage(t, secondTask, 20, 20)
+
+	// Each attempt keeps its own producing account.
+	if got, _ := readUsageAccount(t, firstTask); got != accountA {
+		t.Fatalf("first attempt usage = %s, want %s", got, accountA)
+	}
+	if got, _ := readUsageAccount(t, secondTask); got != accountB {
+		t.Fatalf("retry attempt usage = %s, want %s", got, accountB)
+	}
+}
+
+func strPtr(s string) *string { return &s }

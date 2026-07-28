@@ -288,13 +288,52 @@ SET status = 'dispatched',
     credential_account_id = COALESCE(
         agent_task_queue.credential_account_id,
         (
-            SELECT asg.account_id
-            FROM assignments asg
-            JOIN approved_accounts ap
-              ON ap.account_id = asg.account_id
+            -- Predicates are the authoritative set from
+            -- adr-orq21-orq12-producing-account-snapshot.md (sha256
+            -- f34e6dcc69112292c782294b857df419790f1a2ff1ef87f53150529bcc49139b)
+            -- and the ORQ-21 R3 rulings:
+            --   tenant   accounts.tenant_id AND approved_accounts.tenant_id must
+            --            both equal the agent's workspace. tenant_id IS the
+            --            workspace UUID; rows carrying any other semantics fail
+            --            closed and need an authorised metadata correction. No
+            --            COALESCE, no backward guess.
+            --   provider the canonical source is the TASK's runtime row, not
+            --            runtime_config: agent_task_queue.runtime_id ->
+            --            agent_runtime.provider, with agy canonicalised to
+            --            antigravity before comparing against accounts.vendor.
+            --   status   only 'available' or 'leased' can produce work; the
+            --            durable exclusivity comes from assignments.agent_id
+            --            being the primary key plus the unique index on
+            --            assignments(account_id) added by this migration.
+            --   worktype exactly 'GENERAL'. NULL is REJECTED: there is no
+            --            implicit NULL -> GENERAL and no automatic backfill, so
+            --            an unimported approval stays non-executable.
+            -- NO LIMIT, deliberately. Ambiguity must be surfaced, not hidden: if
+            -- these joins ever yield two rows Postgres fails the claim instead of
+            -- picking arbitrarily. Uniqueness makes that unreachable by
+            -- construction - agent.id and assignments.agent_id are primary keys,
+            -- assignments(account_id) is unique, and approved_accounts is unique
+            -- on (tenant_id, account_id) with the tenant pinned by the join.
+            SELECT acc.account_id
+            FROM agent AS ag
+            JOIN agent_runtime AS rt
+              ON rt.id = agent_task_queue.runtime_id
+            JOIN assignments AS asg
+              ON asg.agent_id = agent_task_queue.agent_id
+            JOIN accounts AS acc
+              ON acc.account_id = asg.account_id
+             AND acc.tenant_id = ag.workspace_id
+             AND acc.status IN ('available', 'leased')
+             AND lower(acc.vendor) = CASE
+                     WHEN lower(rt.provider) = 'agy' THEN 'antigravity'
+                     ELSE lower(rt.provider)
+                 END
+            JOIN approved_accounts AS ap
+              ON ap.account_id = acc.account_id
+             AND ap.tenant_id = ag.workspace_id
              AND ap.allowed IS TRUE
-            WHERE asg.agent_id = agent_task_queue.agent_id
-            LIMIT 1
+             AND ap.worktype_scope = 'GENERAL'
+            WHERE ag.id = agent_task_queue.agent_id
         )
     )
 WHERE id = (
