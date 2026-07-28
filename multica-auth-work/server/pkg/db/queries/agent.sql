@@ -340,6 +340,11 @@ SET status = 'dispatched',
                      WHEN lower(btrim(rt.provider)) = 'agy' THEN 'antigravity'
                      ELSE lower(btrim(rt.provider))
                  END
+             -- Covered providers only per ADR: codex, kiro, antigravity (agy input alias)
+             AND CASE
+                     WHEN lower(btrim(rt.provider)) = 'agy' THEN 'antigravity'
+                     ELSE lower(btrim(rt.provider))
+                 END IN ('codex', 'kiro', 'antigravity')
             JOIN approved_accounts AS ap
               ON ap.account_id = acc.account_id
              AND ap.tenant_id = ag.workspace_id
@@ -380,14 +385,26 @@ RETURNING *;
 -- with no `started_at`, so the daemon has not acknowledged it via StartTask.
 -- Refresh dispatched_at so the server-side dispatch timeout measures from the
 -- recovered delivery attempt.
+--
+-- Reclaim NEVER resolves or changes an account: it preserves the existing
+-- credential_account_id. If a covered provider task reaches `dispatched` with
+-- a NULL credential_account_id, reclaim MUST fail closed and refuse to reclaim.
 UPDATE agent_task_queue
 SET dispatched_at = now()
 WHERE id = (
     SELECT atq.id FROM agent_task_queue atq
+    JOIN agent_runtime rt ON rt.id = atq.runtime_id
     WHERE atq.runtime_id = $1
       AND atq.status = 'dispatched'
       AND atq.started_at IS NULL
       AND atq.dispatched_at < now() - make_interval(secs => @claim_recovery_secs::double precision)
+      AND NOT (
+          CASE
+              WHEN lower(btrim(rt.provider)) = 'agy' THEN 'antigravity'
+              ELSE lower(btrim(rt.provider))
+          END IN ('codex', 'kiro', 'antigravity')
+          AND atq.credential_account_id IS NULL
+      )
     ORDER BY atq.priority DESC, atq.dispatched_at ASC
     LIMIT 1
     FOR UPDATE SKIP LOCKED

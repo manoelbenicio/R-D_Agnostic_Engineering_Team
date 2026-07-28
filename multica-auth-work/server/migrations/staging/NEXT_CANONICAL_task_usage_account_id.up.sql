@@ -29,6 +29,16 @@
 --     would let one task hold two rows for the same model and double-count.
 --   * rollups (073/084/101/102) are intentionally NOT touched: this phase only
 --     records the dimension.
+-- ORQ-12 preflight / backfill: canonicalize existing provider/vendor alias data
+-- (e.g. agy -> antigravity) so that exact equality comparisons succeed.
+UPDATE accounts
+SET vendor = 'antigravity'
+WHERE lower(btrim(vendor)) = 'agy';
+
+UPDATE agent_runtime
+SET provider = 'antigravity'
+WHERE lower(btrim(provider)) = 'agy';
+
 ALTER TABLE task_usage
     ADD COLUMN IF NOT EXISTS account_id UUID REFERENCES accounts(account_id) ON DELETE SET NULL;
 

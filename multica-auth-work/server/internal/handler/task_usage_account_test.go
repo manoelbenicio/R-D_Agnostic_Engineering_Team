@@ -46,10 +46,18 @@ func uuidParam(t *testing.T, s string) pgtype.UUID {
 func handlerTestRuntimeProvider(t *testing.T) string {
 	t.Helper()
 	var provider string
+	runtimeID := handlerTestRuntimeID(t)
 	if err := testPool.QueryRow(context.Background(),
-		`SELECT provider FROM agent_runtime WHERE id = $1`, handlerTestRuntimeID(t)).
+		`SELECT provider FROM agent_runtime WHERE id = $1`, runtimeID).
 		Scan(&provider); err != nil {
 		t.Fatalf("read runtime provider: %v", err)
+	}
+	if provider == "handler_test_runtime" {
+		provider = "codex"
+		if _, err := testPool.Exec(context.Background(),
+			`UPDATE agent_runtime SET provider = 'codex' WHERE id = $1`, runtimeID); err != nil {
+			t.Fatalf("update runtime provider: %v", err)
+		}
 	}
 	return provider
 }
@@ -737,5 +745,87 @@ func TestClaimFreeze_RetryAttemptFreezesIndependently(t *testing.T) {
 	}
 	if got, _ := readUsageAccount(t, secondTask); got != accountB {
 		t.Fatalf("retry attempt usage = %s, want %s", got, accountB)
+	}
+}
+
+func TestClaimFreeze_CoveredProvidersOnly(t *testing.T) {
+	ctx := context.Background()
+	runtimeID := handlerTestRuntimeID(t)
+	var originalProvider string
+	if err := testPool.QueryRow(ctx, `SELECT provider FROM agent_runtime WHERE id = $1`, runtimeID).Scan(&originalProvider); err != nil {
+		t.Fatalf("read runtime provider: %v", err)
+	}
+
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `UPDATE agent_runtime SET provider = $1 WHERE id = $2`, originalProvider, runtimeID)
+	})
+
+	for _, covered := range []string{"codex", "kiro", "antigravity", "agy"} {
+		t.Run("covered_"+covered, func(t *testing.T) {
+			if _, err := testPool.Exec(ctx, `UPDATE agent_runtime SET provider = $1 WHERE id = $2`, covered, runtimeID); err != nil {
+				t.Fatalf("set provider to %s: %v", covered, err)
+			}
+			expectedVendor := covered
+			if covered == "agy" {
+				expectedVendor = "antigravity"
+			}
+			accountID := createTestAccountFull(t, testWorkspaceID, expectedVendor, "available")
+			approveAccount(t, accountID)
+
+			_, _, frozen, ok := freezeAttempt(t, "ORQ12 Covered "+covered, accountID)
+			if !ok || frozen != accountID {
+				t.Fatalf("covered provider %s must freeze account: got %q ok=%v want %s", covered, frozen, ok, accountID)
+			}
+		})
+	}
+
+	for _, uncovered := range []string{"openai", "anthropic", "ollama"} {
+		t.Run("uncovered_"+uncovered, func(t *testing.T) {
+			if _, err := testPool.Exec(ctx, `UPDATE agent_runtime SET provider = $1 WHERE id = $2`, uncovered, runtimeID); err != nil {
+				t.Fatalf("set provider to %s: %v", uncovered, err)
+			}
+			accountID := createTestAccountFull(t, testWorkspaceID, uncovered, "available")
+			approveAccount(t, accountID)
+
+			if _, _, frozen, ok := freezeAttempt(t, "ORQ12 Uncovered "+uncovered, accountID); ok {
+				t.Fatalf("uncovered provider %s must NOT freeze account, got %s", uncovered, frozen)
+			}
+		})
+	}
+}
+
+func TestReclaim_FailsClosedForCoveredProviderWithNullSnapshot(t *testing.T) {
+	ctx := context.Background()
+	runtimeID := handlerTestRuntimeID(t)
+	var originalProvider string
+	if err := testPool.QueryRow(ctx, `SELECT provider FROM agent_runtime WHERE id = $1`, runtimeID).Scan(&originalProvider); err != nil {
+		t.Fatalf("read runtime provider: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `UPDATE agent_runtime SET provider = $1 WHERE id = $2`, originalProvider, runtimeID)
+	})
+
+	if _, err := testPool.Exec(ctx, `UPDATE agent_runtime SET provider = 'codex' WHERE id = $1`, runtimeID); err != nil {
+		t.Fatalf("set provider to codex: %v", err)
+	}
+
+	agentID := createHandlerTestAgent(t, "ORQ12 ReclaimFailClosed", nil)
+	taskID := enqueueTaskForAgent(t, agentID)
+
+	if _, err := testPool.Exec(ctx, `
+		UPDATE agent_task_queue
+		SET status = 'dispatched', dispatched_at = now() - INTERVAL '10 minutes', credential_account_id = NULL
+		WHERE id = $1
+	`, taskID); err != nil {
+		t.Fatalf("setup dispatched task: %v", err)
+	}
+
+	queries := db.New(testPool)
+	_, err := queries.ReclaimStaleDispatchedTaskForRuntime(ctx, db.ReclaimStaleDispatchedTaskForRuntimeParams{
+		RuntimeID:         uuidParam(t, runtimeID),
+		ClaimRecoverySecs: 60.0,
+	})
+	if err == nil {
+		t.Fatal("reclaim of covered provider task with NULL credential_account_id must fail closed, but succeeded")
 	}
 }
