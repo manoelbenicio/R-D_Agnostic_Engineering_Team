@@ -591,11 +591,23 @@ func TestClaimFreeze_RefusesVendorMismatch(t *testing.T) {
 	}
 }
 
-// The one alias the policy canonicalises: a runtime reporting `agy` must match a
-// vendor recorded as `antigravity`. This is the positive half of the mapping, and
-// it is also the case that would silently break if the SQL CASE and the Go
-// canonicaliser ever diverge.
-func TestClaimFreeze_CanonicalisesAgyToAntigravity(t *testing.T) {
+// Alias acceptance belongs to write-path normalization (normalizeProvider), which
+// canonicalises 'agy' / trim / case -> 'antigravity' for storage, so exact claim
+// (acc.vendor = rt.provider) succeeds.
+func TestWritePath_NormalizeProviderAndClaim(t *testing.T) {
+	if got := normalizeProvider("agy"); got != "antigravity" {
+		t.Fatalf("normalizeProvider('agy') = %q, want 'antigravity'", got)
+	}
+	if got := normalizeProvider(" AGY "); got != "antigravity" {
+		t.Fatalf("normalizeProvider(' AGY ') = %q, want 'antigravity'", got)
+	}
+	if got := normalizeProvider(" Codex "); got != "codex" {
+		t.Fatalf("normalizeProvider(' Codex ') = %q, want 'codex'", got)
+	}
+	if got := normalizeProvider(" KIRO "); got != "kiro" {
+		t.Fatalf("normalizeProvider(' KIRO ') = %q, want 'kiro'", got)
+	}
+
 	ctx := context.Background()
 	runtimeID := handlerTestRuntimeID(t)
 	var original string
@@ -603,56 +615,27 @@ func TestClaimFreeze_CanonicalisesAgyToAntigravity(t *testing.T) {
 		`SELECT provider FROM agent_runtime WHERE id = $1`, runtimeID).Scan(&original); err != nil {
 		t.Fatalf("read provider: %v", err)
 	}
-	if _, err := testPool.Exec(ctx,
-		`UPDATE agent_runtime SET provider = 'agy' WHERE id = $1`, runtimeID); err != nil {
-		t.Fatalf("set provider to agy: %v", err)
-	}
 	t.Cleanup(func() {
 		testPool.Exec(context.Background(),
 			`UPDATE agent_runtime SET provider = $1 WHERE id = $2`, original, runtimeID)
 	})
+
+	// Simulate write-path normalization on runtime registration
+	canonicalProvider := normalizeProvider("agy")
+	if _, err := testPool.Exec(ctx,
+		`UPDATE agent_runtime SET provider = $1 WHERE id = $2`, canonicalProvider, runtimeID); err != nil {
+		t.Fatalf("set canonical provider: %v", err)
+	}
 
 	accountID := createTestAccountFull(t, testWorkspaceID, "antigravity", "available")
 	approveAccount(t, accountID)
 
-	_, _, frozen, ok := freezeAttempt(t, "ORQ12 AgyAlias", accountID)
+	_, _, frozen, ok := freezeAttempt(t, "ORQ12 CanonicalWritePathClaim", accountID)
 	if !ok || frozen != accountID {
-		t.Fatalf("agy must canonicalise to antigravity: got %q ok=%v want %s", frozen, ok, accountID)
+		t.Fatalf("canonical write path claim failed: got %q ok=%v want %s", frozen, ok, accountID)
 	}
 }
 
-// The mirror case, and the one that ORQ-21 R3 accepts while an asymmetric
-// canonicalisation would reject: the ACCOUNT carries the alias. R3 compares
-// CanonicalProvider(vendor) against CanonicalProvider(provider), so a vendor
-// stored as agy is valid; if this freeze rejected it, the task would execute and
-// its spend would be unattributable.
-func TestClaimFreeze_CanonicalisesAliasOnTheAccountSideToo(t *testing.T) {
-	ctx := context.Background()
-	runtimeID := handlerTestRuntimeID(t)
-	var original string
-	if err := testPool.QueryRow(ctx,
-		`SELECT provider FROM agent_runtime WHERE id = $1`, runtimeID).Scan(&original); err != nil {
-		t.Fatalf("read provider: %v", err)
-	}
-	if _, err := testPool.Exec(ctx,
-		`UPDATE agent_runtime SET provider = 'antigravity' WHERE id = $1`, runtimeID); err != nil {
-		t.Fatalf("set provider: %v", err)
-	}
-	t.Cleanup(func() {
-		testPool.Exec(context.Background(),
-			`UPDATE agent_runtime SET provider = $1 WHERE id = $2`, original, runtimeID)
-	})
-
-	// Vendor stored with the alias, and with padding to prove the btrim.
-	accountID := createTestAccountFull(t, testWorkspaceID, " AGY ", "available")
-	approveAccount(t, accountID)
-
-	_, _, frozen, ok := freezeAttempt(t, "ORQ12 AliasOnAccount", accountID)
-	if !ok || frozen != accountID {
-		t.Fatalf("a vendor stored as agy must match an antigravity runtime: got %q ok=%v want %s",
-			frozen, ok, accountID)
-	}
-}
 
 func TestClaimFreeze_AccountStatusPolicy(t *testing.T) {
 	// Only available and leased can produce work.
@@ -760,16 +743,12 @@ func TestClaimFreeze_CoveredProvidersOnly(t *testing.T) {
 		testPool.Exec(context.Background(), `UPDATE agent_runtime SET provider = $1 WHERE id = $2`, originalProvider, runtimeID)
 	})
 
-	for _, covered := range []string{"codex", "kiro", "antigravity", "agy"} {
+	for _, covered := range []string{"codex", "kiro", "antigravity"} {
 		t.Run("covered_"+covered, func(t *testing.T) {
 			if _, err := testPool.Exec(ctx, `UPDATE agent_runtime SET provider = $1 WHERE id = $2`, covered, runtimeID); err != nil {
 				t.Fatalf("set provider to %s: %v", covered, err)
 			}
-			expectedVendor := covered
-			if covered == "agy" {
-				expectedVendor = "antigravity"
-			}
-			accountID := createTestAccountFull(t, testWorkspaceID, expectedVendor, "available")
+			accountID := createTestAccountFull(t, testWorkspaceID, covered, "available")
 			approveAccount(t, accountID)
 
 			_, _, frozen, ok := freezeAttempt(t, "ORQ12 Covered "+covered, accountID)
