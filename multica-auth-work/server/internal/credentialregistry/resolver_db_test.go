@@ -31,6 +31,7 @@ func TestResolverDBApprovedAssignmentContract(t *testing.T) {
 	workspaceID := uuid.NewString()
 	runtimeID := uuid.NewString()
 	agentID := uuid.NewString()
+	otherAgentID := uuid.NewString()
 	accountID := uuid.NewString()
 	homeDir := "/private/orq21/slot-1/xdg-data"
 	slug := "orq21-" + uuid.NewString()
@@ -83,6 +84,34 @@ func TestResolverDBApprovedAssignmentContract(t *testing.T) {
 	if _, err := resolver.Resolve(ctx, agentID, "codex"); !errors.Is(err, ErrProviderMismatch) {
 		t.Fatalf("provider mismatch=%v, want ErrProviderMismatch", err)
 	}
+	if _, err := tx.Exec(ctx, `INSERT INTO agent (id, workspace_id, name, runtime_mode, runtime_id)
+		VALUES ($1, $2, 'ORQ21 other agent', 'local', $3)`, otherAgentID, workspaceID, runtimeID); err != nil {
+		t.Fatalf("insert other agent: %v", err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO assignments (agent_id, account_id) VALUES ($1, $2)`, otherAgentID, accountID); err != nil {
+		t.Fatalf("duplicate account assignment fixture: %v", err)
+	}
+	if _, err := resolver.Resolve(ctx, agentID, "kiro"); !errors.Is(err, ErrAccountAlreadyUsed) {
+		t.Fatalf("shared account=%v, want ErrAccountAlreadyUsed", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM assignments WHERE agent_id=$1`, otherAgentID); err != nil {
+		t.Fatalf("remove duplicate account assignment fixture: %v", err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE accounts SET status='leased' WHERE account_id=$1`, accountID); err != nil {
+		t.Fatalf("mark account leased: %v", err)
+	}
+	if got, err := resolver.Resolve(ctx, agentID, "kiro"); err != nil || got.AccountID != accountID {
+		t.Fatalf("exclusively assigned leased account: got=%+v err=%v", got, err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE accounts SET status='cooldown' WHERE account_id=$1`, accountID); err != nil {
+		t.Fatalf("mark account cooldown: %v", err)
+	}
+	if _, err := resolver.Resolve(ctx, agentID, "kiro"); !errors.Is(err, ErrAccountUnavailable) {
+		t.Fatalf("cooldown account=%v, want ErrAccountUnavailable", err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE accounts SET status='available' WHERE account_id=$1`, accountID); err != nil {
+		t.Fatalf("restore account available: %v", err)
+	}
 	if _, err := tx.Exec(ctx, `UPDATE approved_accounts SET worktype_scope=NULL WHERE account_id=$1`, accountID); err != nil {
 		t.Fatalf("clear worktype scope: %v", err)
 	}
@@ -91,6 +120,41 @@ func TestResolverDBApprovedAssignmentContract(t *testing.T) {
 	}
 	if _, err := tx.Exec(ctx, `UPDATE approved_accounts SET worktype_scope='GENERAL' WHERE account_id=$1`, accountID); err != nil {
 		t.Fatalf("restore worktype scope: %v", err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE approved_accounts SET worktype_scope='CHEAP' WHERE account_id=$1`, accountID); err != nil {
+		t.Fatalf("set unsupported worktype scope: %v", err)
+	}
+	if _, err := resolver.Resolve(ctx, agentID, "kiro"); !errors.Is(err, ErrInvalidMetadata) {
+		t.Fatalf("unsupported worktype scope=%v, want ErrInvalidMetadata", err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE approved_accounts SET worktype_scope='GENERAL' WHERE account_id=$1`, accountID); err != nil {
+		t.Fatalf("restore GENERAL worktype scope: %v", err)
+	}
+	otherWorkspaceID := uuid.NewString()
+	otherAccountID := uuid.NewString()
+	if _, err := tx.Exec(ctx, `INSERT INTO workspace (id, name, slug) VALUES ($1, 'ORQ21 other workspace', $2)`,
+		otherWorkspaceID, "orq21-other-"+uuid.NewString()); err != nil {
+		t.Fatalf("insert other workspace: %v", err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO accounts
+		(account_id, vendor, tenant_id, priority, home_dir, config_dir, status)
+		VALUES ($1, 'kiro', $2, 10, '/private/orq21/cross/home', '', 'available')`,
+		otherAccountID, otherWorkspaceID); err != nil {
+		t.Fatalf("insert cross-workspace account: %v", err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO approved_accounts
+		(tenant_id, account_id, allowed, worktype_scope) VALUES ($1, $2, true, 'GENERAL')`,
+		otherWorkspaceID, otherAccountID); err != nil {
+		t.Fatalf("approve cross-workspace account: %v", err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE assignments SET account_id=$1 WHERE agent_id=$2`, otherAccountID, agentID); err != nil {
+		t.Fatalf("set cross-workspace assignment: %v", err)
+	}
+	if _, err := resolver.Resolve(ctx, agentID, "kiro"); !errors.Is(err, ErrNoApprovedAssignment) {
+		t.Fatalf("cross-workspace assignment=%v, want ErrNoApprovedAssignment", err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE assignments SET account_id=$1 WHERE agent_id=$2`, accountID, agentID); err != nil {
+		t.Fatalf("restore same-workspace assignment: %v", err)
 	}
 	if _, err := tx.Exec(ctx, `UPDATE approved_accounts SET allowed=false WHERE account_id=$1`, accountID); err != nil {
 		t.Fatalf("revoke approval: %v", err)
