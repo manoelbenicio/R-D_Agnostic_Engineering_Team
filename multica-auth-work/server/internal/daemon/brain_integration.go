@@ -530,8 +530,14 @@ func (r *agentBrainRuntime) buildLaunch(ctx context.Context, plan *agentBrainTas
 // comparison is not exhaustive: a token nobody listed in that universe would
 // escape it. Closing that hole requires pkg/agent to export its enum, which is
 // another package's file and is requested as a formal handoff rather than taken
-// silently. Antigravity is deliberately absent from both: `agy` exposes no
-// effort flag, so reasoning there is model-embedded only.
+// silently. Antigravity is deliberately absent from both, and the reason is
+// product wiring rather than CLI capability: `agy` 1.1.7 does expose
+// `--effort low|medium|high`, but nothing in the product passes a level to it —
+// pkg/agent/antigravity.go never reads opts.ThinkingLevel and `antigravity` has
+// no entry in pkg/agent's providerThinkingEnums, so the API rejects the field
+// for antigravity runtimes. Adding it here would advertise a level the child
+// never receives. Wiring it is a scoped change to the Antigravity runtime and
+// needs its own approval; until then this map must stay as it is.
 var gatewayApprovedThinkingLevels = map[string][]string{
 	"claude": {"low", "medium", "high", "xhigh", "max"},
 	"codex":  {"none", "minimal", "low", "medium", "high", "xhigh"},

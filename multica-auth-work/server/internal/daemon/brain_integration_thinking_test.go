@@ -140,7 +140,9 @@ func TestValidateThinking_FailsClosedForUnapprovedCLIs(t *testing.T) {
 			t.Errorf("%s must have no gateway thinking allowlist, got %v", kind, err)
 		}
 	}
-	// Antigravity end to end: reasoning is model-embedded, never a level.
+	// Antigravity end to end. Note the distinction: the `agy` CLI itself accepts
+	// --effort low|medium|high, but the product never forwards a level to it, so
+	// the gateway must refuse one instead of pretending it will be honoured.
 	plan := thinkingPlan(t, brain.CLIAntigravity, "gemini-3.6-flash", brain.ProtocolAntigravity, true)
 	if err := r.validateThinking(plan, "high"); !errors.Is(err, runtimeenv.ErrThinkingNotApproved) {
 		t.Fatalf("antigravity must refuse a thinking level, got %v", err)
@@ -187,10 +189,11 @@ func TestGatewayThinkingLevelsMatchProviderEnums(t *testing.T) {
 		}
 	}
 	if _, ok := gatewayApprovedThinkingLevels["antigravity"]; ok {
-		t.Error("antigravity must stay absent: it has no effort flag")
+		t.Error("antigravity must stay absent: agy accepts --effort, but the product never passes a level to it, so advertising one here would be a lie")
 	}
-	// Antigravity has no reasoning contract in pkg/agent either, in either
-	// direction.
+	// pkg/agent owns the product-side contract and has no antigravity reasoning
+	// entry. If that changes — i.e. the runtime is wired under its own approval —
+	// this fails and the gateway allowlist must be revisited deliberately.
 	for _, token := range thinkingTokenUniverse {
 		if token == "" {
 			continue
