@@ -29,8 +29,9 @@
 --     would let one task hold two rows for the same model and double-count.
 --   * rollups (073/084/101/102) are intentionally NOT touched: this phase only
 --     records the dimension.
--- ORQ-12 preflight / backfill: canonicalize existing provider/vendor alias data
--- (e.g. agy -> antigravity) so that exact equality comparisons succeed.
+-- ORQ-12 preflight / backfill: canonicalize existing provider/vendor data to exact
+-- lowercase trimmed representations ('codex', 'kiro', 'antigravity') and fail closed
+-- if any non-canonical or unmapped alias drift remains.
 UPDATE accounts
 SET vendor = 'antigravity'
 WHERE lower(btrim(vendor)) = 'agy';
@@ -38,6 +39,45 @@ WHERE lower(btrim(vendor)) = 'agy';
 UPDATE agent_runtime
 SET provider = 'antigravity'
 WHERE lower(btrim(provider)) = 'agy';
+
+UPDATE accounts
+SET vendor = lower(btrim(vendor))
+WHERE lower(btrim(vendor)) IN ('codex', 'kiro', 'antigravity')
+  AND vendor <> lower(btrim(vendor));
+
+UPDATE agent_runtime
+SET provider = lower(btrim(provider))
+WHERE lower(btrim(provider)) IN ('codex', 'kiro', 'antigravity')
+  AND provider <> lower(btrim(provider));
+
+DO $$
+DECLARE
+    invalid_vendors TEXT;
+    invalid_providers TEXT;
+BEGIN
+    SELECT string_agg(DISTINCT vendor, ', ' ORDER BY vendor)
+      INTO invalid_vendors
+      FROM accounts
+      WHERE lower(btrim(vendor)) IN ('codex', 'kiro', 'antigravity', 'agy')
+        AND vendor NOT IN ('codex', 'kiro', 'antigravity');
+    IF invalid_vendors IS NOT NULL THEN
+        RAISE EXCEPTION
+            'ORQ-12 preflight: non-canonical account vendors found: %. Preflight must normalize before applying migration.',
+            invalid_vendors;
+    END IF;
+
+    SELECT string_agg(DISTINCT provider, ', ' ORDER BY provider)
+      INTO invalid_providers
+      FROM agent_runtime
+      WHERE lower(btrim(provider)) IN ('codex', 'kiro', 'antigravity', 'agy')
+        AND provider NOT IN ('codex', 'kiro', 'antigravity');
+    IF invalid_providers IS NOT NULL THEN
+        RAISE EXCEPTION
+            'ORQ-12 preflight: non-canonical runtime providers found: %. Preflight must normalize before applying migration.',
+            invalid_providers;
+    END IF;
+END
+$$;
 
 ALTER TABLE task_usage
     ADD COLUMN IF NOT EXISTS account_id UUID REFERENCES accounts(account_id) ON DELETE SET NULL;
