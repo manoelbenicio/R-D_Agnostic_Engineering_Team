@@ -61,13 +61,13 @@ if isinstance(value, str) and value:
   fi
 
   tty_name="$(tty 2>/dev/null || true)"
-  if [[ -n "${tty_name}" && "${tty_name}" != "not a tty" ]]; then
-    fallback_key="tty:${tty_name}"
-  elif [[ -n "${HERDR_PANE_ID:-}" ]]; then
-    # A pane id is not durable, but it is safer than a shared no-TTY bucket:
+  if [[ -n "${HERDR_PANE_ID:-}" ]]; then
+    # A pane id is not durable, but it is safer than a shared tty/no-TTY bucket:
     # if Herdr lookup is unavailable, a recompact allocates a fresh slot rather
-    # than ever falling back to a shared vendor home.
+    # than ever falling back to a shared vendor home or shared terminal slot.
     fallback_key="pane:${HERDR_PANE_ID}"
+  elif [[ -n "${tty_name}" && "${tty_name}" != "not a tty" ]]; then
+    fallback_key="tty:${tty_name}"
   else
     fallback_key="process:${PPID}:${BASHPID}"
   fi
