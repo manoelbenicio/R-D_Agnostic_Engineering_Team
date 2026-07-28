@@ -64,6 +64,8 @@ async function rowExists(table: "issue" | "agent_runtime", id: string) {
   }
 }
 
+test.use({ locale: "en-US" });
+
 test.describe("Delete flows", () => {
   let api: TestApiClient;
   let fixture: DeleteFixture | null = null;

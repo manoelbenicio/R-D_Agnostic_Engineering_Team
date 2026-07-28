@@ -85,6 +85,8 @@ async function removeSquadFixture(fixture: SquadFixture | null) {
   }
 }
 
+test.use({ locale: "en-US" });
+
 test.describe("Squad model dropdown", () => {
   let api: TestApiClient;
   let fixture: SquadFixture | null = null;
@@ -109,6 +111,8 @@ test.describe("Squad model dropdown", () => {
       "Access-Control-Allow-Origin": new URL(page.url()).origin,
       "Access-Control-Allow-Credentials": "true",
     };
+    // UI-only contract: assert a populated dropdown without coupling this test to
+    // backend/daemon model discovery, whose response contract needs a separate gate.
     await page.route(`**/api/runtimes/${fixture!.runtimeId}/models`, async (route) => {
       if (route.request().method() === "OPTIONS") {
         await route.continue();

@@ -72,7 +72,9 @@ async function removeReasoningFixture(fixture: ReasoningFixture | null) {
   }
 }
 
-test.describe("Chat reasoning level", () => {
+test.use({ locale: "en-US" });
+
+test.describe("Agent reasoning level", () => {
   let api: TestApiClient;
   let fixture: ReasoningFixture | null = null;
 
@@ -96,6 +98,8 @@ test.describe("Chat reasoning level", () => {
       "Access-Control-Allow-Origin": new URL(page.url()).origin,
       "Access-Control-Allow-Credentials": "true",
     };
+    // UI-only contract: this deterministic catalog proves rendering and persistence.
+    // It does not validate the backend/daemon model-discovery response contract.
     await page.route(`**/api/runtimes/${fixture!.runtimeId}/models`, async (route) => {
       if (route.request().method() === "OPTIONS") {
         await route.continue();

@@ -67,9 +67,9 @@ jobs:
 
           cat > "$RUNNER_TEMP/orq39-expected.txt" <<'EOF'
           .github/workflows/orq39-browser-qa.yml
+          multica-auth-work/e2e/agent-reasoning-level.spec.ts
           multica-auth-work/e2e/board-kanban.spec.ts
           multica-auth-work/e2e/chat-panel-buttons.spec.ts
-          multica-auth-work/e2e/chat-reasoning-level.spec.ts
           multica-auth-work/e2e/chat-upload-ui.spec.ts
           multica-auth-work/e2e/delete-flows.spec.ts
           multica-auth-work/e2e/squad-model-dropdown.spec.ts
@@ -158,7 +158,7 @@ jobs:
           SPECS=(
             e2e/board-kanban.spec.ts
             e2e/chat-panel-buttons.spec.ts
-            e2e/chat-reasoning-level.spec.ts
+            e2e/agent-reasoning-level.spec.ts
             e2e/chat-upload-ui.spec.ts
             e2e/delete-flows.spec.ts
             e2e/squad-model-dropdown.spec.ts
