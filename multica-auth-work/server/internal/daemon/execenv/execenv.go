@@ -233,8 +233,8 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 
 	// Remove existing env if present (defensive — task IDs are unique).
 	if _, err := os.Stat(envRoot); err == nil {
-		if params.CredentiallessGateway {
-			return nil, fmt.Errorf("execenv: credentialless gateway task root already exists; refusing to inspect or rewrite it")
+		if params.CredentiallessGateway || params.CredentialAccountHome != "" {
+			return nil, fmt.Errorf("execenv: isolated task root already exists; refusing to inspect or rewrite it")
 		}
 		if err := os.RemoveAll(envRoot); err != nil {
 			return nil, fmt.Errorf("execenv: remove existing env: %w", err)
