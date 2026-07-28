@@ -11,43 +11,35 @@
 
 \if :{?workspace_id}
 \else
-  \echo 'E_WORKSPACE_ID_REQUIRED'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_WORKSPACE_ID_REQUIRED'; END $$;
 \endif
 \if :{?agent_id}
 \else
-  \echo 'E_AGENT_ID_REQUIRED'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_AGENT_ID_REQUIRED'; END $$;
 \endif
 \if :{?account_id}
 \else
-  \echo 'E_ACCOUNT_ID_REQUIRED'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_ACCOUNT_ID_REQUIRED'; END $$;
 \endif
 \if :{?vendor}
 \else
-  \echo 'E_VENDOR_REQUIRED'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_VENDOR_REQUIRED'; END $$;
 \endif
 \if :{?priority}
 \else
-  \echo 'E_PRIORITY_REQUIRED'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_PRIORITY_REQUIRED'; END $$;
 \endif
 \if :{?home_dir}
 \else
-  \echo 'E_HOME_DIR_REQUIRED'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_HOME_DIR_REQUIRED'; END $$;
 \endif
 \if :{?config_dir}
 \else
-  \echo 'E_CONFIG_DIR_REQUIRED'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_CONFIG_DIR_REQUIRED'; END $$;
 \endif
 \if :{?worktype_scope}
 \else
-  \echo 'E_WORKTYPE_SCOPE_REQUIRED'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_WORKTYPE_SCOPE_REQUIRED'; END $$;
 \endif
 
 BEGIN;
@@ -74,26 +66,46 @@ EXISTS (
       FROM assignments
      WHERE agent_id = :'agent_id'::uuid
        AND account_id <> :'account_id'::uuid
-) AS assignment_conflict
+) AS assignment_conflict,
+EXISTS (
+    SELECT 1
+      FROM assignments
+     WHERE account_id = :'account_id'::uuid
+       AND agent_id <> :'agent_id'::uuid
+) AS account_assignment_conflict,
+EXISTS (
+    SELECT 1
+      FROM approved_accounts
+     WHERE tenant_id = :'workspace_id'::uuid
+       AND account_id = :'account_id'::uuid
+       AND allowed = false
+) AS approval_revoked,
+(:'worktype_scope' = 'GENERAL') AS scope_supported
 \gset
 
 \if :workspace_exists
 \else
-  \echo 'E_WORKSPACE_NOT_FOUND'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_WORKSPACE_NOT_FOUND'; END $$;
 \endif
 \if :agent_exists
 \else
-  \echo 'E_AGENT_WORKSPACE_MISMATCH'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_AGENT_WORKSPACE_MISMATCH'; END $$;
 \endif
 \if :account_conflict
-  \echo 'E_ACCOUNT_ID_CONFLICT'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_ACCOUNT_ID_CONFLICT'; END $$;
 \endif
 \if :assignment_conflict
-  \echo 'E_AGENT_ALREADY_ASSIGNED'
-  \quit 1
+  DO $$ BEGIN RAISE EXCEPTION 'E_AGENT_ALREADY_ASSIGNED'; END $$;
+\endif
+\if :account_assignment_conflict
+  DO $$ BEGIN RAISE EXCEPTION 'E_ACCOUNT_ALREADY_ASSIGNED'; END $$;
+\endif
+\if :approval_revoked
+  DO $$ BEGIN RAISE EXCEPTION 'E_ACCOUNT_REVOKED'; END $$;
+\endif
+\if :scope_supported
+\else
+  DO $$ BEGIN RAISE EXCEPTION 'E_WORKTYPE_SCOPE_UNSUPPORTED'; END $$;
 \endif
 
 INSERT INTO accounts (
@@ -134,11 +146,11 @@ INSERT INTO approved_accounts (
     :'worktype_scope'
 )
 ON CONFLICT (tenant_id, account_id) DO UPDATE
-   SET allowed = true,
-       worktype_scope = EXCLUDED.worktype_scope
- WHERE (approved_accounts.allowed, approved_accounts.worktype_scope)
+   SET worktype_scope = EXCLUDED.worktype_scope
+ WHERE approved_accounts.allowed = true
+   AND approved_accounts.worktype_scope
        IS DISTINCT FROM
-       (EXCLUDED.allowed, EXCLUDED.worktype_scope);
+       EXCLUDED.worktype_scope;
 
 INSERT INTO assignments (agent_id, account_id)
 VALUES (:'agent_id'::uuid, :'account_id'::uuid)

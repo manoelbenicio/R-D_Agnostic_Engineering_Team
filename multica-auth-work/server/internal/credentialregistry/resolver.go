@@ -15,6 +15,7 @@ import (
 var (
 	ErrNoApprovedAssignment = errors.New("credential registry: no approved assignment")
 	ErrProviderMismatch     = errors.New("credential registry: provider mismatch")
+	ErrAccountAlreadyUsed   = errors.New("credential registry: account assigned to multiple agents")
 	ErrAccountUnavailable   = errors.New("credential registry: account unavailable")
 	ErrInvalidMetadata      = errors.New("credential registry: invalid account metadata")
 )
@@ -78,6 +79,7 @@ func (r *Resolver) Resolve(ctx context.Context, agentID, provider string) (Assig
 	}
 
 	var assignment Assignment
+	var assignedToAnotherAgent bool
 	err := r.db.QueryRow(ctx, `
 		SELECT a.account_id::text,
 		       a.tenant_id::text,
@@ -85,7 +87,13 @@ func (r *Resolver) Resolve(ctx context.Context, agentID, provider string) (Assig
 		       a.home_dir,
 		       a.config_dir,
 		       a.status,
-		       aa.worktype_scope
+		       aa.worktype_scope,
+		       EXISTS (
+		           SELECT 1
+		             FROM assignments AS other
+		            WHERE other.account_id = ass.account_id
+		              AND other.agent_id <> ass.agent_id
+		       ) AS assigned_to_another_agent
 		  FROM assignments AS ass
 		  JOIN agent AS ag
 		    ON ag.id = ass.agent_id
@@ -105,6 +113,7 @@ func (r *Resolver) Resolve(ctx context.Context, agentID, provider string) (Assig
 		&assignment.ConfigDir,
 		&assignment.Status,
 		&assignment.WorktypeScope,
+		&assignedToAnotherAgent,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -116,6 +125,12 @@ func (r *Resolver) Resolve(ctx context.Context, agentID, provider string) (Assig
 	if CanonicalProvider(assignment.Vendor) != CanonicalProvider(provider) {
 		return Assignment{}, ErrProviderMismatch
 	}
+	if assignedToAnotherAgent {
+		return Assignment{}, ErrAccountAlreadyUsed
+	}
+	// A durable assignments row identifies this agent as the lease owner and
+	// the duplicate check above proves no other agent owns the account.
+	// States that are neither available nor leased are never executable.
 	if assignment.Status != "available" && assignment.Status != "leased" {
 		return Assignment{}, ErrAccountUnavailable
 	}
@@ -125,7 +140,10 @@ func (r *Resolver) Resolve(ctx context.Context, agentID, provider string) (Assig
 	if assignment.ConfigDir != "" && !validAbsoluteMetadataPath(assignment.ConfigDir) {
 		return Assignment{}, ErrInvalidMetadata
 	}
-	if assignment.WorktypeScope == nil {
+	// GENERAL is the only implemented execution vocabulary. Other values are
+	// stored by the schema for future policy, but must not be represented as
+	// enforced until a task worktype exists and is compared here.
+	if assignment.WorktypeScope == nil || *assignment.WorktypeScope != "GENERAL" {
 		return Assignment{}, ErrInvalidMetadata
 	}
 	return assignment, nil

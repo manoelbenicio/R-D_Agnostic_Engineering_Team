@@ -1161,6 +1161,8 @@ func credentialAssignmentReason(err error) string {
 		return "not_approved"
 	case errors.Is(err, credentialregistry.ErrProviderMismatch):
 		return "provider_mismatch"
+	case errors.Is(err, credentialregistry.ErrAccountAlreadyUsed):
+		return "account_already_assigned"
 	case errors.Is(err, credentialregistry.ErrAccountUnavailable):
 		return "account_unavailable"
 	case errors.Is(err, credentialregistry.ErrInvalidMetadata):
@@ -1312,6 +1314,15 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 		}
 		resp.Agent.CredentialAccountHome = assignment.HomeDir
 		resp.Agent.CredentialAssignmentRequired = true
+		// AccountID is metadata, not a credential. Keep it server-side and log
+		// only the claim correlation needed until ORQ-12's durable task-row
+		// snapshot is integrated; it is never accepted from or returned to the
+		// daemon as an attribution input.
+		slog.Info("task claim: approved credential assignment resolved",
+			"task_id", uuidToString(task.ID),
+			"agent_id", uuidToString(task.AgentID),
+			"account_id", assignment.AccountID,
+		)
 	}
 
 	// Resolve the runtime owner's profile description so the daemon can

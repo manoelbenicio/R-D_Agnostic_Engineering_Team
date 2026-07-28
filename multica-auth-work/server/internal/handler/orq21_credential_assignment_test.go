@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/multica-ai/multica/server/internal/util"
 )
 
 func createORQ21Runtime(t *testing.T, provider string) string {
@@ -96,7 +98,14 @@ func TestORQ21ClaimIncludesOnlyApprovedAssignmentMetadata(t *testing.T) {
 	if response.Task.Agent.CredentialAccountHome != homeDir || !response.Task.Agent.CredentialAssignmentRequired {
 		t.Fatalf("assignment metadata=%+v", response.Task.Agent)
 	}
-	for _, forbidden := range []string{"secret_ref", "credential_id", "token_value", "password"} {
+	for _, forbidden := range []string{
+		"account_id",
+		"credential_account_id",
+		"credential_id",
+		"password",
+		"secret_ref",
+		"token_value",
+	} {
 		if jsonContainsKey(w.Body.Bytes(), forbidden) {
 			t.Fatalf("claim must not contain credential key %q", forbidden)
 		}
@@ -122,6 +131,62 @@ func TestORQ21ClaimCancelsWithoutApprovedAssignment(t *testing.T) {
 	}
 	if status != "cancelled" {
 		t.Fatalf("task status=%q, want cancelled", status)
+	}
+
+	// Configuration failure is recoverable by an explicit rerun after the
+	// operator fixes metadata. The cancelled attempt remains immutable; a new
+	// queued task is created and can be claimed with the approved assignment.
+	accountID := uuid.NewString()
+	homeDir := "/private/orq21/slot-retry/home"
+	for _, statement := range []struct {
+		sql  string
+		args []any
+	}{
+		{`INSERT INTO accounts (account_id, vendor, tenant_id, priority, home_dir, config_dir, status)
+		  VALUES ($1, 'antigravity', $2, 10, $3, '', 'available')`, []any{accountID, testWorkspaceID, homeDir}},
+		{`INSERT INTO approved_accounts (tenant_id, account_id, allowed, worktype_scope)
+		  VALUES ($1, $2, true, 'GENERAL')`, []any{testWorkspaceID, accountID}},
+		{`INSERT INTO assignments (agent_id, account_id) VALUES ($1, $2)`, []any{agentID, accountID}},
+	} {
+		if _, err := testPool.Exec(ctx, statement.sql, statement.args...); err != nil {
+			t.Fatalf("correct approved assignment metadata: %v", err)
+		}
+	}
+	t.Cleanup(func() {
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM accounts WHERE account_id=$1`, accountID)
+	})
+	retry, err := testHandler.TaskService.RerunIssue(
+		ctx,
+		util.MustParseUUID(issueID),
+		util.MustParseUUID(taskID),
+		pgtype.UUID{},
+	)
+	if err != nil {
+		t.Fatalf("rerun after assignment correction: %v", err)
+	}
+	if retry.Status != "queued" || util.UUIDToString(retry.ID) == taskID {
+		t.Fatalf("recoverable retry=%+v, want a fresh queued task", retry)
+	}
+	w = claimORQ21Task(t, runtimeID)
+	if w.Code != http.StatusOK {
+		t.Fatalf("claim corrected retry status=%d body=%s", w.Code, w.Body.String())
+	}
+	var recovered struct {
+		Task *struct {
+			ID    string `json:"id"`
+			Agent struct {
+				CredentialAccountHome        string `json:"credential_account_home"`
+				CredentialAssignmentRequired bool   `json:"credential_assignment_required"`
+			} `json:"agent"`
+		} `json:"task"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &recovered); err != nil {
+		t.Fatalf("decode corrected retry claim: %v", err)
+	}
+	if recovered.Task == nil || recovered.Task.ID != util.UUIDToString(retry.ID) ||
+		recovered.Task.Agent.CredentialAccountHome != homeDir ||
+		!recovered.Task.Agent.CredentialAssignmentRequired {
+		t.Fatalf("corrected retry assignment=%+v", recovered.Task)
 	}
 }
 
