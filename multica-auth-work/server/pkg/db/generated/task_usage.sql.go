@@ -45,7 +45,7 @@ func (q *Queries) GetIssueUsageSummary(ctx context.Context, issueID pgtype.UUID)
 }
 
 const getTaskUsage = `-- name: GetTaskUsage :many
-SELECT id, task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, created_at, updated_at, thinking_level FROM task_usage
+SELECT id, task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, created_at, updated_at, thinking_level, account_id FROM task_usage
 WHERE task_id = $1
 ORDER BY model
 `
@@ -71,6 +71,7 @@ func (q *Queries) GetTaskUsage(ctx context.Context, taskID pgtype.UUID) ([]TaskU
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ThinkingLevel,
+			&i.AccountID,
 		); err != nil {
 			return nil, err
 		}
@@ -80,6 +81,44 @@ func (q *Queries) GetTaskUsage(ctx context.Context, taskID pgtype.UUID) ([]TaskU
 		return nil, err
 	}
 	return items, nil
+}
+
+const getTaskUsageAccountAttribution = `-- name: GetTaskUsageAccountAttribution :one
+SELECT
+    COUNT(*)::int                                                  AS total_rows,
+    COUNT(tu.account_id)::int                                      AS attributed_rows,
+    (COUNT(*) - COUNT(tu.account_id))::int                         AS unattributed_rows,
+    COUNT(DISTINCT tu.account_id)::int                             AS distinct_accounts
+FROM task_usage tu
+WHERE tu.updated_at >= $1 AND tu.updated_at < $2
+`
+
+type GetTaskUsageAccountAttributionParams struct {
+	FromTs pgtype.Timestamptz `json:"from_ts"`
+	ToTs   pgtype.Timestamptz `json:"to_ts"`
+}
+
+type GetTaskUsageAccountAttributionRow struct {
+	TotalRows        int32 `json:"total_rows"`
+	AttributedRows   int32 `json:"attributed_rows"`
+	UnattributedRows int32 `json:"unattributed_rows"`
+	DistinctAccounts int32 `json:"distinct_accounts"`
+}
+
+// Coverage counter for the same window: how many rows carry an account and how
+// many do not. A rotation window can be accepted only if the attributable share
+// behaves as expected, so the two numbers are returned together and never as a
+// single ratio that would hide a zero denominator.
+func (q *Queries) GetTaskUsageAccountAttribution(ctx context.Context, arg GetTaskUsageAccountAttributionParams) (GetTaskUsageAccountAttributionRow, error) {
+	row := q.db.QueryRow(ctx, getTaskUsageAccountAttribution, arg.FromTs, arg.ToTs)
+	var i GetTaskUsageAccountAttributionRow
+	err := row.Scan(
+		&i.TotalRows,
+		&i.AttributedRows,
+		&i.UnattributedRows,
+		&i.DistinctAccounts,
+	)
+	return i, err
 }
 
 const listDashboardAgentRunTime = `-- name: ListDashboardAgentRunTime :many
@@ -394,9 +433,87 @@ func (q *Queries) ListDashboardUsageDaily(ctx context.Context, arg ListDashboard
 	return items, nil
 }
 
+const listTaskUsageByAccount = `-- name: ListTaskUsageByAccount :many
+SELECT
+    tu.account_id,
+    (tu.account_id IS NOT NULL)::bool                        AS attributable,
+    COALESCE(SUM(tu.input_tokens), 0)::bigint                AS total_input_tokens,
+    COALESCE(SUM(tu.output_tokens), 0)::bigint               AS total_output_tokens,
+    COALESCE(SUM(tu.cache_read_tokens), 0)::bigint           AS total_cache_read_tokens,
+    COALESCE(SUM(tu.cache_write_tokens), 0)::bigint          AS total_cache_write_tokens,
+    COUNT(DISTINCT tu.task_id)::int                          AS task_count,
+    COUNT(*)::int                                            AS row_count
+FROM task_usage tu
+WHERE tu.updated_at >= $1 AND tu.updated_at < $2
+GROUP BY tu.account_id
+ORDER BY attributable DESC, total_input_tokens DESC, tu.account_id
+`
+
+type ListTaskUsageByAccountParams struct {
+	FromTs pgtype.Timestamptz `json:"from_ts"`
+	ToTs   pgtype.Timestamptz `json:"to_ts"`
+}
+
+type ListTaskUsageByAccountRow struct {
+	AccountID             pgtype.UUID `json:"account_id"`
+	Attributable          bool        `json:"attributable"`
+	TotalInputTokens      int64       `json:"total_input_tokens"`
+	TotalOutputTokens     int64       `json:"total_output_tokens"`
+	TotalCacheReadTokens  int64       `json:"total_cache_read_tokens"`
+	TotalCacheWriteTokens int64       `json:"total_cache_write_tokens"`
+	TaskCount             int32       `json:"task_count"`
+	RowCount              int32       `json:"row_count"`
+}
+
+// ORQ-12 report: token totals per provider account for a window, plus the
+// unattributable tail.
+//
+// The NULL bucket is reported EXPLICITLY instead of being filtered out. Hiding
+// it would make the per-account totals look complete while legacy rows and rows
+// from unassigned agents silently vanished, which is the exact misreading this
+// column exists to prevent. `attributable` lets a caller separate the two
+// without inspecting NULL semantics itself.
+func (q *Queries) ListTaskUsageByAccount(ctx context.Context, arg ListTaskUsageByAccountParams) ([]ListTaskUsageByAccountRow, error) {
+	rows, err := q.db.Query(ctx, listTaskUsageByAccount, arg.FromTs, arg.ToTs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTaskUsageByAccountRow{}
+	for rows.Next() {
+		var i ListTaskUsageByAccountRow
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.Attributable,
+			&i.TotalInputTokens,
+			&i.TotalOutputTokens,
+			&i.TotalCacheReadTokens,
+			&i.TotalCacheWriteTokens,
+			&i.TaskCount,
+			&i.RowCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertTaskUsage = `-- name: UpsertTaskUsage :exec
-INSERT INTO task_usage (task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, thinking_level, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
+INSERT INTO task_usage (task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, thinking_level, account_id, updated_at)
+VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8,
+    (
+        SELECT asg.account_id
+        FROM agent_task_queue q
+        JOIN assignments asg ON asg.agent_id = q.agent_id
+        WHERE q.id = $1
+    ),
+    now()
+)
 ON CONFLICT (task_id, provider, model)
 DO UPDATE SET
     input_tokens = EXCLUDED.input_tokens,
@@ -404,6 +521,7 @@ DO UPDATE SET
     cache_read_tokens = EXCLUDED.cache_read_tokens,
     cache_write_tokens = EXCLUDED.cache_write_tokens,
     thinking_level = COALESCE(EXCLUDED.thinking_level, task_usage.thinking_level),
+    account_id = COALESCE(EXCLUDED.account_id, task_usage.account_id),
     updated_at = now()
 `
 
@@ -425,6 +543,16 @@ type UpsertTaskUsageParams struct {
 // thinking_level is nullable and reported by the daemon; COALESCE on conflict
 // keeps a previously recorded tier when a later report omits it, so a partial
 // re-report can never erase the tier that produced the tokens.
+// account_id is resolved SERVER-SIDE, never accepted from the caller: the daemon
+// reports tokens, and the account that produced them is derived here by walking
+// agent_task_queue.agent_id -> assignments.account_id. A reporter therefore
+// cannot attribute its spend to another account.
+// The subquery yields NULL when the task has no agent, when the agent has no
+// assignment, or when the task row is already gone; NULL means "not
+// attributable" and is stored as such rather than guessed.
+// On conflict the snapshot is COALESCEd the same way thinking_level is: a later
+// partial re-report can never erase an attribution that was already recorded,
+// and it can fill one in that was previously unknown.
 func (q *Queries) UpsertTaskUsage(ctx context.Context, arg UpsertTaskUsageParams) error {
 	_, err := q.db.Exec(ctx, upsertTaskUsage,
 		arg.TaskID,

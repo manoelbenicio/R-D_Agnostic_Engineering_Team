@@ -2,7 +2,17 @@ version: "2"
 sql:
   - engine: "postgresql"
     queries: "pkg/db/queries/"
-    schema: "migrations/"
+    # Two schema roots on purpose. `migrations/` is what `migrate up` applies,
+    # via internal/migrations.Files, which globs "<dir>/*.up.sql"
+    # NON-RECURSIVELY. `migrations/staging/` therefore holds DDL that is already
+    # reviewed and typed into the generated code but deliberately NOT applied:
+    # a staged migration carries a NEXT_CANONICAL_* placeholder name and gets a
+    # version number only when the central registrar assigns one. Without this
+    # second root, sqlc would type the column as absent and the generated code
+    # would not compile against the staged schema.
+    schema:
+      - "migrations/"
+      - "migrations/staging/"
     gen:
       go:
         package: "db"
