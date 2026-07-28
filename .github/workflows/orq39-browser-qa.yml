@@ -1,0 +1,373 @@
+name: ORQ-39 Ephemeral Browser QA
+
+on:
+  push:
+    branches:
+      - ci/orq39-browser-qa
+
+permissions:
+  contents: read
+  actions: none
+  id-token: none
+
+concurrency:
+  group: orq39-browser-qa-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: multica-auth-work
+
+jobs:
+  browser-qa:
+    name: Playwright Chromium against ephemeral stack
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: none
+      id-token: none
+    container:
+      image: mcr.microsoft.com/playwright@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+    services:
+      postgres:
+        image: pgvector/pgvector@sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0
+        env:
+          POSTGRES_DB: multica_test
+          POSTGRES_USER: multica
+          POSTGRES_PASSWORD: multica_pass
+        options: >-
+          --health-cmd "pg_isready -U multica -d multica_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout exact pushed revision
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove trigger and exact ORQ-39 package
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_EVENT_NAME" = "push"
+          test "$GITHUB_REF" = "refs/heads/ci/orq39-browser-qa"
+          test -f .github/workflows/orq39-browser-qa.yml
+          test ! -f multica-auth-work/.github/workflows/orq39-browser-qa.yml
+
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          git show-ref --verify --quiet "refs/remotes/origin/$DEFAULT_BRANCH"
+          BASE_SHA="$(git merge-base "$GITHUB_SHA" "origin/$DEFAULT_BRANCH")"
+          git diff --no-renames --name-only "$BASE_SHA" "$GITHUB_SHA" \
+            | LC_ALL=C sort -u > "$RUNNER_TEMP/orq39-actual.txt"
+
+          cat > "$RUNNER_TEMP/orq39-expected.txt" <<'EOF'
+          .github/workflows/orq39-browser-qa.yml
+          multica-auth-work/e2e/board-kanban.spec.ts
+          multica-auth-work/e2e/chat-panel-buttons.spec.ts
+          multica-auth-work/e2e/chat-reasoning-level.spec.ts
+          multica-auth-work/e2e/chat-upload-ui.spec.ts
+          multica-auth-work/e2e/delete-flows.spec.ts
+          multica-auth-work/e2e/squad-model-dropdown.spec.ts
+          EOF
+          LC_ALL=C sort -u -o "$RUNNER_TEMP/orq39-expected.txt" "$RUNNER_TEMP/orq39-expected.txt"
+          diff -u "$RUNNER_TEMP/orq39-expected.txt" "$RUNNER_TEMP/orq39-actual.txt"
+
+      - name: Strict root-aware zero-secret guard
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for f in .env .env.worktree multica-auth-work/.env multica-auth-work/.env.worktree; do
+            if [ -f "$f" ]; then
+              echo "FATAL: forbidden environment file present: $f"
+              exit 1
+            fi
+          done
+          if find . -path './.git' -prune -o -type f \( -name '*.pem' -o -name '*.key' -o -name 'auth.json' \) -print -quit | grep -q .; then
+            echo "FATAL: credential-like file present in checkout"
+            exit 1
+          fi
+
+      - name: Install exact Go toolchain
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version-file: multica-auth-work/server/go.mod
+          cache: false
+
+      - name: Prove immutable container Node and activate exact pnpm
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          command -v node >/dev/null
+          command -v corepack >/dev/null
+          command -v setsid >/dev/null
+          command -v curl >/dev/null
+          test "${BASH_VERSINFO[0]}" -ge 5
+          test -f package.json
+          test -f pnpm-lock.yaml
+          test "$(node -p 'require("./package.json").packageManager')" = "pnpm@10.28.2"
+          corepack prepare pnpm@10.28.2 --activate
+          test "$(corepack pnpm --version)" = "10.28.2"
+          test "$(go env GOVERSION)" = "go1.26.1"
+          printf 'node=%s\npnpm=%s\ngo=%s\n' \
+            "$(node --version)" "$(corepack pnpm --version)" "$(go env GOVERSION)" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install frozen dependencies
+        shell: bash
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Apply migrations to ephemeral Postgres
+        working-directory: multica-auth-work/server
+        shell: bash
+        env:
+          DATABASE_URL: postgres://multica:multica_pass@postgres:5432/multica_test?sslmode=disable
+        run: |
+          set -Eeuo pipefail
+          test "$(printf '%s' "$DATABASE_URL" | sed -E 's#^[^@]*@([^:/?]+).*#\1#')" = "postgres"
+          go run ./cmd/migrate up
+
+      - name: Build web with the ephemeral backend URL
+        shell: bash
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080
+        run: corepack pnpm --filter @multica/web build
+
+      - name: Run supervised backend, web and exact Playwright matrix
+        shell: bash
+        env:
+          APP_ENV: test
+          DATABASE_URL: postgres://multica:multica_pass@postgres:5432/multica_test?sslmode=disable
+          JWT_SECRET: ephemeral-orq39-ci-only-secret-32-bytes
+          PORT: "8080"
+          NEXT_PUBLIC_API_URL: http://localhost:8080
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: |
+          set -Eeuo pipefail
+          test -z "${MULTICA_DEV_VERIFICATION_CODE:-}"
+
+          RUN_DIR="$RUNNER_TEMP/orq39"
+          install -d -m 700 "$RUN_DIR"
+          test "$(stat -c %a "$RUN_DIR")" = "700"
+
+          SPECS=(
+            e2e/board-kanban.spec.ts
+            e2e/chat-panel-buttons.spec.ts
+            e2e/chat-reasoning-level.spec.ts
+            e2e/chat-upload-ui.spec.ts
+            e2e/delete-flows.spec.ts
+            e2e/squad-model-dropdown.spec.ts
+          )
+          for spec in "${SPECS[@]}"; do
+            test -f "$spec" || { echo "FATAL: missing required spec: $spec"; exit 1; }
+          done
+
+          BACKEND_PID=""
+          WEB_PID=""
+          TEST_PID=""
+
+          redact_log() {
+            local log="$1"
+            [ -f "$log" ] || return 0
+            sed -E \
+              -e 's#postgres://[^[:space:]]+#postgres://[REDACTED]#g' \
+              -e 's#(Bearer )[A-Za-z0-9._-]+#\1[REDACTED]#g' \
+              -e 's#ephemeral-orq39-ci-only-secret-32-bytes#[REDACTED]#g' \
+              "$log" | tail -n 120
+          }
+
+          kill_group() {
+            local pid="${1:-}"
+            if [ -n "$pid" ] && [[ "$pid" =~ ^[0-9]+$ ]]; then
+              kill -- "-$pid" 2>/dev/null || true
+            fi
+          }
+
+          process_running() {
+            local pid="$1"
+            local state
+            kill -0 "$pid" 2>/dev/null || return 1
+            [ -r "/proc/$pid/stat" ] || return 1
+            state="$(awk '{print $3}' "/proc/$pid/stat")"
+            [ "$state" != "Z" ]
+          }
+
+          cleanup() {
+            local status=$?
+            trap - EXIT INT TERM
+            kill_group "$TEST_PID"
+            kill_group "$WEB_PID"
+            kill_group "$BACKEND_PID"
+            for pid in "$TEST_PID" "$WEB_PID" "$BACKEND_PID"; do
+              if [ -n "$pid" ]; then wait "$pid" 2>/dev/null || true; fi
+            done
+            exit "$status"
+          }
+          trap cleanup EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+
+          fail_service() {
+            local label="$1"
+            local log="$2"
+            echo "FATAL: $label exited before browser QA completed"
+            redact_log "$log"
+            kill_group "$TEST_PID"
+            exit 1
+          }
+
+          wait_ready() {
+            local label="$1"
+            local url="$2"
+            local pid="$3"
+            local log="$4"
+            local attempt
+            for attempt in $(seq 1 60); do
+              process_running "$pid" || fail_service "$label" "$log"
+              if curl --fail --silent --show-error "$url" >/dev/null; then return 0; fi
+              sleep 2
+            done
+            echo "FATAL: readiness timeout for $label"
+            redact_log "$log"
+            return 1
+          }
+
+          setsid bash -c 'cd server && exec go run ./cmd/server' \
+            >"$RUN_DIR/backend.log" 2>&1 &
+          BACKEND_PID=$!
+          wait_ready backend http://localhost:8080/healthz "$BACKEND_PID" "$RUN_DIR/backend.log"
+
+          setsid corepack pnpm --filter @multica/web start \
+            >"$RUN_DIR/web.log" 2>&1 &
+          WEB_PID=$!
+          wait_ready web http://localhost:3000/ "$WEB_PID" "$RUN_DIR/web.log"
+
+          set +e
+          setsid corepack pnpm exec playwright test "${SPECS[@]}" \
+            --forbid-only \
+            --reporter=json \
+            --trace=retain-on-failure \
+            --screenshot=only-on-failure \
+            --video=off \
+            --max-failures=5 \
+            >"$RUN_DIR/playwright-report.json" 2>"$RUN_DIR/playwright.stderr.log" &
+          TEST_PID=$!
+          set -e
+
+          FIRST_PID=""
+          set +e
+          wait -n -p FIRST_PID "$BACKEND_PID" "$WEB_PID" "$TEST_PID"
+          FIRST_RC=$?
+          set -e
+
+          if [ "$FIRST_PID" = "$BACKEND_PID" ]; then
+            fail_service backend "$RUN_DIR/backend.log"
+          fi
+          if [ "$FIRST_PID" = "$WEB_PID" ]; then
+            fail_service web "$RUN_DIR/web.log"
+          fi
+          if [ "$FIRST_PID" != "$TEST_PID" ]; then
+            echo "FATAL: wait supervisor returned unknown pid: $FIRST_PID"
+            exit 1
+          fi
+
+          process_running "$BACKEND_PID" || fail_service backend "$RUN_DIR/backend.log"
+          process_running "$WEB_PID" || fail_service web "$RUN_DIR/web.log"
+          curl --fail --silent --show-error http://localhost:8080/healthz >/dev/null \
+            || fail_service backend "$RUN_DIR/backend.log"
+          curl --fail --silent --show-error http://localhost:3000/ >/dev/null \
+            || fail_service web "$RUN_DIR/web.log"
+
+          EXPECTED_SPECS="$(printf '%s\n' "${SPECS[@]}")"
+          set +e
+          REPORT_PATH="$RUN_DIR/playwright-report.json" EXPECTED_SPECS="$EXPECTED_SPECS" node <<'NODE'
+          const fs = require("fs");
+          const reportPath = process.env.REPORT_PATH;
+          const expected = new Set(process.env.EXPECTED_SPECS.split("\n").filter(Boolean));
+          const counts = new Map([...expected].map((file) => [file, 0]));
+          const errors = [];
+          let report;
+          try {
+            report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+          } catch (error) {
+            console.error(`invalid Playwright JSON report: ${error.message}`);
+            process.exit(1);
+          }
+
+          function expectedFile(file) {
+            const normalized = String(file || "").replaceAll("\\", "/");
+            return [...expected].find((candidate) =>
+              normalized === candidate || normalized.endsWith(`/${candidate}`),
+            );
+          }
+
+          function visitSuite(suite) {
+            for (const spec of suite.specs || []) {
+              const file = expectedFile(spec.file || suite.file);
+              if (!file) {
+                errors.push(`unexpected or missing spec path: ${spec.file || suite.file || "<empty>"}`);
+                continue;
+              }
+              counts.set(file, counts.get(file) + 1);
+              if (!Array.isArray(spec.tests) || spec.tests.length === 0) {
+                errors.push(`${file}: discovered spec has no tests`);
+                continue;
+              }
+              for (const test of spec.tests) {
+                if (test.expectedStatus !== "passed") {
+                  errors.push(`${file}: expectedStatus=${test.expectedStatus}`);
+                }
+                if (!Array.isArray(test.results) || test.results.length !== 1) {
+                  errors.push(`${file}: expected exactly one result, got ${test.results?.length ?? 0}`);
+                  continue;
+                }
+                if (test.results[0].status !== "passed") {
+                  errors.push(`${file}: result status=${test.results[0].status}`);
+                }
+              }
+            }
+            for (const child of suite.suites || []) visitSuite(child);
+          }
+          for (const suite of report.suites || []) visitSuite(suite);
+
+          for (const [file, count] of counts) {
+            if (count === 0) errors.push(`${file}: no executed specs in report`);
+          }
+          if (!report.stats || report.stats.expected <= 0) {
+            errors.push("report.stats.expected must be positive");
+          }
+          for (const field of ["skipped", "unexpected", "flaky"]) {
+            if (!report.stats || report.stats[field] !== 0) {
+              errors.push(`report.stats.${field}=${report.stats?.[field] ?? "missing"}`);
+            }
+          }
+          if (Array.isArray(report.errors) && report.errors.length !== 0) {
+            errors.push(`report.errors has ${report.errors.length} entries`);
+          }
+          if (errors.length !== 0) {
+            for (const error of errors) console.error(`FATAL: ${error}`);
+            process.exit(1);
+          }
+          fs.appendFileSync(
+            process.env.GITHUB_STEP_SUMMARY,
+            `Playwright anti-skip proof: ${report.stats.expected} expected, 0 skipped, six required files represented.\n`,
+          );
+          NODE
+          REPORT_RC=$?
+          set -e
+
+          if [ "$FIRST_RC" -ne 0 ] || [ "$REPORT_RC" -ne 0 ]; then
+            echo "FATAL: Playwright result failed (test_rc=$FIRST_RC report_rc=$REPORT_RC)"
+            redact_log "$RUN_DIR/playwright.stderr.log"
+            redact_log "$RUN_DIR/backend.log"
+            redact_log "$RUN_DIR/web.log"
+            if [ "$FIRST_RC" -ne 0 ]; then exit "$FIRST_RC"; fi
+            exit "$REPORT_RC"
+          fi
+
+          echo "PASS: Playwright exited zero, both services stayed alive, and the exact six-file matrix had zero skips"
