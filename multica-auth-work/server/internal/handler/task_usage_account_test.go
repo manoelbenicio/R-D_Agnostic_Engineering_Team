@@ -139,23 +139,48 @@ func assignAgentToAccount(t *testing.T, agentID, accountID string) {
 	})
 }
 
-// enqueueTaskForAgent seeds a QUEUED task, which is the only status
-// ClaimAgentTask will pick up. The package helper seeds 'running' instead, so it
-// cannot exercise the freeze.
-func enqueueTaskForAgent(t *testing.T, agentID string) string {
+func enqueueTaskForAgentWithRuntime(t *testing.T, agentID, runtimeID string) string {
 	t.Helper()
 	var taskID string
 	if err := testPool.QueryRow(context.Background(), `
 		INSERT INTO agent_task_queue (agent_id, runtime_id, status, priority)
 		VALUES ($1, $2, 'queued', 0)
 		RETURNING id
-	`, agentID, handlerTestRuntimeID(t)).Scan(&taskID); err != nil {
+	`, agentID, runtimeID).Scan(&taskID); err != nil {
 		t.Fatalf("enqueue task: %v", err)
 	}
 	t.Cleanup(func() {
 		testPool.Exec(context.Background(), `DELETE FROM agent_task_queue WHERE id = $1`, taskID)
 	})
 	return taskID
+}
+
+// enqueueTaskForAgent seeds a QUEUED task, which is the only status
+// ClaimAgentTask will pick up. The package helper seeds 'running' instead, so it
+// cannot exercise the freeze.
+func enqueueTaskForAgent(t *testing.T, agentID string) string {
+	t.Helper()
+	return enqueueTaskForAgentWithRuntime(t, agentID, handlerTestRuntimeID(t))
+}
+
+func createHandlerTestAgentWithRuntime(t *testing.T, name, runtimeID string) string {
+	t.Helper()
+	var agentID string
+	if err := testPool.QueryRow(context.Background(), `
+		INSERT INTO agent (
+			workspace_id, name, description, runtime_mode, runtime_config,
+			runtime_id, visibility, max_concurrent_tasks, owner_id,
+			instructions, custom_env, custom_args, mcp_config
+		)
+		VALUES ($1, $2, '', 'cloud', '{}'::jsonb, $3, 'private', 1, $4, '', '{}'::jsonb, '[]'::jsonb, '{}'::jsonb)
+		RETURNING id
+	`, testWorkspaceID, name, runtimeID, testUserID).Scan(&agentID); err != nil {
+		t.Fatalf("create handler test agent with runtime: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM agent WHERE id = $1`, agentID)
+	})
+	return agentID
 }
 
 // claimTask runs the real atomic claim and returns the frozen account, if any.
@@ -550,9 +575,9 @@ func TestListTaskUsageByAccount_ScopedToWorkspaceAndKeepsNullBucket(t *testing.T
 
 func freezeAttemptWithRuntime(t *testing.T, name, runtimeID, accountID string) (agentID, taskID, frozen string, ok bool) {
 	t.Helper()
-	agentID = createHandlerTestAgent(t, name, nil)
+	agentID = createHandlerTestAgentWithRuntime(t, name, runtimeID)
 	assignAgentToAccount(t, agentID, accountID)
-	taskID = enqueueTaskForAgent(t, agentID)
+	taskID = enqueueTaskForAgentWithRuntime(t, agentID, runtimeID)
 	frozen, ok = claimTask(t, agentID, taskID)
 	return agentID, taskID, frozen, ok
 }
@@ -594,6 +619,64 @@ func TestClaimFreeze_RefusesVendorMismatch(t *testing.T) {
 	if _, _, frozen, ok := freezeAttempt(t, "ORQ12 VendorMismatch", accountID); ok {
 		t.Fatalf("a vendor that does not match the task runtime must not be frozen, got %s", frozen)
 	}
+}
+
+// Direct un-normalized drift in DB (bypassing constraints/triggers) must fail exact equality claim.
+func TestClaimFreeze_RefusesDirectNonCanonicalDriftInDB(t *testing.T) {
+	ctx := context.Background()
+	runtimeID := handlerTestRuntimeID(t)
+	var originalProvider string
+	if err := testPool.QueryRow(ctx, `SELECT provider FROM agent_runtime WHERE id = $1`, runtimeID).Scan(&originalProvider); err != nil {
+		t.Fatalf("read runtime provider: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `UPDATE agent_runtime SET provider = $1 WHERE id = $2`, originalProvider, runtimeID)
+		testPool.Exec(context.Background(), `ALTER TABLE agent_runtime ADD CONSTRAINT agent_runtime_provider_canonical CHECK (((provider = lower(btrim(provider))) AND (provider <> 'agy'::text)))`)
+		testPool.Exec(context.Background(), `ALTER TABLE agent_runtime ENABLE TRIGGER trg_agent_runtime_canonical_provider`)
+		testPool.Exec(context.Background(), `ALTER TABLE accounts ADD CONSTRAINT accounts_vendor_canonical CHECK (((vendor = lower(btrim(vendor))) AND (vendor <> 'agy'::text)))`)
+		testPool.Exec(context.Background(), `ALTER TABLE accounts ENABLE TRIGGER trg_accounts_canonical_vendor`)
+	})
+
+	t.Run("unnormalized_runtime_provider_in_db", func(t *testing.T) {
+		if _, err := testPool.Exec(ctx, `ALTER TABLE agent_runtime DROP CONSTRAINT IF EXISTS agent_runtime_provider_canonical`); err != nil {
+			t.Fatalf("drop constraint: %v", err)
+		}
+		if _, err := testPool.Exec(ctx, `ALTER TABLE agent_runtime DISABLE TRIGGER trg_agent_runtime_canonical_provider`); err != nil {
+			t.Fatalf("disable trigger: %v", err)
+		}
+		if _, err := testPool.Exec(ctx, `UPDATE agent_runtime SET provider = 'agy' WHERE id = $1`, runtimeID); err != nil {
+			t.Fatalf("set provider to agy: %v", err)
+		}
+
+		accountID := createTestAccountFull(t, testWorkspaceID, "antigravity", "available")
+		approveAccount(t, accountID)
+
+		if _, _, frozen, ok := freezeAttemptWithRuntime(t, "ORQ12 UnnormalizedRuntime", runtimeID, accountID); ok {
+			t.Fatalf("un-normalized runtime provider 'agy' in DB must fail closed on claim, got %s", frozen)
+		}
+	})
+
+	t.Run("unnormalized_account_vendor_in_db", func(t *testing.T) {
+		if _, err := testPool.Exec(ctx, `UPDATE agent_runtime SET provider = 'antigravity' WHERE id = $1`, runtimeID); err != nil {
+			t.Fatalf("set provider: %v", err)
+		}
+		accountID := createTestAccountFull(t, testWorkspaceID, "antigravity", "available")
+		approveAccount(t, accountID)
+
+		if _, err := testPool.Exec(ctx, `ALTER TABLE accounts DROP CONSTRAINT IF EXISTS accounts_vendor_canonical`); err != nil {
+			t.Fatalf("drop account constraint: %v", err)
+		}
+		if _, err := testPool.Exec(ctx, `ALTER TABLE accounts DISABLE TRIGGER trg_accounts_canonical_vendor`); err != nil {
+			t.Fatalf("disable account trigger: %v", err)
+		}
+		if _, err := testPool.Exec(ctx, `UPDATE accounts SET vendor = ' AGY ' WHERE account_id = $1`, uuidParam(t, accountID)); err != nil {
+			t.Fatalf("set vendor to AGY: %v", err)
+		}
+
+		if _, _, frozen, ok := freezeAttemptWithRuntime(t, "ORQ12 UnnormalizedVendor", runtimeID, accountID); ok {
+			t.Fatalf("un-normalized vendor ' AGY ' in DB must fail closed on claim, got %s", frozen)
+		}
+	})
 }
 
 // Alias acceptance belongs to write-path normalization (normalizeProvider), which
