@@ -621,7 +621,7 @@ func TestClaimFreeze_RefusesVendorMismatch(t *testing.T) {
 	}
 }
 
-// Direct un-normalized drift in DB (bypassing constraints/triggers) must fail exact equality claim.
+// Direct un-normalized drift injected into DB must fail closed under exact claim matching.
 func TestClaimFreeze_RefusesDirectNonCanonicalDriftInDB(t *testing.T) {
 	ctx := context.Background()
 	runtimeID := handlerTestRuntimeID(t)
@@ -631,23 +631,12 @@ func TestClaimFreeze_RefusesDirectNonCanonicalDriftInDB(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		testPool.Exec(context.Background(), `UPDATE agent_runtime SET provider = $1 WHERE id = $2`, originalProvider, runtimeID)
-		testPool.Exec(context.Background(), `ALTER TABLE agent_runtime ADD CONSTRAINT agent_runtime_provider_canonical CHECK (((provider = lower(btrim(provider))) AND (provider <> 'agy'::text)))`)
-		testPool.Exec(context.Background(), `ALTER TABLE agent_runtime ENABLE TRIGGER trg_agent_runtime_canonical_provider`)
-		testPool.Exec(context.Background(), `ALTER TABLE accounts ADD CONSTRAINT accounts_vendor_canonical CHECK (((vendor = lower(btrim(vendor))) AND (vendor <> 'agy'::text)))`)
-		testPool.Exec(context.Background(), `ALTER TABLE accounts ENABLE TRIGGER trg_accounts_canonical_vendor`)
 	})
 
 	t.Run("unnormalized_runtime_provider_in_db", func(t *testing.T) {
-		if _, err := testPool.Exec(ctx, `ALTER TABLE agent_runtime DROP CONSTRAINT IF EXISTS agent_runtime_provider_canonical`); err != nil {
-			t.Fatalf("drop constraint: %v", err)
-		}
-		if _, err := testPool.Exec(ctx, `ALTER TABLE agent_runtime DISABLE TRIGGER trg_agent_runtime_canonical_provider`); err != nil {
-			t.Fatalf("disable trigger: %v", err)
-		}
 		if _, err := testPool.Exec(ctx, `UPDATE agent_runtime SET provider = 'agy' WHERE id = $1`, runtimeID); err != nil {
 			t.Fatalf("set provider to agy: %v", err)
 		}
-
 		accountID := createTestAccountFull(t, testWorkspaceID, "antigravity", "available")
 		approveAccount(t, accountID)
 
@@ -660,18 +649,8 @@ func TestClaimFreeze_RefusesDirectNonCanonicalDriftInDB(t *testing.T) {
 		if _, err := testPool.Exec(ctx, `UPDATE agent_runtime SET provider = 'antigravity' WHERE id = $1`, runtimeID); err != nil {
 			t.Fatalf("set provider: %v", err)
 		}
-		accountID := createTestAccountFull(t, testWorkspaceID, "antigravity", "available")
+		accountID := createTestAccountFull(t, testWorkspaceID, " AGY ", "available")
 		approveAccount(t, accountID)
-
-		if _, err := testPool.Exec(ctx, `ALTER TABLE accounts DROP CONSTRAINT IF EXISTS accounts_vendor_canonical`); err != nil {
-			t.Fatalf("drop account constraint: %v", err)
-		}
-		if _, err := testPool.Exec(ctx, `ALTER TABLE accounts DISABLE TRIGGER trg_accounts_canonical_vendor`); err != nil {
-			t.Fatalf("disable account trigger: %v", err)
-		}
-		if _, err := testPool.Exec(ctx, `UPDATE accounts SET vendor = ' AGY ' WHERE account_id = $1`, uuidParam(t, accountID)); err != nil {
-			t.Fatalf("set vendor to AGY: %v", err)
-		}
 
 		if _, _, frozen, ok := freezeAttemptWithRuntime(t, "ORQ12 UnnormalizedVendor", runtimeID, accountID); ok {
 			t.Fatalf("un-normalized vendor ' AGY ' in DB must fail closed on claim, got %s", frozen)
