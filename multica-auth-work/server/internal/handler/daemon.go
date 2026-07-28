@@ -259,7 +259,11 @@ func workspaceReposResponse(workspaceID string, raw []byte, settingsRaw []byte) 
 // lowercased so client-side pricing lookups tolerate case drift. Returns "" for
 // a blank input.
 func normalizeProvider(s string) string {
-	return strings.ToLower(strings.TrimSpace(s))
+	lower := strings.ToLower(strings.TrimSpace(s))
+	if lower == "agy" {
+		return "antigravity"
+	}
+	return lower
 }
 
 func (h *Handler) DaemonRegister(w http.ResponseWriter, r *http.Request) {

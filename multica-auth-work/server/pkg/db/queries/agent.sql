@@ -324,27 +324,11 @@ SET status = 'dispatched',
               ON acc.account_id = asg.account_id
              AND acc.tenant_id = ag.workspace_id
              AND acc.status IN ('available', 'leased')
-             -- Canonicalise BOTH sides, exactly like
-             -- credentialregistry.CanonicalProvider does in ORQ-21 R3
-             -- (resolver.go:53-60), which compares
-             -- CanonicalProvider(vendor) against CanonicalProvider(provider).
-             -- Canonicalising only the runtime side would reject an account
-             -- whose vendor happens to be stored as 'agy': ORQ-21 would let the
-             -- task execute while this freeze returned NULL, producing spend
-             -- that runs but cannot be attributed.
-             AND CASE
-                     WHEN lower(btrim(acc.vendor)) = 'agy' THEN 'antigravity'
-                     ELSE lower(btrim(acc.vendor))
-                 END
-               = CASE
-                     WHEN lower(btrim(rt.provider)) = 'agy' THEN 'antigravity'
-                     ELSE lower(btrim(rt.provider))
-                 END
-             -- Covered providers only per ADR: codex, kiro, antigravity (agy input alias)
-             AND CASE
-                     WHEN lower(btrim(rt.provider)) = 'agy' THEN 'antigravity'
-                     ELSE lower(btrim(rt.provider))
-                 END IN ('codex', 'kiro', 'antigravity')
+             -- Exact canonical equality comparison per GTM ruling: values are
+             -- canonicalized on write and backfilled via migration 128. No read-time
+             -- CASE/lower/btrim authority.
+             AND acc.vendor = rt.provider
+             AND rt.provider IN ('codex', 'kiro', 'antigravity')
             JOIN approved_accounts AS ap
               ON ap.account_id = acc.account_id
              AND ap.tenant_id = ag.workspace_id
@@ -399,10 +383,7 @@ WHERE id = (
       AND atq.started_at IS NULL
       AND atq.dispatched_at < now() - make_interval(secs => @claim_recovery_secs::double precision)
       AND NOT (
-          CASE
-              WHEN lower(btrim(rt.provider)) = 'agy' THEN 'antigravity'
-              ELSE lower(btrim(rt.provider))
-          END IN ('codex', 'kiro', 'antigravity')
+          rt.provider IN ('codex', 'kiro', 'antigravity')
           AND atq.credential_account_id IS NULL
       )
     ORDER BY atq.priority DESC, atq.dispatched_at ASC
