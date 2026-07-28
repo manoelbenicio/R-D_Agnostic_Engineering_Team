@@ -548,15 +548,20 @@ func TestListTaskUsageByAccount_ScopedToWorkspaceAndKeepsNullBucket(t *testing.T
 // silently promoted.
 // ---------------------------------------------------------------------------
 
-// freezeAttempt wires one agent + assignment + task and returns the frozen
-// account after a real claim.
-func freezeAttempt(t *testing.T, name, accountID string) (agentID, taskID, frozen string, ok bool) {
+func freezeAttemptWithRuntime(t *testing.T, name, runtimeID, accountID string) (agentID, taskID, frozen string, ok bool) {
 	t.Helper()
 	agentID = createHandlerTestAgent(t, name, nil)
 	assignAgentToAccount(t, agentID, accountID)
 	taskID = enqueueTaskForAgent(t, agentID)
 	frozen, ok = claimTask(t, agentID, taskID)
 	return agentID, taskID, frozen, ok
+}
+
+// freezeAttempt wires one agent + assignment + task and returns the frozen
+// account after a real claim.
+func freezeAttempt(t *testing.T, name, accountID string) (agentID, taskID, frozen string, ok bool) {
+	t.Helper()
+	return freezeAttemptWithRuntime(t, name, handlerTestRuntimeID(t), accountID)
 }
 
 func TestClaimFreeze_RefusesTenantMismatchOnAccount(t *testing.T) {
@@ -630,7 +635,7 @@ func TestWritePath_NormalizeProviderAndClaim(t *testing.T) {
 	accountID := createTestAccountFull(t, testWorkspaceID, "antigravity", "available")
 	approveAccount(t, accountID)
 
-	_, _, frozen, ok := freezeAttempt(t, "ORQ12 CanonicalWritePathClaim", accountID)
+	_, _, frozen, ok := freezeAttemptWithRuntime(t, "ORQ12 CanonicalWritePathClaim", runtimeID, accountID)
 	if !ok || frozen != accountID {
 		t.Fatalf("canonical write path claim failed: got %q ok=%v want %s", frozen, ok, accountID)
 	}

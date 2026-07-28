@@ -83,7 +83,7 @@ ALTER TABLE task_usage
     ADD COLUMN IF NOT EXISTS account_id UUID REFERENCES accounts(account_id) ON DELETE SET NULL;
 
 COMMENT ON COLUMN task_usage.account_id IS
-    'Provider account that produced this usage, snapshotted at report time by resolving agent_task_queue.agent_id through assignments. NULL = not attributable (legacy row, or the agent had no assignment). Never inferred.';
+    'Provider account that produced this usage, snapshotted at task claim time on agent_task_queue.credential_account_id and copied to task_usage upon report. Never live assignment lookup.';
 
 -- Partial index: only attributable rows are ever grouped by account, and the
 -- NULL-heavy legacy tail would otherwise bloat the index for no reader.
