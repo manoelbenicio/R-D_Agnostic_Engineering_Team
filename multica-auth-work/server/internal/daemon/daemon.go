@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/multica-ai/multica/server/internal/cli"
+	"github.com/multica-ai/multica/server/internal/credentialregistry"
 	"github.com/multica-ai/multica/server/internal/daemon/brain"
 	"github.com/multica-ai/multica/server/internal/daemon/commitledger"
 	"github.com/multica-ai/multica/server/internal/daemon/execenv"
@@ -3224,6 +3225,10 @@ func gateResumeToReusedWorkdir(task *Task, taskCtx *execenv.TaskContextForEnv, e
 // through the frozen built-in CLIKind mapping. All checks occur before gateway
 // admission can access the injected credential source.
 func (d *Daemon) resolveTaskAgentEntry(task Task, claimedProvider string) (AgentEntry, string, error) {
+	// `agy` is the historical executable name for the Antigravity provider.
+	// Canonicalize before config lookup and before execenv so the alias cannot
+	// bypass Antigravity's isolated HOME preparation.
+	claimedProvider = credentialregistry.CanonicalProvider(claimedProvider)
 	if d.agentBrainGatewayRequired() {
 		if d.runtimeIsCustom(task.RuntimeID) {
 			return AgentEntry{}, "", &agentBrainAdmissionError{class: "custom_runtime_not_allowed"}
@@ -3445,7 +3450,16 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// LocalWorkDir into execenv. handleTask already validated + locked the
 	// path; this call is a pure JSON parse over the same task payload.
 	localAssignment, _ := findLocalDirectoryAssignment(task.ProjectResources, d.cfg.DaemonID)
-	credentialAccountHome := ""
+	rawCredentialAccountHome := ""
+	credentialAssignmentRequired := false
+	if task.Agent != nil {
+		rawCredentialAccountHome = task.Agent.CredentialAccountHome
+		credentialAssignmentRequired = task.Agent.CredentialAssignmentRequired
+	}
+	credentialAccountHome, credentialHomeErr := validateCredentialAccountHome(provider, rawCredentialAccountHome, credentialAssignmentRequired)
+	if credentialHomeErr != nil {
+		return TaskResult{}, credentialHomeErr
+	}
 	startedTask := false
 	// Reuse intentionally skipped for local_directory tasks: the prior
 	// WorkDir is the user's own path (always present) but the reuse path
@@ -3473,7 +3487,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 			McpConfig:             agentMcpConfig,
 			OpenclawGateway:       openclawGateway,
 			CredentialAccountHome: credentialAccountHome,
-			CredentiallessGateway: true,
+			CredentiallessGateway: credentialAccountHome == "",
 			Task:                  taskCtx,
 		}, d.logger)
 	}
@@ -3490,7 +3504,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 			McpConfig:             agentMcpConfig,
 			OpenclawGateway:       openclawGateway,
 			CredentialAccountHome: credentialAccountHome,
-			CredentiallessGateway: true,
+			CredentiallessGateway: credentialAccountHome == "",
 			Task:                  taskCtx,
 		}
 		if localAssignment != nil {
