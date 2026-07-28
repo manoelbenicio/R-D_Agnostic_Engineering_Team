@@ -84,18 +84,48 @@ func TestResolverDBApprovedAssignmentContract(t *testing.T) {
 	if _, err := resolver.Resolve(ctx, agentID, "codex"); !errors.Is(err, ErrProviderMismatch) {
 		t.Fatalf("provider mismatch=%v, want ErrProviderMismatch", err)
 	}
+	if _, err := tx.Exec(ctx, `UPDATE accounts SET vendor='antigravity' WHERE account_id=$1`, accountID); err != nil {
+		t.Fatalf("set canonical antigravity vendor: %v", err)
+	}
+	if got, err := resolver.Resolve(ctx, agentID, "agy"); err != nil || got.Vendor != "antigravity" {
+		t.Fatalf("canonical vendor with runtime alias: got=%+v err=%v", got, err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE accounts SET vendor='agy' WHERE account_id=$1`, accountID); err != nil {
+		t.Fatalf("set noncanonical vendor fixture: %v", err)
+	}
+	if _, err := resolver.Resolve(ctx, agentID, "agy"); !errors.Is(err, ErrProviderMismatch) {
+		t.Fatalf("noncanonical stored vendor=%v, want ErrProviderMismatch", err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE accounts SET vendor='kiro' WHERE account_id=$1`, accountID); err != nil {
+		t.Fatalf("restore canonical kiro vendor: %v", err)
+	}
 	if _, err := tx.Exec(ctx, `INSERT INTO agent (id, workspace_id, name, runtime_mode, runtime_id)
 		VALUES ($1, $2, 'ORQ21 other agent', 'local', $3)`, otherAgentID, workspaceID, runtimeID); err != nil {
 		t.Fatalf("insert other agent: %v", err)
 	}
-	if _, err := tx.Exec(ctx, `INSERT INTO assignments (agent_id, account_id) VALUES ($1, $2)`, otherAgentID, accountID); err != nil {
-		t.Fatalf("duplicate account assignment fixture: %v", err)
+	var accountUniqueIndex bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS (
+		SELECT 1
+		  FROM pg_index AS i
+		  JOIN pg_class AS tab ON tab.oid=i.indrelid
+		 WHERE tab.relname='assignments'
+		   AND i.indisunique
+		   AND pg_get_indexdef(i.indexrelid) LIKE '%(account_id)%'
+	)`).Scan(&accountUniqueIndex); err != nil {
+		t.Fatalf("detect account uniqueness: %v", err)
 	}
-	if _, err := resolver.Resolve(ctx, agentID, "kiro"); !errors.Is(err, ErrAccountAlreadyUsed) {
-		t.Fatalf("shared account=%v, want ErrAccountAlreadyUsed", err)
-	}
-	if _, err := tx.Exec(ctx, `DELETE FROM assignments WHERE agent_id=$1`, otherAgentID); err != nil {
-		t.Fatalf("remove duplicate account assignment fixture: %v", err)
+	if !accountUniqueIndex {
+		if _, err := tx.Exec(ctx, `INSERT INTO assignments (agent_id, account_id) VALUES ($1, $2)`, otherAgentID, accountID); err != nil {
+			t.Fatalf("duplicate account assignment fixture: %v", err)
+		}
+		// Before the ORQ-12 unique index is promoted, the resolver remains a
+		// second fail-closed defense against a legacy duplicate.
+		if _, err := resolver.Resolve(ctx, agentID, "kiro"); !errors.Is(err, ErrAccountAlreadyUsed) {
+			t.Fatalf("shared account=%v, want ErrAccountAlreadyUsed", err)
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM assignments WHERE agent_id=$1`, otherAgentID); err != nil {
+			t.Fatalf("remove duplicate account assignment fixture: %v", err)
+		}
 	}
 	if _, err := tx.Exec(ctx, `UPDATE accounts SET status='leased' WHERE account_id=$1`, accountID); err != nil {
 		t.Fatalf("mark account leased: %v", err)

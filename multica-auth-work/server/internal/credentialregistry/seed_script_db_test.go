@@ -157,6 +157,26 @@ func TestSeedApprovedAssignmentIdempotencyRevocationAndExclusivity(t *testing.T)
 		t.Fatalf("shared account assignments=%d, want 1", assignmentCount)
 	}
 
+	canonical := seedFixture{
+		workspaceID: workspaceID,
+		agentID:     uuid.NewString(),
+		accountID:   uuid.NewString(),
+		vendor:      " AGY ",
+		scope:       "GENERAL",
+	}
+	seedAgentFixture(t, ctx, pool, workspaceID, canonical.agentID, "canonical-vendor")
+	if output, err = runSeedScript(ctx, dbURL, canonical); err != nil {
+		t.Fatalf("canonical vendor seed: %v output=%s", err, output)
+	}
+	var storedVendor string
+	if err := pool.QueryRow(ctx, `SELECT vendor FROM accounts WHERE account_id=$1`,
+		canonical.accountID).Scan(&storedVendor); err != nil {
+		t.Fatalf("read canonical vendor: %v", err)
+	}
+	if storedVendor != "antigravity" {
+		t.Fatalf("stored vendor=%q, want exact canonical antigravity", storedVendor)
+	}
+
 	unsupported := seedFixture{
 		workspaceID: workspaceID,
 		agentID:     uuid.NewString(),
@@ -181,8 +201,8 @@ func TestSeedApprovedAssignmentIdempotencyRevocationAndExclusivity(t *testing.T)
 
 	var credentialRows int
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM credentials
-		WHERE account_id IN ($1, $2, $3)`,
-		first.accountID, sharedAccountID, unsupported.accountID).Scan(&credentialRows); err != nil {
+		WHERE account_id IN ($1, $2, $3, $4)`,
+		first.accountID, sharedAccountID, canonical.accountID, unsupported.accountID).Scan(&credentialRows); err != nil {
 		t.Fatalf("count credential rows: %v", err)
 	}
 	if credentialRows != 0 {
