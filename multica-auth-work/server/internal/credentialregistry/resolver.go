@@ -122,7 +122,10 @@ func (r *Resolver) Resolve(ctx context.Context, agentID, provider string) (Assig
 		return Assignment{}, fmt.Errorf("credential registry: resolve metadata: %w", err)
 	}
 
-	if CanonicalProvider(assignment.Vendor) != CanonicalProvider(provider) {
+	// The importer and the ORQ-12 migration own canonicalization at write
+	// time. Reads compare the persisted canonical vendor exactly so drift is
+	// rejected instead of being repaired independently by multiple readers.
+	if assignment.Vendor != CanonicalProvider(provider) {
 		return Assignment{}, ErrProviderMismatch
 	}
 	if assignedToAnotherAgent {

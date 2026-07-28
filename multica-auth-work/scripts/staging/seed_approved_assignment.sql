@@ -46,6 +46,22 @@ BEGIN;
 
 SELECT pg_advisory_xact_lock(hashtextextended(:'account_id', 0));
 
+SELECT CASE lower(btrim(:'vendor'))
+           WHEN 'agy' THEN 'antigravity'
+           WHEN 'antigravity' THEN 'antigravity'
+           WHEN 'codex' THEN 'codex'
+           WHEN 'kiro' THEN 'kiro'
+           ELSE ''
+       END AS canonical_vendor,
+       lower(btrim(:'vendor')) IN ('agy', 'antigravity', 'codex', 'kiro')
+         AS vendor_supported
+\gset
+
+\if :vendor_supported
+\else
+  DO $$ BEGIN RAISE EXCEPTION 'E_VENDOR_UNSUPPORTED'; END $$;
+\endif
+
 SELECT EXISTS (
     SELECT 1 FROM workspace WHERE id = :'workspace_id'::uuid
 ) AS workspace_exists,
@@ -57,9 +73,9 @@ EXISTS (
 ) AS agent_exists,
 EXISTS (
     SELECT 1
-      FROM accounts
+     FROM accounts
      WHERE account_id = :'account_id'::uuid
-       AND (tenant_id <> :'workspace_id'::uuid OR vendor <> :'vendor')
+       AND (tenant_id <> :'workspace_id'::uuid OR vendor <> :'canonical_vendor')
 ) AS account_conflict,
 EXISTS (
     SELECT 1
@@ -118,7 +134,7 @@ INSERT INTO accounts (
     status
 ) VALUES (
     :'account_id'::uuid,
-    :'vendor',
+    :'canonical_vendor',
     :'workspace_id'::uuid,
     :'priority'::int,
     :'home_dir',
