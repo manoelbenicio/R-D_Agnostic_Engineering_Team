@@ -72,6 +72,15 @@ func TestORQ21ClaimIncludesOnlyApprovedAssignmentMetadata(t *testing.T) {
 			t.Fatalf("seed approved assignment metadata: %v", err)
 		}
 	}
+	// Reclaim must preserve an account snapshot that was frozen by the original
+	// claim. It must never resolve the current assignment for a dispatched row.
+	if _, err := testPool.Exec(ctx, `
+		UPDATE agent_task_queue
+		SET credential_account_id = $1
+		WHERE id = $2
+	`, accountID, taskID); err != nil {
+		t.Fatalf("freeze producing account on stale dispatched fixture: %v", err)
+	}
 	t.Cleanup(func() {
 		_, _ = testPool.Exec(context.Background(), `DELETE FROM accounts WHERE account_id=$1`, accountID)
 	})
@@ -119,7 +128,19 @@ func TestORQ21ClaimCancelsWithoutApprovedAssignment(t *testing.T) {
 	ctx := context.Background()
 	runtimeID := createORQ21Runtime(t, "antigravity")
 	agentID, issueID := createClaimReclaimAgentAndIssue(t, ctx, runtimeID, "ORQ21 fail closed")
-	taskID := createDispatchedClaimFixtureTask(t, ctx, agentID, runtimeID, issueID, "120 seconds", false)
+	var taskID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent_task_queue (
+			agent_id, runtime_id, issue_id, status, priority
+		)
+		VALUES ($1, $2, $3, 'queued', 0)
+		RETURNING id
+	`, agentID, runtimeID, issueID).Scan(&taskID); err != nil {
+		t.Fatalf("create queued missing-assignment attempt: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_task_queue WHERE id=$1`, taskID)
+	})
 
 	w := claimORQ21Task(t, runtimeID)
 	if w.Code != http.StatusConflict {
