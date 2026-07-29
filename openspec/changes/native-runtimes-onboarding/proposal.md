@@ -1,40 +1,29 @@
-# Proposal — Native Runtimes (NIM, Cline) + Model Discovery Fix + Onboarding Rework
+# Proposal — Native Runtimes (Cline, NIM Superseded) + Model Discovery Fix + Onboarding Rework
 
 ## Why
-Multica precisa de dois runtimes nativos que hoje não existem, corrigir a descoberta de
-modelos que não popula na UI, e trocar o onboarding (landing de patrocinadores + login por
-código de email) por um login limpo no mesmo design do app.
+Multica requires native runtime integration for Cline 3.x, reliable UI model discovery, and an onboarding redesign replacing sponsor landing pages and email verification codes with a clean, app-styled login interface.
 
-- **NVIDIA NIM**: runtime nativo **do zero** (OpenAI-compatible), NÃO via opencode.
-- **Cline**: backend nativo Cline 3.x via `cline --acp`, falando ACP JSON-RPC 2.0
-  por stdin/stdout. O flag `--json` pertence ao modo headless separado de saída de prompt e
-  é incompatível com o handshake ACP quando combinado com `--acp`.
-- **Descoberta de modelos**: o fluxo assíncrono trava/lento (`agy models` ~20s) e a UI fica vazia ("nada do CLI").
-- **Onboarding**: remover marketing/patrocinadores + fluxo de código por email; login no design do kanban/agentes.
+- **Cline**: Backend native Cline 3.x via `cline --acp`, exchanging ACP JSON-RPC 2.0 messages over stdin/stdout. The `--json` flag belongs to a separate headless prompt-output mode and is incompatible with the ACP handshake when combined with `--acp`.
+- **NVIDIA NIM (SUPERSEDED)**: Deliberately removed from canonical source (zero `nim.go`/`nim_home.go` at production SHA `15626386da2725af8e8d4ac611754cffe359fe31`). All obsolete NIM implementation and deployment claims/tasks are SUPERSEDED per owner ruling. Any NIM revival requires a new owner-approved proposal.
+- **Model Discovery**: Asynchronous enumeration flow (`agy models` ~20s) fixed with timeouts, caching, and error surfacing so the UI populates reliably.
+- **Onboarding**: Sponsor landing pages and email verification code flow removed. Simple username/password login implemented in the design-system style (Firebase-ready).
 
 ## What Changes
-- **ADDED** runtime nativo `nim` (backend, probe, factory, isolamento de credencial, rotação, catálogo).
-- **ADDED** runtime nativo `cline` (backend ACP, probe, factory).
-- **MODIFIED** descoberta de modelos: timeout, cache e surface de erro; UI popula de forma confiável.
-- **MODIFIED** onboarding/auth: remover landing de sponsors + verificação por email; login consistente com o design-system.
+- **ADDED** native `cline` runtime backend (`cline.go`, config probe, `New`/`SupportedTypes`, `POST /auth/login`).
+- **SUPERSEDED** native `nim` runtime (deliberately removed from canonical source; zero `nim.go`/`nim_home.go` at production SHA `15626386da2725af8e8d4ac611754cffe359fe31`).
+- **MODIFIED** model discovery: timeout, caching, and error surfacing so UI populates reliably.
+- **MODIFIED** onboarding/auth: sponsor landing pages and email-code verification removed; app-styled login implemented.
 
 ## Impact
-- Código: `server/pkg/agent/*`, `server/internal/daemon/*`, `apps/web/app/(auth|landing)`, `packages/views/auth`, design-system.
-- Execução: **coders experts (codex & cia)**. **Kiro apenas orquestra e valida** (não produz código).
-- Decisão do dono RESOLVIDA em 2026-07-12: login/senha simples agora, com interface
-  Firebase-ready para evolucao posterior sem rework.
+- Code: `server/pkg/agent/cline.go`, `internal/daemon/config.go`, `pkg/agent/agent.go`, `cmd/server/router.go`, `apps/web/app/(auth)`.
+- Execs: Expert coder agents for implementation; GTL / Kiro for verification and Kanban control.
 
 ## Non-goals
-- Usar NIM via opencode (explicitamente rejeitado pelo dono).
-- Telemetria de token/quota do antigravity (backlog separado, limitação do fabricante).
+- Operating NIM via opencode or custom wrappers (explicitly rejected by owner decision).
+- Claiming frontend or live Cline acceptance before ORQ-66 durable daemon deployment (live CLI is `cline 3.0.46`, but ORQ2 daemon remains old `88ca` until ORQ-66).
 
-## Implementation status — 2026-07-29
-
-- Backend NIM, isolamento NIM, backend Cline ACP, model discovery e auth backend estão
-  implementados; wiring compartilhado de NIM/Cline também está concluído.
-- Task 1.5 (onboarding frontend & remoção de marketing/sponsors/email-code) foi concluída e
-  aceita no Wave 2 via ORQ-51.
-- Paridade visual (Agent-6 / ORQ-52), rebuild/restart dos runtimes (ORQ-53), smoke real e UAT
-  permanecem abertos e rastreados nos cards correspondentes.
-- Os agentes AGY criados no workspace e o reparo de model selection pertencem a outra frente;
-  eles não comprovam que NIM/Cline estejam online ou que o onboarding novo esteja aceito.
+## Implementation Status — 2026-07-29 (v6.2 Reconciliation)
+- **NIM Removal**: Verified zero `nim.go` or `nim_home.go` files at production SHA `15626386da2725af8e8d4ac611754cffe359fe31`. All NIM tasks marked SUPERSEDED.
+- **Cline Backend**: Canonical source contains `cline.go`, config probe, `New`/`SupportedTypes`, and `POST /auth/login`. Live CLI `cline 3.0.46` verified. Pending ORQ-66 durable daemon deployment for live runtime/canary.
+- **Onboarding Frontend & Marketing Removal**: Completed and accepted under ORQ-51.
+- **Design System Parity**: Completed and accepted under ORQ-52.

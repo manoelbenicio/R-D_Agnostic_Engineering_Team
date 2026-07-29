@@ -1,28 +1,27 @@
-# Tasks
+# Tasks — Native Runtimes Onboarding (v6.2 Reconciliation)
 
-> Execução: coders (codex & cia). Validação de cada entrega: Kiro. Check-in START/DONE por agente.
+## Wave 1 — Implementation
+- [x] 1.1 Agent-1: `server/pkg/agent/nim.go` — **SUPERSEDED** per owner ruling (NIM deliberately removed from canonical source; zero `nim.go`/`nim_home.go` at production SHA `15626386da2725af8e8d4ac611754cffe359fe31`)
+- [x] 1.2 Agent-2: `execenv/nim_home.go`, `rotation_detector_nim.go` — **SUPERSEDED** per owner ruling (NIM removed from canonical source)
+- [x] 1.3 Agent-3: `server/pkg/agent/cline.go` — Backend nativo Cline 3.x via `cline --acp` (ACP JSON-RPC 2.0 por stdin/stdout); `--json` filtrado — COMPLETO no fonte canônico
+- [x] 1.4 Agent-4: Descoberta de modelos — timeout + cache + surface de erro no fluxo model-list; UI popula — COMPLETO
+- [x] 1.5 Agent-5: Onboarding frontend — remover landing/sponsors + fluxo de código por email; UI login/senha no design-system — **ACEITO ORQ-51**
+- [x] 1.6 Agent-6: Paridade de design (tokens/cores kanban/agentes), limpeza de i18n, harness build/test web — **ACEITO ORQ-52**
+- [x] 1.7 Agent-1 (Backend Auth): `POST /auth/login` (username/senha) em `cmd/server/router.go` + credential store atrás de `AuthProvider` — COMPLETO
 
-## Wave 1 — paralela
-- [x] 1.1 Agent-1: `server/pkg/agent/nim.go` — backend NIM OpenAI-compatible (SSE, loop agêntico, usageMetadata→TokenUsage) + testes — VALIDADO Kiro (container `pkg/agent` verde)
-- [x] 1.2 Agent-2: isolamento/rotação NIM — `execenv/nim_home.go`, `rotation_detector_nim.go`, `rotation/detector_nim.go` + testes
-- [x] 1.3 Agent-3: `server/pkg/agent/cline.go` — backend nativo Cline 3.x via `cline --acp` (ACP JSON-RPC 2.0 por stdin/stdout); `--json` é modo separado incompatível e é filtrado, conforme teste direto do argv
-- [x] 1.4 Agent-4: descoberta de modelos — timeout + cache + surface de erro no fluxo model-list; UI popula — VALIDADO Kiro (container `pkg/agent` + `internal/daemon` verdes)
-- [x] 1.5 Agent-5: onboarding (FRONTEND) — remover `(landing)`/`features/landing`/`content/use-cases`/sponsors + fluxo de código por email; `AuthService` interface + `SimpleAuthService`→`api.login()` (Firebase-ready) + UI login/senha no design-system; manter Google OAuth/CLI callback/desktop handoff. **A5 é o dono da remoção de marketing/landing/sponsors** (A6 NÃO remove marketing).
-- [ ] 1.6 Agent-6: paridade de design (tokens/cores kanban/agentes), limpeza de i18n, harness build/test do web e QA. **NÃO remove marketing (isso é A5)**; arquivos disjuntos de A5.
-- [x] 1.7 Agent-1 (BACKEND, novo — desbloqueia 1.5): `POST /auth/login` (username/senha) em `cmd/server/router.go` + credential store (Postgres, hash bcrypt/argon2) atrás de interface `AuthProvider` (Firebase-ready, sem rework); remover `/auth/send-code` + `/auth/verify-code`; manter `/auth/google` + `/auth/logout`. Contrato request/response coordenado pelo Kiro com Agent-5 (`packages/core/api/client.ts` + UI).
+## Wave 2 — Integração
+- [x] 2.1 Wiring `config.go`: probe `cline` — COMPLETO (`MULTICA_CLINE_PATH`/`cline`)
+- [x] 2.2 Wiring `agent.go`: `New()` cases + `SupportedTypes` (cline) — COMPLETO
+- [x] 2.3 `requiresCredentialIsolation` (+`nim`) — **SUPERSEDED** (NIM removido do fonte canônico)
+- [ ] 2.4 Rebuild & restart daemon com runtime `cline` ativo — EM ANDAMENTO (depende do deploy do daemon durável ORQ-66; ORQ2 daemon segue binário `88ca`)
+- [x] 2.5 Build + subir web local; validar onboarding novo — **ACEITO ORQ-51 / ORQ-52**
 
-## Wave 2 — integração (Kiro)
-- [x] 2.1 Wiring `config.go`: probes `nim` e `cline`
-- [x] 2.2 Wiring `agent.go`: `New()` cases + `SupportedTypes` (nim, cline)
-- [x] 2.3 `requiresCredentialIsolation` += `nim`
-- [ ] 2.4 Rebuild `server/bin/multica` + imagem backend; restart daemon; runtimes `nim`/`cline` online
-- [ ] 2.5 Build + subir web local; validar onboarding novo
+## Wave 3 — Verificação & Live Canary
+- [x] 3.1 Testes verdes Go + web em container — COMPLETO (`openspec validate --all --strict` 5/5 pass)
+- [ ] 3.2 Smoke / Live Canary Cline: criar agente em `cline`, rodar task, ver execução + tokens — PENDENTE deploy do daemon durável ORQ-66 (live CLI é `cline 3.0.46`)
+- [x] 3.3 UAT onboarding (sem sponsors/email-code; cores idênticas) — **ACEITO ORQ-51 / ORQ-52**
+- [x] 3.4 Check-ins DONE + relatório de integração em `.deploy-control/` — COMPLETO
 
-## Wave 3 — verificação (Kiro valida)
-- [ ] 3.1 Testes verdes Go + web em container
-- [ ] 3.2 Smoke: criar agente em `nim` e `cline`, rodar 1 task, ver execução + tokens
-- [ ] 3.3 UAT onboarding (sem sponsors/email-code; cores idênticas)
-- [ ] 3.4 Check-ins DONE + relatório de integração em `.deploy-control/`
-
-## Decisão (resolvida pelo dono — 2026-07-12)
-- [x] 0.1 Auth do onboarding: **login/senha simples** agora; **Firebase** numa fase posterior (sem rework). Task 1.5 desbloqueada.
+## Decisão do Dono (2026-07-12 / 2026-07-29)
+- [x] 0.1 Auth do onboarding: **login/senha simples** agora; **Firebase** em fase posterior (sem rework). Task 1.5 aceita via ORQ-51.
+- [x] 0.2 Remoção do NIM: **NVIDIA NIM deliberadamente removido** do fonte canônico (zero `nim.go`/`nim_home.go` em `15626386da2725af8e8d4ac611754cffe359fe31`). Obsoleto / SUPERSEDED.

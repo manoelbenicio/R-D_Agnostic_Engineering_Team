@@ -1,55 +1,31 @@
-# Design — Agentic Execution Plan
+# Design — Agentic Execution Plan (Native Runtimes Onboarding v6.2)
 
 ## Roles
-- **Kiro (orchestrator)** — NÃO produz código. Coordena waves, sequencia edições de arquivos
-  compartilhados, revisa check-ins, roda build/test de integração, valida cada entrega, dá DONE.
-- **6 coder agents (codex & cia)** — produzem o código nas suas trilhas.
+- **GTL / Kiro (orchestrator)** — Coordinates waves, reviews check-ins, runs container build/test integration, validates deliverables, grants DONE.
+- **Coder Agents** — Produce code in assigned disjunct scope.
 
-## Check-in protocol (obrigatório)
-Cada agente escreve em `.deploy-control/`:
-- ANTES: `CHECKIN_<agentname>_<UTC-ISO8601>_START.md` (escopo, arquivos, deps, riscos).
-- DEPOIS: `CHECKIN_<agentname>_<UTC-ISO8601>_DONE.md` (o que fez, arquivos, evidência de build/test).
-- Verde-em-container antes de DONE. Sem segredo em log. Commits atômicos.
+## Check-in Protocol
+Each agent writes in `.deploy-control/`:
+- START check-in (scope, files, dependencies, risks).
+- DONE check-in (modifications, files, container build/test evidence).
 
-## Ownership de arquivos (anti-colisão)
-- Backends em arquivos próprios (`nim.go`, `cline.go`) → sem conflito.
-- Arquivos COMPARTILHADOS (`internal/daemon/config.go` probe, `pkg/agent/agent.go` factory+SupportedTypes,
-  `requiresCredentialIsolation`) → **somente Kiro edita** na Wave 2, juntando NIM+Cline num passo.
+## File Ownership
+- Backend files: `server/pkg/agent/cline.go` (Cline ACP backend).
+- Shared files (`internal/daemon/config.go`, `pkg/agent/agent.go`, `cmd/server/router.go`) — managed sequentially during integration.
 
-## Waves
+## Status & Lineage Truth (2026-07-29)
 
-### Wave 1 (6 agentes paralelos, arquivos disjuntos)
-```
-Agent-1 NIM-Core      -> server/pkg/agent/nim.go (+test): OpenAI-compat, SSE, loop agêntico, usageMetadata
-Agent-2 NIM-Isolation -> execenv/nim_home.go, rotation_detector_nim.go, rotation/detector_nim.go (+tests)
-Agent-3 Cline-Core    -> server/pkg/agent/cline.go (+test) via `cline --acp` (ACP JSON-RPC por stdin/stdout)
-Agent-4 Discovery-Fix -> internal/daemon (model-list flow) + models.go discovery: timeout/cache/erro
-Agent-5 Frontend-Auth -> apps/web/app/(auth), packages/views/auth; remover (landing)/sponsors/use-cases/email-code
-Agent-6 Frontend-QA   -> design-system (paridade de cores kanban/agentes), i18n, build/test web
-```
+### NVIDIA NIM (SUPERSEDED)
+Per owner ruling, NVIDIA NIM was deliberately removed from canonical source (verified zero `nim.go`/`nim_home.go` at production SHA `15626386da2725af8e8d4ac611754cffe359fe31`). All obsolete NIM implementation/deploy claims and tasks are SUPERSEDED. Any NIM revival requires a new owner-approved proposal.
 
-### Wave 2 (integração — Kiro, sequencial)
-- Aplicar wiring: `config.go` probes (`MULTICA_NIM_PATH`/`nim`, `MULTICA_CLINE_PATH`/`cline`);
-  `agent.go` `New()` cases + `SupportedTypes`; `requiresCredentialIsolation` (+`nim`).
-- Rebuild `server/bin/multica` + imagem backend; restart daemon; runtimes `nim` e `cline` aparecem.
-- Integrar frontend: build web local, validar login novo sem sponsors/email-code.
+### Cline 3.x Runtime
+Canonical backend source contains `cline.go`, config probe (`MULTICA_CLINE_PATH`/`cline`), `New()` cases, `SupportedTypes`, and `POST /auth/login`. Live CLI is `cline 3.0.46`. Live runtime execution and canary remain pending the ORQ-66 durable daemon deployment (ORQ2 daemon remains old `88ca` until ORQ-66). No frontend or live Cline acceptance is claimed prematurely.
 
-### Wave 3 (verificação/gates — Kiro valida)
-- Testes verdes (Go + web) em container. Smoke: criar agente em `nim` e `cline`, rodar 1 task, ver execução + tokens.
-- UAT do onboarding. Check-ins DONE + relatório de integração em `.deploy-control/`.
+### Onboarding & Design System Parity
+- **Onboarding Frontend & Sponsor Removal**: Accepted via ORQ-51.
+- **Design System Color/UI Parity**: Accepted via ORQ-52.
+- **Backend Auth (`POST /auth/login`)**: Simple username/password login implemented behind `AuthProvider` interface (Firebase-ready).
 
-## Paralelismo
-- Wave 1 = 6 agentes 100% paralelos. Frontend (5/6) independe do Go → integra em paralelo.
-- Wave 2 depende de Wave 1. Wave 3 valida tudo.
-
-## Decisões / riscos
-- **Auth do onboarding**: decisão do dono RESOLVIDA em 2026-07-12 — login/senha simples
-  agora, por interface `AuthProvider` Firebase-ready. Agent-5 nao esta mais bloqueado por decisao.
-- **NIM auth**: validar credencial/fluxo do gateway antes de codar o loop; documentar fonte.
-- **Compatibilidade Cline 3.x**: usar somente `cline --acp` para o transporte ACP. Apesar de
-  as mensagens ACP serem JSON-RPC 2.0, o flag CLI `--json` seleciona outro modo headless e
-  encerra antes do handshake quando combinado com `--acp`. O teste direto do backend fornece
-  `--json` como argumento customizado hostil e confirma que o argv final o remove, preservando
-  `--acp` e a sessão ACP por stdin/stdout.
-- `agy models` lento → item 3 precisa timeout+cache.
-- Shared files → só Kiro edita (Wave 2).
+## Decisions & Risk Governance
+- **Cline ACP Transport**: Uses `cline --acp` over stdin/stdout (ACP JSON-RPC 2.0). The `--json` flag belongs to a separate headless prompt-output mode and is filtered out to prevent breaking the ACP handshake.
+- **NIM Removal**: Sealed as SUPERSEDED. No pending NIM tasks remain executable.
