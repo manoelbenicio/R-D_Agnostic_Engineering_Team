@@ -7,6 +7,10 @@ description: "Teach humans how to understand, install, configure, use, or troubl
 
 Guide the human from concepts to setup and diagnosis. Treat [the canonical Herdr documentation](https://herdr.dev/docs/) as authoritative. Verify any command, flag, keybinding, or configuration key not listed here against the relevant documentation page before presenting it.
 
+This skill teaches a human. The separate `$herdr` operating skill controls an
+already-running Herdr session from inside a managed pane. Keep those roles
+distinct.
+
 ## Explain the concept model
 
 Teach the concepts in this order:

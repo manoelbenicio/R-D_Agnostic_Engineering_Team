@@ -1,38 +1,36 @@
-# Herdr CLI command map
+# Herdr 0.7.5 CLI command map
 
-Read this file when the requested operation is not covered by the parent
-skill's core pane workflows. The installed binary is authoritative: run
-`herdr --help`, then the relevant non-mutating command group before acting. Use
-the [canonical CLI reference](https://herdr.dev/docs/cli-reference/) for detail.
+This reference records the command surface observed from the installed `herdr
+0.7.5` binary. Treat the installed binary as authoritative and rerun `herdr
+--help` plus the relevant command group when the version changes.
 
 Do not run bare `herdr` for discovery because it launches or attaches the TUI.
-Do not probe a mutating nested command by omitting arguments.
+Do not probe a mutating nested command without `--help`.
 
-## Launch, update, status, and schema
+## Top level
 
 ```text
+herdr
 herdr --session <name>
-herdr --remote <host> [--remote-keybindings local|server] [--handoff]
+herdr --remote <ssh-target> [--session <name>]
 herdr --no-session
+herdr --remote-keybindings local|server
+herdr --handoff
 herdr --default-config
+herdr --version
+herdr status [server|client] [--json]
 herdr update [--handoff]
+herdr completion bash|elvish|fish|powershell|zsh
+herdr completions bash|elvish|fish|powershell|zsh
 herdr channel show
 herdr channel set stable|preview
-herdr --version
-herdr status [server|client]
-herdr api schema [--json|--output PATH]
-herdr api snapshot
 ```
 
 Bare `herdr` launches or attaches. Never launch it from an existing managed
-pane. `--no-session` is a single-process escape hatch. Schema and snapshot are
-the preferred bootstrap surfaces for protocol tooling.
+pane. `--no-session` is the monolithic escape hatch. `completions` is an alias
+for `completion`; both print the completion script to stdout.
 
-Generate shell completions with `herdr completion <shell>`; `completions` is an
-alias. Supported shells include Bash, Zsh, Fish, PowerShell, and Elvish. Do not
-edit shell startup files unless the user asks.
-
-## Server, notifications, and sessions
+## Server
 
 ```text
 herdr server
@@ -41,35 +39,46 @@ herdr server reload-config
 herdr server agent-manifests [--json]
 herdr server update-agent-manifests [--json]
 herdr server reload-agent-manifests
-herdr notification show <title> [--body TEXT] [--position POSITION] [--sound SOUND]
-herdr session list [--json]
-herdr session attach <name>
-herdr session stop <name> [--json]
-herdr session delete <name> [--json]
 ```
 
-`server stop`, session stop/delete, and update operations require explicit user
-intent. Use `default` when explicitly targeting the default session.
+`server stop` and manifest updates change live state. Require explicit user
+intent. Never stop the server from an active session unless the user intends to
+stop its pane processes.
 
-## Workspaces, worktrees, and tabs
+## Agents
 
 ```text
-herdr workspace list|get|focus|rename|close ...
-herdr workspace create [--cwd PATH] [--label TEXT] [--env KEY=VALUE] [--focus|--no-focus]
-herdr workspace report-metadata <id> --source ID [metadata options]
-
-herdr worktree list [--workspace ID|--cwd PATH] [--json]
-herdr worktree create [--workspace ID|--cwd PATH] [--branch NAME] [--base REF] [--path PATH] [--label TEXT] [--focus|--no-focus] [--json]
-herdr worktree open [--workspace ID|--cwd PATH] (--path PATH|--branch NAME) [--label TEXT] [--focus|--no-focus] [--json]
-herdr worktree remove --workspace ID [--force] [--json]
-
-herdr tab list|create|get|focus|rename|close ...
+herdr agent list
+herdr agent get <target>
+herdr agent read <target> [--source visible|recent|recent-unwrapped|detection] [--lines N] [--format text|ansi] [--ansi]
+herdr agent send-keys <target> <key> [key ...]
+herdr agent prompt <target> <text> [--wait] [--until STATUS]... [--timeout MS]
+herdr agent rename <target> <name>|--clear
+herdr agent focus <target>
+herdr agent wait <target> [--until STATUS]... [--timeout MS]
+herdr agent attach <target> [--takeover]
+herdr agent start <name> --kind KIND --pane ID [--timeout MS] [-- <agent-args...>]
+herdr agent explain <target> [--json|--format text|json] [--verbose]
+herdr agent explain --file PATH --agent LABEL [--json|--format text|json] [--verbose]
 ```
 
-Prefer `--no-focus` for background creation. `workspace close` removes Herdr
-state only. `worktree remove` deletes the checkout with `git worktree remove`,
-does not delete the branch, and is destructive; require clear authorization and
-inspect dirty state first.
+Targets accept a unique live agent name or a pane ID that currently hosts an
+agent. They do not accept terminal IDs or bare kind labels.
+
+Installed kinds:
+
+```text
+pi claude codex gemini cursor devin agy cline omp mastracode opencode
+copilot kimi kiro droid amp grok hermes kilo qodercli maki
+```
+
+`agent start` requires an existing shell pane at its interactive prompt. It does
+not create layout. Its default startup timeout is 30000 ms and maximum is
+300000 ms.
+
+For `prompt --wait` and standalone `wait`, the default settled states are
+`idle`, `done`, or `blocked`. Valid explicit states are `idle`, `working`,
+`blocked`, `done`, and `unknown`.
 
 ## Panes
 
@@ -79,14 +88,16 @@ Inspection and geometry:
 herdr pane list [--workspace ID]
 herdr pane current [--pane ID|--current]
 herdr pane get <pane_id>
-herdr pane layout|process-info|edges [--pane ID|--current]
+herdr pane layout [--pane ID|--current]
+herdr pane process-info [--pane ID|--current]
 herdr pane neighbor --direction left|right|up|down [--pane ID|--current]
+herdr pane edges [--pane ID|--current]
 herdr pane focus --direction left|right|up|down [--pane ID|--current]
 herdr pane resize --direction left|right|up|down [--amount FLOAT] [--pane ID|--current]
 herdr pane zoom [<pane_id>|--pane ID|--current] [--toggle|--on|--off]
 ```
 
-Mutation:
+Layout mutation:
 
 ```text
 herdr pane rename <pane_id> <label>|--clear
@@ -99,39 +110,64 @@ herdr pane move <pane_id> --new-workspace [--label TEXT] [--tab-label TEXT] [--f
 herdr pane close <pane_id>
 ```
 
-Read and input:
+Read, input, waits, and integration reporting:
 
 ```text
-herdr pane read <pane_id> [--source visible|recent|recent-unwrapped|detection] [--lines N] [--ansi]
+herdr pane read <pane_id> [--source visible|recent|recent-unwrapped|detection] [--lines N] [--format text|ansi] [--ansi] [--raw]
 herdr pane send-text <pane_id> <text>
 herdr pane send-keys <pane_id> <key> [key ...]
 herdr pane run <pane_id> <command>
+herdr pane wait-output <pane_id> (--match TEXT|--regex PATTERN) [--source visible|recent|recent-unwrapped] [--lines N] [--timeout MS] [--raw]
+herdr pane report-agent <pane_id> --source ID --agent LABEL --state idle|working|blocked|unknown [--message TEXT] [--seq N] [--agent-session-id ID] [--agent-session-path PATH]
+herdr pane report-agent-session <pane_id> --source ID --agent LABEL [--seq N] [--agent-session-id ID] [--agent-session-path PATH] [--session-start-source SOURCE]
+herdr pane release-agent <pane_id> --source ID --agent LABEL [--seq N]
+herdr pane report-metadata <pane_id> --source ID [--agent LABEL] [--applies-to-source ID] [--title TEXT|--clear-title] [--display-agent TEXT|--clear-display-agent] [--state-label STATUS=TEXT] [--clear-state-labels] [--token NAME=VALUE] [--clear-token NAME] [--seq N] [--ttl-ms N]
 ```
 
-Prefer `pane run` for text plus Enter. Use `--current` in the calling pane. An
-omitted target can resolve to UI focus. Parse the new public ID after a move.
+`pane wait-output` searches the existing snapshot before polling. `--match` is
+literal; `--regex` is a Rust regular expression. Without `--timeout`, it waits
+indefinitely. For reads, `detection` is the plain-text bottom-buffer snapshot
+used by agent detection. `recent-unwrapped` is usually best for logs.
 
-Custom hooks can use `pane report-agent` for semantic lifecycle state and
-`pane report-metadata` for display-only presentation. Read
-[socket-api.md](socket-api.md) for the distinction and schema constraints.
-
-## Agents
+## Workspaces
 
 ```text
-herdr agent list
-herdr agent get|read|send|rename|focus|wait|attach <target> ...
-herdr agent start <name> [--cwd PATH] [--workspace ID] [--tab ID] [--split right|down] [--env KEY=VALUE] [--focus|--no-focus] -- <argv...>
-herdr agent explain <target> [--json|--verbose]
-herdr agent explain --file PATH --agent LABEL [--json|--verbose]
+herdr workspace list
+herdr workspace create [--cwd PATH] [--label TEXT] [--env KEY=VALUE] [--focus|--no-focus]
+herdr workspace get <workspace_id>
+herdr workspace focus <workspace_id>
+herdr workspace rename <workspace_id> <label>
+herdr workspace report-metadata <workspace_id> --source ID [--token NAME=VALUE] [--clear-token NAME] [--seq N] [--ttl-ms N]
+herdr workspace close <workspace_id>
 ```
 
-Targets can be terminal IDs, unique names, detected or reported labels, or
-legacy pane IDs. Use pane commands for ordinary terminals, commands, servers,
-tests, and shells. `agent explain` diagnoses classification from the active
-manifest cache; after a Herdr upgrade, ensure the server was restarted or handed
-off before relying on newly added detection behavior.
+`workspace create` is valid with defaults and mutates layout. Do not use it as
+a help probe.
 
-## Direct terminal streams and waits
+## Tabs
+
+```text
+herdr tab list [--workspace ID]
+herdr tab create [--workspace ID] [--cwd PATH] [--label TEXT] [--env KEY=VALUE] [--focus|--no-focus]
+herdr tab get <tab_id>
+herdr tab focus <tab_id>
+herdr tab rename <tab_id> <label>
+herdr tab close <tab_id>
+```
+
+## Worktrees
+
+```text
+herdr worktree list [--workspace ID|--cwd PATH] [--json]
+herdr worktree create [--workspace ID|--cwd PATH] [--branch NAME] [--base REF] [--path PATH] [--label TEXT] [--focus|--no-focus] [--json]
+herdr worktree open [--workspace ID|--cwd PATH] (--path PATH|--branch NAME) [--label TEXT] [--focus|--no-focus] [--json]
+herdr worktree remove --workspace ID [--force] [--json]
+```
+
+`worktree remove` deletes a checkout through Git and is destructive. Resolve
+the exact target and inspect dirty state before using it.
+
+## Direct terminal streams
 
 ```text
 herdr terminal attach <terminal_id> [--takeover]
@@ -139,44 +175,91 @@ herdr terminal session control <target> [--takeover] [--cols N] [--rows N]
 herdr terminal session observe <target> [--cols N] [--rows N]
 herdr terminal title set <title>
 herdr terminal title clear
-herdr wait output <pane_id> --match <text> [--source SOURCE] [--lines N] [--timeout MS] [--regex] [--raw]
-herdr wait agent-status <pane_id> --status idle|working|blocked|done|unknown [--timeout MS]
 ```
 
-Use observe for read-only frames. A controller owns input and resize authority;
-`--takeover` replaces another controller, so require explicit need. Use output
-waits for commands and servers and state waits for agents.
+Detach from direct attach with `ctrl+b q`; send a literal `ctrl+b` with
+`ctrl+b ctrl+b`. `--takeover` replaces another controller, so use it only with
+explicit need.
 
-## Integrations and plugins
+## Notifications
 
 ```text
-herdr integration install|uninstall <agent>
-herdr integration status [--outdated-only]
+herdr notification show <title> [--body TEXT] [--position top-left|top-right|bottom-left|bottom-right] [--sound none|done|request]
+```
 
+## Integrations
+
+```text
+herdr integration install pi|omp|claude|codex|copilot|devin|droid|kimi|opencode|kilo|hermes|qodercli|cursor|mastracode
+herdr integration uninstall pi|omp|claude|codex|copilot|devin|droid|kimi|opencode|kilo|hermes|qodercli|cursor|mastracode
+herdr integration status [--outdated-only]
+```
+
+Install and uninstall change agent integration state.
+
+## Sessions
+
+```text
+herdr session list [--json]
+herdr session attach <name>
+herdr session stop <name> [--json]
+herdr session delete <name> [--json]
+```
+
+Use `default` as the name to target the default session for stop. Stop and
+delete require explicit user intent.
+
+## Plugins
+
+```text
 herdr plugin install <owner>/<repo>[/subdir...] [--ref REF] [--yes]
-herdr plugin list [--plugin ID] [--json]
-herdr plugin uninstall|enable|disable <plugin>
+herdr plugin uninstall <plugin_id|owner/repo[/subdir...]>
 herdr plugin link <path> [--disabled]
 herdr plugin unlink <plugin_id>
+herdr plugin enable <plugin_id>
+herdr plugin disable <plugin_id>
+herdr plugin list [--plugin ID] [--json]
 herdr plugin config-dir <plugin_id>
 herdr plugin action list [--plugin ID]
 herdr plugin action invoke <action_id> [--plugin ID]
 herdr plugin log list [--plugin ID] [--limit N]
-herdr plugin pane open --plugin ID --entrypoint ID [placement and target options]
-herdr plugin pane focus|close <pane_id>
+herdr plugin pane open --plugin ID --entrypoint ID [--placement overlay|popup|split|tab|zoomed] [--width SIZE] [--height SIZE] [--workspace ID] [--target-pane ID] [--direction right|down] [--cwd PATH] [--env KEY=VALUE] [--focus|--no-focus]
+herdr plugin pane focus <pane_id>
+herdr plugin pane close <pane_id>
 ```
 
-Inspect plugin trust and manifest warnings before install, link, or invocation.
-Install, uninstall, link, unlink, enable, disable, and action invocation change
-state or execute third-party code; obtain the authority implied by the user's
-request and avoid `--yes` unless noninteractive confirmation is intended.
+GitHub installs use `owner/repo[/subdir...]`. Local development uses `link`;
+`unlink` leaves source files in place, while uninstalling a managed GitHub
+plugin removes its managed checkout. Plugins require `min_herdr_version`.
+Inspect link/list warnings and effective platform support before invoking an
+action or opening a pane.
 
-## Environment and output
+Plugin actions and panes are manifest-declared. Popup terminals are modal and
+do not receive a pane ID or participate in pane/agent APIs. Use
+`plugin config-dir` for a stable user-editable configuration location; plugin
+state and migrations remain plugin-owned.
 
-Important injected variables are `HERDR_ENV`, `HERDR_SOCKET_PATH`,
-`HERDR_WORKSPACE_ID`, `HERDR_TAB_ID`, and `HERDR_PANE_ID`. Herdr-managed values
-remain authoritative over caller-provided launch environment.
+## API, configuration, and update channel
 
-Most commands return JSON. Treat all public IDs as opaque, inspect response
-types and error codes, tolerate unknown fields, and refresh records after every
-mutation.
+```text
+herdr api snapshot
+herdr api schema [--json|--output PATH]
+herdr config check
+herdr config reset-keys
+herdr channel show
+herdr channel set stable|preview
+```
+
+`config reset-keys` backs up `config.toml` and removes custom keybindings.
+`channel set` changes update configuration.
+
+## Environment and exits
+
+Important variables include `HERDR_CONFIG_PATH`, `HERDR_SESSION`,
+`HERDR_SOCKET_PATH`, `HERDR_ENV`, `HERDR_WORKSPACE_ID`, `HERDR_TAB_ID`,
+`HERDR_PANE_ID`, `HERDR_LOG`, and `HERDR_DISABLE_SOUND`. Treat Herdr-managed
+context variables as authoritative.
+
+Most successful control commands return JSON. Server errors are JSON on stderr
+with exit status 1. CLI syntax errors exit with status 2. Treat IDs as opaque
+and refresh records after every mutation.

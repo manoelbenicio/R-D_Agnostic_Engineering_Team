@@ -37,23 +37,24 @@ Method names use dot notation. Confirm parameters in the installed schema.
 
 | Area | Methods |
 | --- | --- |
-| Server | `ping`, `server.stop`, `server.reload_config`, `server.agent_manifests`, `server.reload_agent_manifests` |
+| Server | `ping`, `server.stop`, `server.reload_config`, `server.agent_manifests`, `server.reload_agent_manifests`, `server.live_handoff` |
 | Notification | `notification.show` |
 | Client | `client.window_title.set`, `client.window_title.clear` |
 | Session | `session.snapshot` |
 | Workspace | `workspace.create`, `workspace.list`, `workspace.get`, `workspace.focus`, `workspace.rename`, `workspace.move`, `workspace.report_metadata`, `workspace.close` |
 | Worktree | `worktree.list`, `worktree.create`, `worktree.open`, `worktree.remove` |
 | Tab | `tab.create`, `tab.list`, `tab.get`, `tab.focus`, `tab.rename`, `tab.move`, `tab.close` |
-| Pane | `pane.split`, `pane.swap`, `pane.move`, `pane.zoom`, `pane.layout`, `pane.process_info`, `pane.neighbor`, `pane.edges`, `pane.focus_direction`, `pane.resize`, `pane.list`, `pane.current`, `pane.get`, `pane.rename`, `pane.send_text`, `pane.send_keys`, `pane.send_input`, `pane.read`, `pane.graphics.info`, `pane.graphics.set`, `pane.graphics.clear`, `pane.graphics.stream`, `pane.report_agent`, `pane.report_agent_session`, `pane.report_metadata`, `pane.clear_agent_authority`, `pane.release_agent`, `pane.close`, `pane.wait_for_output` |
+| Pane | `pane.split`, `pane.swap`, `pane.move`, `pane.zoom`, `pane.layout`, `pane.process_info`, `pane.neighbor`, `pane.edges`, `pane.focus`, `pane.focus_direction`, `pane.resize`, `pane.list`, `pane.current`, `pane.get`, `pane.rename`, `pane.send_text`, `pane.send_keys`, `pane.send_input`, `pane.read`, `pane.graphics.info`, `pane.graphics.set`, `pane.graphics.clear`, `pane.report_agent`, `pane.report_agent_session`, `pane.report_metadata`, `pane.clear_agent_authority`, `pane.release_agent`, `pane.close`, `pane.wait_for_output` |
 | Popup | `popup.close` |
 | Layout | `layout.export`, `layout.apply`, `layout.set_split_ratio` |
-| Agent | `agent.list`, `agent.get`, `agent.read`, `agent.explain`, `agent.send`, `agent.rename`, `agent.focus`, `agent.start` |
+| Agent | `agent.list`, `agent.get`, `agent.read`, `agent.explain`, `agent.send_keys`, `agent.prompt`, `agent.wait`, `agent.rename`, `agent.focus`, `agent.start`, `agent.view.set`, `agent.view.clear` |
 | Events | `events.subscribe`, `events.wait` |
 | Integration | `integration.install`, `integration.uninstall` |
 | Plugin | `plugin.link`, `plugin.list`, `plugin.unlink`, `plugin.enable`, `plugin.disable`, `plugin.action.list`, `plugin.action.invoke`, `plugin.log.list`, `plugin.pane.open`, `plugin.pane.focus`, `plugin.pane.close` |
 
-Some CLI commands are convenience layers over these methods. For example,
-agent waits resolve a target and subscribe to pane agent-state events.
+This inventory was checked against Herdr 0.7.5 protocol 17. Refresh it from the
+installed schema after an upgrade. Some CLI commands are convenience layers
+over these methods.
 
 ## Bootstrap and keep state current
 
@@ -128,6 +129,24 @@ Use output waits for ordinary commands and servers. Use agent-state waits for
 agents; these observe semantic state rather than generic command completion.
 Inspect current state or output before waiting for a future transition.
 
+`agent.wait` is server-owned and event-driven. It pins the resolved pane
+occupant so a replacement cannot satisfy the wait. Prefer `agent.prompt` with
+its optional wait object when a raw client must submit a prompt and wait
+without a race between two requests.
+
+## Project the Agents view
+
+Use `agent.view.set` for one transient declarative projection of the built-in
+Agents view. Filters support `all`, `any`, `not`, `eq`, `in`, and `exists`;
+fields include status, workspace/tab/pane IDs, agent, seen,
+`state_change_seq`, and metadata tokens. Sorts can use workspace/tab/pane
+order, attention, status, agent, seen, state transition sequence, or tokens.
+
+The projection changes presentation and navigation only. It does not change
+`agent.list`, detection, notifications, or attention counts. Use
+`agent.view.clear` to remove it. A plugin-owned view is removed when that
+plugin is disabled, unlinked, or uninstalled.
+
 ## Work with plugins
 
 Plugin actions, event hooks, terminal pane entrypoints, and link handlers come
@@ -146,10 +165,12 @@ from `herdr-plugin.toml`; runtime action registration is not part of v1.
 ## Use graphics only when enabled
 
 Pane graphics require `[experimental].kitty_graphics = true`; otherwise graphics
-methods return `feature_disabled`. Use `pane.graphics.info` for cell pixel size,
-`set` for one image, and `clear` to remove it. A graphics stream owns the pane's
-graphics layer until its dedicated socket closes; concurrent set, clear, or
-stream requests can return `stream_conflict`.
+methods return `feature_disabled`. Protocol 17 exposes
+`pane.graphics.info`, `pane.graphics.set`, and `pane.graphics.clear`. Use
+`info` for cell pixel size, `set` for one image, and `clear` to remove it.
+Some Herdr documentation also describes a dedicated
+`pane.graphics.stream` transport for repeated frames; use it only when the
+installed schema advertises it.
 
 ## Handle responses defensively
 
