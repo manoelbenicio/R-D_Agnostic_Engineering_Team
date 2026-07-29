@@ -1,0 +1,5 @@
+services:
+  backend:
+    labels:
+      com.multica.deploy.approved-wrapper: scripts/deploy/recreate-transition-backend.sh
+      com.multica.deploy.env-file: ${MULTICA_DEPLOY_ENV_FILE_LABEL:?Use scripts/deploy/recreate-transition-backend.sh; direct recreate is prohibited}
