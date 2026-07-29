@@ -12,7 +12,7 @@ Decisão: **prodex AS-IS em PROD agora** → alvo **polyglot** (Go L4 control pl
 
 ## Onde estão as outras peças (frameworks — ficam no home próprio)
 - **OpenSpec change:** `openspec/changes/rotation-parity-polyglot/{proposal,design,tasks}.md`
-  - Supersede: `openspec/changes/rotation-router/proposal.md`
+  - Supersede: `openspec/changes/archive/2026-07-04-rotation-router/proposal.md`
 - **Plano agêntico (board ativo):** `.deploy-control/MASTER_ROTATION_PARITY_POLYGLOT.md`
 - **Prompts dos 8 agentes:** `agentic-prompts-hub/new_prompts/` (ativos) · `agentic-prompts-hub/archive/` (consumidos)
 
