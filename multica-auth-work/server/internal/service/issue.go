@@ -402,7 +402,7 @@ func (s *IssueService) maybeEnqueueOnAssign(ctx context.Context, issue db.Issue,
 // Mirrors handler.shouldEnqueueAgentTask; kept here to make the service
 // self-contained, since both code paths must move together.
 func (s *IssueService) shouldEnqueueAgentTask(ctx context.Context, issue db.Issue) bool {
-	if issue.Status == "backlog" {
+	if issue.Status == "backlog" || issue.Status == "done" || issue.Status == "cancelled" || issue.Status == "in_review" {
 		return false
 	}
 	return s.isAgentAssigneeReady(ctx, issue)
@@ -420,7 +420,7 @@ func (s *IssueService) isAgentAssigneeReady(ctx context.Context, issue db.Issue)
 }
 
 func (s *IssueService) shouldEnqueueSquadLeaderOnAssign(ctx context.Context, issue db.Issue) bool {
-	if issue.Status == "backlog" {
+	if issue.Status == "backlog" || issue.Status == "done" || issue.Status == "cancelled" || issue.Status == "in_review" {
 		return false
 	}
 	return s.isSquadLeaderReady(ctx, issue)
