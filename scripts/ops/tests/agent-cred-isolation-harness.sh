@@ -244,9 +244,58 @@ FAKE_BIN_DIR="${TMP_DIR}/fake-multica-bin"
 mkdir -p "${FAKE_BIN_DIR}"
 chmod 700 "${FAKE_BIN_DIR}"
 touch "${FAKE_BIN_DIR}/active.real"
-chmod 755 "${FAKE_BIN_DIR}/active.real"
+chmod 700 "${FAKE_BIN_DIR}/active.real"
 
 rf_fail_output="$(DAEMON_BIN_DIR="${FAKE_BIN_DIR}" DAEMON_BIN_ACTIVE="${FAKE_BIN_DIR}/active.real" FORCE_ROLLFORWARD=1 "${ROLLBACK_SCRIPT}" --roll-forward 2>&1 || true)"
 [[ "${rf_fail_output}" == *"LIVE ROLL-FORWARD REFUSED"* ]] || fail "missing rollforward backup did not fail closed: ${rf_fail_output}"
 
-printf 'PASS: 6-vendor migration, isolated dual login, HERDR_PANE_ID fallback precedence, rollback atomic/roll-forward/dry-run, and flock allocator\n'
+# Test systemctl stop failure stub fail-closed guard
+FAKE_SYSTEMCTL_DIR="${TMP_DIR}/fake-systemctl-stop-fail"
+mkdir -p "${FAKE_SYSTEMCTL_DIR}"
+cat >"${FAKE_SYSTEMCTL_DIR}/systemctl" <<'SH'
+#!/usr/bin/env bash
+if [[ "$1 $2" == "--user stop" ]]; then
+  exit 1
+elif [[ "$1 $2" == "--user is-active" ]]; then
+  echo "active"
+  exit 0
+fi
+exit 0
+SH
+chmod +x "${FAKE_SYSTEMCTL_DIR}/systemctl"
+
+cat >"${FAKE_SYSTEMCTL_DIR}/pgrep" <<'SH'
+#!/usr/bin/env bash
+exit 1
+SH
+chmod +x "${FAKE_SYSTEMCTL_DIR}/pgrep"
+
+touch "${FAKE_BIN_DIR}/previous.real"
+chmod 700 "${FAKE_BIN_DIR}/previous.real"
+stop_fail_output="$(PATH="${FAKE_SYSTEMCTL_DIR}:${PATH}" DAEMON_BIN_DIR="${FAKE_BIN_DIR}" DAEMON_BIN_ACTIVE="${FAKE_BIN_DIR}/active.real" DAEMON_BIN_PREVIOUS="${FAKE_BIN_DIR}/previous.real" FORCE_ROLLBACK=1 "${ROLLBACK_SCRIPT}" --live 2>&1 || true)"
+[[ "${stop_fail_output}" == *"FAIL-CLOSED"* || "${stop_fail_output}" == *"EXIT RECOVERY TRAP"* ]] || fail "systemctl stop failure did not fail closed: ${stop_fail_output}"
+
+# Test systemctl restart non-active failure stub fail-closed guard
+FAKE_SYSTEMCTL_RESTART_FAIL="${TMP_DIR}/fake-systemctl-restart-fail"
+mkdir -p "${FAKE_SYSTEMCTL_RESTART_FAIL}"
+cat >"${FAKE_SYSTEMCTL_RESTART_FAIL}/systemctl" <<'SH'
+#!/usr/bin/env bash
+if [[ "$1 $2" == "--user stop" ]]; then
+  exit 0
+elif [[ "$1 $2" == "--user is-active" ]]; then
+  exit 1
+fi
+exit 0
+SH
+chmod +x "${FAKE_SYSTEMCTL_RESTART_FAIL}/systemctl"
+
+cat >"${FAKE_SYSTEMCTL_RESTART_FAIL}/pgrep" <<'SH'
+#!/usr/bin/env bash
+exit 1
+SH
+chmod +x "${FAKE_SYSTEMCTL_RESTART_FAIL}/pgrep"
+
+restart_fail_output="$(PATH="${FAKE_SYSTEMCTL_RESTART_FAIL}:${PATH}" DAEMON_BIN_DIR="${FAKE_BIN_DIR}" DAEMON_BIN_ACTIVE="${FAKE_BIN_DIR}/active.real" DAEMON_BIN_PREVIOUS="${FAKE_BIN_DIR}/previous.real" FORCE_ROLLBACK=1 "${ROLLBACK_SCRIPT}" --live 2>&1 || true)"
+[[ "${restart_fail_output}" == *"FAIL-CLOSED"* || "${restart_fail_output}" == *"Service"* ]] || fail "systemctl restart non-active failure did not fail closed: ${restart_fail_output}"
+
+printf 'PASS: 6-vendor migration, isolated dual login, HERDR_PANE_ID fallback precedence, rollback atomic/roll-forward/dry-run, systemd stop/restart fail-closed stubs, mode 0700 posture, and flock allocator\n'

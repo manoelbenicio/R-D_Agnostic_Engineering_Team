@@ -3,7 +3,8 @@
 # Validates prior daemon references, 3 required runtimes (Codex, Antigravity, Kiro),
 # and performs content-free identity reporting without reading credential secrets.
 # Implements atomic file replacement, parent directory fsync, private roll-forward
-# backup creation, explicit roll-forward restoration, and fail-closed security guards.
+# backup creation, explicit roll-forward restoration, EXIT recovery trap, systemd
+# stop/start verification, mode 0700 posture, and fail-closed security guards.
 
 set -euo pipefail
 
@@ -95,7 +96,7 @@ validate_security_environment() {
   fi
 }
 
-# 5. Validate binary regular file, owner, non-empty, executable, and hash
+# 5. Validate binary regular file, owner, non-empty, executable mode 0700 posture, and hash
 validate_binary_file() {
   local label="$1"
   local bin_path="$2"
@@ -122,6 +123,13 @@ validate_binary_file() {
     die "FAIL-CLOSED: ${label} file ${bin_path} is not executable."
   fi
 
+  # Check private operational posture (0700)
+  local file_mode
+  file_mode="$(stat -c '%a' "${bin_path}")"
+  if [[ "${file_mode}" != "700" ]]; then
+    die "FAIL-CLOSED: ${label} file ${bin_path} mode is ${file_mode}, expected 700 (private operational posture)."
+  fi
+
   local hash
   hash="$(get_sha256 "${bin_path}")"
   if [[ "${hash}" == "FILE_MISSING_OR_SYMLINK" || -z "${hash}" ]]; then
@@ -140,7 +148,7 @@ fsync_dir() {
   python3 -c "import os, sys; fd = os.open(sys.argv[1], os.O_RDONLY); os.fsync(fd); os.close(fd)" "${target_dir}"
 }
 
-# 7. Atomic binary replacement (stage to temp in same dir, validate, fsync file, rename over active, fsync parent dir)
+# 7. Atomic binary replacement with EXIT recovery trap, systemd stop/start verification, and mode 0700
 atomic_install_binary() {
   local src_bin="$1"
   local dest_bin="$2"
@@ -151,9 +159,25 @@ atomic_install_binary() {
   dest_dir="$(dirname "${dest_bin}")"
   local temp_bin="${dest_bin}.tmp.${BASHPID}_$(date +%s%N)"
 
+  # Install EXIT recovery trap
+  cleanup_atomic_install() {
+    local exit_code=$?
+    rm -f "${temp_bin:-}" 2>/dev/null || true
+    if (( exit_code != 0 )); then
+      log "EXIT RECOVERY TRAP: Atomic installation failed with exit code ${exit_code}."
+      if command -v systemctl >/dev/null 2>&1; then
+        if ! systemctl --user is-active --quiet "${DAEMON_SERVICE_NAME}" 2>/dev/null; then
+          log "EXIT RECOVERY TRAP: Attempting emergency restart of ${DAEMON_SERVICE_NAME}..."
+          systemctl --user restart "${DAEMON_SERVICE_NAME}" 2>/dev/null || true
+        fi
+      fi
+    fi
+  }
+  trap cleanup_atomic_install EXIT
+
   log "Staging binary ${src_bin} -> ${temp_bin}"
   cp -p "${src_bin}" "${temp_bin}"
-  chmod 0755 "${temp_bin}"
+  chmod 0700 "${temp_bin}"
 
   validate_binary_file "Staged" "${temp_bin}"
 
@@ -161,29 +185,54 @@ atomic_install_binary() {
   src_hash="$(get_sha256 "${src_bin}")"
   temp_hash="$(get_sha256 "${temp_bin}")"
   if [[ "${src_hash}" != "${temp_hash}" ]]; then
-    rm -f "${temp_bin}"
     die "FAIL-CLOSED: Staged binary SHA256 (${temp_hash}) does not match source (${src_hash})."
   fi
 
   fsync_file "${temp_bin}"
 
-  log "Stopping daemon service ${DAEMON_SERVICE_NAME} prior to atomic swap..."
+  # Systemd stop with error propagation and stop verification
   if command -v systemctl >/dev/null 2>&1; then
-    systemctl --user stop "${DAEMON_SERVICE_NAME}" 2>/dev/null || true
+    log "Stopping daemon service ${DAEMON_SERVICE_NAME} prior to atomic swap..."
+    systemctl --user stop "${DAEMON_SERVICE_NAME}"
+
+    local stop_ok=0
+    for _ in $(seq 1 5); do
+      if ! systemctl --user is-active --quiet "${DAEMON_SERVICE_NAME}" 2>/dev/null; then
+        stop_ok=1
+        break
+      fi
+      sleep 1
+    done
+
+    if (( stop_ok != 1 )); then
+      die "FAIL-CLOSED: Service ${DAEMON_SERVICE_NAME} failed to stop before atomic rename."
+    fi
+    log "Service ${DAEMON_SERVICE_NAME} verified STOPPED."
+  else
+    log "systemctl not available; daemon stop check skipped."
   fi
 
   log "Executing atomic rename: ${temp_bin} -> ${dest_bin}"
   mv -f "${temp_bin}" "${dest_bin}"
+  chmod 0700 "${dest_bin}"
   fsync_dir "${dest_dir}"
 
-  log "Restarting daemon service ${DAEMON_SERVICE_NAME}..."
+  # Systemd restart with error propagation and active state verification
   if command -v systemctl >/dev/null 2>&1; then
-    systemctl --user daemon-reload 2>/dev/null || true
-    systemctl --user restart "${DAEMON_SERVICE_NAME}" 2>/dev/null || true
-    log "Daemon service ${DAEMON_SERVICE_NAME} restarted."
+    log "Reloading systemd daemon and restarting service ${DAEMON_SERVICE_NAME}..."
+    systemctl --user daemon-reload
+    systemctl --user restart "${DAEMON_SERVICE_NAME}"
+
+    if ! systemctl --user is-active --quiet "${DAEMON_SERVICE_NAME}" 2>/dev/null; then
+      die "FAIL-CLOSED: Service ${DAEMON_SERVICE_NAME} is not active after restart."
+    fi
+    log "Service ${DAEMON_SERVICE_NAME} verified ACTIVE."
   else
     log "systemctl not available; daemon restart skipped."
   fi
+
+  # Clear EXIT trap on successful completion
+  trap - EXIT
 }
 
 # 8. Create private timestamped roll-forward backup before mutation
@@ -223,6 +272,7 @@ create_rollforward_backup() {
   (umask 077; printf '%s\n' "${backup_path}" > "${pointer_tmp}")
   fsync_file "${pointer_tmp}"
   mv -f "${pointer_tmp}" "${ROLLFORWARD_LATEST_POINTER}"
+  chmod 0600 "${ROLLFORWARD_LATEST_POINTER}"
   fsync_dir "${DAEMON_BIN_DIR}"
 
   log "Roll-forward backup created successfully: ${backup_path} (SHA256: ${backup_hash})"
@@ -237,7 +287,6 @@ get_latest_rollforward_backup() {
   fi
 
   if [[ -z "${backup_path}" || ! -f "${backup_path}" ]]; then
-    # Fallback to newest timestamped backup file in backup dir
     if [[ -d "${ROLLFORWARD_BACKUP_DIR}" && ! -L "${ROLLFORWARD_BACKUP_DIR}" ]]; then
       backup_path="$(find "${ROLLFORWARD_BACKUP_DIR}" -maxdepth 1 -type f -name "multica-auth-credential-home-v1.rollforward.*" 2>/dev/null | sort -r | head -n 1 || true)"
     fi
