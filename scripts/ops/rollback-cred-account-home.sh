@@ -35,6 +35,43 @@ die() {
   exit 1
 }
 
+# Live mutations under the real daemon library require a separate, explicit
+# authorization in addition to the queue-zero and GTL dispatch gates.
+readonly PROTECTED_LIVE_ROOT="/home/ec2-user/.local/lib"
+: "${ADDITIONAL_PROTECTED_LIVE_ROOT:=}"
+
+path_is_within_root() {
+  local candidate="${1%/}"
+  local root="${2%/}"
+  [[ "${candidate}" == "${root}" || "${candidate}" == "${root}/"* ]]
+}
+
+require_live_authorization() {
+  local candidate
+  local protected=0
+
+  for candidate in \
+    "${DAEMON_BIN_DIR}" \
+    "${DAEMON_BIN_ACTIVE}" \
+    "${DAEMON_BIN_PREVIOUS}" \
+    "${ROLLFORWARD_BACKUP_DIR}" \
+    "${ROLLFORWARD_LATEST_POINTER}"; do
+    if path_is_within_root "${candidate}" "${PROTECTED_LIVE_ROOT}"; then
+      protected=1
+      break
+    fi
+    if [[ -n "${ADDITIONAL_PROTECTED_LIVE_ROOT}" ]] && \
+      path_is_within_root "${candidate}" "${ADDITIONAL_PROTECTED_LIVE_ROOT}"; then
+      protected=1
+      break
+    fi
+  done
+
+  if (( protected == 1 )) && [[ "${ALLOW_LIVE:-0}" != "1" ]]; then
+    die "LIVE OPERATION REFUSED: protected daemon paths require explicit ALLOW_LIVE=1."
+  fi
+}
+
 # 1. Count active product tasks
 count_active_tasks() {
   local count=0
@@ -358,6 +395,8 @@ run_dry_run() {
 }
 
 run_live_rollback() {
+  require_live_authorization
+
   local active_tasks
   active_tasks="$(count_active_tasks)"
 
@@ -411,6 +450,8 @@ run_live_rollback() {
 }
 
 run_live_rollforward() {
+  require_live_authorization
+
   local active_tasks
   active_tasks="$(count_active_tasks)"
 

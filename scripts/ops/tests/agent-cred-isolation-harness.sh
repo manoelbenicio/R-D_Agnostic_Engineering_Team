@@ -83,8 +83,14 @@ chmod +x "${FAKE_BIN}/herdr"
 run_terminal() {
   local pane_id="$1"
   local command="$2"
-  PATH="${FAKE_BIN}:${PATH}" \
+  env -i \
+  PATH="${FAKE_BIN}:/usr/bin:/bin" \
   HOME="${HOST_HOME}" \
+  XDG_DATA_HOME="${HOST_HOME}/.local/share" \
+  XDG_CONFIG_HOME="${HOST_HOME}/.config" \
+  AGENT_CRED_ISOLATION_HOST_HOME="${HOST_HOME}" \
+  AGENT_CRED_ISOLATION_HOST_XDG_DATA_HOME="${HOST_HOME}/.local/share" \
+  AGENT_CRED_ISOLATION_HOST_XDG_CONFIG_HOME="${HOST_HOME}/.config" \
   HERDR_PANE_ID="${pane_id}" \
   AGENT_CRED_ISOLATION_ROOT="${STATE_ROOT}" \
   AGENT_CRED_ISOLATION_AUTOSTART=1 \
@@ -94,6 +100,8 @@ run_terminal() {
 capture_env() {
   local pane_id="$1"
   local output="$2"
+  # Variables intentionally expand inside the child shell started by run_terminal.
+  # shellcheck disable=SC2016
   run_terminal "${pane_id}" \
     'printf "%s|%s|%s|%s|%s|%s|%s|%s\n" "$AGENT_CRED_ISOLATION_SLOT" "$AGENT_CRED_ISOLATION_SLOT_NAME" "$AGENT_CRED_ISOLATION_SLOT_ROOT" "$CODEX_HOME" "$CLINE_DATA_DIR" "$HOME" "$XDG_DATA_HOME" "$XDG_CONFIG_HOME"' \
     >"${output}"
@@ -122,7 +130,7 @@ assert_content "${config_a}/glm/config.json" 'legacy-glm-config'
 # markers in two panes, and neither write changes the other's credential.
 printf 'codex-account-A\n' >"${codex_a}/auth.json"
 capture_env pane-b "${TMP_DIR}/pane-b.env"
-IFS='|' read -r slot_b slot_name_b root_b codex_b cline_b home_b data_b config_b <"${TMP_DIR}/pane-b.env"
+IFS='|' read -r slot_b slot_name_b root_b codex_b cline_b home_b _data_b _config_b <"${TMP_DIR}/pane-b.env"
 assert_equal "${slot_b}" '2'
 assert_equal "${slot_name_b}" 'slot-02'
 [[ "${root_a}" != "${root_b}" ]] || fail 'two terminals received the same slot root'
@@ -214,8 +222,14 @@ done
 capture_env_no_herdr() {
   local pane_id="$1"
   local output="$2"
+  env -i \
   PATH="/usr/bin:/bin" \
   HOME="${HOST_HOME}" \
+  XDG_DATA_HOME="${HOST_HOME}/.local/share" \
+  XDG_CONFIG_HOME="${HOST_HOME}/.config" \
+  AGENT_CRED_ISOLATION_HOST_HOME="${HOST_HOME}" \
+  AGENT_CRED_ISOLATION_HOST_XDG_DATA_HOME="${HOST_HOME}/.local/share" \
+  AGENT_CRED_ISOLATION_HOST_XDG_CONFIG_HOME="${HOST_HOME}/.config" \
   HERDR_PANE_ID="${pane_id}" \
   AGENT_CRED_ISOLATION_ROOT="${STATE_ROOT}" \
   AGENT_CRED_ISOLATION_AUTOSTART=1 \
@@ -225,201 +239,276 @@ capture_env_no_herdr() {
 
 capture_env_no_herdr "pane-herdr-fallback-1" "${TMP_DIR}/herdr-fallback-1.env"
 capture_env_no_herdr "pane-herdr-fallback-2" "${TMP_DIR}/herdr-fallback-2.env"
-IFS='|' read -r h_slot1 h_name1 <"${TMP_DIR}/herdr-fallback-1.env"
-IFS='|' read -r h_slot2 h_name2 <"${TMP_DIR}/herdr-fallback-2.env"
+IFS='|' read -r h_slot1 _h_name1 <"${TMP_DIR}/herdr-fallback-1.env"
+IFS='|' read -r h_slot2 _h_name2 <"${TMP_DIR}/herdr-fallback-2.env"
 [[ "${h_slot1}" != "${h_slot2}" ]] || fail 'two different HERDR_PANE_ID fallbacks shared a slot'
 
-# Test Rollback Script Dry-Run
 ROLLBACK_SCRIPT="${TEST_DIR}/../rollback-cred-account-home.sh"
 assert_file "${ROLLBACK_SCRIPT}"
 assert_not_symlink "${ROLLBACK_SCRIPT}"
 
-rollback_output="$("${ROLLBACK_SCRIPT}" --dry-run)"
-[[ "${rollback_output}" == *"=== DRY-RUN VERIFICATION RESULT: PASS ==="* ]] || fail 'rollback dry-run did not PASS'
-[[ "${rollback_output}" == *"Active Daemon Binary:"* ]] || fail 'rollback dry-run missing Active Daemon'
-[[ "${rollback_output}" == *"Prior Daemon Binary:"* ]] || fail 'rollback dry-run missing Prior Daemon'
-
-# Test Rollback Script Fail-Closed Security Guards
-FAKE_BIN_DIR="${TMP_DIR}/fake-multica-bin"
-mkdir -p "${FAKE_BIN_DIR}"
-chmod 700 "${FAKE_BIN_DIR}"
-touch "${FAKE_BIN_DIR}/active.real"
-chmod 700 "${FAKE_BIN_DIR}/active.real"
-
-rf_fail_output="$(DAEMON_BIN_DIR="${FAKE_BIN_DIR}" DAEMON_BIN_ACTIVE="${FAKE_BIN_DIR}/active.real" FORCE_ROLLFORWARD=1 "${ROLLBACK_SCRIPT}" --roll-forward 2>&1 || true)"
-[[ "${rf_fail_output}" == *"LIVE ROLL-FORWARD REFUSED"* ]] || fail "missing rollforward backup did not fail closed: ${rf_fail_output}"
-
-# Test systemctl stop failure stub fail-closed guard
-FAKE_SYSTEMCTL_DIR="${TMP_DIR}/fake-systemctl-stop-fail"
-mkdir -p "${FAKE_SYSTEMCTL_DIR}"
-cat >"${FAKE_SYSTEMCTL_DIR}/systemctl" <<'SH'
-#!/usr/bin/env bash
-if [[ "$1 $2" == "--user stop" ]]; then
-  exit 1
-elif [[ "$1 $2" == "--user is-active" ]]; then
-  echo "active"
-  exit 0
-fi
-exit 0
-SH
-chmod +x "${FAKE_SYSTEMCTL_DIR}/systemctl"
-
-cat >"${FAKE_SYSTEMCTL_DIR}/pgrep" <<'SH'
-#!/usr/bin/env bash
-exit 1
-SH
-chmod +x "${FAKE_SYSTEMCTL_DIR}/pgrep"
-
-touch "${FAKE_BIN_DIR}/previous.real"
-chmod 700 "${FAKE_BIN_DIR}/previous.real"
-stop_fail_output="$(PATH="${FAKE_SYSTEMCTL_DIR}:${PATH}" DAEMON_BIN_DIR="${FAKE_BIN_DIR}" DAEMON_BIN_ACTIVE="${FAKE_BIN_DIR}/active.real" DAEMON_BIN_PREVIOUS="${FAKE_BIN_DIR}/previous.real" FORCE_ROLLBACK=1 "${ROLLBACK_SCRIPT}" --live 2>&1 || true)"
-[[ "${stop_fail_output}" == *"FAIL-CLOSED"* || "${stop_fail_output}" == *"EXIT RECOVERY TRAP"* ]] || fail "systemctl stop failure did not fail closed: ${stop_fail_output}"
-
-# Test systemctl restart non-active failure stub fail-closed guard
-FAKE_SYSTEMCTL_RESTART_FAIL="${TMP_DIR}/fake-systemctl-restart-fail"
-mkdir -p "${FAKE_SYSTEMCTL_RESTART_FAIL}"
-cat >"${FAKE_SYSTEMCTL_RESTART_FAIL}/systemctl" <<'SH'
-#!/usr/bin/env bash
-if [[ "$1 $2" == "--user stop" ]]; then
-  exit 0
-elif [[ "$1 $2" == "--user is-active" ]]; then
-  exit 1
-fi
-exit 0
-SH
-chmod +x "${FAKE_SYSTEMCTL_RESTART_FAIL}/systemctl"
-
-cat >"${FAKE_SYSTEMCTL_RESTART_FAIL}/pgrep" <<'SH'
-#!/usr/bin/env bash
-exit 1
-SH
-chmod +x "${FAKE_SYSTEMCTL_RESTART_FAIL}/pgrep"
-
-restart_fail_output="$(PATH="${FAKE_SYSTEMCTL_RESTART_FAIL}:${PATH}" DAEMON_BIN_DIR="${FAKE_BIN_DIR}" DAEMON_BIN_ACTIVE="${FAKE_BIN_DIR}/active.real" DAEMON_BIN_PREVIOUS="${FAKE_BIN_DIR}/previous.real" FORCE_ROLLBACK=1 "${ROLLBACK_SCRIPT}" --live 2>&1 || true)"
-[[ "${restart_fail_output}" == *"FAIL-CLOSED"* || "${restart_fail_output}" == *"Service"* ]] || fail "systemctl restart non-active failure did not fail closed: ${restart_fail_output}"
-
-# Test anti-leak sentinel regression in isolated TEST_ROOT
-TEST_ROOT_ISOLATED="${TMP_DIR}/test-anti-leak-root"
-mkdir -p "${TEST_ROOT_ISOLATED}"
-chmod 700 "${TEST_ROOT_ISOLATED}"
-
+# Every rollback invocation below runs with an empty environment, a controlled
+# PATH, synthetic paths under TEST_ROOT, and captured stdout/stderr. No command
+# can resolve the real daemon binary, service unit, credential home, or runtime.
+TEST_ROOT="${TMP_DIR}/rollback-test-root"
 SYNTHETIC_SENTINEL_TOKEN="SK-SYNTHETIC-SENTINEL-KEY-DO-NOT-LEAK-998877"
 SYNTHETIC_SECRET_SHAPED="sk-proj-syntheticsecretkey1234567890"
+mkdir -p "${TEST_ROOT}/home"
+chmod 700 "${TEST_ROOT}" "${TEST_ROOT}/home"
 
-SYNTHETIC_CRED_DIR="${TEST_ROOT_ISOLATED}/synthetic-cred-homes"
-mkdir -p "${SYNTHETIC_CRED_DIR}/slots/slot-01/codex"
-chmod 700 "${SYNTHETIC_CRED_DIR}" "${SYNTHETIC_CRED_DIR}/slots" "${SYNTHETIC_CRED_DIR}/slots/slot-01" "${SYNTHETIC_CRED_DIR}/slots/slot-01/codex"
-printf '{"token": "%s", "secret": "%s"}\n' "${SYNTHETIC_SENTINEL_TOKEN}" "${SYNTHETIC_SECRET_SHAPED}" >"${SYNTHETIC_CRED_DIR}/slots/slot-01/codex/auth.json"
-chmod 600 "${SYNTHETIC_CRED_DIR}/slots/slot-01/codex/auth.json"
+create_rollback_fixture() {
+  local root="$1"
+  mkdir -p "${root}/bin" "${root}/credential-homes/slots/slot-01/codex"
+  chmod 700 \
+    "${root}" \
+    "${root}/bin" \
+    "${root}/credential-homes" \
+    "${root}/credential-homes/slots" \
+    "${root}/credential-homes/slots/slot-01" \
+    "${root}/credential-homes/slots/slot-01/codex"
+  printf '#!/usr/bin/env bash\nexit 0\n# synthetic active binary\n' >"${root}/bin/active-daemon"
+  printf '#!/usr/bin/env bash\nexit 0\n# synthetic previous binary\n' >"${root}/bin/previous-daemon"
+  chmod 700 "${root}/bin/active-daemon" "${root}/bin/previous-daemon"
+  printf '[Service]\nExecStart=%s\n' "${root}/bin/active-daemon" >"${root}/synthetic-daemon.service"
+  chmod 600 "${root}/synthetic-daemon.service"
+}
 
-SYNTHETIC_BIN_DIR="${TEST_ROOT_ISOLATED}/bin"
-mkdir -p "${SYNTHETIC_BIN_DIR}"
-chmod 700 "${SYNTHETIC_BIN_DIR}"
+SUCCESS_ROOT="${TEST_ROOT}/success"
+create_rollback_fixture "${SUCCESS_ROOT}"
+printf '{"token":"%s","secret":"%s"}\n' \
+  "${SYNTHETIC_SENTINEL_TOKEN}" \
+  "${SYNTHETIC_SECRET_SHAPED}" \
+  >"${SUCCESS_ROOT}/credential-homes/slots/slot-01/codex/auth.json"
+chmod 600 "${SUCCESS_ROOT}/credential-homes/slots/slot-01/codex/auth.json"
+cp "${SUCCESS_ROOT}/bin/active-daemon" "${SUCCESS_ROOT}/expected-active-daemon"
 
-touch "${SYNTHETIC_BIN_DIR}/active-daemon"
-touch "${SYNTHETIC_BIN_DIR}/previous-daemon"
-chmod 700 "${SYNTHETIC_BIN_DIR}/active-daemon" "${SYNTHETIC_BIN_DIR}/previous-daemon"
-
-SYNTHETIC_SERVICE_FILE="${TEST_ROOT_ISOLATED}/multica-daemon.service"
-touch "${SYNTHETIC_SERVICE_FILE}"
-
-SYNTHETIC_STUBS_DIR="${TEST_ROOT_ISOLATED}/stubs"
+SYNTHETIC_STUBS_DIR="${TEST_ROOT}/stubs-success"
 mkdir -p "${SYNTHETIC_STUBS_DIR}"
 chmod 700 "${SYNTHETIC_STUBS_DIR}"
 
 cat >"${SYNTHETIC_STUBS_DIR}/codex" <<'SH'
 #!/usr/bin/env bash
-if [[ "${1:-}" == "--version" ]]; then echo "codex-cli 0.145.0-synthetic"; exit 0; fi
-exit 0
+[[ "${1:-}" == "--version" ]] && printf '%s\n' 'codex-cli synthetic'
 SH
-chmod 700 "${SYNTHETIC_STUBS_DIR}/codex"
-
 cat >"${SYNTHETIC_STUBS_DIR}/agy" <<'SH'
 #!/usr/bin/env bash
-if [[ "${1:-}" == "--version" ]]; then echo "agy 1.1.8-synthetic"; exit 0; fi
-exit 0
+[[ "${1:-}" == "--version" ]] && printf '%s\n' 'agy synthetic'
 SH
-chmod 700 "${SYNTHETIC_STUBS_DIR}/agy"
-
 cat >"${SYNTHETIC_STUBS_DIR}/kiro-cli" <<'SH'
 #!/usr/bin/env bash
-if [[ "${1:-}" == "--version" ]]; then echo "kiro-cli 2.13.0-synthetic"; exit 0; fi
-exit 0
+[[ "${1:-}" == "--version" ]] && printf '%s\n' 'kiro-cli synthetic'
 SH
-chmod 700 "${SYNTHETIC_STUBS_DIR}/kiro-cli"
-
-cat >"${SYNTHETIC_STUBS_DIR}/systemctl" <<'SH'
-#!/usr/bin/env bash
-if [[ "$1 $2" == "--user stop" || "$1 $2" == "--user daemon-reload" || "$1 $2" == "--user restart" ]]; then
-  exit 0
-elif [[ "$1 $2" == "--user is-active" ]]; then
-  exit 0
-fi
-exit 0
-SH
-chmod 700 "${SYNTHETIC_STUBS_DIR}/systemctl"
-
 cat >"${SYNTHETIC_STUBS_DIR}/pgrep" <<'SH'
 #!/usr/bin/env bash
 exit 1
 SH
-chmod 700 "${SYNTHETIC_STUBS_DIR}/pgrep"
-
 cat >"${SYNTHETIC_STUBS_DIR}/curl" <<'SH'
 #!/usr/bin/env bash
-echo '{"status":"ok"}'
-exit 0
+printf '%s\n' '{"status":"ok"}'
 SH
-chmod 700 "${SYNTHETIC_STUBS_DIR}/curl"
+cat >"${SYNTHETIC_STUBS_DIR}/systemctl" <<'SH'
+#!/usr/bin/env bash
+state_file="${SYSTEMCTL_STATE_FILE:?missing synthetic state file}"
+case "${1:-} ${2:-}" in
+  '--user stop')
+    printf '%s\n' inactive >"${state_file}"
+    ;;
+  '--user daemon-reload')
+    ;;
+  '--user restart')
+    printf '%s\n' active >"${state_file}"
+    ;;
+  '--user is-active')
+    [[ "$(<"${state_file}")" == active ]]
+    ;;
+esac
+SH
+chmod 700 "${SYNTHETIC_STUBS_DIR}"/*
 
-captured_anti_leak_logs="${TMP_DIR}/captured-anti-leak.log"
+CONTROLLED_PATH="${SYNTHETIC_STUBS_DIR}:/usr/bin:/bin"
+SYSTEMCTL_STATE_FILE="${TEST_ROOT}/systemctl-success.state"
+printf '%s\n' active >"${SYSTEMCTL_STATE_FILE}"
+
+COMMON_ROLLBACK_ENV=(
+  "HOME=${TEST_ROOT}/home"
+  "PATH=${CONTROLLED_PATH}"
+  'LC_ALL=C'
+  'TZ=UTC'
+  "DAEMON_BIN_DIR=${SUCCESS_ROOT}/bin"
+  "DAEMON_BIN_ACTIVE=${SUCCESS_ROOT}/bin/active-daemon"
+  "DAEMON_BIN_PREVIOUS=${SUCCESS_ROOT}/bin/previous-daemon"
+  "DAEMON_SERVICE_FILE=${SUCCESS_ROOT}/synthetic-daemon.service"
+  'DAEMON_SERVICE_NAME=synthetic-daemon.service'
+  "ROLLFORWARD_BACKUP_DIR=${SUCCESS_ROOT}/bin/rollforward-backups"
+  "ROLLFORWARD_LATEST_POINTER=${SUCCESS_ROOT}/bin/rollforward.latest"
+  "CRED_HOMES_ROOT=${SUCCESS_ROOT}/credential-homes"
+  "CODEX_BIN=${SYNTHETIC_STUBS_DIR}/codex"
+  "AGY_BIN=${SYNTHETIC_STUBS_DIR}/agy"
+  "KIRO_BIN=${SYNTHETIC_STUBS_DIR}/kiro-cli"
+  "ADDITIONAL_PROTECTED_LIVE_ROOT=${TEST_ROOT}"
+  "SYSTEMCTL_STATE_FILE=${SYSTEMCTL_STATE_FILE}"
+)
+
+captured_anti_leak_logs="${TEST_ROOT}/captured-rollback.log"
 : >"${captured_anti_leak_logs}"
 
-PATH="${SYNTHETIC_STUBS_DIR}:${PATH}" \
-DAEMON_BIN_DIR="${SYNTHETIC_BIN_DIR}" \
-DAEMON_BIN_ACTIVE="${SYNTHETIC_BIN_DIR}/active-daemon" \
-DAEMON_BIN_PREVIOUS="${SYNTHETIC_BIN_DIR}/previous-daemon" \
-DAEMON_SERVICE_FILE="${SYNTHETIC_SERVICE_FILE}" \
-CRED_HOMES_ROOT="${SYNTHETIC_CRED_DIR}" \
-CODEX_BIN="${SYNTHETIC_STUBS_DIR}/codex" \
-AGY_BIN="${SYNTHETIC_STUBS_DIR}/agy" \
-KIRO_BIN="${SYNTHETIC_STUBS_DIR}/kiro-cli" \
-"${ROLLBACK_SCRIPT}" --dry-run >>"${captured_anti_leak_logs}" 2>&1 || true
+run_rollback_capture() {
+  local expected_status="$1"
+  local label="$2"
+  local output_file="$3"
+  shift 3
+  local actual_status
 
-PATH="${SYNTHETIC_STUBS_DIR}:${PATH}" \
-DAEMON_BIN_DIR="${SYNTHETIC_BIN_DIR}" \
-DAEMON_BIN_ACTIVE="${SYNTHETIC_BIN_DIR}/active-daemon" \
-DAEMON_BIN_PREVIOUS="${SYNTHETIC_BIN_DIR}/previous-daemon" \
-DAEMON_SERVICE_FILE="${SYNTHETIC_SERVICE_FILE}" \
-CRED_HOMES_ROOT="${SYNTHETIC_CRED_DIR}" \
-CODEX_BIN="${SYNTHETIC_STUBS_DIR}/codex" \
-AGY_BIN="${SYNTHETIC_STUBS_DIR}/agy" \
-KIRO_BIN="${SYNTHETIC_STUBS_DIR}/kiro-cli" \
-FORCE_ROLLBACK=1 \
-"${ROLLBACK_SCRIPT}" --live >>"${captured_anti_leak_logs}" 2>&1 || true
+  set +e
+  "$@" >"${output_file}" 2>&1
+  actual_status=$?
+  set -e
 
-PATH="${SYNTHETIC_STUBS_DIR}:${PATH}" \
-DAEMON_BIN_DIR="${SYNTHETIC_BIN_DIR}" \
-DAEMON_BIN_ACTIVE="${SYNTHETIC_BIN_DIR}/active-daemon" \
-DAEMON_BIN_PREVIOUS="${SYNTHETIC_BIN_DIR}/previous-daemon" \
-DAEMON_SERVICE_FILE="${SYNTHETIC_SERVICE_FILE}" \
-CRED_HOMES_ROOT="${SYNTHETIC_CRED_DIR}" \
-CODEX_BIN="${SYNTHETIC_STUBS_DIR}/codex" \
-AGY_BIN="${SYNTHETIC_STUBS_DIR}/agy" \
-KIRO_BIN="${SYNTHETIC_STUBS_DIR}/kiro-cli" \
-FORCE_ROLLFORWARD=1 \
-"${ROLLBACK_SCRIPT}" --roll-forward >>"${captured_anti_leak_logs}" 2>&1 || true
+  printf '\n--- %s (exit=%d) ---\n' "${label}" "${actual_status}" >>"${captured_anti_leak_logs}"
+  cat "${output_file}" >>"${captured_anti_leak_logs}"
+  if (( actual_status != expected_status )); then
+    fail "${label} exited ${actual_status}, expected ${expected_status}; captured output retained at ${output_file}"
+  fi
+}
 
-if grep -q "${SYNTHETIC_SENTINEL_TOKEN}" "${captured_anti_leak_logs}"; then
-  fail "ANTI-LEAK REGRESSION: Output contained synthetic sentinel token"
+# Protected synthetic roots model the hard-coded real-path ALLOW_LIVE gate
+# without ever passing a real path to the rollback artifact.
+guard_output="${TEST_ROOT}/guard-refusal.log"
+run_rollback_capture 1 'ALLOW_LIVE guard refusal' "${guard_output}" \
+  env -i "${COMMON_ROLLBACK_ENV[@]}" FORCE_ROLLBACK=1 \
+  "${ROLLBACK_SCRIPT}" --live
+if ! grep -q 'require explicit ALLOW_LIVE=1' "${guard_output}"; then
+  fail 'protected live path did not report the ALLOW_LIVE=1 requirement'
 fi
 
-if grep -q "${SYNTHETIC_SECRET_SHAPED}" "${captured_anti_leak_logs}"; then
-  fail "ANTI-LEAK REGRESSION: Output contained synthetic secret-shaped material"
+# Dry-run, successful rollback, and successful roll-forward are all synthetic.
+dry_run_output="${TEST_ROOT}/dry-run.log"
+run_rollback_capture 0 'synthetic dry-run' "${dry_run_output}" \
+  env -i "${COMMON_ROLLBACK_ENV[@]}" \
+  "${ROLLBACK_SCRIPT}" --dry-run
+grep -q '=== DRY-RUN VERIFICATION RESULT: PASS ===' "${dry_run_output}" || \
+  fail 'synthetic rollback dry-run did not report PASS'
+
+live_output="${TEST_ROOT}/live.log"
+run_rollback_capture 0 'synthetic live rollback' "${live_output}" \
+  env -i "${COMMON_ROLLBACK_ENV[@]}" ALLOW_LIVE=1 FORCE_ROLLBACK=1 \
+  "${ROLLBACK_SCRIPT}" --live
+cmp -s "${SUCCESS_ROOT}/bin/active-daemon" "${SUCCESS_ROOT}/bin/previous-daemon" || \
+  fail 'synthetic live rollback did not install the prior binary'
+
+rollforward_output="${TEST_ROOT}/roll-forward.log"
+run_rollback_capture 0 'synthetic live roll-forward' "${rollforward_output}" \
+  env -i "${COMMON_ROLLBACK_ENV[@]}" ALLOW_LIVE=1 FORCE_ROLLFORWARD=1 \
+  "${ROLLBACK_SCRIPT}" --roll-forward
+cmp -s "${SUCCESS_ROOT}/bin/active-daemon" "${SUCCESS_ROOT}/expected-active-daemon" || \
+  fail 'synthetic roll-forward did not restore the original active binary'
+
+# Missing backup must fail with exactly 1 and preserve the real exit status.
+MISSING_ROOT="${TEST_ROOT}/missing-backup"
+create_rollback_fixture "${MISSING_ROOT}"
+missing_output="${TEST_ROOT}/missing-backup.log"
+run_rollback_capture 1 'missing roll-forward backup' "${missing_output}" \
+  env -i \
+  "HOME=${TEST_ROOT}/home" "PATH=${CONTROLLED_PATH}" LC_ALL=C TZ=UTC \
+  "DAEMON_BIN_DIR=${MISSING_ROOT}/bin" \
+  "DAEMON_BIN_ACTIVE=${MISSING_ROOT}/bin/active-daemon" \
+  "DAEMON_BIN_PREVIOUS=${MISSING_ROOT}/bin/previous-daemon" \
+  "DAEMON_SERVICE_FILE=${MISSING_ROOT}/synthetic-daemon.service" \
+  DAEMON_SERVICE_NAME=synthetic-daemon.service \
+  "ROLLFORWARD_BACKUP_DIR=${MISSING_ROOT}/bin/rollforward-backups" \
+  "ROLLFORWARD_LATEST_POINTER=${MISSING_ROOT}/bin/rollforward.latest" \
+  "CRED_HOMES_ROOT=${MISSING_ROOT}/credential-homes" \
+  "CODEX_BIN=${SYNTHETIC_STUBS_DIR}/codex" \
+  "AGY_BIN=${SYNTHETIC_STUBS_DIR}/agy" \
+  "KIRO_BIN=${SYNTHETIC_STUBS_DIR}/kiro-cli" \
+  "ADDITIONAL_PROTECTED_LIVE_ROOT=${TEST_ROOT}" \
+  "SYSTEMCTL_STATE_FILE=${SYSTEMCTL_STATE_FILE}" \
+  ALLOW_LIVE=1 FORCE_ROLLFORWARD=1 \
+  "${ROLLBACK_SCRIPT}" --roll-forward
+grep -q 'No roll-forward backup file recorded' "${missing_output}" || \
+  fail 'missing backup path did not fail closed'
+
+# Stop failure propagates the stub's exact status (9).
+STOP_FAIL_ROOT="${TEST_ROOT}/stop-failure"
+STOP_FAIL_STUBS="${TEST_ROOT}/stubs-stop-failure"
+create_rollback_fixture "${STOP_FAIL_ROOT}"
+mkdir -p "${STOP_FAIL_STUBS}"
+cp "${SYNTHETIC_STUBS_DIR}"/{pgrep,curl,codex,agy,kiro-cli} "${STOP_FAIL_STUBS}/"
+cat >"${STOP_FAIL_STUBS}/systemctl" <<'SH'
+#!/usr/bin/env bash
+case "${1:-} ${2:-}" in
+  '--user stop') exit 9 ;;
+  '--user is-active') exit 0 ;;
+  *) exit 0 ;;
+esac
+SH
+chmod 700 "${STOP_FAIL_STUBS}"/*
+stop_fail_output="${TEST_ROOT}/stop-failure.log"
+run_rollback_capture 9 'systemctl stop failure' "${stop_fail_output}" \
+  env -i \
+  "HOME=${TEST_ROOT}/home" "PATH=${STOP_FAIL_STUBS}:/usr/bin:/bin" LC_ALL=C TZ=UTC \
+  "DAEMON_BIN_DIR=${STOP_FAIL_ROOT}/bin" \
+  "DAEMON_BIN_ACTIVE=${STOP_FAIL_ROOT}/bin/active-daemon" \
+  "DAEMON_BIN_PREVIOUS=${STOP_FAIL_ROOT}/bin/previous-daemon" \
+  "DAEMON_SERVICE_FILE=${STOP_FAIL_ROOT}/synthetic-daemon.service" \
+  DAEMON_SERVICE_NAME=synthetic-daemon.service \
+  "ROLLFORWARD_BACKUP_DIR=${STOP_FAIL_ROOT}/bin/rollforward-backups" \
+  "ROLLFORWARD_LATEST_POINTER=${STOP_FAIL_ROOT}/bin/rollforward.latest" \
+  "CRED_HOMES_ROOT=${STOP_FAIL_ROOT}/credential-homes" \
+  "CODEX_BIN=${STOP_FAIL_STUBS}/codex" \
+  "AGY_BIN=${STOP_FAIL_STUBS}/agy" \
+  "KIRO_BIN=${STOP_FAIL_STUBS}/kiro-cli" \
+  "ADDITIONAL_PROTECTED_LIVE_ROOT=${TEST_ROOT}" \
+  ALLOW_LIVE=1 FORCE_ROLLBACK=1 \
+  "${ROLLBACK_SCRIPT}" --live
+
+# A restart that never becomes active must fail with exactly 1.
+RESTART_FAIL_ROOT="${TEST_ROOT}/restart-failure"
+RESTART_FAIL_STUBS="${TEST_ROOT}/stubs-restart-failure"
+create_rollback_fixture "${RESTART_FAIL_ROOT}"
+mkdir -p "${RESTART_FAIL_STUBS}"
+cp "${SYNTHETIC_STUBS_DIR}"/{pgrep,curl,codex,agy,kiro-cli} "${RESTART_FAIL_STUBS}/"
+cat >"${RESTART_FAIL_STUBS}/systemctl" <<'SH'
+#!/usr/bin/env bash
+case "${1:-} ${2:-}" in
+  '--user stop'|'--user daemon-reload'|'--user restart') exit 0 ;;
+  '--user is-active') exit 1 ;;
+  *) exit 0 ;;
+esac
+SH
+chmod 700 "${RESTART_FAIL_STUBS}"/*
+restart_fail_output="${TEST_ROOT}/restart-failure.log"
+run_rollback_capture 1 'systemctl restart inactive failure' "${restart_fail_output}" \
+  env -i \
+  "HOME=${TEST_ROOT}/home" "PATH=${RESTART_FAIL_STUBS}:/usr/bin:/bin" LC_ALL=C TZ=UTC \
+  "DAEMON_BIN_DIR=${RESTART_FAIL_ROOT}/bin" \
+  "DAEMON_BIN_ACTIVE=${RESTART_FAIL_ROOT}/bin/active-daemon" \
+  "DAEMON_BIN_PREVIOUS=${RESTART_FAIL_ROOT}/bin/previous-daemon" \
+  "DAEMON_SERVICE_FILE=${RESTART_FAIL_ROOT}/synthetic-daemon.service" \
+  DAEMON_SERVICE_NAME=synthetic-daemon.service \
+  "ROLLFORWARD_BACKUP_DIR=${RESTART_FAIL_ROOT}/bin/rollforward-backups" \
+  "ROLLFORWARD_LATEST_POINTER=${RESTART_FAIL_ROOT}/bin/rollforward.latest" \
+  "CRED_HOMES_ROOT=${RESTART_FAIL_ROOT}/credential-homes" \
+  "CODEX_BIN=${RESTART_FAIL_STUBS}/codex" \
+  "AGY_BIN=${RESTART_FAIL_STUBS}/agy" \
+  "KIRO_BIN=${RESTART_FAIL_STUBS}/kiro-cli" \
+  "ADDITIONAL_PROTECTED_LIVE_ROOT=${TEST_ROOT}" \
+  ALLOW_LIVE=1 FORCE_ROLLBACK=1 \
+  "${ROLLBACK_SCRIPT}" --live
+
+# Captured output from success and every error path must remain content-free.
+if grep -F -q "${SYNTHETIC_SENTINEL_TOKEN}" "${captured_anti_leak_logs}"; then
+  fail 'ANTI-LEAK REGRESSION: output contained the synthetic sentinel token'
+fi
+if grep -F -q "${SYNTHETIC_SECRET_SHAPED}" "${captured_anti_leak_logs}"; then
+  fail 'ANTI-LEAK REGRESSION: output contained synthetic secret-shaped material'
+fi
+if grep -E -q 'sk-[a-zA-Z0-9_-]{10,}' "${captured_anti_leak_logs}"; then
+  fail 'ANTI-LEAK REGRESSION: output contained a secret-shaped pattern'
+fi
+if grep -F -q '/home/ec2-user/.local/lib' "${captured_anti_leak_logs}" || \
+  grep -F -q '/home/ec2-user/.config/systemd' "${captured_anti_leak_logs}"; then
+  fail 'HERMETICITY REGRESSION: rollback output referenced a real daemon or service path'
 fi
 
-if grep -E -q "sk-[a-zA-Z0-9_-]{10,}" "${captured_anti_leak_logs}"; then
-  fail "ANTI-LEAK REGRESSION: Output contained secret-shaped pattern match"
-fi
-
-printf 'PASS: 6-vendor migration, isolated dual login, HERDR_PANE_ID fallback precedence, rollback atomic/roll-forward/dry-run, anti-leak sentinel regression, systemd stop/restart fail-closed stubs, mode 0700 posture, and flock allocator\n'
+printf 'PASS: 6-vendor migration, isolated dual login, HERDR_PANE_ID fallback precedence, hermetic TEST_ROOT rollback/dry-run/roll-forward, anti-leak sentinel regression, exact failure statuses, mode 0700 posture, and flock allocator\n'
