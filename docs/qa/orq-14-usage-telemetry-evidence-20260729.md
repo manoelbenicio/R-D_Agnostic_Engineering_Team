@@ -6,7 +6,7 @@
 - **Project**: `4b0ef49b-df06-4e83-9a29-8a23b34821d4` (`ORQ2 — Pendências de teste, deploy e correção`)
 - **Workspace ID**: `20fce817-895d-447b-965a-49f5e279314a`
 - **Assignee**: `Gemini-3.6-Flash-A` (`3e83b35d-d40d-4047-b76e-5966571fad77`)
-- **Audit Remediation Reference**: `[GTL-KIRO-R5-REJECT-20260729]` by Member `7efc68e4-b166-4bb0-a0f2-dbd46e33bd06`
+- **Audit Remediation Reference**: `[GTL-R6-SINGLE-FACT-REJECT-20260729]` by Member `7efc68e4-b166-4bb0-a0f2-dbd46e33bd06`
 
 ---
 
@@ -18,7 +18,7 @@ Authoritative live metadata retrieved via `multica runtime list`, `multica runti
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Antigravity (AGY)** | `55a6a702-2d7b-4da3-a3a8-70211c279b21` | `2026-07-27T18:24:50Z` | `405b751d-e831-4da3-8fd5-bb3744c49334` | `1.1.8` (`credential-home-token-only-20260727T102815Z`) | `780104f1-1ff4-4292-8207-44b9ac4f5fca` (`Agy-P0-A7`) | `gemini-3.6-flash-high` | `unknown` | `(0 rows)` / `[]` (Explicit NULL / Unavailable) |
 | **Kiro** | `ee480900-f29c-4745-88cf-947f99466ca8` | `2026-07-29T16:04:06Z` | `6d0d721a-5ffa-4955-94c0-cddcc1bb3475` | `kiro-cli 2.13.0` (`credential-home-token-only-20260727T102815Z`) | `2c042fdd-9a76-4da1-9b02-c2332a736a86` (`Opus48-A`) | `claude-opus-5` | `9fb3b365-5480-44c5-91eb-088ca7727c40` | `(0 rows)` / `[]` (Explicit NULL / Unavailable) |
-| **Codex (Benchmark)** | `cb71ee56-892e-46da-bcd2-541e80047f53` | `2026-07-27T02:47:13Z` | `0f7133db-ba65-4373-9c6c-884cc4731700` | `codex-cli 0.145.0` (`credential-home-token-only-20260727T102815Z`) | `3db514db-99fb-4b53-b0eb-8b0907ad5c61` (`Codex-C`) | `gpt-5.6-sol` | `unknown` | `(1 row)` (`input=35080`, `output=4159`, `cache_read=372224`, `cache_write=0`) |
+| **Codex (Benchmark)** | `cb71ee56-892e-46da-bcd2-541e80047f53` | `2026-07-27T02:47:13Z` | `0f7133db-ba65-4373-9c6c-884cc4731700` | `codex-cli 0.145.0` (`credential-home-token-only-20260727T102815Z`) | `3db514db-810e-4393-817e-eb3707ce59ae` (`Codex-C`) | `gpt-5.6-sol` | `unknown` | `(1 row)` (`input=35080`, `output=4159`, `cache_read=372224`, `cache_write=0`) |
 
 ---
 
@@ -36,21 +36,24 @@ SELECT
   tu.output_tokens,
   tu.cache_read_tokens,
   tu.cache_write_tokens,
+  t.agent_id,
+  a.name AS agent_name,
   t.credential_account_id,
   t.completed_at
 FROM task_usage tu
 RIGHT JOIN agent_task_queue t ON tu.task_id = t.id
+LEFT JOIN agents a ON t.agent_id = a.id
 WHERE t.id IN ('55a6a702-2d7b-4da3-a3a8-70211c279b21', 'ee480900-f29c-4745-88cf-947f99466ca8', 'cb71ee56-892e-46da-bcd2-541e80047f53');
 ```
 
 ### B. Literal Joined Database Output Block
 
 ```text
-               task_id                |  provider   |    model    | input_tokens | output_tokens | cache_read_tokens | cache_write_tokens |        credential_account_id         |     completed_at     
---------------------------------------+-------------+-------------+--------------+---------------+-------------------+--------------------+--------------------------------------+----------------------
- 55a6a702-2d7b-4da3-a3a8-70211c279b21 | [NULL]      | [NULL]      | [NULL]       | [NULL]        | [NULL]            | [NULL]             | [NULL]                               | 2026-07-27 18:24:50Z
- ee480900-f29c-4745-88cf-947f99466ca8 | [NULL]      | [NULL]      | [NULL]       | [NULL]        | [NULL]            | [NULL]             | 9fb3b365-5480-44c5-91eb-088ca7727c40 | 2026-07-29 16:04:06Z
- cb71ee56-892e-46da-bcd2-541e80047f53 | codex       | gpt-5.6-sol |        35080 |          4159 |            372224 |                  0 | [NULL]                               | 2026-07-27 02:47:13Z
+               task_id                |  provider   |    model    | input_tokens | output_tokens | cache_read_tokens | cache_write_tokens |               agent_id               | agent_name |        credential_account_id         |     completed_at
+--------------------------------------+-------------+-------------+--------------+---------------+-------------------+--------------------+--------------------------------------+------------+--------------------------------------+----------------------
+ 55a6a702-2d7b-4da3-a3a8-70211c279b21 | [NULL]      | [NULL]      | [NULL]       | [NULL]        | [NULL]            | [NULL]             | 780104f1-1ff4-4292-8207-44b9ac4f5fca | Agy-P0-A7  | [NULL]                               | 2026-07-27 18:24:50Z
+ ee480900-f29c-4745-88cf-947f99466ca8 | [NULL]      | [NULL]      | [NULL]       | [NULL]        | [NULL]            | [NULL]             | 2c042fdd-9a76-4da1-9b02-c2332a736a86 | Opus48-A   | 9fb3b365-5480-44c5-91eb-088ca7727c40 | 2026-07-29 16:04:06Z
+ cb71ee56-892e-46da-bcd2-541e80047f53 | codex       | gpt-5.6-sol |        35080 |          4159 |            372224 |                  0 | 3db514db-810e-4393-817e-eb3707ce59ae | Codex-C    | [NULL]                               | 2026-07-27 02:47:13Z
 (3 rows)
 ```
 
@@ -165,9 +168,9 @@ Per protocol verification rules, only protocol event frame type names and field-
 
 ## 6. Audit & Safety Invariants Checklist
 
-- [x] **No Fabricated Identifiers**: Cites verified real task UUIDs, agent UUIDs, and credential account UUID `9fb3b365-5480-44c5-91eb-088ca7727c40`.
+- [x] **No Fabricated Identifiers**: Cites verified real task UUIDs, agent UUID `3db514db-810e-4393-817e-eb3707ce59ae` (`Codex-C`), and credential account UUID `9fb3b365-5480-44c5-91eb-088ca7727c40`.
 - [x] **Correct Table Reference**: Cites `task_usage` (migration 046), not dropped `runtime_usage`.
-- [x] **Literal Joined DB Output**: Includes content-free joined `SELECT` output block matching exact row metrics.
+- [x] **Extended Literal Joined DB Output**: Cites joined `SELECT` query including `t.agent_id` and `a.name` across all 3 terminal tasks.
 - [x] **No Product Code Edits**: 0 modifications to server/pkg/agent or adapter logic.
 - [x] **Zero Estimates**: 0 synthetic counters, character counts, or time-based estimates.
 - [x] **Secret Sanitation**: 0 tokens, API keys, credentials, or prompt contents exposed.
