@@ -841,18 +841,7 @@ func (h *Handler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 		created, _ = h.Queries.GetAgent(r.Context(), created.ID)
 	}
 
-	if isFirstAgent {
-		if squads, err := h.Queries.ListSquads(r.Context(), wsUUID); err == nil {
-			for _, sq := range squads {
-				if !sq.LeaderID.Valid {
-					_, _ = h.Queries.UpdateSquad(r.Context(), db.UpdateSquadParams{
-						ID:       sq.ID,
-						LeaderID: created.ID,
-					})
-				}
-			}
-		}
-	}
+	h.ensureDefaultSquad(r.Context(), wsUUID, created, member.UserID, r)
 
 	resp := agentToResponse(created)
 	actorType, actorID := h.resolveActor(r, ownerID, workspaceID)
@@ -870,6 +859,90 @@ func (h *Handler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 
 	redactAgentResponseForActor(&resp, actorType)
 	writeJSON(w, http.StatusCreated, resp)
+}
+
+// Identity of the squad every workspace gets for free. Kept in one place so
+// the create path here and any future lookup agree on the name, which is also
+// the workspace-scoped uniqueness key (migration 084_squad.up.sql).
+const (
+	defaultSquadName        = "Workspace Team"
+	defaultSquadDescription = "Default workspace squad"
+)
+
+// ensureDefaultSquad materializes the workspace's default squad the first time
+// the workspace has an agent that can lead it.
+//
+// Why here and not in CreateWorkspace: squad.leader_id is NOT NULL and
+// references agent(id) (migration 084_squad.up.sql:7), and a fresh workspace
+// has no agents, so the row cannot be written at workspace-creation time —
+// attempting it made CreateWorkspace fail with SQLSTATE 23502. The first agent
+// is the earliest point where a valid leader exists, so the squad is written
+// here instead.
+//
+// This is what makes untargeted chat work end to end: CreateChatSession with an
+// empty agent_id routes to the first squad's leader and otherwise answers 400
+// "no default squad found for routing" (chat.go).
+//
+// The condition is "this workspace has no squad", not "this is the first agent
+// ever". Workspaces created while squad creation was deferred already have
+// agents, so gating on the first-agent signal would leave their default chat
+// permanently broken. Once any squad exists, the caller's own squad layout is
+// authoritative and is never rewritten here.
+//
+// Every step is best-effort: the agent row is already committed and a failure
+// to add the convenience squad must not turn a successful create into a 500.
+// Chat with an explicit agent_id keeps working without it.
+func (h *Handler) ensureDefaultSquad(ctx context.Context, workspaceID pgtype.UUID, leader db.Agent, creatorID pgtype.UUID, r *http.Request) {
+	if leader.ArchivedAt.Valid {
+		return
+	}
+
+	squads, err := h.Queries.ListSquads(ctx, workspaceID)
+	if err != nil {
+		slog.Warn("default squad: could not list squads", append(logger.RequestAttrs(r), "error", err, "workspace_id", uuidToString(workspaceID))...)
+		return
+	}
+	if len(squads) > 0 {
+		return
+	}
+
+	squad, err := h.Queries.CreateSquad(ctx, db.CreateSquadParams{
+		WorkspaceID: workspaceID,
+		Name:        defaultSquadName,
+		Description: defaultSquadDescription,
+		LeaderID:    leader.ID,
+		CreatorID:   creatorID,
+	})
+	if err != nil {
+		slog.Warn("default squad: create failed", append(logger.RequestAttrs(r), "error", err, "workspace_id", uuidToString(workspaceID), "leader_id", uuidToString(leader.ID))...)
+		return
+	}
+
+	// Mirror the user-driven CreateSquad handler (squad.go): the leader is also
+	// a member with role "leader" so member previews and leader routing agree.
+	if _, err := h.Queries.AddSquadMember(ctx, db.AddSquadMemberParams{
+		SquadID:    squad.ID,
+		MemberType: "agent",
+		MemberID:   leader.ID,
+		Role:       "leader",
+	}); err != nil {
+		slog.Warn("default squad: could not add leader as member", append(logger.RequestAttrs(r), "error", err, "squad_id", uuidToString(squad.ID))...)
+	}
+
+	// The human who created the agent joins too, matching what the original
+	// CreateWorkspace path intended for the workspace owner.
+	if creatorID.Valid {
+		if _, err := h.Queries.AddSquadMember(ctx, db.AddSquadMemberParams{
+			SquadID:    squad.ID,
+			MemberType: "member",
+			MemberID:   creatorID,
+			Role:       "member",
+		}); err != nil {
+			slog.Warn("default squad: could not add creator as member", append(logger.RequestAttrs(r), "error", err, "squad_id", uuidToString(squad.ID))...)
+		}
+	}
+
+	slog.Info("default squad created", append(logger.RequestAttrs(r), "squad_id", uuidToString(squad.ID), "leader_id", uuidToString(leader.ID), "workspace_id", uuidToString(workspaceID))...)
 }
 
 type UpdateAgentRequest struct {
