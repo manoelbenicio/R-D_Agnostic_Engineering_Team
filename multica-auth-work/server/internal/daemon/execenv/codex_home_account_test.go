@@ -78,15 +78,74 @@ func TestPrepareCodexHomePerAccountIsolatesAuth(t *testing.T) {
 	}
 }
 
-// TestPrepareCodexHomeFallbackWhenNoAccount confirms that with AccountHome
-// empty, the historical behavior is preserved: no per-account copy is forced,
-// and preparation still succeeds (full backward compatibility).
-func TestPrepareCodexHomeFallbackWhenNoAccount(t *testing.T) {
+// TestPrepareCodexHomeFailsClosedWhenNoAccount confirms credential-bearing
+// preparation rejects an empty AccountHome before creating task state.
+func TestPrepareCodexHomeFailsClosedWhenNoAccount(t *testing.T) {
+	sharedHome := t.TempDir()
+	t.Setenv("CODEX_HOME", sharedHome)
 	home := filepath.Join(t.TempDir(), "codex-home")
-	if err := prepareCodexHomeWithOpts(home, CodexHomeOptions{GOOS: "linux"}, testLogger()); err != nil {
-		t.Fatalf("prepare home (fallback): %v", err)
+	if err := prepareCodexHomeWithOpts(home, CodexHomeOptions{GOOS: "linux"}, testLogger()); err == nil {
+		t.Fatal("credential-bearing Codex preparation accepted an empty account home")
 	}
-	if _, err := os.Stat(home); err != nil {
-		t.Fatalf("codex home not created in fallback mode: %v", err)
+	if _, err := os.Stat(home); !os.IsNotExist(err) {
+		t.Fatalf("codex home was created before account-home validation: %v", err)
+	}
+}
+
+// TestPrepareCodexHomeLegacySharedSeedRequiresExplicitOptIn confines the
+// historical shared-home behavior to its narrowly named compatibility flag.
+func TestPrepareCodexHomeLegacySharedSeedRequiresExplicitOptIn(t *testing.T) {
+	sharedHome := t.TempDir()
+	t.Setenv("CODEX_HOME", sharedHome)
+	if err := os.WriteFile(filepath.Join(sharedHome, "auth.json"), []byte("synthetic-shared-auth"), 0o600); err != nil {
+		t.Fatalf("write synthetic shared auth fixture: %v", err)
+	}
+
+	home := filepath.Join(t.TempDir(), "codex-home")
+	err := prepareCodexHomeWithOpts(home, CodexHomeOptions{
+		GOOS:                      "linux",
+		AllowLegacySharedAuthSeed: true,
+	}, testLogger())
+	if err != nil {
+		t.Fatalf("prepare explicitly opted-in legacy home: %v", err)
+	}
+	fi, err := os.Lstat(filepath.Join(home, "auth.json"))
+	if err != nil {
+		t.Fatalf("legacy synthetic auth copy missing: %v", err)
+	}
+	if fi.Mode()&os.ModeSymlink != 0 {
+		t.Fatal("legacy synthetic auth seed created a symlink")
+	}
+}
+
+// TestPrepareCredentiallessGatewayCodexHomeNeverSeedsSharedAuth proves the
+// gateway contract stays on the separate task-local preparer even when a
+// synthetic shared auth fixture exists.
+func TestPrepareCredentiallessGatewayCodexHomeNeverSeedsSharedAuth(t *testing.T) {
+	sharedHome := t.TempDir()
+	t.Setenv("CODEX_HOME", sharedHome)
+	if err := os.WriteFile(filepath.Join(sharedHome, "auth.json"), []byte("synthetic-shared-auth"), 0o600); err != nil {
+		t.Fatalf("write synthetic shared auth fixture: %v", err)
+	}
+
+	env, err := Prepare(PrepareParams{
+		WorkspacesRoot:        t.TempDir(),
+		WorkspaceID:           "synthetic-workspace",
+		TaskID:                "synthetic-gateway-task",
+		AgentName:             "Synthetic Codex",
+		Provider:              "codex",
+		CredentiallessGateway: true,
+		Task:                  TaskContextForEnv{IssueID: "synthetic-issue"},
+	}, testLogger())
+	if err != nil {
+		t.Fatalf("prepare credentialless gateway home: %v", err)
+	}
+	defer env.Cleanup(true)
+
+	if env.CodexHome == "" {
+		t.Fatal("credentialless gateway did not prepare a task-local CODEX_HOME")
+	}
+	if _, err := os.Lstat(filepath.Join(env.CodexHome, "auth.json")); !os.IsNotExist(err) {
+		t.Fatalf("credentialless gateway seeded auth state: %v", err)
 	}
 }

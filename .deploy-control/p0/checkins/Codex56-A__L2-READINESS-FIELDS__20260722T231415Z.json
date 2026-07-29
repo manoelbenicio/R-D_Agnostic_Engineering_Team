@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/L2-readiness-fields.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/L2-readiness-fields.md"
+  ],
+  "finished_at": "2026-07-22T23:15:37Z",
+  "lane": "L2",
+  "last_heartbeat_at": "2026-07-22T23:15:37Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T23:14:15Z",
+  "status": "DONE",
+  "summary": "Determination: X-OmniRoute-Registry-Version ABSENT on unauthenticated /v1/models; therefore ModelRegistryReady + SelectedModelReady + SelectedProtocolReady (codex + auto/coding) are unmet/undeterminable non-secret; Live at risk (/health/live 404), Authenticated unverifiable non-secret. Authenticated non-inference /v1/models read required to confirm values (owner: OmniRoute operator + Principal). No secret/inference/OmniRoute changes.",
+  "task": "L2-READINESS-FIELDS",
+  "validation": "read-only probe: GET /v1/models -> 401 auth-gated, headers show content-type+x-omniroute-route-class:CLIENT_API, NO X-OmniRoute-Registry-Version; /health/live+/health/ready -> 404; /status -> 200. Source contract from health_models.go CheckGatewayReadiness (5 fields). No edits (git diff --check CLEAN)."
+}

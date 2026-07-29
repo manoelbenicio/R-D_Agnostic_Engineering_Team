@@ -1,0 +1,26 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    "multica-auth-work/server/internal/middleware/request_logger.go"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/metrics/http.go",
+    "multica-auth-work/server/internal/metrics/http_test.go",
+    "multica-auth-work/server/internal/middleware/request_logger.go",
+    "multica-auth-work/server/internal/middleware/request_logger_test.go"
+  ],
+  "finished_at": "2026-07-22T11:37:58Z",
+  "lane": "F5",
+  "last_heartbeat_at": "2026-07-22T11:37:58Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:34:48Z",
+  "status": "DONE",
+  "summary": "F5 OBS-2 ingress anchor wired in request_logger.go (single emission point): emitIngressSpan after ServeHTTP calls EmitIngress with real request_id (chimw.GetReqID)+task_id (context) + bounded method/route-template(chi RoutePattern, never raw path)/principal-class(context)/HTTP-status/latency; fail-closed when recorder unset or request_id/task_id missing; no body/header/query/raw-path read. Non-breaking (SetIngressRecorder nil->no-op). metrics/http.go intentionally unchanged (avoids duplicate hop-1). Added SetIngressRecorder/SetIngressTaskID/SetIngressPrincipalClass. 5 new focused tests + existing L6 tests green.",
+  "task": "F5-INGRESS-ANCHOR",
+  "validation": "gofmt -l (4 owned files): clean; go vet ./internal/middleware/: exit0; go test ./internal/middleware/ -run Ingress|RouteTemplate|Outcome -count=1: PASS (8 tests incl fail-closed missing-IDs, route-template-never-raw-path, metadata ScanSpans clean); go test ./internal/middleware/ -count=1 (full pkg): ok exit0 no regression; git diff --check owned: PASS"
+}

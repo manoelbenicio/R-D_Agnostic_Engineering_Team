@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/multica-ai/multica/server/internal/cli"
+	"github.com/multica-ai/multica/server/internal/daemon/brain"
 )
 
 func TestPatternsFromEnv_DefaultsWhenUnset(t *testing.T) {
@@ -243,45 +244,6 @@ func stageFakeAgent(t *testing.T) string {
 	return binDir
 }
 
-func TestLoadConfig_ProbesClineAndNIMCredential(t *testing.T) {
-	binDir := stageFakeAgent(t)
-	clinePath := filepath.Join(binDir, "cline")
-	if err := os.WriteFile(clinePath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-		t.Fatalf("write fake cline: %v", err)
-	}
-	t.Setenv("MULTICA_CLINE_MODEL", "cline-model")
-	t.Setenv("NVIDIA_API_KEY", "test-nvidia-key")
-	t.Setenv("MULTICA_NIM_MODEL", "meta/test-model")
-
-	cfg, err := LoadConfig(Overrides{ServerURL: "http://localhost:8080", WorkspacesRoot: t.TempDir()})
-	if err != nil {
-		t.Fatalf("LoadConfig: %v", err)
-	}
-	if got, ok := cfg.Agents["cline"]; !ok || got.Path != "cline" || got.Model != "cline-model" {
-		t.Fatalf("cline agent = %#v, want CLI path and configured model", got)
-	}
-	if got, ok := cfg.Agents["nim"]; !ok || got.Path != "" || got.Model != "meta/test-model" {
-		t.Fatalf("nim agent = %#v, want credential-gated native HTTP entry", got)
-	}
-}
-
-func TestLoadConfig_SkipsNIMWithoutCredential(t *testing.T) {
-	stageFakeAgent(t)
-	t.Setenv("NVIDIA_API_KEY", "")
-
-	cfg, err := LoadConfig(Overrides{ServerURL: "http://localhost:8080", WorkspacesRoot: t.TempDir()})
-	if err != nil {
-		t.Fatalf("LoadConfig: %v", err)
-	}
-	if _, ok := cfg.Agents["nim"]; ok {
-		t.Fatalf("NIM must require NVIDIA_API_KEY, got agents=%#v", cfg.Agents)
-	}
-}
-
-// TestLoadConfig_AutoUpdateDefault_SelfHostOff is the regression guard for
-// MUL-2381: a daemon pointed at any non-cloud server URL must default
-// AutoUpdateEnabled to false, because self-host operators frequently run a
-// fork and the upstream GitHub release would silently overwrite it.
 func TestLoadConfig_AutoUpdateDefault_SelfHostOff(t *testing.T) {
 	stageFakeAgent(t)
 	cfg, err := LoadConfig(Overrides{
@@ -891,4 +853,58 @@ func agentKeys(m map[string]AgentEntry) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// --- D3/D4: accepted OpenAI-compatible (Cline) gateway frontend ---
+// D3 = agentBrainBuiltInCLIFor executable mapping; D4 = AgentBrainIntegrationConfig
+// .Validate accepted-CLIKind set. Both preserve the Claude/Codex behavior.
+
+func TestAgentBrainBuiltInCLIForAcceptsOpenAICompatibleAndPreservesClaudeCodex(t *testing.T) {
+	cases := []struct {
+		kind         brain.CLIKind
+		wantProvider string
+		wantCommand  string
+	}{
+		{brain.CLIClaudeCode, "claude", "claude"},
+		{brain.CLICodex, "codex", "codex"},
+		{brain.CLIOpenAICompatible, "cline", "cline"},
+	}
+	for _, tc := range cases {
+		got, err := agentBrainBuiltInCLIFor(tc.kind)
+		if err != nil {
+			t.Fatalf("agentBrainBuiltInCLIFor(%q): %v", tc.kind, err)
+		}
+		if got.Provider != tc.wantProvider || got.Command != tc.wantCommand {
+			t.Fatalf("agentBrainBuiltInCLIFor(%q) = %+v, want {Provider:%q Command:%q}", tc.kind, got, tc.wantProvider, tc.wantCommand)
+		}
+	}
+	// Fail-closed default preserved for a CLIKind with no accepted built-in.
+	if _, err := agentBrainBuiltInCLIFor(brain.CLINIM); err == nil {
+		t.Fatal("unmapped CLIKind must fail closed with no built-in executable mapping")
+	}
+}
+
+func TestAgentBrainIntegrationConfigValidateAcceptsOpenAICompatibleCline(t *testing.T) {
+	config := syntheticAgentBrainConfig(t, "http://127.0.0.1:20128")
+	config.CLIKind = brain.CLIOpenAICompatible
+	config.RouteModel = brain.RouteModel("cp/cline-pass/glm-5.2")
+	if err := config.Validate(); err != nil {
+		t.Fatalf("Validate rejected the accepted OpenAI-compatible (Cline) frontend: %v", err)
+	}
+
+	// Regression guard: the previously accepted frontends still validate.
+	for _, kind := range []brain.CLIKind{brain.CLIClaudeCode, brain.CLICodex} {
+		accepted := syntheticAgentBrainConfig(t, "http://127.0.0.1:20128")
+		accepted.CLIKind = kind
+		if err := accepted.Validate(); err != nil {
+			t.Fatalf("Validate rejected preserved frontend %q: %v", kind, err)
+		}
+	}
+
+	// An unaccepted frontend still fails closed in development mode.
+	unaccepted := syntheticAgentBrainConfig(t, "http://127.0.0.1:20128")
+	unaccepted.CLIKind = brain.CLINIM
+	if err := unaccepted.Validate(); err == nil {
+		t.Fatal("unaccepted CLIKind was validated in agent brain development mode")
+	}
 }

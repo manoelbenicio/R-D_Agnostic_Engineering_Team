@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "agy",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/KIRO-trace-ui-audit.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/KIRO-trace-ui-audit.md"
+  ],
+  "finished_at": "2026-07-23T00:10:11Z",
+  "lane": "KIRO-TRACE-UI-AUDIT",
+  "last_heartbeat_at": "2026-07-23T00:10:11Z",
+  "pane_id": "wK:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:09:40Z",
+  "status": "DONE",
+  "summary": "Completed Kiro Supervisor correlation and terminal/UI evidence collection plan consuming safe IDs only",
+  "task": "KIRO-TRACE-UI-AUDIT",
+  "validation": "git diff --check .deploy-control/p0/evidence/KIRO-trace-ui-audit.md: PASS"
+}

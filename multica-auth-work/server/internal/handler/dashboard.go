@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/util"
@@ -291,4 +292,97 @@ func (h *Handler) GetDashboardRunTimeDaily(w http.ResponseWriter, r *http.Reques
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// DashboardUsageByAccountResponse is one row of the ORQ-12 per-account report.
+//
+// AccountID is a pointer on purpose: the unattributable bucket is reported as
+// `null`, not as an empty string or a zero UUID, so a client cannot mistake it
+// for a real account. Attributable states the same fact explicitly, so a client
+// never has to infer it from a null check.
+type DashboardUsageByAccountResponse struct {
+	AccountID        *string `json:"account_id"`
+	Attributable     bool    `json:"attributable"`
+	InputTokens      int64   `json:"input_tokens"`
+	OutputTokens     int64   `json:"output_tokens"`
+	CacheReadTokens  int64   `json:"cache_read_tokens"`
+	CacheWriteTokens int64   `json:"cache_write_tokens"`
+	TaskCount        int32   `json:"task_count"`
+	RowCount         int32   `json:"row_count"`
+}
+
+// DashboardUsageByAccountEnvelope carries the rows plus the attribution
+// counters. The counters are returned alongside the rows, never as a ratio: a
+// client that sees `attributed_rows` and `unattributed_rows` cannot divide by a
+// zero denominator and cannot mistake "no data" for "fully attributed".
+type DashboardUsageByAccountEnvelope struct {
+	Accounts         []DashboardUsageByAccountResponse `json:"accounts"`
+	TotalRows        int32                             `json:"total_rows"`
+	AttributedRows   int32                             `json:"attributed_rows"`
+	UnattributedRows int32                             `json:"unattributed_rows"`
+	DistinctAccounts int32                             `json:"distinct_accounts"`
+}
+
+// GetDashboardUsageByAccount returns token totals per producing provider
+// account for the caller's workspace (ORQ-12).
+//
+// Authorisation is the same as every other dashboard route: the workspace comes
+// from the request context and h.workspaceMember refuses a caller who is not a
+// member, so the query can never be pointed at another tenant. The underlying
+// SQL is workspace-scoped as well, through agent_task_queue -> agent, because
+// task_usage itself carries no workspace column.
+func (h *Handler) GetDashboardUsageByAccount(w http.ResponseWriter, r *http.Request) {
+	workspaceID := h.resolveWorkspaceID(r)
+	if _, ok := h.workspaceMember(w, r, workspaceID); !ok {
+		return
+	}
+	tz := h.resolveViewingTZ(r)
+	since := parseSinceParamInTZ(r, 30, tz)
+	until := pgtype.Timestamptz{Time: time.Now(), Valid: true}
+
+	ws := parseUUID(workspaceID)
+	rows, err := h.Queries.ListTaskUsageByAccount(r.Context(), db.ListTaskUsageByAccountParams{
+		WorkspaceID: ws,
+		FromTs:      since,
+		ToTs:        until,
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list usage by account")
+		return
+	}
+	attribution, err := h.Queries.GetTaskUsageAccountAttribution(r.Context(),
+		db.GetTaskUsageAccountAttributionParams{
+			WorkspaceID: ws,
+			FromTs:      since,
+			ToTs:        until,
+		})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to summarise usage attribution")
+		return
+	}
+
+	out := DashboardUsageByAccountEnvelope{
+		Accounts:         make([]DashboardUsageByAccountResponse, len(rows)),
+		TotalRows:        attribution.TotalRows,
+		AttributedRows:   attribution.AttributedRows,
+		UnattributedRows: attribution.UnattributedRows,
+		DistinctAccounts: attribution.DistinctAccounts,
+	}
+	for i, row := range rows {
+		item := DashboardUsageByAccountResponse{
+			Attributable:     row.Attributable,
+			InputTokens:      row.TotalInputTokens,
+			OutputTokens:     row.TotalOutputTokens,
+			CacheReadTokens:  row.TotalCacheReadTokens,
+			CacheWriteTokens: row.TotalCacheWriteTokens,
+			TaskCount:        row.TaskCount,
+			RowCount:         row.RowCount,
+		}
+		if row.AccountID.Valid {
+			id := util.UUIDToString(row.AccountID)
+			item.AccountID = &id
+		}
+		out.Accounts[i] = item
+	}
+	writeJSON(w, http.StatusOK, out)
 }

@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/A1-A2-cline-foundation.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/A1-A2-cline-foundation.md"
+  ],
+  "finished_at": "2026-07-21T22:37:53Z",
+  "lane": "A1+A2",
+  "last_heartbeat_at": "2026-07-21T22:37:53Z",
+  "pane_id": "w6:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:31:46Z",
+  "status": "DONE",
+  "summary": "A1+A2 Cline foundation+mapping handoff complete. A1 shared providers.json base already EQUIV (zero delta, GLM+Kimi share it). A2: reuse CLIOpenAICompatible (exe=cline). 4 exact W1-hotspot wiring gaps (C3 config.go exe map, C4 config validate, C5 adapter flip, C6 env.go trusted inject, C7 execenv writer+buildLaunch branch). Kimi/deny-list/task-home collisions documented. BLOCKED_EXTERNAL: A3 canonical RouteModel IDs (GLM-5.2/Kimi-K2.7, not invented) + Cline ${ENV} apiKey expansion behavior. No product source modified; no live run.",
+  "task": "P0-CLINE-FOUNDATION",
+  "validation": "Read-only analysis phase; no product code changed so no go test run. Focused verification commands specified in artifact §10 against /home/ec2-user/goroot/go/bin/go for the owning edits. Gap claims cross-checked via rg (NewClineConfigContract exists; WriteCredentiallessClineConfig/CLICline/prepareCredentiallessClineHome absent)."
+}

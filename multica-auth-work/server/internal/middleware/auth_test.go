@@ -247,6 +247,48 @@ func TestAuth_ValidToken(t *testing.T) {
 	}
 }
 
+func TestAuth_VerifiedJWTStampsRecentAuthenticationTime(t *testing.T) {
+	now := time.Now()
+	claims := validClaims()
+	claims["auth_time"] = now.Add(-time.Minute).Unix()
+	token := generateToken(claims, auth.JWTSecret())
+
+	var recent bool
+	handler := authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		recent = auth.HasRecentAuthentication(r.Context(), now, 5*time.Minute)
+		w.WriteHeader(http.StatusOK)
+	}))
+	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK || !recent {
+		t.Fatalf("status = %d, recent = %v", w.Code, recent)
+	}
+}
+
+func TestAuth_IssuedAtAloneDoesNotCreateRecentAuthenticationProof(t *testing.T) {
+	now := time.Now()
+	claims := validClaims()
+	claims["iat"] = now.Unix()
+	token := generateToken(claims, auth.JWTSecret())
+
+	var recent bool
+	handler := authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		recent = auth.HasRecentAuthentication(r.Context(), now, 5*time.Minute)
+		w.WriteHeader(http.StatusOK)
+	}))
+	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK || recent {
+		t.Fatalf("status = %d, recent = %v", w.Code, recent)
+	}
+}
+
 func TestAuth_MissingClaims(t *testing.T) {
 	handler := authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("next handler should not be called")

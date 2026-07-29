@@ -57,19 +57,24 @@ type PrepareParams struct {
 	// substituted. Used by the local_directory project_resource flow
 	// (MUL-2663). When set, the envRoot/workdir directory is not created.
 	LocalWorkDir string
-	// CredentialAccountHome, when non-empty, is the per-account credential
+	// CredentialAccountHome is the per-account credential
 	// source directory for this task's provider. It is the single contract
 	// point for per-account OAuth isolation: the provider's home preparer
 	// seeds the task's credential from this dir (copied, isolated) instead of
-	// the shared global home. Empty preserves the historical shared behavior
-	// exactly — full backward compatibility for every task/project/squad mode.
+	// the shared global home. Credential-bearing Codex preparation fails closed
+	// when this is empty; its historical shared-home behavior is available only
+	// through the explicitly named legacy/admin helper in codex_home.go.
 	//
 	// The daemon resolves this from the agent→account assignment. Each vendor
 	// maps it onto its native isolation lever (Codex: CODEX_HOME source;
 	// Kiro: XDG_DATA_HOME / KIRO_API_KEY; Antigravity: HOME; Cline:
 	// CLINE_DATA_DIR; OpenCode/GLM: XDG_DATA_HOME + XDG_CONFIG_HOME).
-	// Empty = fallback.
+	// Empty is invalid for credential-bearing providers that require isolation.
 	CredentialAccountHome string
+	// CredentiallessGateway creates only controlled task-local state and must
+	// never seed provider auth or shared provider configuration. It is used
+	// exclusively by the default-off Agent Brain gateway-required path.
+	CredentiallessGateway bool
 	Task                  TaskContextForEnv // context data for writing files
 }
 
@@ -178,9 +183,6 @@ type Environment struct {
 	// OpenCode-compatible providers. OpenCode stores config under
 	// XDG_CONFIG_HOME/opencode/.
 	OpenCodeConfigHome string
-	// NIMCredentialPath is the per-task regular-file copy of the assigned
-	// account's NVIDIA_API_KEY. CredentialEnv reads only this copy.
-	NIMCredentialPath string
 	// OpenclawConfigPath is the path to the per-task synthesized OpenClaw
 	// config (set only for openclaw provider). The daemon exports this as
 	// OPENCLAW_CONFIG_PATH on the openclaw subprocess so its native skill
@@ -231,6 +233,9 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 
 	// Remove existing env if present (defensive — task IDs are unique).
 	if _, err := os.Stat(envRoot); err == nil {
+		if params.CredentiallessGateway || params.CredentialAccountHome != "" {
+			return nil, fmt.Errorf("execenv: isolated task root already exists; refusing to inspect or rewrite it")
+		}
 		if err := os.RemoveAll(envRoot); err != nil {
 			return nil, fmt.Errorf("execenv: remove existing env: %w", err)
 		}
@@ -275,7 +280,13 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 	// For Codex, set up a per-task CODEX_HOME seeded from ~/.codex/ with skills.
 	if params.Provider == "codex" {
 		codexHome := filepath.Join(envRoot, "codex-home")
-		if err := prepareCodexHomeWithOpts(codexHome, CodexHomeOptions{CodexVersion: params.CodexVersion, AccountHome: params.CredentialAccountHome}, logger); err != nil {
+		var err error
+		if params.CredentiallessGateway {
+			err = prepareCredentiallessCodexHome(codexHome)
+		} else {
+			err = prepareCodexHomeWithOpts(codexHome, CodexHomeOptions{CodexVersion: params.CodexVersion, AccountHome: params.CredentialAccountHome}, logger)
+		}
+		if err != nil {
 			return nil, fmt.Errorf("execenv: prepare codex-home: %w", err)
 		}
 		if err := hydrateCodexSkills(codexHome, params.Task.AgentSkills, logger); err != nil {
@@ -335,16 +346,6 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 		}
 		env.OpenCodeDataHome = opencodeDataHome
 		env.OpenCodeConfigHome = opencodeConfigHome
-	}
-
-	// NIM is a native HTTP runtime. Copy its assigned raw NVIDIA_API_KEY into
-	// the task root before exposing the value to the backend process.
-	if params.Provider == "nim" && params.CredentialAccountHome != "" {
-		nimCredentialPath, err := prepareNimHome(filepath.Join(envRoot, "nim-home"), NimHomeOptions{AccountHome: params.CredentialAccountHome}, logger)
-		if err != nil {
-			return nil, fmt.Errorf("execenv: prepare nim-home: %w", err)
-		}
-		env.NIMCredentialPath = nimCredentialPath
 	}
 
 	// For Cursor, materialize managed MCP into project-local config and use
@@ -410,9 +411,10 @@ type ReuseParams struct {
 	// reuse paths.
 	LocalDirectory bool
 	// CredentialAccountHome mirrors PrepareParams.CredentialAccountHome so the
-	// per-account OAuth isolation persists across session reuse. Empty = shared
-	// fallback (historical behavior).
+	// per-account OAuth isolation persists across session reuse. Empty fails
+	// closed for credential-bearing Codex reuse.
 	CredentialAccountHome string
+	CredentiallessGateway bool
 	Task                  TaskContextForEnv // refreshed context files / skills
 }
 
@@ -497,7 +499,13 @@ func Reuse(params ReuseParams, logger *slog.Logger) *Environment {
 	// config (especially sandbox/network access) is up to date.
 	if params.Provider == "codex" {
 		codexHome := filepath.Join(env.RootDir, "codex-home")
-		if err := prepareCodexHomeWithOpts(codexHome, CodexHomeOptions{CodexVersion: params.CodexVersion, AccountHome: params.CredentialAccountHome}, logger); err != nil {
+		var err error
+		if params.CredentiallessGateway {
+			err = prepareCredentiallessCodexHome(codexHome)
+		} else {
+			err = prepareCodexHomeWithOpts(codexHome, CodexHomeOptions{CodexVersion: params.CodexVersion, AccountHome: params.CredentialAccountHome}, logger)
+		}
+		if err != nil {
 			logger.Warn("execenv: refresh codex-home failed", "error", err)
 		} else {
 			env.CodexHome = codexHome
@@ -552,16 +560,6 @@ func Reuse(params ReuseParams, logger *slog.Logger) *Environment {
 		} else {
 			env.OpenCodeDataHome = opencodeDataHome
 			env.OpenCodeConfigHome = opencodeConfigHome
-		}
-	}
-
-	// NIM per-account credential refreshed on reuse (mirror of Prepare).
-	if params.Provider == "nim" && params.CredentialAccountHome != "" {
-		nimCredentialPath, err := prepareNimHome(filepath.Join(env.RootDir, "nim-home"), NimHomeOptions{AccountHome: params.CredentialAccountHome}, logger)
-		if err != nil {
-			logger.Warn("execenv: refresh nim-home failed", "error", err)
-		} else {
-			env.NIMCredentialPath = nimCredentialPath
 		}
 	}
 
@@ -647,12 +645,6 @@ func (e *Environment) CredentialEnv(provider string) map[string]string {
 				out["XDG_CONFIG_HOME"] = e.OpenCodeConfigHome
 			}
 			return out
-		}
-	case "nim":
-		if e.NIMCredentialPath != "" {
-			if key, err := readNIMAPIKey(e.NIMCredentialPath); err == nil {
-				return map[string]string{"NVIDIA_API_KEY": key}
-			}
 		}
 	}
 	return nil

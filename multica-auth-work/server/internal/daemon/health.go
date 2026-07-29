@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/multica-ai/multica/server/internal/daemon/brain"
 	"github.com/multica-ai/multica/server/internal/daemon/repocache"
 )
 
@@ -33,6 +34,22 @@ type HealthResponse struct {
 	ActiveTaskCount int64             `json:"active_task_count"`
 	Agents          []string          `json:"agents"`
 	Workspaces      []healthWorkspace `json:"workspaces"`
+	AgentBrain      healthAgentBrain  `json:"agent_brain"`
+}
+
+type healthAgentBrain struct {
+	GatewayRequired           bool                   `json:"gateway_required"`
+	SecretReferenceConfigured bool                   `json:"secret_reference_configured"`
+	AdmissionLimit            int                    `json:"admission_limit"`
+	State                     string                 `json:"state"`
+	Readiness                 string                 `json:"readiness"`
+	CLIKind                   string                 `json:"cli_kind,omitempty"`
+	RouteModel                string                 `json:"route_model,omitempty"`
+	RouterOwner               string                 `json:"router_owner,omitempty"`
+	Protocol                  string                 `json:"protocol,omitempty"`
+	TrustedProfile            string                 `json:"trusted_profile,omitempty"`
+	LastOutcome               string                 `json:"last_outcome,omitempty"`
+	Capacity                  brain.CapacityCounters `json:"capacity"`
 }
 
 type healthWorkspace struct {
@@ -104,10 +121,43 @@ func (d *Daemon) healthHandler(startedAt time.Time) http.HandlerFunc {
 			Agents:          agents,
 			Workspaces:      wsList,
 		}
+		diagnostics := d.agentBrain.snapshot()
+		if d.agentBrainInitErr != nil {
+			diagnostics.State = "configuration-error"
+		}
+		admissionLimit := 0
+		if d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required {
+			admissionLimit = effectiveAgentBrainCapacity(d.cfg.AgentBrain)
+		}
+		resp.AgentBrain = healthAgentBrain{
+			GatewayRequired:           d.cfg.AgentBrain.Neutral.Gateway.Required,
+			SecretReferenceConfigured: d.cfg.AgentBrain.Neutral.Gateway.SecretFile.Path != "",
+			AdmissionLimit:            admissionLimit,
+			State:                     diagnostics.State, Readiness: string(diagnostics.Readiness),
+			CLIKind: string(diagnostics.CLIKind), RouteModel: string(diagnostics.RouteModel),
+			RouterOwner: string(diagnostics.RouterOwner), Protocol: string(diagnostics.Protocol),
+			TrustedProfile: string(diagnostics.Profile), LastOutcome: diagnostics.LastOutcome,
+			Capacity: diagnostics.Capacity,
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}
+}
+
+func runtimeAuthority(cfg Config) string {
+	// Wave B installs only the AB-REQ-41 selection scaffold. A nil recovery
+	// mode keeps it default-OFF and preserves the active runtime path; Wave C
+	// may supply platform state here only after its separately authorized
+	// operator/session-boundary wiring is accepted.
+	return runtimeAuthorityWithRecovery(cfg, nil)
+}
+
+func runtimeAuthorityWithRecovery(_ Config, recovery *brain.RecoveryMode) string {
+	if recovery != nil {
+		return string(recovery.RouterOwner())
+	}
+	return string(brain.RouterOwnerOmniRoute)
 }
 
 // shutdownHandler triggers a graceful daemon shutdown by cancelling the

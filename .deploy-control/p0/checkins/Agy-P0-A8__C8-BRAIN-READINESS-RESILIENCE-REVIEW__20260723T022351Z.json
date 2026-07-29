@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/RES-review.md",
+    ".deploy-control/p0/handoffs/RES-review-handoff.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/RES-review.md",
+    ".deploy-control/p0/handoffs/RES-review-handoff.md"
+  ],
+  "finished_at": "2026-07-23T02:24:38Z",
+  "lane": "C8",
+  "last_heartbeat_at": "2026-07-23T02:24:38Z",
+  "pane_id": "wB:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T02:23:51Z",
+  "status": "DONE",
+  "summary": "C8 brain integration readiness-resilience review complete; PASS confirmed to RES-review.md",
+  "task": "C8-BRAIN-READINESS-RESILIENCE-REVIEW",
+  "validation": "Brain integration readiness-resilience diff VERIFIED PASS: no stale-ready reuse, StrictReadinessPolicy preserved, deterministic rejections fail closed immediately, bounded wait + Retry-After + jitter correct, no OmniRoute-internal touch"
+}

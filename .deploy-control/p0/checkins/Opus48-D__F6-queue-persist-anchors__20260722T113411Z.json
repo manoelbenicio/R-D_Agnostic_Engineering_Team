@@ -1,0 +1,26 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/F6-queue-persist-anchors.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-D__F6__F6-QUEUE-PERSIST-ANCHORS__20260722T113630Z.json"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/service/task.go",
+    "multica-auth-work/server/internal/service/task_complete_race_test.go",
+    "multica-auth-work/server/internal/service/task_notify_test.go"
+  ],
+  "finished_at": "2026-07-22T11:39:57Z",
+  "lane": "F6",
+  "last_heartbeat_at": "2026-07-22T11:39:57Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:34:11Z",
+  "status": "DONE",
+  "summary": "F6 DONE: EmitQueue wired at enqueue (NotifyTaskEnqueued) + claim/dequeue (captureTaskDispatched, both claim paths), EmitPersist wired in CompleteTask after CompleteAgentTask commit; real row-id ids + closed counters, metadata-only (ScanSpans clean), ordering proven (helper consumes persisted row + post-commit placement). Nil-safe best-effort via TaskService.Obs (nil default -> handoff to sink/exporter owner to activate). 5 tests green; vet/gofmt/diff clean. No shared-anchor logic change beyond additive emits; no deploy/inference/secret/commit; no checkbox.",
+  "task": "F6-queue-persist-anchors",
+  "validation": "go1.26.1, GOCACHE=/tmp/f6-gocache. PASS: gofmt -l 3 files empty (0); go vet ./internal/service/ (0); go test ./internal/service/ -run EmitQueue|EmitPersist -count=1 (5 tests PASS, ok 0.005s, exit 0); git diff --check (0). -race NOT_AVAILABLE (no gcc)."
+}

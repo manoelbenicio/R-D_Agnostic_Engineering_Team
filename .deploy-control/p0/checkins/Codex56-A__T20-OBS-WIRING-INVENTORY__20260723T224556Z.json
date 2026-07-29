@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-obs-wiring-inventory.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-obs-wiring-inventory.md"
+  ],
+  "finished_at": "2026-07-23T22:48:18Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T22:48:18Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T22:45:56Z",
+  "status": "DONE",
+  "summary": "Inventoried 6 e2e hop owners all defaulting to nil/discard no-op (no production sink installed; setters test-only). Designed bounded metadata-only RingSink (e2e.Sink, fixed-cap ring, newest-wins overflow with dropped counter, O(1) non-blocking Record, no goroutine/busy-loop, thread-safe) + pull-based exporter (Snapshot/promexport bounded-cardinality, no id/pseudonym labels). Shared single recorder injected at boot across backend+daemon seams (SetIngressRecorder, TaskService.Obs, hub.SetDeliveryRecorder, daemon.cliObs, gateway executor SetRecorder), gated OFF by default flag; W1-serial anchors. Metadata-only/fail-closed enforced upstream by Recorder.Emit. Priority-2/DEFERRED behind P0.",
+  "task": "T20-OBS-WIRING-INVENTORY",
+  "validation": "inventory/design-only, no edits (git diff --check CLEAN). Verified: e2e recorder.go (Sink/NewRecorder(nil)->discardSink/Emit validate+leakscan/MemorySink unbounded); 6 hop seams (request_logger ingressRecorder+SetIngressRecorder, service TaskService.Obs + obs_queue/obs_persist, daemon.go cliObs + cli_observability, gateway executor/obs_span EmitProviderSpan, daemonws hub delivRecorder+SetDeliveryRecorder); all real-sink setters appear ONLY in *_test.go -> production no-op."
+}

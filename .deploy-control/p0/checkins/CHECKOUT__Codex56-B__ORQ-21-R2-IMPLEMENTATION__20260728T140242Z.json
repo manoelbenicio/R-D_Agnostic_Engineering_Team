@@ -1,0 +1,47 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T14:02:42Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "ORQ-21",
+  "task_ids": ["ORQ-21"],
+  "status": "IMPLEMENTED_PENDING_INDEPENDENT_REVIEW",
+  "branch": "agent/codex56-b/orq21-r2",
+  "base_commit": "0cb8aebb5aff79cb430b3740d22fadc53c0116fd",
+  "evidence": [
+    ".deploy-control/p0/evidence/orq21-r2-approved-account-assignment-implementation.md",
+    ".deploy-control/inbox-tm/NOTE_FOR_KANBAN__ORQ-21-R2-IMPLEMENTED.md"
+  ],
+  "tests": [
+    {
+      "command": "disposable PostgreSQL migrations + ORQ-21 DB-backed resolver/handler/import gates",
+      "exit_code": 0,
+      "result": "PASS; zero skip; import second run changed zero rows; credentials rows remained zero"
+    },
+    {
+      "command": "focused race, daemon package, vet, server build, gofmt, diff check",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "full handler candidate versus exact-base differential under identical DB/env",
+      "exit_code": 0,
+      "result": "PASS differential; candidate introduced zero new failures"
+    },
+    {
+      "command": "ephemeral resource teardown",
+      "exit_code": 0,
+      "result": "container, tunnel and private cache removed; no product resource touched"
+    }
+  ],
+  "summary": "ORQ-21 R2 metadata-only approved-account assignment is implemented and locally gated. No credential values, new migration, production mutation, remote action, or board mutation occurred.",
+  "reported_to": [
+    "GENERAL-TECH-LEAD",
+    "independent reviewer (request pending commit creation)"
+  ],
+  "non_claims": [
+    "No production metadata was imported.",
+    "No credential or secret value was read, written, logged, or returned.",
+    "No runtime rollout, push, PR, merge, or direct board mutation was performed."
+  ]
+}

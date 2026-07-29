@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T12:20:10Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C3",
+  "task_ids": ["chat-orchestration-1.3"],
+  "status": "BLOCKED",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/C3-chat-core-api.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "static type verification (read chat/mutations.ts:15, api/client.ts:1709, types/chat.ts, spec)", "exit_code": 0, "assertions_or_tests": "n/a (review)", "result": "REVIEWED"},
+    {"command": "git diff --check -- multica-auth-work/packages/core/chat/", "exit_code": 0, "assertions_or_tests": "no edits", "result": "CLEAN"}
+  ],
+  "format_and_diff": {
+    "format": "NOT_APPLICABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/C3-chat-core-api.md",
+    ".deploy-control/p0/checkins/CHECKIN__Codex56-A__C3__C3-CHAT-CORE-API__20260722T121857Z.json"
+  ],
+  "requirements": ["chat-orchestration: default-TL routing + direct-agent escape hatch"],
+  "openspec_tasks": ["chat-orchestration-standard 1.3"],
+  "summary": "VERIFIED spec-backed gap: session-create requires agent_id (chat/mutations.ts:15) but spec mandates untargeted chat -> default squad TL (agent_id must be OPTIONAL) plus @agent direct escape hatch. Store already models selectedAgentId string|null, but the create-request type mandates agent_id. Contract-correct fix is NOT isolatable to packages/core/chat/** (would break typecheck against api.createChatSession which requires agent_id) -> requires out-of-lock edits to packages/core/api/client.ts:1709, packages/core/types/chat.ts, and the Go chat-session handler. implementation_authorized=false.",
+  "non_claims": [
+    "No product source edited; no in-lock fix applied (would break build against out-of-lock api signature).",
+    "No agent_id default fabricated (server routing responsibility per spec).",
+    "Focused TS tests/tsc NOT run (cross-package change not isolatable; disk critical; no dependency-install).",
+    "No OmniRoute internals probed; no inference/secret/deploy; no OpenSpec checkbox closed."
+  ],
+  "blocker": "Optional-agent_id + direct-target session-create is spec-required but not isolatable to packages/core/chat/** lock; needs coordinated out-of-lock edits (packages/core/api/client.ts:1709 createChatSession, packages/core/types/chat.ts ChatSession.agent_id, Go chat-session create handler for default-TL routing) and product-edit authorization. Owner: packages/core/api+types lane owner + server chat-handler owner + Principal Orchestrator (w5:p9). Next action: Principal authorizes + assigns the out-of-lock files to one owner (or expands C3 lock); then apply the 4 coordinated edits as one unit + add a mutation test asserting create with and without agent_id.",
+  "handoffs": [
+    {"to_lane": "core-api/types owner", "reason": "createChatSession + ChatSession must accept optional agent_id to match chat/mutations.ts change", "file": "multica-auth-work/packages/core/api/client.ts"},
+    {"to_lane": "server chat-handler owner", "reason": "accept missing agent_id -> default squad-TL routing per chat-orchestration spec", "file": "server chat-session create handler (out of lock)"},
+    {"to_lane": "Principal", "reason": "authorize product edit + assign out-of-lock ownership", "file": ".deploy-control/p0/evidence/C3-chat-core-api.md"}
+  ]
+}

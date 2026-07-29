@@ -137,7 +137,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenString, err := h.issueJWT(user)
+	tokenString, err := h.issueRecentlyAuthenticatedJWT(user)
 	if err != nil {
 		slog.Warn("password login token generation failed", append(logger.RequestAttrs(r), "error", err)...)
 		writeError(w, http.StatusInternalServerError, "failed to generate token")
@@ -209,6 +209,19 @@ func (h *Handler) issueJWT(user db.User) (string, error) {
 		"name":  user.Name,
 		"exp":   time.Now().Add(auth.AuthTokenTTL()).Unix(),
 		"iat":   time.Now().Unix(),
+	})
+	return token.SignedString(auth.JWTSecret())
+}
+
+func (h *Handler) issueRecentlyAuthenticatedJWT(user db.User) (string, error) {
+	now := time.Now()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":       uuidToString(user.ID),
+		"email":     user.Email,
+		"name":      user.Name,
+		"exp":       now.Add(auth.AuthTokenTTL()).Unix(),
+		"iat":       now.Unix(),
+		"auth_time": now.Unix(),
 	})
 	return token.SignedString(auth.JWTSecret())
 }
@@ -447,7 +460,7 @@ func (h *Handler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 		obsmetrics.RecordEvent(h.Analytics, h.Metrics, analytics.Signup(uuidToString(user.ID), user.Email, signupSourceFromRequest(r)))
 	}
 
-	tokenString, err := h.issueJWT(user)
+	tokenString, err := h.issueRecentlyAuthenticatedJWT(user)
 	if err != nil {
 		slog.Warn("login failed", append(logger.RequestAttrs(r), "error", err, "email", req.Email)...)
 		writeError(w, http.StatusInternalServerError, "failed to generate token")
@@ -495,6 +508,86 @@ type UpdateMeRequest struct {
 	ProfileDescription *string `json:"profile_description"`
 	// IANA tz to pin; "" clears back to NULL; nil leaves untouched.
 	Timezone *string `json:"timezone"`
+}
+
+const passwordUpdateBodyLimit = 1024
+
+const recentPasswordAuthenticationWindow = 5 * time.Minute
+
+type UpdatePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
+// UpdatePassword creates or replaces the authenticated human user's local
+// password credential. It is deliberately separate from profile updates so
+// generic profile payloads and logs never carry password material.
+func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	userID, ok := requireUserID(w, r)
+	if !ok {
+		return
+	}
+	if h.PasswordProvisioner == nil {
+		writeError(w, http.StatusServiceUnavailable, "password updates are not configured")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, passwordUpdateBodyLimit)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	var req UpdatePasswordRequest
+	if err := decoder.Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := ValidatePassword(req.NewPassword); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	parsedUserID := parseUUID(userID)
+	if !auth.HasRecentAuthentication(r.Context(), time.Now(), recentPasswordAuthenticationWindow) {
+		if req.CurrentPassword == "" {
+			writeError(w, http.StatusUnauthorized, "current authentication required")
+			return
+		}
+		if h.AuthProvider == nil || h.Queries == nil {
+			writeError(w, http.StatusServiceUnavailable, "password verification is not configured")
+			return
+		}
+		user, err := h.Queries.GetUser(r.Context(), parsedUserID)
+		if err != nil {
+			slog.Warn("password update could not resolve authenticated user", append(logger.RequestAttrs(r), "error", err)...)
+			writeError(w, http.StatusInternalServerError, "failed to update password")
+			return
+		}
+		identity, err := h.AuthProvider.Login(r.Context(), user.Email, req.CurrentPassword)
+		if errors.Is(err, ErrInvalidCredentials) || (err == nil && identity.UserID != parsedUserID) {
+			writeError(w, http.StatusUnauthorized, "current authentication required")
+			return
+		}
+		if err != nil {
+			slog.Warn("password update verification provider failed", logger.RequestAttrs(r)...)
+			writeError(w, http.StatusInternalServerError, "failed to update password")
+			return
+		}
+	}
+
+	err := h.PasswordProvisioner.ProvisionPassword(r.Context(), parsedUserID, req.NewPassword)
+	if errors.Is(err, ErrPasswordRequired) || errors.Is(err, ErrPasswordTooShort) || errors.Is(err, ErrPasswordTooLong) || errors.Is(err, ErrPasswordInvalidEncoding) {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update password")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 type GoogleLoginRequest struct {
@@ -643,7 +736,7 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tokenString, err := h.issueJWT(user)
+	tokenString, err := h.issueRecentlyAuthenticatedJWT(user)
 	if err != nil {
 		slog.Warn("google login failed", append(logger.RequestAttrs(r), "error", err, "email", email)...)
 		writeError(w, http.StatusInternalServerError, "failed to generate token")

@@ -3,7 +3,10 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
 	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
@@ -100,4 +103,55 @@ func TestNotifyTaskAvailable_InvalidWithoutRuntimeIsNoOp(t *testing.T) {
 	if got := len(wakeup.calls); got != 0 {
 		t.Fatalf("expected 0 wakeup calls when RuntimeID is invalid, got %d", got)
 	}
+}
+
+// --- F6: queue-hop (OBS-3) span wiring at enqueue/dequeue (metadata-only) ---
+
+func TestEmitQueueEnqueuedRecordsMetadataOnlySpan(t *testing.T) {
+	// Cardinality contract: the queue hop emits EXACTLY ONE completed span per
+	// task, at DEQUEUE. Enqueue must NOT emit a span (a second span would trip
+	// the assembler's duplicate_task_hop). This asserts enqueue is a no-op.
+	sink := e2e.NewMemorySink()
+	svc := &TaskService{Obs: e2e.NewRecorder(sink)}
+	svc.emitQueueEnqueued(db.AgentTaskQueue{
+		ID:        testUUID(11),
+		CreatedAt: pgtype.Timestamptz{Time: time.Now().Add(-2 * time.Second), Valid: true},
+	})
+	if sink.Len() != 0 {
+		t.Fatalf("enqueue must emit NO span (single completed queue span is at dequeue), got %d", sink.Len())
+	}
+}
+
+func TestEmitQueueDequeuedRecordsWaitAndMetadataOnly(t *testing.T) {
+	sink := e2e.NewMemorySink()
+	svc := &TaskService{Obs: e2e.NewRecorder(sink)}
+	id := testUUID(12)
+	created := time.Now().Add(-3 * time.Second)
+	svc.emitQueueDequeued(db.AgentTaskQueue{
+		ID:        id,
+		CreatedAt: pgtype.Timestamptz{Time: created, Valid: true},
+	})
+	if sink.Len() != 1 {
+		t.Fatalf("sink len = %d, want 1", sink.Len())
+	}
+	sp := sink.Spans()[0]
+	if sp.Hop != e2e.HopQueue || sp.Outcome != "dequeued" {
+		t.Fatalf("unexpected dequeue span: hop=%q outcome=%q", sp.Hop, sp.Outcome)
+	}
+	if sp.Counters["dequeue_unix_ms"] <= 0 {
+		t.Fatal("dequeue_unix_ms not set")
+	}
+	if sp.Counters["wait_ms"] < 0 {
+		t.Fatal("wait_ms must be non-negative")
+	}
+	if r := e2e.ScanSpans([]e2e.Span{sp}); !r.Clean {
+		t.Fatalf("leak scan not clean: %+v", r.Findings)
+	}
+}
+
+func TestEmitQueueNilObsIsNoop(t *testing.T) {
+	svc := &TaskService{} // Obs nil
+	// Must not panic and must not require a sink.
+	svc.emitQueueEnqueued(db.AgentTaskQueue{ID: testUUID(13)})
+	svc.emitQueueDequeued(db.AgentTaskQueue{ID: testUUID(13)})
 }

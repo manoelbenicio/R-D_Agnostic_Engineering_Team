@@ -1,0 +1,32 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T21:10:20Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "tier20-workload",
+  "task_ids": ["9.1-prep"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/T20-workload.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "git diff --check -- .deploy-control/p0/evidence/T20-workload.md", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "control.json live_runs check (all authorized=false)", "exit_code": 0, "assertions_or_tests": 0, "result": "RUN FORBIDDEN (cline_glm/cline_kimi/opus48/antigravity = false)"}
+  ],
+  "format_and_diff": {"format": "N/A (no code written)", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-workload.md"],
+  "requirements": [],
+  "openspec_tasks": ["9.1 (prep only; not executed; not 9.2)"],
+  "summary": "PREPARE-ONLY: bounded 20-concurrent read-only workload generator spec. 20 safe read-only chat/issue tasks via existing EnqueueQuickCreateTask/EnqueueChatTask/EnqueueTaskForIssue against the operator-approved route (parameterized; never invented). Per-task admission/queue/start/complete capture keyed by the frozen agent-brain.e2e.v1 IDs (metadata-only, secrets_present=false). ABORT thresholds: A1 readiness instability, A2 error>10% (>2/20), A3 dup/lost persistence, A4 trace breakage (e2e.Assemble AllContinuous==false), A5 tier breach>20. GO/NO-GO gates: operator go + live_run token(authorized) + CapacityTier20/CapacityGateEnabled + D-V3-25(B) cleared + sustained strict readiness. Generator pseudocode + output-artifact schema included.",
+  "non_claims": [
+    "NOT RUN: nothing executed, no task enqueued, no inference, no live call; live_runs.* all false (preflight would EXIT no-go)",
+    "no generator code written (prepare-only spec); no product code edited",
+    "no OmniRoute internals invoked/probed; no RouteModel invented; no secret read/printed",
+    "does NOT authorize tier-20 activation (9.2), 50/100 tiers, cutover, or production; single authorized run only, no duplicate acceptance",
+    "evidence capture is metadata-only per EVIDENCE_CONTRACT + agent-brain.e2e.v1 secrets_present=false"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "operator/Principal", "reason": "supply GO + set live_runs.<approved family>.authorized=true with exact RouteModel/provenance, confirm CapacityTier20+CapacityGateEnabled and D-V3-25(B) clearance, then a writer implements §7 and runs once producing T20-run-<ts>.md", "file": ".deploy-control/p0/evidence/T20-workload.md"}
+  ]
+}

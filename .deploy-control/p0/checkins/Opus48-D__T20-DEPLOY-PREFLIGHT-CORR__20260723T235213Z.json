@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-deploy-preflight.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-deploy-preflight.md"
+  ],
+  "finished_at": "2026-07-23T23:53:22Z",
+  "lane": "deploy-preflight",
+  "last_heartbeat_at": "2026-07-23T23:53:22Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T23:52:13Z",
+  "status": "DONE",
+  "summary": "Preflight corrected + standby: 5-check preflight (checksum, local export path exists, 0600 perms, content-off flags present, rollback) with loopback-only OTLP and NO OTEL creds/owner/mTLS. No deploy until Kiro green build. Nothing executed.",
+  "task": "T20-DEPLOY-PREFLIGHT-CORR",
+  "validation": "Corrected per manager: OTLP loopback-only (127.0.0.1, daemon-fixed) per internal/daemon/observability/otlpreceiver; withdrew invented OTEL owner/credential/mTLS blocker. Preflight scoped to 5 checks (artifact checksum 1abda82d..., local JSONL export-file exists + 0600, content-off flags ON, rollback). OmniRoute secret unchanged/never read. No exec."
+}

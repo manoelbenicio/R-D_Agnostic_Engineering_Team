@@ -192,7 +192,7 @@ func handlerTestRuntimeID(t *testing.T) string {
 
 	var runtimeID string
 	if err := testPool.QueryRow(context.Background(),
-		`SELECT id FROM agent_runtime WHERE workspace_id = $1 ORDER BY created_at ASC LIMIT 1`,
+		`SELECT id FROM agent_runtime WHERE workspace_id = $1 ORDER BY created_at ASC, id ASC LIMIT 1`,
 		testWorkspaceID,
 	).Scan(&runtimeID); err != nil {
 		t.Fatalf("failed to load handler test runtime: %v", err)

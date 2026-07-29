@@ -1,0 +1,21 @@
+{
+  "title": "G4-OBS Acceptance Bundle",
+  "uid": "g4-obs-acceptance",
+  "description": "Declares PASS only when OBS-1 to OBS-10 are independently accepted, OBS-9 shows a continuous trace per synthetic task, and OBS-10 is clean.",
+  "panels": [
+    {
+      "title": "G4-OBS Bundle Status",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "min(g4_obs_prerequisites_met) == 1 and max(obs_trace_gaps_total) == 0 and max(obs_leak_scan_failures) == 0",
+          "legendFormat": "PASS (1=PASS)"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 16,
+  "version": 2
+}

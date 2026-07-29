@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/A6-lifecycle-gap-matrix.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/A6-lifecycle-gap-matrix.md"
+  ],
+  "finished_at": "2026-07-21T22:39:16Z",
+  "lane": "A6",
+  "last_heartbeat_at": "2026-07-21T22:39:16Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:30:28Z",
+  "status": "DONE",
+  "summary": "Delivered 5-category lifecycle gap matrix Kanban->terminal with exact symbols/line refs and focused-test candidates. One real Main-Brain lifecycle gap (L3c: credentialless Cline CLIOpenAICompatible/CLIKimi admission+launch-config materialization for 5.6/5.7) handed to A1/R1(+A3 IDs)/W1; A6 did not implement. 5.8 launch lifecycle ready (gap=A4 RouteModel). Covered Main-Brain portion of 8.2. Excluded OmniRoute internals(Cat4)/Prodex(Cat5)/OBS(deferred). Read-only; no product code, no live run, no checkbox. Toolchain path reconciled to /home/ec2-user/goroot/go/bin/go (go1.26.1), non-blocking.",
+  "task": "P0-LIFECYCLE-GAP",
+  "validation": "Read-only source trace (no build/test executed — A6 owns no source lock). Verified symbols in-repo at HEAD a6d5098: daemon.go handleTask:2829/runTask:3288/resolveTaskAgentEntry:3248/admitTask-call:3323/buildLaunch-call:3701/recordLaunch:3828/reportTaskResult:3112; brain_integration.go admitTask/buildLaunch:338(Codex-only)/recordTerminal; runtimeenv/adapter.go CredentiallessAdapterContract (CLIOpenAICompatible+CLIKimi=AdapterFailClosed, CLIClaudeCode+CLICodex=AdapterReady); runtimeenv/cline.go NewClineConfigContract (no WriteCredentiallessClineConfig); brain/identity.go CLIKind enum (no CLICline/CLIKiro). Existing test names cited by grep of *_test.go."
+}

@@ -1,0 +1,47 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:34:00Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "F1",
+  "task_ids": ["5.2", "6.2"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/daemon/daemon.go",
+    "multica-auth-work/server/internal/daemon/workdir_race_test.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "edit_note": "daemon.go phase-1: gated the admitted-plan setup on agentBrainPlan!=nil and kept the gateway_required rejection only in gateway-required mode, so non-gateway tasks reach Prepare->StartTask (fixes ordering). daemon.go phase-2: added nil-default cliObs *e2e.Recorder field + e2e import, and wired EmitCLI(F10 HopCLI helper) at the post-launch/terminal boundary in runTask for admitted gateway tasks using admission correlation + metadata-only IDs. workdir_race_test.go: gofmt whitespace-only (var-block alignment); NOT modified logically — ordering invariant preserved.",
+  "phase1_fix": "runTask no longer aborts with gateway_required before Prepare/StartTask when agentBrain is disabled (admitTask returns nil,nil only when not gateway-required). StartTask-after-workdir-on-disk ordering (issue #3999 race A) restored.",
+  "phase2_wiring": "EmitCLI(d.cliObs, CLIObservation{LaunchID/ProcID via safeCorrelationID(corr.RequestID), TaskID, CLIKind, bounded ExitCodeClass/Outcome/ReasonCode, LatencyMs}) at terminal boundary; agentBrainPlan!=nil guard; nil recorder => no-op until central injection. No prompt/argv/env/repo/stdout/stderr; no rotation/provider-credential logic.",
+  "tests": [
+    {"command": "gofmt -l internal/daemon/daemon.go internal/daemon/workdir_race_test.go", "exit_code": 0, "assertions_or_tests": 2, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/ (GOCACHE/GOTMPDIR=/tmp)", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go test ./internal/daemon/ -run '^TestRunTask_StartTaskCalledAfterWorkdirOnDisk$' -count=1", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go test ./internal/daemon/ -count=1 (full 5.2 matrix, incl F10 cli_observability_test)", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS", "detail": "ok 15.157s"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/checkins/Opus48-A__F1-DAEMON-ORDERING__20260722T112956Z.json"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["5.2", "6.2"],
+  "acceptance": {
+    "named_workdir_test_pass": true,
+    "daemon_package_test_pass": true,
+    "cli_focused_test_pass": true,
+    "go_vet_daemon_pass": true,
+    "no_rotation_or_provider_credential_restored": true
+  },
+  "summary": "F1 phase-1 + phase-2 complete. Phase-1 fixed TestRunTask_StartTaskCalledAfterWorkdirOnDisk by correcting runTask's admission gating (no premature gateway_required abort for non-gateway tasks) WITHOUT modifying the test's ordering invariant. Phase-2 wired the F10 HopCLI helper (EmitCLI) at the post-launch/terminal boundary with admission correlation + metadata-only IDs, nil-safe. Full daemon matrix PASS, vet PASS, gofmt clean, git diff --check clean.",
+  "non_claims": [
+    "d.cliObs is nil by default: the central observability wiring (out of F1 lock; cmd_daemon/observability init) must inject an e2e.Recorder with a production Sink for CLI-hop spans to actually emit. Until then EmitCLI is a documented no-op.",
+    "proc_id/launch_id are metadata-only correlation keys derived from the admission RequestID (the backend abstraction does not expose the OS PID at this boundary); real-PID capture, if required, is a follow-up in the launch plumbing.",
+    "5.3 server-wide go test ./... NOT run here (handed to F2; root disk 95M/100%).",
+    "no deploy/inference/secret/commit/push/destructive-git; no out-of-lock edit."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "F2", "reason": "run the full 5.2 matrix + 5.3 server-wide build/test with lane /tmp GOCACHE/GOTMPDIR; daemon package is green.", "file": "multica-auth-work/server"},
+    {"to_lane": "central-observability/W1", "reason": "inject an e2e.Recorder (production Sink) into Daemon.cliObs so the wired HopCLI span emits; optionally supply real launch_id/proc_id from launch plumbing.", "file": "multica-auth-work/server/internal/daemon/daemon.go"}
+  ]
+}

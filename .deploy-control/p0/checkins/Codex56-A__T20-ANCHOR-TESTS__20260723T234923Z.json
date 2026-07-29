@@ -1,0 +1,27 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-anchor-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-anchor-tests.md",
+    "multica-auth-work/server/internal/daemon/anchor_cli_recorder_test.go",
+    "multica-auth-work/server/internal/daemonws/anchor_delivery_recorder_test.go",
+    "multica-auth-work/server/internal/middleware/anchor_ingress_recorder_test.go",
+    "multica-auth-work/server/internal/service/anchor_obs_recorder_test.go"
+  ],
+  "finished_at": "2026-07-23T23:57:26Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T23:57:26Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T23:49:23Z",
+  "status": "DONE",
+  "summary": "Delivered NEW real-call-site anchor test internal/middleware/anchor_ingress_recorder_test.go: drives production RequestLogger handler end-to-end, asserts hop-1 span emitted through wired MemorySink recorder (FAILS if ingress seam nil/discard) + fail-closed-without-task_id. Distinct from existing emitIngressSpan-helper test. Verified per-hop fail-if-discard contract for queue/persist/delivery/cli already covered by owner seam tests (task_notify_test, task_complete_race_test, hub_test incl. TestHub_NoDeliveryRecorder_NoEmitNoPanic, cli_observability_test) + cross-package assembly by e2ewiring wiring_integration_test — duplicating barred by no-duplicate-QA. Did not build DB/WS/daemon harnesses in concurrently-owned packages (handoff specs given). Real remaining gap = production startup installs no real sink (source/P0-gated, W1+Principal), the actual nil/discard condition. Test-files-only, no shared source edits.",
+  "task": "T20-ANCHOR-TESTS",
+  "validation": "gofmt -l anchor_ingress_recorder_test.go: empty (exit 0); go vet ./internal/middleware/: exit 0; go test -run RequestLoggerAnchor -v ./internal/middleware/: PASS 2/2 (exit 0). git diff --check clean (new untracked test file)."
+}

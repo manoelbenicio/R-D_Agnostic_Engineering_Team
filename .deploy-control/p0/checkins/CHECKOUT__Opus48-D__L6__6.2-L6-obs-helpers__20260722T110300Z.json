@@ -1,0 +1,42 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:03:00Z",
+  "agent": "Opus48#D",
+  "pane_id": "w8:p2",
+  "lane": "L6",
+  "task_ids": ["6.2"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    "multica-auth-work/server/internal/middleware/obs_ingress.go",
+    "multica-auth-work/server/internal/middleware/obs_ingress_test.go",
+    "multica-auth-work/server/internal/service/obs_queue.go",
+    "multica-auth-work/server/internal/service/obs_queue_test.go",
+    "multica-auth-work/server/internal/service/obs_persist.go",
+    "multica-auth-work/server/internal/service/obs_persist_test.go"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/middleware/ -run Ingress -count=1", "exit_code": 0, "assertions_or_tests": 3, "result": "PASS"},
+    {"command": "go test ./internal/service/ -run 'QueueSpan|PersistSpan' -count=1", "exit_code": 0, "assertions_or_tests": 4, "result": "PASS"},
+    {"command": "go vet ./internal/middleware/", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go vet ./internal/service/", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "gofmt -l <6 L6 files>", "exit_code": 0, "assertions_or_tests": 6, "result": "PASS"},
+    {"command": "CGO_ENABLED=1 go test -race ./internal/middleware/ -run Ingress", "exit_code": null, "assertions_or_tests": 0, "result": "NOT_AVAILABLE_no_gcc"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/handoffs/L6-obs-helpers-design-and-anchor-map.md"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["6.2"],
+  "summary": "L6 ingress/queue/persist metadata-only helpers + 7 tests GREEN against frozen L5 agent-brain.e2e.v1 (hop1 ingress, hop2 queue, hop6 persist). gofmt/vet/diff clean. Only frozen closed label/counter keys used; SecretsPresent=false; fail-closed via Recorder.Emit; e2e.ScanSpans clean. Service tests unblocked after R2 fixed email.go.",
+  "non_claims": [
+    "-race not run (gcc/cgo unavailable in env)",
+    "no shared anchor edited (task.go/router/hub.go); call-site insertion handed to R1/L1",
+    "no deploy/inference/live-run/secret/commit",
+    "did not close any OpenSpec checkbox (Principal-only)"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "L1", "reason": "shared-anchor call-site insertion for ingress/queue/persist spans (EmitIngress/EmitQueue/EmitPersist)", "file": ".deploy-control/p0/handoffs/L6-obs-helpers-design-and-anchor-map.md"}
+  ]
+}

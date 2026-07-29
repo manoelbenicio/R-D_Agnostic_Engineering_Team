@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly gateway_host="${AGENT_BRAIN_GATEWAY_HOST:-orq1}"
+readonly gateway_port="${AGENT_BRAIN_GATEWAY_PORT:-20128}"
+readonly gateway_root="${AGENT_BRAIN_GATEWAY_BASE_URL:-http://${gateway_host}:${gateway_port}}"
+readonly secret_file="${AGENT_BRAIN_GATEWAY_SECRET_FILE:-/etc/agent-brain/secrets/omniroute-inference-key}"
+readonly default_model="${AGENT_BRAIN_ANTIGRAVITY_MODEL:-agy/claude-opus-4-6-thinking}"
+
+if [[ ! -r "$secret_file" || ! -s "$secret_file" ]]; then
+  printf 'ERROR: OmniRoute secret is unavailable: %s\n' "$secret_file" >&2
+  exit 78
+fi
+if ! timeout 5 bash -c "</dev/tcp/${gateway_host}/${gateway_port}" 2>/dev/null; then
+  printf 'ERROR: OmniRoute on %s:%s is unreachable.\n' "$gateway_host" "$gateway_port" >&2
+  exit 69
+fi
+
+export ANTHROPIC_BASE_URL="$gateway_root"
+export ANTHROPIC_AUTH_TOKEN
+auth_value="$(tr -d '\r\n' < "$secret_file")"
+if [[ -z "$auth_value" ]]; then
+  printf 'ERROR: OmniRoute secret is empty.\n' >&2
+  exit 78
+fi
+ANTHROPIC_AUTH_TOKEN="$auth_value"
+unset auth_value ANTHROPIC_API_KEY
+
+model_supplied=false
+for argument in "$@"; do
+  case "$argument" in
+    -m|--model|--model=*) model_supplied=true; break ;;
+  esac
+done
+
+if [[ "$model_supplied" == true ]]; then
+  exec claude "$@"
+fi
+exec claude --model "$default_model" "$@"

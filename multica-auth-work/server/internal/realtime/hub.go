@@ -277,16 +277,22 @@ type Hub struct {
 	// Subscription lifecycle hooks. Both can be nil.
 	onFirstSubscriber SubscriptionCallback
 	onLastSubscriber  SubscriptionCallback
+
+	// deliveryObs records aggregate, metadata-only HopDelivery spans for
+	// terminal task events (UI delivery). Nil-safe; a nil recorder disables
+	// emission. See obs_delivery.go.
+	deliveryObs *deliveryObserver
 }
 
 // NewHub creates a new Hub instance.
 func NewHub() *Hub {
 	return &Hub{
-		rooms:      make(map[scopeKey]map[*Client]bool),
-		clients:    make(map[*Client]bool),
-		broadcast:  make(chan []byte),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
+		rooms:       make(map[scopeKey]map[*Client]bool),
+		clients:     make(map[*Client]bool),
+		broadcast:   make(chan []byte),
+		register:    make(chan *Client),
+		unregister:  make(chan *Client),
+		deliveryObs: newDeliveryObserver(),
 	}
 }
 

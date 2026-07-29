@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/analytics"
 	"github.com/multica-ai/multica/server/internal/auth"
+	"github.com/multica-ai/multica/server/internal/credentialregistry"
 	"github.com/multica-ai/multica/server/internal/daemonws"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	"github.com/multica-ai/multica/server/internal/middleware"
@@ -259,7 +260,11 @@ func workspaceReposResponse(workspaceID string, raw []byte, settingsRaw []byte) 
 // lowercased so client-side pricing lookups tolerate case drift. Returns "" for
 // a blank input.
 func normalizeProvider(s string) string {
-	return strings.ToLower(strings.TrimSpace(s))
+	lower := strings.ToLower(strings.TrimSpace(s))
+	if lower == "agy" {
+		return "antigravity"
+	}
+	return lower
 }
 
 func (h *Handler) DaemonRegister(w http.ResponseWriter, r *http.Request) {
@@ -1154,6 +1159,23 @@ func logClaimEndpointSlow(runtimeID, outcome string, start time.Time, authMs, cl
 	)
 }
 
+func credentialAssignmentReason(err error) string {
+	switch {
+	case errors.Is(err, credentialregistry.ErrNoApprovedAssignment):
+		return "not_approved"
+	case errors.Is(err, credentialregistry.ErrProviderMismatch):
+		return "provider_mismatch"
+	case errors.Is(err, credentialregistry.ErrAccountAlreadyUsed):
+		return "account_already_assigned"
+	case errors.Is(err, credentialregistry.ErrAccountUnavailable):
+		return "account_unavailable"
+	case errors.Is(err, credentialregistry.ErrInvalidMetadata):
+		return "invalid_metadata"
+	default:
+		return "resolver_error"
+	}
+}
+
 // ClaimTaskByRuntime atomically claims the next queued task for a runtime.
 // The response includes the agent's name and skills, fetched fresh from the DB.
 func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
@@ -1257,6 +1279,54 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 			ThinkingLevel: agent.ThinkingLevel.String,
 			RuntimeConfig: runtimeConfig,
 		}
+	}
+
+	// Credential-bearing providers must have one persisted, tenant-approved
+	// account assignment before the task leaves the server. The resolver reads
+	// routing metadata only; it never joins credentials or returns secret_ref.
+	// Cancel the just-claimed task on any missing/invalid assignment so a
+	// daemon cannot fall back to a shared provider home.
+	if credentialregistry.RequiresApprovedAssignment(runtime.Provider) {
+		if resp.Agent == nil || h.CredentialAssignments == nil {
+			outcome = "error_credential_assignment"
+			if _, cerr := h.TaskService.CancelTask(r.Context(), task.ID); cerr != nil {
+				slog.Error("task claim: cancel after unavailable credential resolver failed",
+					"task_id", uuidToString(task.ID), "error", cerr)
+			}
+			writeError(w, http.StatusServiceUnavailable, "approved credential assignment unavailable")
+			return
+		}
+		assignment, resolveErr := h.CredentialAssignments.Resolve(
+			r.Context(),
+			uuidToString(task.AgentID),
+			runtime.Provider,
+		)
+		if resolveErr != nil {
+			outcome = "error_credential_assignment"
+			slog.Warn("task claim: approved credential assignment rejected",
+				"task_id", uuidToString(task.ID),
+				"agent_id", uuidToString(task.AgentID),
+				"provider", credentialregistry.CanonicalProvider(runtime.Provider),
+				"reason", credentialAssignmentReason(resolveErr),
+			)
+			if _, cerr := h.TaskService.CancelTask(r.Context(), task.ID); cerr != nil {
+				slog.Error("task claim: cancel after rejected credential assignment failed",
+					"task_id", uuidToString(task.ID), "error", cerr)
+			}
+			writeError(w, http.StatusConflict, "approved credential assignment unavailable")
+			return
+		}
+		resp.Agent.CredentialAccountHome = assignment.HomeDir
+		resp.Agent.CredentialAssignmentRequired = true
+		// AccountID is metadata, not a credential. Keep it server-side and log
+		// only the claim correlation needed until ORQ-12's durable task-row
+		// snapshot is integrated; it is never accepted from or returned to the
+		// daemon as an attribution input.
+		slog.Info("task claim: approved credential assignment resolved",
+			"task_id", uuidToString(task.ID),
+			"agent_id", uuidToString(task.AgentID),
+			"account_id", assignment.AccountID,
+		)
 	}
 
 	// Resolve the runtime owner's profile description so the daemon can
@@ -2059,6 +2129,22 @@ type TaskUsagePayload struct {
 	OutputTokens     int64  `json:"output_tokens"`
 	CacheReadTokens  int64  `json:"cache_read_tokens"`
 	CacheWriteTokens int64  `json:"cache_write_tokens"`
+	// ThinkingLevel is optional: a daemon older than ORQ-13 omits it. Empty
+	// persists as NULL, which reads as "tier not declared" — deliberately not
+	// the base tier, so an unpriced reasoning tier surfaces as a gap instead
+	// of being silently charged at the base rate.
+	ThinkingLevel string `json:"thinking_level"`
+}
+
+// thinkingLevelText maps a reported reasoning tier onto a nullable column.
+// A blank or whitespace-only value becomes SQL NULL rather than an empty
+// string: NULL reads as "the reporting daemon declared no tier", so a pricing
+// lookup can treat it as a gap instead of charging the model's base rate.
+// Whitespace is trimmed so a stray " high" cannot create a second, distinct
+// tier value.
+func thinkingLevelText(level string) pgtype.Text {
+	trimmed := strings.TrimSpace(level)
+	return pgtype.Text{String: trimmed, Valid: trimmed != ""}
 }
 
 func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
@@ -2098,6 +2184,11 @@ func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
 			}
 			provider = runtimeProvider
 		}
+		// An absent or blank tier is stored as SQL NULL, never as an empty
+		// string: NULL means "the reporting daemon did not declare a tier",
+		// which a pricing lookup must treat as a gap rather than as the
+		// model's base tier.
+		thinkingLevel := strings.TrimSpace(u.ThinkingLevel)
 		if err := h.Queries.UpsertTaskUsage(r.Context(), db.UpsertTaskUsageParams{
 			TaskID:           parseUUID(taskID),
 			Provider:         provider,
@@ -2106,6 +2197,7 @@ func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
 			OutputTokens:     u.OutputTokens,
 			CacheReadTokens:  u.CacheReadTokens,
 			CacheWriteTokens: u.CacheWriteTokens,
+			ThinkingLevel:    thinkingLevelText(thinkingLevel),
 		}); err != nil {
 			slog.Warn("upsert task usage failed", "task_id", taskID, "model", u.Model, "error", err)
 			continue
@@ -2221,6 +2313,29 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var highestPersistedSeq int32
+
+	// Atomic batch insert: all messages committed in a single transaction.
+	// On any failure, the entire batch is rolled back and no ack is returned.
+	tx, err := h.TxStarter.Begin(r.Context())
+	if err != nil {
+		slog.Error("failed to begin tx for task messages", "task_id", taskID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to persist task messages")
+		return
+	}
+	defer tx.Rollback(r.Context())
+	qtx := h.Queries.WithTx(tx)
+
+	// Validate batch is ordered by seq (contiguous relative to submission).
+	var lastSeq int32
+	for i, msg := range req.Messages {
+		if i > 0 && int32(msg.Seq) <= lastSeq {
+			writeError(w, http.StatusBadRequest, "messages must be ordered by strictly increasing seq")
+			return
+		}
+		lastSeq = int32(msg.Seq)
+	}
+
 	for _, msg := range req.Messages {
 		// Redact sensitive information before persisting or broadcasting.
 		msg.Content = redact.Text(msg.Content)
@@ -2231,7 +2346,7 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 		if msg.Input != nil {
 			inputJSON, _ = json.Marshal(msg.Input)
 		}
-		created, createErr := h.Queries.CreateTaskMessage(r.Context(), db.CreateTaskMessageParams{
+		_, createErr := qtx.CreateTaskMessage(r.Context(), db.CreateTaskMessageParams{
 			TaskID:  parseUUID(taskID),
 			Seq:     int32(msg.Seq),
 			Type:    msg.Type,
@@ -2242,17 +2357,49 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 		})
 		if createErr != nil {
 			slog.Error("failed to create task message", "task_id", taskID, "seq", msg.Seq, "error", createErr)
+			// Transaction will be rolled back by defer — no partial commit.
 			writeError(w, http.StatusInternalServerError, "failed to persist task message")
 			return
 		}
-
-		if workspaceID != "" {
-			h.publishTask(protocol.EventTaskMessage, workspaceID, "system", "", taskID,
-				taskMessageToPayload(created, taskID, uuidToString(task.IssueID)))
+		if int32(msg.Seq) > highestPersistedSeq {
+			highestPersistedSeq = int32(msg.Seq)
 		}
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	// Commit atomically — all rows or none.
+	if err := tx.Commit(r.Context()); err != nil {
+		slog.Error("failed to commit task messages tx", "task_id", taskID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to persist task messages")
+		return
+	}
+
+	// Publish events only AFTER durable commit.
+	for _, msg := range req.Messages {
+		if workspaceID != "" {
+			var inputJSON []byte
+			if msg.Input != nil {
+				inputJSON, _ = json.Marshal(msg.Input)
+			}
+			payload := protocol.TaskMessagePayload{
+				TaskID:  taskID,
+				IssueID: uuidToString(task.IssueID),
+				Seq:     msg.Seq,
+				Type:    msg.Type,
+				Tool:    msg.Tool,
+				Content: redact.Text(msg.Content),
+				Input:   msg.Input,
+				Output:  redact.Text(msg.Output),
+			}
+			_ = inputJSON // used in payload.Input above
+			h.publishTask(protocol.EventTaskMessage, workspaceID, "system", "", taskID, payload)
+		}
+	}
+
+	// Return persisted_through_seq: highest seq durably committed.
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":                "ok",
+		"persisted_through_seq": highestPersistedSeq,
+	})
 }
 
 func taskMessageToPayload(m db.TaskMessage, taskID, issueID string) protocol.TaskMessagePayload {

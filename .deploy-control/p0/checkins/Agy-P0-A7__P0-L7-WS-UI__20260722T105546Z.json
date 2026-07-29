@@ -1,0 +1,28 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A7",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/R4-obs-delivery.md",
+    ".deploy-control/p0/handoffs/L7-ws-ui-delivery.md"
+  ],
+  "files_locked": [
+    "packages/views/issues/components/board-view.tsx",
+    "packages/views/issues/components/execution-log-section.tsx",
+    "packages/views/issues/components/issue-detail.tsx",
+    "server/internal/daemonws/obs_delivery.go",
+    "server/internal/daemonws/obs_delivery_test.go"
+  ],
+  "finished_at": "2026-07-22T11:08:49Z",
+  "lane": "L7",
+  "last_heartbeat_at": "2026-07-22T11:08:49Z",
+  "pane_id": "wB:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T10:55:46Z",
+  "status": "DONE",
+  "summary": "Stale duplicate L7 assignment reconciled after independent R4 Go verification. Delivery helper is green; UI node tests remain unavailable and hub.go anchor remains a 6.2 integration handoff, so no full 6.2/live claim.",
+  "task": "P0-L7-WS-UI",
+  "validation": "R4: go vet ./internal/daemonws PASS; focused delivery tests 5/5 PASS; full daemonws package PASS; gofmt clean; UI node tests NOT_AVAILABLE because node_modules absent"
+}

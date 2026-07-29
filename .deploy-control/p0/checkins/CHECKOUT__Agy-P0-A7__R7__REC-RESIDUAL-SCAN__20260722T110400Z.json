@@ -1,0 +1,48 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:04:00Z",
+  "agent": "Agy-P0-A7",
+  "pane_id": "wB:p1",
+  "lane": "R7",
+  "task_ids": ["REC-RESIDUAL-SCAN", "5.5"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/R7-residual-scan.md"
+  ],
+  "files_deleted": [],
+  "tests": [],
+  "format_and_diff": {
+    "git_diff_check": "PASS (exit_code=0)"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/R7-residual-scan.md"
+  ],
+  "requirements": ["AB-REQ-02"],
+  "openspec_tasks": ["5.5"],
+  "summary": "NO_REACHABLE_RESIDUAL across startup/config/health/recovery/fallback paths. All mock/fake/stub patterns confined to _test.go files. Placeholder patterns are legitimate secret masking. Fallback patterns are legitimate OmniRoute/recovery architecture. Frontend production code clean. Zero findings to route.",
+  "scan_areas": [
+    "server/internal/daemon/ (all *.go excl _test.go)",
+    "server/cmd/ (all *.go excl _test.go)",
+    "server/internal/handler/ (all *.go excl _test.go)",
+    "server/internal/service/ (all *.go excl _test.go)",
+    "server/internal/middleware/ (all *.go excl _test.go)",
+    "server/cmd/server/health.go",
+    "server/cmd/server/router.go",
+    "packages/core/ (all *.ts, *.tsx excl test)",
+    "packages/views/ (all *.ts, *.tsx excl test)"
+  ],
+  "patterns_searched": [
+    "mock|fake|stub|dummy",
+    "fallback|recover|default.*model|placeholder",
+    "TODO|FIXME|HACK|XXX|TEMP|WORKAROUND",
+    "hardcoded|hard.coded|sample|demo|qa.only|dev.only",
+    "synthetic.*result|placeholder.*data|demo.mode|qa.route|hardcoded.*status"
+  ],
+  "verdict": "NO_REACHABLE_RESIDUAL",
+  "routed_findings": [],
+  "non_claims": [
+    "Code NOT edited — READ-ONLY scan",
+    "No deploy, inference, secret, commit, push, or dependency install"
+  ]
+}

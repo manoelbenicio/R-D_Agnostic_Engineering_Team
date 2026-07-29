@@ -1,0 +1,45 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T04:33:00Z",
+  "agent": "Opus48#D",
+  "pane_id": "w8:p2",
+  "lane": "L6",
+  "task_ids": ["6.2"],
+  "status": "BLOCKED",
+  "files_changed": [],
+  "files_created": [
+    "multica-auth-work/server/internal/middleware/obs_ingress.go",
+    "multica-auth-work/server/internal/middleware/obs_ingress_test.go",
+    "multica-auth-work/server/internal/service/obs_queue.go",
+    "multica-auth-work/server/internal/service/obs_queue_test.go",
+    "multica-auth-work/server/internal/service/obs_persist.go",
+    "multica-auth-work/server/internal/service/obs_persist_test.go"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "gofmt -l <6 L6 files>", "exit_code": 0, "assertions_or_tests": 6, "result": "PASS"},
+    {"command": "go vet ./internal/middleware/", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go test ./internal/middleware/ -run Ingress -count=1", "exit_code": 0, "assertions_or_tests": 3, "result": "PASS"},
+    {"command": "git diff --check -- <6 L6 files>", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "CGO_ENABLED=1 go test -race ./internal/middleware/ -run Ingress", "exit_code": null, "assertions_or_tests": 0, "result": "NOT_AVAILABLE"},
+    {"command": "go vet ./internal/service/", "exit_code": 1, "assertions_or_tests": 0, "result": "BLOCKED"},
+    {"command": "go test ./internal/service/ -run 'ObsQueue|ObsPersist'", "exit_code": 1, "assertions_or_tests": 0, "result": "BLOCKED"},
+    {"command": "go build ./internal/service/ (attribution)", "exit_code": 1, "assertions_or_tests": 0, "result": "BLOCKED_FOREIGN_email.go_only"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/handoffs/L6-obs-helpers-design-and-anchor-map.md"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["6.2"],
+  "summary": "L6 ingress/queue/persist metadata-only helpers + tests delivered against frozen L5 agent-brain.e2e.v1. Ingress (hop1) VERIFIED green. Queue(hop2)/persist(hop6) compile-clean+gofmt+diff clean but package test/vet BLOCKED by a foreign pre-existing build break in internal/service/email.go (unused log/slog), outside L6 ownership.",
+  "non_claims": [
+    "service-package tests did NOT execute (blocked by foreign email.go build break)",
+    "-race not run (gcc/cgo unavailable in env)",
+    "no shared anchor edited (task.go/router/hub.go); call-site insertion handed to L1",
+    "no deploy/inference/live-run/secret/commit"
+  ],
+  "blocker": "internal/service/email.go:9 unused 'log/slog' import breaks the service package build, blocking L6 queue/persist package tests; owner=email.go owner via manager w5:p1; next=owner removes unused import, then L6 re-runs `go test ./internal/service/ -run 'ObsQueue|ObsPersist' -count=1` and checks out DONE.",
+  "handoffs": [
+    {"to_lane": "L1", "reason": "shared-anchor call-site insertion for ingress/queue/persist spans", "file": ".deploy-control/p0/handoffs/L6-obs-helpers-design-and-anchor-map.md"},
+    {"to_lane": "MANAGER", "reason": "foreign build break in internal/service/email.go blocks service-package tests", "file": "multica-auth-work/server/internal/service/email.go"}
+  ]
+}

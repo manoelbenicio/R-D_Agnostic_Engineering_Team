@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/A4-opus48.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/A4-opus48.md"
+  ],
+  "finished_at": "2026-07-21T22:36:18Z",
+  "lane": "A4",
+  "last_heartbeat_at": "2026-07-21T22:36:18Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:31:07Z",
+  "status": "DONE",
+  "summary": "Analysis DONE. Accepted Anthropic frontend PROVEN = CLIKind claude-code (CLIClaudeCode) via ProfileAnthropicMessages + credentialless AdapterReady; no CLIKiro, native kiro-cli/XDG/AWS path forbidden. Exact Opus48 AWS RouteModel = BLOCKED_EXTERNAL on OmniRoute registry owner (runtime-fetched /v1/models; pricing/thinking keys are NOT RouteModel IDs; matrix D-V3-27 is semantic-only). Intent->launch delta = zero new Main-Brain code, reuse accepted Claude->Anthropic-Messages chain + exact ID once published. Focused tests mapped for 5.8/8.1/8.2; single live run reserved to W1 and gated by D-V3-25(B) security-stop. No Kiro credential/account behavior; no fallback invented.",
+  "task": "P0-OPUS48-ROUTE",
+  "validation": "Preflight: git 2.50.1 /usr/bin/git; python3 3.9.25 /usr/bin/python3; rg 15.2.0 /usr/local/bin/rg; go1.26.1 linux/amd64 confirmed (canonical /home/ec2-user/.local/toolchains/go1.26.1/bin/go, not mounted in this read-only pane, no compile needed). Registry no-secret probe: curl http://127.0.0.1:20128/v1/models -> connection refused (http_code=000), no local gateway. Read-only source review at HEAD a6d5098: adapter.go/profiles.go/identity.go/registry.go/brain_integration.go + D-V3-27 matrix. No product source modified; only A4-opus48.md written."
+}

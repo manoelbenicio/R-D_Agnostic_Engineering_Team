@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/A10-traceability.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/A10-traceability.md"
+  ],
+  "finished_at": "2026-07-22T00:05:00Z",
+  "lane": "A10",
+  "last_heartbeat_at": "2026-07-22T00:05:00Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:36:41Z",
+  "status": "DONE",
+  "summary": "Closed and superseded by P0-TRACEABILITY-CONTINUATION (A10-traceability-continuation.md). Implementation+D6+R1/R3 focused validation complete; remaining work is external live-acceptance gate only.",
+  "task": "P0-TRACEABILITY",
+  "validation": "A10 map current through 23:38Z §8; all impl/design/focused-validation states represented; no test rerun, no product edit"
+}

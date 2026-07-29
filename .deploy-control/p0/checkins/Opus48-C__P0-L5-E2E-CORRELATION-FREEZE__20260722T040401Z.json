@@ -1,0 +1,32 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/L5-e2e-contract-freeze.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/observability/e2e/assemble.go",
+    "multica-auth-work/server/internal/daemon/observability/e2e/assemble_test.go",
+    "multica-auth-work/server/internal/daemon/observability/e2e/contract.go",
+    "multica-auth-work/server/internal/daemon/observability/e2e/contract_test.go",
+    "multica-auth-work/server/internal/daemon/observability/e2e/doc.go",
+    "multica-auth-work/server/internal/daemon/observability/e2e/leakscan.go",
+    "multica-auth-work/server/internal/daemon/observability/e2e/leakscan_test.go",
+    "multica-auth-work/server/internal/daemon/observability/e2e/recorder.go",
+    "multica-auth-work/server/internal/daemon/observability/e2e/recorder_test.go",
+    "multica-auth-work/server/internal/daemon/observability/e2e/synthetic.go"
+  ],
+  "finished_at": "2026-07-22T04:07:38Z",
+  "lane": "L5",
+  "last_heartbeat_at": "2026-07-22T04:07:38Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T04:04:01Z",
+  "status": "DONE",
+  "summary": "PUBLISHED+FROZEN e2e correlation contract agent-brain.e2e.v1 (schema/9-IDs/8-hops, per-hop join keys, metadata-only Span/Event no free-form field, closed label+per-hop-counter+argv vocab, deterministic assembler w/ gap/orphan/conflict + AllContinuous, structural fail-closed leak scan incl ScanLogLines rejecting all free-form, Recorder fail-closed emit w/ deep-clone). Verified GREEN, zero product edits needed. L6/L7 build against it; L1 integrates anchors serially. NON-CLAIMS: no race (no cgo), no live/inference, no caller/anchor/OpenSpec touched.",
+  "task": "P0-L5-E2E-CORRELATION-FREEZE",
+  "validation": "gofmt -l e2e: clean; go vet ./...e2e: PASS exit0; go test ./...e2e -count=1: PASS exit0 (38 tests); go test -race: NOT_AVAILABLE (gcc/cgo absent); git diff --check e2e: PASS; zero product edits (package already freeze-quality)"
+}

@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/R1-cline-focused-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/R1-cline-focused-tests.md"
+  ],
+  "finished_at": "2026-07-21T22:42:31Z",
+  "lane": "R1-TEST-DESIGN",
+  "last_heartbeat_at": "2026-07-21T22:42:31Z",
+  "pane_id": "w6:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:38:58Z",
+  "status": "DONE",
+  "summary": "Cline focused test contract complete. Reuses 6 existing cline_test.go tests + one Kimi-fixture correction to a pending constant; specifies 6 new test groups (T-ADPT/T-ENV/T-EXEC/T-ASSERT/T-CFG/T-LAUNCH/T-MODEL) with exact names/inputs/expectations; full fail-closed matrix for the 8.2 deterministic-error half; dedup map showing offline unit tests + ONE reserved GLM live run close 5.6/8.1/8.2 with zero extra Kimi live runs. GLM cp/cline-pass/glm-5.2 is offline-implementable now (BLK-AVAIL only blocks live). Kimi 5.7 exact-model tests HELD behind BLK-KIMI (no id invented; claude_code_kimi_2.7_Code anti-conflation guard included). No product source touched.",
+  "task": "P0-CLINE-TEST-CONTRACT",
+  "validation": "Test-design phase; no source edited, no test executed, no live run. Existing test names verified via rg against cline_test.go/adapter_test.go(absent)/model_test.go/env_test.go/gateway_acceptance_test.go/assert_test.go/isolation_g4_test.go/execenv/cline_home_test.go/config_test.go/brain_integration_test.go. Owner/A9 run command specified in artifact §7 against /home/ec2-user/goroot/go/bin/go."
+}

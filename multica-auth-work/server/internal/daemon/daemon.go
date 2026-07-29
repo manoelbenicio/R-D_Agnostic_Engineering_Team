@@ -2,12 +2,14 @@ package daemon
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/fnv"
 	"log/slog"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,13 +20,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/multica-ai/multica/server/internal/cli"
+	"github.com/multica-ai/multica/server/internal/credentialregistry"
+	"github.com/multica-ai/multica/server/internal/daemon/brain"
+	"github.com/multica-ai/multica/server/internal/daemon/commitledger"
 	"github.com/multica-ai/multica/server/internal/daemon/execenv"
+	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
 	"github.com/multica-ai/multica/server/internal/daemon/repocache"
-	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
-	"github.com/multica-ai/multica/server/internal/rotation"
 	"github.com/multica-ai/multica/server/pkg/agent"
 	"github.com/multica-ai/multica/server/pkg/taskfailure"
 )
@@ -150,6 +152,21 @@ type Daemon struct {
 	repoCache repoCacheBackend
 	logger    *slog.Logger
 
+	// cliObs records the metadata-only CLI hop (hop 4, HopCLI) of the
+	// end-to-end correlation trace (OpenSpec 6.2, AB-REQ-39/40). It is nil
+	// until the central observability wiring injects a recorder; EmitCLI is a
+	// no-op on a nil recorder, so the launch/terminal path never depends on it.
+	// Only bounded correlation IDs and classification labels are ever emitted —
+	// never prompt, argv, environment, repository content or process output.
+	cliObs *e2e.Recorder
+	// otlpReceiver is the fixed loopback OTLP-logs receiver that turns Claude
+	// Code api_request telemetry into route spans. nil unless the gateway
+	// development slice is active. Bound in Run, shut down on Run exit.
+	otlpReceiver *http.Server
+	// spanExportFile is the process-owned 0600 JSONL export file (or nil).
+	// Closed on Run exit so the fd never leaks across daemon lifecycle.
+	spanExportFile *os.File
+
 	mu           sync.Mutex
 	workspaces   map[string]*workspaceState
 	runtimeIndex map[string]Runtime // runtimeID -> Runtime for provider lookups
@@ -225,28 +242,41 @@ type Daemon struct {
 	// without touching the real network or the brew CLI.
 	runUpdateFn func(targetVersion string) (string, error)
 
-	rotationDB        *pgxpool.Pool
-	rotationStore     rotation.Store
-	rotationDetector  rotation.ExhaustionDetector
-	rotationService   rotation.RotationService
-	warningDetector   *rotation.WarningDetector
-	usageDetector     *rotation.UsageDetector
-	credentialMetrics *obsmetrics.CredentialMetrics
+	agentBrain        *agentBrainRuntime
+	agentBrainInitErr error
+	agentBrainOBS     *brain.AdmissionObserver
 
-	l2Client     l2RuntimeClient
-	l2InitErr    error
-	l2Sidecar    *l2Sidecar
-	l2SessionsMu sync.RWMutex
-	l2Sessions   map[string]runtimeRouterOwnerRecord
+	// commitLedgers is the in-process registry of active task commit ledgers.
+	// Created per-task in executeAndDrainForTask, consulted by the replay gate
+	// before automatic retry. Nil-safe: if nil, replay gate fails closed.
+	commitLedgers *commitledger.LedgerRegistry
+	// commitAckHandler processes persisted_through_seq acks from the server.
+	commitAckHandler *commitledger.AckHandler
 }
 
 // New creates a new Daemon instance.
 func New(cfg Config, logger *slog.Logger) *Daemon {
+	return newDaemon(cfg, logger, AgentBrainDependencies{})
+}
+
+// NewWithAgentBrainDependencies is restricted to the default-off development
+// slice and synthetic tests. Production entrypoints intentionally call New
+// without a credential source while PD-08 remains in force.
+func NewWithAgentBrainDependencies(cfg Config, logger *slog.Logger, dependencies AgentBrainDependencies) *Daemon {
+	return newDaemon(cfg, logger, dependencies)
+}
+
+func newDaemon(cfg Config, logger *slog.Logger, dependencies AgentBrainDependencies) *Daemon {
 	cacheRoot := filepath.Join(cfg.WorkspacesRoot, ".repos")
 	client := NewClient(cfg.ServerBaseURL)
 	// Tag every daemon HTTP request with the daemon's CLI version so the
 	// server can split logs/metrics by client version (parallel to the CLI).
 	client.SetVersion(cfg.CLIVersion)
+	// One process-owned span sink for the daemon: admission AND CLI hops emit
+	// through the same recorder/export file so their spans join. (Fail-closed
+	// per record; 0600 JSONL export when AGENT_BRAIN_E2E_EXPORT_FILE is set.)
+	daemonSpanSink, spanExportFile := daemonAdmissionSink(logger)
+	daemonSpanRecorder := e2e.NewRecorder(daemonSpanSink)
 	d := &Daemon{
 		cfg:                       cfg,
 		client:                    client,
@@ -264,40 +294,16 @@ func New(cfg Config, logger *slog.Logger) *Daemon {
 		reregisterNextAttempt:     make(map[string]time.Time),
 		reregisterLastCompletedAt: make(map[string]time.Time),
 		cancelPollInterval:        5 * time.Second,
-		rotationDetector:          rotation.NewExhaustionDetector(),
-		warningDetector:           rotation.NewWarningDetector(),
-		usageDetector:             rotation.NewUsageDetector(0),
-		credentialMetrics:         obsmetrics.NewCredentialMetrics(),
-		l2Sessions:                make(map[string]runtimeRouterOwnerRecord),
+		agentBrainOBS:             brain.NewAdmissionObserver(daemonSpanSink),
+		cliObs:                    daemonSpanRecorder,
 	}
-	d.initRotationService()
-	d.initL2RuntimeClient()
+	d.agentBrain, d.agentBrainInitErr = newAgentBrainRuntime(cfg.AgentBrain, dependencies, logger)
+	d.spanExportFile = spanExportFile
+	d.commitLedgers = commitledger.NewLedgerRegistry()
+	d.commitAckHandler = commitledger.NewAckHandler(d.commitLedgers, logger)
 	d.runner = taskRunnerFunc(d.runTask)
 	d.runUpdateFn = d.runUpdate
 	return d
-}
-
-func (d *Daemon) initRotationService() {
-	if strings.TrimSpace(d.cfg.RotationDatabaseURL) == "" {
-		d.logger.Warn("rotation: DISABLED - DATABASE_URL/RotationDatabaseURL is empty; account rotation will NOT run. Set DATABASE_URL on the daemon process to enable rotation.")
-		return
-	}
-	pool, err := pgxpool.New(context.Background(), d.cfg.RotationDatabaseURL)
-	if err != nil {
-		d.logger.Warn("rotation: postgres pool initialization failed; rotation disabled", "error", err)
-		return
-	}
-	store := rotation.NewPGStore(pool)
-	auth := rotation.NewCredentialAuthenticator()
-	d.rotationDB = pool
-	d.rotationStore = store
-	d.rotationService = rotation.NewService(store, d.rotationDetector, auth)
-}
-
-func (d *Daemon) closeRotationService() {
-	if d.rotationDB != nil {
-		d.rotationDB.Close()
-	}
 }
 
 // setAgentVersion records the detected CLI version for an agent provider so
@@ -745,11 +751,19 @@ func (d *Daemon) clearWSHeartbeatAcks() {
 
 // Run starts the daemon: resolves auth, registers runtimes, then polls for tasks.
 func (d *Daemon) Run(ctx context.Context) error {
-	defer d.closeRotationService()
 	// Wrap context so handleUpdate can cancel the daemon for restart.
 	ctx, cancel := context.WithCancel(ctx)
 	d.cancelFunc = cancel
 	d.rootCtx = ctx
+
+	// Close the process-owned span export fd on ANY Run exit — registered before
+	// the first possible return (health-listen / preflight) so an early failure
+	// never leaks the descriptor.
+	defer func() {
+		if d.spanExportFile != nil {
+			_ = d.spanExportFile.Close()
+		}
+	}()
 
 	// Bind health port early to detect another running daemon.
 	healthLn, err := d.listenHealth()
@@ -786,11 +800,6 @@ func (d *Daemon) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := d.startL2Runtime(ctx); err != nil {
-		return err
-	}
-	defer d.stopL2Runtime()
-
 	// Bind and serve the health port before the (potentially slow) preflight,
 	// so `daemon start` and the desktop see a live "starting" daemon instead
 	// of connection-refused while preflightAuth runs. preflightAuth's initial
@@ -813,6 +822,18 @@ func (d *Daemon) Run(ctx context.Context) error {
 
 	// Deregister runtimes on shutdown (uses a fresh context since ctx will be cancelled).
 	defer d.deregisterRuntimes()
+	defer func() { shutdownRouteTelemetryReceiver(d.otlpReceiver) }()
+
+	// Bind the fixed loopback OTLP route-telemetry receiver SYNCHRONOUSLY before
+	// readiness: a port conflict must fail closed here (never admit tasks with a
+	// dead route listener), not surface asynchronously after tasks can run.
+	if d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required {
+		srv, rerr := startRouteTelemetryReceiver(d.cliObs, d.logger)
+		if rerr != nil {
+			return fmt.Errorf("route telemetry receiver bind: %w", rerr)
+		}
+		d.otlpReceiver = srv
+	}
 
 	// Start workspace sync loop to discover newly created workspaces.
 	go d.workspaceSyncLoop(ctx)
@@ -947,6 +968,24 @@ func (d *Daemon) customCommandPathForRuntime(runtimeID string) (string, bool) {
 	return path, true
 }
 
+func (d *Daemon) agentBrainGatewayRequired() bool {
+	return d != nil && d.cfg.AgentBrain.DevelopmentEnabled &&
+		d.cfg.AgentBrain.Neutral.Gateway.Required
+}
+
+// runtimeIsCustom identifies workspace-profile runtimes without consulting or
+// returning their executable paths. Gateway-required tasks reject this state
+// before admission can acquire the stable gateway credential.
+func (d *Daemon) runtimeIsCustom(runtimeID string) bool {
+	if d == nil || runtimeID == "" {
+		return false
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	runtime, ok := d.runtimeIndex[runtimeID]
+	return ok && runtime.ProfileID != ""
+}
+
 func (d *Daemon) registerRuntimesForWorkspace(ctx context.Context, workspaceID string) (*RegisterResponse, string, error) {
 	d.logger.Debug("registering runtimes for workspace", "workspace_id", workspaceID, "agent_count", len(d.cfg.Agents))
 	var runtimes []map[string]string
@@ -1017,11 +1056,10 @@ func (d *Daemon) registerRuntimesForWorkspace(ctx context.Context, workspaceID s
 	return resp, profileSig, nil
 }
 
-// runtimeVersion avoids probing a binary for native HTTP runtimes.
-func runtimeVersion(ctx context.Context, provider, executablePath string) (string, error) {
-	if provider == "nim" {
-		return "native-http", nil
-	}
+// runtimeVersion probes the agent binary for its version. (The former
+// native-HTTP short-circuit for the nim runtime was removed together with that
+// runtime; NVIDIA is reached through OmniRoute like any other provider.)
+func runtimeVersion(ctx context.Context, _ string, executablePath string) (string, error) {
 	return detectAgentVersion(ctx, executablePath)
 }
 
@@ -1050,6 +1088,11 @@ func runtimeVersion(ctx context.Context, provider, executablePath string) (strin
 // (otherwise a transient 5xx would silently flip the daemon into thinking the
 // workspace has zero profiles).
 func (d *Daemon) appendProfileRuntimes(ctx context.Context, workspaceID string, runtimes *[]map[string]string) string {
+	if d.agentBrainGatewayRequired() {
+		// Gateway-required mode exposes only the frozen built-in CLIKind runtime.
+		// Do not fetch, resolve, register, or remember workspace executable paths.
+		return profileSetSignature(nil)
+	}
 	resp, err := d.client.GetRuntimeProfiles(ctx, workspaceID)
 	if err != nil {
 		// Best-effort: never fail registration because profiles couldn't be
@@ -1406,6 +1449,9 @@ func (d *Daemon) refreshWorkspaceRepos(ctx context.Context, workspaceID string) 
 // The workspaceState pointer is never replaced (matches the invariant
 // documented on syncWorkspacesFromAPI and reregisterWorkspaceAfterRuntimeGone).
 func (d *Daemon) refreshWorkspaceRuntimeProfiles(ctx context.Context, workspaceID string) error {
+	if d.agentBrainGatewayRequired() {
+		return nil
+	}
 	refreshCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -3174,14 +3220,111 @@ func gateResumeToReusedWorkdir(task *Task, taskCtx *execenv.TaskContextForEnv, e
 	return reused
 }
 
-func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot int, taskLog *slog.Logger) (TaskResult, error) {
+// resolveTaskAgentEntry applies the last central launch-identity gate. The
+// gateway path accepts no untrusted argv and resolves provider/executable only
+// through the frozen built-in CLIKind mapping. All checks occur before gateway
+// admission can access the injected credential source.
+func (d *Daemon) resolveTaskAgentEntry(task Task, claimedProvider string) (AgentEntry, string, error) {
+	// `agy` is the historical executable name for the Antigravity provider.
+	// Canonicalize before config lookup and before execenv so the alias cannot
+	// bypass Antigravity's isolated HOME preparation.
+	claimedProvider = credentialregistry.CanonicalProvider(claimedProvider)
+	if d.agentBrainGatewayRequired() {
+		if d.runtimeIsCustom(task.RuntimeID) {
+			return AgentEntry{}, "", &agentBrainAdmissionError{class: "custom_runtime_not_allowed"}
+		}
+		if len(d.cfg.ClaudeArgs) != 0 || len(d.cfg.CodexArgs) != 0 || len(d.cfg.CodebuddyArgs) != 0 ||
+			(task.Agent != nil && len(task.Agent.CustomArgs) != 0) {
+			return AgentEntry{}, "", &agentBrainAdmissionError{class: "custom_args_not_allowed"}
+		}
+		builtIn, err := agentBrainBuiltInCLIFor(d.cfg.AgentBrain.CLIKind)
+		if err != nil {
+			return AgentEntry{}, "", &agentBrainAdmissionError{class: "builtin_runtime_mapping_unavailable"}
+		}
+		if claimedProvider != builtIn.Provider {
+			return AgentEntry{}, "", &agentBrainAdmissionError{class: "builtin_runtime_provider_mismatch"}
+		}
+		entry, ok := d.cfg.Agents[builtIn.Provider]
+		if !ok || strings.TrimSpace(entry.Path) == "" {
+			return AgentEntry{}, "", &agentBrainAdmissionError{class: "builtin_runtime_unavailable"}
+		}
+		return entry, builtIn.Provider, nil
+	}
+
+	entry, ok := d.cfg.Agents[claimedProvider]
+	// Legacy migration retains workspace custom-runtime behavior unchanged.
+	if customPath, isCustom := d.customCommandPathForRuntime(task.RuntimeID); isCustom {
+		entry.Path = customPath
+		ok = true
+		d.logger.Info("task uses custom runtime profile command",
+			"task_id", task.ID, "runtime_id", task.RuntimeID,
+			"provider", claimedProvider, "command_path", customPath)
+	}
+	if !ok {
+		return AgentEntry{}, "", fmt.Errorf("no agent configured for provider %q", claimedProvider)
+	}
+	return entry, claimedProvider, nil
+}
+
+// isTaskSupersededStartError reports whether a StartTask failure indicates the
+// claimed task was superseded/cancelled before it could start (the server's
+// StartAgentTask UPDATE matched no row still in a startable state). It matches
+// the current backend signal (pgx "no rows in result set") and the explicit
+// superseded/not-startable contract a future backend may return. Callers treat
+// this as a benign cancellation, never an execution failure.
+func isTaskSupersededStartError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "no rows in result set") ||
+		strings.Contains(msg, "superseded") ||
+		strings.Contains(msg, "not startable")
+}
+
+// holdForCapacityBarrier is a deterministic, cancellable acceptance-only barrier
+// used to validate bounded tier concurrency. When AGENT_BRAIN_TEST_TASK_HOLD_MS
+// is set (dev + gateway-required only), an admitted task holds its acquired
+// lifecycle lease for that interval before the agent launches, so a controlled
+// tier-N run can observe N simultaneous leases without depending on LLM timing.
+// It honors context cancellation so backpressure/cancellation are preserved.
+func (d *Daemon) holdForCapacityBarrier(ctx context.Context) error {
+	if !(d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required) {
+		return nil
+	}
+	raw := strings.TrimSpace(os.Getenv("AGENT_BRAIN_TEST_TASK_HOLD_MS"))
+	if raw == "" {
+		return nil
+	}
+	ms, err := strconv.Atoi(raw)
+	if err != nil || ms <= 0 {
+		return nil
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(time.Duration(ms) * time.Millisecond):
+		return nil
+	}
+}
+
+func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot int, taskLog *slog.Logger) (taskResult TaskResult, runErr error) {
+	admissionStarted := time.Now()
 	// Refuse to spawn an agent without a workspace. An empty workspace_id
 	// here would make MULTICA_WORKSPACE_ID empty in the agent env, and the
 	// CLI would otherwise silently fall back to the user-global config — a
 	// path that can leak operations into an unrelated workspace when
 	// multiple workspaces share a host.
 	if task.WorkspaceID == "" {
+		d.observeAgentBrainAdmission(task, nil, "workspace_required", admissionStarted)
 		return TaskResult{}, fmt.Errorf("refusing to spawn agent: task has no workspace_id (task_id=%s)", task.ID)
+	}
+	entry, provider, err := d.resolveTaskAgentEntry(task, provider)
+	if err != nil {
+		if class, ok := launchIdentityAdmissionClass(err); ok {
+			d.observeAgentBrainAdmission(task, nil, class, admissionStarted)
+		}
+		return TaskResult{}, err
 	}
 
 	// task.Repos is the authoritative repo list for this task — when the
@@ -3192,23 +3335,47 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// bound at the workspace level.
 	d.registerTaskRepos(task.WorkspaceID, task.Repos)
 
-	entry, ok := d.cfg.Agents[provider]
-	// A custom runtime profile (MUL-3284) overrides the executable path: the
-	// runtime's protocol_family is the provider (so agent.New still selects
-	// the right backend), but the actual binary on PATH is the profile's
-	// command_name, resolved at registration time and keyed by RuntimeID here.
-	// Critically, a custom runtime can live on a host that has NO built-in
-	// agent of the same provider installed, so when the runtime is custom we
-	// synthesize an AgentEntry instead of hard-failing on the !ok lookup.
-	if customPath, isCustom := d.customCommandPathForRuntime(task.RuntimeID); isCustom {
-		entry.Path = customPath
-		ok = true
-		d.logger.Info("task uses custom runtime profile command",
-			"task_id", task.ID, "runtime_id", task.RuntimeID,
-			"provider", provider, "command_path", customPath)
+	legacyModel := entry.Model
+	if task.Agent != nil && strings.TrimSpace(task.Agent.Model) != "" {
+		legacyModel = task.Agent.Model
 	}
-	if !ok {
-		return TaskResult{}, fmt.Errorf("no agent configured for provider %q", provider)
+	if d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required && d.agentBrainInitErr != nil {
+		d.observeAgentBrainAdmission(task, nil, "integration_initialization_failed", admissionStarted)
+		return TaskResult{}, &agentBrainAdmissionError{class: "integration_initialization_failed"}
+	}
+	agentBrainPlan, err := d.agentBrain.admitTask(ctx, task, provider, legacyModel)
+	if err != nil {
+		class := "readiness_cancelled"
+		var admissionErr *agentBrainAdmissionError
+		if errors.As(err, &admissionErr) && admissionErr.class != "" {
+			class = admissionErr.class
+		}
+		d.observeAgentBrainAdmission(task, nil, class, admissionStarted)
+		return TaskResult{}, err
+	}
+	if agentBrainPlan != nil {
+		d.observeAgentBrainAdmission(task, agentBrainPlan, "admitted", admissionStarted)
+		task.RuntimeRouterOwner = string(brain.RouterOwnerOmniRoute)
+		entry.Model = string(agentBrainPlan.Task.Request.RouteModel)
+		defer func() {
+			d.agentBrain.recordTerminal(ctx, agentBrainPlan, taskResult.Status, runErr)
+		}()
+		// Deterministic capacity-acceptance barrier (dev + gateway only): hold
+		// the acquired lifecycle lease for a bounded, cancellable interval
+		// independent of any LLM/agent behavior, so a tier-N concurrency run can
+		// observe N simultaneous held leases. No-op unless the env is set.
+		if err := d.holdForCapacityBarrier(ctx); err != nil {
+			return TaskResult{}, err
+		}
+	} else if d.cfg.AgentBrain.DevelopmentEnabled && d.cfg.AgentBrain.Neutral.Gateway.Required {
+		// Gateway-required mode with no admitted plan: fail closed before any
+		// workdir/StartTask work. Outside gateway-required mode admitTask
+		// returns a nil plan and the task proceeds on the existing non-gateway
+		// execution path, so the StartTask-after-workdir-on-disk ordering
+		// invariant (issue #3999 race A) still holds. No provider credential or
+		// account rotation is reintroduced here.
+		d.observeAgentBrainAdmission(task, nil, "gateway_required", admissionStarted)
+		return TaskResult{}, &agentBrainAdmissionError{class: "gateway_required"}
 	}
 
 	agentName := "agent"
@@ -3221,23 +3388,6 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 		skills = task.Agent.Skills
 		instructions = task.Agent.Instructions
 	}
-	var rotationTriggered atomic.Bool
-	if !d.cfg.L2Runtime.Enabled {
-		if next, ok := d.maybeProactiveRotateFromLedger(ctx, task, provider, taskLog, &rotationTriggered); ok {
-			task.PriorSessionID = ""
-			task.PriorWorkDir = ""
-			taskLog.Info("starting task after proactive account rotation",
-				"provider", provider,
-				"account_id", next.AccountID,
-			)
-		}
-	} else if taskLog != nil {
-		taskLog.Debug("rotation: proactive ledger skipped before L2 session start",
-			"runtime_router_owner", runtimeRouterOwnerRustL2,
-			"rotation_noop_reason", rotationNoopReasonL2RouterOwn,
-		)
-	}
-
 	// Prepare isolated execution environment.
 	// Repos are passed as metadata only — the agent checks them out on demand
 	// via `multica repo checkout <url>`.
@@ -3300,17 +3450,17 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// LocalWorkDir into execenv. handleTask already validated + locked the
 	// path; this call is a pure JSON parse over the same task payload.
 	localAssignment, _ := findLocalDirectoryAssignment(task.ProjectResources, d.cfg.DaemonID)
-	credentialAccountHome := ""
-	if !d.cfg.L2Runtime.Enabled {
-		var err error
-		credentialAccountHome, err = d.credentialAccountHomeForTask(ctx, task, provider, taskLog)
-		if err != nil {
-			return TaskResult{}, err
-		}
+	rawCredentialAccountHome := ""
+	credentialAssignmentRequired := false
+	if task.Agent != nil {
+		rawCredentialAccountHome = task.Agent.CredentialAccountHome
+		credentialAssignmentRequired = task.Agent.CredentialAssignmentRequired
 	}
-	rotationRetried := false
+	credentialAccountHome, credentialHomeErr := validateCredentialAccountHome(provider, rawCredentialAccountHome, credentialAssignmentRequired)
+	if credentialHomeErr != nil {
+		return TaskResult{}, credentialHomeErr
+	}
 	startedTask := false
-runAttempt:
 	// Reuse intentionally skipped for local_directory tasks: the prior
 	// WorkDir is the user's own path (always present) but the reuse path
 	// loses the envRoot association the GC loop needs, and re-running
@@ -3337,6 +3487,7 @@ runAttempt:
 			McpConfig:             agentMcpConfig,
 			OpenclawGateway:       openclawGateway,
 			CredentialAccountHome: credentialAccountHome,
+			CredentiallessGateway: credentialAccountHome == "",
 			Task:                  taskCtx,
 		}, d.logger)
 	}
@@ -3353,14 +3504,13 @@ runAttempt:
 			McpConfig:             agentMcpConfig,
 			OpenclawGateway:       openclawGateway,
 			CredentialAccountHome: credentialAccountHome,
+			CredentiallessGateway: credentialAccountHome == "",
 			Task:                  taskCtx,
 		}
 		if localAssignment != nil {
 			prepParams.LocalWorkDir = localAssignment.AbsPath
 		}
-		prepareStarted := time.Now()
 		env, err = execenv.Prepare(prepParams, d.logger)
-		d.observeCredentialPrepare(provider, credentialAccountHome, err, time.Since(prepareStarted).Seconds())
 		if err != nil {
 			return TaskResult{}, fmt.Errorf("prepare execution environment: %w", err)
 		}
@@ -3385,9 +3535,8 @@ runAttempt:
 	if model == "" {
 		model = entry.Model
 	}
-
-	if _, err := d.startL2SessionForTask(ctx, &task, provider, model, env.WorkDir, taskLog); err != nil {
-		return TaskResult{}, err
+	if agentBrainPlan != nil {
+		model = string(agentBrainPlan.Task.Request.RouteModel)
 	}
 
 	// Issue #3999 race A: now that env.WorkDir is on disk, transition the
@@ -3403,6 +3552,20 @@ runAttempt:
 	// taxonomy as before — see MUL-2946 for the classifier contract.
 	if !startedTask {
 		if err := d.client.StartTask(ctx, task.ID); err != nil {
+			// Race hardening (rerun / max_concurrent_tasks=1): a concurrent
+			// RerunIssue can cancel/supersede this claimed task between claim and
+			// start. StartAgentTask (UPDATE ... WHERE status IN
+			// ('dispatched','waiting_local_directory')) then matches 0 rows and the
+			// server returns pgx.ErrNoRows. That is NOT an execution failure — a
+			// newer task for this issue has taken this one's place. Treat it as a
+			// benign cancellation: no CLI is launched, no inference occurs
+			// (fail-closed preserved), and the agent-brain gateway circuit is not
+			// tripped (runErr stays nil). The existing "cancelled" terminal path
+			// records it as a deliberate non-failure state.
+			if isTaskSupersededStartError(err) {
+				d.logger.Info("task superseded before start; treating as cancelled (not an execution failure)", "task_id", task.ID)
+				return TaskResult{Status: "cancelled", Comment: "task superseded by a newer run before start"}, nil
+			}
 			return TaskResult{}, fmt.Errorf("start task failed: %w", err)
 		}
 		startedTask = true
@@ -3500,22 +3663,6 @@ runAttempt:
 		binDir := filepath.Dir(selfBin)
 		agentEnv["PATH"] = binDir + string(os.PathListSeparator) + os.Getenv("PATH")
 	}
-	// Merge the provider-native credential environment only after verifying
-	// that every required isolation lever was prepared. This is deliberately
-	// fail-closed: a Reuse refresh error must not silently omit the isolated
-	// env and let the child inherit a shared credential from the daemon.
-	credentialEnv := env.CredentialEnv(provider)
-	if !d.cfg.L2Runtime.Enabled {
-		credentialEnv, err = isolatedCredentialEnv(provider, credentialAccountHome, env)
-		if err != nil {
-			return TaskResult{}, err
-		}
-	}
-	for key, value := range credentialEnv {
-		agentEnv[key] = value
-	}
-	d.applyProdexEnv(provider, env.RootDir, agentEnv)
-	d.observeCredentialEnvInjection(provider, credentialAccountHome, env)
 	// Point Cursor at per-task project state when managed MCP is present.
 	// The workdir .cursor/mcp.json carries the managed server list, while
 	// CURSOR_DATA_DIR isolates the matching project approvals from the user's
@@ -3544,18 +3691,29 @@ runAttempt:
 	// Bedrock). These are set per-agent via the agent settings UI.
 	// Critical internal variables are blocklisted to prevent accidental or
 	// malicious override of daemon-set values.
+	var customEnvironment map[string]string
+	var exactAgentEnvironment []string
 	if task.Agent != nil {
-		for k, v := range task.Agent.CustomEnv {
-			if isBlockedEnvKey(k) {
-				d.logger.Warn("custom_env: blocked key skipped", "key", k)
-				continue
-			}
-			agentEnv[k] = v
+		customEnvironment = task.Agent.CustomEnv
+	}
+	{
+		if task.Agent != nil && len(task.Agent.McpConfig) > 0 {
+			return TaskResult{}, &agentBrainAdmissionError{class: "managed_mcp_not_accepted_in_g3_slice"}
 		}
+		launch, launchErr := d.agentBrain.buildLaunch(ctx, agentBrainPlan, env, agentEnv, customEnvironment)
+		if launchErr != nil {
+			return TaskResult{}, launchErr
+		}
+		agentEnv, err = childEnvironmentMap(launch.Environment)
+		if err != nil {
+			return TaskResult{}, err
+		}
+		exactAgentEnvironment = launch.Environment.Exec()
 	}
 	backend, err := agent.New(provider, agent.Config{
 		ExecutablePath: entry.Path,
 		Env:            agentEnv,
+		ExactEnv:       exactAgentEnvironment,
 		Logger:         d.logger,
 	})
 	if err != nil {
@@ -3595,23 +3753,8 @@ runAttempt:
 	// provider's default model internally so default-model tasks aren't
 	// misjudged. Discovery errors fail open: if we can't list models, we
 	// keep the persisted level and let the CLI surface any objection.
-	if thinkingLevel != "" {
-		ok, err := agent.ValidateThinkingLevel(ctx, provider, entry.Path, model, thinkingLevel)
-		if err != nil {
-			taskLog.Warn("thinking_level: catalog lookup failed; passing through",
-				"provider", provider,
-				"model", model,
-				"thinking_level", thinkingLevel,
-				"error", err,
-			)
-		} else if !ok {
-			taskLog.Warn("thinking_level: not valid for this (provider, model); skipping injection",
-				"provider", provider,
-				"model", model,
-				"thinking_level", thinkingLevel,
-			)
-			thinkingLevel = ""
-		}
+	if err := d.agentBrain.validateThinking(agentBrainPlan, thinkingLevel); err != nil {
+		return TaskResult{}, &agentBrainAdmissionError{class: "thinking_not_approved"}
 	}
 	execOpts := agent.ExecOptions{
 		Cwd:                       env.WorkDir,
@@ -3662,42 +3805,52 @@ runAttempt:
 		"resume_session", execOpts.ResumeSessionID != "",
 		"timeout", execOpts.Timeout,
 	)
+	// Count a start only at the final execution boundary, after all
+	// fail-closed launch/config/model validation has passed.
+	d.agentBrain.recordLaunch(agentBrainPlan)
 
-	result, tools, err := d.executeAndDrainForTask(ctx, backend, prompt, execOpts, taskLog, task.ID, task, provider, &rotationTriggered)
+	result, tools, err := d.executeAndDrainForTask(ctx, backend, prompt, execOpts, taskLog, task.ID)
+	// Hop 4 (HopCLI) terminal boundary: emit a metadata-only CLI span for the
+	// admitted gateway task, carrying correlation from admission. No prompt,
+	// argv, environment, repository content or process output is included.
+	// d.cliObs is nil until the central observability wiring injects a recorder,
+	// so EmitCLI is a safe no-op today and never affects task execution.
+	if agentBrainPlan != nil {
+		corr := agentBrainPlan.Task.Request.Correlation
+		cliOutcome, cliReason, cliExitClass := "completed", "ok", "success"
+		switch {
+		case ctx.Err() != nil:
+			cliOutcome, cliReason, cliExitClass = "cancelled", "cancelled", "error"
+		case err != nil || result.Status != "completed":
+			cliOutcome, cliReason, cliExitClass = "failed", "error", "error"
+		}
+		// proc_id is the REAL child PID; empty when unknown so EmitCLI fails
+		// closed (no synthetic CLI span) per the acceptance contract.
+		cliProcID := ""
+		if result.ProcessID > 0 {
+			cliProcID = strconv.Itoa(result.ProcessID)
+		}
+		if cliProcID == "" {
+			// No real child PID -> do NOT emit a CLI span (fail closed, never
+			// synthesized). Recorded at debug for observability completeness.
+			if d.logger != nil {
+				d.logger.Debug("cli span skipped: no real proc_id", "task", shortID(task.ID))
+			}
+		} else if emitErr := EmitCLI(d.cliObs, CLIObservation{
+			LaunchID:      brain.AdmissionLaunchID(corr),
+			ProcID:        cliProcID,
+			TaskID:        corr.TaskID,
+			CLIKind:       string(agentBrainPlan.Task.Request.CLIKind),
+			ExitCodeClass: cliExitClass,
+			LatencyMs:     time.Since(taskStart).Milliseconds(),
+			Outcome:       cliOutcome,
+			ReasonCode:    cliReason,
+		}); emitErr != nil && d.logger != nil {
+			d.logger.Warn("agent brain CLI span refused", "error_class", "cli_span_refused")
+		}
+	}
 	if err != nil {
 		return TaskResult{}, err
-	}
-
-	// Fallback: if session resume failed before establishing a session, retry
-	// with a fresh session. We check SessionID == "" to distinguish a resume
-	// failure (no session established) from a failure during actual execution.
-	if result.Status == "failed" && task.PriorSessionID != "" && result.SessionID == "" {
-		firstUsage := result.Usage
-		taskLog.Warn("session resume failed, retrying with fresh session", "error", result.Error)
-		execOpts.ResumeSessionID = ""
-		retryResult, retryTools, retryErr := d.executeAndDrainForTask(ctx, backend, prompt, execOpts, taskLog, task.ID, task, provider, &rotationTriggered)
-		if retryErr != nil {
-			taskLog.Error("fresh session also failed to start", "error", retryErr)
-		} else {
-			result = retryResult
-			result.Usage = mergeUsage(firstUsage, result.Usage)
-			tools = retryTools
-		}
-	}
-
-	if !rotationRetried && d.legacyGoRotationAllowed(task, taskLog, "retry_after_rotation") {
-		if next, ok := d.rotateTaskOnExhaustion(ctx, task, provider, result, taskLog); ok {
-			credentialAccountHome = next.HomeDir
-			task.PriorSessionID = ""
-			task.PriorWorkDir = ""
-			rotationRetried = true
-			rotationTriggered.Store(true)
-			taskLog.Info("retrying task after account rotation",
-				"provider", provider,
-				"account_id", next.AccountID,
-			)
-			goto runAttempt
-		}
 	}
 
 	elapsed := time.Since(taskStart).Round(time.Second)
@@ -3715,6 +3868,11 @@ runAttempt:
 	)
 
 	// Convert agent usage map to task usage entries.
+	// The reasoning tier is read from the agent record, not derived from the
+	// model id: a `-high`/`-thinking` suffix is not a dependable tier signal.
+	// It stays empty when the agent declares none, which the backend persists
+	// as NULL ("not declared") rather than as the base tier.
+	usageThinkingLevel := usageThinkingLevelFor(task)
 	var usageEntries []TaskUsageEntry
 	for model, u := range result.Usage {
 		if u.InputTokens == 0 && u.OutputTokens == 0 && u.CacheReadTokens == 0 && u.CacheWriteTokens == 0 {
@@ -3727,6 +3885,7 @@ runAttempt:
 			OutputTokens:     u.OutputTokens,
 			CacheReadTokens:  u.CacheReadTokens,
 			CacheWriteTokens: u.CacheWriteTokens,
+			ThinkingLevel:    usageThinkingLevel,
 		})
 	}
 
@@ -3881,283 +4040,108 @@ runAttempt:
 	}
 }
 
-func (d *Daemon) credentialAccountHomeForTask(ctx context.Context, task Task, provider string, taskLog *slog.Logger) (string, error) {
-	provider = strings.ToLower(strings.TrimSpace(provider))
-	if provider == "" {
-		return "", errors.New("credential isolation: provider is required")
+// launchIdentityAdmissionClass returns only the bounded failure classes that
+// resolveTaskAgentEntry can produce before normal Agent Brain admission. The
+// static switch prevents arbitrary error text or unrecognized classifications
+// from entering observability metadata.
+func launchIdentityAdmissionClass(err error) (string, bool) {
+	var admissionErr *agentBrainAdmissionError
+	if !errors.As(err, &admissionErr) {
+		return "", false
 	}
-	if !requiresCredentialIsolation(provider) {
-		return "", nil
-	}
-	if d.rotationStore == nil {
-		return "", fmt.Errorf("credential isolation required for provider %q but rotation store is unavailable", provider)
-	}
-	if task.AgentID == "" {
-		return "", fmt.Errorf("credential isolation required for provider %q but task has no agent id", provider)
-	}
-	accountID, err := d.rotationStore.CurrentAssignment(ctx, task.AgentID)
-	if err != nil {
-		if errors.Is(err, rotation.ErrNoAssignment) {
-			return "", fmt.Errorf("credential isolation required for provider %q but no account assignment exists", provider)
-		}
-		taskLog.Debug("rotation: current assignment unavailable; failing closed", "error", err)
-		return "", fmt.Errorf("credential isolation required for provider %q but current assignment is unavailable: %w", provider, err)
-	}
-	account, err := d.rotationStore.GetAccount(ctx, accountID)
-	if err != nil {
-		taskLog.Debug("rotation: assigned account unavailable; failing closed", "error", err)
-		return "", fmt.Errorf("credential isolation required for provider %q but assigned account is unavailable: %w", provider, err)
-	}
-	if !strings.EqualFold(account.Vendor, provider) {
-		return "", fmt.Errorf("credential isolation account vendor mismatch: provider=%q account_vendor=%q", provider, account.Vendor)
-	}
-	if strings.TrimSpace(account.HomeDir) == "" {
-		return "", fmt.Errorf("credential isolation required for provider %q but assigned account has no home dir", provider)
-	}
-	return account.HomeDir, nil
-}
-
-func requiresCredentialIsolation(provider string) bool {
-	switch strings.ToLower(strings.TrimSpace(provider)) {
-	case "codex", "kiro", "antigravity", "glm", "cline", "nim", "opencode":
-		return true
+	switch admissionErr.class {
+	case "custom_runtime_not_allowed",
+		"custom_args_not_allowed",
+		"builtin_runtime_mapping_unavailable",
+		"builtin_runtime_provider_mismatch",
+		"builtin_runtime_unavailable":
+		return admissionErr.class, true
 	default:
-		return false
+		return "", false
 	}
 }
 
-// isolatedCredentialEnv returns the provider-native environment only when all
-// of that provider's isolation levers are present. An assigned account with a
-// partially prepared Environment is an error, never permission to inherit the
-// daemon user's shared credential paths.
-func isolatedCredentialEnv(provider, accountHome string, env *execenv.Environment) (map[string]string, error) {
-	provider = strings.ToLower(strings.TrimSpace(provider))
-	if !requiresCredentialIsolation(provider) {
-		return nil, nil
+func (d *Daemon) observeAgentBrainAdmission(task Task, plan *agentBrainTaskPlan, class string, startedAt time.Time) {
+	if !d.agentBrainGatewayRequired() || d.agentBrainOBS == nil {
+		return
 	}
-	if strings.TrimSpace(accountHome) == "" {
-		return nil, fmt.Errorf("credential isolation required for provider %q but account home is empty", provider)
+	correlation := brain.AdmissionCorrelation(task.ID, firstConfigured(task.ChatSessionID, task.PriorSessionID, task.ID))
+	if plan != nil {
+		correlation = plan.Task.Request.Correlation
 	}
-	if env == nil {
-		return nil, fmt.Errorf("credential isolation required for provider %q but execution environment is unavailable", provider)
+	decision, readiness, failClosedClass := brain.AdmissionClassification(class)
+	if err := d.agentBrainOBS.Emit(brain.AdmissionObservation{
+		Correlation:     correlation,
+		CLIKind:         d.cfg.AgentBrain.CLIKind,
+		RouteModel:      d.cfg.AgentBrain.RouteModel,
+		Decision:        decision,
+		Readiness:       readiness,
+		FailClosedClass: failClosedClass,
+		StartedAt:       startedAt,
+	}); err != nil && d.logger != nil {
+		d.logger.Warn("agent brain admission span refused", "error_class", "invalid_metadata")
 	}
+}
 
-	isolationEnv := env.CredentialEnv(provider)
-	for _, key := range requiredCredentialEnvKeys(provider) {
-		if strings.TrimSpace(isolationEnv[key]) == "" {
-			return nil, fmt.Errorf("credential isolation required for provider %q but %s was not prepared", provider, key)
+// daemonAdmissionSink builds the admission-hop sink. It always logs the span
+// (metadata-only) and, when AGENT_BRAIN_E2E_EXPORT_FILE is set, additionally
+// exports each validated span as one JSONL line to that per-process file
+// (0600) for cross-process trace assembly. Export is fail-closed per record: if
+// the file cannot be opened the JSONL sink is unwritable and surfaces an error
+// on every Emit (visible via the caller's refusal log), never a silent success.
+func daemonAdmissionSink(logger *slog.Logger) (e2e.Sink, *os.File) {
+	logSink := brain.NewAdmissionLogSink(logger)
+	path := strings.TrimSpace(os.Getenv("AGENT_BRAIN_E2E_EXPORT_FILE"))
+	if path == "" {
+		return logSink, nil
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		if logger != nil {
+			logger.Warn("e2e span export open failed; per-record fail-closed", "error_class", "export_open")
 		}
+		return e2e.NewMultiSink(logSink, e2e.NewJSONLSink(nil)), nil
 	}
-	return isolationEnv, nil
+	// O_CREATE's mode only applies to a NEW file; tighten an existing (possibly
+	// broader-mode) export file to 0600 explicitly.
+	if chmodErr := f.Chmod(0o600); chmodErr != nil {
+		if logger != nil {
+			logger.Warn("e2e span export chmod failed; per-record fail-closed", "error_class", "export_chmod")
+		}
+		_ = f.Close()
+		return e2e.NewMultiSink(logSink, e2e.NewJSONLSink(nil)), nil
+	}
+	// The caller (newDaemon) owns f and closes it on Run exit.
+	return e2e.NewMultiSink(logSink, e2e.NewJSONLSink(f)), f
 }
 
-func requiredCredentialEnvKeys(provider string) []string {
-	switch strings.ToLower(strings.TrimSpace(provider)) {
-	case "codex":
-		return []string{"CODEX_HOME"}
-	case "kiro":
-		return []string{"XDG_DATA_HOME"}
-	case "antigravity":
-		return []string{"HOME"}
-	case "cline":
-		return []string{"CLINE_DATA_DIR", "CLINE_SANDBOX", "CLINE_SANDBOX_DATA_DIR"}
-	case "glm", "opencode":
-		return []string{"XDG_DATA_HOME", "XDG_CONFIG_HOME"}
-	case "nim":
-		return []string{"NVIDIA_API_KEY"}
-	default:
+// commitLedgerSecret returns the decoded HMAC secret for commit ledger tokens.
+// Returns nil if not configured (ledger will fail-closed).
+func (d *Daemon) commitLedgerSecret() []byte {
+	raw := d.cfg.CommitLedgerHMACSecret
+	if raw == "" {
 		return nil
 	}
-}
-
-func taskRuntimeRouterOwner(task Task) string {
-	return strings.ToLower(strings.TrimSpace(task.RuntimeRouterOwner))
-}
-
-var ErrL2Owned = errors.New("l2 runtime owns session routing")
-
-func (d *Daemon) legacyGoRotationBlockError(task Task) error {
-	if d.runtimeRouterOwnerForTask(task) == runtimeRouterOwnerRustL2 {
-		return ErrL2Owned
+	// Accept hex-encoded or raw bytes (if >= 32 bytes as-is)
+	if len(raw) >= 64 {
+		decoded, err := hex.DecodeString(raw)
+		if err == nil && len(decoded) >= 32 {
+			return decoded
+		}
+	}
+	if len(raw) >= 32 {
+		return []byte(raw)
 	}
 	return nil
-}
-
-func (d *Daemon) legacyGoRotationAllowed(task Task, taskLog *slog.Logger, path string) bool {
-	err := d.legacyGoRotationBlockError(task)
-	if err == nil {
-		return true
-	}
-	owner := d.runtimeRouterOwnerForTask(task)
-	if taskLog != nil {
-		taskLog.Debug("rotation: legacy Go rotation suppressed for L2-owned session",
-			"task_id", task.ID,
-			"runtime_router_owner", owner,
-			"rotation_noop_reason", rotationNoopReasonL2RouterOwn,
-			"error", err,
-			"path", path,
-		)
-	}
-	return false
-}
-
-func (d *Daemon) maybeProactiveRotateFromLedger(ctx context.Context, task Task, provider string, taskLog *slog.Logger, rotationTriggered *atomic.Bool) (rotation.Account, bool) {
-	if !d.legacyGoRotationAllowed(task, taskLog, "proactive_ledger") {
-		return rotation.Account{}, false
-	}
-	if d.rotationService == nil || d.rotationStore == nil || task.AgentID == "" || task.WorkspaceID == "" || provider == "" {
-		return rotation.Account{}, false
-	}
-	if rotationTriggered != nil && rotationTriggered.Load() {
-		return rotation.Account{}, false
-	}
-	accountID, err := d.rotationStore.CurrentAssignment(ctx, task.AgentID)
-	if err != nil {
-		if !errors.Is(err, rotation.ErrNoAssignment) {
-			taskLog.Debug("rotation: current assignment unavailable for proactive ledger check", "provider", provider, "error", err)
-		}
-		return rotation.Account{}, false
-	}
-	account, err := d.rotationStore.GetAccount(ctx, accountID)
-	if err != nil {
-		taskLog.Debug("rotation: assigned account unavailable for proactive ledger check", "provider", provider, "error", err)
-		return rotation.Account{}, false
-	}
-	if !strings.EqualFold(account.Vendor, provider) {
-		return rotation.Account{}, false
-	}
-	detected := rotation.NewProactiveDetector(0).ShouldRotate(account, time.Now())
-	if !detected.Exhausted {
-		return rotation.Account{}, false
-	}
-	if d.credentialMetrics != nil {
-		d.credentialMetrics.ObserveExhaustionDetected(provider, string(detected.Signal))
-	}
-	return d.rotateTaskProactively(ctx, task, provider, "ledger", taskLog, rotationTriggered)
-}
-
-func (d *Daemon) maybeProactiveRotateOnText(ctx context.Context, task Task, provider, text string, taskLog *slog.Logger, rotationTriggered *atomic.Bool) (rotation.Account, bool) {
-	if !d.legacyGoRotationAllowed(task, taskLog, "proactive_text") {
-		return rotation.Account{}, false
-	}
-	if d.rotationService == nil || task.AgentID == "" || task.WorkspaceID == "" || provider == "" || strings.TrimSpace(text) == "" {
-		return rotation.Account{}, false
-	}
-	if rotationTriggered != nil && rotationTriggered.Load() {
-		return rotation.Account{}, false
-	}
-
-	source := ""
-	if d.warningDetector != nil {
-		if approaching, _, _ := d.warningDetector.DetectWarning(provider, text); approaching {
-			source = "warning_banner"
-		}
-	}
-	if source == "" && d.usageDetector != nil {
-		for _, sample := range d.usageDetector.Detect(provider, text) {
-			if sample.Approaching {
-				source = "usage_sample"
-				break
-			}
-		}
-	}
-	if source == "" {
-		return rotation.Account{}, false
-	}
-	return d.rotateTaskProactively(ctx, task, provider, source, taskLog, rotationTriggered)
-}
-
-func (d *Daemon) rotateTaskProactively(ctx context.Context, task Task, provider, source string, taskLog *slog.Logger, rotationTriggered *atomic.Bool) (rotation.Account, bool) {
-	if rotationTriggered != nil && !rotationTriggered.CompareAndSwap(false, true) {
-		return rotation.Account{}, false
-	}
-	taskLog.Info("rotation: proactive quota signal detected",
-		"provider", provider,
-		"source", source,
-	)
-	return d.rotateTaskWithReason(ctx, task, provider, rotation.ReasonQuotaProactive, taskLog)
-}
-
-func (d *Daemon) rotateTaskOnExhaustion(ctx context.Context, task Task, provider string, result agent.Result, taskLog *slog.Logger) (rotation.Account, bool) {
-	if !d.legacyGoRotationAllowed(task, taskLog, "reactive_exhaustion") {
-		return rotation.Account{}, false
-	}
-	if d.rotationService == nil || d.rotationDetector == nil || task.AgentID == "" || task.WorkspaceID == "" {
-		return rotation.Account{}, false
-	}
-	text := strings.TrimSpace(result.Error + "\n" + result.Output)
-	detected := d.rotationDetector.Detect(provider, text, 0)
-	if !detected.Exhausted {
-		return rotation.Account{}, false
-	}
-	if d.credentialMetrics != nil {
-		d.credentialMetrics.ObserveExhaustionDetected(provider, string(detected.Signal))
-	}
-
-	return d.rotateTaskWithReason(ctx, task, provider, rotation.ReasonQuotaReactive, taskLog)
-}
-
-func (d *Daemon) rotateTaskWithReason(ctx context.Context, task Task, provider string, reason rotation.RotationReason, taskLog *slog.Logger) (rotation.Account, bool) {
-	if !d.legacyGoRotationAllowed(task, taskLog, string(reason)) {
-		return rotation.Account{}, false
-	}
-	if d.rotationService == nil || task.AgentID == "" || task.WorkspaceID == "" {
-		return rotation.Account{}, false
-	}
-	start := time.Now()
-	account, err := d.rotationService.OnExhaustion(ctx, task.AgentID, provider, task.WorkspaceID, reason, start)
-	durationSeconds := time.Since(start).Seconds()
-	if err != nil {
-		if errors.Is(err, rotation.ErrNoAccountAvailable) {
-			if d.credentialMetrics != nil {
-				d.credentialMetrics.SetAllAccountsExhausted(provider, true)
-			}
-			taskLog.Info("rotation: no account available; preserving current failure behavior", "provider", provider)
-			return rotation.Account{}, false
-		}
-		if d.credentialMetrics != nil {
-			d.credentialMetrics.ObserveRotation(provider, string(reason), "error", durationSeconds)
-		}
-		taskLog.Warn("rotation: account rotation failed; preserving current failure behavior", "provider", provider, "error", err)
-		return rotation.Account{}, false
-	}
-	if d.credentialMetrics != nil {
-		d.credentialMetrics.SetAllAccountsExhausted(provider, false)
-		d.credentialMetrics.ObserveRotation(provider, string(reason), "ok", durationSeconds)
-	}
-	return account, true
-}
-
-func (d *Daemon) observeCredentialPrepare(provider, accountHome string, err error, seconds float64) {
-	if d.credentialMetrics == nil || accountHome == "" {
-		return
-	}
-	d.credentialMetrics.ObservePrepare(provider, seconds)
-	result := "ok"
-	if err != nil {
-		result = "error"
-	}
-	d.credentialMetrics.ObserveRestore(provider, result)
-}
-
-func (d *Daemon) observeCredentialEnvInjection(provider, accountHome string, env *execenv.Environment) {
-	if d.credentialMetrics == nil || accountHome == "" || env == nil {
-		return
-	}
-	result := "error"
-	if _, err := isolatedCredentialEnv(provider, accountHome, env); err == nil {
-		result = "ok"
-	}
-	d.credentialMetrics.ObserveEnvInjection(provider, result)
 }
 
 // executeAndDrain runs a backend, drains its message stream (forwarding to the
 // server), and waits for the final result.
 func (d *Daemon) executeAndDrain(ctx context.Context, backend agent.Backend, prompt string, opts agent.ExecOptions, taskLog *slog.Logger, taskID string) (agent.Result, int32, error) {
-	return d.executeAndDrainForTask(ctx, backend, prompt, opts, taskLog, taskID, Task{}, "", nil)
+	return d.executeAndDrainForTask(ctx, backend, prompt, opts, taskLog, taskID)
 }
 
-func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backend, prompt string, opts agent.ExecOptions, taskLog *slog.Logger, taskID string, task Task, provider string, rotationTriggered *atomic.Bool) (agent.Result, int32, error) {
+func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backend, prompt string, opts agent.ExecOptions, taskLog *slog.Logger, taskID string) (res agent.Result, tools int32, err error) {
 	// Wrap the caller's ctx so the idle watchdog (below) can interrupt both
 	// the agent subprocess (via the ctx passed to backend.Execute) AND the
 	// drain loop with a single cancel. Without this layer the backend would
@@ -4166,12 +4150,41 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 	agentCtx, agentCancel := context.WithCancel(ctx)
 	defer agentCancel()
 
+	// --- CommitLedger: create per-task ledger ---
+	var taskLedger *commitledger.Ledger
+	var ledgerErr error
+	hmacSecret := d.commitLedgerSecret()
+	if len(hmacSecret) >= 32 {
+		taskLedger, ledgerErr = commitledger.New(commitledger.Config{
+			HMACSecret: hmacSecret,
+			TaskID:     taskID,
+		})
+		if ledgerErr != nil {
+			taskLog.Warn("commitledger: failed to create ledger; replay gate will fail closed", "error", ledgerErr)
+			taskLedger = commitledger.NewFailClosed(taskID)
+		}
+	} else {
+		// No valid HMAC secret configured — fail closed
+		taskLedger = commitledger.NewFailClosed(taskID)
+	}
+	if d.commitLedgers != nil {
+		d.commitLedgers.Register(taskID, taskLedger)
+	}
+	defer func() {
+		// On function exit: mark any unresolved entries ambiguous, close.
+		taskLedger.MarkAllUnresolvedAmbiguous()
+		taskLedger.Close()
+	}()
+
 	session, err := backend.Execute(agentCtx, prompt, opts)
 	if err != nil {
 		taskLog.Debug("backend execute returned error", "error", err)
 		return agent.Result{}, 0, err
 	}
 	taskLog.Debug("backend started, draining messages")
+	// Surface the real child PID for the e2e HopCLI proc_id. Never synthesized;
+	// 0 if the backend did not record it (CLI span then fails closed).
+	defer func() { res.ProcessID = session.ProcessID }()
 
 	// Bound the drain loop only when there is a wall-clock cap. With a positive
 	// opts.Timeout, give the drain a slightly longer deadline than the backend
@@ -4216,6 +4229,10 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 		go d.runIdleWatchdog(agentCtx, idleWindow, d.cfg.AgentToolWatchdog, &lastActivityAt, &inFlightTools, &idleWatchdogFired, &idleWatchdogThreshold, agentCancel, session.Messages, taskLog, taskID)
 	}
 
+	// drainFinished is closed by the drain goroutine when it has completed
+	// its final flush. The bounded join waits on this before returning.
+	drainFinished := make(chan struct{})
+
 	go func() {
 		var seq atomic.Int32
 		var mu sync.Mutex
@@ -4249,11 +4266,16 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 			mu.Unlock()
 
 			if len(toSend) > 0 {
-				sendCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				if err := d.client.ReportTaskMessages(sendCtx, taskID, toSend); err != nil {
+				sendCtx, cancel := context.WithTimeout(drainCtx, 5*time.Second)
+				ackSeq, err := d.client.ReportTaskMessagesWithAck(sendCtx, taskID, toSend)
+				if err != nil {
 					taskLog.Debug("failed to report task messages", "error", err)
 				} else {
 					taskLog.Debug("reported task messages", "count", len(toSend), "last_seq", toSend[len(toSend)-1].Seq)
+					// --- CommitLedger: process server output ack ---
+					if ackSeq > 0 && d.commitAckHandler != nil {
+						d.commitAckHandler.ProcessOutputAck(taskID, ackSeq)
+					}
 				}
 				cancel()
 			}
@@ -4262,17 +4284,9 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
 
-		done := make(chan struct{})
-		go func() {
-			for {
-				select {
-				case <-ticker.C:
-					flush()
-				case <-done:
-					return
-				}
-			}
-		}()
+		// Single flush owner: the message loop below is the sole goroutine
+		// that calls flush(). No separate ticker goroutine — the ticker is
+		// consumed inline in the same select, guaranteeing no concurrent flush.
 
 		var sessionPinned atomic.Bool
 		for {
@@ -4308,12 +4322,19 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 					n := toolCount.Add(1)
 					inFlightTools.Add(1)
 					taskLog.Info(fmt.Sprintf("tool #%d: %s", n, msg.Tool))
+					// Atomically claim the seq FIRST so ledger and batch use the same value.
+					s := seq.Add(1)
+					// --- CommitLedger: record tool_use (started, not yet committed) ---
+					var toolToken string
 					if msg.CallID != "" {
 						mu.Lock()
 						callIDToTool[msg.CallID] = msg.Tool
 						mu.Unlock()
+						toolToken, _ = taskLedger.RecordToolUse(msg.CallID, int64(s))
 					}
-					s := seq.Add(1)
+					if toolToken != "" {
+						taskLog.Debug("tool_use recorded", "seq", s, "tool", msg.Tool, "token", toolToken)
+					}
 					mu.Lock()
 					batch = append(batch, TaskMessageData{
 						Seq:   int(s),
@@ -4348,7 +4369,14 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 						toolName = callIDToTool[msg.CallID]
 						mu.Unlock()
 					}
-					taskLog.Info("tool_result observed", "seq", s, "tool", toolName, "call_id", msg.CallID)
+					// --- CommitLedger: record tool_result (committed immediately) ---
+					if msg.CallID != "" {
+						toolToken := taskLedger.TokenizeCallID(msg.CallID)
+						_ = taskLedger.RecordToolResult(toolToken)
+						taskLog.Info("tool_result committed", "seq", s, "tool", toolName, "token", toolToken)
+					} else {
+						taskLog.Info("tool_result observed", "seq", s, "tool", toolName)
+					}
 					mu.Lock()
 					batch = append(batch, TaskMessageData{
 						Seq:    int(s),
@@ -4366,7 +4394,6 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 				case agent.MessageText:
 					if msg.Content != "" {
 						taskLog.Debug("agent", "text", truncateLog(msg.Content, 200))
-						d.maybeProactiveRotateOnText(ctx, task, provider, msg.Content, taskLog, rotationTriggered)
 						mu.Lock()
 						pendingText.WriteString(msg.Content)
 						mu.Unlock()
@@ -4382,17 +4409,52 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 					})
 					mu.Unlock()
 				}
+			case <-ticker.C:
+				flush()
 			case <-drainCtx.Done():
 				goto drainDone
 			}
 		}
 	drainDone:
-		close(done)
+		// Single final flush: we are the sole flush owner, no other goroutine
+		// can call flush() concurrently.
 		flush()
+		close(drainFinished)
 	}()
+
+	// Bounded join contract (frozen, absolute invariant):
+	// Function returns ONLY after drainFinished is observed. No exceptions.
+	// 1. Wait finalFlushBudget for drainFinished (flush completes → done)
+	// 2. If budget expires: cancel drainCtx to abort context-bound I/O
+	// 3. Block on drainFinished unconditionally. The cancelled context ensures
+	//    all client I/O will eventually return (TCP/HTTP timeouts), so this
+	//    cannot block forever in practice.
+	const finalFlushBudget = 10 * time.Second
+
+	joinDrain := func() bool {
+		select {
+		case <-drainFinished:
+			drainCancel()
+			return true // normal: flush completed within budget
+		case <-time.After(finalFlushBudget):
+		}
+		// Budget expired: cancel I/O, then block until goroutine exits.
+		drainCancel()
+		taskLog.Warn("drain flush budget expired; cancelled, blocking on termination")
+		<-drainFinished // absolute: never return without this
+		taskLedger.MarkAllUnresolvedAmbiguous()
+		return false // flush was cancelled, state is ambiguous
+	}
 
 	select {
 	case result := <-session.Result:
+		joined := joinDrain()
+		if !joined {
+			return agent.Result{
+				Status: "failed",
+				Error:  "drain flush budget expired; commit state ambiguous",
+			}, toolCount.Load(), nil
+		}
 		if idleWatchdogFired.Load() {
 			// The backend's wait goroutine (e.g. claude.go) translates the
 			// SIGKILL we delivered via agentCancel into Status="aborted".
@@ -4406,6 +4468,11 @@ func (d *Daemon) executeAndDrainForTask(ctx context.Context, backend agent.Backe
 		}
 		return result, toolCount.Load(), nil
 	case <-drainCtx.Done():
+		// drainCtx already cancelled (timeout or parent cancel). Wait for
+		// drain goroutine to observe the cancellation and exit.
+		// MUST block until drainFinished — never return while goroutine is live.
+		<-drainFinished
+		taskLedger.MarkAllUnresolvedAmbiguous()
 		// Idle watchdog cancels via agentCancel(), which propagates here as
 		// context.Canceled. Check this BEFORE the generic cancelled/timeout
 		// classifiers so a watchdog-induced stop isn't misreported as
@@ -4685,9 +4752,6 @@ func composeOpenclawIncludeRoots(addRoot, userValue string) (string, bool) {
 func isBlockedEnvKey(key string) bool {
 	upper := strings.ToUpper(key)
 	if strings.HasPrefix(upper, "MULTICA_") {
-		return true
-	}
-	if strings.HasPrefix(upper, "PRODEX_") {
 		return true
 	}
 	switch upper {

@@ -76,6 +76,7 @@ export type { Attachment } from "./attachment";
 export { attachmentDownloadPath, attachmentIdFromDownloadURL, contentReferencesAttachment } from "./attachment-url";
 export type {
   ChatSession,
+  CreateChatSessionRequest,
   ChatMessage,
   ChatMessagesPage,
   ChatPendingTask,

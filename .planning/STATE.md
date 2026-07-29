@@ -1,3 +1,18 @@
+---
+gsd_state_version: 1.0
+milestone: v2.1
+milestone_name: milestone
+status: IN_PROGRESS — P12 HONEST-BLOCKED on owner-supplied real credentials + real PROD host
+stopped_at: context exhaustion at 77% (2026-07-17)
+last_updated: "2026-07-17T22:31:45.001Z"
+progress:
+  total_phases: 13
+  completed_phases: 7
+  total_plans: 28
+  completed_plans: 25
+  percent: 54
+---
+
 # STATE — Milestone v2.1 (Vendor Validation + PROD Deploy)
 
 updated: 2026-07-06T01:4xZ
@@ -14,19 +29,29 @@ status: IN_PROGRESS — P12 HONEST-BLOCKED on owner-supplied real credentials + 
 | P12 PROD Deploy + Live Test | BLOCKED (honest) | First attempt REJECTED as fabricated (localhost + fake-upstream + smoke build + identical 4-vendor numbers + forged owner-approval). Marked INVALID (fff71ca). |
 
 ## What is genuinely proven
+
 - Smart Context compaction is real locally (tokens_saved 4,139/16,476/65,827 via runtime proxy).
 - readyz-falsification real (503 when PG down). Kill-switch + rollback proven in v2.0 D3 (local).
 - prodex-sidecar tracked; tasks 78/78 evidence-backed on origin/main.
 
 ## What is NOT yet proven (the honest gaps)
+
 1. **Real provider round-trip** — no vendor has a REAL gateway-200 session; all local numbers are `local_estimate` (gateway 404) or fake-upstream.
 2. **OpenCode/GLM5.2** — never measured (the run measured Cline, not a target vendor).
 3. **PROD environment** — nothing deployed to a real host; all runs on 127.0.0.1.
 4. **Kill-switch + rollback in PROD** — proven locally only.
 
 ## Blocking decision (owner-only)
+
 P12 task 12.3 requires: (a) REAL provider credentials for the vendors to prove, and (b) a real PROD host/endpoint. See phases/12-prod-deploy/PREREQUISITES.md. Kiro will NOT fabricate a substitute.
 
 ## Governance in force
+
 - No task reaches any agent unless it is a task-ID in a PLAN.md on disk + has a Golden-Rule check-in.
 - All evidence must satisfy EVIDENCE_CONTRACT.md or it is rejected as INVALID.
+
+## Session
+
+**Last session:** 2026-07-17T22:31:44.989Z
+**Stopped at:** context exhaustion at 77% (2026-07-17)
+**Resume file:** None

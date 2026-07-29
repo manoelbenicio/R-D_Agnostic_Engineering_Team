@@ -862,3 +862,59 @@ func TestBuildClaudeArgsExtraArgsBeforeCustomArgsAndFiltersBoth(t *testing.T) {
 		t.Fatalf("expected extra args before custom args, got %v", args)
 	}
 }
+
+func TestClaudeCommandLoggingRedactsSensitiveArgv(t *testing.T) {
+	var output bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&output, nil))
+	args := []string{
+		"-p",
+		"--strict-mcp-config",
+		"--permission-mode", "bypassPermissions",
+		"--model", "synthetic/provider-model",
+		"--resume", "synthetic-resume-identifier",
+		"--mcp-config", "/synthetic/private/mcp-settings.json",
+		"--settings=/synthetic/private/claude-settings.json",
+		"--provider-config", "/synthetic/private/provider.toml",
+		"--home-dir=/synthetic/private/claude-home",
+		"--routing-url", "https://routing.provider.invalid/v1",
+		"--base-url=https://api.provider.invalid/v1",
+		"--auth-token=synthetic-auth-value",
+		"--header", "Authorization: Bearer synthetic-bearer-value",
+		"OPENAI_API_KEY=synthetic-inline-value",
+		"--append-system-prompt", "synthetic-private-instruction",
+		"--max-turns", "25",
+		"--verbose",
+	}
+
+	logAgentCommand(logger, "/synthetic/private/home/bin/claude", args)
+	logged := output.String()
+	for _, forbidden := range []string{
+		"synthetic/provider-model",
+		"synthetic-resume-identifier",
+		"/synthetic/private/mcp-settings.json",
+		"/synthetic/private/claude-settings.json",
+		"/synthetic/private/provider.toml",
+		"/synthetic/private/claude-home",
+		"https://routing.provider.invalid/v1",
+		"https://api.provider.invalid/v1",
+		"synthetic-auth-value",
+		"synthetic-bearer-value",
+		"synthetic-inline-value",
+		"synthetic-private-instruction",
+		"/synthetic/private/home/bin/claude",
+	} {
+		if strings.Contains(logged, forbidden) {
+			t.Fatal("Claude command log exposed a synthetic sensitive argument")
+		}
+	}
+	for _, useful := range []string{
+		"agent command", "exec=claude", "--model", "--resume", "--mcp-config",
+		"--provider-config", "--home-dir", "--routing-url", "--strict-mcp-config",
+		"--permission-mode", "bypassPermissions", "--max-turns", "25", "--verbose",
+		redactedAgentArgValue, "arg_count=",
+	} {
+		if !strings.Contains(logged, useful) {
+			t.Fatalf("Claude command log lost safe diagnostic marker %q", useful)
+		}
+	}
+}

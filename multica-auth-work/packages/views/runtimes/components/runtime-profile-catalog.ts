@@ -76,6 +76,52 @@ export interface ProfileFormValues {
   description: string;
 }
 
+// Per-family create defaults used to pre-fill the "Create from this" flow so
+// admins never face empty mystery fields. `commandName` MIRRORS the command
+// skeleton the daemon spawns (server/pkg/agent/agent.go `launchHeaders`), with
+// the trailing transport/mode parenthetical stripped so the value is a real
+// command the admin can extend — e.g. launchHeaders "claude (stream-json)"
+// becomes "claude", "agy -p (print mode)" becomes "agy -p". Families whose
+// launch header is a native (non-CLI) backend have NO command skeleton, so the
+// command is left empty rather than inventing one (`nim` = native HTTP). Keep
+// this in exact sync with launchHeaders; never invent a command.
+export const RUNTIME_PROFILE_FORM_DEFAULTS: Record<
+  RuntimeProtocolFamily,
+  { displayName: string; commandName: string }
+> = {
+  claude: { displayName: "Claude", commandName: "claude" },
+  codebuddy: { displayName: "CodeBuddy", commandName: "codebuddy" },
+  cline: { displayName: "Cline", commandName: "cline --acp" },
+  codex: { displayName: "Codex", commandName: "codex app-server" },
+  copilot: { displayName: "Copilot", commandName: "copilot" },
+  // Native HTTP backend — no CLI launch skeleton in launchHeaders, so no
+  // command is pre-filled (never invented). The admin supplies one.
+  nim: { displayName: "NVIDIA NIM", commandName: "" },
+  opencode: { displayName: "OpenCode", commandName: "opencode run" },
+  openclaw: { displayName: "OpenClaw", commandName: "openclaw agent" },
+  hermes: { displayName: "Hermes", commandName: "hermes acp" },
+  gemini: { displayName: "Gemini", commandName: "gemini" },
+  pi: { displayName: "Pi", commandName: "pi" },
+  cursor: { displayName: "Cursor", commandName: "cursor-agent" },
+  kimi: { displayName: "Kimi", commandName: "kimi acp" },
+  kiro: { displayName: "Kiro", commandName: "kiro-cli acp" },
+  antigravity: { displayName: "Antigravity", commandName: "agy -p" },
+};
+
+// Builds the initial create-form values for a chosen base family. Unknown
+// families (should be impossible given the closed union) fall back to empty
+// fields so nothing is fabricated.
+export function createProfileFormDefaults(
+  family: RuntimeProtocolFamily,
+): ProfileFormValues {
+  const defaults = RUNTIME_PROFILE_FORM_DEFAULTS[family];
+  return {
+    displayName: defaults?.displayName ?? "",
+    commandName: defaults?.commandName ?? "",
+    description: "",
+  };
+}
+
 export type ProfileFormErrorField = "displayName" | "commandName";
 
 // Pure, synchronous validation for the create/edit form. Returns the set of

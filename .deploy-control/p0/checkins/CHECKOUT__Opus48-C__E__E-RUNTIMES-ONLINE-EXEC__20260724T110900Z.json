@@ -1,0 +1,37 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-24T11:09:00Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "E",
+  "task_ids": ["E-RUNTIMES-ONLINE-EXEC"],
+  "status": "STOOD_DOWN_HANDOFF",
+  "reassigned_to": "Principal (w5:p9)",
+  "reported_to": ["w5:p9", "w5:p1"],
+  "executed_anything": false,
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/E-runtimes-online-exec.md"],
+  "evidence": [
+    ".deploy-control/p0/evidence/E-runtimes-online-prep.md",
+    ".deploy-control/p0/evidence/E-runtimes-online-exec.md"
+  ],
+  "handoff_findings": {
+    "cli_installed": "5/5 + claude (codex ~/.nvm/.../codex; cline ~/.nvm/.../cline; agy ~/.local/bin/agy; kiro-cli ~/.local/bin/kiro-cli; opencode ~/.opencode/bin/opencode)",
+    "auth_provisional_UNVERIFIED": {
+      "codex": "likely-authed (~/.codex/auth.json present) — confirm `codex doctor`",
+      "cline": "likely-configured (~/.cline/data/settings/providers.json present) — confirm `cline auth <provider>`",
+      "kiro": "likely-authed (~/.local/share/kiro-cli + ~/.kiro present) — confirm Builder-ID",
+      "antigravity": "LIKELY NOT AUTHED (~/.gemini/antigravity-cli ABSENT) — `agy` Google eligibility/login, GODEBUG=netdns=cgo per A5",
+      "opencode": "LIKELY NOT AUTHED (~/.local/share/opencode/auth.json ABSENT) — `opencode auth login`"
+    },
+    "auth_caveats": "host NOT confirmed orq1; $HOME=cred slot slot-109; authoritative auth in ~/.agent-cred-homes enrollment, not user home; confirm on orq1 as runtime user",
+    "registration_mechanics": "daemon POST /api/daemon/register (client.go:459) -> RegisterResponse.Runtimes; claude 588ebcba is a registered Runtime row; online while daemon registered+heartbeating; built-in CLIKinds + optional runtime profiles (multica runtime profile set-path); observe via `multica runtime list`",
+    "start_plan": "per provider: (1) auth [agy+opencode = credential-owner steps] (2) ensure runtime/agent configured (3) LANE D healthy new-sha daemon re-registers — NO manual per-runtime start / NO daemon restart (4) verify `multica runtime list`/agent_runtime shows all 5 ONLINE + claude 588ebcba"
+  },
+  "why_no_execution": "STAND DOWN per lead (reassigned to Principal w5:p9). Gate never opened: no LANE D daemon-healthy-on-new-sha confirmation; backend unreachable from this pane (127.0.0.1:8080/health refused).",
+  "non_claims": [
+    "nothing executed: no runtime started/registered, no daemon restart, no login/auth run, no source/config edited, no secret read/printed",
+    "5-runtime agent_runtime online verification NOT performed (handed to w5:p9)"
+  ],
+  "blocker": null
+}

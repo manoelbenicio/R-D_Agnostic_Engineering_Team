@@ -1,0 +1,28 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/R1-test-lock-activation.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/R1-test-lock-activation.md",
+    "multica-auth-work/server/internal/daemon/runtimeenv/adapter_test.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/cline_test.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/env_test.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/isolation_g4_test.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/model_test.go"
+  ],
+  "finished_at": "2026-07-21T23:19:36Z",
+  "lane": "A9-R1",
+  "last_heartbeat_at": "2026-07-21T23:19:36Z",
+  "pane_id": "w6:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T23:11:52Z",
+  "status": "DONE",
+  "summary": "Lock-activation complete; D1+D2 applied and R1 authorized. Releasing locks to re-acquire under P0-R1-TEST-IMPLEMENTATION. Artifact retained with D1 flip map.",
+  "task": "P0-R1-TEST-LOCK-ACTIVATION",
+  "validation": "W1 D1+D2 verified applied in source (adapter.go CLIOpenAICompatible=AdapterReady+ProtocolOpenAIChat; env.go Cline trusted-inject branch with ClineDataDir). No test edited under this record. Transitioning to implementation."
+}

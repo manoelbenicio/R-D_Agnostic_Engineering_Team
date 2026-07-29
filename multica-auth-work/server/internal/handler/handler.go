@@ -18,6 +18,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/analytics"
 	"github.com/multica-ai/multica/server/internal/auth"
 	"github.com/multica-ai/multica/server/internal/cloudruntime"
+	"github.com/multica-ai/multica/server/internal/credentialregistry"
 	"github.com/multica-ai/multica/server/internal/daemonws"
 	"github.com/multica-ai/multica/server/internal/events"
 	"github.com/multica-ai/multica/server/internal/integrations/lark"
@@ -117,17 +118,19 @@ type Handler struct {
 	CFSigner              *auth.CloudFrontSigner
 	Analytics             analytics.Client
 	AuthProvider          AuthProvider
+	PasswordProvisioner   PasswordCredentialProvisioner
 	// Metrics is the shared business-metrics collector built by main.go.
 	// May be nil in tests / self-hosted with the metrics listener disabled;
 	// every Record* method is nil-safe and obsmetrics.RecordEvent treats a
 	// nil Metrics as "PostHog only".
-	Metrics              *obsmetrics.BusinessMetrics
-	PATCache             *auth.PATCache
-	DaemonTokenCache     *auth.DaemonTokenCache
-	MembershipCache      *auth.MembershipCache
-	WebhookRateLimiter   WebhookRateLimiter
-	WebhookIPRateLimiter WebhookRateLimiter
-	CloudRuntime         cloudRuntimeProxy
+	Metrics               *obsmetrics.BusinessMetrics
+	PATCache              *auth.PATCache
+	DaemonTokenCache      *auth.DaemonTokenCache
+	MembershipCache       *auth.MembershipCache
+	WebhookRateLimiter    WebhookRateLimiter
+	WebhookIPRateLimiter  WebhookRateLimiter
+	CloudRuntime          cloudRuntimeProxy
+	CredentialAssignments *credentialregistry.Resolver
 	// Lark integration. All three are nil when the Lark master key
 	// (MULTICA_LARK_SECRET_KEY) is unset; the corresponding HTTP
 	// handlers return 503 in that case so a misconfigured self-host
@@ -221,7 +224,8 @@ func New(queries *db.Queries, txStarter txStarter, hub *realtime.Hub, bus *event
 			BaseURL: cfg.CloudRuntimeFleetURL,
 			Timeout: cfg.CloudRuntimeFleetTimeout,
 		}),
-		cfg: cfg,
+		CredentialAssignments: credentialregistry.NewResolver(executor),
+		cfg:                   cfg,
 	}
 }
 

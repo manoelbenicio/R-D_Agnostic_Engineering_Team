@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:00:40Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "R3",
+  "task_ids": ["5.2", "6.1"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/R3-deploy-readiness.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "/home/ec2-user/goroot/go/bin/go test -count=1 ./internal/daemon/deploy/...", "exit_code": 0, "assertions_or_tests": 6, "result": "PASS"},
+    {"command": "/home/ec2-user/goroot/go/bin/go vet ./internal/daemon/deploy/...", "exit_code": 0, "assertions_or_tests": "n/a", "result": "PASS"},
+    {"command": "/home/ec2-user/goroot/go/bin/gofmt -l internal/daemon/deploy", "exit_code": 0, "assertions_or_tests": "0 files listed", "result": "PASS"}
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/R3-deploy-readiness.md",
+    ".deploy-control/p0/checkins/CHECKIN__Codex56-A__R3__REC-DEPLOY-READINESS__20260722T105907Z.json"
+  ],
+  "requirements": ["AB-REQ-33"],
+  "openspec_tasks": ["5.2", "6.1"],
+  "summary": "Deploy package verified GREEN (gofmt -l empty; go vet exit 0; go test -count=1 PASS, 6 tests, exit 0; git diff --check CLEAN). Task 6.1 evidence (read-only): gateway ReadinessChecker.CheckGatewayReadiness enforces distinct ordered fail-closed gates Live -> Authenticated -> ModelRegistryReady(immutable registry.Version via X-OmniRoute-Registry-Version) -> SelectedModelReady(model.Available) -> SelectedProtocolReady(per-model protocol match) under strict fail-closed policy; header/body revision mismatch -> ErrorProtocol with no upstream echo.",
+  "non_claims": [
+    "No product source edited; no RouteModel/route invented; deploy/** unchanged.",
+    "6.1 is evidence-only; checkbox NOT closed (Principal adjudicates).",
+    "Zero inference, zero secret read, zero deploy; no live readiness/protocol conformance executed.",
+    "Actual live OmniRoute revision string and live protocol conformance remain gated (live_runs.*=false, BLK-AVAIL, D-V3-25B).",
+    "Server-wide build/test not run (L1/L8 scope)."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "L2", "reason": "6.1 readiness/revision source lives in gateway/** (L2-owned); this artifact is read-only evidence for it, not an edit.", "file": "server/internal/daemon/gateway/health_models.go"}
+  ]
+}

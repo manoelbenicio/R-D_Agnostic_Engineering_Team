@@ -1,0 +1,39 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/W1-source-lock-activation.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/W1-source-lock-activation.md",
+    "multica-auth-work/server/cmd/multica/cmd_daemon.go",
+    "multica-auth-work/server/go.mod",
+    "multica-auth-work/server/internal/daemon/brain_integration.go",
+    "multica-auth-work/server/internal/daemon/config.go",
+    "multica-auth-work/server/internal/daemon/daemon.go",
+    "multica-auth-work/server/internal/daemon/execenv/cline_home.go",
+    "multica-auth-work/server/internal/daemon/health.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/adapter.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/env.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/home.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/policy.go",
+    "multica-auth-work/server/internal/handler/agent_thinking_test.go",
+    "multica-auth-work/server/pkg/agent/models.go",
+    "multica-auth-work/server/pkg/agent/models_test.go",
+    "multica-auth-work/server/pkg/agent/nim.go",
+    "multica-auth-work/server/pkg/agent/nim_test.go"
+  ],
+  "finished_at": "2026-07-21T23:09:31Z",
+  "lane": "W1-LOCKS",
+  "last_heartbeat_at": "2026-07-21T23:09:31Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T23:06:09Z",
+  "status": "DONE",
+  "summary": "Activation complete; transitioning to authorized P0-W1-IMPLEMENTATION (GLM-ready D1-D7 only, live_runs_authorized=false).",
+  "task": "P0-W1-SOURCE-LOCK-ACTIVATION",
+  "validation": "activation verified: 16 W1 locks acquired+existence-checked, pairwise zero-overlap tool-enforced, A7/A8 NO_REACHABLE_RESIDUAL consumed, D1-D7 + disjoint R1/R3 test handoffs frozen; no source edit/test/live run"
+}

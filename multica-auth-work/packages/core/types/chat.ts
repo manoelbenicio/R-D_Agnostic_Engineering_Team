@@ -13,6 +13,19 @@ export interface ChatSession {
   updated_at: string;
 }
 
+/**
+ * Request body for POST /api/chat/sessions.
+ *
+ * `agent_id` is OPTIONAL: an untargeted chat omits it and the server routes the
+ * session to the workspace's default TL/Manager squad leader (chat-orchestration
+ * default routing). Providing an explicit `agent_id` is the direct-to-agent
+ * escape hatch that bypasses the TL. `title` is always optional.
+ */
+export interface CreateChatSessionRequest {
+  agent_id?: string;
+  title?: string;
+}
+
 export interface PendingChatTaskItem {
   task_id: string;
   status: string;

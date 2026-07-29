@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A7",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/R7-residual-scan.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/R7-residual-scan.md"
+  ],
+  "finished_at": "2026-07-22T11:04:35Z",
+  "lane": "R7",
+  "last_heartbeat_at": "2026-07-22T11:04:35Z",
+  "pane_id": "wB:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:00:41Z",
+  "status": "DONE",
+  "summary": "DONE: NO_REACHABLE_RESIDUAL across startup/config/health/recovery/fallback paths. Zero findings to route.",
+  "task": "REC-RESIDUAL-SCAN",
+  "validation": "git diff --check: PASS exit_code=0; rg 5 pattern families across 9 scan areas: NO_REACHABLE_RESIDUAL; all mock/fake/stub confined to _test.go; all placeholder/fallback patterns are legitimate production architecture"
+}

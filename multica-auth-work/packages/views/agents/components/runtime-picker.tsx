@@ -15,6 +15,57 @@ import { useT } from "../../i18n";
 
 export type RuntimeFilter = "mine" | "all";
 
+const RUNTIME_PROVIDER_LABELS: Readonly<Record<string, string>> = {
+  claude: "Claude",
+  codebuddy: "CodeBuddy",
+  cline: "Cline",
+  codex: "Codex",
+  copilot: "GitHub Copilot",
+  nim: "NVIDIA NIM",
+  opencode: "OpenCode",
+  openclaw: "OpenClaw",
+  hermes: "Hermes",
+  gemini: "Gemini",
+  pi: "Pi",
+  cursor: "Cursor",
+  kimi: "Kimi",
+  kiro: "Kiro",
+  antigravity: "Antigravity",
+  qoder: "Qoder",
+};
+
+/** Human-readable identity for built-in and forward-compatible runtimes. */
+export function runtimeProviderLabel(provider: string): string {
+  const normalized = provider.trim().toLowerCase();
+  return RUNTIME_PROVIDER_LABELS[normalized] ?? (provider.trim() || "Runtime");
+}
+
+function RuntimeProviderMark({
+  provider,
+  className,
+}: {
+  provider: string;
+  className: string;
+}) {
+  const normalized = provider.trim().toLowerCase();
+  if (normalized === "cline" || normalized === "nim") {
+    return (
+      <span
+        aria-hidden="true"
+        className={`${className} inline-flex items-center justify-center rounded bg-muted px-0.5 font-mono text-[8px] font-bold leading-none text-foreground`}
+      >
+        {normalized === "cline" ? "CL" : "NIM"}
+      </span>
+    );
+  }
+
+  return (
+    <span aria-hidden="true" className="inline-flex shrink-0">
+      <ProviderLogo provider={provider} className={className} />
+    </span>
+  );
+}
+
 export function RuntimePicker({
   runtimes,
   runtimesLoading,
@@ -116,7 +167,7 @@ export function RuntimePicker({
           {runtimesLoading ? (
             <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
           ) : selectedRuntime ? (
-            <ProviderLogo
+            <RuntimeProviderMark
               provider={selectedRuntime.provider}
               className="h-4 w-4 shrink-0"
             />
@@ -138,9 +189,15 @@ export function RuntimePicker({
               )}
             </div>
             {selectedRuntime && (
-              <div className="truncate text-xs text-muted-foreground">
-                {getOwnerMember(selectedRuntime.owner_id)?.name ??
-                  selectedRuntime.device_info}
+              <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                <span className="shrink-0 font-medium">
+                  {runtimeProviderLabel(selectedRuntime.provider)}
+                </span>
+                <span aria-hidden="true">·</span>
+                <span className="truncate">
+                  {getOwnerMember(selectedRuntime.owner_id)?.name ??
+                    selectedRuntime.device_info}
+                </span>
               </div>
             )}
           </div>
@@ -179,7 +236,7 @@ export function RuntimePicker({
                       : "hover:bg-accent/50"
                 }`}
               >
-                <ProviderLogo
+                <RuntimeProviderMark
                   provider={device.provider}
                   className="h-4 w-4 shrink-0"
                 />
@@ -199,6 +256,10 @@ export function RuntimePicker({
                     )}
                   </div>
                   <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="shrink-0 font-medium">
+                      {runtimeProviderLabel(device.provider)}
+                    </span>
+                    <span aria-hidden="true">·</span>
                     {ownerMember ? (
                       <>
                         <ActorAvatar

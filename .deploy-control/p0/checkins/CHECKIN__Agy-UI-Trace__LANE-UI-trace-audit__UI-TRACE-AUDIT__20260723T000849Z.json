@@ -1,0 +1,33 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-23T00:08:49Z",
+  "agent": "Agy-UI-Trace",
+  "pane_id": "wK:p2",
+  "lane": "UI-trace-audit",
+  "task_ids": ["UI-TRACE-AUDIT"],
+  "plan_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_COMPLETION_PLAN.md",
+  "prompt_ref": "[LANE UI/trace-audit] Read-only: prepare UI terminal/status validation + 8-hop/9-ID trace collection",
+  "files_locked": [
+    ".deploy-control/p0/evidence/UI-trace-audit.md"
+  ],
+  "new_files_declared": [
+    ".deploy-control/p0/evidence/UI-trace-audit.md"
+  ],
+  "dependencies": [],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "toolchains": {"go": "go1.26.1"},
+    "disk_free": "root 4.3G (83%); /tmp 2.9G (63%)"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true
+  },
+  "zero_overlap_proof": "scan of active check-ins: lock is exclusive to .deploy-control/p0/evidence/UI-trace-audit.md",
+  "status": "IN_PROGRESS"
+}

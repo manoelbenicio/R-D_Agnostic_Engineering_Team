@@ -1,0 +1,41 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:37:40Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "F3",
+  "task_ids": ["6.1"],
+  "status": "BLOCKED",
+  "supersedes": "CHECKOUT__Codex56-A__F3__F3-DEPLOYED-READINESS__20260722T113040Z.json (wrong topology)",
+  "files_changed": [".deploy-control/p0/evidence/F3-deployed-readiness.md"],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [
+    {"command": "curl -sS -o /dev/null -w '%{http_code}' --max-time 6 http://100.118.244.61:20128/v1/models", "exit_code": 0, "assertions_or_tests": "http=401 (API-key required); header x-omniroute-route-class: CLIENT_API; no X-OmniRoute-Registry-Version", "result": "REACHABLE_AUTH_GATED"},
+    {"command": "curl -sS -o /dev/null -w '%{http_code}' --max-time 6 http://100.118.244.61:20128/status", "exit_code": 0, "assertions_or_tests": "http=200 text/html dashboard (no version field)", "result": "REACHABLE"},
+    {"command": "curl -sS -o /dev/null -w '%{http_code}' --max-time 6 http://100.118.244.61:20128/health/live", "exit_code": 0, "assertions_or_tests": "http=404 (source path not served here)", "result": "NO_STD_HEALTH_PATH"},
+    {"command": "curl -sS -o /dev/null -w '%{http_code}' --max-time 6 http://100.118.244.61:20128/", "exit_code": 0, "assertions_or_tests": "http=307 Location:/dashboard", "result": "REACHABLE"}
+  ],
+  "format_and_diff": {
+    "format": "NOT_APPLICABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/F3-deployed-readiness.md",
+    ".deploy-control/p0/checkins/CHECKIN__Codex56-A__F3__F3-DEPLOYED-READINESS__20260722T112935Z.json"
+  ],
+  "requirements": ["AB-REQ-33"],
+  "openspec_tasks": ["6.1"],
+  "summary": "Corrected authoritative re-probe of http://100.118.244.61:20128 (ORQ1 Tailscale): endpoint REACHABLE (rc=0). PROVEN deployed non-secret: reachability; REQUIRE_API_KEY enforced (/v1/models -> 401); OmniRoute CLIENT_API surface (x-omniroute-route-class); management UI (/ ->307 /dashboard, /status 200 html). UNPROVEN: immutable revision, registry consistency, selected-model (cp/cline-pass/glm-5.2) availability, selected-protocol readiness -- all behind auth-gated /v1/models; source health paths 404 on this deployment.",
+  "non_claims": [
+    "Immutable revision / model / protocol readiness NOT proven deployed (auth-gated; secret prohibited to this lane; no inference).",
+    "Image digest not verified (Docker prohibited).",
+    "No secret used; no inference; no raw registry body printed; only status + bounded metadata headers.",
+    "Only the F3 evidence file edited; no product source touched.",
+    "Source-only proof (R3) is not deployed proof."
+  ],
+  "blocker": "ORQ1 OmniRoute (http://100.118.244.61:20128) reachable but registry/revision/readiness surface is auth-gated: /v1/models -> 401 without scoped key; no non-secret liveness/readiness/version path exposed (source /health/live|ready -> 404; only /status html + /dashboard). Lane may not use secret or run inference, so immutable revision + selected model/protocol availability cannot be proven deployed. Owner: OmniRoute operator (expose non-secret readiness/revision endpoint or document real health path) + Principal Orchestrator w5:p9 (authorize a single NON-inference authenticated /v1/models metadata read by an auth-permitted lane). Next action: one of (a) non-secret revision/readiness endpoint, (b) authorized non-inference authenticated /v1/models metadata capture (version + cp/cline-pass/glm-5.2 availability + protocol; headers/bounded fields only), or (c) operator publishes pinned image digest + registry revision out-of-band; D-V3-25(B) still gates any authenticated step.",
+  "handoffs": [
+    {"to_lane": "Principal", "reason": "authorize a single non-inference authenticated /v1/models metadata read, or route to an auth-permitted lane, to complete deployed 6.1", "file": ".deploy-control/p0/evidence/F3-deployed-readiness.md"}
+  ]
+}

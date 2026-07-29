@@ -16,29 +16,32 @@ export interface ParseOptions {
   endpoint: string;
 }
 
+/** Raised when a production API response violates its declared contract. */
+export class ApiContractError extends Error {
+  readonly endpoint: string;
+  readonly issues: unknown;
+
+  constructor(endpoint: string, issues: unknown) {
+    super(`API response failed schema validation: ${endpoint}`);
+    this.name = "ApiContractError";
+    this.endpoint = endpoint;
+    this.issues = issues;
+  }
+}
+
 /**
- * Validate a JSON value parsed from an API response against a zod schema,
- * returning the parsed value on success or `fallback` on failure.
+ * Validate a parsed API response and fail closed on contract drift.
  *
- * On failure we log a warning with the endpoint and zod's structured error,
- * but never throw — the UI layer must keep rendering. This is the boundary
- * defense that turns "API contract drifted" from a white-screen incident
- * into a degraded-but-rendering page.
- *
- * The return type is anchored to `T` (inferred from `fallback`), not to the
- * schema's `z.infer` type. Schemas are intentionally **lenient** — string
- * enums kept as `z.string()` so an unknown enum value still parses, etc. —
- * so the parsed runtime value can be wider than the strict TS type at the
- * call site. The caller asserts compatibility by typing the fallback to the
- * expected `T`; downstream code is already responsible for handling unknown
- * enum values via `default`-bearing switches and optional chaining.
- *
- * See CLAUDE.md "API Response Compatibility" for when to reach for this.
+ * The third parameter remains temporarily for source compatibility with
+ * existing callers, but is deliberately ignored: malformed production data
+ * must never be replaced with an empty or successful-looking synthetic record.
+ * Callers receive a typed error so their normal query/mutation error path can
+ * render an honest failure and roll back optimistic state.
  */
 export function parseWithFallback<T>(
   data: unknown,
   schema: ZodType,
-  fallback: T,
+  _legacyFallback: T,
   opts: ParseOptions,
 ): T {
   const result = schema.safeParse(data);
@@ -48,8 +51,7 @@ export function parseWithFallback<T>(
     {
       endpoint: opts.endpoint,
       issues: result.error.issues,
-      received: data,
     },
   );
-  return fallback;
+  throw new ApiContractError(opts.endpoint, result.error.issues);
 }

@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-barrier-harness.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-barrier-harness.md"
+  ],
+  "finished_at": "2026-07-23T22:22:09Z",
+  "lane": "tier20-workload",
+  "last_heartbeat_at": "2026-07-23T22:22:09Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T22:20:29Z",
+  "status": "DONE",
+  "summary": "Designed deterministic control-plane barrier: dev-gated task-hold at the recordLaunch<->executeAndDrainForTask lease seam that holds each capacity lease (brain.LifecycleCapacity TryBegin/promote/Finish) open without spawning the agent/LLM, releasing on explicit signal (fs marker / control endpoint / test channel) or a bounded mandatory timeout, then synthetic terminal -> recordTerminal -> capacity.Finish (exactly-once slot release). Env-gated (AGENT_BRAIN_DEVELOPMENT_ENABLED + CapacityTier20 + AGENT_BRAIN_T20_BARRIER_HOLD/TIMEOUT_MS), fail-closed, production-off. Barrier coordinator drives T20-workload 20-way: assert Active==20 simultaneously, never >Limit()==20, ledger reconciles, release -> Active==0 exactly-once, e2e AllContinuous. Proves concurrency/capacity/cancel/trace WITHOUT inference; does NOT prove LLM/protocol (separate live family) and is non-acceptance. Not implemented, not run.",
+  "task": "T20-BARRIER-HARNESS",
+  "validation": "DESIGN-ONLY: nothing executed; no source/hook implemented; no task enqueued/no inference; git diff --check evidence PASS; live_runs.*=false"
+}

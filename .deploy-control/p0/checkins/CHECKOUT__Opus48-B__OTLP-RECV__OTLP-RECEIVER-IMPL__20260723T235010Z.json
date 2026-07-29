@@ -1,0 +1,35 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T23:50:10Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "OTLP-RECV",
+  "task_ids": [],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver.go",
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver_test.go"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/daemon/observability/otlpreceiver/ -count=1", "exit_code": 0, "assertions_or_tests": 11, "result": "PASS"},
+    {"command": "go build ./internal/daemon/observability/otlpreceiver/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/observability/otlpreceiver/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-otlp-receiver.md"],
+  "requirements": [],
+  "openspec_tasks": [],
+  "summary": "NEW package internal/daemon/observability/otlpreceiver: loopback-only OTLP logs http/json receiver. Accepts claude_code.api_request; default-deny allowlist persists ONLY event.name/request_id/client_request_id/task_id/model/status/duration_ms(+timeUnixNano); OTLP body not modeled (content-off); non-loopback->403; bounded body(256KiB)/records(1000)/value(512); LoopbackServer binds 127.0.0.1 with timeouts; context-cancel->408 no persist; no logging (no auth-header leak); fail-closed (nil sink/sink error->503, oversized->400/413, bad method/ct->405/415, malformed/bad-duration->400). 11/11 tests PASS; gofmt/build/vet/diff clean.",
+  "non_claims": [
+    "New leaf package; no shared/existing source edited; zero import cycles.",
+    "Delivers the package + Sink interface only; starting the listener + wiring a real persistence Sink into the daemon is the integrator's scope (out of this task).",
+    "Tests use httptest ServeHTTP + RemoteAddr; no real socket bound; no live run.",
+    "No inference/secret/deploy/commit/push; no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "L1/integrator", "reason": "start LoopbackServer + connect a persistence Sink (out of scope for this package-only task)", "file": "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver.go"}
+  ]
+}

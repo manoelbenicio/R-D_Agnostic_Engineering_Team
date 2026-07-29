@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-L8Watcher",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/L8-kanban.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/L8-kanban.md"
+  ],
+  "finished_at": "2026-07-22T23:40:39Z",
+  "lane": "L8",
+  "last_heartbeat_at": "2026-07-22T23:40:39Z",
+  "pane_id": "wK:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T23:40:24Z",
+  "status": "DONE",
+  "summary": "Watched live task pipeline on ORQ1 (claim->admitted->launch boundary->persisted terminal). Recorded stage verification, blockers, and non-claims.",
+  "task": "L8-kanban-watch",
+  "validation": "cat .deploy-control/p0/evidence/L8-kanban.md: PASS"
+}

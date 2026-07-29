@@ -317,6 +317,9 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 			if email, ok := claims["email"].(string); ok {
 				r.Header.Set("X-User-Email", email)
 			}
+			if authenticatedAt, ok := claims["auth_time"].(float64); ok {
+				r = r.WithContext(auth.WithAuthenticationTime(r.Context(), time.Unix(int64(authenticatedAt), 0)))
+			}
 
 			next.ServeHTTP(w, r)
 		})

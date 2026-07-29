@@ -20,23 +20,24 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-// These tests cover the five failure modes that white-screened the desktop
-// app in past incidents. The contract is: a malformed response degrades to
-// an empty/safe shape, never throws into React.
-describe("ApiClient schema fallback", () => {
+// Malformed server responses must fail closed instead of looking like valid
+// empty/success records. Schema-level defaults remain covered separately.
+describe("ApiClient schema contract enforcement", () => {
   describe("listTimeline", () => {
-    it("falls back to an empty array when the body is null", async () => {
+    it("fails closed when the body is null", async () => {
       stubFetchJson(null);
       const client = new ApiClient("https://api.example.test");
-      const entries = await client.listTimeline("issue-1");
-      expect(entries).toEqual([]);
+      await expect(client.listTimeline("issue-1")).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
 
-    it("falls back when the body is not an array", async () => {
+    it("fails closed when the body is not an array", async () => {
       stubFetchJson({ wrong: "shape" });
       const client = new ApiClient("https://api.example.test");
-      const entries = await client.listTimeline("issue-1");
-      expect(entries).toEqual([]);
+      await expect(client.listTimeline("issue-1")).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
 
     it("accepts a new entry type rather than crashing on enum drift", async () => {
@@ -79,15 +80,12 @@ describe("ApiClient schema fallback", () => {
   });
 
   describe("listIssues", () => {
-    it("falls back to an empty list when the response is malformed", async () => {
-      // `issues` having the wrong type triggers the fallback. An object
-      // with only unexpected keys would *succeed* parsing now (every
-      // declared field has a default) and just pass the extras through
-      // via `.loose()`, so we use a wrong-type payload here instead.
+    it("fails closed when the response is malformed", async () => {
       stubFetchJson({ issues: "not-an-array", total: 0 });
       const client = new ApiClient("https://api.example.test");
-      const res = await client.listIssues();
-      expect(res).toEqual({ issues: [], total: 0 });
+      await expect(client.listIssues()).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
   });
 
@@ -108,11 +106,12 @@ describe("ApiClient schema fallback", () => {
       updated_at: "2026-06-01T00:00:00Z",
     };
 
-    it("falls back to an empty list when the response is malformed", async () => {
+    it("fails closed when the response is malformed", async () => {
       stubFetchJson({ autopilots: "not-an-array", total: 1 });
       const client = new ApiClient("https://api.example.test");
-      const res = await client.listAutopilots();
-      expect(res).toEqual({ autopilots: [], total: 0 });
+      await expect(client.listAutopilots()).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
 
     it("accepts an old-server row without assignee_type or derived fields", async () => {
@@ -171,38 +170,42 @@ describe("ApiClient schema fallback", () => {
   });
 
   describe("listGroupedIssues", () => {
-    it("falls back to empty groups when the response is malformed", async () => {
+    it("fails closed when grouped issues are malformed", async () => {
       stubFetchJson({ groups: "not-an-array" });
       const client = new ApiClient("https://api.example.test");
-      const res = await client.listGroupedIssues({ group_by: "assignee" });
-      expect(res).toEqual({ groups: [] });
+      await expect(
+        client.listGroupedIssues({ group_by: "assignee" }),
+      ).rejects.toThrow("API response failed schema validation");
     });
   });
 
   describe("listComments", () => {
-    it("returns [] when the response is not an array", async () => {
+    it("fails closed when the response is not an array", async () => {
       stubFetchJson({ wrong: "shape" });
       const client = new ApiClient("https://api.example.test");
-      const comments = await client.listComments("issue-1");
-      expect(comments).toEqual([]);
+      await expect(client.listComments("issue-1")).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
   });
 
   describe("previewCommentTriggers", () => {
-    it("returns an empty agent list when the response is malformed", async () => {
+    it("fails closed when the response is malformed", async () => {
       stubFetchJson({ agents: "not-an-array" });
       const client = new ApiClient("https://api.example.test");
-      const preview = await client.previewCommentTriggers("issue-1", "hello");
-      expect(preview).toEqual({ agents: [] });
+      await expect(
+        client.previewCommentTriggers("issue-1", "hello"),
+      ).rejects.toThrow("API response failed schema validation");
     });
   });
 
   describe("listIssueSubscribers", () => {
-    it("returns [] when the response is null", async () => {
+    it("fails closed when the response is null", async () => {
       stubFetchJson(null);
       const client = new ApiClient("https://api.example.test");
-      const subs = await client.listIssueSubscribers("issue-1");
-      expect(subs).toEqual([]);
+      await expect(client.listIssueSubscribers("issue-1")).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
   });
 
@@ -220,11 +223,12 @@ describe("ApiClient schema fallback", () => {
   // survive future field renames / wrapping without crashing. Each test
   // here mirrors a concrete future drift we want to absorb.
   describe("listAgentTemplates", () => {
-    it("falls back to [] when the body is null", async () => {
+    it("fails closed when the body is null", async () => {
       stubFetchJson(null);
       const client = new ApiClient("https://api.example.test");
-      const tmpls = await client.listAgentTemplates();
-      expect(tmpls).toEqual([]);
+      await expect(client.listAgentTemplates()).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
 
     it("defaults skills to [] when the field is missing from a template", async () => {
@@ -262,15 +266,12 @@ describe("ApiClient schema fallback", () => {
   });
 
   describe("getAgentTemplate", () => {
-    it("falls back to a minimal record carrying the requested slug", async () => {
-      // Slug is part of the URL the user clicked — the fallback round-
-      // trips it so the page header still makes sense after a parse miss.
+    it("fails closed instead of fabricating a template detail", async () => {
       stubFetchJson({ wrong: "shape" });
       const client = new ApiClient("https://api.example.test");
-      const detail = await client.getAgentTemplate("code-reviewer");
-      expect(detail.slug).toBe("code-reviewer");
-      expect(detail.skills).toEqual([]);
-      expect(detail.instructions).toBe("");
+      await expect(client.getAgentTemplate("code-reviewer")).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
 
     it("defaults instructions to '' when the field is missing", async () => {
@@ -287,18 +288,20 @@ describe("ApiClient schema fallback", () => {
   });
 
   describe("listAutopilotDeliveries", () => {
-    it("falls back to an empty list when the body is null", async () => {
+    it("fails closed when the body is null", async () => {
       stubFetchJson(null);
       const client = new ApiClient("https://api.example.test");
-      const res = await client.listAutopilotDeliveries("ap-1");
-      expect(res).toEqual({ deliveries: [], total: 0 });
+      await expect(client.listAutopilotDeliveries("ap-1")).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
 
-    it("falls back to an empty list when `deliveries` is not an array", async () => {
+    it("fails closed when `deliveries` is not an array", async () => {
       stubFetchJson({ deliveries: "not-an-array", total: 0 });
       const client = new ApiClient("https://api.example.test");
-      const res = await client.listAutopilotDeliveries("ap-1");
-      expect(res).toEqual({ deliveries: [], total: 0 });
+      await expect(client.listAutopilotDeliveries("ap-1")).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
 
     it("accepts an unknown future status value rather than dropping the row", async () => {
@@ -339,30 +342,26 @@ describe("ApiClient schema fallback", () => {
   });
 
   describe("getAutopilotDelivery", () => {
-    it("falls back to a placeholder carrying the requested id", async () => {
+    it("fails closed instead of fabricating a delivery", async () => {
       stubFetchJson({ wrong: "shape" });
       const client = new ApiClient("https://api.example.test");
-      const detail = await client.getAutopilotDelivery("ap-1", "d-1");
-      expect(detail.id).toBe("d-1");
-      expect(detail.autopilot_id).toBe("ap-1");
+      await expect(client.getAutopilotDelivery("ap-1", "d-1")).rejects.toThrow(
+        "API response failed schema validation",
+      );
     });
   });
 
   describe("createAgentFromTemplate", () => {
-    it("falls back to an empty agent when the response is malformed", async () => {
-      // The agent was created server-side even though the client can't
-      // parse the response — UI code reads `agent.id === ""` and skips
-      // the navigation step rather than landing on `/agents/`.
+    it("fails closed when the response is malformed", async () => {
       stubFetchJson({ unexpected: "shape" });
       const client = new ApiClient("https://api.example.test");
-      const resp = await client.createAgentFromTemplate({
-        template_slug: "x",
-        name: "X",
-        runtime_id: "rt-1",
-      });
-      expect(resp.agent.id).toBe("");
-      expect(resp.imported_skill_ids).toEqual([]);
-      expect(resp.reused_skill_ids).toEqual([]);
+      await expect(
+        client.createAgentFromTemplate({
+          template_slug: "x",
+          name: "X",
+          runtime_id: "rt-1",
+        }),
+      ).rejects.toThrow("API response failed schema validation");
     });
 
     it("defaults imported_skill_ids / reused_skill_ids to [] when missing", async () => {
@@ -391,17 +390,17 @@ describe("parseWithFallback", () => {
     expect(out).toEqual({ id: "x" });
   });
 
-  it("returns the fallback when validation fails", () => {
+  it("throws a contract error when validation fails", () => {
     const schema = z.object({ id: z.string() });
-    const fallback = { id: "fallback" };
-    const out = parseWithFallback({ id: 123 }, schema, fallback, opts);
-    expect(out).toBe(fallback);
+    expect(() =>
+      parseWithFallback({ id: 123 }, schema, { id: "fallback" }, opts),
+    ).toThrow("API response failed schema validation: TEST /unit");
   });
 
-  it("returns the fallback when data is null", () => {
+  it("throws a contract error when data is null", () => {
     const schema = z.object({ id: z.string() });
-    const fallback = { id: "fallback" };
-    const out = parseWithFallback(null, schema, fallback, opts);
-    expect(out).toBe(fallback);
+    expect(() =>
+      parseWithFallback(null, schema, { id: "fallback" }, opts),
+    ).toThrow("API response failed schema validation: TEST /unit");
   });
 });

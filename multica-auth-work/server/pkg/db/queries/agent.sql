@@ -43,6 +43,8 @@ UPDATE agent SET
     thinking_level = COALESCE(sqlc.narg('thinking_level'), thinking_level),
     updated_at = now()
 WHERE id = $1
+  AND runtime_id IS NOT DISTINCT FROM sqlc.arg('expected_runtime_id')::uuid
+  AND model IS NOT DISTINCT FROM sqlc.narg('expected_model')::text
 RETURNING *;
 
 -- name: ClearAgentThinkingLevel :one
@@ -273,8 +275,68 @@ WHERE atq.id = $1 AND a.workspace_id = $2;
 -- "any other quick-create-shaped task" (all four FKs NULL) for the same agent —
 -- otherwise a user mashing the create button could fire concurrent quick-creates
 -- whose completion lookup would race over "most recent issue by this agent".
+--
+-- ORQ-12: the producing account is FROZEN here, at claim/dispatch, and never
+-- again. COALESCE keeps an already-frozen value, so a reclaim or a second claim
+-- attempt cannot re-file the task under a different account. The value is
+-- resolved server-side from the agent's assignment, restricted to accounts that
+-- are explicitly allowed in approved_accounts; an agent with no allowed
+-- assignment leaves NULL rather than borrowing someone else's account.
 UPDATE agent_task_queue
-SET status = 'dispatched', dispatched_at = now()
+SET status = 'dispatched',
+    dispatched_at = now(),
+    credential_account_id = COALESCE(
+        agent_task_queue.credential_account_id,
+        (
+            -- Predicates are the authoritative set from
+            -- adr-orq21-orq12-producing-account-snapshot.md (sha256
+            -- f34e6dcc69112292c782294b857df419790f1a2ff1ef87f53150529bcc49139b)
+            -- and the ORQ-21 R3 rulings:
+            --   tenant   accounts.tenant_id AND approved_accounts.tenant_id must
+            --            both equal the agent's workspace. tenant_id IS the
+            --            workspace UUID; rows carrying any other semantics fail
+            --            closed and need an authorised metadata correction. No
+            --            COALESCE, no backward guess.
+            --   provider the canonical source is the TASK's runtime row, not
+            --            runtime_config: agent_task_queue.runtime_id ->
+            --            agent_runtime.provider, with agy canonicalised to
+            --            antigravity before comparing against accounts.vendor.
+            --   status   only 'available' or 'leased' can produce work; the
+            --            durable exclusivity comes from assignments.agent_id
+            --            being the primary key plus the unique index on
+            --            assignments(account_id) added by this migration.
+            --   worktype exactly 'GENERAL'. NULL is REJECTED: there is no
+            --            implicit NULL -> GENERAL and no automatic backfill, so
+            --            an unimported approval stays non-executable.
+            -- NO LIMIT, deliberately. Ambiguity must be surfaced, not hidden: if
+            -- these joins ever yield two rows Postgres fails the claim instead of
+            -- picking arbitrarily. Uniqueness makes that unreachable by
+            -- construction - agent.id and assignments.agent_id are primary keys,
+            -- assignments(account_id) is unique, and approved_accounts is unique
+            -- on (tenant_id, account_id) with the tenant pinned by the join.
+            SELECT acc.account_id
+            FROM agent AS ag
+            JOIN agent_runtime AS rt
+              ON rt.id = agent_task_queue.runtime_id
+            JOIN assignments AS asg
+              ON asg.agent_id = agent_task_queue.agent_id
+            JOIN accounts AS acc
+              ON acc.account_id = asg.account_id
+             AND acc.tenant_id = ag.workspace_id
+             AND acc.status IN ('available', 'leased')
+             -- Exact canonical equality comparison per GTM ruling: values are
+             -- canonicalized on write and backfilled via migration 128. No read-time
+             -- CASE/lower/btrim authority.
+             AND acc.vendor = rt.provider
+             AND rt.provider IN ('codex', 'kiro', 'antigravity')
+            JOIN approved_accounts AS ap
+              ON ap.account_id = acc.account_id
+             AND ap.tenant_id = ag.workspace_id
+             AND ap.allowed IS TRUE
+             AND ap.worktype_scope = 'GENERAL'
+            WHERE ag.id = agent_task_queue.agent_id
+        )
+    )
 WHERE id = (
     SELECT atq.id FROM agent_task_queue atq
     WHERE atq.agent_id = $1 AND atq.status = 'queued'
@@ -307,6 +369,19 @@ RETURNING *;
 -- with no `started_at`, so the daemon has not acknowledged it via StartTask.
 -- Refresh dispatched_at so the server-side dispatch timeout measures from the
 -- recovered delivery attempt.
+--
+-- Reclaim NEVER resolves or changes an account: it preserves the existing
+-- credential_account_id exactly as frozen at claim, and it must never invent one
+-- for a row that reached `dispatched` with NULL.
+--
+-- It does NOT hide such a row, either. Excluding covered-provider rows with a
+-- NULL snapshot from the candidate set made them invisible instead of
+-- fail-closed: every task already in flight when the account snapshot ships is
+-- exactly that shape, and an invisible row can be neither recovered nor
+-- cancelled - it just stalls. The claim path is the only layer that may decide a
+-- task is non-executable, and it can only do that for a row it can see, so the
+-- row stays selectable here and the approved-assignment gate in
+-- ClaimTaskByRuntime cancels it. See ORQ-12/ORQ-21 combined-gate finding.
 UPDATE agent_task_queue
 SET dispatched_at = now()
 WHERE id = (

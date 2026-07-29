@@ -1,0 +1,32 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T22:21:00Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "tier20-workload",
+  "task_ids": ["9.1-prep"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/T20-barrier-harness.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "git diff --check -- .deploy-control/p0/evidence/T20-barrier-harness.md", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "grep product .go for barrier/hold edits", "exit_code": 0, "assertions_or_tests": 0, "result": "NONE (design-only; no hook implemented)"}
+  ],
+  "format_and_diff": {"format": "N/A (no code written)", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-barrier-harness.md"],
+  "requirements": [],
+  "openspec_tasks": ["9.1 (prep only; not executed)"],
+  "summary": "Designed a deterministic control-plane barrier: a dev-gated task-hold at the recordLaunch<->executeAndDrainForTask lease seam that holds each capacity lease (brain.LifecycleCapacity TryBegin/promote/Finish) open WITHOUT spawning the agent/LLM, releasing on explicit signal (fs marker / control endpoint / in-proc test channel) or a mandatory bounded timeout, then a synthetic terminal -> recordTerminal -> capacity.Finish (exactly-once release). Gated by AGENT_BRAIN_DEVELOPMENT_ENABLED + CapacityTier20 + AGENT_BRAIN_T20_BARRIER_HOLD/TIMEOUT_MS, fail-closed and production-off. A barrier coordinator drives the T20-workload 20 tasks: assert Snapshot().Active==20 simultaneously, never > Limit()==20, ledger reconciles, release -> Active==0 with each lease Finished exactly once, and e2e Assemble.AllContinuous. Proves concurrency/capacity/cancel/trace deterministically without inference.",
+  "non_claims": [
+    "DESIGN ONLY: nothing executed, no product/hook code written, no task enqueued, no inference, no secret",
+    "the dev-gated hook is fail-closed + production-off; the synthetic barrier terminal is explicitly NON-ACCEPTANCE and never a model-route acceptance",
+    "does NOT prove LLM/OmniRoute protocol/tools/reasoning/usage (separate live-run family, gated)",
+    "does NOT authorize tier-20 activation (9.2), higher tiers, cutover, or production",
+    "live_runs.*=false; the barrier is the inference-free alternative for the concurrency/capacity/trace dimension only"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "writer (authorized)", "reason": "implement the dev-gated task-hold hook (§2/§3) and, under operator go + dev gate, run the barrier coordinator (§4) once -> T20-barrier-run-<ts>.md", "file": "multica-auth-work/server/internal/daemon (runTask execution seam) + brain/capacity"}
+  ]
+}

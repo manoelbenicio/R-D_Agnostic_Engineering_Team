@@ -1,0 +1,33 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T23:41:10Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "UI",
+  "task_ids": [],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [],
+  "files_modified": [".deploy-control/p0/evidence/UI-terminal-status.md"],
+  "tests": [
+    {"command": "curl --max-time 4 http://127.0.0.1:8080/health", "exit_code": 7, "assertions_or_tests": 1, "result": "BLOCKED (connection refused)"},
+    {"command": "curl --max-time 4 http://127.0.0.1:3100", "exit_code": 7, "assertions_or_tests": 1, "result": "BLOCKED (connection refused)"},
+    {"command": "ss -ltn (8080/3100/20128/5432/6379)", "exit_code": 0, "assertions_or_tests": 1, "result": "no listening ports"}
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [".deploy-control/p0/evidence/UI-terminal-status.md"],
+  "requirements": [],
+  "openspec_tasks": [],
+  "summary": "Post-run UI re-validation. Static/contract validation re-affirmed unchanged at HEAD a6d5098 (ExecutionLogSection renders status/live-timer/transcript, mounted in issue-detail, updated via task: realtime invalidation; components not modified). Live post-run browser/API observation re-checked and still NOT possible from this pane: backend :8080, web :3100 and DB/gateway ports all unreachable. Live observation BLOCKED_EXTERNAL (no reachable non-prod stack).",
+  "non_claims": [
+    "Live ORQ-7 run NOT observed (initial + 23:40Z re-check); component tests NOT executed (static/API-only, no node install).",
+    "No product code modified; no frontend edits; no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "Principal", "reason": "provision reachable non-prod web+backend+daemon stack for live ORQ-7 UI post-run observation", "file": ".deploy-control/p0/evidence/UI-terminal-status.md"}
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/P0-realtime-delivery.md",
+    "multica-auth-work/server/internal/realtime/obs_delivery.go",
+    "multica-auth-work/server/internal/realtime/obs_delivery_test.go"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/realtime/hub.go",
+    "multica-auth-work/server/internal/realtime/obs_delivery.go",
+    "multica-auth-work/server/internal/realtime/obs_delivery_test.go"
+  ],
+  "finished_at": "2026-07-24T01:28:58Z",
+  "lane": "realtime-delivery",
+  "last_heartbeat_at": "2026-07-24T01:28:58Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T01:21:17Z",
+  "status": "DONE",
+  "summary": "Implemented aggregate UI terminal-delivery HopDelivery in realtime.Hub (NEW obs_delivery.go + obs_delivery_test.go; minimal hub.go: deliveryObs field+init). Injectable *e2e.Recorder setter; classifies task:completed/failed/cancelled only; CanonicalSessionID; genuine per-delivery ULID; EXACTLY one aggregate span per (session,event) regardless of tabs/Redis loopback; delivered iff >=1 enqueue else dropped; backpressure counters; content-free (ScanSpans clean); bounded dedup (4096) + retry-safe seen-marking (mark only after successful Emit); concurrency-safe. Typed BroadcastTerminalDelivery seam for cmd/server (later). Ownership: only internal/realtime touched. No deploy/inference/secret/commit.",
+  "task": "P0-REALTIME-DELIVERY",
+  "validation": "go1.26.1 GOCACHE=/tmp/kgc: gofmt -l (3 files) empty; go vet ./internal/realtime/=0; go test ./internal/realtime/ -count=1=0 (ok 0.424s); 10 delivery tests PASS (many/zero/slow clients, redis-loopback dedup, concurrent same task, recorder first-fail retry, bounded dedup, canonical session, no nonterminal emission, exactly-one span, nil recorder). git diff --check clean. -race unavailable (no gcc)."
+}

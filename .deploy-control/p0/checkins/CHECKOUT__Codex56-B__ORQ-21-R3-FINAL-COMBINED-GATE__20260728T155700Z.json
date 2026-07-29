@@ -1,0 +1,92 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-28T15:57:00Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "ORQ-21",
+  "task_ids": [
+    "ORQ-21"
+  ],
+  "status": "DONE_PASS",
+  "code_commits": [
+    "ee87f7b8483507269ddc6631d17af99d41b4d204",
+    "ec8f945f1522e543469ae8dba2f211961549d4a4",
+    "aac222715c46dd3000b00c0df3ba43e83b94a73f",
+    "feccee4be2d9443e37f8b050de05473d1885ad38"
+  ],
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/orq21-r3-exclusive-assignment-correction.md",
+    ".deploy-control/p0/evidence/orq21-to-orq12-producing-account-snapshot-handoff.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-B__ORQ-21-R3-FINAL-COMBINED-GATE__20260728T155700Z.json"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "combined ORQ-21/ORQ-12 handler acceptance matrix on disposable PostgreSQL",
+      "exit_code": 0,
+      "result": "39 pass, 0 fail, 0 skip"
+    },
+    {
+      "command": "focused combined handler race gate",
+      "exit_code": 0,
+      "result": "7 pass, 0 fail, 0 skip"
+    },
+    {
+      "command": "ORQ-21 tagged credential registry DB gate",
+      "exit_code": 0,
+      "result": "5 pass, 0 fail, 0 skip"
+    },
+    {
+      "command": "full internal/handler baseline differential",
+      "exit_code": 1,
+      "result": "1383 pass, exactly 3 baseline-identical failures, 37 baseline-identical skips; zero new failures and zero added skips"
+    },
+    {
+      "command": "staged migration up/down/up and normalization fixture",
+      "exit_code": 0,
+      "result": "snapshot columns 2->0->2, unique assignments(account_id) restored, stored AGY aliases normalized to exact antigravity"
+    },
+    {
+      "command": "combined vet and server build",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "task-specific disposable infrastructure teardown",
+      "exit_code": 0,
+      "result": "Disposable PostgreSQL container, SSH tunnel, private combined worktree, caches and gate logs removed; product services untouched"
+    }
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/orq21-r3-exclusive-assignment-correction.md",
+    ".deploy-control/p0/evidence/orq21-to-orq12-producing-account-snapshot-handoff.md",
+    ".deploy-control/p0/evidence/adr-orq21-orq12-producing-account-snapshot.md"
+  ],
+  "reported_to": [
+    "GENERAL-TECH-LEAD Codex56-TL (w5:pC)",
+    "Kiro (w5:p9)",
+    "independent reviewer Codex56#A (w7:p3)",
+    "ORQ-12 owner Opus48#A"
+  ],
+  "summary": "PASS. ORQ-21 R3 is code-complete in four local code-only commits and independently approved. The final combined ORQ-12 staged-schema gate passed with zero new failures or skips, exact write-time canonicalization, frozen reclaim snapshots, durable account exclusivity, and complete disposable teardown.",
+  "non_claims": [
+    "No production database, product container, AWS resource, secret, credential, board, remote, push or merge was accessed or mutated.",
+    "No migration number was invented or materialized.",
+    "The three full-handler failures and 37 skips are baseline-identical, not claimed as nominal package PASS."
+  ],
+  "blockers": [
+    "Registrar must materialize the ORQ-12 staged migration before integration.",
+    "Promotion/deploy must prove aggregate zero active queue entries for queued, dispatched, running and waiting_local_directory."
+  ],
+  "handoffs": [
+    {
+      "to": "GENERAL-TECH-LEAD Codex56-TL",
+      "reason": "Integrate only after Registrar materialization and the aggregate queue-zero deploy gate; no further ORQ-21 code correction is pending."
+    },
+    {
+      "to": "ORQ-12 owner Opus48#A",
+      "reason": "Use the exact snapshot/canonicalization boundary recorded in the handoff; ORQ-21 does not edit ORQ-12 migration/query/generated files."
+    }
+  ]
+}

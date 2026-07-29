@@ -1,0 +1,7 @@
+{
+  "model": "synthetic/chat-model",
+  "stream": true,
+  "messages": [
+    {"role": "user", "content": "synthetic request"}
+  ]
+}

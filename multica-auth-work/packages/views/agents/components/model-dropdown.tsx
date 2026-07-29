@@ -1,9 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Cpu, Loader2, Plus, Check, Info } from "lucide-react";
-import { runtimeModelsOptions } from "@multica/core/runtimes";
+import {
+  filterRuntimeModelGroups,
+  groupRuntimeModelsByProvider,
+  runtimeKeys,
+  runtimeListSnapshotFromCache,
+  runtimeModelSearchMatchesProvider,
+  runtimeModelsOptions,
+  useLastKnownRuntimeModels,
+  useRuntimeModelsLifecycle,
+  useRuntimeProviderIdentity,
+} from "@multica/core/runtimes";
+import { useWorkspaceId } from "@multica/core/hooks";
 import type { RuntimeModel } from "@multica/core/types";
 import {
   Popover,
@@ -28,29 +39,61 @@ export function ModelDropdown({
   value,
   onChange,
   disabled,
+  runtimeProvider,
 }: {
   runtimeId: string | null;
   runtimeOnline: boolean;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  /** Optional authoritative fallback for catalog rows missing provider. */
+  runtimeProvider?: string;
 }) {
   const { t } = useT("agents");
+  const wsId = useWorkspaceId();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
+  const runtimeSnapshot = runtimeListSnapshotFromCache(
+    queryClient,
+    runtimeId,
+    runtimeKeys.list(wsId),
+  );
+  const discoveryEnabled = useRuntimeModelsLifecycle(
+    runtimeId,
+    runtimeOnline,
+    runtimeSnapshot.generation,
+  );
   const modelsQuery = useQuery(
-    runtimeModelsOptions(runtimeOnline ? runtimeId : null),
+    runtimeModelsOptions(runtimeId, discoveryEnabled),
+  );
+  const catalog = useLastKnownRuntimeModels(
+    runtimeId,
+    modelsQuery.data,
+    modelsQuery.dataUpdatedAt,
   );
 
-  const supported = modelsQuery.data?.supported ?? true;
+  const supported = catalog?.supported ?? true;
   // Stable reference for the model list — `?? []` would mint a fresh
   // array each render and force every downstream useMemo to invalidate.
   const models = useMemo(
-    () => modelsQuery.data?.models ?? [],
-    [modelsQuery.data],
+    () => catalog?.models ?? [],
+    [catalog],
   );
-  const grouped = useMemo(() => groupByProvider(models), [models]);
+  const fallbackProvider = useRuntimeProviderIdentity(
+    runtimeId,
+    runtimeProvider,
+    runtimeSnapshot.provider,
+  );
+  const grouped = useMemo(
+    () => groupRuntimeModelsByProvider(models, fallbackProvider),
+    [models, fallbackProvider],
+  );
+  const normalizedModels = useMemo(
+    () => grouped.flatMap((group) => group.models),
+    [grouped],
+  );
 
   // When the selected runtime reports it doesn't support per-agent
   // model selection, clear any previously-saved value so we don't
@@ -61,26 +104,18 @@ export function ModelDropdown({
     }
   }, [supported, value, onChange]);
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return grouped;
-    const needle = search.toLowerCase();
-    const out: Record<string, RuntimeModel[]> = {};
-    for (const [provider, list] of Object.entries(grouped)) {
-      const matches = list.filter(
-        (m) =>
-          m.id.toLowerCase().includes(needle) ||
-          m.label.toLowerCase().includes(needle),
-      );
-      if (matches.length > 0) out[provider] = matches;
-    }
-    return out;
-  }, [grouped, search]);
+  const filtered = useMemo(
+    () => filterRuntimeModelGroups(grouped, search),
+    [grouped, search],
+  );
 
   const trimmedSearch = search.trim();
-  const exactMatch = models.some(
+  const exactMatch = normalizedModels.some(
     (m) => m.id === trimmedSearch || m.label === trimmedSearch,
   );
-  const canCreate = trimmedSearch.length > 0 && !exactMatch;
+  const providerMatch = runtimeModelSearchMatchesProvider(grouped, search);
+  const canCreate =
+    trimmedSearch.length > 0 && !exactMatch && !providerMatch;
 
   const select = (id: string) => {
     onChange(id);
@@ -138,7 +173,7 @@ export function ModelDropdown({
             </div>
             {value && (
               <div className="truncate text-xs text-muted-foreground">
-                {modelLabel(models, value)}
+                {modelLabel(normalizedModels, value)}
               </div>
             )}
           </div>
@@ -168,14 +203,14 @@ export function ModelDropdown({
             )}
 
             {!modelsQuery.isLoading &&
-              Object.entries(filtered).map(([provider, list]) => (
+              filtered.map(({ provider, models: providerModels }) => (
                 <div key={provider} className="mb-1">
                   {provider && (
                     <div className="px-2 pt-1.5 pb-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       {provider}
                     </div>
                   )}
-                  {list.map((m) => (
+                  {providerModels.map((m) => (
                     <button
                       type="button"
                       key={m.id}
@@ -201,7 +236,7 @@ export function ModelDropdown({
               ))}
 
             {!modelsQuery.isLoading &&
-              Object.keys(filtered).length === 0 &&
+              filtered.length === 0 &&
               !canCreate && (
                 <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                   {t(($) => $.pickers.model_empty_with_dot)}
@@ -235,16 +270,6 @@ export function ModelDropdown({
       </Popover>
     </div>
   );
-}
-
-function groupByProvider(models: RuntimeModel[]): Record<string, RuntimeModel[]> {
-  const out: Record<string, RuntimeModel[]> = {};
-  for (const m of models) {
-    const key = m.provider ?? "";
-    if (!out[key]) out[key] = [];
-    out[key].push(m);
-  }
-  return out;
 }
 
 function modelLabel(models: RuntimeModel[], id: string): string {

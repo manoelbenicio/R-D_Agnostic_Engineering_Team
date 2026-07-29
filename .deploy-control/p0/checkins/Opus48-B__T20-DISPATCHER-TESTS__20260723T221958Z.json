@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-dispatcher-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-dispatcher-tests.md"
+  ],
+  "finished_at": "2026-07-23T22:24:56Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T22:24:56Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T22:19:58Z",
+  "status": "DONE",
+  "summary": "PASS: 5 deterministic bounded-drain tests added (daemon.go primitives newTaskSlotSemaphore:2701 / waitForTaskSlot:2669). Drain-to-capacity / never-exceed / cancellation / wakeup-backpressure / release-resumes. pollLoop end-to-end not driven (primitive-level). One test-only file; no source edited.",
+  "task": "T20-DISPATCHER-TESTS",
+  "validation": "gofmt clean(0); go vet ./internal/daemon/(0); go test ./internal/daemon/ -run TaskSlotSemaphore|WaitForTaskSlot -count=1 = 6/6 PASS ok 0.031s(0); git diff --check(0). Proven: newTaskSlotSemaphore hard bound (cap/len/distinct slots); waitForTaskSlot drains up to capacity, never exceeds, honors ctx cancel (pre + during wait), wakeup backpressure (woke=true), release resumes drain. Test-only new file; zero-overlap verified."
+}

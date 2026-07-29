@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A7",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/RES-live.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/RES-live.md"
+  ],
+  "finished_at": "2026-07-23T02:14:16Z",
+  "lane": "live-watcher",
+  "last_heartbeat_at": "2026-07-23T02:14:16Z",
+  "pane_id": "wB:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T02:13:55Z",
+  "status": "DONE",
+  "summary": "Single clean Kanban live-run watcher harness and observation plan prepared. Standby mode active (live_runs=false) pending post-deploy signal and live token authorization.",
+  "task": "RES-LIVE-WATCH",
+  "validation": "go test ./internal/daemon/brain/...: PASS, go vet ./internal/daemon/brain/...: PASS, git diff --check: PASS"
+}

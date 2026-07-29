@@ -1,0 +1,32 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T10:58:53Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "R4",
+  "task_ids": ["6.2"],
+  "plan_ref": ".planning/agent-brain-v3/P0_SIX_HOUR_EXECUTION_PLAN.md",
+  "prompt_ref": ".deploy-control/p0/SIX_HOUR_CHECKIN_CONTRACT.md",
+  "files_locked": [
+    "multica-auth-work/server/internal/daemonws/obs_delivery.go",
+    "multica-auth-work/server/internal/daemonws/obs_delivery_test.go"
+  ],
+  "new_files_declared": [],
+  "dependencies": ["hub.go shared anchor owned by R1 (handoff only, no edit)"],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 298,
+    "toolchains": {"go": "go1.26.1 (/home/ec2-user/goroot/go/bin/go)", "node": "v22.23.1 (STATIC UI evidence only; no deps install)"},
+    "disk_free": "868M (97% used)"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true
+  },
+  "status": "IN_PROGRESS"
+}

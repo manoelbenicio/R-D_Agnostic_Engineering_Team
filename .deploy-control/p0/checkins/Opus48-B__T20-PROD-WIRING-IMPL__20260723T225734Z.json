@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-prod-wiring-tests.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/observability/e2ewiring/doc.go",
+    "multica-auth-work/server/internal/daemon/observability/e2ewiring/wiring_integration_test.go"
+  ],
+  "finished_at": "2026-07-23T23:00:07Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T23:00:07Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T22:57:34Z",
+  "status": "DONE",
+  "summary": "PASS: production-wiring integration test over real seams (ingress/queue/admission/cli/route/persist/delivery) + dedicated route actual-telemetry test in new leaf pkg e2ewiring. SyntheticTraceSpans kept as contract regression. Test + no-logic anchor only; no source edited.",
+  "task": "T20-PROD-WIRING-IMPL",
+  "validation": "gofmt clean(0); go vet ./internal/daemon/observability/e2ewiring/(0); go test ...e2ewiring/ -count=1 = 2/2 PASS ok 0.005s(0); git diff --check(0). 7 REAL seam emitters -> one sink: AllContinuous, 1 trace, 0 orphans/anomalies, 0 gaps, 9 IDs, leak-clean, one persist+one delivery; CLI joins admission read-back launch_id. Route hop separate via actual gateway.Telemetry fixture."
+}

@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "agy",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/RES-chat-trace.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/RES-chat-trace.md"
+  ],
+  "finished_at": "2026-07-23T02:14:35Z",
+  "lane": "chat-smokes-trace",
+  "last_heartbeat_at": "2026-07-23T02:14:35Z",
+  "pane_id": "wK:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T02:14:07Z",
+  "status": "DONE",
+  "summary": "Completed standby evidence protocol for post-deploy chat smokes and 8-hop trace collection in RES-chat-trace.md",
+  "task": "CHAT-SMOKES-TRACE",
+  "validation": "git diff --check .deploy-control/p0/evidence/RES-chat-trace.md: PASS"
+}

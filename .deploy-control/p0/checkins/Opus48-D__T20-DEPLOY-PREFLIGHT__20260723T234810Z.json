@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-deploy-preflight.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-deploy-preflight.md"
+  ],
+  "finished_at": "2026-07-23T23:49:15Z",
+  "lane": "deploy-preflight",
+  "last_heartbeat_at": "2026-07-23T23:49:15Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T23:48:10Z",
+  "status": "DONE",
+  "summary": "Standby ORQ1 deploy+rollback+env-preflight at T20-deploy-preflight.md: artifact checksum (1abda82d...), env preflight (gateway + tier-20 + trusted OTEL keys as owner-provided placeholders), 0600 file-perms verification for gateway secret + any OTEL cert/key/headers file (mode/owner only, never content), and deploy+rollback reusing canonical FIX-deploy-prep. HARD-GATED: DO NOT deploy until Kiro green-build signal (unset) + deploy_authorized + authorized orq1 access; OTEL endpoint/headers/cert values BLOCKED pending OTEL/observability owner. Nothing executed.",
+  "task": "T20-DEPLOY-PREFLIGHT",
+  "validation": "STANDBY/DRAFT — read-only checks only: artifact /tmp/multica-auth-fixed sha256=1abda82d... (ELF, rebuilt); control.json green_build/build_signal/deploy_authorized/capacity_tier_authorized all unset; repo has ZERO OTEL_* env definitions (OTEL values owner-provided, not invented); documented 0600 secret path /etc/agent-brain/secrets/omniroute-inference-key. No build/scp/ssh/env-set/chmod/swap/at/restart/observe/inference/secret."
+}

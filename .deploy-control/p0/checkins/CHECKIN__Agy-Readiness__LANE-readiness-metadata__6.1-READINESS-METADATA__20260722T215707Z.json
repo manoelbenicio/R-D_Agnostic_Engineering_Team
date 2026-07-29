@@ -1,0 +1,33 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T21:57:07Z",
+  "agent": "Agy-Readiness",
+  "pane_id": "wK:p2",
+  "lane": "readiness-metadata",
+  "task_ids": ["6.1-READINESS-METADATA"],
+  "plan_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_COMPLETION_PLAN.md",
+  "prompt_ref": "[P0 NOW — INDEPENDENT CLOSEOUT]",
+  "files_locked": [
+    ".deploy-control/p0/evidence/READINESS-routes.md"
+  ],
+  "new_files_declared": [
+    ".deploy-control/p0/evidence/READINESS-routes.md"
+  ],
+  "dependencies": [],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "toolchains": {"go": "go1.26.1"},
+    "disk_free": "root 4.4G (82%); /tmp 3.6G (55%)"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true
+  },
+  "zero_overlap_proof": "scan of active check-ins: lock is exclusive to .deploy-control/p0/evidence/READINESS-routes.md",
+  "status": "IN_PROGRESS"
+}

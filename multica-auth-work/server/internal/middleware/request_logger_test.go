@@ -9,6 +9,11 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
+
+	chi "github.com/go-chi/chi/v5"
+
+	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
 )
 
 // withCapturedLogs swaps the default slog logger for one that writes to buf,
@@ -214,6 +219,115 @@ func TestIsSoftNotFound(t *testing.T) {
 	for _, tc := range cases {
 		if got := isSoftNotFound([]byte(tc.body)); got != tc.want {
 			t.Errorf("isSoftNotFound(%q) = %v, want %v", tc.body, got, tc.want)
+		}
+	}
+}
+
+// --- F5 OBS-2 ingress span wiring tests (metadata-only, fail-closed) ---
+
+func TestEmitIngressSpanRecordsMetadataOnlyWithBothIDs(t *testing.T) {
+	sink := e2e.NewMemorySink()
+	SetIngressRecorder(e2e.NewRecorder(sink))
+	t.Cleanup(func() { SetIngressRecorder(nil) })
+
+	rctx := chi.NewRouteContext()
+	rctx.RoutePatterns = []string{"/v1/tasks"}
+	// Raw path contains a token-like segment that MUST NOT reach the span.
+	req := httptest.NewRequest(http.MethodPost, "/v1/tasks/awt_secret-token-xyz", nil)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	req = req.WithContext(withIngressHolder(req.Context()))
+	SetIngressPrincipalClass(req, "user")
+	SetIngressTaskID(req.Context(), "task-abc")
+
+	emitIngressSpan(req, http.StatusAccepted, 8*time.Millisecond)
+
+	if sink.Len() != 1 {
+		t.Fatalf("expected 1 ingress span, got %d", sink.Len())
+	}
+	spans := sink.Spans()
+	sp := spans[0]
+	if err := sp.Validate(); err != nil {
+		t.Fatalf("ingress span invalid: %v", err)
+	}
+	if report := e2e.ScanSpans(spans); !report.Clean {
+		t.Fatalf("metadata leak scan not clean: %+v", report.Findings)
+	}
+	if sp.Hop != e2e.HopIngress {
+		t.Fatalf("hop = %q, want ingress", sp.Hop)
+	}
+	if sp.Correlation.RequestID != e2e.CanonicalRequestID("task-abc") || sp.Correlation.TaskID != "task-abc" {
+		t.Fatalf("correlation = %+v (request_id must be canonical from task_id)", sp.Correlation)
+	}
+	if sp.Labels["method"] != "POST" || sp.Labels["route_template"] != "/v1/tasks" || sp.Labels["principal_class"] != "user" {
+		t.Fatalf("labels = %+v", sp.Labels)
+	}
+	if sp.HTTPStatus != http.StatusAccepted {
+		t.Fatalf("status = %d", sp.HTTPStatus)
+	}
+	for k, v := range sp.Labels {
+		if strings.Contains(v, "awt_secret-token-xyz") || strings.Contains(v, "/v1/tasks/awt") {
+			t.Fatalf("raw path leaked into label %q=%q", k, v)
+		}
+	}
+	if strings.Contains(sp.Outcome, "awt_") {
+		t.Fatalf("raw content leaked into outcome %q", sp.Outcome)
+	}
+}
+
+func TestEmitIngressSpanFailsClosedOnMissingIDs(t *testing.T) {
+	sink := e2e.NewMemorySink()
+	SetIngressRecorder(e2e.NewRecorder(sink))
+	t.Cleanup(func() { SetIngressRecorder(nil) })
+
+	// Holder present but no task_id -> no span (fail closed).
+	req := httptest.NewRequest(http.MethodGet, "/v1/tasks", nil)
+	req = req.WithContext(withIngressHolder(req.Context()))
+	emitIngressSpan(req, http.StatusOK, time.Millisecond)
+	if sink.Len() != 0 {
+		t.Fatalf("expected no span without task_id, got %d", sink.Len())
+	}
+
+	// No holder at all (non-request context) -> no span, no panic.
+	bare := httptest.NewRequest(http.MethodGet, "/v1/tasks", nil)
+	emitIngressSpan(bare, http.StatusOK, time.Millisecond)
+	if sink.Len() != 0 {
+		t.Fatalf("expected no span without holder, got %d", sink.Len())
+	}
+}
+
+func TestEmitIngressSpanNoopWhenRecorderUnset(t *testing.T) {
+	SetIngressRecorder(nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/tasks", nil)
+	req = req.WithContext(withIngressHolder(req.Context()))
+	SetIngressTaskID(req.Context(), "task-1")
+	// Must not panic and must be a no-op with no recorder installed.
+	emitIngressSpan(req, http.StatusOK, time.Millisecond)
+}
+
+func TestIngressRouteTemplateNeverRawPath(t *testing.T) {
+	rctx := chi.NewRouteContext()
+	rctx.RoutePatterns = []string{"/v1/tasks/{id}"}
+	req := httptest.NewRequest(http.MethodGet, "/v1/tasks/awt_secret", nil)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	if got := ingressRouteTemplate(req); got != "/v1/tasks/{id}" {
+		t.Fatalf("route template = %q, want bounded template not raw path", got)
+	}
+	// No chi context -> empty (omit label), never the raw path.
+	bare := httptest.NewRequest(http.MethodGet, "/v1/tasks/awt_secret", nil)
+	if got := ingressRouteTemplate(bare); got != "" {
+		t.Fatalf("expected empty template without chi ctx, got %q", got)
+	}
+}
+
+func TestIngressOutcomeBoundedCodes(t *testing.T) {
+	cases := map[int]string{
+		http.StatusAccepted: "accepted", http.StatusFound: "redirect",
+		http.StatusNotFound: "client_error", http.StatusInternalServerError: "server_error",
+		http.StatusContinue: "unknown",
+	}
+	for status, want := range cases {
+		if got := ingressOutcome(status); got != want {
+			t.Fatalf("ingressOutcome(%d) = %q, want %q", status, got, want)
 		}
 	}
 }

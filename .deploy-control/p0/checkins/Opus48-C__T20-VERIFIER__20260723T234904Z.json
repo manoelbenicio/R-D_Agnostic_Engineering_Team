@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-verifier.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-verifier.md"
+  ],
+  "finished_at": "2026-07-23T23:50:30Z",
+  "lane": "tier20-workload",
+  "last_heartbeat_at": "2026-07-23T23:50:30Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T23:49:04Z",
+  "status": "DONE",
+  "summary": "Delivered instrumented tier-20 harness update (20 tasks + deterministic hold export redacted e2e spans to backend {ingress,queue,persist,delivery} + daemon {admission,cli,route} JSON files) and a full AssembleFromLogs verifier (package e2e test, env-gated inert until exports exist): loads+merges export files -> Assemble -> asserts 20 traces, each 7 emitting hops present +assembled HopTrace=8 hops, all 9 correlation IDs, AllContinuous, delivery drop_count==0 (dropped=0), zero orphans + zero anomalies, plus ScanSpans leak-clean. Run recipe provided. NOT written to product tree (No product source), NOT run.",
+  "task": "T20-VERIFIER",
+  "validation": "No product source (verifier delivered verbatim in evidence, not added to tree); nothing executed (live_runs.*=false, no export files); git diff --check evidence PASS; verifier references only confirmed frozen e2e API (Assemble/ScanSpans/EmittingHops/Correlation.Get/AssemblyReport/Trace/HopDelivery/drop_count)"
+}

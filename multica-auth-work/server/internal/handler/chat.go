@@ -45,17 +45,29 @@ func (h *Handler) CreateChatSession(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.AgentID == "" {
-		writeError(w, http.StatusBadRequest, "agent_id is required")
-		return
-	}
-	agentID, ok := parseUUIDOrBadRequest(w, req.AgentID, "agent_id")
-	if !ok {
-		return
-	}
 	workspaceUUID, ok := parseUUIDOrBadRequest(w, workspaceID, "workspace id")
 	if !ok {
 		return
+	}
+
+	var agentID pgtype.UUID
+	if req.AgentID == "" {
+		// Task 1.3: Default routing to Squad TL
+		squads, err := h.Queries.ListSquads(r.Context(), workspaceUUID)
+		if err != nil || len(squads) == 0 {
+			writeError(w, http.StatusBadRequest, "no default squad found for routing")
+			return
+		}
+		if !squads[0].LeaderID.Valid {
+			writeError(w, http.StatusBadRequest, "default squad has no leader yet")
+			return
+		}
+		agentID = squads[0].LeaderID
+	} else {
+		agentID, ok = parseUUIDOrBadRequest(w, req.AgentID, "agent_id")
+		if !ok {
+			return
+		}
 	}
 
 	// Verify agent exists in workspace.

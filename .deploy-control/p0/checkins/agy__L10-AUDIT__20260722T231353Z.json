@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "agy",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/L10-audit.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/L10-audit.md"
+  ],
+  "finished_at": "2026-07-22T23:14:19Z",
+  "lane": "L10",
+  "last_heartbeat_at": "2026-07-22T23:14:19Z",
+  "pane_id": "wK:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T23:13:53Z",
+  "status": "DONE",
+  "summary": "Completed read-only L10 audit report maintaining evidence and OpenSpec traceability for readiness remediation and live gates",
+  "task": "L10-AUDIT",
+  "validation": "git diff --check .deploy-control/p0/evidence/L10-audit.md: PASS"
+}

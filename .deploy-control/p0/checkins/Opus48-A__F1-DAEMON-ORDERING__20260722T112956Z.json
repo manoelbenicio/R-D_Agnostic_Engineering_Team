@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-A__F1__F1-DAEMON-ORDERING__20260722T113400Z.json"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/daemon.go",
+    "multica-auth-work/server/internal/daemon/workdir_race_test.go"
+  ],
+  "finished_at": "2026-07-22T11:42:34Z",
+  "lane": "F1",
+  "last_heartbeat_at": "2026-07-22T11:42:34Z",
+  "pane_id": "w6:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:29:56Z",
+  "status": "DONE",
+  "summary": "F1 phase-1 fixed runTask admission gating so non-gateway tasks reach Prepare->StartTask (TestRunTask_StartTaskCalledAfterWorkdirOnDisk PASS) without modifying the test invariant; phase-2 wired F10 HopCLI EmitCLI at the post-launch/terminal boundary with admission correlation + metadata-only IDs, nil-safe recorder (no-op until central injection). Full daemon matrix PASS, vet PASS, gofmt clean. No rotation/provider-cred. Handed 5.3 server-wide to F2; central recorder injection handed off.",
+  "task": "F1-DAEMON-ORDERING",
+  "validation": "gofmt -l (daemon.go, workdir_race_test.go)=clean; go vet ./internal/daemon/=exit0; go test ./internal/daemon/ -run TestRunTask_StartTaskCalledAfterWorkdirOnDisk -count=1=PASS; go test ./internal/daemon/ -count=1=ok 15.157s exit0 (full 5.2 matrix incl F10 cli_observability_test); git diff --check=exit0. GOCACHE/GOTMPDIR on /tmp."
+}

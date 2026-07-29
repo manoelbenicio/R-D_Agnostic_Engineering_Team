@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/KIRO-review.md",
+    ".deploy-control/p0/handoffs/KIRO-review-handoff.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/KIRO-review.md",
+    ".deploy-control/p0/handoffs/KIRO-review-handoff.md"
+  ],
+  "finished_at": "2026-07-23T00:10:55Z",
+  "lane": "C8",
+  "last_heartbeat_at": "2026-07-23T00:10:55Z",
+  "pane_id": "wB:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:09:33Z",
+  "status": "DONE",
+  "summary": "KIRO race semantics review complete; superseded task semantics and error handling verified green",
+  "task": "KIRO-RACE-SEMANTICS-REVIEW",
+  "validation": "Superseded task semantics VERIFIED: benign no-rows requires authoritative task status, real DB errors not masked, transaction rollback protects chat session state"
+}

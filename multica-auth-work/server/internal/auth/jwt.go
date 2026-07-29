@@ -4,12 +4,23 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 )
 
 const defaultJWTSecret = "multica-dev-secret-change-in-production"
+
+const minimumProductionJWTSecretBytes = 32
+
+var knownInsecureJWTSecrets = map[string]struct{}{
+	defaultJWTSecret:          {},
+	"change-me-in-production": {},
+}
+
+var ErrInsecureJWTConfiguration = errors.New("JWT_SECRET must be a non-placeholder secret of at least 32 bytes outside explicit development or test mode")
 
 var (
 	jwtSecret     []byte
@@ -26,6 +37,25 @@ func JWTSecret() []byte {
 	})
 
 	return jwtSecret
+}
+
+// ValidateJWTConfiguration prevents a production-like server from starting
+// with no signing secret or with the repository's known development secret.
+// The insecure default remains available only when APP_ENV explicitly opts
+// into a development or test mode.
+func ValidateJWTConfiguration(appEnv, secret string) error {
+	switch strings.ToLower(strings.TrimSpace(appEnv)) {
+	case "dev", "development", "test":
+		return nil
+	}
+	trimmed := strings.TrimSpace(secret)
+	if _, known := knownInsecureJWTSecrets[trimmed]; known {
+		return ErrInsecureJWTConfiguration
+	}
+	if len([]byte(trimmed)) < minimumProductionJWTSecretBytes {
+		return ErrInsecureJWTConfiguration
+	}
+	return nil
 }
 
 // GeneratePATToken creates a new personal access token: "mul_" + 40 random hex chars.

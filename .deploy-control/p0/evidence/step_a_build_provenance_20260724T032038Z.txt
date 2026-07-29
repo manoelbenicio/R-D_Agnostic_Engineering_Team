@@ -1,0 +1,10 @@
+STEP A - BUILD PROVENANCE (Opus48-Kiro, deploy owner via w8:p2 lane)
+NO GIT COMMIT (standing directive); consistency = one build of one working-tree snapshot.
+working_tree_snapshot:
+  git_head:            a6d50986aee7f1981a323b29c9d90f175b4b6f8b
+  tracked_diff_sha256: 7a27017b431d720381fcf3728c649ff15f287aa82687c1585f0812a7c465e025
+  untracked_go_count:  57
+  untracked_go_set_sha256: be8b71f6d2c383b4664a476d4a2700f6d7249e5843e4ad1320063bc814a15e3c
+binaries_one_pass_same_tree:
+  daemon_cmd_multica:  sha256=9c8120da621f0900eb3ac62cb7be750018ccf9ac4d65996f00e5fa3a9ba5e283 size=21344634 build_exit=0
+  server_cmd_server:   sha256=dc8b28d17f20b1ad66e8c46c24c069bde1ad95c4e58659d16f04c84b6194e1e5 size=50633156 build_exit=0

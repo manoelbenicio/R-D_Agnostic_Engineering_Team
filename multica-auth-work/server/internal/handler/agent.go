@@ -14,9 +14,11 @@ import (
 	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/analytics"
+	"github.com/multica-ai/multica/server/internal/daemon/brain"
 	"github.com/multica-ai/multica/server/internal/logger"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	"github.com/multica-ai/multica/server/internal/service"
@@ -341,15 +343,17 @@ type ChatAttachmentMeta struct {
 // TaskAgentData holds agent info included in claim responses so the daemon
 // can set up the execution environment (branch naming, skill files, instructions).
 type TaskAgentData struct {
-	ID            string                   `json:"id"`
-	Name          string                   `json:"name"`
-	Instructions  string                   `json:"instructions"`
-	Skills        []service.AgentSkillData `json:"skills,omitempty"`
-	CustomEnv     map[string]string        `json:"custom_env,omitempty"`
-	CustomArgs    []string                 `json:"custom_args,omitempty"`
-	McpConfig     json.RawMessage          `json:"mcp_config,omitempty"`
-	Model         string                   `json:"model,omitempty"`
-	ThinkingLevel string                   `json:"thinking_level,omitempty"`
+	ID                           string                   `json:"id"`
+	Name                         string                   `json:"name"`
+	Instructions                 string                   `json:"instructions"`
+	Skills                       []service.AgentSkillData `json:"skills,omitempty"`
+	CustomEnv                    map[string]string        `json:"custom_env,omitempty"`
+	CustomArgs                   []string                 `json:"custom_args,omitempty"`
+	McpConfig                    json.RawMessage          `json:"mcp_config,omitempty"`
+	Model                        string                   `json:"model,omitempty"`
+	ThinkingLevel                string                   `json:"thinking_level,omitempty"`
+	CredentialAccountHome        string                   `json:"credential_account_home,omitempty"`
+	CredentialAssignmentRequired bool                     `json:"credential_assignment_required,omitempty"`
 	// RuntimeConfig is the agent's saved runtime_config JSON as-is. The
 	// daemon decodes it per-provider — e.g. the openclaw backend reads
 	// `mode` + `gateway.*` to choose between embedded and gateway routing
@@ -839,6 +843,8 @@ func (h *Handler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 		created, _ = h.Queries.GetAgent(r.Context(), created.ID)
 	}
 
+	h.ensureDefaultSquad(r.Context(), wsUUID, created, member.UserID, r)
+
 	resp := agentToResponse(created)
 	actorType, actorID := h.resolveActor(r, ownerID, workspaceID)
 	h.publish(protocol.EventAgentCreated, workspaceID, actorType, actorID, map[string]any{"agent": broadcastAgentResponse(resp)})
@@ -855,6 +861,90 @@ func (h *Handler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 
 	redactAgentResponseForActor(&resp, actorType)
 	writeJSON(w, http.StatusCreated, resp)
+}
+
+// Identity of the squad every workspace gets for free. Kept in one place so
+// the create path here and any future lookup agree on the name, which is also
+// the workspace-scoped uniqueness key (migration 084_squad.up.sql).
+const (
+	defaultSquadName        = "Workspace Team"
+	defaultSquadDescription = "Default workspace squad"
+)
+
+// ensureDefaultSquad materializes the workspace's default squad the first time
+// the workspace has an agent that can lead it.
+//
+// Why here and not in CreateWorkspace: squad.leader_id is NOT NULL and
+// references agent(id) (migration 084_squad.up.sql:7), and a fresh workspace
+// has no agents, so the row cannot be written at workspace-creation time —
+// attempting it made CreateWorkspace fail with SQLSTATE 23502. The first agent
+// is the earliest point where a valid leader exists, so the squad is written
+// here instead.
+//
+// This is what makes untargeted chat work end to end: CreateChatSession with an
+// empty agent_id routes to the first squad's leader and otherwise answers 400
+// "no default squad found for routing" (chat.go).
+//
+// The condition is "this workspace has no squad", not "this is the first agent
+// ever". Workspaces created while squad creation was deferred already have
+// agents, so gating on the first-agent signal would leave their default chat
+// permanently broken. Once any squad exists, the caller's own squad layout is
+// authoritative and is never rewritten here.
+//
+// Every step is best-effort: the agent row is already committed and a failure
+// to add the convenience squad must not turn a successful create into a 500.
+// Chat with an explicit agent_id keeps working without it.
+func (h *Handler) ensureDefaultSquad(ctx context.Context, workspaceID pgtype.UUID, leader db.Agent, creatorID pgtype.UUID, r *http.Request) {
+	if leader.ArchivedAt.Valid {
+		return
+	}
+
+	squads, err := h.Queries.ListSquads(ctx, workspaceID)
+	if err != nil {
+		slog.Warn("default squad: could not list squads", append(logger.RequestAttrs(r), "error", err, "workspace_id", uuidToString(workspaceID))...)
+		return
+	}
+	if len(squads) > 0 {
+		return
+	}
+
+	squad, err := h.Queries.CreateSquad(ctx, db.CreateSquadParams{
+		WorkspaceID: workspaceID,
+		Name:        defaultSquadName,
+		Description: defaultSquadDescription,
+		LeaderID:    leader.ID,
+		CreatorID:   creatorID,
+	})
+	if err != nil {
+		slog.Warn("default squad: create failed", append(logger.RequestAttrs(r), "error", err, "workspace_id", uuidToString(workspaceID), "leader_id", uuidToString(leader.ID))...)
+		return
+	}
+
+	// Mirror the user-driven CreateSquad handler (squad.go): the leader is also
+	// a member with role "leader" so member previews and leader routing agree.
+	if _, err := h.Queries.AddSquadMember(ctx, db.AddSquadMemberParams{
+		SquadID:    squad.ID,
+		MemberType: "agent",
+		MemberID:   leader.ID,
+		Role:       "leader",
+	}); err != nil {
+		slog.Warn("default squad: could not add leader as member", append(logger.RequestAttrs(r), "error", err, "squad_id", uuidToString(squad.ID))...)
+	}
+
+	// The human who created the agent joins too, matching what the original
+	// CreateWorkspace path intended for the workspace owner.
+	if creatorID.Valid {
+		if _, err := h.Queries.AddSquadMember(ctx, db.AddSquadMemberParams{
+			SquadID:    squad.ID,
+			MemberType: "member",
+			MemberID:   creatorID,
+			Role:       "member",
+		}); err != nil {
+			slog.Warn("default squad: could not add creator as member", append(logger.RequestAttrs(r), "error", err, "squad_id", uuidToString(squad.ID))...)
+		}
+	}
+
+	slog.Info("default squad created", append(logger.RequestAttrs(r), "squad_id", uuidToString(squad.ID), "leader_id", uuidToString(leader.ID), "workspace_id", uuidToString(workspaceID))...)
 }
 
 type UpdateAgentRequest struct {
@@ -1017,7 +1107,9 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := db.UpdateAgentParams{
-		ID: existing.ID,
+		ID:                existing.ID,
+		ExpectedRuntimeID: existing.RuntimeID,
+		ExpectedModel:     existing.Model,
 	}
 	if req.Name != nil {
 		params.Name = pgtype.Text{String: *req.Name, Valid: true}
@@ -1098,9 +1190,26 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 	if req.MaxConcurrentTasks != nil {
 		params.MaxConcurrentTasks = pgtype.Int4{Int32: *req.MaxConcurrentTasks, Valid: true}
 	}
+	preserveGatewayRoute := false
+	if req.RuntimeID != nil {
+		currentProvider := targetProvider
+		if req.Model == nil && existing.Model.Valid && strings.Contains(existing.Model.String, "/") && targetRuntimeID != existing.RuntimeID {
+			var ok bool
+			currentProvider, ok = h.resolveAgentProvider(r, existing.WorkspaceID, existing.RuntimeID)
+			if !ok {
+				writeError(w, http.StatusInternalServerError, "failed to resolve current runtime for route preservation")
+				return
+			}
+		}
+		preserveGatewayRoute, err = resolveRuntimeRouteUpdate(existing.Model.String, currentProvider, targetProvider, req.Model)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
 	if req.Model != nil {
 		params.Model = pgtype.Text{String: *req.Model, Valid: true}
-	} else if req.RuntimeID != nil && existing.Model.Valid && agent.ModelKnownIncompatibleWithProvider(targetProvider, existing.Model.String) {
+	} else if req.RuntimeID != nil && existing.Model.Valid && !preserveGatewayRoute && agent.ModelKnownIncompatibleWithProvider(targetProvider, existing.Model.String) {
 		// Model is runtime-native. When moving an agent across known provider
 		// families and the caller did not choose a replacement model, clear the
 		// old value so the new runtime falls back to its own default instead of
@@ -1173,6 +1282,10 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 
 	updated, err := h.Queries.UpdateAgent(r.Context(), params)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusConflict, "agent changed concurrently; reload it and submit runtime_id with model atomically")
+			return
+		}
 		slog.Warn("update agent failed", append(logger.RequestAttrs(r), "error", err, "agent_id", id)...)
 		writeError(w, http.StatusInternalServerError, "failed to update agent: "+err.Error())
 		return
@@ -1215,6 +1328,34 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 	h.publish(protocol.EventAgentStatus, uuidToString(updated.WorkspaceID), actorType, actorID, map[string]any{"agent": broadcastAgentResponse(resp)})
 	redactAgentResponseForActor(&resp, actorType)
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func resolveRuntimeRouteUpdate(routeModel, currentProvider, targetProvider string, replacement *string) (bool, error) {
+	if replacement != nil {
+		if strings.Contains(routeModel, "/") {
+			replacementRoute, err := brain.ParseRouteModel(*replacement)
+			if err != nil || string(replacementRoute) != *replacement || !strings.Contains(*replacement, "/") {
+				return false, fmt.Errorf("gateway route changes require an exact replacement RouteModel in the same update")
+			}
+		}
+		return false, nil
+	}
+	if routeModel == "" || !strings.Contains(routeModel, "/") {
+		return false, nil
+	}
+	route, err := brain.ParseRouteModel(routeModel)
+	if err != nil || string(route) != routeModel {
+		return false, fmt.Errorf("existing gateway route is not an exact RouteModel; submit runtime_id with a replacement model atomically")
+	}
+	currentCLI, err := brain.LegacyProviderCLIKind(currentProvider)
+	if err != nil {
+		return false, fmt.Errorf("current runtime has no accepted CLI mapping; submit runtime_id with a replacement model atomically")
+	}
+	targetCLI, err := brain.LegacyProviderCLIKind(targetProvider)
+	if err != nil || targetCLI != currentCLI {
+		return false, fmt.Errorf("existing gateway route is not compatible with the selected runtime; submit runtime_id with a replacement model atomically")
+	}
+	return true, nil
 }
 
 // attachAgentSkills populates resp.Skills from the agent_skill junction

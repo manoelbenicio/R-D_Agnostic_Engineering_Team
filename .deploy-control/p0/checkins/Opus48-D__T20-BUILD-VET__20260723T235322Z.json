@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-build-vet.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-build-vet.md"
+  ],
+  "finished_at": "2026-07-23T23:56:41Z",
+  "lane": "build-vet",
+  "last_heartbeat_at": "2026-07-23T23:56:41Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T23:53:22Z",
+  "status": "DONE",
+  "summary": "Authoritative build+vet+focused tests GREEN across the 5 package sets as-of 23:54Z. One exact transient failure reported+resolved: e2e/db_trace_verify_test.go:56:3 \"declared and not used: now\" (foreign test file; fixed concurrently). Read-only lane, no source edit/fix/deploy by me. Will rerun after Kiro merge signal on merged HEAD. -race unavailable (no gcc).",
+  "task": "T20-BUILD-VET",
+  "validation": "GOCACHE=/tmp/kgc GOTMPDIR=/tmp/kgt, go1.26.1. build ./internal/daemon/ ./internal/daemon/runtimeenv/ ./internal/daemon/observability/... ./internal/daemonws/ ./internal/service/ exit=0; go vet (re-run) exit=0; go test -count=1 all ok (daemon 53.005s, runtimeenv, observability, e2e, e2ewiring, otlpreceiver, daemonws, service). Transient vet failure at 23:53 e2e/db_trace_verify_test.go:56:3 declared-and-not-used:now was fixed by owning lane by 23:54 (re-vet clean)."
+}

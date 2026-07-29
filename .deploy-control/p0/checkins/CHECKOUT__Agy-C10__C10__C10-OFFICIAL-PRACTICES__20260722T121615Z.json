@@ -1,0 +1,40 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T12:16:15Z",
+  "agent": "Agy-C10",
+  "pane_id": "wK:p2",
+  "lane": "C10",
+  "task_ids": ["C10-OFFICIAL-PRACTICES"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".planning/agent-brain-v3/FULL_PRODUCT_OFFICIAL_PRACTICES.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "git diff --check -- .planning/agent-brain-v3/FULL_PRODUCT_OFFICIAL_PRACTICES.md",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/checkins/CHECKOUT__Agy-C10__C10__C10-OFFICIAL-PRACTICES__20260722T121615Z.json"
+  ],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["C10"],
+  "summary": "Documented official Anthropic and OpenAI prompt, tool use, structured output, and DAG orchestration practices in .planning/agent-brain-v3/FULL_PRODUCT_OFFICIAL_PRACTICES.md. Zero product code edits made. Native runtimes onboarding excluded and OmniRoute internals strictly forbidden.",
+  "non_claims": [
+    "Product code modifications (none made)",
+    "Native runtimes onboarding (excluded)",
+    "OmniRoute internals / provider credentials / model rotation (forbidden)",
+    "Deploy / restart / Docker / systemd / live runs"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

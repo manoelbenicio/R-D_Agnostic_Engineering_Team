@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/RES-deploy.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/RES-deploy.md"
+  ],
+  "finished_at": "2026-07-23T02:15:06Z",
+  "lane": "deploy-prep",
+  "last_heartbeat_at": "2026-07-23T02:15:06Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T02:14:16Z",
+  "status": "DONE",
+  "summary": "Standby deploy-prep delivered at RES-deploy.md: identified fixed candidate /tmp/multica-auth-fixed (sha256 b554ee52...) to stage to orq1:/tmp/multica-auth with checksum + rollback, preserving launcher (claude-code + claude_code_kimi_2.7_Code + AGENT_BRAIN_* gateway env) and restart via at + health gate, per the single canonical runbook FIX-deploy-prep.md (not duplicated). Deploy gated: deploy_authorized unset + no authorized orq1 access + fix-build-verify owned by build lane; nothing executed. Ready to run on authorization.",
+  "task": "RES-DEPLOY-PREP",
+  "validation": "STANDBY/DRAFT — no command executed beyond read-only checks: recorded fixed-artifact provenance sha256 /tmp/multica-auth-fixed=b554ee52..., /tmp/multica-auth=bd5c3848... (ELF binaries, no secrets); control.json deploy_authorized=unset, live_runs_authorized=unset. No build/scp/ssh/swap/at/restart/observe/inference/secret."
+}

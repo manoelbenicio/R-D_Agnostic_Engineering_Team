@@ -4,11 +4,14 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
 	"github.com/multica-ai/multica/server/internal/events"
+	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
@@ -195,4 +198,59 @@ func TestTaskFailureClassifiers(t *testing.T) {
 			}
 		})
 	}
+}
+
+// --- F6: persist-hop (OBS-7) span emitted only after terminal persistence ---
+
+func TestEmitPersistSpanAfterPersistenceMetadataOnly(t *testing.T) {
+	sink := e2e.NewMemorySink()
+	svc := &TaskService{Obs: e2e.NewRecorder(sink)}
+	id := testUUID(21)
+	persisted := db.AgentTaskQueue{
+		ID:     id,
+		Status: "completed",
+		Result: []byte(`{"output":"x"}`),
+	}
+	svc.emitPersistSpan(persisted, 7*time.Millisecond)
+	if sink.Len() != 1 {
+		t.Fatalf("sink len = %d, want 1", sink.Len())
+	}
+	sp := sink.Spans()[0]
+	wantID := util.UUIDToString(id)
+	if sp.Hop != e2e.HopPersist || sp.Correlation.TaskID != wantID || sp.Correlation.ResultID != wantID {
+		t.Fatalf("unexpected persist span: hop=%q task=%q result=%q", sp.Hop, sp.Correlation.TaskID, sp.Correlation.ResultID)
+	}
+	if sp.Labels["terminal_status"] != "completed" {
+		t.Fatalf("terminal_status label=%q, want completed", sp.Labels["terminal_status"])
+	}
+	if sp.Counters["byte_count"] != int64(len(persisted.Result)) {
+		t.Fatalf("byte_count=%d, want %d", sp.Counters["byte_count"], len(persisted.Result))
+	}
+	if sp.Counters["persist_latency_ms"] != 7 {
+		t.Fatalf("persist_latency_ms=%d, want 7", sp.Counters["persist_latency_ms"])
+	}
+	for k := range sp.Counters {
+		switch k {
+		case "persist_latency_ms", "byte_count", "token_count":
+		default:
+			t.Fatalf("unexpected counter key %q", k)
+		}
+	}
+	if r := e2e.ScanSpans([]e2e.Span{sp}); !r.Clean {
+		t.Fatalf("leak scan not clean: %+v", r.Findings)
+	}
+}
+
+// TestEmitPersistSpanOrderingConsumesPersistedRow proves the persist span is
+// derived from the PERSISTED row (byte_count == persisted Result length), so it
+// can only carry post-persistence state; and that a nil Obs recorder is a no-op.
+func TestEmitPersistSpanOrderingConsumesPersistedRow(t *testing.T) {
+	sink := e2e.NewMemorySink()
+	svc := &TaskService{Obs: e2e.NewRecorder(sink)}
+	svc.emitPersistSpan(db.AgentTaskQueue{ID: testUUID(22), Status: "completed", Result: []byte("abcd")}, time.Millisecond)
+	if sink.Len() != 1 || sink.Spans()[0].Counters["byte_count"] != 4 {
+		t.Fatalf("persist span did not reflect persisted row bytes: %+v", sink.Spans())
+	}
+	// Nil Obs: no recorder, no panic, nothing emitted.
+	(&TaskService{}).emitPersistSpan(db.AgentTaskQueue{ID: testUUID(23), Result: []byte("z")}, 0)
 }

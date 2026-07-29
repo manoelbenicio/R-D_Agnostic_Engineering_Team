@@ -1,0 +1,28 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/R1-test-implementation.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/R1-test-implementation.md",
+    "multica-auth-work/server/internal/daemon/runtimeenv/adapter_test.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/cline_test.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/env_test.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/isolation_g4_test.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/model_test.go"
+  ],
+  "finished_at": "2026-07-21T23:22:25Z",
+  "lane": "A9-R1",
+  "last_heartbeat_at": "2026-07-21T23:22:25Z",
+  "pane_id": "w6:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T23:19:44Z",
+  "status": "DONE",
+  "summary": "Implemented focused Cline runtimeenv tests under D1+D2: new adapter_test.go (AdapterReady+ProtocolOpenAIChat); env_test.go trusted CLINE_DATA_DIR/CLINE_OMNIROUTE_API_KEY + deny-list reject; model_test.go GLM policy accept + Kimi t.Skip (no id invented); flipped CLIOpenAICompatible fail-closed rows out of model_test.go + isolation_g4_test.go while keeping Kimi/NIM/Antigravity fail-closed. Only the locked files edited; cline_test.go unchanged. Focused suite green, gofmt clean, no live run.",
+  "task": "P0-R1-TEST-IMPLEMENTATION",
+  "validation": "from multica-auth-work/server: /home/ec2-user/goroot/go/bin/go test ./internal/daemon/runtimeenv/ -run \"Adapter|Env|Model|Cline|G4\" -count=1 => ok github.com/multica-ai/multica/server/internal/daemon/runtimeenv 0.014s (exit 0). gofmt -l over all 5 locked files: clean. New tests PASS (adapter-ready, cline trusted-env, deny-list reject, GLM policy), Kimi SKIP (BLK-KIMI), flipped tables keep Kimi/NIM/Antigravity fail-closed."
+}

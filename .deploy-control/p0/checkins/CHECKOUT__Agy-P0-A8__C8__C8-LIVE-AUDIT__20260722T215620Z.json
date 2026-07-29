@@ -1,0 +1,62 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T21:56:20Z",
+  "agent": "Agy-P0-A8",
+  "pane_id": "wB:p2",
+  "lane": "C8",
+  "task_ids": [
+    "C8-LIVE-AUDIT"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/C8-live-audit.md",
+    ".deploy-control/p0/handoffs/C8-live-audit-handoff.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "GOCACHE=/tmp/gocache-c8 GOTMPDIR=/tmp/gotmp-c8 /home/ec2-user/goroot/go/bin/go test ./internal/daemonws/... ./internal/daemon/gateway/... ./internal/daemon/brain/...",
+      "exit_code": 0,
+      "assertions_or_tests": 57,
+      "result": "PASS",
+      "detail": "internal/daemonws (0.454s), gateway (0.307s), brain (0.009s) all PASS 100%"
+    },
+    {
+      "command": "python3 scripts/orchestration/p0_control.py monitor --once",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS",
+      "detail": "0 active lock overlaps across canonical records"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/C8-live-audit.md",
+    ".deploy-control/p0/handoffs/C8-live-audit-handoff.md"
+  ],
+  "requirements": [
+    "AB-REQ-39",
+    "AB-REQ-40"
+  ],
+  "openspec_tasks": [
+    "C8-LIVE-AUDIT"
+  ],
+  "summary": "C8 live audit complete. Main Brain task claim and pick pipeline VERIFIED. Fail-closed gate verified when gateway_required=false (0 inference incurred, 0 credentials leaked). gateway_required routing verified in execenv.go and admission.go:64. WS delivery (hub.go EmitDelivery) and telemetry spans VERIFIED PASS (0.454s).",
+  "non_claims": [
+    "No product source code edits authored",
+    "No deployment, network, or inference executed",
+    "Account assignments never created (boundary preserved)"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "Backend / Runtime Router Owner",
+      "reason": "Configure backend task creation so gateway_required=true for OmniRoute-routed tasks, or provision provider account assignments out-of-band",
+      "file": ".deploy-control/p0/evidence/C8-live-audit.md"
+    }
+  ]
+}

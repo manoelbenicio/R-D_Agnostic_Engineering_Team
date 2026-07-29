@@ -1,0 +1,33 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/L1-integration-convergence.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/cmd/multica/cmd_daemon.go",
+    "multica-auth-work/server/go.mod",
+    "multica-auth-work/server/internal/daemon/brain",
+    "multica-auth-work/server/internal/daemon/brain_integration.go",
+    "multica-auth-work/server/internal/daemon/config.go",
+    "multica-auth-work/server/internal/daemon/daemon.go",
+    "multica-auth-work/server/internal/daemon/execenv",
+    "multica-auth-work/server/internal/daemon/health.go",
+    "multica-auth-work/server/internal/daemon/types.go",
+    "multica-auth-work/server/internal/daemon/wakeup.go",
+    "multica-auth-work/server/pkg/agent/models.go"
+  ],
+  "finished_at": "2026-07-22T04:20:02Z",
+  "lane": "L1",
+  "last_heartbeat_at": "2026-07-22T04:20:02Z",
+  "pane_id": "w6:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T04:03:43Z",
+  "status": "DONE",
+  "summary": "L1 owned-scope convergence DONE: restored 4 over-deleted wakeup.go helpers from HEAD (+imports; credential-rotation kept removed), removed daemon.go observeCredentialPrepare orphan, added admission.go fail-closed gateway-bypass reject (g2a green), gofmt owned clean. Escalated out-of-lock daemon_test.go blocker (newTestDaemon 742-line partial deletion, blocks daemon pkg tests) to manager for owner assignment. No deploy/inference/secret/commit.",
+  "task": "P0-L1-INTEGRATION",
+  "validation": "from multica-auth-work/server (go1.26.1): gofmt -l owned=clean; go build ./internal/daemon/ ./internal/daemon/brain/ ./internal/daemon/execenv/ ./pkg/agent/ ./cmd/multica/ =exit0; go test ./internal/daemon/brain/ ./internal/daemon/execenv/ -count=1 =PASS (incl TestGatewayAdmissionReadyAndRejectsGatewayBypass); go vet brain+execenv=exit0; git diff --check owned=exit0. BLOCKED (non-claim): go vet ./internal/daemon/ =exit1 due to out-of-lock daemon_test.go newTestDaemon undefined."
+}

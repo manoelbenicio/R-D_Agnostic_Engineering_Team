@@ -1,0 +1,35 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T11:29:56Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "F1",
+  "task_ids": ["5.2"],
+  "plan_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_COMPLETION_PLAN.md",
+  "prompt_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_PROMPTS.md#F1",
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/daemon.go",
+    "multica-auth-work/server/internal/daemon/workdir_race_test.go"
+  ],
+  "new_files_declared": [],
+  "dependencies": ["phase-2 CLI-hop call-site wiring waits for F10 (cli_observability.go) signature"],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 330,
+    "toolchains": {"go": "go1.26.1", "gofmt": "/home/ec2-user/goroot/go/bin/gofmt"},
+    "disk_free": "root 187M (100%); /tmp 7.6G (2%)",
+    "go_env": {"GOCACHE": "/tmp/f1-gocache", "GOTMPDIR": "/tmp/f1-gotmp"}
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true,
+    "no_rotation_or_provider_credential_logic": true
+  },
+  "zero_overlap_proof": "scan of active check-ins: no lock intersects daemon.go or workdir_race_test.go",
+  "status": "IN_PROGRESS"
+}

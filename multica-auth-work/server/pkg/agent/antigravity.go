@@ -70,12 +70,12 @@ func (b *antigravityBackend) Execute(ctx context.Context, prompt string, opts Ex
 
 	cmd := exec.CommandContext(runCtx, execPath, args...)
 	hideAgentWindow(cmd)
-	b.cfg.Logger.Info("agent command", "exec", execPath, "args", args)
+	b.cfg.Logger.Info("agent command", "exec", execPath, "args", safeAntigravityArgvForLog(args), "arg_count", len(args))
 	cmd.WaitDelay = 10 * time.Second
 	if opts.Cwd != "" {
 		cmd.Dir = opts.Cwd
 	}
-	cmd.Env = buildEnv(b.cfg.Env)
+	cmd.Env = antigravityResolverEnv(buildEnv(b.cfg.Env))
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -219,6 +219,49 @@ var antigravityBlockedArgs = map[string]blockedArgMode{
 	"--log-file":                     blockedWithValue,  // daemon needs it for session capture
 }
 
+// antigravitySensitiveValueFlags are agy value-bearing flags whose VALUES must
+// never reach logs: the prompt (full user/repository content) and the resume
+// conversation id. `--model` is already covered by the shared
+// sensitiveAgentArgValueFlags set. agy's `-p` takes the prompt as its value
+// (unlike Claude Code's standalone `-p`), so this redaction is antigravity-local
+// to avoid mis-redacting other adapters that share safeAgentArgvForLog.
+var antigravitySensitiveValueFlags = map[string]struct{}{
+	"-p": {}, "--print": {}, "--prompt": {}, "--conversation": {},
+}
+
+// safeAntigravityArgvForLog returns a redacted projection of the launch argv
+// for logging. The child process still receives the original argv; only the
+// log projection hides prompt/model/session values. It mirrors
+// safeAgentArgvForLog and additionally redacts agy's value-bearing prompt and
+// conversation flags.
+func safeAntigravityArgvForLog(args []string) []string {
+	safe := make([]string, 0, len(args))
+	redactNext := false
+	for _, arg := range args {
+		if redactNext {
+			safe = append(safe, redactedAgentArgValue)
+			redactNext = false
+			continue
+		}
+		flag := arg
+		if index := strings.IndexByte(flag, '='); index >= 0 {
+			flag = flag[:index]
+		}
+		_, antigravitySensitive := antigravitySensitiveValueFlags[flag]
+		if antigravitySensitive || isSensitiveAgentArgValueFlag(flag) {
+			if strings.Contains(arg, "=") {
+				safe = append(safe, flag+"="+redactedAgentArgValue)
+			} else {
+				safe = append(safe, arg)
+				redactNext = true
+			}
+			continue
+		}
+		safe = append(safe, redactSensitiveInlineArg(arg))
+	}
+	return safe
+}
+
 // buildAntigravityArgs assembles the argv for a one-shot agy invocation.
 //
 //	agy -p <prompt> --dangerously-skip-permissions [--model <display name>]
@@ -300,4 +343,51 @@ func antigravityFormatTimeout(d time.Duration) string {
 	// time.Duration.String() already produces shapes like "20m0s" / "1h30m0s"
 	// that agy parses via Go's stdlib flag.Duration on the receiving side.
 	return d.String()
+}
+
+// antigravityResolverEnv makes agy 1.1.4 reachable through the OmniRoute path
+// by forcing the cgo/system DNS resolver instead of Go's pure-Go resolver.
+//
+// agy is a Go binary and, like every Go program, defaults to the pure-Go
+// resolver. In this deployment IPv6 is intentionally disabled
+// (net.ipv6.conf.all.disable_ipv6=1) while an IPv6 loopback interface is still
+// present, so the pure-Go resolver races an AAAA/`::1` answer for the loopback
+// OmniRoute endpoint (agy's configured host) that can never connect — the run
+// then fails to reach OmniRoute at all. This is the same IPv6-disabled Go
+// resolver failure class already recorded in the foundation-reachability
+// evidence. `GODEBUG=netdns=cgo` is the documented Go mechanism for exactly
+// this situation: it defers to the system resolver order (/etc/hosts, nsswitch)
+// and the host's IPv4 preference. See https://pkg.go.dev/net#hdr-Name_Resolution.
+//
+// It is applied as a NON-OVERRIDING default: if GODEBUG is already present
+// (inherited from the daemon environment or supplied via cfg.Env) it is
+// preserved, and an explicit `netdns=` directive is never clobbered — so an
+// operator override and all existing behavior are kept intact. Unrelated
+// GODEBUG settings are merged, not replaced. This adds no provider credentials
+// and introduces no new fallback owner; it only tunes the child's resolver.
+func antigravityResolverEnv(env []string) []string {
+	const (
+		key    = "GODEBUG"
+		netdns = "netdns=cgo"
+	)
+	out := make([]string, len(env), len(env)+1)
+	copy(out, env)
+	for i, entry := range out {
+		name, value, found := strings.Cut(entry, "=")
+		if !found || name != key {
+			continue
+		}
+		// GODEBUG already set: preserve an explicit resolver choice, otherwise
+		// merge our directive without disturbing the caller's other settings.
+		if strings.Contains(value, "netdns=") {
+			return out
+		}
+		if value == "" {
+			out[i] = key + "=" + netdns
+		} else {
+			out[i] = key + "=" + value + "," + netdns
+		}
+		return out
+	}
+	return append(out, key+"="+netdns)
 }

@@ -1,0 +1,38 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T12:30:40Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "C5",
+  "task_ids": ["5.2"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/service/email.go",
+    "multica-auth-work/server/internal/service/email_test.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [
+    {"command": "gofmt -l internal/service/email.go internal/service/email_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS (clean)"},
+    {"command": "go vet ./internal/service/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "go test ./internal/service/ -run 'TestSendVerificationCode_DevModeRedactsCode|TestSendInvitationEmail_DevModeRedactsURL' -count=1 -v", "exit_code": 0, "assertions_or_tests": 2, "result": "PASS"},
+    {"command": "go test ./internal/service/ -count=1 (full package regression)", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS (ok 0.011s)"},
+    {"command": "git diff --check owned", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": ["multica-auth-work/server/internal/service/email.go", "multica-auth-work/server/internal/service/email_test.go"],
+  "requirements": [],
+  "openspec_tasks": ["5.2"],
+  "summary": "Made the two dev-mode email tests HERMETIC and green. Implemented the documented DEV-stdout delivery tier in email.go: SendVerificationCode/SendInvitationEmail, when smtpHost=='' && client==nil, log a developer-visibility line with the secret scrubbed through the shared redact.Text library (produces [REDACTED CREDENTIAL]) and return nil (previously returned ErrEmailBackendNotConfigured). Tests require no SMTP/Resend backend or secrets; invitation test pins FRONTEND_ORIGIN via t.Setenv to remove the only ambient-env read.",
+  "non_claims": [
+    "no -race (cgo/gcc absent)",
+    "no live run / no inference / no secret read",
+    "go vet/test fetched already-declared modules into the cache to build; go.mod/go.sum UNCHANGED (no new dependency added)",
+    "ErrEmailBackendNotConfigured retained as exported var (now unused internally; API preserved) — grep confirmed zero external callers/asserts before change",
+    "did not hard-code the [REDACTED CREDENTIAL] literal; it is produced by pkg/redact (single source of truth)",
+    "OpenSpec not closed by narrative"
+  ],
+  "blocker": null,
+  "behavior_change_note": "no-backend path now logs-redacted + returns nil (documented 'DEV stdout' tier) instead of ErrEmailBackendNotConfigured; safe because that error had no external consumers (verified by repo-wide grep).",
+  "handoffs": []
+}

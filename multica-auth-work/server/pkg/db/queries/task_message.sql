@@ -3,6 +3,11 @@ INSERT INTO task_message (task_id, seq, type, tool, content, input, output)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
+-- name: GetTaskMessageMaxSeq :one
+SELECT COALESCE(MAX(seq), 0)::integer AS max_seq
+FROM task_message
+WHERE task_id = $1;
+
 -- name: ListTaskMessages :many
 SELECT * FROM task_message
 WHERE task_id = $1

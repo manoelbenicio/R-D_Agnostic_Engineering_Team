@@ -10,6 +10,23 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Account struct {
+	AccountID       pgtype.UUID        `json:"account_id"`
+	Vendor          string             `json:"vendor"`
+	TenantID        pgtype.UUID        `json:"tenant_id"`
+	Priority        int32              `json:"priority"`
+	HomeDir         string             `json:"home_dir"`
+	ConfigDir       string             `json:"config_dir"`
+	Status          string             `json:"status"`
+	TokensPerWindow int64              `json:"tokens_per_window"`
+	TokensUsed      int64              `json:"tokens_used"`
+	WindowStart     pgtype.Timestamptz `json:"window_start"`
+	CooldownUntil   pgtype.Timestamptz `json:"cooldown_until"`
+	LastError       string             `json:"last_error"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type ActivityLog struct {
 	ID          pgtype.UUID        `json:"id"`
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`
@@ -99,6 +116,23 @@ type AgentTaskQueue struct {
 	IsLeaderTask      bool               `json:"is_leader_task"`
 	WaitReason        pgtype.Text        `json:"wait_reason"`
 	InitiatorUserID   pgtype.UUID        `json:"initiator_user_id"`
+	// Provider account frozen on this task at claim/dispatch, resolved server-side from the approved assignment. Immutable once set. NULL = claimed before this column existed, or the agent had no approved assignment. Never supplied by the daemon.
+	CredentialAccountID pgtype.UUID `json:"credential_account_id"`
+}
+
+type ApprovedAccount struct {
+	ApprovedID    pgtype.UUID        `json:"approved_id"`
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	AccountID     pgtype.UUID        `json:"account_id"`
+	Allowed       bool               `json:"allowed"`
+	WorktypeScope pgtype.Text        `json:"worktype_scope"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type Assignment struct {
+	AgentID    pgtype.UUID        `json:"agent_id"`
+	AccountID  pgtype.UUID        `json:"account_id"`
+	AssignedAt pgtype.Timestamptz `json:"assigned_at"`
 }
 
 type Attachment struct {
@@ -245,6 +279,16 @@ type ContactSalesInquiry struct {
 	SubmitterIp     *netip.Addr        `json:"submitter_ip"`
 	UserAgent       string             `json:"user_agent"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
+type Credential struct {
+	CredentialID pgtype.UUID        `json:"credential_id"`
+	AccountID    pgtype.UUID        `json:"account_id"`
+	Vendor       string             `json:"vendor"`
+	SecretRef    string             `json:"secret_ref"`
+	Format       string             `json:"format"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
 }
 
 type DaemonConnection struct {
@@ -585,6 +629,16 @@ type ProjectResource struct {
 	CreatedBy    pgtype.UUID        `json:"created_by"`
 }
 
+type RotationEvent struct {
+	ID            pgtype.UUID        `json:"id"`
+	AgentID       pgtype.UUID        `json:"agent_id"`
+	FromAccountID pgtype.UUID        `json:"from_account_id"`
+	ToAccountID   pgtype.UUID        `json:"to_account_id"`
+	Reason        string             `json:"reason"`
+	At            pgtype.Timestamptz `json:"at"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
 type RuntimeProfile struct {
 	ID             pgtype.UUID        `json:"id"`
 	WorkspaceID    pgtype.UUID        `json:"workspace_id"`
@@ -704,6 +758,10 @@ type TaskUsage struct {
 	CacheWriteTokens int64              `json:"cache_write_tokens"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	// Reasoning tier declared by the agent config for this task (e.g. high, low, thinking). NULL = not declared by the reporting daemon. Never inferred from the model name.
+	ThinkingLevel pgtype.Text `json:"thinking_level"`
+	// Provider account that produced this usage, snapshotted at task claim time on agent_task_queue.credential_account_id and copied to task_usage upon report. Never live assignment lookup.
+	AccountID pgtype.UUID `json:"account_id"`
 }
 
 type TaskUsageHourly struct {
@@ -759,6 +817,13 @@ type User struct {
 	ProfileDescription      string             `json:"profile_description"`
 	// User-preferred IANA timezone for report rendering (Viewing tz). NULL means "use the browser-detected tz at render time". Affects dashboards, charts, and any "today" label shown to this user. Does not affect data materialisation — all rollups remain in UTC.
 	Timezone pgtype.Text `json:"timezone"`
+}
+
+type UserPasswordCredential struct {
+	UserID       pgtype.UUID        `json:"user_id"`
+	PasswordHash string             `json:"password_hash"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type VerificationCode struct {

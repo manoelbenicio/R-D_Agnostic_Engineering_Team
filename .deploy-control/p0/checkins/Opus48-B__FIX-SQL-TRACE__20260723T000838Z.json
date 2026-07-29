@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/FIX-sql-trace.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/FIX-sql-trace.md"
+  ],
+  "finished_at": "2026-07-23T00:10:26Z",
+  "lane": "SQL-TRACE",
+  "last_heartbeat_at": "2026-07-23T00:10:26Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:08:38Z",
+  "status": "DONE",
+  "summary": "ROOT CAUSE: StartAgentTask no-rows = optimistic guard firing when a concurrent RerunIssue CancelAgentTasksByIssueAndAgent superseded/cancelled the prior (issue,agent) task before the daemon flip. MINIMAL INVARIANT: keep the WHERE guard (never widen); fix at caller task.go:1229 to treat pgx.ErrNoRows as benign superseded->abort/cleanup (mirror existing ErrNoRows handling). No edits made; advisory. Reported to Kiro.",
+  "task": "FIX-SQL-TRACE",
+  "validation": "READ-ONLY trace (no edits, no DB run). StartAgentTask (agent.sql:326) WHERE id=$1 AND status IN (dispatched,waiting_local_directory) RETURNING * :one -> ErrNoRows when status left that set. RerunIssue (task.go:1727) calls CancelAgentTasksByIssueAndAgent (agent.sql:214, sets status=cancelled WHERE status IN queued/dispatched/running/waiting) BEFORE enqueue, not in one txn -> concurrent interleave flips prior task to cancelled -> StartAgentTask 0 rows. Caller task.go:1229 wraps ErrNoRows as generic error (unlike siblings :942/:988/:1061/:1318/:1514)."
+}

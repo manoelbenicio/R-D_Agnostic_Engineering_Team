@@ -1,0 +1,28 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T21:49:40Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "T20-WAVE",
+  "task_ids": ["6.1"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": ["multica-auth-work/server/internal/daemon/gateway/fetchmodels_classification_test.go"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/daemon/gateway/ -run 'FetchModels(BodyReadFailure|InvalidJSON|RegistryVersionMismatch)' -count=1", "exit_code": 0, "assertions_or_tests": 3, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/gateway/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-tests.md"],
+  "requirements": [],
+  "openspec_tasks": ["6.1"],
+  "summary": "ADDED deterministic FetchModels classification regression (3 tests PASS): body read/drain failure after healthy 200 -> ErrorTransport with Retryable=true (asserted via errors.As); invalid JSON -> ErrorProtocol; registry_version body/header mismatch -> ErrorProtocol. No live network (injected roundTripFunc + synthetic credential). gofmt/vet/diff-check clean.",
+  "non_claims": [
+    "One product file created (test-only); no gateway/client source edited by me.",
+    "Deterministic unit-level (injected transport); no live OmniRoute/network.",
+    "No inference/secret/deploy/commit/push; no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": []
+}

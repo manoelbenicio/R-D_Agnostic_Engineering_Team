@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/BACKEND-contract-verify.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/BACKEND-contract-verify.md"
+  ],
+  "finished_at": "2026-07-22T21:58:43Z",
+  "lane": "BACKEND-VERIFY",
+  "last_heartbeat_at": "2026-07-22T21:58:43Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T21:56:32Z",
+  "status": "DONE",
+  "summary": "Backend gateway-required admission fail-closed contract VERIFIED read-only (exact line refs in evidence). UI SMOKE NOT RUN: daemon 8080 + frontend 3100 unreachable (http=000); pending daemon readiness — on ready, run read-only chat/Kanban/status HTTP/UI assertions (no edits/capacity/secrets). Reported to Kiro dashboard via evidence file.",
+  "task": "BACKEND-CONTRACT-VERIFY",
+  "validation": "READ-ONLY static verify (no edits). daemon.go runTask admission gate: init-err fail-closed (:3260); admitTask err fail-closed (:3263-3272); plan!=nil -> RouterOwnerOmniRoute (:3274-3276), legacy rotation gated by plan!=nil (:3440,:3706); nil-plan + gateway-required -> fail-closed \"gateway_required\" before launch (~:3282, \"no provider credential or account rotation\"). admitTask returns valid plan or typed fail-closed error incl credential_source_unavailable (brain_integration.go:198-199). CONFIRMED: no native account path reachable when AGENT_BRAIN_DEVELOPMENT_ENABLED+gateway-required."
+}

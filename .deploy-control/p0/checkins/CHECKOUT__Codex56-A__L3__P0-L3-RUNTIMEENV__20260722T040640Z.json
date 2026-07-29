@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T04:06:40Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "L3",
+  "task_ids": ["5.1", "5.2"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [
+    {"command": "/home/ec2-user/goroot/go/bin/go test ./internal/daemon/runtimeenv/...", "exit_code": 0, "assertions_or_tests": ">0 (package suite)", "result": "PASS"},
+    {"command": "/home/ec2-user/goroot/go/bin/go vet ./internal/daemon/runtimeenv/...", "exit_code": 0, "assertions_or_tests": "n/a", "result": "PASS"},
+    {"command": "/home/ec2-user/goroot/go/bin/gofmt -l internal/daemon/runtimeenv", "exit_code": 0, "assertions_or_tests": "0 files listed", "result": "PASS"}
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/checkins/CHECKOUT__Codex56-A__L3__P0-L3-RUNTIMEENV__20260722T040640Z.json",
+    ".deploy-control/p0/checkins/CHECKIN__Codex56-A__L3__P0-L3-RUNTIMEENV__20260722T040526Z.json"
+  ],
+  "requirements": ["AB-REQ-16", "AB-REQ-17", "AB-REQ-18", "AB-REQ-19", "AB-REQ-20", "AB-REQ-21", "AB-REQ-22"],
+  "openspec_tasks": ["5.1", "5.2"],
+  "summary": "L3 runtimeenv verified GREEN read-only (no product edits authorized or made; implementation_authorized=false, authorized_lanes=[]). Confirmed the already-integrated GLM/Kimi Cline contract meets L3 acceptance: CredentiallessAdapterContract(CLIOpenAICompatible)=AdapterReady+ProtocolOpenAIChat (Cline OpenAI-compatible accepts GLM/Kimi by explicit CLIKind+RouteModel); native CLIKimi/CLINIM/CLIAntigravity remain AdapterFailClosed with gate errors. gofmt -l empty, go vet rc=0, go test PASS 0.070s.",
+  "non_claims": [
+    "Did NOT author these contracts; D1-D7 GLM runtimeenv delta was already integrated and green per control.json (updated 2026-07-22T00:54:55Z).",
+    "No product source edited this window; no RouteModel invented.",
+    "Kimi catalog/fixtures (models.go=L1) and availability/live remain externally blocked (BLK-AVAIL); out of runtimeenv/L3 scope.",
+    "No inference/live run executed (live_runs.*=false).",
+    "Server-wide build/test not run in this lane (L1/L8 scope)."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "L1", "reason": "Kimi static catalog row (cp/cline-pass/kimi-k2.7-code) lives in server/pkg/agent/models.go (L1-owned) and remains authorization/availability-blocked; not a runtimeenv edit.", "file": "server/pkg/agent/models.go"}
+  ]
+}

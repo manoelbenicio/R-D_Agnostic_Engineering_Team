@@ -1,0 +1,31 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T10:58:53Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "R1",
+  "task_ids": ["5.2"],
+  "plan_ref": ".planning/agent-brain-v3/P0_SIX_HOUR_EXECUTION_PLAN.md",
+  "prompt_ref": ".deploy-control/p0/SIX_HOUR_CHECKIN_CONTRACT.md",
+  "files_locked": ["multica-auth-work/server/internal/daemon/daemon_test.go"],
+  "new_files_declared": [],
+  "dependencies": ["restores helpers referenced by existing daemon_test.go callers; depends on HEAD daemon_test.go as the source of truth for the over-deleted helpers"],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 298,
+    "toolchains": {"go": "go1.26.1", "gofmt": "/home/ec2-user/goroot/go/bin/gofmt", "node": "v22.23.1"},
+    "disk_free": "868M (97% used)"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true,
+    "test_file_only_no_source": true
+  },
+  "zero_overlap_proof": "scan of active check-ins: no lock on daemon_test.go",
+  "status": "IN_PROGRESS"
+}

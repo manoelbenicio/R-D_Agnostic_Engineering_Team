@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-Trace",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/TRACE-live.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/TRACE-live.md"
+  ],
+  "finished_at": "2026-07-22T21:56:16Z",
+  "lane": "L-TRACE",
+  "last_heartbeat_at": "2026-07-22T21:56:16Z",
+  "pane_id": "wK:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T21:55:39Z",
+  "status": "DONE",
+  "summary": "Collected 8-hop 9-safe-ID correlation for live task (d9079555). Recorded 6/8 present hops, missing Hops 4 (CLI) & 5 (Route) due to Hop 3 fail-closed pre-launch stop.",
+  "task": "TRACE-live-collection",
+  "validation": "cat .deploy-control/p0/evidence/TRACE-live.md: PASS"
+}

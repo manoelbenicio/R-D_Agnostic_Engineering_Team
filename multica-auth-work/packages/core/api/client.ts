@@ -64,6 +64,7 @@ import type {
   TaskMessagePayload,
   Attachment,
   ChatSession,
+  CreateChatSessionRequest,
   ChatMessage,
   ChatMessagesPage,
   ChatPendingTask,
@@ -821,9 +822,8 @@ export class ApiClient {
     const raw = await this.fetch<unknown>(
       `/api/agent-templates/${encodeURIComponent(slug)}`,
     );
-    // Round-trip the requested slug into the fallback so a malformed
-    // detail response still produces a navigable record matching the URL
-    // the user clicked.
+    // The legacy compatibility value is retained at the call site until the
+    // parser signature migration is completed; contract drift still throws.
     return parseWithFallback(
       raw,
       AgentTemplateSchema,
@@ -1331,15 +1331,24 @@ export class ApiClient {
     return this.fetch(`/api/runtimes/${runtimeId}/update/${updateId}`);
   }
 
-  async initiateListModels(runtimeId: string): Promise<RuntimeModelListRequest> {
-    return this.fetch(`/api/runtimes/${runtimeId}/models`, { method: "POST" });
+  async initiateListModels(
+    runtimeId: string,
+    signal?: AbortSignal,
+  ): Promise<RuntimeModelListRequest> {
+    return this.fetch(`/api/runtimes/${runtimeId}/models`, {
+      method: "POST",
+      signal,
+    });
   }
 
   async getListModelsResult(
     runtimeId: string,
     requestId: string,
+    signal?: AbortSignal,
   ): Promise<RuntimeModelListRequest> {
-    return this.fetch(`/api/runtimes/${runtimeId}/models/${requestId}`);
+    return this.fetch(`/api/runtimes/${runtimeId}/models/${requestId}`, {
+      signal,
+    });
   }
 
   async initiateListLocalSkills(
@@ -1698,7 +1707,7 @@ export class ApiClient {
     return this.fetch(`/api/chat/sessions/${id}`);
   }
 
-  async createChatSession(data: { agent_id: string; title?: string }): Promise<ChatSession> {
+  async createChatSession(data: CreateChatSessionRequest): Promise<ChatSession> {
     return this.fetch("/api/chat/sessions", {
       method: "POST",
       body: JSON.stringify(data),

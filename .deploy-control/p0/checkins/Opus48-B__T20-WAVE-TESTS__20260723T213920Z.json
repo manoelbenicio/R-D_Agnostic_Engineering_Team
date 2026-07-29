@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-tests.md",
+    "multica-auth-work/server/internal/daemon/gateway/predicate_instrumentation_test.go"
+  ],
+  "finished_at": "2026-07-23T21:41:41Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T21:41:41Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T21:39:20Z",
+  "status": "DONE",
+  "summary": "ADDED gateway/predicate_instrumentation_test.go (4 emitPredicates tests: all fields on success; failing sub-check op=readiness/class=rate_limited/status=429; non_gateway_error; nil-diag no-op). CONFIRMED tier20_enablement_test.go (2 PASS: gate+tier20=20; 50/100 blocked; dev-off=requested). One product file created (test-only); no source edited.",
+  "task": "T20-WAVE-TESTS",
+  "validation": "gofmt -l new test=clean(0); go vet ./internal/daemon/gateway/=0; go test ./internal/daemon/gateway/ -run EmitPredicates -count=1 = 4/4 PASS ok 0.004s (0); go test ./internal/daemon/ -run Tier20 -count=1 = 2/2 PASS ok 0.020s (0); git diff --check new file=0. /tmp caches."
+}

@@ -1,0 +1,45 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T21:57:40Z",
+  "agent": "Agy-P0-A7",
+  "pane_id": "wB:p1",
+  "lane": "chat-smoke-live",
+  "task_ids": ["CHAT-LIVE-SMOKE"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/CHAT-live-smoke.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "GOCACHE=/tmp/gocache_f7 GOTMPDIR=/tmp/gotmp_f7 /home/ec2-user/goroot/go/bin/go test ./internal/daemon/brain/...",
+      "exit_code": 0,
+      "assertions_or_tests": 45,
+      "result": "PASS"
+    },
+    {
+      "command": "GOCACHE=/tmp/gocache_f7 GOTMPDIR=/tmp/gotmp_f7 /home/ec2-user/goroot/go/bin/go vet ./internal/daemon/brain/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/CHAT-live-smoke.md"
+  ],
+  "requirements": ["CHAT-LIVE-SMOKE"],
+  "openspec_tasks": ["chat-smoke-live"],
+  "summary": "Prepared read-only harness and 5-hop Kanban pipeline evidence for test1 (untargeted -> Kiro-TL delegation + synthesis) and test2 (direct -> Codex). Live inference deferred (live_runs=false) pending daemon live-run token authorization.",
+  "non_claims": [
+    "Product code in server/... was strictly READ-ONLY (no product code written)",
+    "No live cloud provider endpoints invoked (live_runs=false)",
+    "No OmniRoute internal inspection performed"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/FIX-repro-test.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/FIX-repro-test.md"
+  ],
+  "finished_at": "2026-07-23T00:11:57Z",
+  "lane": "reproducer-test",
+  "last_heartbeat_at": "2026-07-23T00:11:57Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:09:48Z",
+  "status": "DONE",
+  "summary": "Reproducer DESIGN delivered. Root cause: StartTask (task.go:1228) hard-wraps pgx.ErrNoRows; concurrent RerunIssue + max_concurrent_tasks=1 cancels A (CancelAgentTasksByIssueAndAgent -> status=cancelled), so StartAgentTask :one matches 0 rows -> ErrNoRows -> execution_error/gateway trip instead of graceful superseded-skip. Exact test: NEW internal/service/start_task_supersede_repro_test.go (package service) reusing existing mockDBTX/mockRow/testUUID harness; assertions: err==nil, !errors.Is(err,pgx.ErrNoRows), returned task status=cancelled/ID match. Fails on current code (reproduces bug); passes after fix (mirror CompleteTask idempotency). NO source edited (awaiting Kiro writer assignment). No live/inference/OmniRoute.",
+  "task": "FIX-REPRO-TEST-DESIGN",
+  "validation": "DESIGN-ONLY: no source/test written (start_task_supersede_repro_test.go ABSENT); root cause + SQL confirmed by read (StartAgentTask :one UPDATE WHERE status IN dispatched/waiting -> ErrNoRows; StartTask hard-wraps; CancelAgentTasksByIssueAndAgent sets cancelled); git diff --check evidence: PASS"
+}

@@ -14,8 +14,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/analytics"
+	"github.com/multica-ai/multica/server/internal/daemon/commitledger"
+	"github.com/multica-ai/multica/server/internal/daemon/observability/e2e"
 	"github.com/multica-ai/multica/server/internal/events"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
+	"github.com/multica-ai/multica/server/internal/middleware"
 	"github.com/multica-ai/multica/server/internal/realtime"
 	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
@@ -32,12 +35,22 @@ type TaskService struct {
 	Analytics analytics.Client
 	Metrics   *obsmetrics.BusinessMetrics
 	Wakeup    TaskWakeupNotifier
+	// ReplayGateHook is consulted before CreateRetryTask to block automatic
+	// retry when the parent task's commit ledger shows tool activity
+	// (definite or ambiguous). Nil fails closed (blocks all retries).
+	// Manual RerunIssue is exempt from this gate.
+	ReplayGateHook *commitledger.ReplayGateHook
 	// EmptyClaim caches "this runtime has no queued task" so the daemon
 	// poll path can skip a Postgres scan on the steady-state empty case.
 	// Optional — a nil cache disables the fast path and every claim
 	// goes through the DB. Wired in router.go from the shared Redis
 	// client.
 	EmptyClaim *EmptyClaimCache
+
+	// Obs is the optional end-to-end correlation recorder (OBS-3/OBS-7 —
+	// queue/persist hops). A nil recorder disables emission; span emission is
+	// best-effort, metadata-only, and never affects task processing.
+	Obs *e2e.Recorder
 
 	analyticsContextMu    sync.Mutex
 	analyticsContextCache map[string]analytics.TaskContext
@@ -146,6 +159,7 @@ func (s *TaskService) captureTaskDispatched(ctx context.Context, task db.AgentTa
 		source, runtimeMode, _ := s.taskMetricsContext(ctx, task)
 		s.Metrics.RecordTaskDispatched(util.UUIDToString(task.ID), source, runtimeMode, taskQueueWaitSeconds(task))
 	}
+	s.emitQueueDequeued(task)
 }
 
 func (s *TaskService) AnalyticsContextForTask(ctx context.Context, task db.AgentTaskQueue) analytics.TaskContext {
@@ -164,6 +178,80 @@ func (s *TaskService) captureTaskCompleted(ctx context.Context, task db.AgentTas
 		source, runtimeMode, _ := s.taskMetricsContext(ctx, task)
 		s.Metrics.RecordTaskTerminal(util.UUIDToString(task.ID), source, runtimeMode, task.Status, taskRunSeconds(task), taskTotalSeconds(task), task.Attempt)
 	}
+}
+
+// emitQueueEnqueued records the hop-2 (queue) correlation span at enqueue.
+// Best-effort and metadata-only: a nil Obs recorder is a no-op and emission
+// never affects task flow. The AgentTaskQueue row is the queued task, so
+// queue_msg_id and task_id are both the row id; enqueue_unix_ms is created_at.
+// emitQueueEnqueued is intentionally a no-op: the assembler contract permits
+// exactly one queue (hop-2) span per task, so the single COMPLETED queue-
+// lifecycle span is emitted at dequeue (emitQueueDequeued), carrying both the
+// enqueue and dequeue timestamps + wait. Emitting a second span at enqueue
+// would trip duplicate_task_hop. Kept as a named seam for call-site clarity.
+func (s *TaskService) emitQueueEnqueued(task db.AgentTaskQueue) {
+	_ = task
+}
+
+// emitQueueDequeued records the hop-2 (queue) correlation span at claim/dequeue.
+// wait_ms is the elapsed time from enqueue (created_at) to now. Best-effort,
+// metadata-only, nil-safe.
+func (s *TaskService) emitQueueDequeued(task db.AgentTaskQueue) {
+	if s == nil || s.Obs == nil {
+		return
+	}
+	id := util.UUIDToString(task.ID)
+	now := time.Now()
+	obs := QueueObservation{
+		QueueMsgID:    id,
+		TaskID:        id,
+		EnqueueUnixMs: timestamptzUnixMs(task.CreatedAt),
+		DequeueUnixMs: now.UnixMilli(),
+		Outcome:       "dequeued",
+	}
+	if task.CreatedAt.Valid {
+		if wait := now.Sub(task.CreatedAt.Time).Milliseconds(); wait >= 0 {
+			obs.WaitMs = wait
+		}
+	}
+	_ = EmitQueue(s.Obs, obs)
+}
+
+// emitPersistSpan records the hop-6 (persist) correlation span AFTER the
+// terminal result has been persisted. It consumes the persisted row, so it can
+// only run post-persistence. The schema stores the result on the task row and
+// has no separate result-id column, so result_id is the real persisted task-row
+// primary key (not a generated "result-<task_id>" fixture value).
+// Best-effort, metadata-only, nil-safe.
+func (s *TaskService) emitPersistSpan(task db.AgentTaskQueue, latency time.Duration) {
+	if s == nil || s.Obs == nil {
+		return
+	}
+	id := util.UUIDToString(task.ID)
+	latencyMs := latency.Milliseconds()
+	if latencyMs < 0 {
+		latencyMs = 0
+	}
+	_ = EmitPersist(s.Obs, PersistObservation{
+		TaskID:           id,
+		ResultID:         id,
+		TerminalStatus:   task.Status,
+		PersistLatencyMs: latencyMs,
+		ByteCount:        int64(len(task.Result)),
+		Outcome:          "persisted",
+	})
+}
+
+// timestamptzUnixMs returns the unix-millisecond value of ts, or 0 when ts is
+// not valid or would be negative (counters must be non-negative).
+func timestamptzUnixMs(ts pgtype.Timestamptz) int64 {
+	if !ts.Valid {
+		return 0
+	}
+	if ms := ts.Time.UnixMilli(); ms > 0 {
+		return ms
+	}
+	return 0
 }
 
 func (s *TaskService) captureTaskFailed(ctx context.Context, task db.AgentTaskQueue) {
@@ -1189,6 +1277,7 @@ func (s *TaskService) MarkTaskWaitingLocalDirectory(ctx context.Context, taskID 
 // causing the new task to resume against a stale (or NULL) session.
 func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, result []byte, sessionID, workDir string) (*db.AgentTaskQueue, error) {
 	var task db.AgentTaskQueue
+	persistStart := time.Now()
 	if err := s.runInTx(ctx, func(qtx *db.Queries) error {
 		t, err := qtx.CompleteAgentTask(ctx, db.CompleteAgentTaskParams{
 			ID:        taskID,
@@ -1255,6 +1344,9 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, resu
 
 	slog.Info("task completed", "task_id", util.UUIDToString(task.ID), "issue_id", util.UUIDToString(task.IssueID))
 	s.captureTaskCompleted(ctx, task)
+	// Terminal-persistence hop (OBS-7): emitted only here, after CompleteAgentTask
+	// has committed the result to the task row, using the persisted row.
+	s.emitPersistSpan(task, time.Since(persistStart))
 
 	// Invariant: every completed issue task must have at least one agent
 	// comment on the issue, so the user always sees something when a run
@@ -1558,6 +1650,23 @@ func (s *TaskService) MaybeRetryFailedTask(ctx context.Context, parent db.AgentT
 		return nil, nil
 	}
 	if !parent.IssueID.Valid && !parent.ChatSessionID.Valid {
+		return nil, nil
+	}
+
+	// --- CommitLedger: replay gate check ---
+	// Consult the commit ledger before creating a retry child. If the parent
+	// had any tool activity (definite or ambiguous), block automatic replay
+	// to prevent duplicate side effects.
+	// Nil hook fails closed: automatic retry requires authoritative durable
+	// ledger state to confirm safety. Until the durable server-side store is
+	// wired, all automatic retries for tasks with tool activity are blocked.
+	parentTaskID := util.UUIDToString(parent.ID)
+	if err := commitledger.CheckOrAllow(s.ReplayGateHook, parentTaskID); err != nil {
+		slog.Info("task auto-retry blocked by replay gate",
+			"parent_task_id", parentTaskID,
+			"reason", reason,
+			"error", err,
+		)
 		return nil, nil
 	}
 
@@ -1945,6 +2054,11 @@ func priorityToInt(p string) int32 {
 func (s *TaskService) NotifyTaskEnqueued(ctx context.Context, task db.AgentTaskQueue) {
 	s.captureTaskQueued(ctx, task)
 	s.notifyTaskAvailable(task)
+	// Record the resolved task id into the request's ingress holder so the
+	// RequestLogger emits the single hop-1 ingress span (with real HTTP
+	// method/route/status/latency + canonical request id). No-op outside an
+	// HTTP request context.
+	middleware.SetIngressTaskID(ctx, util.UUIDToString(task.ID))
 }
 
 // notifyTaskAvailable runs after a task has been inserted: bumps the

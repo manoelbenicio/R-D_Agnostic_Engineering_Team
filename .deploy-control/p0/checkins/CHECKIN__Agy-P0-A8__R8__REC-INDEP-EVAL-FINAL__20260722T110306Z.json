@@ -1,0 +1,37 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T11:03:06Z",
+  "agent": "Agy-P0-A8",
+  "pane_id": "wB:p2",
+  "lane": "R8",
+  "task_ids": [
+    "REC-INDEP-EVAL-FINAL"
+  ],
+  "plan_ref": ".planning/agent-brain-v3/P0_SIX_HOUR_EXECUTION_PLAN.md",
+  "prompt_ref": ".planning/agent-brain-v3/P0_SIX_HOUR_AGENT_PROMPTS.md#L8",
+  "files_locked": [
+    ".deploy-control/p0/evidence/R8-post-t360-verification-report.md",
+    ".deploy-control/p0/handoffs/R8-post-t360-handoff.md"
+  ],
+  "new_files_declared": [],
+  "dependencies": [],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 322,
+    "toolchains": {
+      "go": "absent",
+      "node": "v22.23.1"
+    },
+    "disk_free": "410M"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true
+  },
+  "status": "IN_PROGRESS"
+}

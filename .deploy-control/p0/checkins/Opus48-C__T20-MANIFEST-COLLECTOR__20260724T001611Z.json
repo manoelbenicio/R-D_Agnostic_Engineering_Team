@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-manifest-collector.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-manifest-collector.md",
+    "scripts/ops/t20_manifest_collector.py"
+  ],
+  "finished_at": "2026-07-24T00:19:32Z",
+  "lane": "tier20-workload",
+  "last_heartbeat_at": "2026-07-24T00:19:32Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T00:16:11Z",
+  "status": "DONE",
+  "summary": "Built scripts/ops/t20_manifest_collector.py (Python 3.9, no product source): fail-closed collector producing t20-run-manifest.v1 (run_id/window, exact 20 launched task IDs, backend+daemon export inode+mtime+sha256 with staleness gate, real child PIDs bound to /proc field-22 starttime with live reuse/spoof re-verify, 20 unique persisted terminal rows). Never generates spans/IDs, never pads, never infers; every shortfall fails closed. 11-case unit self-test green with temp fixtures (happy path + missing/stale export, wrong/dup task+persisted counts, pid starttime mismatch/missing/sentinel, dead-proc sampled-starttime, missing run_id). Live invocation documented; NOT run; no live PASS claimed. Feeds the hardened verifier t20RunManifest gates.",
+  "task": "T20-MANIFEST-COLLECTOR",
+  "validation": "py_compile OK; --self-test: Ran 11 tests OK exit0 (temp fixtures only); fail-closed CLI smoke: FAILED_CLOSED exit2; git diff --check PASS; no product source (scripts/ops tooling); live NOT run"
+}

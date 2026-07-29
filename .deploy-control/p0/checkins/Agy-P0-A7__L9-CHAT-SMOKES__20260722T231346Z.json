@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A7",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/L9-chat.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/L9-chat.md"
+  ],
+  "finished_at": "2026-07-22T23:14:03Z",
+  "lane": "L9",
+  "last_heartbeat_at": "2026-07-22T23:14:03Z",
+  "pane_id": "wB:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T23:13:46Z",
+  "status": "DONE",
+  "summary": "Standby prep complete for L9 chat smokes: test1 (untargeted -> Kiro-TL) and test2 (direct -> Codex) harnesses verified. Awaiting deployment and live_runs=true authorization.",
+  "task": "L9-CHAT-SMOKES",
+  "validation": "go test ./internal/daemon/brain/...: PASS, go vet ./internal/daemon/brain/...: PASS, git diff --check: PASS"
+}

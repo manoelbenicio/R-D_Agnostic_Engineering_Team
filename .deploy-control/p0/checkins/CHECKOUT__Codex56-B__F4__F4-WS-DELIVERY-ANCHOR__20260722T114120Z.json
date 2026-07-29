@@ -1,0 +1,40 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:41:20Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "F4",
+  "task_ids": ["6.2"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/daemonws/hub.go",
+    "multica-auth-work/server/internal/daemonws/hub_test.go"
+  ],
+  "files_created": [
+    ".deploy-control/p0/evidence/F4-hub-delivery-anchor.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go vet ./internal/daemonws/", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go test ./internal/daemonws/ -run 'EmitDelivery|NotifyFrame_EmitsDeliveredSpan|HeartbeatAckBackpressure|NoDeliveryRecorder' -count=1 -v", "exit_code": 0, "assertions_or_tests": 9, "result": "PASS"},
+    {"command": "go test ./internal/daemonws/ -count=1", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"}
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [".deploy-control/p0/evidence/F4-hub-delivery-anchor.md"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["6.2"],
+  "summary": "Wired DeliveryRecorder/EmitDelivery at real hub outcomes: delivered (send ok, notifyFrame/notifyWorkspaceFrame), dropped (slow-consumer eviction, drop_count/backpressure_count), backpressure (heartbeat-ack buffer full, connection survives). Added per-connection WS session_id + per-attempt delivery_id (safe-charset, content-free); opt-in recorder (nil=no-op). Metadata-only: no frame/payload/user content in spans. gofmt clean, vet PASS, 4 new + existing delivery tests PASS, full daemonws package ok; git diff --check clean. GOCACHE/GOTMPDIR on /tmp (root disk full).",
+  "non_claims": [
+    "No live run / inference / deploy / secret read / dependency install (mod cache on /tmp only).",
+    "session_id is the WS-connection session, not the upstream agent task session; end-to-end OBS-9 join NOT claimed (needs task-session propagation into WS layer) - routed to F1/F8/Principal.",
+    "dropped call-site emits via emitDelivery (unit-proven); live-socket eviction integration test intentionally omitted to avoid timing flakiness.",
+    "Frontend not edited; no OpenSpec/GSD edits; no checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "F1", "reason": "WS-session to agent-task-session correlation needed for OBS-9 end-to-end join of the delivery hop", "file": "multica-auth-work/server/internal/daemonws/hub.go"}
+  ]
+}

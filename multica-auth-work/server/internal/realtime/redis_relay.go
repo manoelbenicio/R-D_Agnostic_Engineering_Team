@@ -549,6 +549,22 @@ func (d *DualWriteBroadcaster) Broadcast(message []byte) {
 	_ = d.relay.PublishWithID("global", "all", "", message, id)
 }
 
+// BroadcastTerminalToWorkspace makes DualWriteBroadcaster a TerminalBroadcaster.
+// It mints ONE shared event ULID, injects it into the LOCAL frame exactly like
+// BroadcastToScope, runs the local Hub terminal leg (workspace fanout + the
+// single aggregate HopDelivery span) with that id, then publishes the SAME id to
+// the relay for cross-node fanout. Reusing one id means the Redis loopback for
+// this event is deduped locally (no duplicate local delivery) and the relay is
+// never bypassed — the exact single-write/no-bypass property of BroadcastToScope,
+// extended to the terminal-delivery seam. meta is content-free; the frame
+// payload is never parsed here.
+func (d *DualWriteBroadcaster) BroadcastTerminalToWorkspace(workspaceID string, message []byte, meta TerminalDeliveryMeta) {
+	id := ulid.Make().String()
+	frame := injectEventID(message, id)
+	d.local.BroadcastTerminalDelivery(ScopeWorkspace, workspaceID, frame, meta, id)
+	_ = d.relay.PublishWithID(ScopeWorkspace, workspaceID, "", message, id)
+}
+
 // PublishWithID is like publish but uses a caller-supplied event id so the
 // dual-write path can dedup.
 func (r *RedisRelay) PublishWithID(scopeType, scopeID, exclude string, frame []byte, id string) error {
@@ -576,3 +592,4 @@ func (r *RedisRelay) PublishWithID(scopeType, scopeID, exclude string, frame []b
 var _ Broadcaster = (*RedisRelay)(nil)
 var _ Broadcaster = (*DualWriteBroadcaster)(nil)
 var _ RelayPublisher = (*RedisRelay)(nil)
+var _ TerminalBroadcaster = (*DualWriteBroadcaster)(nil)

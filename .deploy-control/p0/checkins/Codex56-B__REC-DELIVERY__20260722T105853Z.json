@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/R4-obs-delivery.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemonws/obs_delivery.go",
+    "multica-auth-work/server/internal/daemonws/obs_delivery_test.go"
+  ],
+  "finished_at": "2026-07-22T11:01:42Z",
+  "lane": "R4",
+  "last_heartbeat_at": "2026-07-22T11:01:42Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T10:58:53Z",
+  "status": "DONE",
+  "summary": "WS delivery helper verified: metadata-only span, fail-closed on missing session/delivery id, nil-recorder no-op, secrets_present=false. gofmt-fixed obs_delivery.go struct alignment (formatting-only). vet+full daemonws test PASS. hub.go NOT edited; EmitDelivery call-site wiring handed to R1. UI static-only (no Node install). No live/inference/deploy/secret.",
+  "task": "REC-DELIVERY",
+  "validation": "go vet ./internal/daemonws/: PASS (0); go test ./internal/daemonws/ -run EmitDelivery|Delivery -v: 5/5 PASS (0); go test ./internal/daemonws/ -count=1: ok 0.449s (0); gofmt -l obs_delivery*.go: clean; git diff --check: PASS (files untracked)"
+}

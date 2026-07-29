@@ -1,0 +1,12 @@
+event: response.created
+data: {"type":"response.created","response":{"id":"synthetic-response","status":"in_progress"}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","output_index":0,"item":{"id":"synthetic-item","type":"message","status":"in_progress","content":[]}}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","item_id":"synthetic-item","output_index":0,"content_index":0,"delta":"synthetic response"}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"synthetic-response","status":"completed"}}
+

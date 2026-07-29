@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-barrier-fix.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-barrier-fix.md"
+  ],
+  "finished_at": "2026-07-23T21:41:10Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T21:41:10Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T21:39:30Z",
+  "status": "DONE",
+  "summary": "Root cause: prose sleep ignored because LLM has no timer -> answers+finishes. Fix: mandatory single read-only shell command whose duration is wall-clock-bounded (timeout 115 sh -c while SECONDS<end pwd>/dev/null; sleep 5; done), single-action imperative contract (no answer/other cmd/files/delegate). Read-only, observably active, self-terminating+hard-capped. Cleanup: in-command timeout self-exit (124=benign) + harness cancel sweep at CANCEL_AT over all task_ids (idempotent-safe, benign classification). Barrier: 110s hold >> submit/startup spread -> all 20 overlap; optional wait-until-running for deterministic window. Hold MUST be < confirmed platform task running-timeout (verify owner) -> flagged blocker. Execution gated (live run).",
+  "task": "T20-BARRIER-FIX",
+  "validation": "design-only, no execution, no probe, no edits (git diff --check CLEAN). Builds on documented /tmp/t20_workload.py."
+}

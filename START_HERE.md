@@ -3,6 +3,8 @@
 > Este é o **único** documento que o próximo agente precisa abrir. Contém, em ordem:
 > (1) prompt de onboarding pra colar na IDE · (2) handoff (estado/próximos passos) · (3) apêndice (todos os paths/git/SSH/Herdr/roster).
 > Fonte de verdade viva: openspec/changes/rotation-parity-polyglot + .planning + Diligencias. Repo remote `rnd` (branch main).
+> **TOPOLOGIA MIGRADA — 2026-07-21:** instruções abaixo que mencionem o antigo host LAN/WSL são apenas históricas e **NÃO DEVEM SER EXECUTADAS**. ORQ1 (`100.118.244.61`, `i-0d9d441dd364039f9`) hospeda OmniRoute + stack DEV; ORQ2 (`100.110.178.47`, `i-0af937456e125143d`) é este host e hospeda Herdr + agentes + board. Para status/fleet use `scripts/dashboard/fleet_dashboard.py` localmente no ORQ2 e fale somente com `opus-4.8-orchestrator`.
+
 
 ---
 

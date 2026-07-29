@@ -269,3 +269,151 @@ func TestAntigravityModelError(t *testing.T) {
 		t.Error("near-miss model (dropped suffix) should be rejected")
 	}
 }
+
+// godebugValue returns the GODEBUG value from an env slice, or "" if unset.
+func godebugValue(env []string) string {
+	for _, e := range env {
+		if k, v, ok := strings.Cut(e, "="); ok && k == "GODEBUG" {
+			return v
+		}
+	}
+	return ""
+}
+
+// countEnvKey counts how many entries in env carry the given key.
+func countEnvKey(env []string, key string) int {
+	n := 0
+	for _, e := range env {
+		if k, _, ok := strings.Cut(e, "="); ok && k == key {
+			n++
+		}
+	}
+	return n
+}
+
+// TestAntigravityResolverEnvAddsCgoResolverWhenUnset is the core regression
+// guard for agy 1.1.4 reachability through OmniRoute in the IPv6-disabled
+// deployment: with no GODEBUG set we must inject netdns=cgo so agy uses the
+// system resolver and reaches the loopback OmniRoute endpoint instead of
+// racing an unroutable ::1.
+func TestAntigravityResolverEnvAddsCgoResolverWhenUnset(t *testing.T) {
+	t.Parallel()
+
+	env := antigravityResolverEnv([]string{"PATH=/usr/bin", "HOME=/root"})
+	if got := godebugValue(env); got != "netdns=cgo" {
+		t.Fatalf("GODEBUG = %q, want netdns=cgo", got)
+	}
+	// Inherited entries must survive untouched — the resolver default must not
+	// drop or reorder the process/config environment agy needs.
+	if !slices.Contains(env, "PATH=/usr/bin") || !slices.Contains(env, "HOME=/root") {
+		t.Fatalf("resolver env dropped inherited entries: %v", env)
+	}
+	if n := countEnvKey(env, "GODEBUG"); n != 1 {
+		t.Fatalf("expected exactly one GODEBUG entry, got %d: %v", n, env)
+	}
+}
+
+// TestAntigravityResolverEnvPreservesExplicitNetdns proves the default is
+// non-overriding: an operator (or the daemon env) that already pinned a
+// resolver wins, so existing behavior is preserved.
+func TestAntigravityResolverEnvPreservesExplicitNetdns(t *testing.T) {
+	t.Parallel()
+
+	env := antigravityResolverEnv([]string{"GODEBUG=netdns=go"})
+	if got := godebugValue(env); got != "netdns=go" {
+		t.Fatalf("explicit netdns directive overridden: GODEBUG=%q, want netdns=go", got)
+	}
+	if n := countEnvKey(env, "GODEBUG"); n != 1 {
+		t.Fatalf("expected exactly one GODEBUG entry, got %d: %v", n, env)
+	}
+}
+
+// TestAntigravityResolverEnvMergesIntoExistingGodebug proves unrelated GODEBUG
+// settings are kept and only gain netdns=cgo — we never clobber the caller's
+// other tuning.
+func TestAntigravityResolverEnvMergesIntoExistingGodebug(t *testing.T) {
+	t.Parallel()
+
+	env := antigravityResolverEnv([]string{"GODEBUG=http2debug=1"})
+	got := godebugValue(env)
+	if !strings.Contains(got, "http2debug=1") || !strings.Contains(got, "netdns=cgo") {
+		t.Fatalf("merged GODEBUG lost a setting: %q", got)
+	}
+	if n := countEnvKey(env, "GODEBUG"); n != 1 {
+		t.Fatalf("expected exactly one GODEBUG entry, got %d: %v", n, env)
+	}
+}
+
+// TestAntigravityResolverEnvIdempotent guards against a double-applied default
+// accumulating duplicate directives (e.g. if the env is passed through twice).
+func TestAntigravityResolverEnvIdempotent(t *testing.T) {
+	t.Parallel()
+
+	once := antigravityResolverEnv([]string{"PATH=/usr/bin"})
+	twice := antigravityResolverEnv(once)
+	if !slices.Equal(once, twice) {
+		t.Fatalf("resolver env not idempotent:\n once: %v\ntwice: %v", once, twice)
+	}
+}
+
+// TestAntigravityResolverEnvDoesNotAliasInput proves the helper never mutates
+// the caller's slice in place — buildEnv's result must be safe to reuse.
+func TestAntigravityResolverEnvDoesNotAliasInput(t *testing.T) {
+	t.Parallel()
+
+	input := []string{"PATH=/usr/bin"}
+	_ = antigravityResolverEnv(input)
+	if len(input) != 1 || input[0] != "PATH=/usr/bin" {
+		t.Fatalf("resolver env mutated caller slice: %v", input)
+	}
+}
+
+func TestSafeAntigravityArgvForLogRedactsSensitiveValues(t *testing.T) {
+	t.Parallel()
+
+	args := buildAntigravityArgs(
+		"PROMPT-BODY-XYZ",
+		"/tmp/agy.log",
+		time.Minute,
+		ExecOptions{
+			Model:           "Claude Opus 4.6 (Thinking)",
+			ResumeSessionID: "conv-abc123",
+			Cwd:             "/work",
+		},
+		quietAntigravityLogger(),
+	)
+
+	safe := safeAntigravityArgvForLog(args)
+	joined := strings.Join(safe, " ")
+
+	// The prompt (full user/repository content), model display string and
+	// resume conversation id must never reach the log projection.
+	for _, leaked := range []string{"PROMPT-BODY-XYZ", "Claude Opus 4.6 (Thinking)", "conv-abc123"} {
+		if strings.Contains(joined, leaked) {
+			t.Fatalf("sensitive value %q leaked into antigravity log projection: %v", leaked, safe)
+		}
+	}
+
+	// Each value-bearing sensitive flag keeps its flag token but has its value
+	// replaced by the redaction marker.
+	for i, arg := range safe {
+		switch arg {
+		case "-p", "--model", "--conversation":
+			if i+1 >= len(safe) || safe[i+1] != redactedAgentArgValue {
+				t.Fatalf("expected %q value redacted, got projection: %v", arg, safe)
+			}
+		}
+	}
+
+	// Non-sensitive flags/values remain visible so launch diagnostics stay useful.
+	for _, keep := range []string{"-p", "--model", "--conversation", "--dangerously-skip-permissions", "--log-file", "/tmp/agy.log"} {
+		if !strings.Contains(joined, keep) {
+			t.Fatalf("expected %q preserved in projection, got: %v", keep, safe)
+		}
+	}
+
+	// The real argv passed to the process must be unchanged by the projection.
+	if len(args) == 0 || args[1] != "PROMPT-BODY-XYZ" {
+		t.Fatalf("safeAntigravityArgvForLog must not mutate the launch argv: %v", args)
+	}
+}

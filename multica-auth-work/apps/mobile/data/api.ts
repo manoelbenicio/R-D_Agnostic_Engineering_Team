@@ -177,7 +177,7 @@ export interface ApiClientOptions {
   onUnauthorized?: () => void;
 }
 
-class ApiClient {
+export class ApiClient {
   private token: string | null = null;
   private options: ApiClientOptions = {};
 
@@ -192,6 +192,10 @@ class ApiClient {
   private async fetch<T>(
     path: string,
     init: RequestInit & { signal?: AbortSignal } = {},
+    options: {
+      handleUnauthorized?: boolean;
+      redactErrorResponse?: boolean;
+    } = {},
   ): Promise<T> {
     const rid = createRequestId();
     const start = Date.now();
@@ -276,7 +280,7 @@ class ApiClient {
       // 401 sign-out hook: invoke once, let the platform layer (auth-store)
       // clear the token + navigate. Subsequent requests in flight will also
       // 401 and re-enter here, so the callback must be idempotent.
-      if (res.status === 401) {
+      if (res.status === 401 && options.handleUnauthorized !== false) {
         this.options.onUnauthorized?.();
       }
 
@@ -286,10 +290,19 @@ class ApiClient {
       } catch {
         body = undefined;
       }
-      const message =
+      let message =
         (body && typeof body === "object" && "message" in body
           ? String((body as { message: unknown }).message)
           : null) ?? `${res.status} ${res.statusText}`;
+      if (options.redactErrorResponse) {
+        message =
+          res.status === 401
+            ? "invalid credentials"
+            : res.status === 429
+              ? "too many attempts"
+              : `login request failed: ${res.status}`;
+        body = undefined;
+      }
 
       const level = res.status === 404 ? "warn" : "error";
       console[level](`[api] ← ${res.status} ${path}`, {
@@ -362,18 +375,18 @@ class ApiClient {
   }
 
   // --- Auth ---
-  async sendCode(email: string): Promise<void> {
-    await this.fetch<void>("/auth/send-code", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
-  }
-
-  async verifyCode(email: string, code: string): Promise<LoginResponse> {
-    return this.fetch<LoginResponse>("/auth/verify-code", {
-      method: "POST",
-      body: JSON.stringify({ email, code }),
-    });
+  async login(email: string, password: string): Promise<LoginResponse> {
+    return this.fetch<LoginResponse>(
+      "/auth/login",
+      {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      },
+      // Invalid login credentials must not invoke the global expired-session
+      // handler and clear an existing session while the caller handles the
+      // failed attempt.
+      { handleUnauthorized: false, redactErrorResponse: true },
+    );
   }
 
   async getMe(opts?: { signal?: AbortSignal }): Promise<User> {

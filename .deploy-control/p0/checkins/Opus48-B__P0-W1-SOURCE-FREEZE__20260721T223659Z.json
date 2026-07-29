@@ -1,0 +1,27 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/W1-source-lock-freeze.md",
+    ".deploy-control/p0/handoffs/R1-cline-route-source-delta.md",
+    ".deploy-control/p0/handoffs/R2-opus48-source-delta.md",
+    ".deploy-control/p0/handoffs/A6-lifecycle-gap-matrix.md",
+    ".deploy-control/p0/handoffs/A3-route-freeze.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/W1-source-lock-freeze.md"
+  ],
+  "finished_at": "2026-07-21T22:45:23Z",
+  "lane": "W1",
+  "last_heartbeat_at": "2026-07-21T22:45:23Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:36:59Z",
+  "status": "DONE",
+  "summary": "W1 source-lock & integration-queue freeze delivered (280 lines): machine-auditable file->single-owner->dependency->source-edit-gate->focused-check table (F1-F25 + F-NEW-1/2), exact edit-site refinement folding R1 D1-D7 + A6 L3c + R2 config-only, pairwise zero-overlap proof (W1=18 incl 4 escalated shared runtimeenv + coupled handler test + execenv/cline_home.go + L7b test; R1/A1=3 Cline-exact; A3/A4/R1/R2/A5/A6/A10 zero source; A7/A8 PENDING-ARRIVAL disjoint-by-construction), contested-file escalation list, serial queue, blockers (BLK-KIMI/BLK-AVAIL/BLK-OPUS48/BLK-25B/GATE-FLEET/DEC-NIM/DEC-CLIKIND). LIMITATIONS: source read-only; A7 not yet checked in + A8 handoff body pending (fold-in rule defined, disjoint, does not affect routing proof); W1 reconciliation flagged: execenv/cline_home.go already exists (R1 called it new file)",
+  "task": "P0-W1-SOURCE-FREEZE",
+  "validation": "read-only freeze; independently verified source anchors via rg (models.go:562/563/572, nim.go:25, models_test.go:172, handler/agent_thinking_test.go:164, runtimeenv env.go:195-222/adapter.go:58-59/policy.go/home.go:48-67, execenv/cline_home.go EXISTS-legacy, config.go:141/179/196, brain_integration.go:277/331/338, env.go:107/111/215, antigravity.go:78); git worktree shows ONLY .deploy-control changes (no product source touched); NO product test executed and NO live run"
+}
