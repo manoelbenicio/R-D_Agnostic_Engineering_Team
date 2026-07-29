@@ -146,3 +146,12 @@ host    all             all               all                     scram-sha-256
 | **ORQ-35 (SCRAM & HBA)** | SCRAM-SHA-256 local/TCP auth & OS peer map enforcement | Synchronize `multica_recovery` NOLOGIN peer-mapping with `pg_hba.conf` and `pg_ident.conf` cutover. |
 | **ORQ-57 (Deploy Gate)** | Mandatory env-file wrapper & fail-closed recreate | Ensure `multica_migrator` credentials and `DATABASE_URL` are supplied via the safe deploy wrapper. |
 | **ORQ-58 (Canonical Rebuild)** | Canonical image rebuild & deployment | Validate backend binary operates under non-superuser `multica_transition` / `multica_app` credentials before release. |
+
+---
+
+## 8. Traceability & Authoritative Evidence Citations
+
+- **Target Issue**: ORQ-35 (`3f73ff90-55a1-4c2f-a52d-d3735580ce7e`)
+- **Authoritative Remote Branch**: `agent/gemini-3-6-flash-b/6b400612`
+- **Implementation Base SHA (40-hex)**: `cde2e0898b18065658340d14bc3a71c3e354dcd2`
+- **Verification Evidence**: Empirically proven via Go test suite `multica-auth-work/server/cmd/migrate/peer_hba_test.go` on PostgreSQL 17.10 cluster (`/usr/bin/postgres`).
