@@ -1712,6 +1712,29 @@ func (q *Queries) HasActiveTaskForIssue(ctx context.Context, issueID pgtype.UUID
 	return has_active, err
 }
 
+const hasAnyTaskForIssueAndAgent = `-- name: HasAnyTaskForIssueAndAgent :one
+SELECT count(*) > 0 AS has_task FROM agent_task_queue
+WHERE issue_id = $1 AND agent_id = $2
+`
+
+type HasAnyTaskForIssueAndAgentParams struct {
+	IssueID pgtype.UUID `json:"issue_id"`
+	AgentID pgtype.UUID `json:"agent_id"`
+}
+
+// Returns true if this agent has EVER had a task for the given issue, in any
+// state — queued, dispatched, running, completed, failed or cancelled.
+// ORQ-41 uses this to tell a fresh assignment (never dispatched: activating it
+// is genuine execution intent) from a historical/stale assignment (already
+// bought execution at least once: later status/metadata edits are bookkeeping
+// and must not enqueue paid work).
+func (q *Queries) HasAnyTaskForIssueAndAgent(ctx context.Context, arg HasAnyTaskForIssueAndAgentParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasAnyTaskForIssueAndAgent, arg.IssueID, arg.AgentID)
+	var has_task bool
+	err := row.Scan(&has_task)
+	return has_task, err
+}
+
 const hasPendingTaskForIssue = `-- name: HasPendingTaskForIssue :one
 SELECT count(*) > 0 AS has_pending FROM agent_task_queue
 WHERE issue_id = $1 AND status IN ('queued', 'dispatched')
