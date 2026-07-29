@@ -28,7 +28,7 @@ FROM pg_roles
 WHERE rolname IN ('multica_transition', 'multica_app')
   AND rolsuper = true;
 
--- 3. Assert Recovery Authority Security Profile (NOLOGIN or Peer-Mapped Only)
+-- 3. Assert Recovery Authority Security Profile (LOGIN Restricted via OS Peer Map)
 SELECT
     rolname,
     rolsuper,

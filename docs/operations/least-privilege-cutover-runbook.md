@@ -13,7 +13,7 @@ To separate administrative recovery, schema DDL operations, and runtime DML exec
 
 | Role Name | Type | Login | Purpose & Scope | Security Attributes |
 |:---|:---|:---|:---|:---|
-| `multica_recovery` | Recovery / Emergency Authority | `NOLOGIN` (Peer-Mapped) | Proven recovery superuser authority for maintenance and emergency rollback. Reachable ONLY via ORQ-35 OS Peer Map (mapping container OS user `postgres` / socket user) or secret-backed handoff. | `SUPERUSER`, `CREATEROLE`, `CREATEDB`, `BYPASSRLS`, `REPLICATION` |
+| `multica_recovery` | Recovery / Emergency Authority | `LOGIN` (Peer-Mapped) | Proven recovery superuser authority for maintenance and emergency rollback. Reachable ONLY via ORQ-35 OS Peer Map (mapping container OS user `postgres` / socket user) or secret-backed handoff. | `SUPERUSER`, `CREATEROLE`, `CREATEDB`, `BYPASSRLS`, `REPLICATION` |
 | `multica_owner` | Group / Schema Owner | `NOLOGIN` | Owns all schema objects across all object classes (tables, partitions, views, matviews, sequences, functions, procedures, types). | `NOSUPERUSER`, `NOCREATEROLE`, `NOCREATEDB`, `NOBYPASSRLS`, `NOREPLICATION` |
 | `multica_migrator` | Migration Runner | `NOLOGIN` (Pre-Provision) | Used by `cmd/migrate` during maintenance windows to execute DDL migrations. Granted `multica_owner`. | `NOSUPERUSER`, `NOCREATEROLE`, `NOCREATEDB`, `NOBYPASSRLS`, `NOREPLICATION` |
 | `multica_transition` / `multica_app` | Runtime Backend App | `LOGIN` | Used by `multica-server` at runtime. Granted minimal required DML (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, sequence `USAGE`). | `NOSUPERUSER`, `NOCREATEROLE`, `NOCREATEDB`, `NOBYPASSRLS`, `NOREPLICATION` |
@@ -80,7 +80,7 @@ docker exec -i multica-dev-transition-postgres-1 psql -U multica_transition -d m
 
 Expected Output:
 - `violating_superuser_app_roles` = `0`
-- `multica_recovery` = `rolsuper=true`, `rolcanlogin=false` (NOLOGIN / Peer-mapped only)
+- `multica_recovery` = `rolsuper=true`, `rolcanlogin=true` (LOGIN / Peer-mapped only)
 - `schema_owner` = `multica_owner`
 - `non_owner_count` = `0` across all object classes (tables, views, matviews, sequences, functions, procedures, types)
 

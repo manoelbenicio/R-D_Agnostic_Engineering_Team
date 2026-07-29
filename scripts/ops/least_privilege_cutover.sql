@@ -15,11 +15,11 @@
 
 BEGIN;
 
--- 1. Create NOLOGIN Recovery Authority (Reachable ONLY via ORQ-35 OS Peer Map or Secret Handoff)
+-- 1. Create Recovery Authority (Reachable ONLY via ORQ-35 OS Peer Map or Secret Handoff)
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'multica_recovery') THEN
-        CREATE ROLE multica_recovery WITH NOLOGIN SUPERUSER CREATEROLE CREATEDB BYPASSRLS REPLICATION;
+        CREATE ROLE multica_recovery WITH LOGIN SUPERUSER CREATEROLE CREATEDB BYPASSRLS REPLICATION;
     END IF;
 END $$;
 
