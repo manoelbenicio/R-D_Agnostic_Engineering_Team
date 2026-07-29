@@ -45,3 +45,26 @@ func HasMentionAll(mentions []Mention) bool {
 	}
 	return false
 }
+
+// FirstAgentMention returns the id of the first agent addressed in the content,
+// in document order.
+//
+// Chat uses it for the direct-to-agent escape hatch: an untargeted chat turn
+// goes to the session's agent (the default Squad TL), while a message writing
+// `[@Codex](mention://agent/<id>)` is addressed to that agent and must reach it
+// without TL interception.
+//
+// Only `mention://agent/...` counts. Member, squad, issue and @all mentions are
+// addressing/context markup inside a message that is still directed at the
+// chat's own agent, and squad mentions would re-introduce the very TL hop this
+// hatch bypasses. When several agents are mentioned the first one wins: a chat
+// turn produces exactly one run, and document order matches how people address
+// a message ("@codex can you …, cc @kiro").
+func FirstAgentMention(content string) (string, bool) {
+	for _, m := range ParseMentions(content) {
+		if m.Type == "agent" {
+			return m.ID, true
+		}
+	}
+	return "", false
+}

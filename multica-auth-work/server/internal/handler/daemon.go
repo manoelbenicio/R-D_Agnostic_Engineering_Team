@@ -1491,7 +1491,17 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 					resp.Repos = repos
 				}
 			}
-			if !task.ForceFreshSession {
+			// A mention-routed turn runs on an agent that does not own this
+			// chat session (the direct `@agent` escape hatch). The stored
+			// resume pointers — chat_session.session_id and the
+			// GetLastChatTaskSession fallback — are session-scoped, not
+			// agent-scoped, so handing them to a different agent would make it
+			// resume someone else's CLI session whenever the two agents happen
+			// to share a runtime. Only the session's own agent resumes; the
+			// mentioned agent starts a fresh session and answers from the
+			// unanswered-message prompt built below.
+			ownsChatSession := task.AgentID == cs.AgentID
+			if !task.ForceFreshSession && ownsChatSession {
 				// Resume chat sessions only when the stored pointer was produced
 				// by the same runtime as the claiming task. When the chat_session
 				// pointer is missing (legacy NULL runtime_id), stale (last task

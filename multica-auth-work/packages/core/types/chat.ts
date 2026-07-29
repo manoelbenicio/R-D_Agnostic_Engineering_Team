@@ -99,6 +99,14 @@ export interface SendChatMessageResponse {
    * compat with servers that predate the field.
    */
   attachment_ids?: string[];
+  /**
+   * Agent that will actually answer this message. Equals the session's agent
+   * for a normal turn, and the mentioned agent when the message used the
+   * direct `@agent` escape hatch (an `@agent` mention runs that turn on that
+   * agent instead of the session's squad TL). Optional for forward compat with
+   * servers that predate the field.
+   */
+  agent_id?: string;
 }
 
 export interface CancelledChatMessage {

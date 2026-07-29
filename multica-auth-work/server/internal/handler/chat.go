@@ -414,6 +414,11 @@ type SendChatMessageResponse struct {
 	// real created_at. Returning it here means the pill renders 0s from
 	// the start with a stable anchor.
 	CreatedAt string `json:"created_at"`
+	// AgentID is the agent that will actually answer this message. It equals
+	// the session's agent for a normal turn, and the mentioned agent when the
+	// message used the direct `@agent` escape hatch — the client needs it to
+	// label the pending reply with the agent that is really running.
+	AgentID string `json:"agent_id"`
 }
 
 func (h *Handler) SendChatMessage(w http.ResponseWriter, r *http.Request) {
@@ -501,7 +506,14 @@ func (h *Handler) SendChatMessage(w http.ResponseWriter, r *http.Request) {
 	// Enqueue a chat task after the message exists. For web chat the sender is
 	// the authenticated request user (sessions are creator-only), so they are
 	// the task initiator — surfaced to the agent under `## Task Initiator`.
-	task, err := h.TaskService.EnqueueChatTask(r.Context(), session, parseUUID(userID))
+	//
+	// The turn's agent is the session's own agent unless this message
+	// explicitly addresses another agent with an `@agent` mention (the
+	// direct-to-agent escape hatch — see resolveChatTurnAgent). The session
+	// itself stays bound to its original agent, so the next untargeted message
+	// goes back to the default Squad TL.
+	turnAgentID := h.resolveChatTurnAgent(r, userID, workspaceID, session, req.Content)
+	task, err := h.TaskService.EnqueueChatTaskForAgent(r.Context(), session, parseUUID(userID), turnAgentID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to enqueue chat task: "+err.Error())
 		return
@@ -531,7 +543,10 @@ func (h *Handler) SendChatMessage(w http.ResponseWriter, r *http.Request) {
 		workspaceID,
 		uuidToString(session.ID),
 		uuidToString(task.ID),
-		uuidToString(session.AgentID),
+		// The agent that actually runs this turn, which is the mentioned
+		// agent for an escape-hatch message — reporting the session agent
+		// here would attribute the run to the TL that never saw it.
+		uuidToString(task.AgentID),
 		taskContext.RuntimeMode,
 		taskContext.Provider,
 		platform,
@@ -553,6 +568,7 @@ func (h *Handler) SendChatMessage(w http.ResponseWriter, r *http.Request) {
 		TaskID:        uuidToString(task.ID),
 		CreatedAt:     timestampToString(task.CreatedAt),
 		AttachmentIDs: boundAttachmentIDs,
+		AgentID:       uuidToString(task.AgentID),
 	})
 }
 
