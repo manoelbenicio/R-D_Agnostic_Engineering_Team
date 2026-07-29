@@ -28,11 +28,13 @@ código de email) por um login limpo no mesmo design do app.
 - Usar NIM via opencode (explicitamente rejeitado pelo dono).
 - Telemetria de token/quota do antigravity (backlog separado, limitação do fabricante).
 
-## Implementation status — 2026-07-28
+## Implementation status — 2026-07-29
 
-- Backend NIM, isolamento NIM, backend Cline ACP, model discovery e auth backend estao
-  implementados; wiring compartilhado de NIM/Cline tambem esta marcado concluido.
-- Frontend de onboarding, paridade visual, rebuild/restart dos runtimes, smoke real e UAT
-  permanecem abertos e nao devem ser inferidos como prontos a partir dos avanços AGY.
+- Backend NIM, isolamento NIM, backend Cline ACP, model discovery e auth backend estão
+  implementados; wiring compartilhado de NIM/Cline também está concluído.
+- Task 1.5 (onboarding frontend & remoção de marketing/sponsors/email-code) foi concluída e
+  aceita no Wave 2 via ORQ-51.
+- Paridade visual (Agent-6 / ORQ-52), rebuild/restart dos runtimes (ORQ-53), smoke real e UAT
+  permanecem abertos e rastreados nos cards correspondentes.
 - Os agentes AGY criados no workspace e o reparo de model selection pertencem a outra frente;
-  eles nao comprovam que NIM/Cline estejam online ou que o onboarding novo esteja aceito.
+  eles não comprovam que NIM/Cline estejam online ou que o onboarding novo esteja aceito.
