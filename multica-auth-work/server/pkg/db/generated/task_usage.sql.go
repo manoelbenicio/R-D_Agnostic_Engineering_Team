@@ -573,6 +573,8 @@ type UpsertTaskUsageParams struct {
 // EXCLUDED.account_id) fills a NULL and is otherwise a no-op, so a recorded
 // attribution is immutable. The reverse order would let a later report rewrite
 // history after a rotation.
+// price_version and computed_cost_usd are replaced as a pair from the same
+// deterministic task effective time; both remain NULL when the row is unpriced.
 func (q *Queries) UpsertTaskUsage(ctx context.Context, arg UpsertTaskUsageParams) error {
 	_, err := q.db.Exec(ctx, upsertTaskUsage,
 		arg.TaskID,
