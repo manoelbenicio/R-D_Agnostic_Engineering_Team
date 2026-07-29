@@ -145,17 +145,17 @@ func attachmentDownloadPath(id string) string {
 //
 //  1. Persist `a.Url` only when the deployment has signaled the storage
 //     backend serves URLs publicly without per-request auth:
-//       - `Storage.CdnDomain()` is non-empty (operator configured a
-//         public-facing base URL — `S3_CDN_DOMAIN` for the S3 backend or
-//         `LOCAL_UPLOAD_BASE_URL` for LocalStorage), AND
-//       - `h.CFSigner` is nil (no per-request CloudFront signing — when
-//         signing is on, the same CDN domain serves PRIVATE content via
-//         time-bounded signed URLs and the raw `a.Url` is unauth-deny),
-//         AND
-//       - `a.Url` is itself an absolute http(s) URL with no signature
-//         query — defends against legacy rows backfilled while baseURL
-//         was unset, and against a freshly-signed `download_url` ever
-//         leaking into `a.Url` (the original MUL-3130 bug).
+//     - `Storage.CdnDomain()` is non-empty (operator configured a
+//     public-facing base URL — `S3_CDN_DOMAIN` for the S3 backend or
+//     `LOCAL_UPLOAD_BASE_URL` for LocalStorage), AND
+//     - `h.CFSigner` is nil (no per-request CloudFront signing — when
+//     signing is on, the same CDN domain serves PRIVATE content via
+//     time-bounded signed URLs and the raw `a.Url` is unauth-deny),
+//     AND
+//     - `a.Url` is itself an absolute http(s) URL with no signature
+//     query — defends against legacy rows backfilled while baseURL
+//     was unset, and against a freshly-signed `download_url` ever
+//     leaking into `a.Url` (the original MUL-3130 bug).
 //
 //  2. Every other shape — CloudFront-signed mode, S3 presign /proxy
 //     against a private bucket without a CDN domain, raw S3 / R2 /
@@ -379,6 +379,25 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		key = "users/" + userID + "/" + filename
 	}
 
+	// P3 (ORQ-26) — entity refs require a resolvable workspace, and the
+	// rejection must happen BEFORE the object is written to storage.
+	//
+	// Without this guard the no-workspace branch below silently ignores
+	// issue_id / comment_id / chat_session_id: the membership check and the
+	// chat-session gate never run, the row is never created, and the caller
+	// still gets a 200 while the object is orphaned under users/<id>/.
+	// The workspace header is only sent when the client has a current slug
+	// (packages/core/api/client.ts, apps/mobile/data/api.ts), so this is a
+	// reachable shape, not a theoretical one.
+	if workspaceID == "" {
+		for _, field := range []string{"issue_id", "comment_id", "chat_session_id"} {
+			if r.FormValue(field) != "" {
+				writeError(w, http.StatusBadRequest, "workspace context is required to link an attachment")
+				return
+			}
+		}
+	}
+
 	// If workspace context is available, validate membership before uploading.
 	if workspaceID != "" {
 		if _, err := h.getWorkspaceMember(r.Context(), userID, workspaceID); err != nil {
@@ -446,33 +465,44 @@ func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
 
 		att, err := h.Queries.CreateAttachment(r.Context(), params)
 		if err != nil {
+			// P1 (ORQ-26) — the object is already in storage but no row
+			// references it. Returning 200 with a row-less link used to be
+			// the intended degradation, but the client now validates the
+			// upload response fail-closed (ApiContractError), so a partial
+			// success surfaces as an opaque contract error while leaving an
+			// orphan object behind. Delete best-effort and fail loudly.
 			slog.Error("failed to create attachment record", "error", err)
-			// S3 upload succeeded but DB record failed — still return the link
-			// so the file is usable. Log the error for investigation.
-		} else {
-			writeJSON(w, http.StatusOK, h.attachmentToResponse(att))
+			h.cleanupOrphanObject(r.Context(), key)
+			writeError(w, http.StatusInternalServerError, "failed to persist attachment")
 			return
 		}
 
-		writeJSON(w, http.StatusOK, map[string]string{
-			"id":       "",
-			"url":      link,
-			"filename": header.Filename,
-		})
+		writeJSON(w, http.StatusOK, h.attachmentToResponse(att))
 		return
 	}
 
-	// No workspace context (e.g. avatar upload) — upload directly.
+	// No workspace context (e.g. avatar upload) — upload directly. No
+	// attachment row exists for this shape, so there is nothing for
+	// /api/attachments/{id}/download to resolve.
 	link, err := h.Storage.Upload(r.Context(), key, data, contentType, header.Filename)
 	if err != nil {
 		slog.Error("file upload failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "upload failed")
 		return
 	}
+	// P2 (ORQ-26) — the contract for the contextless shape:
+	//   - id is EMPTY. Returning the generated UUID made clients persist
+	//     /api/attachments/<id>/download, which 404s because no row exists.
+	//     An empty id makes the client fall back to the storage link.
+	//   - download_url is present and equal to the storage link, because the
+	//     client validates this response against a schema that requires
+	//     id / url / download_url / filename and now fails closed.
 	writeJSON(w, http.StatusOK, map[string]string{
-		"id":       id.String(),
-		"url":      link,
-		"filename": header.Filename,
+		"id":           "",
+		"url":          link,
+		"download_url": link,
+		"markdown_url": link,
+		"filename":     header.Filename,
 	})
 }
 
@@ -976,6 +1006,36 @@ func (h *Handler) deleteS3Object(ctx context.Context, url string) {
 		return
 	}
 	h.Storage.Delete(ctx, h.Storage.KeyFromURL(url))
+}
+
+// cleanupOrphanObject removes an object that was written to storage but whose
+// attachment row could not be persisted. Two properties matter and neither is
+// provided by deleteS3Object:
+//
+//  1. F1 — it deletes by the EXACT key the upload used, never by round-tripping
+//     the returned URL through Storage.KeyFromURL. That resolver ends with a
+//     "everything after the last /" fallback, so a URL shape it does not
+//     recognise (for example an S3Storage configured without cdnDomain,
+//     endpointURL and region) collapses "users/<id>/<file>" to "<file>" and the
+//     delete would target an unrelated object at the bucket root. The caller
+//     already holds the exact key, so there is no reason to derive it.
+//
+//  2. F2 — it detaches the request context. CreateAttachment most often fails
+//     BECAUSE the client disconnected and r.Context() was canceled; reusing
+//     that context makes Delete fail immediately and leaves the orphan behind,
+//     which is precisely what this cleanup exists to prevent. Values (tracing,
+//     auth) are preserved, only cancellation is dropped, and a short deadline
+//     keeps a wedged backend from holding the handler.
+//
+// Cleanup stays best-effort: Storage.Delete reports no error and the caller
+// fails closed regardless.
+func (h *Handler) cleanupOrphanObject(ctx context.Context, key string) {
+	if h.Storage == nil || key == "" {
+		return
+	}
+	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	h.Storage.Delete(cleanupCtx, key)
 }
 
 // deleteS3Objects removes multiple files from S3 by their CDN URLs.

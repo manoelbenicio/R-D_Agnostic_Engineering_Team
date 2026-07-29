@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/multica-ai/multica/server/internal/auth"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
@@ -1194,5 +1196,549 @@ func TestIsDurablePublicURL(t *testing.T) {
 				t.Errorf("isDurablePublicURL(%q) = %v, want %v", tc.url, got, tc.want)
 			}
 		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ORQ-26 upload contract (S1-S7)
+//
+// Three contract rules, all exercised against the real handler:
+//   P1  insert failure  -> best-effort storage cleanup + 500
+//   P2  contextless     -> id "" + url/download_url = storage link
+//   P3  entity refs without a resolvable workspace -> 400 BEFORE the upload
+// ---------------------------------------------------------------------------
+
+// fileCount reports how many objects the mock currently holds. Used to assert
+// that a rejection happened *before* anything was written to storage, and that
+// a failed insert removed what it wrote.
+func (m *mockStorage) fileCount() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.files)
+}
+
+// mockStorageDeleteNoop keeps the object on Delete while still recording the
+// attempt. Models a storage backend whose delete silently fails: cleanup is
+// best-effort, so the request must still fail closed with 500.
+type mockStorageDeleteNoop struct {
+	mockStorage
+	deleteCalls []string
+}
+
+func (m *mockStorageDeleteNoop) Delete(_ context.Context, key string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.deleteCalls = append(m.deleteCalls, key)
+}
+
+// failingCreateAttachmentDB wraps the real DBTX and fails ONLY the
+// CreateAttachment statement. Everything else (membership lookup, actor
+// resolution, cleanup queries) passes through to the real pool.
+//
+// Why not a BEFORE INSERT trigger on `attachment`: that mutates schema shared
+// by the whole package, so any concurrently running test that inserts an
+// attachment would fail, and a crashed test would leave the trigger installed.
+// Why not a fully stubbed Queries: the membership check runs before the insert
+// and would fail first, turning the expected 500 into a 403.
+type failingCreateAttachmentDB struct {
+	inner db.DBTX
+	calls int
+}
+
+func (f *failingCreateAttachmentDB) Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error) {
+	return f.inner.Exec(ctx, sql, args...)
+}
+
+func (f *failingCreateAttachmentDB) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
+	return f.inner.Query(ctx, sql, args...)
+}
+
+func (f *failingCreateAttachmentDB) QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row {
+	if strings.Contains(sql, "-- name: CreateAttachment") {
+		f.calls++
+		return errRow{err: fmt.Errorf("orq26: forced attachment insert failure")}
+	}
+	return f.inner.QueryRow(ctx, sql, args...)
+}
+
+// errRow is a pgx.Row whose Scan always fails, which is how a sqlc `:one`
+// query surfaces a database error.
+type errRow struct{ err error }
+
+func (e errRow) Scan(_ ...any) error { return e.err }
+
+// withFailingAttachmentInsert points the handler at a DBTX that fails the
+// attachment insert for the duration of the test, restoring the real Queries
+// on cleanup. Hermetic: no DDL, no shared-table mutation, no leftover state.
+func withFailingAttachmentInsert(t *testing.T) *failingCreateAttachmentDB {
+	t.Helper()
+	fake := &failingCreateAttachmentDB{inner: testPool}
+	orig := testHandler.Queries
+	testHandler.Queries = db.New(fake)
+	t.Cleanup(func() { testHandler.Queries = orig })
+	return fake
+}
+
+// uploadRequestBody builds a multipart body with the given filename, bytes and
+// extra form fields.
+func uploadRequestBody(t *testing.T, filename, content string, fields map[string]string) (*bytes.Buffer, string) {
+	t.Helper()
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("file", filename)
+	if err != nil {
+		t.Fatalf("create form file: %v", err)
+	}
+	if _, err := part.Write([]byte(content)); err != nil {
+		t.Fatalf("write form file: %v", err)
+	}
+	for k, v := range fields {
+		if err := writer.WriteField(k, v); err != nil {
+			t.Fatalf("write form field %s: %v", k, err)
+		}
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close multipart writer: %v", err)
+	}
+	return &body, writer.FormDataContentType()
+}
+
+// S1 — contextless upload with no entity refs: id must be empty (no row
+// exists, so /api/attachments/{id}/download would 404) and both url and
+// download_url must carry the storage link.
+func TestUploadFile_ContextlessWithoutEntityRefsReturnsEmptyIDAndStorageLinks(t *testing.T) {
+	origStorage := testHandler.Storage
+	store := &mockStorage{}
+	testHandler.Storage = store
+	defer func() { testHandler.Storage = origStorage }()
+
+	const filename = "contextless-upload.txt"
+	body, contentType := uploadRequestBody(t, filename, "avatar bytes", nil)
+
+	req := httptest.NewRequest("POST", "/api/upload-file", body)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("X-User-ID", testUserID)
+	// No workspace slug/id header at all — this is the avatar / feedback shape.
+
+	w := httptest.NewRecorder()
+	testHandler.UploadFile(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("contextless upload: expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v; body: %s", err, w.Body.String())
+	}
+	if resp["id"] != "" {
+		t.Fatalf("contextless upload must return an empty id (no attachment row exists), got %q", resp["id"])
+	}
+	if resp["url"] == "" {
+		t.Fatal("contextless upload must return the storage link in url")
+	}
+	if resp["download_url"] != resp["url"] {
+		t.Fatalf("download_url must equal the storage link: url=%q download_url=%q", resp["url"], resp["download_url"])
+	}
+	if resp["filename"] != filename {
+		t.Fatalf("filename: want %q, got %q", filename, resp["filename"])
+	}
+	if store.fileCount() != 1 {
+		t.Fatalf("expected exactly one stored object, got %d", store.fileCount())
+	}
+
+	var count int
+	if err := testPool.QueryRow(
+		context.Background(),
+		`SELECT count(*) FROM attachment WHERE filename = $1`,
+		filename,
+	).Scan(&count); err != nil {
+		t.Fatalf("query attachment count: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("contextless upload must not create an attachment row, got %d", count)
+	}
+}
+
+// S2/S3/S4 — an entity ref without a resolvable workspace is rejected with a
+// 4xx and, critically, before anything is written to storage.
+func TestUploadFile_ContextlessWithEntityRefsRejectedPreUpload(t *testing.T) {
+	for _, field := range []string{"issue_id", "comment_id", "chat_session_id"} {
+		t.Run(field, func(t *testing.T) {
+			origStorage := testHandler.Storage
+			store := &mockStorage{}
+			testHandler.Storage = store
+			defer func() { testHandler.Storage = origStorage }()
+
+			body, contentType := uploadRequestBody(t, "orphan-ref.txt", "bytes", map[string]string{
+				field: "11111111-1111-1111-1111-111111111111",
+			})
+
+			req := httptest.NewRequest("POST", "/api/upload-file", body)
+			req.Header.Set("Content-Type", contentType)
+			req.Header.Set("X-User-ID", testUserID)
+			// No workspace header: the ref cannot be gated, so it must 4xx.
+
+			w := httptest.NewRecorder()
+			testHandler.UploadFile(w, req)
+			if w.Code != http.StatusBadRequest {
+				t.Fatalf("%s without workspace: expected 400, got %d: %s", field, w.Code, w.Body.String())
+			}
+			if store.fileCount() != 0 {
+				t.Fatalf("%s must be rejected pre-upload, but %d object(s) were stored", field, store.fileCount())
+			}
+		})
+	}
+}
+
+// S5 — a failed insert must delete the object it just wrote and return 500,
+// never a 200 pointing at a row-less object.
+func TestUploadFile_InsertFailureCleansUpAndReturns500(t *testing.T) {
+	origStorage := testHandler.Storage
+	store := &mockStorage{}
+	testHandler.Storage = store
+	defer func() { testHandler.Storage = origStorage }()
+
+	forceInsertFailure := withFailingAttachmentInsert(t)
+
+	body, contentType := uploadRequestBody(t, "insert-failure.txt", "bytes", nil)
+	req := httptest.NewRequest("POST", "/api/upload-file", body)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("X-User-ID", testUserID)
+	req.Header.Set("X-Workspace-ID", testWorkspaceID)
+
+	w := httptest.NewRecorder()
+	testHandler.UploadFile(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("insert failure: expected 500, got %d: %s", w.Code, w.Body.String())
+	}
+	if forceInsertFailure.calls != 1 {
+		t.Fatalf("expected exactly one CreateAttachment attempt, got %d", forceInsertFailure.calls)
+	}
+	if store.fileCount() != 0 {
+		t.Fatalf("insert failure must clean up the uploaded object, %d left behind", store.fileCount())
+	}
+
+	var count int
+	if err := testPool.QueryRow(
+		context.Background(),
+		`SELECT count(*) FROM attachment WHERE filename = $1`,
+		"insert-failure.txt",
+	).Scan(&count); err != nil {
+		t.Fatalf("query attachment count: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("no attachment row should exist after a failed insert, got %d", count)
+	}
+}
+
+// S6 — cleanup is best-effort: when the delete does not actually remove the
+// object, the request must still fail closed with 500 and still have tried.
+func TestUploadFile_InsertFailureStillFailsWhenCleanupIsNoop(t *testing.T) {
+	origStorage := testHandler.Storage
+	store := &mockStorageDeleteNoop{}
+	testHandler.Storage = store
+	defer func() { testHandler.Storage = origStorage }()
+
+	forceInsertFailure := withFailingAttachmentInsert(t)
+
+	body, contentType := uploadRequestBody(t, "insert-failure-noop-cleanup.txt", "bytes", nil)
+	req := httptest.NewRequest("POST", "/api/upload-file", body)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("X-User-ID", testUserID)
+	req.Header.Set("X-Workspace-ID", testWorkspaceID)
+
+	w := httptest.NewRecorder()
+	testHandler.UploadFile(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("insert failure with failing cleanup: expected 500, got %d: %s", w.Code, w.Body.String())
+	}
+	if forceInsertFailure.calls != 1 {
+		t.Fatalf("expected exactly one CreateAttachment attempt, got %d", forceInsertFailure.calls)
+	}
+	if len(store.deleteCalls) != 1 {
+		t.Fatalf("expected exactly one best-effort delete attempt, got %d", len(store.deleteCalls))
+	}
+	if store.fileCount() != 1 {
+		t.Fatalf("noop cleanup should leave the object in place (best-effort), got %d", store.fileCount())
+	}
+}
+
+// S7 — every 200 from UploadFile carries the four fields the client contract
+// requires, for both success shapes.
+func TestUploadFile_SuccessShapesAlwaysCarryContractFields(t *testing.T) {
+	tests := []struct {
+		name        string
+		filename    string
+		workspaceID string
+		wantEmptyID bool
+	}{
+		{name: "workspace shape", filename: "shape-workspace.txt", workspaceID: testWorkspaceID},
+		{name: "contextless shape", filename: "shape-contextless.txt", wantEmptyID: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			origStorage := testHandler.Storage
+			testHandler.Storage = &mockStorage{}
+			defer func() { testHandler.Storage = origStorage }()
+
+			body, contentType := uploadRequestBody(t, tt.filename, "bytes", nil)
+			req := httptest.NewRequest("POST", "/api/upload-file", body)
+			req.Header.Set("Content-Type", contentType)
+			req.Header.Set("X-User-ID", testUserID)
+			if tt.workspaceID != "" {
+				req.Header.Set("X-Workspace-ID", tt.workspaceID)
+			}
+
+			w := httptest.NewRecorder()
+			testHandler.UploadFile(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("%s: expected 200, got %d: %s", tt.name, w.Code, w.Body.String())
+			}
+			t.Cleanup(func() {
+				testPool.Exec(context.Background(), `DELETE FROM attachment WHERE filename = $1`, tt.filename)
+			})
+
+			var resp map[string]any
+			if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+				t.Fatalf("decode response: %v; body: %s", err, w.Body.String())
+			}
+			for _, field := range []string{"id", "url", "download_url", "filename"} {
+				if _, ok := resp[field]; !ok {
+					t.Fatalf("%s: response is missing required field %q: %s", tt.name, field, w.Body.String())
+				}
+			}
+			gotID, _ := resp["id"].(string)
+			if tt.wantEmptyID && gotID != "" {
+				t.Fatalf("%s: id must be empty, got %q", tt.name, gotID)
+			}
+			if !tt.wantEmptyID && gotID == "" {
+				t.Fatalf("%s: id must be set when an attachment row exists", tt.name)
+			}
+			if url, _ := resp["url"].(string); url == "" {
+				t.Fatalf("%s: url must be non-empty", tt.name)
+			}
+			if dl, _ := resp["download_url"].(string); dl == "" {
+				t.Fatalf("%s: download_url must be non-empty", tt.name)
+			}
+		})
+	}
+}
+
+// deleteSnapshot captures what a Delete call observed AT CALL TIME. Inspecting
+// the stored context after cleanupOrphanObject returns is worthless: its
+// `defer cancel()` has already fired, so Err() would report context.Canceled
+// no matter how the context was built. Everything asserted about the cleanup
+// context must therefore be sampled inside Delete.
+type deleteSnapshot struct {
+	key         string
+	err         error
+	deadline    time.Time
+	hasDeadline bool
+	// observedAt is sampled in the same instant as deadline, so the remaining
+	// budget can be computed from two timestamps taken inside Delete. Measuring
+	// against a timestamp captured before the call is wrong: the deadline is
+	// created as time.Now()+5s *during* the call, so deadline minus a pre-call
+	// instant is always slightly MORE than 5s.
+	observedAt time.Time
+	value      any
+}
+
+// mockStorageRecordingDelete records a snapshot per Delete call. mockStorage
+// discards both the key and the context, which is exactly what F1/F2 need to
+// observe.
+type mockStorageRecordingDelete struct {
+	mockStorage
+	// uploadURL, when set, is returned by Upload instead of the CDN-shaped URL.
+	uploadURL string
+	// collapseKeyFromURL makes KeyFromURL behave like the S3Storage fallback
+	// ("everything after the last /"), which is the shape F1 must never use.
+	collapseKeyFromURL bool
+	snapshots          []deleteSnapshot
+}
+
+type cleanupProbeKey struct{}
+
+func (m *mockStorageRecordingDelete) Upload(ctx context.Context, key string, data []byte, contentType string, filename string) (string, error) {
+	if _, err := m.mockStorage.Upload(ctx, key, data, contentType, filename); err != nil {
+		return "", err
+	}
+	if m.uploadURL != "" {
+		return m.uploadURL, nil
+	}
+	return fmt.Sprintf("https://cdn.example.com/%s", key), nil
+}
+
+func (m *mockStorageRecordingDelete) KeyFromURL(rawURL string) string {
+	if m.collapseKeyFromURL {
+		if i := strings.LastIndex(rawURL, "/"); i >= 0 {
+			return rawURL[i+1:]
+		}
+		return rawURL
+	}
+	return m.mockStorage.KeyFromURL(rawURL)
+}
+
+func (m *mockStorageRecordingDelete) Delete(ctx context.Context, key string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	deadline, hasDeadline := ctx.Deadline()
+	m.snapshots = append(m.snapshots, deleteSnapshot{
+		key:         key,
+		err:         ctx.Err(),
+		deadline:    deadline,
+		hasDeadline: hasDeadline,
+		observedAt:  time.Now(),
+		value:       ctx.Value(cleanupProbeKey{}),
+	})
+	delete(m.files, key)
+}
+
+func (m *mockStorageRecordingDelete) deleteSnapshots() []deleteSnapshot {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]deleteSnapshot(nil), m.snapshots...)
+}
+
+// F1 (unit) — the orphan cleanup must delete the EXACT key it was given.
+func TestCleanupOrphanObject_DeletesExactKeyNotDerivedFromURL(t *testing.T) {
+	const key = "users/11111111-1111-1111-1111-111111111111/22222222-2222-2222-2222-222222222222.png"
+
+	store := &mockStorageRecordingDelete{}
+	store.put(key, []byte("orphan"))
+	h := &Handler{Storage: store}
+
+	h.cleanupOrphanObject(context.Background(), key)
+
+	snaps := store.deleteSnapshots()
+	if len(snaps) != 1 {
+		t.Fatalf("expected exactly one Delete call, got %d", len(snaps))
+	}
+	if snaps[0].key != key {
+		t.Fatalf("cleanup must delete the exact key\n got: %q\nwant: %q", snaps[0].key, key)
+	}
+	// Guard the specific regression: the last path element alone must never
+	// reach the backend, because it addresses the bucket root.
+	if last := key[strings.LastIndex(key, "/")+1:]; snaps[0].key == last {
+		t.Fatalf("cleanup deleted the bare filename %q instead of the full key", last)
+	}
+	if store.fileCount() != 0 {
+		t.Fatalf("orphan object still present, %d left", store.fileCount())
+	}
+}
+
+// F2 (unit) — CreateAttachment most often fails BECAUSE the client
+// disconnected and the request context was canceled. The cleanup must still
+// run: cancellation is dropped, values survive, and its own deadline applies.
+// Every context property is sampled INSIDE Delete, before `defer cancel()`.
+func TestCleanupOrphanObject_RunsWithCanceledRequestContext(t *testing.T) {
+	const key = "workspaces/33333333-3333-3333-3333-333333333333/44444444-4444-4444-4444-444444444444.pdf"
+
+	store := &mockStorageRecordingDelete{}
+	store.put(key, []byte("orphan"))
+	h := &Handler{Storage: store}
+
+	reqCtx, cancel := context.WithCancel(
+		context.WithValue(context.Background(), cleanupProbeKey{}, "request-scoped"),
+	)
+	cancel() // the client is already gone before cleanup starts
+	if reqCtx.Err() == nil {
+		t.Fatal("test setup: request context should already be canceled")
+	}
+
+	h.cleanupOrphanObject(reqCtx, key)
+
+	snaps := store.deleteSnapshots()
+	if len(snaps) != 1 {
+		t.Fatalf("cleanup must still call Delete with a canceled request context, got %d calls", len(snaps))
+	}
+	got := snaps[0]
+	if got.key != key {
+		t.Fatalf("cleanup deleted %q, want %q", got.key, key)
+	}
+	if got.err != nil {
+		t.Fatalf("cleanup context must not inherit cancellation, Err() was %v at call time", got.err)
+	}
+	if got.value != "request-scoped" {
+		t.Fatalf("cleanup context must preserve request values, got %v", got.value)
+	}
+	if !got.hasDeadline {
+		t.Fatal("cleanup context must carry its own deadline")
+	}
+	// Both timestamps come from inside Delete, so the budget is measured
+	// strictly after the deadline was created and cannot exceed it.
+	remaining := got.deadline.Sub(got.observedAt)
+	if remaining <= 0 || remaining > 5*time.Second {
+		t.Fatalf("cleanup budget out of range: %v remaining at call time", remaining)
+	}
+	if store.fileCount() != 0 {
+		t.Fatalf("orphan object still present after cleanup, %d left", store.fileCount())
+	}
+}
+
+// F1 (wiring) — proves UploadFile itself deletes the ORIGINAL key. The storage
+// fake returns an upload URL that its own KeyFromURL cannot parse and collapses
+// to the bare filename, reproducing the S3Storage fallback. If the handler ever
+// goes back to deleting by URL, the recorded key becomes the bare filename and
+// this test fails.
+func TestUploadFile_InsertFailureDeletesOriginalKeyWhenKeyFromURLCollapses(t *testing.T) {
+	origStorage := testHandler.Storage
+	store := &mockStorageRecordingDelete{
+		uploadURL:          "https://unrecognised.example.net/some/other/prefix/collapsed.txt",
+		collapseKeyFromURL: true,
+	}
+	testHandler.Storage = store
+	defer func() { testHandler.Storage = origStorage }()
+
+	forceInsertFailure := withFailingAttachmentInsert(t)
+
+	body, contentType := uploadRequestBody(t, "collapse-cleanup.txt", "bytes", nil)
+	req := httptest.NewRequest("POST", "/api/upload-file", body)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("X-User-ID", testUserID)
+	req.Header.Set("X-Workspace-ID", testWorkspaceID)
+
+	w := httptest.NewRecorder()
+	testHandler.UploadFile(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("insert failure: expected 500, got %d: %s", w.Code, w.Body.String())
+	}
+	if forceInsertFailure.calls != 1 {
+		t.Fatalf("expected exactly one CreateAttachment attempt, got %d", forceInsertFailure.calls)
+	}
+
+	snaps := store.deleteSnapshots()
+	if len(snaps) != 1 {
+		t.Fatalf("expected exactly one cleanup Delete, got %d", len(snaps))
+	}
+	deleted := snaps[0].key
+	// The handler builds workspaces/<workspace>/<uuid><ext>; assert the full
+	// prefixed key, not the collapsed filename the URL would have produced.
+	wantPrefix := "workspaces/" + testWorkspaceID + "/"
+	if !strings.HasPrefix(deleted, wantPrefix) {
+		t.Fatalf("cleanup must delete the original key\n got: %q\nwant prefix: %q", deleted, wantPrefix)
+	}
+	if !strings.HasSuffix(deleted, ".txt") {
+		t.Fatalf("cleanup key lost the upload extension: %q", deleted)
+	}
+	if deleted == "collapsed.txt" || !strings.Contains(deleted, "/") {
+		t.Fatalf("cleanup deleted a URL-derived bare filename %q", deleted)
+	}
+	if store.KeyFromURL(store.uploadURL) != "collapsed.txt" {
+		t.Fatalf("test setup: KeyFromURL should collapse to the bare filename, got %q",
+			store.KeyFromURL(store.uploadURL))
+	}
+	// And the cleanup context must be usable here too.
+	if snaps[0].err != nil {
+		t.Fatalf("cleanup context unusable in the handler path: %v", snaps[0].err)
+	}
+	if !snaps[0].hasDeadline {
+		t.Fatal("cleanup context must carry its own deadline in the handler path")
+	}
+	if remaining := snaps[0].deadline.Sub(snaps[0].observedAt); remaining <= 0 || remaining > 5*time.Second {
+		t.Fatalf("cleanup budget out of range in the handler path: %v", remaining)
+	}
+	if store.fileCount() != 0 {
+		t.Fatalf("orphan object left behind, %d present", store.fileCount())
 	}
 }
