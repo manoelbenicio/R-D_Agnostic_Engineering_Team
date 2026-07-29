@@ -3,10 +3,12 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
@@ -263,12 +265,39 @@ func TestSendChatMessage_UnusableMentionTargetFallsBackToSessionAgent(t *testing
 		t.Fatalf("create foreign agent: %v", err)
 	}
 
+	// A target whose runtime is offline: the task would be queued and never
+	// claimed, so the turn must go to the session agent instead of hanging.
+	var offlineRuntimeID, offlineAgentID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent_runtime (
+			workspace_id, daemon_id, name, runtime_mode, provider, status,
+			device_info, metadata, owner_id, last_seen_at
+		)
+		VALUES ($1, NULL, 'ORQ54 Offline Runtime', 'cloud', 'orq54_offline', 'offline', 'offline', '{}'::jsonb, $2, now())
+		RETURNING id
+	`, testWorkspaceID, testUserID).Scan(&offlineRuntimeID); err != nil {
+		t.Fatalf("create offline runtime: %v", err)
+	}
+	t.Cleanup(func() { testPool.Exec(ctx, `DELETE FROM agent_runtime WHERE id = $1`, offlineRuntimeID) })
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent (
+			workspace_id, name, description, runtime_mode, runtime_config,
+			runtime_id, visibility, max_concurrent_tasks, owner_id
+		)
+		VALUES ($1, 'ORQ54 Offline Agent', '', 'cloud', '{}'::jsonb, $2, 'workspace', 1, $3)
+		RETURNING id
+	`, testWorkspaceID, offlineRuntimeID, testUserID).Scan(&offlineAgentID); err != nil {
+		t.Fatalf("create offline agent: %v", err)
+	}
+	t.Cleanup(func() { testPool.Exec(ctx, `DELETE FROM agent WHERE id = $1`, offlineAgentID) })
+
 	cases := []struct {
 		name    string
 		agentID string
 	}{
 		{"archived agent", archivedID},
 		{"agent in another workspace", foreignAgentID},
+		{"agent whose runtime is offline", offlineAgentID},
 	}
 
 	for _, tc := range cases {
@@ -285,12 +314,11 @@ func TestSendChatMessage_UnusableMentionTargetFallsBackToSessionAgent(t *testing
 }
 
 // TestClaimTask_MentionRoutedChatTurnDoesNotResumeSessionOwnersCLISession
-// covers the isolation half of the escape hatch. chat_session.session_id and
-// the GetLastChatTaskSession fallback are session-scoped, not agent-scoped, and
-// the resume guard only compared runtimes — so once a second agent can run a
-// turn in the same chat, two agents sharing one runtime would hand each other
-// their CLI sessions. The session owner still resumes; the mentioned agent must
-// start fresh.
+// covers the read half of the resume-pointer contract. chat_session.session_id
+// is the session owner's pointer, and the resume guard only compared runtimes —
+// so once a second agent can run a turn in the same chat, two agents sharing
+// one runtime would hand each other their CLI sessions. The owner resumes; a
+// mention-routed agent must not inherit the owner's session or work dir.
 func TestClaimTask_MentionRoutedChatTurnDoesNotResumeSessionOwnersCLISession(t *testing.T) {
 	if testHandler == nil {
 		t.Skip("database not available")
@@ -363,5 +391,230 @@ func TestClaimTask_MentionRoutedChatTurnDoesNotResumeSessionOwnersCLISession(t *
 	}
 	if task.PriorWorkDir != "/tmp/owner-workdir" {
 		t.Fatalf("session owner should still resume its work dir: got %q", task.PriorWorkDir)
+	}
+}
+
+// createSiblingAgentOnRuntime adds a second agent bound to an existing runtime.
+// Two agents on ONE runtime is the shape where the escape hatch's concurrency
+// and session-pointer hazards are observable.
+func createSiblingAgentOnRuntime(t *testing.T, ctx context.Context, runtimeID, name string) string {
+	t.Helper()
+
+	var agentID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent (
+			workspace_id, name, runtime_mode, runtime_config,
+			runtime_id, visibility, max_concurrent_tasks
+		)
+		VALUES ($1, $2, 'local', '{}'::jsonb, $3, 'workspace', 3)
+		RETURNING id
+	`, testWorkspaceID, name+" "+t.Name(), runtimeID).Scan(&agentID); err != nil {
+		t.Fatalf("setup: create sibling agent %q: %v", name, err)
+	}
+	t.Cleanup(func() { testPool.Exec(ctx, `DELETE FROM agent WHERE id = $1`, agentID) })
+	return agentID
+}
+
+func queueChatTask(t *testing.T, ctx context.Context, agentID, runtimeID, sessionID, status string) string {
+	t.Helper()
+
+	var taskID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent_task_queue (agent_id, runtime_id, chat_session_id, status, priority)
+		VALUES ($1, $2, $3, $4, 0)
+		RETURNING id
+	`, agentID, runtimeID, sessionID, status).Scan(&taskID); err != nil {
+		t.Fatalf("setup: queue chat task (%s): %v", status, err)
+	}
+	return taskID
+}
+
+// TestClaimAgentTask_OneInFlightTurnPerChatSessionAcrossAgents pins the
+// serialization the escape hatch requires. ClaimAgentTask used to serialize
+// chat turns per (agent, chat_session): fine while a session only ever ran on
+// its own agent, but once a mention can route a turn elsewhere, two agents
+// would claim the same session concurrently and interleave assistant messages
+// and resume state in one transcript. Serialization is now per chat_session,
+// whoever runs it — without over-serializing issue work, which stays per agent.
+func TestClaimAgentTask_OneInFlightTurnPerChatSessionAcrossAgents(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database not available")
+	}
+
+	ctx := context.Background()
+	ownerAgentID, runtimeID, _ := createRuntimeGuardAgent(t, ctx)
+	mentionedAgentID := createSiblingAgentOnRuntime(t, ctx, runtimeID, "Serialization Sibling")
+
+	var sessionID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO chat_session (workspace_id, agent_id, creator_id, title)
+		VALUES ($1, $2, $3, 'serialization guard chat')
+		RETURNING id
+	`, testWorkspaceID, ownerAgentID, testUserID).Scan(&sessionID); err != nil {
+		t.Fatalf("setup: create chat session: %v", err)
+	}
+	t.Cleanup(func() { testPool.Exec(ctx, `DELETE FROM chat_session WHERE id = $1`, sessionID) })
+
+	// The mentioned agent's turn is already in flight.
+	inFlight := queueChatTask(t, ctx, mentionedAgentID, runtimeID, sessionID, "running")
+
+	// The session owner has a queued turn in the same session: it must NOT be
+	// claimable while another agent is mid-turn there.
+	queueChatTask(t, ctx, ownerAgentID, runtimeID, sessionID, "queued")
+	if _, err := testHandler.Queries.ClaimAgentTask(ctx, util.MustParseUUID(ownerAgentID)); !errors.Is(err, pgx.ErrNoRows) {
+		t.Fatalf("owner must not claim while another agent runs the same chat session, got err=%v", err)
+	}
+
+	// A different chat session is unaffected — the guard is per session, not a
+	// global chat lock.
+	var otherSessionID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO chat_session (workspace_id, agent_id, creator_id, title)
+		VALUES ($1, $2, $3, 'serialization guard other chat')
+		RETURNING id
+	`, testWorkspaceID, ownerAgentID, testUserID).Scan(&otherSessionID); err != nil {
+		t.Fatalf("setup: create second chat session: %v", err)
+	}
+	t.Cleanup(func() { testPool.Exec(ctx, `DELETE FROM chat_session WHERE id = $1`, otherSessionID) })
+	queueChatTask(t, ctx, ownerAgentID, runtimeID, otherSessionID, "queued")
+	claimed, err := testHandler.Queries.ClaimAgentTask(ctx, util.MustParseUUID(ownerAgentID))
+	if err != nil {
+		t.Fatalf("owner should claim a task in a different chat session: %v", err)
+	}
+	if uuidToString(claimed.ChatSessionID) != otherSessionID {
+		t.Fatalf("claimed the wrong session: got %s, want %s", uuidToString(claimed.ChatSessionID), otherSessionID)
+	}
+
+	// Once the in-flight turn finishes, the blocked turn becomes claimable.
+	if _, err := testPool.Exec(ctx, `
+		UPDATE agent_task_queue SET status = 'completed', completed_at = now() WHERE id IN ($1, $2)
+	`, inFlight, uuidToString(claimed.ID)); err != nil {
+		t.Fatalf("complete in-flight tasks: %v", err)
+	}
+	unblocked, err := testHandler.Queries.ClaimAgentTask(ctx, util.MustParseUUID(ownerAgentID))
+	if err != nil {
+		t.Fatalf("owner should claim after the other agent's turn completed: %v", err)
+	}
+	if uuidToString(unblocked.ChatSessionID) != sessionID {
+		t.Fatalf("unblocked claim hit the wrong session: got %s, want %s", uuidToString(unblocked.ChatSessionID), sessionID)
+	}
+}
+
+// TestClaimAgentTask_IssueWorkStaysParallelAcrossAgents guards the blast radius
+// of the change above: issue tasks must still serialize per (issue, agent) so
+// two agents can work one issue in parallel.
+func TestClaimAgentTask_IssueWorkStaysParallelAcrossAgents(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database not available")
+	}
+
+	ctx := context.Background()
+	agentA, runtimeID, _ := createRuntimeGuardAgent(t, ctx)
+	agentB := createSiblingAgentOnRuntime(t, ctx, runtimeID, "Issue Parallel Sibling")
+
+	var issueID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO issue (workspace_id, title, description, status, priority, creator_id, creator_type, number)
+		VALUES ($1, 'orq54 parallel issue', '', 'todo', 'medium', $2, 'member',
+		        (SELECT COALESCE(MAX(number), 0) + 1 FROM issue WHERE workspace_id = $1))
+		RETURNING id
+	`, testWorkspaceID, testUserID).Scan(&issueID); err != nil {
+		t.Fatalf("setup: create issue: %v", err)
+	}
+	t.Cleanup(func() { testPool.Exec(ctx, `DELETE FROM issue WHERE id = $1`, issueID) })
+
+	for _, agentID := range []string{agentA, agentB} {
+		if _, err := testPool.Exec(ctx, `
+			INSERT INTO agent_task_queue (agent_id, runtime_id, issue_id, status, priority)
+			VALUES ($1, $2, $3, 'queued', 0)
+		`, agentID, runtimeID, issueID); err != nil {
+			t.Fatalf("setup: queue issue task: %v", err)
+		}
+	}
+
+	for _, agentID := range []string{agentA, agentB} {
+		if _, err := testHandler.Queries.ClaimAgentTask(ctx, util.MustParseUUID(agentID)); err != nil {
+			t.Fatalf("both agents must claim their own task on the same issue: %v", err)
+		}
+	}
+}
+
+// TestCompleteTask_MentionRoutedTurnKeepsOwnerSessionPointer covers the write
+// half of the resume-pointer contract. Reading was already gated, but the
+// mentioned agent's completion still wrote chat_session.session_id — so the
+// owner's next turn resumed the mentioned agent's CLI session. The pointer is
+// now explicitly (chat_session, agent): chat_session holds the owner's, and
+// each agent's own continuity comes from its own task rows.
+func TestCompleteTask_MentionRoutedTurnKeepsOwnerSessionPointer(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database not available")
+	}
+
+	ctx := context.Background()
+	ownerAgentID, runtimeID, daemonID := createRuntimeGuardAgent(t, ctx)
+	mentionedAgentID := createSiblingAgentOnRuntime(t, ctx, runtimeID, "Pointer Sibling")
+
+	var sessionID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO chat_session (
+			workspace_id, agent_id, creator_id, title,
+			session_id, work_dir, runtime_id
+		)
+		VALUES ($1, $2, $3, 'pointer guard chat', 'owner-cli-session', '/tmp/owner-workdir', $4)
+		RETURNING id
+	`, testWorkspaceID, ownerAgentID, testUserID, runtimeID).Scan(&sessionID); err != nil {
+		t.Fatalf("setup: create chat session: %v", err)
+	}
+	t.Cleanup(func() { testPool.Exec(ctx, `DELETE FROM chat_session WHERE id = $1`, sessionID) })
+
+	// The mentioned agent runs a turn and reports its own CLI session.
+	mentionedTaskID := queueChatTask(t, ctx, mentionedAgentID, runtimeID, sessionID, "running")
+	if _, err := testHandler.TaskService.CompleteTask(ctx, util.MustParseUUID(mentionedTaskID),
+		[]byte(`{"summary":"orq54 mention-routed reply"}`), "mentioned-cli-session", "/tmp/mentioned-workdir"); err != nil {
+		t.Fatalf("complete mention-routed task: %v", err)
+	}
+
+	var pointerSession, pointerWorkDir string
+	if err := testPool.QueryRow(ctx,
+		`SELECT session_id, work_dir FROM chat_session WHERE id = $1`, sessionID).
+		Scan(&pointerSession, &pointerWorkDir); err != nil {
+		t.Fatalf("load chat session pointer: %v", err)
+	}
+	if pointerSession != "owner-cli-session" || pointerWorkDir != "/tmp/owner-workdir" {
+		t.Fatalf("mention-routed completion overwrote the owner pointer: session_id=%q work_dir=%q",
+			pointerSession, pointerWorkDir)
+	}
+
+	// The mentioned agent's session is still recorded on its own task row, so
+	// its next turn in this chat resumes its own conversation.
+	var taskSession string
+	if err := testPool.QueryRow(ctx,
+		`SELECT session_id FROM agent_task_queue WHERE id = $1`, mentionedTaskID).Scan(&taskSession); err != nil {
+		t.Fatalf("load task session_id: %v", err)
+	}
+	if taskSession != "mentioned-cli-session" {
+		t.Fatalf("mention-routed task should record its own session_id, got %q", taskSession)
+	}
+
+	queueChatTask(t, ctx, mentionedAgentID, runtimeID, sessionID, "queued")
+	task := claimTaskForRuntimeGuard(t, runtimeID, daemonID)
+	if task.PriorSessionID != "mentioned-cli-session" {
+		t.Fatalf("mentioned agent should resume its own session, got %q", task.PriorSessionID)
+	}
+	if _, err := testPool.Exec(ctx, `
+		UPDATE agent_task_queue SET status = 'completed', completed_at = now()
+		WHERE chat_session_id = $1 AND status IN ('dispatched', 'running')
+	`, sessionID); err != nil {
+		t.Fatalf("complete claimed task: %v", err)
+	}
+
+	// And the owner still resumes its own, untouched session.
+	queueChatTask(t, ctx, ownerAgentID, runtimeID, sessionID, "queued")
+	task = claimTaskForRuntimeGuard(t, runtimeID, daemonID)
+	if task.PriorSessionID != "owner-cli-session" {
+		t.Fatalf("owner should resume owner-cli-session, got %q", task.PriorSessionID)
+	}
+	if task.PriorWorkDir != "/tmp/owner-workdir" {
+		t.Fatalf("owner should resume its own work dir, got %q", task.PriorWorkDir)
 	}
 }

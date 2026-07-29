@@ -67,6 +67,16 @@ func (h *Handler) resolveChatTurnAgent(r *http.Request, userID, workspaceID stri
 			"chat_session_id", uuidToString(session.ID), "mention_agent_id", raw)
 		return session.AgentID
 	}
+	if !h.isRuntimeOnline(r.Context(), agent.RuntimeID) {
+		// A task queued for an offline runtime is never claimed: the turn
+		// would sit unanswered until someone notices. The session agent is
+		// the honest destination — and if it is offline too, the user gets
+		// the existing offline banner for the agent they can actually see,
+		// instead of silence from an agent the UI never mentioned.
+		slog.Warn("chat direct mention ignored: agent runtime offline",
+			"chat_session_id", uuidToString(session.ID), "mention_agent_id", raw)
+		return session.AgentID
+	}
 	actorType, actorID := h.resolveActor(r, userID, workspaceID)
 	if !h.canAccessPrivateAgent(r.Context(), agent, actorType, actorID, workspaceID) {
 		slog.Warn("chat direct mention ignored: no access to private agent",

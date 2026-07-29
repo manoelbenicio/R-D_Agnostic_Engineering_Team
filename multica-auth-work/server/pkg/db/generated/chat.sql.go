@@ -266,6 +266,7 @@ func (q *Queries) GetChatSessionInWorkspace(ctx context.Context, arg GetChatSess
 const getLastChatTaskSession = `-- name: GetLastChatTaskSession :one
 SELECT session_id, work_dir, runtime_id FROM agent_task_queue
 WHERE chat_session_id = $1
+  AND agent_id = $2
   AND (
     status = 'completed'
     OR (
@@ -279,21 +280,32 @@ ORDER BY completed_at DESC
 LIMIT 1
 `
 
+type GetLastChatTaskSessionParams struct {
+	ChatSessionID pgtype.UUID `json:"chat_session_id"`
+	AgentID       pgtype.UUID `json:"agent_id"`
+}
+
 type GetLastChatTaskSessionRow struct {
 	SessionID pgtype.Text `json:"session_id"`
 	WorkDir   pgtype.Text `json:"work_dir"`
 	RuntimeID pgtype.UUID `json:"runtime_id"`
 }
 
-// Returns the most recent task in this chat session that managed to record a
-// session_id. Includes both completed and failed tasks: even a failed task
-// may have established a real agent session before failing, and we'd rather
-// resume there than start over and lose conversation memory. Used as a
-// fallback when chat_session.session_id is NULL. Resume-unsafe failures are
-// excluded because replaying those sessions deterministically reproduces the
-// same terminal state.
-func (q *Queries) GetLastChatTaskSession(ctx context.Context, chatSessionID pgtype.UUID) (GetLastChatTaskSessionRow, error) {
-	row := q.db.QueryRow(ctx, getLastChatTaskSession, chatSessionID)
+// Returns the most recent task in this chat session, BY THIS AGENT, that
+// managed to record a session_id. Includes both completed and failed tasks:
+// even a failed task may have established a real agent session before failing,
+// and we'd rather resume there than start over and lose conversation memory.
+// Used as a fallback when chat_session.session_id is NULL. Resume-unsafe
+// failures are excluded because replaying those sessions deterministically
+// reproduces the same terminal state.
+//
+// The agent_id filter makes the pointer explicitly (chat_session, agent). With
+// the direct `@agent` escape hatch a single chat session accumulates task rows
+// from several agents, and a session_id is only meaningful to the CLI process
+// that created it — an unfiltered lookup would hand the squad TL the mentioned
+// agent's session (and vice versa) whenever they share a runtime.
+func (q *Queries) GetLastChatTaskSession(ctx context.Context, arg GetLastChatTaskSessionParams) (GetLastChatTaskSessionRow, error) {
+	row := q.db.QueryRow(ctx, getLastChatTaskSession, arg.ChatSessionID, arg.AgentID)
 	var i GetLastChatTaskSessionRow
 	err := row.Scan(&i.SessionID, &i.WorkDir, &i.RuntimeID)
 	return i, err
@@ -689,6 +701,7 @@ SET session_id = COALESCE($1, session_id),
     runtime_id = COALESCE($3, runtime_id),
     updated_at = now()
 WHERE id = $4
+  AND agent_id = $5
 `
 
 type UpdateChatSessionSessionParams struct {
@@ -696,6 +709,7 @@ type UpdateChatSessionSessionParams struct {
 	WorkDir   pgtype.Text `json:"work_dir"`
 	RuntimeID pgtype.UUID `json:"runtime_id"`
 	ID        pgtype.UUID `json:"id"`
+	AgentID   pgtype.UUID `json:"agent_id"`
 }
 
 // Updates the resume pointer for a chat session. Empty/NULL inputs are
@@ -703,12 +717,21 @@ type UpdateChatSessionSessionParams struct {
 // the agent crashed before establishing one) cannot wipe out a previously
 // recorded resume pointer. This makes the chat memory robust against
 // intermittent agent failures.
+//
+// The agent_id predicate keeps this pointer owned by the session's own agent.
+// With the direct `@agent` escape hatch another agent can run a single turn in
+// this session; letting its completion write here would overwrite the owner's
+// session_id/runtime_id and the owner's next turn would resume the wrong CLI
+// session. A mentioned agent's continuity comes from its own task rows
+// (GetLastChatTaskSession, filtered by agent), so a no-op here is correct
+// rather than a lost pointer.
 func (q *Queries) UpdateChatSessionSession(ctx context.Context, arg UpdateChatSessionSessionParams) error {
 	_, err := q.db.Exec(ctx, updateChatSessionSession,
 		arg.SessionID,
 		arg.WorkDir,
 		arg.RuntimeID,
 		arg.ID,
+		arg.AgentID,
 	)
 	return err
 }

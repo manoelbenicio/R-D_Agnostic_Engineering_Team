@@ -1324,8 +1324,11 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, resu
 			}
 			// COALESCE in SQL guarantees empty inputs don't wipe the
 			// existing resume pointer; we still surface DB errors.
+			// AgentID scopes the write to the session's own agent: a
+			// mention-routed turn must not overwrite the owner's pointer.
 			if err := qtx.UpdateChatSessionSession(ctx, db.UpdateChatSessionSessionParams{
 				ID:        t.ChatSessionID,
+				AgentID:   t.AgentID,
 				SessionID: pgtype.Text{String: sessionID, Valid: sessionID != ""},
 				WorkDir:   pgtype.Text{String: workDir, Valid: workDir != ""},
 				RuntimeID: sessionRuntimeID,
@@ -1522,8 +1525,11 @@ func (s *TaskService) FailTask(ctx context.Context, taskID pgtype.UUID, errMsg, 
 			if sessionID != "" {
 				sessionRuntimeID = t.RuntimeID
 			}
+			// AgentID scopes the write to the session's own agent: a
+			// mention-routed turn must not overwrite the owner's pointer.
 			if err := qtx.UpdateChatSessionSession(ctx, db.UpdateChatSessionSessionParams{
 				ID:        t.ChatSessionID,
+				AgentID:   t.AgentID,
 				SessionID: pgtype.Text{String: sessionID, Valid: sessionID != ""},
 				WorkDir:   pgtype.Text{String: workDir, Valid: workDir != ""},
 				RuntimeID: sessionRuntimeID,

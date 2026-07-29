@@ -587,18 +587,22 @@ WHERE id = (
     WHERE atq.agent_id = $1 AND atq.status = 'queued'
       AND NOT EXISTS (
           SELECT 1 FROM agent_task_queue active
-          WHERE active.agent_id = atq.agent_id
-            AND active.status IN ('dispatched', 'running', 'waiting_local_directory')
+          WHERE active.status IN ('dispatched', 'running', 'waiting_local_directory')
             AND (
-              (atq.issue_id IS NOT NULL AND active.issue_id = atq.issue_id)
-              OR (atq.chat_session_id IS NOT NULL AND active.chat_session_id = atq.chat_session_id)
+              (atq.chat_session_id IS NOT NULL AND active.chat_session_id = atq.chat_session_id)
               OR (
-                atq.issue_id IS NULL
-                AND atq.chat_session_id IS NULL
-                AND atq.autopilot_run_id IS NULL
-                AND active.issue_id IS NULL
-                AND active.chat_session_id IS NULL
-                AND active.autopilot_run_id IS NULL
+                active.agent_id = atq.agent_id
+                AND (
+                  (atq.issue_id IS NOT NULL AND active.issue_id = atq.issue_id)
+                  OR (
+                    atq.issue_id IS NULL
+                    AND atq.chat_session_id IS NULL
+                    AND atq.autopilot_run_id IS NULL
+                    AND active.issue_id IS NULL
+                    AND active.chat_session_id IS NULL
+                    AND active.autopilot_run_id IS NULL
+                  )
+                )
               )
             )
       )
@@ -613,7 +617,6 @@ RETURNING id, agent_id, issue_id, status, priority, dispatched_at, started_at, c
 // a task is only claimable when no other task for the same issue AND same agent is
 // already dispatched or running. This allows different agents to work on the same
 // issue in parallel while preventing a single agent from running duplicate tasks.
-// Chat tasks (issue_id IS NULL) use chat_session_id for serialization instead.
 // Quick-create tasks have no issue / chat / autopilot link, so they serialize on
 // "any other quick-create-shaped task" (all four FKs NULL) for the same agent —
 // otherwise a user mashing the create button could fire concurrent quick-creates
@@ -625,6 +628,12 @@ RETURNING id, agent_id, issue_id, status, priority, dispatched_at, started_at, c
 // resolved server-side from the agent's assignment, restricted to accounts that
 // are explicitly allowed in approved_accounts; an agent with no allowed
 // assignment leaves NULL rather than borrowing someone else's account.
+//
+// Chat tasks serialize on chat_session_id ACROSS agents, not per (agent, session):
+// the direct `@agent` escape hatch lets one chat session hand a turn to another
+// agent, and two agents running the same session concurrently would interleave
+// assistant messages and resume state in a single transcript. One in-flight turn
+// per chat session, whoever runs it.
 func (q *Queries) ClaimAgentTask(ctx context.Context, agentID pgtype.UUID) (AgentTaskQueue, error) {
 	row := q.db.QueryRow(ctx, claimAgentTask, agentID)
 	var i AgentTaskQueue
