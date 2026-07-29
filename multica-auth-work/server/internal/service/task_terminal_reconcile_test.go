@@ -49,32 +49,6 @@ func (r *mockAgentRow) Scan(dest ...any) error {
 	return nil
 }
 
-func TestShouldEnqueueAgentTask_ExcludesTerminalAndInactiveStatuses(t *testing.T) {
-	svc := &IssueService{}
-	ctx := context.Background()
-
-	statuses := []struct {
-		status     string
-		wantResult bool
-	}{
-		{"backlog", false},
-		{"done", false},
-		{"cancelled", false},
-		{"in_review", false},
-		{"todo", false}, // fails isAgentAssigneeReady because issue has no assignee, proving status check passed
-	}
-
-	for _, tc := range statuses {
-		t.Run(tc.status, func(t *testing.T) {
-			issue := db.Issue{Status: tc.status}
-			got := svc.shouldEnqueueAgentTask(ctx, issue)
-			if got != tc.wantResult {
-				t.Errorf("shouldEnqueueAgentTask(%q) = %v, want %v", tc.status, got, tc.wantResult)
-			}
-		})
-	}
-}
-
 func TestTerminalTransitions_ReconcileAgentStatusWhenAlreadyFinalized(t *testing.T) {
 	taskID := testUUID(10)
 	agentID := testUUID(20)

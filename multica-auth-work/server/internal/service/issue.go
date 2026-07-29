@@ -145,7 +145,7 @@ type IssueCreateResult struct {
 //  8. Publish EventIssueCreated to the bus (payload via opts.BroadcastPayload).
 //  9. Capture the IssueCreated analytics event.
 //  10. Enqueue an agent task or trigger the squad leader when the issue is
-//      assigned and not in `backlog`.
+//     assigned and not in `backlog`.
 //
 // Validation that lives in the service (parent existence, project
 // workspace membership, parent → project back-fill) is enforced here so
@@ -402,7 +402,7 @@ func (s *IssueService) maybeEnqueueOnAssign(ctx context.Context, issue db.Issue,
 // Mirrors handler.shouldEnqueueAgentTask; kept here to make the service
 // self-contained, since both code paths must move together.
 func (s *IssueService) shouldEnqueueAgentTask(ctx context.Context, issue db.Issue) bool {
-	if issue.Status == "backlog" || issue.Status == "done" || issue.Status == "cancelled" || issue.Status == "in_review" {
+	if issue.Status == "backlog" || issue.Status == "done" || issue.Status == "cancelled" {
 		return false
 	}
 	return s.isAgentAssigneeReady(ctx, issue)
@@ -420,7 +420,7 @@ func (s *IssueService) isAgentAssigneeReady(ctx context.Context, issue db.Issue)
 }
 
 func (s *IssueService) shouldEnqueueSquadLeaderOnAssign(ctx context.Context, issue db.Issue) bool {
-	if issue.Status == "backlog" || issue.Status == "done" || issue.Status == "cancelled" || issue.Status == "in_review" {
+	if issue.Status == "backlog" || issue.Status == "done" || issue.Status == "cancelled" {
 		return false
 	}
 	return s.isSquadLeaderReady(ctx, issue)
