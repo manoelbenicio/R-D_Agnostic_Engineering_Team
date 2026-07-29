@@ -943,6 +943,7 @@ func (s *TaskService) CancelTaskWithResult(ctx context.Context, taskID pgtype.UU
 		if err != nil {
 			return nil, fmt.Errorf("cancel task: %w", err)
 		}
+		s.ReconcileAgentStatus(ctx, existing.AgentID)
 		return &CancelTaskResult{Task: existing}, nil
 	}
 	if err != nil {
@@ -1323,6 +1324,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, resu
 					"current_status", existing.Status,
 					"agent_id", util.UUIDToString(existing.AgentID),
 				)
+				s.ReconcileAgentStatus(ctx, existing.AgentID)
 				return &existing, nil
 			}
 			slog.Warn("complete task failed",
@@ -1516,6 +1518,7 @@ func (s *TaskService) FailTask(ctx context.Context, taskID pgtype.UUID, errMsg, 
 					"current_status", existing.Status,
 					"agent_id", util.UUIDToString(existing.AgentID),
 				)
+				s.ReconcileAgentStatus(ctx, existing.AgentID)
 				return &existing, nil
 			}
 			slog.Warn("fail task failed",
