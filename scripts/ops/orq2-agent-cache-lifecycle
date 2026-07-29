@@ -1,0 +1,339 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+umask 077
+
+readonly EXPECTED_USER="ec2-user"
+readonly EXPECTED_UID="1000"
+readonly EXPECTED_HOST="ip-172-31-30-9.sa-east-1.compute.internal"
+readonly EXPECTED_INSTANCE="i-0af937456e125143d"
+readonly EXPECTED_MACHINE_ID="ec2db6e922a067da6569fed9381a0dd3"
+readonly GO_BIN="/home/ec2-user/goroot/go/bin/go"
+readonly GO_SHA256="548e61b2d08ae52043be2f1924ed3c1d2b2c41967e360f3e317667f6fa912fc2"
+readonly LOCK_FILE="${ORQ2_CACHE_LOCK:-/run/user/1000/orq2-agent-cache-lifecycle/run.lock}"
+readonly MAX_CANDIDATES=256
+readonly REAL_AUTH_EXPECTED="owner-delegated-orq2-storage-lifecycle-20260727"
+readonly -a ALLOW_ROOTS=("/tmp" "/home/ec2-user/.cache")
+MODE=""
+
+declare -A SKIP_COUNTS=()
+ROOT_PCENT=0
+
+log() {
+  local level="$1" event="$2"
+  shift 2
+  printf 'orq2_cache_lifecycle level=%s event=%s' "$level" "$event"
+  printf ' %s' "$@"
+  printf '\n'
+}
+
+q() { printf '%q' "$1"; }
+
+die() {
+  log error fatal "reason=$(q "$1")"
+  exit 1
+}
+
+skip() {
+  local reason="$1" path="$2" quiet="${3:-no}"
+  SKIP_COUNTS["$reason"]=$(( ${SKIP_COUNTS["$reason"]:-0} + 1 ))
+  if test "$quiet" != yes; then
+    log info skip "reason=$reason" "path=$(q "$path")"
+  fi
+}
+
+format_skip_counts() {
+  local res="" key
+  local -a keys=()
+  for key in "${!SKIP_COUNTS[@]}"; do
+    keys+=("$key")
+  done
+  if test "${#keys[@]}" -gt 0; then
+    while IFS= read -r -d '' key; do
+      res+="${key}:${SKIP_COUNTS[$key]} "
+    done < <(printf '%s\0' "${keys[@]}" | /usr/bin/sort -zu)
+  fi
+  printf '%s' "${res% }"
+}
+
+usage() {
+  printf 'usage: %s --dry-run|--audit|--real\n' "$0" >&2
+  exit 64
+}
+
+case "${1:-}" in
+  --dry-run|--audit) MODE="dry-run" ;;
+  --real) MODE="real" ;;
+  *) usage ;;
+esac
+test "$#" -eq 1 || usage
+
+# Fail closed before candidate discovery or mutation.
+test "$(id -u)" = "$EXPECTED_UID" || die "wrong_uid"
+test "$(id -un)" = "$EXPECTED_USER" || die "wrong_user"
+test "$(hostname -f)" = "$EXPECTED_HOST" || die "wrong_hostname"
+test "$(cat /sys/devices/virtual/dmi/id/board_asset_tag 2>/dev/null)" = "$EXPECTED_INSTANCE" || die "wrong_instance_id"
+test "$(cat /etc/machine-id 2>/dev/null)" = "$EXPECTED_MACHINE_ID" || die "wrong_machine_id"
+test -x "$GO_BIN" || die "go_binary_missing"
+test "$(sha256sum "$GO_BIN" | awk '{print $1}')" = "$GO_SHA256" || die "go_binary_hash_mismatch"
+test -x /usr/bin/lsof || die "lsof_missing"
+test -x /usr/bin/flock || die "flock_missing"
+for root in "${ALLOW_ROOTS[@]}"; do
+  test -d "$root" || die "allow_root_missing:$root"
+  test ! -L "$root" || die "allow_root_symlink:$root"
+done
+if test "$MODE" = real; then
+  test "${ORQ2_CACHE_REAL_AUTH:-}" = "$REAL_AUTH_EXPECTED" || die "real_mode_not_authorized"
+fi
+
+mkdir -p "$(dirname "$LOCK_FILE")" || die "lock_directory_creation_failed"
+exec 9>"$LOCK_FILE"
+if ! /usr/bin/flock -n 9; then
+  log info overlap_skip "lock=$(q "$LOCK_FILE")"
+  exit 0
+fi
+
+TMP_LSOF=""
+cleanup_temp() {
+  if test -n "$TMP_LSOF" && test -e "$TMP_LSOF"; then
+    /usr/bin/unlink "$TMP_LSOF" || true
+  fi
+}
+trap cleanup_temp EXIT INT TERM
+
+is_recognized_name() {
+  local name="${1,,}"
+  case "$name" in
+    gocache|gocache[-_]*|*[-_]gocache|*[-_]gocache[-_]*|\
+    go-build|go-build*|*[-_]go-build|*[-_]go-build[-_]*|\
+    gomod|gomod[-_]*|gomodcache|gomodcache[-_]*|*[-_]gomod|*[-_]gomod[-_]*|*[-_]gomodcache|*[-_]gomodcache[-_]*|\
+    gotmp|gotmp[-_]*|*[-_]gotmp|*[-_]gotmp[-_]*|\
+    kgc|kgc[-_]*|*[-_]kgc|*[-_]kgc[-_]*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+cache_kind() {
+  local name="${1,,}"
+  case "$name" in
+    *gomod*) printf 'module' ;;
+    *gotmp*) printf 'gotmp' ;;
+    *) printf 'build' ;;
+  esac
+}
+
+is_allowed_path() {
+  case "$1" in
+    /tmp/*|/home/ec2-user/.cache/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+is_protected_path() {
+  local p="${1,,}"
+  case "$p" in
+    *worktree*|*workspace*|*r-d_agnostic_engineering_team*|*.git*|*.deploy-control*|\
+    *evidence*|*checkin*|*backup*|*.agent-cred-homes*|*slots*|*logins*|\
+    *sqlcbuild*|*orq38*|*orq41*|*kiro*|*journal*|*postgres*|*database*|*product*|\
+    *docker*|*containers*|*multica_workspaces*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+contains_protected_entry() {
+  local p="$1" entry lower
+  while IFS= read -r -d '' entry; do
+    lower="${entry,,}"
+    case "$lower" in
+      *worktree*|*workspace*|*r-d_agnostic_engineering_team*|*.git*|*.deploy-control*|\
+      *evidence*|*checkin*|*backup*|*.agent-cred-homes*|*slots*|*logins*|\
+      *sqlcbuild*|*orq38*|*orq41*|*kiro*|*journal*|*postgres*|*database*|*product*|\
+      *docker*|*containers*|*multica_workspaces*) return 0 ;;
+    esac
+  done < <(/usr/bin/find "$p" -xdev -mindepth 1 -print0 2>/dev/null)
+  return 1
+}
+
+has_nested_mount() {
+  local p="$1" target
+  while IFS= read -r target; do
+    case "$target" in
+      "$p"|"$p"/*) return 0 ;;
+    esac
+  done < <(/usr/bin/findmnt -rn -o TARGET 2>/dev/null)
+  return 1
+}
+
+open_reference_state() {
+  local p="$1" rc
+  TMP_LSOF="$(/usr/bin/mktemp /tmp/orq2-cache-lsof.XXXXXX)" || return 2
+  if /usr/bin/lsof -nP +D "$p" >/dev/null 2>"$TMP_LSOF"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  if test -s "$TMP_LSOF"; then
+    /usr/bin/unlink "$TMP_LSOF" || true
+    TMP_LSOF=""
+    return 2
+  fi
+  /usr/bin/unlink "$TMP_LSOF" || true
+  TMP_LSOF=""
+  test "$rc" -eq 1 && return 1
+  test "$rc" -eq 0 && return 0
+  return 2
+}
+
+du_bytes() {
+  /usr/bin/du -sx -B1 -- "$1" 2>/dev/null | /usr/bin/awk 'NR==1 {print $1}'
+}
+
+df_log() {
+  local phase="$1" line target pcent pcent_num
+  while IFS= read -r line; do
+    log info df "phase=$phase" "values=$(q "$line")"
+    target="$(echo "$line" | awk '{print $5}')"
+    pcent="$(echo "$line" | awk '{print $4}')"
+    pcent_num="${pcent%\%}"
+    if test "$target" = "/"; then
+      if [[ "$pcent_num" =~ ^[0-9]+$ ]]; then
+        ROOT_PCENT="$pcent_num"
+        if test "$pcent_num" -gt 88; then
+          log warn disk_warning "target=/" "pcent=${pcent}" "threshold=88%"
+        fi
+        if test "$pcent_num" -gt 92; then
+          log error disk_critical "target=/" "pcent=${pcent}" "threshold=92%"
+        fi
+      fi
+    fi
+  done < <(/usr/bin/df -B1 --output=size,used,avail,pcent,target / /tmp | /usr/bin/tail -n +2)
+}
+
+validate_candidate() {
+  local p="$1" kind="$2" quiet="${3:-no}" resolved hit state
+  if test ! -d "$p" || test -L "$p"; then
+    skip "missing_or_symlink" "$p" "$quiet"
+    return 1
+  fi
+  resolved="$(/usr/bin/realpath -e -- "$p" 2>/dev/null)" || {
+    skip "realpath_failed" "$p" "$quiet"; return 1; }
+  test "$resolved" = "$p" && is_allowed_path "$resolved" || {
+    skip "outside_exact_allow_roots" "$p" "$quiet"; return 1; }
+  is_protected_path "$resolved" && {
+    skip "protected_path" "$p" "$quiet"; return 1; }
+  if contains_protected_entry "$resolved"; then
+    skip "protected_entry_in_tree" "$p" "$quiet"
+    return 1
+  fi
+  hit="$(/usr/bin/find "$resolved" -xdev -type l -print -quit 2>/dev/null)"
+  test -z "$hit" || { skip "symlink_in_tree" "$p" "$quiet"; return 1; }
+  hit="$(/usr/bin/find "$resolved" -xdev ! -user "$EXPECTED_USER" -print -quit 2>/dev/null)"
+  test -z "$hit" || { skip "wrong_owner_in_tree" "$p" "$quiet"; return 1; }
+  has_nested_mount "$resolved" && { skip "nested_mount" "$p" "$quiet"; return 1; }
+  hit="$(/usr/bin/find "$resolved" -xdev -type f -mmin -1440 -print -quit 2>/dev/null)"
+  test -z "$hit" || { skip "file_newer_than_24h" "$p" "$quiet"; return 1; }
+  hit="$(/usr/bin/find "$resolved" -xdev -type f -print -quit 2>/dev/null)"
+  test -n "$hit" || { skip "no_files" "$p" "$quiet"; return 1; }
+  if test "$kind" = gotmp; then
+    skip "no_semantic_go_gotmp_clean_primitive" "$p" "$quiet"
+    return 1
+  fi
+  if test "$kind" = build; then
+    if test ! -f "$resolved/README" || ! /usr/bin/grep -Fq 'This directory holds cached build artifacts' "$resolved/README" 2>/dev/null; then
+      skip "unrecognized_go_build_cache_layout" "$p" "$quiet"
+      return 1
+    fi
+  fi
+  if open_reference_state "$resolved"; then
+    state=0
+  else
+    state=$?
+  fi
+  case "$state" in
+    0) skip "open_file_or_process_reference" "$p" "$quiet"; return 1 ;;
+    1) ;;
+    *) skip "open_reference_check_ambiguous" "$p" "$quiet"; return 1 ;;
+  esac
+  return 0
+}
+
+log info start "mode=$MODE" "host=$EXPECTED_HOST" "instance=$EXPECTED_INSTANCE" "uid=$EXPECTED_UID"
+df_log before
+
+declare -a candidates=()
+while IFS= read -r -d '' p; do
+  is_recognized_name "${p##*/}" || continue
+  candidates+=("$p")
+done < <(/usr/bin/find "${ALLOW_ROOTS[@]}" -xdev -mindepth 1 -maxdepth 4 -type d -print0 2>/dev/null)
+
+if test "${#candidates[@]}" -gt "$MAX_CANDIDATES"; then
+  die "candidate_limit_exceeded:${#candidates[@]}"
+fi
+
+# Deterministic ordering and deduplication.
+declare -a ordered=()
+if test "${#candidates[@]}" -gt 0; then
+  while IFS= read -r -d '' p; do ordered+=("$p"); done < <(printf '%s\0' "${candidates[@]}" | /usr/bin/sort -zu)
+fi
+
+declare -a action_paths=() action_kinds=() action_before=()
+for p in "${ordered[@]}"; do
+  kind="$(cache_kind "${p##*/}")"
+  if validate_candidate "$p" "$kind" no; then
+    bytes="$(du_bytes "$p")"
+    if [[ "$bytes" =~ ^[0-9]+$ ]]; then
+      action_paths+=("$p"); action_kinds+=("$kind"); action_before+=("$bytes")
+      log info eligible "mode=$MODE" "kind=$kind" "bytes=$bytes" "path=$(q "$p")"
+    else
+      skip "size_measurement_failed" "$p" no
+    fi
+  fi
+done
+
+log info plan "mode=$MODE" "discovered=${#ordered[@]}" "eligible=${#action_paths[@]}" "skip_summary=$(q "$(format_skip_counts)")"
+if test "$MODE" = dry-run; then
+  df_log after
+  log info complete "mode=dry-run" "discovered=${#ordered[@]}" "eligible=${#action_paths[@]}" "reclaimed_bytes=0" "skip_summary=$(q "$(format_skip_counts)")"
+  if test "$ROOT_PCENT" -gt 92 && test "${#action_paths[@]}" -eq 0; then
+    log error critical_no_reclaim "root_pcent=${ROOT_PCENT}%" "threshold=92%" "discovered=${#ordered[@]}" "eligible=${#action_paths[@]}" "reclaimed_bytes=0" "reason=root_disk_critical_with_zero_reclaimable_bytes"
+    exit 2
+  fi
+  exit 0
+fi
+
+total_reclaimed=0
+cleaned=0
+for i in "${!action_paths[@]}"; do
+  p="${action_paths[$i]}"; kind="${action_kinds[$i]}"
+  # Repeat every safety gate immediately before semantic cleanup.
+  if ! validate_candidate "$p" "$kind" yes; then
+    skip "changed_between_plan_and_execute" "$p" yes
+    continue
+  fi
+  before="$(du_bytes "$p")"
+  [[ "$before" =~ ^[0-9]+$ ]] || die "preclean_size_failed:$p"
+  if test "$kind" = module; then
+    /usr/bin/env -i HOME=/home/ec2-user USER=ec2-user LOGNAME=ec2-user \
+      PATH=/home/ec2-user/goroot/go/bin:/usr/bin GOENV=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off \
+      GOMODCACHE="$p" GOCACHE="$p/.orq2-unused-build-cache" \
+      "$GO_BIN" clean -modcache
+  else
+    /usr/bin/env -i HOME=/home/ec2-user USER=ec2-user LOGNAME=ec2-user \
+      PATH=/home/ec2-user/goroot/go/bin:/usr/bin GOENV=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off \
+      GOCACHE="$p" GOMODCACHE="$p/.orq2-unused-module-cache" \
+      "$GO_BIN" clean -cache
+  fi
+  if test -d "$p"; then after="$(du_bytes "$p")"; else after=0; fi
+  [[ "$after" =~ ^[0-9]+$ ]] || die "postclean_size_failed:$p"
+  reclaimed=$(( before > after ? before - after : 0 ))
+  total_reclaimed=$(( total_reclaimed + reclaimed )); cleaned=$(( cleaned + 1 ))
+  log info cleaned "kind=$kind" "before_bytes=$before" "after_bytes=$after" "reclaimed_bytes=$reclaimed" "path=$(q "$p")"
+done
+
+df_log after
+log info complete "mode=real" "discovered=${#ordered[@]}" "eligible=${#action_paths[@]}" "cleaned=$cleaned" "reclaimed_bytes=$total_reclaimed" "skip_summary=$(q "$(format_skip_counts)")"
+
+if test "$ROOT_PCENT" -gt 92 && test "$cleaned" -eq 0; then
+  log error critical_no_reclaim "root_pcent=${ROOT_PCENT}%" "threshold=92%" "discovered=${#ordered[@]}" "eligible=${#action_paths[@]}" "reclaimed_bytes=0" "reason=root_disk_critical_with_zero_reclaimable_bytes"
+  exit 2
+fi
