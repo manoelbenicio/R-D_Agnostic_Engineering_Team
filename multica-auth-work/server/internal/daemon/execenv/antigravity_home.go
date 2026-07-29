@@ -19,8 +19,8 @@ type AntigravityHomeOptions struct {
 }
 
 // prepareAntigravityHome restores the per-account Antigravity token directory
-// into the isolated HOME for a task. The caller wires that directory into HOME;
-// this helper only prepares the filesystem state.
+// into the isolated HOME for a task (preserved from c6973fe token-only task-home lineage).
+// The caller wires that directory into HOME; this helper only prepares the filesystem state.
 func prepareAntigravityHome(home string, opts AntigravityHomeOptions, logger *slog.Logger) error {
 	if opts.AccountHome == "" {
 		return nil
