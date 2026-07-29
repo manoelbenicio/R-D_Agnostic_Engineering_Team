@@ -118,6 +118,14 @@ var errDiscoveryProcessContainmentUnavailable = errors.New("catalog discovery re
 // executablePath lets the caller point at a non-default binary; pass
 // "" to use the provider's default name on PATH.
 func ListModels(ctx context.Context, providerType, executablePath string) ([]Model, error) {
+	return ListModelsWithHome(ctx, providerType, executablePath, "")
+}
+
+// ListModelsWithHome resolves a model catalog with an explicit provider HOME.
+// It is currently meaningful only for Antigravity, whose `agy models` command
+// reads the authenticated session from HOME. The value is a path, never a
+// credential value, and is applied only to the discovery child process.
+func ListModelsWithHome(ctx context.Context, providerType, executablePath, home string) ([]Model, error) {
 	discoveryExecutablePath := normalizedDiscoveryExecutablePath(providerType, executablePath)
 	switch providerType {
 	case "claude":
@@ -155,8 +163,8 @@ func ListModels(ctx context.Context, providerType, executablePath string) ([]Mod
 		if err := requireDiscoveryProcessContainment(); err != nil {
 			return nil, err
 		}
-		return cachedDiscovery(ctx, discoveryCacheKey(providerType, discoveryExecutablePath), func() ([]Model, error) {
-			return discoverAntigravityModels(ctx, discoveryExecutablePath)
+		return cachedDiscovery(ctx, discoveryCacheKeyWithHome(providerType, discoveryExecutablePath, home), func() ([]Model, error) {
+			return discoverAntigravityModels(ctx, discoveryExecutablePath, home)
 		})
 	case "cursor":
 		if err := requireDiscoveryProcessContainment(); err != nil {
@@ -446,6 +454,18 @@ func cloneModels(models []Model) []Model {
 func discoveryCacheKey(providerType, executablePath string) string {
 	providerType = strings.ToLower(strings.TrimSpace(providerType))
 	return providerType + "\x00" + normalizedDiscoveryExecutablePath(providerType, executablePath)
+}
+
+func discoveryCacheKeyWithHome(providerType, executablePath, home string) string {
+	key := discoveryCacheKey(providerType, executablePath)
+	if strings.TrimSpace(home) == "" {
+		return key
+	}
+	absolute, err := filepath.Abs(strings.TrimSpace(home))
+	if err == nil {
+		home = absolute
+	}
+	return key + "\x00home\x00" + filepath.Clean(home)
 }
 
 // normalizedDiscoveryExecutablePath binds every positive, negative, stale and
@@ -1381,7 +1401,7 @@ func mergeModels(primary, required []Model) []Model {
 // "successful" empty run. A missing binary is treated as unsupported, while
 // a CLI that starts and then fails, times out, or returns no models produces
 // an explicit error for the daemon/UI. Successful catalogs are cached.
-func discoverAntigravityModels(ctx context.Context, executablePath string) ([]Model, error) {
+func discoverAntigravityModels(ctx context.Context, executablePath, home string) ([]Model, error) {
 	if err := requireDiscoveryProcessContainment(); err != nil {
 		return nil, err
 	}
@@ -1397,6 +1417,9 @@ func discoverAntigravityModels(ctx context.Context, executablePath string) ([]Mo
 	defer cancel()
 	cmd := exec.CommandContext(runCtx, executablePath, "models")
 	hideAgentWindow(cmd)
+	if strings.TrimSpace(home) != "" {
+		cmd.Env = environmentWithValue(os.Environ(), "HOME", filepath.Clean(home))
+	}
 	out, err := cmd.Output()
 	if err != nil {
 		if runCtx.Err() != nil {
@@ -1409,6 +1432,18 @@ func discoverAntigravityModels(ctx context.Context, executablePath string) ([]Mo
 		return nil, fmt.Errorf("antigravity model discovery returned no models")
 	}
 	return models, nil
+}
+
+func environmentWithValue(base []string, key, value string) []string {
+	prefix := strings.ToUpper(key) + "="
+	env := make([]string, 0, len(base)+1)
+	for _, entry := range base {
+		if strings.HasPrefix(strings.ToUpper(entry), prefix) {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return append(env, key+"="+value)
 }
 
 // parseAntigravityModels turns `agy models` output — one model display name

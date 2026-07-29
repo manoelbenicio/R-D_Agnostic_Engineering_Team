@@ -2055,7 +2055,33 @@ func (d *Daemon) handleModelList(ctx context.Context, rt Runtime, requestID stri
 		return
 	}
 
-	models, err := agent.ListModels(discoveryCtx, rt.Provider, entry.Path)
+	// Antigravity reads its authenticated session from HOME, so catalog
+	// discovery must run against the operator-allowlisted slot homes rather
+	// than the daemon's own HOME. No agent identity exists for a model-list
+	// request, so this must not create or reuse a task affinity assignment.
+	discoveryHomes := []string{""}
+	if canonical, required := canonicalCredentialProvider(rt.Provider); required && canonical == "antigravity" {
+		homes, resolveErr := resolveCredentialModelDiscoveryHomes(rt.Provider)
+		if resolveErr != nil {
+			d.reportModelListResult(ctx, rt, requestID, map[string]any{
+				"status": "failed",
+				"error":  resolveErr.Error(),
+			})
+			return
+		}
+		discoveryHomes = homes
+	}
+
+	var (
+		models []agent.Model
+		err    error
+	)
+	for _, discoveryHome := range discoveryHomes {
+		models, err = agent.ListModelsWithHome(discoveryCtx, rt.Provider, entry.Path, discoveryHome)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		if discoveryCtx.Err() != nil {
 			err = fmt.Errorf("model discovery exceeded the 40 second daemon limit: %w", discoveryCtx.Err())
@@ -3445,7 +3471,20 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// LocalWorkDir into execenv. handleTask already validated + locked the
 	// path; this call is a pure JSON parse over the same task payload.
 	localAssignment, _ := findLocalDirectoryAssignment(task.ProjectResources, d.cfg.DaemonID)
+	// Bind this task's frozen agent identity + provider to a physical,
+	// operator-controlled credential slot (c6973fe lineage). Fail closed: a
+	// misconfigured slots root, a slot outside the allowlist, or a missing
+	// provider artifact aborts the task instead of silently degrading to an
+	// empty home, which would run the CLI against the shared global HOME.
+	// Skipped when the agent brain admitted a gateway plan — that path is
+	// credentialless by construction and has no provider credential to bind.
 	credentialAccountHome := ""
+	if agentBrainPlan == nil {
+		credentialAccountHome, err = resolveCredentialAccountHome(task.AgentID, provider)
+		if err != nil {
+			return TaskResult{}, err
+		}
+	}
 	startedTask := false
 	// Reuse intentionally skipped for local_directory tasks: the prior
 	// WorkDir is the user's own path (always present) but the reuse path

@@ -49,7 +49,7 @@ func (b *antigravityBackend) Execute(ctx context.Context, prompt string, opts Ex
 	// resolve the value itself rather than blocking the run on a discovery
 	// hiccup (see antigravityModelError).
 	if opts.Model != "" {
-		catalog, _ := ListModels(ctx, "antigravity", execPath)
+		catalog, _ := ListModelsWithHome(ctx, "antigravity", execPath, b.cfg.Env["HOME"])
 		if err := antigravityModelError(opts.Model, catalog); err != nil {
 			return nil, err
 		}

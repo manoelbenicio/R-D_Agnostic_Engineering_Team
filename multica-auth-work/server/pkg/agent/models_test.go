@@ -1187,7 +1187,7 @@ func TestDiscoverAntigravityModelsSurfacesCommandFailure(t *testing.T) {
 	fake := filepath.Join(t.TempDir(), "agy")
 	writeTestExecutable(t, fake, []byte("#!/bin/sh\necho broken >&2\nexit 7\n"))
 
-	_, err := discoverAntigravityModels(context.Background(), fake)
+	_, err := discoverAntigravityModels(context.Background(), fake, "")
 	if err == nil || !strings.Contains(err.Error(), "model discovery failed") {
 		t.Fatalf("expected explicit command failure, got %v", err)
 	}
@@ -1203,7 +1203,7 @@ func TestDiscoverAntigravityModelsSurfacesTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
 
-	_, err := discoverAntigravityModels(ctx, fake)
+	_, err := discoverAntigravityModels(ctx, fake, "")
 	if err == nil || !strings.Contains(err.Error(), "timed out") {
 		t.Fatalf("expected explicit timeout, got %v", err)
 	}
