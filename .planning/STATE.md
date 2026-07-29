@@ -27,6 +27,14 @@ status: IN_PROGRESS — P12 HONEST-BLOCKED on owner-supplied real credentials + 
 ## Blocking decision (owner-only)
 P12 task 12.3 requires: (a) REAL provider credentials for the vendors to prove, and (b) a real PROD host/endpoint. See phases/12-prod-deploy/PREREQUISITES.md. Kiro will NOT fabricate a substitute.
 
+## Live Recovery & Daemon Control (2026-07-29)
+- **2026-07-29 ORQ2 Daemon Regression:** PID changed to 1285683 at 15:04:41Z during un-isolated test execution.
+- **Phase-1 Bounded Rollback:** Executed under queue SHARE lock to proven token-only artifact SHA-256 `88ca4f39` (slots 162, 163, 168, 169 restored; verified by 5-min AGY run without `cli.log` traversal).
+- **ORQ-64 Incident:** Content-free record; test harness requires isolated `mktemp` test root and zero secrets logged.
+- **ORQ-65 Recovery:** AGY token-only allowlist restored and closed as `done`.
+- **ORQ-66 Combined Daemon:** In review; awaiting clean two-file token-only port by strong agent.
+- **Kanban Reconciliation:** 28 non-Done cards fully audited against OpenSpec and GTL evidence (ORQ-67).
+
 ## Governance in force
 - No task reaches any agent unless it is a task-ID in a PLAN.md on disk + has a Golden-Rule check-in.
 - All evidence must satisfy EVIDENCE_CONTRACT.md or it is rejected as INVALID.
