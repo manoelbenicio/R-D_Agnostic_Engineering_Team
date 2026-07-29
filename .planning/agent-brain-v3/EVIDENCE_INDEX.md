@@ -163,7 +163,8 @@ Evidence-index gap — agent-credential-isolation **4.2** — **CLOSED 2026-07-1
 | EV-OBS-11 | OBS-11 / AB-REQ-40 | PRODUCED-NOT-ACCEPTED | `multica-auth-work/deploy/observability/**` | Per-hop latency/error/drop/gap dashboards+alerts in real stack; consolidated G4-OBS acceptance (awaiting W5 fixes) |
 | EV-ZERO-OVERLAP | D-V3-18 / 8-lane topology | PLANNED | Codex#56#A verification | Glob-intersection proof: every owned path matches exactly one lane (W1–W8); no concurrent hotspot edits |
 | EV-REC-MODE | AB-REQ-41 / task 10.4 | PLANNED | recovery-mode state machine | Platform recovery-mode NORMAL/DEGRADED/RECOVERY; Prodex default-OFF, mutually exclusive, operator-gated; single router owner; session-boundary transitions; DEGRADED fail-closed (no auto-Prodex) |
-| EV-GSD-WAVE3-REBASELINE | AB-REQ-30 / ORQ-59 | DONE | `.planning/agent-brain-v3/evidence/gsd-wave3-rebaseline-reconciliation.md` | Full live GSD rebaseline against 52 Multica Kanban cards (ORQ-11..ORQ-62 DB status), production facts (`b657129` base, `8227241` overlay, ORQ-26 outage, GitHub billing lock, ORQ-61/59 helper-label metadata incident), and OpenSpec topic content SHA `7618599f29d43e964a485ab12a9932a9fd037e1f` (ORQ-62 accepted-in-review) |
+| EV-GSD-WAVE3-REBASELINE | AB-REQ-30 / ORQ-59 | DONE | `.planning/agent-brain-v3/evidence/gsd-wave3-rebaseline-reconciliation.md` | Full live GSD rebaseline against 53 workspace cards (39 main project `4b0ef49b`, 13 unassigned `NULL`, 1 validation `abe3c461`), production facts (`b657129` base, `8227241` overlay, ORQ-26 outage, GitHub billing lock, ORQ-61/59 helper-label metadata incident), and OpenSpec topic content SHA `7618599f29d43e964a485ab12a9932a9fd037e1f` (ORQ-62 accepted-in-review) |
+
 
 
 > Wave A note (2026-07-19): all G4-OBS evidence is PLANNED — the OBS-* tasks are newly ADDED and

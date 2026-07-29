@@ -270,5 +270,5 @@ Dispatch status: **READY — NOT DISPATCHED.** Awaiting explicit owner authoriza
 **Task-ID:** `b36e6bd1-401e-4339-b97f-f57cbec6c4a6` (ORQ-59)
 **Files locked:** `.planning/agent-brain-v3/**`, `.deploy-control/p0/evidence/**`
 **Evidence ID:** `EV-GSD-WAVE3-REBASELINE`
-**Status:** `DONE` (documentation-only GSD rebaseline completed on 2026-07-29T14:55:30Z)
-Reconciled `.planning/agent-brain-v3/` package against live 52-card Multica Kanban board (ORQ-11 to ORQ-62 derived from DB), production facts (`main` commit `b657129` base, overlay `8227241`, ORQ-26 outage, GitHub billing lock, ORQ-61/59 helper-label metadata incident), and OpenSpec topic content SHA `7618599f29d43e964a485ab12a9932a9fd037e1f` (ORQ-62 accepted-in-review). Explicitly superseded stale claims (not-in-production, 51/96, STOP/PD-08, July 18-21 states) without deleting history. Zero product code or issue status changes.
+**Status:** `DONE` (documentation-only GSD rebaseline completed on 2026-07-29T15:01:08Z)
+Reconciled `.planning/agent-brain-v3/` package against live 53-card Multica workspace inventory (39 main project `4b0ef49b`, 13 unassigned `NULL`, 1 validation `abe3c461`), production facts (`main` commit `b657129` base, overlay `8227241`, ORQ-26 outage, GitHub billing lock, ORQ-61/59 helper-label metadata incident), and OpenSpec topic content SHA `7618599f29d43e964a485ab12a9932a9fd037e1f` (ORQ-62 accepted-in-review). Explicitly superseded stale claims (not-in-production, 51/96, STOP/PD-08, July 18-21 states) without deleting history. Zero product code or issue status changes.

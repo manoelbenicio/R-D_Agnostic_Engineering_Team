@@ -37,7 +37,7 @@ protocol translation, streaming/tools, Smart Context (SC01–SC10) e telemetria/
 | Smart Context/token saving | Kill switch only | Computa e executa |
 | Secrets observability | Redige chave+conteúdo | Redige chave/secrets+conteúdo |
 
-## Fatos de Produção & Infraestrutura (Reconciliados Wave 3 em 2026-07-29T14:55:30Z)
+## Fatos de Produção & Infraestrutura (Reconciliados Wave 3 em 2026-07-29T15:01:08Z)
 
 1. **Ponteiro de Integração Base (`main`)**: Commit `b657129` no repositório `R-D_Agnostic_Engineering_Team` mantido como referência de ponteiro de integração.
 2. **Overlay de Produção Ativo**: Imagem Docker de produção e contêineres rodam com overlay commit `8227241`.
@@ -49,7 +49,11 @@ protocol translation, streaming/tools, Smart Context (SC01–SC10) e telemetria/
    - A SHA remota `7618599f29d43e964a485ab12a9932a9fd037e1f` (produzida no ORQ-62 na branch `agent/agy-p0-a7/eb2c0b57`) representa conteúdo **accepted-in-review / topic content** para a linhagem OpenSpec, e não canonical-main ou integrated.
 5. **Superação de Afirmações Obsoletas**:
    - Afirmações anteriores de "não-produtivo" ou "production canary removido" foram **superadas explicitamente** em favor dos fatos de produção reais (overlay `8227241`, canários Docker em EC2, incidente ORQ-26). Histórico preservado sem apagamento.
-   - Contagens antigas 51/96 superadas pelo inventário vivo de **52 cards** do Multica Kanban (projetados diretamente do DB em `2026-07-29T14:55:30Z`: 24 done, 12 in_review, 4 in_progress, 7 blocked, 1 todo, 2 backlog, 2 cancelled).
+   - Contagens antigas 51/96 superadas pelo inventário do DB (snapshot UTC 2026-07-29T15:01:08Z):
+     - **Projeto Principal `4b0ef49b-df06-4e83-9a29-8a23b34821d4`**: 39 cards (21 done, 7 in_review, 6 in_progress, 3 blocked, 2 backlog).
+     - **Sem Projeto (`project_id IS NULL`)**: 13 cards (3 done, 3 in_review, 1 in_progress, 4 blocked, 1 todo, 1 cancelled).
+     - **Projeto Validação `abe3c461-c921-4a51-b91a-b08529429145`**: 1 card (1 cancelled).
+     - **Total do Workspace**: 53 cards.
    - Instruções de STOP/PD-08 superadas pela postura de segurança atual (SCRAM hardening ORQ-35/60, JWT rotation ORQ-30/33/42, credential isolation ativo).
 6. **Separação de Gates (Readiness vs Acceptance)**:
    - **Readiness Gates**: Validação em harness sintético local (ex: harness de carga local de 20 tasks em ORQ-50).

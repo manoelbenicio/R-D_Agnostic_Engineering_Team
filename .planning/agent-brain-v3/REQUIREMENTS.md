@@ -3,7 +3,7 @@
 > Cada AB-REQ rastreia para: spec + scenario OpenSpec, task(s) OpenSpec, fase GSD, owner,
 > evidence ID, decisão de release/removal. Nenhum requisito existe sem essa cadeia.
 > OpenSpec Topic SHA: `7618599f29d43e964a485ab12a9932a9fd037e1f` (accepted-in-review topic content, ORQ-62).
-> Contagem do Quadro DB (2026-07-29T14:55:30Z): 52 cards no total (24 done, 12 in_review, 4 in_progress, 7 blocked, 1 todo, 2 backlog, 2 cancelled).
+> Contagem DB (2026-07-29T15:01:08Z): Total do Workspace = 53 cards (Projeto Principal `4b0ef49b`: 39 cards; Sem Projeto `NULL`: 13 cards; Projeto Validação `abe3c461`: 1 card).
 
 ## Códigos de origem
 - ABR = spec `agent-brain-runtime/spec.md`

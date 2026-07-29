@@ -2,10 +2,10 @@
 
 > Cadeia obrigatória por item:
 > componente/interface → AB-REQ → spec requirement/scenario → OpenSpec task →
-> fase/tarefa GSD → owner + files_locked → evidence ID → status/decisão release|removal → Kanban Card (ORQ-11 a ORQ-62).
+> fase/tarefa GSD → owner + files_locked → evidence ID → status/decisão release|removal → Kanban Card (ORQ-11 a ORQ-63).
 > OpenSpec Topic SHA: `7618599f29d43e964a485ab12a9932a9fd037e1f` (accepted-in-review topic content, ORQ-62).
 > Ponteiro de Integração Base: `b657129` (origin/main) | Overlay de Produção: `8227241`.
-> Contagem do Quadro DB (2026-07-29T14:55:30Z): 52 cards no total (24 done, 12 in_review, 4 in_progress, 7 blocked, 1 todo, 2 backlog, 2 cancelled).
+> Contagem DB (2026-07-29T15:01:08Z): Total do Workspace = 53 cards. Projeto Principal `4b0ef49b`: 39 cards (21 done, 7 in_review, 6 in_progress, 3 blocked, 2 backlog); Sem Projeto `NULL`: 13 cards (3 done, 3 in_review, 1 in_progress, 4 blocked, 1 todo, 1 cancelled); Projeto Validação `abe3c461`: 1 card (1 cancelled).
 
 ## A. Mapeamento de Tarefas OpenSpec Não-Verificadas para Kanban Vivo
 
@@ -16,7 +16,7 @@
 | `credential-account-home-restoration` | 3.2, 3.4 | **ORQ-13** + **ORQ-14** | `in_review` / `blocked` | Canonical Usage Integration (ORQ-13) + Real Token Telemetry (ORQ-14) |
 | `credential-account-home-restoration` | 3.3 | **ORQ-14** | `blocked` | Real Token Telemetry — AGY/Kiro real counters or explicit unavailability |
 | `credential-account-home-restoration` | 4.5 | **ORQ-23** | `in_progress` | Independent safety review before live gate 4.5 |
-| `chat-orchestration-standard` | 2.2 | **ORQ-54** | `in_review` | Chat Escape Hatch — Direct @agent routing and focused acceptance |
+| `chat-orchestration-standard` | 2.2 | **ORQ-54** | `in_progress` | Chat Escape Hatch — Direct @agent routing and focused acceptance |
 | `chat-orchestration-standard` | 2.3 | **ORQ-59** | `in_progress` | P0 GSD Wave 3 — Full live rebaseline and OpenSpec traceability |
 | `build-omniroute-agent-brain` | 6.3, 6.4 | **ORQ-50** | `in_review` | Capacity — Prepare 20/50/100 harness and zero-queue load window |
 
@@ -66,8 +66,8 @@
 
 ---
 
-## D. Auditoria de Órfãos (Reconciliado Wave 3 — UTC 2026-07-29T14:55:30Z)
+## D. Auditoria de Órfãos (Reconciliado Wave 3 — UTC 2026-07-29T15:01:08Z)
 
 - [x] Requisitos specs ↔ AB-REQs: 41 AB-REQs cobrem os 6 specs (incl. `end-to-end-observability`) + paridade.
-- [x] Tarefas OpenSpec ↔ Kanban Vivo: Cada resíduo executável de OpenSpec possui exatamente um card no Multica Kanban (ORQ-11 a ORQ-62 no DB).
+- [x] Tarefas OpenSpec ↔ Kanban Vivo: Cada resíduo executável de OpenSpec possui exatamente um card no Multica Kanban (ORQ-11 a ORQ-63 no DB).
 - [x] linhagem OpenSpec: SHA accepted-in-review `7618599f29d43e964a485ab12a9932a9fd037e1f` (ORQ-62) reconcilia todos os 5 changes ativos sem órfãos ou links quebrados.
