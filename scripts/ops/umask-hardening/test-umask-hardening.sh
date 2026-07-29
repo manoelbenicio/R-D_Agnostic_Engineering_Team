@@ -83,10 +83,56 @@ check "second rollback is safe" grep -qF "ABSENT" "$sandbox/rollback2.out"
 # 7. Refusals: system roots and a missing root must fail closed.
 refute "refuses --root /etc" "$installer" --apply --root /etc --unit "$unit"
 refute "refuses --root /" "$installer" --apply --root / --unit "$unit"
+refute "refuses --root /usr" "$installer" --apply --root /usr --unit "$unit"
+refute "refuses --root /var" "$installer" --apply --root /var --unit "$unit"
+refute "refuses --root /tmp" "$installer" --apply --root /tmp --unit "$unit"
 refute "refuses a nonexistent root" "$installer" --apply --root "$sandbox/does-not-exist" --unit "$unit"
 refute "refuses an unknown flag" "$installer" --bogus
 
-# 8. The installer must never mention a global shell file.
+# 8. Hostile Root Symlinks & Traversal
+symlink_root="$sandbox/symlink_root_etc"
+ln -s /etc "$symlink_root"
+refute "refuses symlink root pointing to /etc" "$installer" --apply --root "$symlink_root" --unit "$unit"
+
+mkdir -p "$sandbox/sub"
+traversal_root="$sandbox/sub/../../etc"
+refute "refuses path traversal root resolving to /etc" "$installer" --apply --root "$traversal_root" --unit "$unit"
+
+# 9. Hostile Unit / Systemd Escape
+refute "refuses hostile unit with path traversal ../" "$installer" --apply --root "$sandbox" --unit "../../etc/passwd"
+refute "refuses hostile unit with slashes" "$installer" --apply --root "$sandbox" --unit "evil/unit.service"
+refute "refuses hostile unit with newline" "$installer" --apply --root "$sandbox" --unit $'evil.service\nExecStart=/bin/sh'
+refute "refuses hostile unit with backslash" "$installer" --apply --root "$sandbox" --unit $'evil\\unit.service'
+
+# 10. Hostile Temporary Directory Ownership, Symlinks & Traversal
+refute "refuses system tmpdir /etc" "$installer" --apply --root "$sandbox" --unit "$unit" --tmpdir /etc
+refute "refuses tmpdir outside root" "$installer" --apply --root "$sandbox" --unit "$unit" --tmpdir "$sandbox/../outside_tmp"
+symlink_tmp="$sandbox/symlink_tmpdir"
+ln -s /tmp "$symlink_tmp"
+refute "refuses symlinked tmpdir" "$installer" --apply --root "$sandbox" --unit "$unit" --tmpdir "$symlink_tmp"
+
+# 11. Hostile Symlink Targets for Drop-in & Shell Fragment
+mkdir -p "$sandbox/.config/systemd/user/$unit.d"
+ln -s /etc/passwd "$sandbox/.config/systemd/user/$unit.d/10-orq37-umask-hardening.conf"
+refute "refuses dropin file that is a symlink" "$installer" --apply --root "$sandbox" --unit "$unit"
+rm -f "$sandbox/.config/systemd/user/$unit.d/10-orq37-umask-hardening.conf"
+
+ln -s /etc/shadow "$sandbox/.config/orq37-umask-hardening.sh"
+refute "refuses fragment file that is a symlink" "$installer" --apply --root "$sandbox" --unit "$unit"
+rm -f "$sandbox/.config/orq37-umask-hardening.sh"
+
+# 12. Stubbed systemctl Verification
+mkdir -p "$sandbox/bin"
+cat <<'EOF' > "$sandbox/bin/systemctl"
+#!/usr/bin/env bash
+echo "STUBBED_SYSTEMCTL: $*" >> "$sandbox/systemctl.log"
+exit 0
+EOF
+chmod +x "$sandbox/bin/systemctl"
+PATH="$sandbox/bin:$PATH" "$installer" --apply --root "$sandbox" --unit "$unit" >/dev/null
+check "stubbed systemctl confirmed uninvoked during installer run" [ ! -f "$sandbox/systemctl.log" ]
+
+# 13. The installer must never mention a global shell file.
 refute "never references /etc/bashrc as a target" grep -n 'install.*\/etc\/bashrc\|>>\s*\/etc\/bashrc' "$installer"
 
 if [ "$fail" -ne 0 ]; then
@@ -94,3 +140,4 @@ if [ "$fail" -ne 0 ]; then
   exit 1
 fi
 printf 'ALL GATES PASSED\n'
+

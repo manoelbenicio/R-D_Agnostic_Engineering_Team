@@ -57,14 +57,91 @@ done
 [ ${#units[@]} -gt 0 ] || units=("multica-daemon-orq2-credential.service")
 [ -n "$tmpdir" ] || tmpdir="$root/.private-tmp"
 
-# Refuse absolute-root or system paths outright: this tool is user-scoped by
-# contract and must never be pointed at /etc or /.
-case "$root" in
-  /|/etc|/etc/*|/usr|/usr/*|/var|/var/*) printf 'E_ROOT_REFUSED %s\n' "$root" >&2; exit 3 ;;
+# Canonicalize root and validate ownership and system path restrictions
+readonly canonical_root="$(realpath -m "$root" 2>/dev/null || readlink -f "$root" 2>/dev/null || echo "$root")"
+
+# Refuse symlink root pointing to system paths
+if [ -L "$root" ]; then
+  target_root="$(realpath "$root" 2>/dev/null || echo "")"
+  case "$target_root" in
+    /|/etc|/etc/*|/usr|/usr/*|/var|/var/*|/tmp|/tmp/*|/sys|/sys/*|/proc|/proc/*|/dev|/dev/*|/boot|/boot/*|/run|/run/*|/lib|/lib*|/opt|/opt/*|/srv|/srv/*)
+      printf 'E_ROOT_REFUSED %s (symlink target %s)\n' "$root" "$target_root" >&2
+      exit 3
+      ;;
+  esac
+fi
+
+# Ownership check for root directory
+current_uid="$(id -u)"
+root_owner="$(stat -c '%u' "$root" 2>/dev/null || true)"
+if [ -n "$root_owner" ] && [ "$root_owner" -ne "$current_uid" ]; then
+  printf 'E_ROOT_OWNERSHIP_MISMATCH root owner %s != current uid %s\n' "$root_owner" "$current_uid" >&2
+  exit 3
+fi
+
+# Refuse absolute-root or system paths outright (including canonicalized paths)
+case "$canonical_root" in
+  /|/etc|/etc/*|/usr|/usr/*|/var|/var/*|/tmp|/sys|/sys/*|/proc|/proc/*|/dev|/dev/*|/boot|/boot/*|/run|/run/*|/lib|/lib*|/opt|/opt/*|/srv|/srv/*)
+    printf 'E_ROOT_REFUSED %s\n' "$canonical_root" >&2
+    exit 3
+    ;;
 esac
+
+# Validate unit names against path traversal, slashes, whitespace, and invalid characters
+for unit in "${units[@]}"; do
+  if [ -z "$unit" ] || [[ "$unit" =~ [/\\[:space:]] ]] || [[ "$unit" == *..* ]] || ! [[ "$unit" =~ ^[a-zA-Z0-9_.-]+$ ]]; then
+    printf 'E_UNIT_INVALID %s\n' "$unit" >&2
+    exit 3
+  fi
+done
+
+# Canonicalize and validate tmpdir
+readonly canonical_tmpdir="$(realpath -m "$tmpdir" 2>/dev/null || echo "$tmpdir")"
+case "$canonical_tmpdir" in
+  /|/etc|/etc/*|/usr|/usr/*|/var|/var/*|/tmp|/sys|/sys/*|/proc|/proc/*|/dev|/dev/*|/boot|/boot/*|/run|/run/*|/lib|/lib*|/opt|/opt/*|/srv|/srv/*)
+    printf 'E_TMPDIR_REFUSED %s\n' "$canonical_tmpdir" >&2
+    exit 3
+    ;;
+esac
+
+if [[ "$canonical_tmpdir" != "$canonical_root"* ]]; then
+  printf 'E_TMPDIR_OUTSIDE_ROOT %s outside %s\n' "$canonical_tmpdir" "$canonical_root" >&2
+  exit 3
+fi
+
+if [ -L "$tmpdir" ]; then
+  printf 'E_TMPDIR_SYMLINK %s\n' "$tmpdir" >&2
+  exit 3
+fi
+
+if [ -e "$tmpdir" ]; then
+  if [ ! -d "$tmpdir" ]; then
+    printf 'E_TMPDIR_NOT_A_DIRECTORY %s\n' "$tmpdir" >&2
+    exit 3
+  fi
+  tmpdir_owner="$(stat -c '%u' "$tmpdir" 2>/dev/null || true)"
+  if [ -n "$tmpdir_owner" ] && [ "$tmpdir_owner" -ne "$current_uid" ]; then
+    printf 'E_TMPDIR_OWNERSHIP_MISMATCH %s owner %s != current uid %s\n' "$tmpdir" "$tmpdir_owner" "$current_uid" >&2
+    exit 3
+  fi
+fi
 
 readonly systemd_user_dir="$root/.config/systemd/user"
 readonly fragment="$root/.config/orq37-umask-hardening.sh"
+
+assert_path_safe() {
+  local p="$1"
+  local canon
+  canon="$(realpath -m "$p" 2>/dev/null || echo "$p")"
+  if [[ "$canon" != "$canonical_root"* ]]; then
+    printf 'E_PATH_TRAVERSAL %s outside %s\n' "$p" "$canonical_root" >&2
+    exit 3
+  fi
+  if [ -L "$p" ]; then
+    printf 'E_SYMLINK_REFUSED %s\n' "$p" >&2
+    exit 3
+  fi
+}
 
 emit() { printf '%s\n' "$*"; }
 
@@ -105,17 +182,33 @@ plan_paths() {
 }
 
 do_apply() {
-  local unit dir
+  local unit dir dropin_path
+  assert_path_safe "$root/.config"
+  assert_path_safe "$systemd_user_dir"
   install -d -m 700 "$tmpdir"
+  chmod 700 "$tmpdir"
   install -d -m 700 "$root/.config"
+  chmod 700 "$root/.config"
+  install -d -m 700 "$systemd_user_dir"
+  chmod 700 "$systemd_user_dir"
+
   for unit in "${units[@]}"; do
     dir="$systemd_user_dir/$unit.d"
+    dropin_path="$dir/$DROPIN_NAME"
+    assert_path_safe "$dir"
+    assert_path_safe "$dropin_path"
+    assert_path_safe "$dropin_path.tmp"
+
     install -d -m 700 "$dir"
-    render_dropin >"$dir/$DROPIN_NAME.tmp"
-    chmod 600 "$dir/$DROPIN_NAME.tmp"
-    mv -f "$dir/$DROPIN_NAME.tmp" "$dir/$DROPIN_NAME"
-    emit "APPLIED drop-in $dir/$DROPIN_NAME"
+    chmod 700 "$dir"
+    render_dropin >"$dropin_path.tmp"
+    chmod 600 "$dropin_path.tmp"
+    mv -f "$dropin_path.tmp" "$dropin_path"
+    emit "APPLIED drop-in $dropin_path"
   done
+
+  assert_path_safe "$fragment"
+  assert_path_safe "$fragment.tmp"
   render_fragment >"$fragment.tmp"
   chmod 600 "$fragment.tmp"
   mv -f "$fragment.tmp" "$fragment"
@@ -124,17 +217,28 @@ do_apply() {
 }
 
 do_rollback() {
-  local unit dir
+  local unit dir dropin_path
   for unit in "${units[@]}"; do
     dir="$systemd_user_dir/$unit.d"
-    if [ -f "$dir/$DROPIN_NAME" ]; then
-      rm -f "$dir/$DROPIN_NAME"
-      emit "ROLLED BACK drop-in $dir/$DROPIN_NAME"
+    dropin_path="$dir/$DROPIN_NAME"
+    if [ -L "$dropin_path" ]; then
+      printf 'E_SYMLINK_REFUSED %s\n' "$dropin_path" >&2
+      exit 3
+    fi
+    if [ -f "$dropin_path" ]; then
+      rm -f "$dropin_path"
+      emit "ROLLED BACK drop-in $dropin_path"
       rmdir "$dir" 2>/dev/null && emit "REMOVED empty $dir" || true
     else
-      emit "ABSENT drop-in $dir/$DROPIN_NAME"
+      emit "ABSENT drop-in $dropin_path"
     fi
   done
+
+  if [ -L "$fragment" ]; then
+    printf 'E_SYMLINK_REFUSED %s\n' "$fragment" >&2
+    exit 3
+  fi
+
   if [ -f "$fragment" ] && grep -qF "$MANAGED_BEGIN" "$fragment"; then
     rm -f "$fragment"
     emit "ROLLED BACK fragment $fragment"
@@ -154,3 +258,4 @@ case "$mode" in
   apply) do_apply ;;
   rollback) do_rollback ;;
 esac
+
