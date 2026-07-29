@@ -228,8 +228,9 @@ func (h *Handler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	// Consumers already model the absence of a default squad rather than
 	// assuming one: CreateChatSession answers "no default squad found for
 	// routing" (chat.go:56-60) and "default squad has no leader yet"
-	// (chat.go:62). Creating the squad once a leader is available is a
-	// separate change and is intentionally not done here.
+	// (chat.go:62). The squad itself is materialized by ensureDefaultSquad
+	// (agent.go) the first time this workspace gets an agent, which is the
+	// earliest point a valid leader_id exists.
 
 	// NOTE: CreateWorkspace deliberately does NOT mark the user as
 	// onboarded. The `onboarded_at` flag is owned by CompleteOnboarding
