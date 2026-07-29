@@ -18,7 +18,7 @@ import (
 // 2. No plaintext fallback defaults. Requires explicit TEST_DATABASE_URL or DATABASE_URL environment variable.
 // 3. Fail-closed: Never skip security gate assertions when invoked in test environments.
 // 4. Assert exact demotion: rolsuper=false, rolcreaterole=false, rolcreatedb=false, rolreplication=false, rolbypassrls=false.
-// 5. Prove real DML (SELECT, INSERT, UPDATE, DELETE) and DDL rejection on isolated test tables.
+// 5. Prove real DML (INSERT, SELECT, UPDATE, DELETE) on app-owned fixture table AND assert DDL denial (CREATE ROLE, schema CREATE).
 
 func connectTestDB(t *testing.T) *pgxpool.Pool {
 	t.Helper()
@@ -108,66 +108,82 @@ func TestLeastPrivilege_DMLandDDLBoundary(t *testing.T) {
 
 	ctx := context.Background()
 
-	// 1. Verify DML operations (SELECT, INSERT, UPDATE, DELETE) on test table if table exists or can be created
-	tableName := fmt.Sprintf("orq60_test_dml_%d", time.Now().UnixNano())
-	
-	tableCreated := false
-	_, err := pool.Exec(ctx, fmt.Sprintf("CREATE TABLE %s (id INT PRIMARY KEY, val TEXT)", tableName))
-	if err == nil {
-		tableCreated = true
-	} else {
-		// If DDL fails due to schema CREATE restriction on demoted role, test DML against an existing system/app table or existing public table
-		t.Logf("Notice: DDL CREATE TABLE rejected on demoted app role (expected least privilege behavior): %v", err)
-	}
-
-	if tableCreated {
-		defer func() {
-			_, _ = pool.Exec(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName))
-		}()
-
-		// DML: INSERT
-		if _, err := pool.Exec(ctx, fmt.Sprintf("INSERT INTO %s (id, val) VALUES (1, 'test_val')", tableName)); err != nil {
-			t.Fatalf("FAIL: DML INSERT failed on table %s: %v", tableName, err)
-		}
-
-		// DML: SELECT
-		var val string
-		if err := pool.QueryRow(ctx, fmt.Sprintf("SELECT val FROM %s WHERE id = 1", tableName)).Scan(&val); err != nil || val != "test_val" {
-			t.Fatalf("FAIL: DML SELECT failed on table %s: %v", tableName, err)
-		}
-
-		// DML: UPDATE
-		if _, err := pool.Exec(ctx, fmt.Sprintf("UPDATE %s SET val = 'updated' WHERE id = 1", tableName)); err != nil {
-			t.Fatalf("FAIL: DML UPDATE failed on table %s: %v", tableName, err)
-		}
-
-		// DML: DELETE
-		if _, err := pool.Exec(ctx, fmt.Sprintf("DELETE FROM %s WHERE id = 1", tableName)); err != nil {
-			t.Fatalf("FAIL: DML DELETE failed on table %s: %v", tableName, err)
-		}
-
-		t.Logf("PASS: DML operations (SELECT, INSERT, UPDATE, DELETE) verified successfully")
-	} else {
-		// Verify DML SELECT read capability on public schema / information_schema
-		var cnt int
-		if err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'").Scan(&cnt); err != nil {
-			t.Fatalf("FAIL: DML SELECT failed on schema: %v", err)
-		}
-		t.Logf("PASS: DML SELECT read capability verified on schema")
-	}
-
-	// 2. Verify DDL denial fail-closed for non-superuser role
+	// 1. Assert current connection user identity and demoted status
+	var currentUser string
 	var currentSuper bool
-	if err := pool.QueryRow(ctx, "SELECT rolsuper FROM pg_roles WHERE rolname = current_user").Scan(&currentSuper); err == nil && !currentSuper {
-		unauthorizedRole := fmt.Sprintf("orq60_unauthorized_role_%d", time.Now().UnixNano())
-		_, err := pool.Exec(ctx, fmt.Sprintf("CREATE ROLE %s", unauthorizedRole))
-		if err == nil {
-			_, _ = pool.Exec(ctx, fmt.Sprintf("DROP ROLE IF EXISTS %s", unauthorizedRole))
-			t.Fatalf("FAIL: demoted application role was able to execute administrative DDL CREATE ROLE")
-		}
-		if !strings.Contains(err.Error(), "permission denied") && !strings.Contains(err.Error(), "must be superuser") {
-			t.Logf("Notice: DDL rejected with error: %v", err)
-		}
-		t.Logf("PASS: Administrative DDL rejection verified fail-closed")
+	if err := pool.QueryRow(ctx, "SELECT current_user, rolsuper FROM pg_roles WHERE rolname = current_user").Scan(&currentUser, &currentSuper); err != nil {
+		t.Fatalf("FAIL: unable to query current session user identity: %v", err)
 	}
+
+	if currentUser != "multica_transition" && currentUser != "multica_app" {
+		t.Fatalf("FAIL: test connection must execute as demoted application role ('multica_transition' or 'multica_app'), got current_user=%q", currentUser)
+	}
+
+	if currentSuper {
+		t.Fatalf("FAIL: connected session user %q has SUPERUSER=true; must be demoted", currentUser)
+	}
+
+	t.Logf("PASS: Verified session connection user identity %q (SUPERUSER=false)", currentUser)
+
+	// 2. Locate pre-created app-owned fixture table for DML proof
+	fixtureTable := "orq60_app_fixture"
+	var exists bool
+	if err := pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_tables WHERE schemaname='public' AND tablename=$1)", fixtureTable).Scan(&exists); err != nil || !exists {
+		// If custom fixture table isn't present, check for any public table owned by multica_owner
+		var tablename string
+		err := pool.QueryRow(ctx, "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tableowner='multica_owner' LIMIT 1").Scan(&tablename)
+		if err != nil {
+			t.Fatalf("FAIL: no fixture table found for DML proof: %v", err)
+		}
+		fixtureTable = tablename
+	}
+
+	// 3. Execute and assert ALL FOUR DML operations (INSERT, SELECT, UPDATE, DELETE)
+	testID := int(time.Now().UnixNano() % 2147483647)
+	testVal := fmt.Sprintf("val_%d", testID)
+
+	// DML 1: INSERT
+	if _, err := pool.Exec(ctx, fmt.Sprintf("INSERT INTO %s (id, content) VALUES ($1, $2)", fixtureTable), testID, testVal); err != nil {
+		t.Fatalf("FAIL: DML INSERT failed on fixture table %s under demoted role %s: %v", fixtureTable, currentUser, err)
+	}
+
+	// DML 2: SELECT
+	var readVal string
+	if err := pool.QueryRow(ctx, fmt.Sprintf("SELECT content FROM %s WHERE id = $1", fixtureTable), testID).Scan(&readVal); err != nil || readVal != testVal {
+		t.Fatalf("FAIL: DML SELECT failed on fixture table %s under demoted role %s: %v", fixtureTable, currentUser, err)
+	}
+
+	// DML 3: UPDATE
+	updatedVal := fmt.Sprintf("updated_%d", testID)
+	if _, err := pool.Exec(ctx, fmt.Sprintf("UPDATE %s SET content = $1 WHERE id = $2", fixtureTable), updatedVal, testID); err != nil {
+		t.Fatalf("FAIL: DML UPDATE failed on fixture table %s under demoted role %s: %v", fixtureTable, currentUser, err)
+	}
+
+	// DML 4: DELETE
+	if _, err := pool.Exec(ctx, fmt.Sprintf("DELETE FROM %s WHERE id = $1", fixtureTable), testID); err != nil {
+		t.Fatalf("FAIL: DML DELETE failed on fixture table %s under demoted role %s: %v", fixtureTable, currentUser, err)
+	}
+
+	t.Logf("PASS: All four DML operations (INSERT, SELECT, UPDATE, DELETE) verified successfully on fixture table %s under demoted role %q", fixtureTable, currentUser)
+
+	// 4. Assert DDL Rejections Fail-Closed
+	// DDL Test A: CREATE ROLE
+	unauthorizedRole := fmt.Sprintf("orq60_unauthorized_role_%d", testID)
+	if _, err := pool.Exec(ctx, fmt.Sprintf("CREATE ROLE %s", unauthorizedRole)); err == nil {
+		_, _ = pool.Exec(ctx, fmt.Sprintf("DROP ROLE IF EXISTS %s", unauthorizedRole))
+		t.Fatalf("FAIL: demoted application role %q was able to execute administrative DDL CREATE ROLE", currentUser)
+	} else if !strings.Contains(err.Error(), "permission denied") && !strings.Contains(err.Error(), "must be superuser") {
+		t.Fatalf("FAIL: unexpected error for CREATE ROLE denial: %v", err)
+	}
+
+	// DDL Test B: Schema CREATE (CREATE TABLE)
+	unauthorizedTable := fmt.Sprintf("orq60_unauthorized_table_%d", testID)
+	if _, err := pool.Exec(ctx, fmt.Sprintf("CREATE TABLE %s (id INT)", unauthorizedTable)); err == nil {
+		_, _ = pool.Exec(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", unauthorizedTable))
+		t.Fatalf("FAIL: demoted application role %q was able to execute schema DDL CREATE TABLE", currentUser)
+	} else if !strings.Contains(err.Error(), "permission denied") {
+		t.Fatalf("FAIL: unexpected error for CREATE TABLE schema denial: %v", err)
+	}
+
+	t.Logf("PASS: Administrative DDL (CREATE ROLE) and Schema DDL (CREATE TABLE) rejections verified fail-closed for role %q", currentUser)
 }

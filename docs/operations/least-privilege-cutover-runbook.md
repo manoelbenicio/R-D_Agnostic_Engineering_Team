@@ -13,9 +13,9 @@ To separate administrative recovery, schema DDL operations, and runtime DML exec
 
 | Role Name | Type | Login | Purpose & Scope | Security Attributes |
 |:---|:---|:---|:---|:---|
-| `multica_recovery` | Recovery / Emergency Authority | `LOGIN` | Proven recovery superuser authority for maintenance, schema repairs, and emergency rollback. | `SUPERUSER`, `CREATEROLE`, `CREATEDB`, `BYPASSRLS`, `REPLICATION` |
-| `multica_owner` | Group / Schema Owner | `NOLOGIN` | Owns all schema objects (tables, sequences, views, functions, types). | `NOSUPERUSER`, `NOCREATEROLE`, `NOCREATEDB`, `NOBYPASSRLS`, `NOREPLICATION` |
-| `multica_migrator` | Migration Runner | `LOGIN` | Used by `cmd/migrate` during maintenance windows to execute DDL migrations. Member of `multica_owner`. | `NOSUPERUSER`, `NOCREATEROLE`, `NOCREATEDB`, `NOBYPASSRLS`, `NOREPLICATION` |
+| `multica_recovery` | Recovery / Emergency Authority | `NOLOGIN` (Peer-Mapped) | Proven recovery superuser authority for maintenance and emergency rollback. Reachable ONLY via ORQ-35 OS Peer Map (mapping container OS user `postgres` / socket user) or secret-backed handoff. | `SUPERUSER`, `CREATEROLE`, `CREATEDB`, `BYPASSRLS`, `REPLICATION` |
+| `multica_owner` | Group / Schema Owner | `NOLOGIN` | Owns all schema objects across all object classes (tables, partitions, views, matviews, sequences, functions, procedures, types). | `NOSUPERUSER`, `NOCREATEROLE`, `NOCREATEDB`, `NOBYPASSRLS`, `NOREPLICATION` |
+| `multica_migrator` | Migration Runner | `NOLOGIN` (Pre-Provision) | Used by `cmd/migrate` during maintenance windows to execute DDL migrations. Granted `multica_owner`. | `NOSUPERUSER`, `NOCREATEROLE`, `NOCREATEDB`, `NOBYPASSRLS`, `NOREPLICATION` |
 | `multica_transition` / `multica_app` | Runtime Backend App | `LOGIN` | Used by `multica-server` at runtime. Granted minimal required DML (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, sequence `USAGE`). | `NOSUPERUSER`, `NOCREATEROLE`, `NOCREATEDB`, `NOBYPASSRLS`, `NOREPLICATION` |
 
 ---
@@ -27,10 +27,10 @@ To separate administrative recovery, schema DDL operations, and runtime DML exec
 - `USAGE` on schema `public` to `multica_app`, `multica_transition`, `multica_migrator`.
 - `CREATE` on schema `public` to `multica_owner`, `multica_migrator`.
 
-### Object Level Privileges (Schema `public`)
-- **Tables & Views**: `SELECT, INSERT, UPDATE, DELETE` to `multica_app`, `multica_transition`.
+### Object Class Level Privileges (Schema `public`)
+- **Tables, Partitions, Views & MatViews**: `SELECT, INSERT, UPDATE, DELETE` to `multica_app`, `multica_transition`.
 - **Sequences**: `USAGE, SELECT, UPDATE` to `multica_app`, `multica_transition`.
-- **Functions & Routines**: `EXECUTE` to `multica_app`, `multica_transition`.
+- **Functions & Procedures**: `EXECUTE` to `multica_app`, `multica_transition`.
 
 ### Default Privileges for Future Objects
 All objects created in schema `public` by `multica_owner` or `multica_migrator` automatically grant:
@@ -40,22 +40,22 @@ All objects created in schema `public` by `multica_owner` or `multica_migrator` 
 
 ---
 
-## 3. Credential Provisioning Contract (LOGIN Roles)
+## 3. Command Line Hygiene & Credential Provisioning Contract
 
-`LOGIN` roles (`multica_migrator`, `multica_app`, `multica_recovery`) must be provisioned without exposing plaintext secrets in repository files or log streams.
-
-1. **Environment Handoff**: Pass dynamic environment variables during maintenance window:
+1. **Zero Secret Command Line Rule**: Never embed passwords or `<SECRET>` placeholders in command-line arguments or process invocations (`ps aux` visible).
+2. **Environment Variable Handoff**: Pass connection strings and credentials exclusively via environment variables:
+   - `TEST_DATABASE_URL`
+   - `DATABASE_URL`
    - `MIGRATOR_DB_PASSWORD`
    - `APP_DB_PASSWORD`
-   - `RECOVERY_DB_PASSWORD`
-2. **Metadata Key Registration**: Pin high-signal credential rotation state to issue metadata using `multica issue metadata set` (metadata-only references, zero plaintext values).
+3. **Metadata Registration**: Record credential rotation status on issue metadata using `multica issue metadata set` (metadata keys only, zero plaintext secret values).
 
 ---
 
 ## 4. Execution Order of Operations & Preflight Checklist
 
 > [!IMPORTANT]
-> To prevent transaction failure mid-flight, all privileged bootstrap steps (recovery role creation, owner setup, ownership transfer, DML grants, default privileges) MUST execute BEFORE demoting `multica_transition` / `multica_app`. Demotion occurs LAST.
+> To prevent transaction failure mid-flight, all privileged bootstrap steps (recovery role creation, owner setup, dynamic ownership transfer, DML grants, default privileges) MUST execute BEFORE demoting `multica_transition` / `multica_app`. Demotion occurs LAST.
 
 ### Preflight Verification Steps
 1. **Zero Active Queue**: Confirm zero pending/running tasks in the platform.
@@ -80,14 +80,16 @@ docker exec -i multica-dev-transition-postgres-1 psql -U multica_transition -d m
 
 Expected Output:
 - `violating_superuser_app_roles` = `0`
-- `valid_recovery_authority_roles` = `1` (`multica_recovery`)
+- `multica_recovery` = `rolsuper=true`, `rolcanlogin=false` (NOLOGIN / Peer-mapped only)
 - `schema_owner` = `multica_owner`
+- `non_owner_count` = `0` across all object classes (tables, views, matviews, sequences, functions, procedures, types)
 
 ### Step 5.2: Execute Go Security Test Suite
 
 ```bash
-TEST_DATABASE_URL="postgres://multica_transition:<SECRET>@127.0.0.1:15433/multica_transition?sslmode=disable" \
-PATH=/home/ec2-user/goroot/go/bin:$PATH go test ./cmd/migrate -run TestLeastPrivilege -v
+TEST_DATABASE_URL="${CONTAINER_APP_DB_URL}" \
+PATH=/home/ec2-user/goroot/go/bin:$PATH \
+go test ./multica-auth-work/server/cmd/migrate -run TestLeastPrivilege -v
 ```
 
 ---
@@ -104,11 +106,11 @@ docker exec multica-dev-transition-postgres-1 cp /var/lib/postgresql/data/pg_hba
 docker exec multica-dev-transition-postgres-1 pg_ctl reload -D /var/lib/postgresql/data
 ```
 
-### SQL Privilege Rollback via `multica_recovery`
-To restore previous superuser status using the proven recovery authority:
+### SQL Privilege Rollback via OS Peer Map
+To restore previous superuser status using the ORQ-35 OS peer-mapped recovery session:
 
 ```bash
-docker exec -i multica-dev-transition-postgres-1 psql -U multica_recovery -d multica_transition < scripts/ops/least_privilege_rollback.sql
+docker exec -i -u postgres multica-dev-transition-postgres-1 psql -U multica_recovery -d multica_transition < scripts/ops/least_privilege_rollback.sql
 ```
 
 ---
@@ -117,6 +119,6 @@ docker exec -i multica-dev-transition-postgres-1 psql -U multica_recovery -d mul
 
 | Gate / Dependency | Target State | Coordination Action |
 |:---|:---|:---|
-| **ORQ-35 (SCRAM & HBA)** | SCRAM-SHA-256 local/TCP auth enforcement | Synchronize least-privilege role demotion with non-trust SCRAM authentication rules in `pg_hba.conf`. |
+| **ORQ-35 (SCRAM & HBA)** | SCRAM-SHA-256 local/TCP auth & OS peer map enforcement | Synchronize `multica_recovery` NOLOGIN peer-mapping with `pg_hba.conf` and `pg_ident.conf` cutover. |
 | **ORQ-57 (Deploy Gate)** | Mandatory env-file wrapper & fail-closed recreate | Ensure `multica_migrator` credentials and `DATABASE_URL` are supplied via the safe deploy wrapper. |
 | **ORQ-58 (Canonical Rebuild)** | Canonical image rebuild & deployment | Validate backend binary operates under non-superuser `multica_transition` / `multica_app` credentials before release. |
