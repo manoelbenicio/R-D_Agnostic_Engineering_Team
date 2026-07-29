@@ -241,11 +241,14 @@ func resolveCredentialAccountHome(agentID, provider string) (string, error) {
 	}
 	key := strings.TrimSpace(agentID) + "|" + canonical
 	if assigned := document.Assignments[key]; assigned != "" {
-		home, ok := validHomes[assigned]
-		if !ok {
-			return "", fmt.Errorf("credential isolation: persisted slot %s is not eligible for provider %s", assigned, canonical)
+		if home, ok := validHomes[assigned]; ok {
+			return home, nil
 		}
-		return home, nil
+		// The operator allowlist is authoritative. A persisted assignment that
+		// leaves it must never be used, but it must not wedge the agent forever:
+		// rendezvous below selects from the currently validated slots and the
+		// replacement is published through the same atomic assignment write.
+		delete(document.Assignments, key)
 	}
 	selected := rendezvousCredentialSlot(key, slots)
 	if selected == "" {

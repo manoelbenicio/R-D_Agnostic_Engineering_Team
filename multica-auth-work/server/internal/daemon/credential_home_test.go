@@ -93,22 +93,65 @@ func TestResolveCredentialAccountHomeRejectsSymlinkSlot(t *testing.T) {
 	}
 }
 
-func TestResolveCredentialAccountHomeFailsWhenPersistedSlotLeavesAllowlist(t *testing.T) {
+func TestResolveCredentialAccountHomeReselectsAndPersistsWhenAssignmentLeavesAllowlist(t *testing.T) {
 	stateRoot := t.TempDir()
 	slotsRoot := filepath.Join(stateRoot, "slots")
 	if err := os.Mkdir(slotsRoot, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	writeCredentialMarker(t, slotsRoot, "slot-140", "kiro")
-	writeCredentialMarker(t, slotsRoot, "slot-149", "kiro")
-	configureCredentialResolver(t, slotsRoot, "kiro", "140")
-	if _, err := resolveCredentialAccountHome("agent-a", "kiro"); err != nil {
-		t.Fatal(err)
+	const agentID = "agent-stale-agy"
+	const provider = "antigravity"
+	const allowlist = "162,163,168,169"
+	for _, slot := range strings.Split(allowlist, ",") {
+		writeCredentialMarker(t, slotsRoot, "slot-"+slot, provider)
 	}
-	t.Setenv(credentialSlotAllowlistEnv("kiro"), "149")
-	if _, err := resolveCredentialAccountHome("agent-a", "kiro"); err == nil ||
-		!strings.Contains(err.Error(), "persisted slot") {
-		t.Fatalf("error = %v, want persisted-slot failure", err)
+	// slot-145 is physical but intentionally outside the current allowlist.
+	writeCredentialMarker(t, slotsRoot, "slot-145", provider)
+	configureCredentialResolver(t, slotsRoot, provider, allowlist)
+
+	key := agentID + "|" + provider
+	assignmentPath := filepath.Join(stateRoot, assignmentFileName)
+	stale := credentialAssignmentDocument{
+		Version:     1,
+		Assignments: map[string]string{key: "slot-145"},
+	}
+	if err := persistCredentialAssignments(assignmentPath, stale); err != nil {
+		t.Fatalf("seed synthetic stale assignment: %v", err)
+	}
+
+	home, err := resolveCredentialAccountHome(agentID, "agy")
+	if err != nil {
+		t.Fatalf("reselect stale assignment: %v", err)
+	}
+	slots := []string{"slot-162", "slot-163", "slot-168", "slot-169"}
+	wantSlot := rendezvousCredentialSlot(key, slots)
+	wantHome := filepath.Join(slotsRoot, wantSlot, "home")
+	if home != wantHome {
+		t.Fatalf("resolved home = %q, want rendezvous home %q", home, wantHome)
+	}
+	if wantSlot == "slot-145" {
+		t.Fatal("rendezvous selected stale out-of-allowlist slot-145")
+	}
+
+	persisted, err := loadCredentialAssignments(assignmentPath)
+	if err != nil {
+		t.Fatalf("load synthetic replacement assignment: %v", err)
+	}
+	if got := persisted.Assignments[key]; got != wantSlot {
+		t.Fatalf("persisted replacement = %q, want %q", got, wantSlot)
+	}
+	if info, err := os.Stat(assignmentPath); err != nil {
+		t.Fatal(err)
+	} else if info.Mode().Perm() != 0o600 {
+		t.Fatalf("replacement assignment mode = %o, want 600", info.Mode().Perm())
+	}
+
+	again, err := resolveCredentialAccountHome(agentID, "agy")
+	if err != nil {
+		t.Fatalf("reuse replacement assignment: %v", err)
+	}
+	if again != home {
+		t.Fatalf("replacement affinity changed: first=%q second=%q", home, again)
 	}
 }
 
