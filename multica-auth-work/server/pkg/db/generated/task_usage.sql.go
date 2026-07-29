@@ -541,13 +541,13 @@ DO UPDATE SET
 `
 
 type UpsertTaskUsageParams struct {
-	TaskID           pgtype.UUID `json:"task_id"`
-	Provider         string      `json:"provider"`
-	Model            string      `json:"model"`
-	InputTokens      int64       `json:"input_tokens"`
-	OutputTokens     int64       `json:"output_tokens"`
-	CacheReadTokens  int64       `json:"cache_read_tokens"`
-	CacheWriteTokens int64       `json:"cache_write_tokens"`
+	TaskID           pgtype.UUID   `json:"task_id"`
+	Provider         string        `json:"provider"`
+	Model            string        `json:"model"`
+	InputTokens      int64         `json:"input_tokens"`
+	OutputTokens     int64         `json:"output_tokens"`
+	CacheReadTokens  int64         `json:"cache_read_tokens"`
+	CacheWriteTokens int64         `json:"cache_write_tokens"`
 	ThinkingLevel    pgtype.Text   `json:"thinking_level"`
 	PriceVersion     pgtype.Text   `json:"price_version"`
 	ComputedCostUsd  pgtype.Float8 `json:"computed_cost_usd"`

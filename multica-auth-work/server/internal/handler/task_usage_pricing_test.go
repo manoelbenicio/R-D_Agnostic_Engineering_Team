@@ -8,7 +8,7 @@ import (
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
-func TestThinkingLevelText(t *testing.T) {
+func TestThinkingLevelTextNormalizesCase(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
 		in    string
