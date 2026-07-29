@@ -298,4 +298,128 @@ chmod +x "${FAKE_SYSTEMCTL_RESTART_FAIL}/pgrep"
 restart_fail_output="$(PATH="${FAKE_SYSTEMCTL_RESTART_FAIL}:${PATH}" DAEMON_BIN_DIR="${FAKE_BIN_DIR}" DAEMON_BIN_ACTIVE="${FAKE_BIN_DIR}/active.real" DAEMON_BIN_PREVIOUS="${FAKE_BIN_DIR}/previous.real" FORCE_ROLLBACK=1 "${ROLLBACK_SCRIPT}" --live 2>&1 || true)"
 [[ "${restart_fail_output}" == *"FAIL-CLOSED"* || "${restart_fail_output}" == *"Service"* ]] || fail "systemctl restart non-active failure did not fail closed: ${restart_fail_output}"
 
-printf 'PASS: 6-vendor migration, isolated dual login, HERDR_PANE_ID fallback precedence, rollback atomic/roll-forward/dry-run, systemd stop/restart fail-closed stubs, mode 0700 posture, and flock allocator\n'
+# Test anti-leak sentinel regression in isolated TEST_ROOT
+TEST_ROOT_ISOLATED="${TMP_DIR}/test-anti-leak-root"
+mkdir -p "${TEST_ROOT_ISOLATED}"
+chmod 700 "${TEST_ROOT_ISOLATED}"
+
+SYNTHETIC_SENTINEL_TOKEN="SK-SYNTHETIC-SENTINEL-KEY-DO-NOT-LEAK-998877"
+SYNTHETIC_SECRET_SHAPED="sk-proj-syntheticsecretkey1234567890"
+
+SYNTHETIC_CRED_DIR="${TEST_ROOT_ISOLATED}/synthetic-cred-homes"
+mkdir -p "${SYNTHETIC_CRED_DIR}/slots/slot-01/codex"
+chmod 700 "${SYNTHETIC_CRED_DIR}" "${SYNTHETIC_CRED_DIR}/slots" "${SYNTHETIC_CRED_DIR}/slots/slot-01" "${SYNTHETIC_CRED_DIR}/slots/slot-01/codex"
+printf '{"token": "%s", "secret": "%s"}\n' "${SYNTHETIC_SENTINEL_TOKEN}" "${SYNTHETIC_SECRET_SHAPED}" >"${SYNTHETIC_CRED_DIR}/slots/slot-01/codex/auth.json"
+chmod 600 "${SYNTHETIC_CRED_DIR}/slots/slot-01/codex/auth.json"
+
+SYNTHETIC_BIN_DIR="${TEST_ROOT_ISOLATED}/bin"
+mkdir -p "${SYNTHETIC_BIN_DIR}"
+chmod 700 "${SYNTHETIC_BIN_DIR}"
+
+touch "${SYNTHETIC_BIN_DIR}/active-daemon"
+touch "${SYNTHETIC_BIN_DIR}/previous-daemon"
+chmod 700 "${SYNTHETIC_BIN_DIR}/active-daemon" "${SYNTHETIC_BIN_DIR}/previous-daemon"
+
+SYNTHETIC_SERVICE_FILE="${TEST_ROOT_ISOLATED}/multica-daemon.service"
+touch "${SYNTHETIC_SERVICE_FILE}"
+
+SYNTHETIC_STUBS_DIR="${TEST_ROOT_ISOLATED}/stubs"
+mkdir -p "${SYNTHETIC_STUBS_DIR}"
+chmod 700 "${SYNTHETIC_STUBS_DIR}"
+
+cat >"${SYNTHETIC_STUBS_DIR}/codex" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then echo "codex-cli 0.145.0-synthetic"; exit 0; fi
+exit 0
+SH
+chmod 700 "${SYNTHETIC_STUBS_DIR}/codex"
+
+cat >"${SYNTHETIC_STUBS_DIR}/agy" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then echo "agy 1.1.8-synthetic"; exit 0; fi
+exit 0
+SH
+chmod 700 "${SYNTHETIC_STUBS_DIR}/agy"
+
+cat >"${SYNTHETIC_STUBS_DIR}/kiro-cli" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then echo "kiro-cli 2.13.0-synthetic"; exit 0; fi
+exit 0
+SH
+chmod 700 "${SYNTHETIC_STUBS_DIR}/kiro-cli"
+
+cat >"${SYNTHETIC_STUBS_DIR}/systemctl" <<'SH'
+#!/usr/bin/env bash
+if [[ "$1 $2" == "--user stop" || "$1 $2" == "--user daemon-reload" || "$1 $2" == "--user restart" ]]; then
+  exit 0
+elif [[ "$1 $2" == "--user is-active" ]]; then
+  exit 0
+fi
+exit 0
+SH
+chmod 700 "${SYNTHETIC_STUBS_DIR}/systemctl"
+
+cat >"${SYNTHETIC_STUBS_DIR}/pgrep" <<'SH'
+#!/usr/bin/env bash
+exit 1
+SH
+chmod 700 "${SYNTHETIC_STUBS_DIR}/pgrep"
+
+cat >"${SYNTHETIC_STUBS_DIR}/curl" <<'SH'
+#!/usr/bin/env bash
+echo '{"status":"ok"}'
+exit 0
+SH
+chmod 700 "${SYNTHETIC_STUBS_DIR}/curl"
+
+captured_anti_leak_logs="${TMP_DIR}/captured-anti-leak.log"
+: >"${captured_anti_leak_logs}"
+
+PATH="${SYNTHETIC_STUBS_DIR}:${PATH}" \
+DAEMON_BIN_DIR="${SYNTHETIC_BIN_DIR}" \
+DAEMON_BIN_ACTIVE="${SYNTHETIC_BIN_DIR}/active-daemon" \
+DAEMON_BIN_PREVIOUS="${SYNTHETIC_BIN_DIR}/previous-daemon" \
+DAEMON_SERVICE_FILE="${SYNTHETIC_SERVICE_FILE}" \
+CRED_HOMES_ROOT="${SYNTHETIC_CRED_DIR}" \
+CODEX_BIN="${SYNTHETIC_STUBS_DIR}/codex" \
+AGY_BIN="${SYNTHETIC_STUBS_DIR}/agy" \
+KIRO_BIN="${SYNTHETIC_STUBS_DIR}/kiro-cli" \
+"${ROLLBACK_SCRIPT}" --dry-run >>"${captured_anti_leak_logs}" 2>&1 || true
+
+PATH="${SYNTHETIC_STUBS_DIR}:${PATH}" \
+DAEMON_BIN_DIR="${SYNTHETIC_BIN_DIR}" \
+DAEMON_BIN_ACTIVE="${SYNTHETIC_BIN_DIR}/active-daemon" \
+DAEMON_BIN_PREVIOUS="${SYNTHETIC_BIN_DIR}/previous-daemon" \
+DAEMON_SERVICE_FILE="${SYNTHETIC_SERVICE_FILE}" \
+CRED_HOMES_ROOT="${SYNTHETIC_CRED_DIR}" \
+CODEX_BIN="${SYNTHETIC_STUBS_DIR}/codex" \
+AGY_BIN="${SYNTHETIC_STUBS_DIR}/agy" \
+KIRO_BIN="${SYNTHETIC_STUBS_DIR}/kiro-cli" \
+FORCE_ROLLBACK=1 \
+"${ROLLBACK_SCRIPT}" --live >>"${captured_anti_leak_logs}" 2>&1 || true
+
+PATH="${SYNTHETIC_STUBS_DIR}:${PATH}" \
+DAEMON_BIN_DIR="${SYNTHETIC_BIN_DIR}" \
+DAEMON_BIN_ACTIVE="${SYNTHETIC_BIN_DIR}/active-daemon" \
+DAEMON_BIN_PREVIOUS="${SYNTHETIC_BIN_DIR}/previous-daemon" \
+DAEMON_SERVICE_FILE="${SYNTHETIC_SERVICE_FILE}" \
+CRED_HOMES_ROOT="${SYNTHETIC_CRED_DIR}" \
+CODEX_BIN="${SYNTHETIC_STUBS_DIR}/codex" \
+AGY_BIN="${SYNTHETIC_STUBS_DIR}/agy" \
+KIRO_BIN="${SYNTHETIC_STUBS_DIR}/kiro-cli" \
+FORCE_ROLLFORWARD=1 \
+"${ROLLBACK_SCRIPT}" --roll-forward >>"${captured_anti_leak_logs}" 2>&1 || true
+
+if grep -q "${SYNTHETIC_SENTINEL_TOKEN}" "${captured_anti_leak_logs}"; then
+  fail "ANTI-LEAK REGRESSION: Output contained synthetic sentinel token"
+fi
+
+if grep -q "${SYNTHETIC_SECRET_SHAPED}" "${captured_anti_leak_logs}"; then
+  fail "ANTI-LEAK REGRESSION: Output contained synthetic secret-shaped material"
+fi
+
+if grep -E -q "sk-[a-zA-Z0-9_-]{10,}" "${captured_anti_leak_logs}"; then
+  fail "ANTI-LEAK REGRESSION: Output contained secret-shaped pattern match"
+fi
+
+printf 'PASS: 6-vendor migration, isolated dual login, HERDR_PANE_ID fallback precedence, rollback atomic/roll-forward/dry-run, anti-leak sentinel regression, systemd stop/restart fail-closed stubs, mode 0700 posture, and flock allocator\n'

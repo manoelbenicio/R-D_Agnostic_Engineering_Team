@@ -9,19 +9,19 @@
 set -euo pipefail
 
 # Configuration
-DAEMON_BIN_DIR="/home/ec2-user/.local/lib/multica/bin"
-DAEMON_BIN_ACTIVE="${DAEMON_BIN_DIR}/multica-auth-credential-home-v1"
-DAEMON_BIN_PREVIOUS="${DAEMON_BIN_DIR}/multica-auth-credential-home-v1.previous"
-DAEMON_SERVICE_FILE="/home/ec2-user/.config/systemd/user/multica-daemon-orq2-credential.service"
-DAEMON_SERVICE_NAME="multica-daemon-orq2-credential.service"
+: "${DAEMON_BIN_DIR:=/home/ec2-user/.local/lib/multica/bin}"
+: "${DAEMON_BIN_ACTIVE:=${DAEMON_BIN_DIR}/multica-auth-credential-home-v1}"
+: "${DAEMON_BIN_PREVIOUS:=${DAEMON_BIN_DIR}/multica-auth-credential-home-v1.previous}"
+: "${DAEMON_SERVICE_FILE:=/home/ec2-user/.config/systemd/user/multica-daemon-orq2-credential.service}"
+: "${DAEMON_SERVICE_NAME:=multica-daemon-orq2-credential.service}"
 
-ROLLFORWARD_BACKUP_DIR="${DAEMON_BIN_DIR}/rollforward-backups"
-ROLLFORWARD_LATEST_POINTER="${DAEMON_BIN_DIR}/multica-auth-credential-home-v1.rollforward.latest"
+: "${ROLLFORWARD_BACKUP_DIR:=${DAEMON_BIN_DIR}/rollforward-backups}"
+: "${ROLLFORWARD_LATEST_POINTER:=${DAEMON_BIN_DIR}/multica-auth-credential-home-v1.rollforward.latest}"
 
-CODEX_BIN="/home/ec2-user/.nvm/versions/node/v22.23.1/bin/codex"
-AGY_BIN="/home/ec2-user/.local/bin/agy"
-KIRO_BIN="/home/ec2-user/.local/bin/kiro-cli"
-CRED_HOMES_ROOT="/home/ec2-user/.agent-cred-homes"
+: "${CODEX_BIN:=/home/ec2-user/.nvm/versions/node/v22.23.1/bin/codex}"
+: "${AGY_BIN:=/home/ec2-user/.local/bin/agy}"
+: "${KIRO_BIN:=/home/ec2-user/.local/bin/kiro-cli}"
+: "${CRED_HOMES_ROOT:=/home/ec2-user/.agent-cred-homes}"
 
 MODE="${1:---dry-run}"
 DISPATCH_CUTOVER="${GTL_CUTOVER_DISPATCH:-0}"
@@ -157,7 +157,8 @@ atomic_install_binary() {
 
   local dest_dir
   dest_dir="$(dirname "${dest_bin}")"
-  local temp_bin="${dest_bin}.tmp.${BASHPID}_$(date +%s%N)"
+  local temp_bin
+  temp_bin="${dest_bin}.tmp.${BASHPID}_$(date +%s%N)"
 
   # Install EXIT recovery trap
   cleanup_atomic_install() {
