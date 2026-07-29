@@ -2,7 +2,8 @@
 
 > Cada AB-REQ rastreia para: spec + scenario OpenSpec, task(s) OpenSpec, fase GSD, owner,
 > evidence ID, decisão de release/removal. Nenhum requisito existe sem essa cadeia.
-> Status padrão: **PLANNED** (implementação não autorizada). Evidência obriga Gate G3+.
+> OpenSpec Topic SHA: `7618599f29d43e964a485ab12a9932a9fd037e1f` (accepted-in-review topic content, ORQ-62).
+> Contagem do Quadro DB (2026-07-29T14:55:30Z): 52 cards no total (24 done, 12 in_review, 4 in_progress, 7 blocked, 1 todo, 2 backlog, 2 cancelled).
 
 ## Códigos de origem
 - ABR = spec `agent-brain-runtime/spec.md`
@@ -85,11 +86,6 @@
 
 ## Notas de reconciliação
 
-- P01–P34 (34 itens) e SC01–SC10 (10 itens) da matriz de paridade = 44 IDs. Eles são
-  absorvidos por AB-REQ-07..AB-REQ-15 (hot) e AB-REQ-32 (gate). Mapeamento detalhado item
-  a item fica em TRACEABILITY.md; REMOVAL_REGISTER cobre o status RETIRE BY DECISION (R01–R05).
+- P01–P34 (34 itens) e SC01–SC10 (10 itens) da matriz de paridade = 44 IDs. Eles são absorvidos por AB-REQ-07..AB-REQ-15 (hot) e AB-REQ-32 (gate). Mapeamento detalhado item a item fica em TRACEABILITY.md.
 - B01–B08 (cold-plane) → AB-REQ-02/03/31 (Brain). R01–R05 → REMOVAL_REGISTER com gate.
-- Conflito conhecido: o GSD v2.1 (`REQUIREMENTS.md` REQ-09, REQ-10) exigia Smart Context
-  via Prodex e proibia SQLite. No target, Smart Context é OmniRoute (AB-REQ-14) e o
-  estado single-node SQLite do OmniRoute é aceito para o tier 20 com decisão de estado
-  (P23/Q18) — ver DECISIONS D-V3-06 e D-V3-08.
+- OpenSpec topic SHA `7618599f29d43e964a485ab12a9932a9fd037e1f` (ORQ-62) representa conteúdo accepted-in-review/topic content, não canonical-main ou integrated.

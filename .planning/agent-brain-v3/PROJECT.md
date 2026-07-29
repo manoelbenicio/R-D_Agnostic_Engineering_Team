@@ -3,7 +3,7 @@
 Planning/adjudication key: Kiro `claude-opus-4.8` — Technical Lead/Manager.
 planning_owner: Kiro/Opus-4.8 · operational_co_lead: Codex#56#A · rebaseline_agent: agy-p0-a7 (ORQ-59)
 active_milestone: Agent Brain v3 — Wave 3 Full Live Rebaseline & OpenSpec Traceability (ORQ-59)
-canonical_openspec_sha: 69880b98e1ae4ed0c550dfbe8fbdeef8817a3a90 (reconciled by ORQ-62 on branch agent/agy-p0-a7/eb2c0b57)
+openspec_topic_sha: 7618599f29d43e964a485ab12a9932a9fd037e1f (accepted-in-review topic content, produced by ORQ-62 on branch agent/agy-p0-a7/eb2c0b57)
 base_integration_pointer: b657129 (origin/main)
 production_overlay_commit: 8227241 (Docker / EC2 active container deployment)
 supersedes_planning: .planning/ (RPP/Prodex v2.1) — preservado como histórico, NÃO executado como plano ativo
@@ -37,18 +37,21 @@ protocol translation, streaming/tools, Smart Context (SC01–SC10) e telemetria/
 | Smart Context/token saving | Kill switch only | Computa e executa |
 | Secrets observability | Redige chave+conteúdo | Redige chave/secrets+conteúdo |
 
-## Fatos de Produção & Infraestrutura (Reconciliados Wave 3)
+## Fatos de Produção & Infraestrutura (Reconciliados Wave 3 em 2026-07-29T14:55:30Z)
 
 1. **Ponteiro de Integração Base (`main`)**: Commit `b657129` no repositório `R-D_Agnostic_Engineering_Team` mantido como referência de ponteiro de integração.
 2. **Overlay de Produção Ativo**: Imagem Docker de produção e contêineres rodam com overlay commit `8227241`.
 3. **Outages e Incidentes Ativos**:
    - **ORQ-26 Outage**: Falha na materialização do default squad e roteamento de Chat Lifecycle.
    - **GitHub Billing Lock**: Bloqueio de cobrança no GitHub afetando workflows automatizados de CI/CD.
-4. **Superação de Afirmações Obsoletas**:
-   - Afirmações anteriores de "não-produtivo" ou "production canary removido" foram **superadas explicitamente** em favor dos fatos de produção reais ( overlay `8227241`, canários Docker em EC2, incidente ORQ-26). Histórico preservado sem apagamento.
-   - Contagens antigas 51/96 superadas pelo inventário vivo de 52 cards do Multica Kanban (ORQ-01 a ORQ-62).
+   - **Incidente de Helper-Label ORQ-61/59**: Incidente de rótulos auxiliares registrado e corrigido como metadata-only.
+4. **OpenSpec SHA Reconciliada**:
+   - A SHA remota `7618599f29d43e964a485ab12a9932a9fd037e1f` (produzida no ORQ-62 na branch `agent/agy-p0-a7/eb2c0b57`) representa conteúdo **accepted-in-review / topic content** para a linhagem OpenSpec, e não canonical-main ou integrated.
+5. **Superação de Afirmações Obsoletas**:
+   - Afirmações anteriores de "não-produtivo" ou "production canary removido" foram **superadas explicitamente** em favor dos fatos de produção reais (overlay `8227241`, canários Docker em EC2, incidente ORQ-26). Histórico preservado sem apagamento.
+   - Contagens antigas 51/96 superadas pelo inventário vivo de **52 cards** do Multica Kanban (projetados diretamente do DB em `2026-07-29T14:55:30Z`: 24 done, 12 in_review, 4 in_progress, 7 blocked, 1 todo, 2 backlog, 2 cancelled).
    - Instruções de STOP/PD-08 superadas pela postura de segurança atual (SCRAM hardening ORQ-35/60, JWT rotation ORQ-30/33/42, credential isolation ativo).
-5. **Separação de Gates (Readiness vs Acceptance)**:
+6. **Separação de Gates (Readiness vs Acceptance)**:
    - **Readiness Gates**: Validação em harness sintético local (ex: harness de carga local de 20 tasks em ORQ-50).
    - **Acceptance Gates**: Aceitação em ambiente de produção com canários reais, persistência em PostgreSQL e telemetria de produção.
 
@@ -74,7 +77,7 @@ protocol translation, streaming/tools, Smart Context (SC01–SC10) e telemetria/
 
 - RPP/Prodex v2.1 (`.planning/`) → SUPERSEDED como plano ativo; preservado como histórico.
 - Decisões legadas D-007 (isolamento credenciais), D-008 (TL delegation-only) e EVIDENCE_CONTRACT → absorvidos como governança permanente.
-- OpenSpec Lineage Defect (fc98e218 sem `rotation-parity-polyglot`) → RECONCILIADO sob a SHA canônica `69880b98e1ae4ed0c550dfbe8fbdeef8817a3a90` (ORQ-62).
+- OpenSpec Lineage Defect (fc98e218 sem `rotation-parity-polyglot`) → RECONCILIADO sob a SHA accepted-in-review `7618599f29d43e964a485ab12a9932a9fd037e1f` (ORQ-62).
 
 ## Índice de artefatos (.planning/agent-brain-v3/)
 

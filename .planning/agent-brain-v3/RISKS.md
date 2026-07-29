@@ -37,4 +37,5 @@
 | R31 | Drift do Overlay de Produção (ponteiro `main` `b657129` vs overlay `8227241`) | M | A | Manter `b657129` como referência de integração e rastrear o overlay `8227241` no registro de deploy (ORQ-58) | divergência de binário entre staging e prod | W1 + Ops |
 | R32 | Outage do Chat Lifecycle (ORQ-26 falha na materialização do squad) | H | A | Resolução em revisão no card ORQ-26 com testes focados de materialização | falha de roteamento no Chat UI | Agent 2c042f... |
 | R33 | GitHub Billing Lock bloqueia automação de workflows CI/CD | M | M | Execução direta via CLI Multica e runtimes locais sem dependência de GitHub Actions | falha em triggers de CI/CD remotos | Ops / TL |
-| R34 | Defeito de Linhagem OpenSpec (commit `fc98e218` omitia `rotation-parity-polyglot`) | M | A | Reconciliação no ORQ-62 sob a SHA canônica `69880b98e1ae4ed0c550dfbe8fbdeef8817a3a90` | divergência entre specs de branches | agy-p0-a7 |
+| R34 | Defeito de Linhagem OpenSpec (commit `fc98e218` omitia `rotation-parity-polyglot`) | M | A | Reconciliação no ORQ-62 sob a SHA accepted-in-review `7618599f29d43e964a485ab12a9932a9fd037e1f` | divergência entre specs de branches | agy-p0-a7 |
+| R35 | Incidente de Rótulos Auxiliares ORQ-61/59 | L | M | Corrigido como alteração de metadados somente (metadata-only), sem impacto no código de produto | desatualização de rótulos | agy-p0-a7 |

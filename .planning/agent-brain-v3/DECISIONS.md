@@ -186,13 +186,14 @@
   bloqueia freeze G1 (que é no-secret).
 
 ### D-V3-31 — P0 GSD Wave 3 Full Live Rebaseline and OpenSpec Traceability Alignment (ORQ-59)
-- Decisão de governança e rebalizamento completo do pacote `.planning/agent-brain-v3/` contra o Multica Kanban vivo e fatos de produção (2026-07-29).
+- Decisão de governança e rebalizamento completo do pacote `.planning/agent-brain-v3/` contra o Multica Kanban vivo e fatos de produção (2026-07-29T14:55:30Z).
 - **Why**: Reconciliar contradições históricas (alegações de "não-produtivo", contagens antigas 51/96, instruções de STOP/PD-08 aposentadas, estados de raia defasados) mantendo proveniência e rastreabilidade total.
 - **How to apply**:
-  1. **Rebalizamento do Kanban Vivo**: Mapeados todos os 52 cards do Multica Kanban (ORQ-01 a ORQ-62) com seus respectivos status, assignees e tarefas GSD/OpenSpec associadas.
-  2. **SHA Canônica do OpenSpec**: Consumida a SHA canônica `69880b98e1ae4ed0c550dfbe8fbdeef8817a3a90` (produzida no ORQ-62 na branch `agent/agy-p0-a7/eb2c0b57`), resolvendo o defeito de linhagem do commit `fc98e218` (que omitia os artefatos de `rotation-parity-polyglot`).
-  3. **Fatos de Produção**: Registrado o commit `b657129` como ponteiro de integração base (`main`), o commit `8227241` como overlay de produção ativo em contêineres Docker/EC2, o incidente ativo no Chat Lifecycle (**ORQ-26**) e o **GitHub Billing Lock**.
-  4. **Superação de Afirmações Obsoletas**: Afirmações antigas ("não-produtivo", 51/96, STOP/PD-08, estados de raia de 18-21 de Julho) foram **explicitamente superadas** por fatos vivos de produção e Kanban, sem apagar o histórico.
-  5. **Mapeamento OpenSpec Não-Verificado**: Registrados os mapeamentos diretos de tarefas OpenSpec para cards Kanban (Native Runtimes 1.6 → ORQ-52; 2.4-3.4 → ORQ-53; Credential 3.2/3.4 → ORQ-13/ORQ-14; 3.3 → ORQ-14; 4.5 → ORQ-23; Chat 2.2 → ORQ-54; 2.3 → ORQ-59; Brain 6.3/6.4 → ORQ-50).
-  6. **Separação de Portões**: Formalizada a distinção entre portões de readiness (harness sintético local) e portões de aceitação de produção (canários reais em contêineres).
-- STATUS: APROVADO / ATIVO (ORQ-59, 2026-07-29).
+  1. **Rebalizamento do Kanban VivoDerivado do DB**: Mapeados todos os 52 cards do Multica Kanban (ORQ-11 a ORQ-62) derivados diretamente do DB via `multica issue list` para o projeto `4b0ef49b-df06-4e83-9a29-8a23b34821d4` em `2026-07-29T14:55:30Z` (24 done, 12 in_review, 4 in_progress, 7 blocked, 1 todo, 2 backlog, 2 cancelled).
+  2. **SHA do OpenSpec (`7618599f29d43e964a485ab12a9932a9fd037e1f`)**: Consumida a SHA remota `7618599f29d43e964a485ab12a9932a9fd037e1f` (produzida no ORQ-62 na branch `agent/agy-p0-a7/eb2c0b57`), classificada como conteúdo **accepted-in-review / topic content** (e não canonical-main ou integrated).
+  3. **Incidente de Helper-Label ORQ-61/59**: Registrado o incidente de rótulos auxiliares como alteração de metadados somente (metadata-only), devidamente corrigido.
+  4. **Fatos de Produção**: Registrado o commit `b657129` como ponteiro de integração base (`main`), o commit `8227241` como overlay de produção ativo em contêineres Docker/EC2, o incidente ativo no Chat Lifecycle (**ORQ-26**) e o **GitHub Billing Lock**.
+  5. **Superação de Afirmações Obsoletas**: Afirmações antigas ("não-produtivo", 51/96, STOP/PD-08, estados de raia de 18-21 de Julho) foram **explicitamente superadas** por fatos vivos de produção e Kanban, sem apagar o histórico.
+  6. **Mapeamento OpenSpec Não-Verificado**: Registrados os mapeamentos diretos de tarefas OpenSpec para cards Kanban (Native Runtimes 1.6 → ORQ-52; 2.4-3.4 → ORQ-53; Credential 3.2/3.4 → ORQ-13/ORQ-14; 3.3 → ORQ-14; 4.5 → ORQ-23; Chat 2.2 → ORQ-54; 2.3 → ORQ-59; Brain 6.3/6.4 → ORQ-50).
+  7. **Separação de Portões**: Formalizada a distinção entre portões de readiness (harness sintético local) e portões de aceitação de produção (canários reais em contêineres).
+- STATUS: APROVADO / ATIVO (ORQ-59, 2026-07-29T14:55:30Z).
