@@ -796,7 +796,24 @@ var ErrChatTaskAgentNoRuntime = errors.New("chat task: agent has no runtime")
 // latest message in the silence window. Stored on the task so the daemon brief
 // can attribute the run to the right person. See MUL-2645.
 func (s *TaskService) EnqueueChatTask(ctx context.Context, chatSession db.ChatSession, initiatorUserID pgtype.UUID) (db.AgentTaskQueue, error) {
-	agent, err := s.Queries.GetAgent(ctx, chatSession.AgentID)
+	return s.EnqueueChatTaskForAgent(ctx, chatSession, initiatorUserID, chatSession.AgentID)
+}
+
+// EnqueueChatTaskForAgent is EnqueueChatTask with an explicit target agent.
+//
+// The chat session stays bound to its own agent (the default Squad TL for
+// untargeted sessions) while a single turn can be routed elsewhere: a message
+// that explicitly addresses another agent with an `@agent` mention is the
+// direct-to-agent escape hatch, and only that turn runs on the mentioned
+// agent. Callers must have already verified that targetAgentID belongs to the
+// session's workspace and is reachable by the sender — this function only
+// re-checks the productizable agent state (archived / no runtime) so the
+// sentinel errors stay identical for both routes.
+func (s *TaskService) EnqueueChatTaskForAgent(ctx context.Context, chatSession db.ChatSession, initiatorUserID pgtype.UUID, targetAgentID pgtype.UUID) (db.AgentTaskQueue, error) {
+	if !targetAgentID.Valid {
+		targetAgentID = chatSession.AgentID
+	}
+	agent, err := s.Queries.GetAgent(ctx, targetAgentID)
 	if err != nil {
 		slog.Error("chat task enqueue failed", "chat_session_id", util.UUIDToString(chatSession.ID), "error", err)
 		return db.AgentTaskQueue{}, fmt.Errorf("load agent: %w", err)
@@ -809,7 +826,7 @@ func (s *TaskService) EnqueueChatTask(ctx context.Context, chatSession db.ChatSe
 	}
 
 	task, err := s.Queries.CreateChatTask(ctx, db.CreateChatTaskParams{
-		AgentID:         chatSession.AgentID,
+		AgentID:         targetAgentID,
 		RuntimeID:       agent.RuntimeID,
 		Priority:        2, // medium priority for chat
 		ChatSessionID:   chatSession.ID,
@@ -820,7 +837,12 @@ func (s *TaskService) EnqueueChatTask(ctx context.Context, chatSession db.ChatSe
 		return db.AgentTaskQueue{}, fmt.Errorf("create chat task: %w", err)
 	}
 
-	slog.Info("chat task enqueued", "task_id", util.UUIDToString(task.ID), "chat_session_id", util.UUIDToString(chatSession.ID), "agent_id", util.UUIDToString(chatSession.AgentID))
+	slog.Info("chat task enqueued",
+		"task_id", util.UUIDToString(task.ID),
+		"chat_session_id", util.UUIDToString(chatSession.ID),
+		"agent_id", util.UUIDToString(targetAgentID),
+		"session_agent_id", util.UUIDToString(chatSession.AgentID),
+	)
 	// See EnqueueTaskForIssue for ordering rationale.
 	s.broadcastTaskEvent(ctx, protocol.EventTaskQueued, task)
 	s.NotifyTaskEnqueued(ctx, task)
