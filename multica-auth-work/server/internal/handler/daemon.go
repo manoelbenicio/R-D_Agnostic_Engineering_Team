@@ -2059,6 +2059,31 @@ type TaskUsagePayload struct {
 	OutputTokens     int64  `json:"output_tokens"`
 	CacheReadTokens  int64  `json:"cache_read_tokens"`
 	CacheWriteTokens int64  `json:"cache_write_tokens"`
+	ThinkingLevel    string `json:"thinking_level"`
+}
+
+func thinkingLevelText(level string) pgtype.Text {
+	trimmed := strings.ToLower(strings.TrimSpace(level))
+	return pgtype.Text{String: trimmed, Valid: trimmed != ""}
+}
+
+func taskUsageEffectiveAt(task db.AgentTaskQueue) time.Time {
+	if task.StartedAt.Valid {
+		return task.StartedAt.Time.UTC()
+	}
+	if task.CreatedAt.Valid {
+		return task.CreatedAt.Time.UTC()
+	}
+	return time.Time{}
+}
+
+func taskUsagePriceSnapshot(u TaskUsagePayload, effectiveAt time.Time) (pgtype.Text, pgtype.Float8) {
+	price, ok := obsmetrics.ResolveModelPrice(u.Model, u.ThinkingLevel, effectiveAt)
+	if !ok {
+		return pgtype.Text{}, pgtype.Float8{}
+	}
+	cost := obsmetrics.ComputeCostUSD(price.ModelPrice, u.InputTokens, u.OutputTokens, u.CacheReadTokens, u.CacheWriteTokens)
+	return pgtype.Text{String: price.Version, Valid: true}, pgtype.Float8{Float64: cost, Valid: true}
 }
 
 func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
@@ -2098,6 +2123,9 @@ func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
 			}
 			provider = runtimeProvider
 		}
+		thinkingLevel := thinkingLevelText(u.ThinkingLevel)
+		effectiveAt := taskUsageEffectiveAt(task)
+		priceVersion, computedCostUSD := taskUsagePriceSnapshot(u, effectiveAt)
 		if err := h.Queries.UpsertTaskUsage(r.Context(), db.UpsertTaskUsageParams{
 			TaskID:           parseUUID(taskID),
 			Provider:         provider,
@@ -2106,11 +2134,14 @@ func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
 			OutputTokens:     u.OutputTokens,
 			CacheReadTokens:  u.CacheReadTokens,
 			CacheWriteTokens: u.CacheWriteTokens,
+			ThinkingLevel:    thinkingLevel,
+			PriceVersion:     priceVersion,
+			ComputedCostUsd:  computedCostUSD,
 		}); err != nil {
 			slog.Warn("upsert task usage failed", "task_id", taskID, "model", u.Model, "error", err)
 			continue
 		}
-		h.TaskService.CaptureTaskUsage(r.Context(), task, provider, u.Model, u.InputTokens, u.OutputTokens, u.CacheReadTokens, u.CacheWriteTokens)
+		h.TaskService.CaptureTaskUsage(r.Context(), task, provider, u.Model, thinkingLevel.String, effectiveAt, u.InputTokens, u.OutputTokens, u.CacheReadTokens, u.CacheWriteTokens)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})

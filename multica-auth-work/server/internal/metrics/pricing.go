@@ -3,6 +3,7 @@ package metrics
 import (
 	"regexp"
 	"strings"
+	"time"
 )
 
 type ModelPrice struct {
@@ -13,6 +14,23 @@ type ModelPrice struct {
 	CacheWritePerM float64
 	OutputPerM     float64
 }
+
+// EffectiveModelPrice is the immutable quote persisted with a usage row.
+// EffectiveUntil is exclusive, so adjacent price versions cannot overlap.
+type EffectiveModelPrice struct {
+	ModelPrice
+	ThinkingLevel  string
+	Version        string
+	EffectiveFrom  time.Time
+	EffectiveUntil time.Time
+}
+
+const CurrentPriceVersion = "2026-07-01"
+
+var (
+	currentPriceEffectiveFrom  = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+	currentPriceEffectiveUntil = time.Date(2027, time.January, 1, 0, 0, 0, 0, time.UTC)
+)
 
 var modelPrices = map[string]ModelPrice{
 	"openai:gpt-5.5":              {Provider: "openai", Model: "gpt-5.5", InputPerM: 5.00, CacheReadPerM: 0.50, CacheWritePerM: 0.50, OutputPerM: 30.00},
@@ -65,15 +83,79 @@ var modelAliasRules = []struct {
 	{regexp.MustCompile(`gemini-2[.]5-flash`), "google:gemini-2.5-flash"},
 }
 
-func PriceForModelAlias(model string) (ModelPrice, bool) {
+// tierModelPrices lists only models whose unit price changes with reasoning
+// effort. The absence of a wildcard is policy: missing or unsupported tiers
+// are unpriced instead of silently falling back to the base model rate.
+var tierModelPrices = map[string][]EffectiveModelPrice{
+	"openai:gpt-5.4": {
+		{
+			ModelPrice:    ModelPrice{Provider: "openai", Model: "gpt-5.4", InputPerM: 2.50, CacheReadPerM: 0.25, CacheWritePerM: 0.25, OutputPerM: 15.00},
+			ThinkingLevel: "low", Version: CurrentPriceVersion,
+			EffectiveFrom: currentPriceEffectiveFrom, EffectiveUntil: currentPriceEffectiveUntil,
+		},
+		{
+			ModelPrice:    ModelPrice{Provider: "openai", Model: "gpt-5.4", InputPerM: 5.00, CacheReadPerM: 0.50, CacheWritePerM: 0.50, OutputPerM: 30.00},
+			ThinkingLevel: "high", Version: CurrentPriceVersion,
+			EffectiveFrom: currentPriceEffectiveFrom, EffectiveUntil: currentPriceEffectiveUntil,
+		},
+	},
+}
+
+func priceKeyForModelAlias(model string) (string, bool) {
 	model = strings.ToLower(strings.TrimSpace(model))
 	for _, rule := range modelAliasRules {
 		if rule.re.MatchString(model) {
-			price, ok := modelPrices[rule.priceKey]
-			return price, ok
+			return rule.priceKey, true
 		}
 	}
-	return ModelPrice{}, false
+	return "", false
+}
+
+// ResolveModelPrice returns the authoritative quote for the model, declared
+// reasoning tier, and usage instant. Tier-dependent models require an exact
+// tier. Models absent from tierModelPrices are explicitly tier-independent and
+// retain the legacy base-price fallback.
+func ResolveModelPrice(model, thinkingLevel string, effectiveAt time.Time) (EffectiveModelPrice, bool) {
+	key, ok := priceKeyForModelAlias(model)
+	if !ok || effectiveAt.IsZero() {
+		return EffectiveModelPrice{}, false
+	}
+	effectiveAt = effectiveAt.UTC()
+	tier := strings.ToLower(strings.TrimSpace(thinkingLevel))
+	if prices, tierDependent := tierModelPrices[key]; tierDependent {
+		if tier == "" {
+			return EffectiveModelPrice{}, false
+		}
+		for _, price := range prices {
+			if price.ThinkingLevel == tier && !effectiveAt.Before(price.EffectiveFrom) && effectiveAt.Before(price.EffectiveUntil) {
+				return price, true
+			}
+		}
+		return EffectiveModelPrice{}, false
+	}
+
+	price, ok := modelPrices[key]
+	if !ok || effectiveAt.Before(currentPriceEffectiveFrom) || !effectiveAt.Before(currentPriceEffectiveUntil) {
+		return EffectiveModelPrice{}, false
+	}
+	return EffectiveModelPrice{
+		ModelPrice:     price,
+		ThinkingLevel:  "*",
+		Version:        CurrentPriceVersion,
+		EffectiveFrom:  currentPriceEffectiveFrom,
+		EffectiveUntil: currentPriceEffectiveUntil,
+	}, true
+}
+
+// PriceForModelAlias preserves the tier-independent lookup used by legacy
+// dashboard metrics. New usage persistence must call ResolveModelPrice.
+func PriceForModelAlias(model string) (ModelPrice, bool) {
+	key, ok := priceKeyForModelAlias(model)
+	if !ok {
+		return ModelPrice{}, false
+	}
+	price, ok := modelPrices[key]
+	return price, ok
 }
 
 func tokenCostUSD(tokens int64, pricePerM float64) float64 {
@@ -81,4 +163,12 @@ func tokenCostUSD(tokens int64, pricePerM float64) float64 {
 		return 0
 	}
 	return float64(tokens) * pricePerM / 1_000_000
+}
+
+// ComputeCostUSD applies one resolved quote to all token counters.
+func ComputeCostUSD(price ModelPrice, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens int64) float64 {
+	return tokenCostUSD(inputTokens, price.InputPerM) +
+		tokenCostUSD(outputTokens, price.OutputPerM) +
+		tokenCostUSD(cacheReadTokens, price.CacheReadPerM) +
+		tokenCostUSD(cacheWriteTokens, price.CacheWritePerM)
 }

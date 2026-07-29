@@ -3,14 +3,25 @@
 -- detects the row as dirty and re-aggregates its bucket.
 -- Without the conflict-side bump, a correction to historical token counts
 -- would never propagate to the rollup.
-INSERT INTO task_usage (task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+-- thinking_level is nullable and reported by the daemon; COALESCE on conflict
+-- keeps a previously recorded tier when a later legacy report omits it.
+-- price_version and computed_cost_usd are replaced as a pair from the same
+-- deterministic task effective time; both remain NULL when the row is unpriced.
+INSERT INTO task_usage (
+    task_id, provider, model,
+    input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
+    thinking_level, price_version, computed_cost_usd, updated_at
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
 ON CONFLICT (task_id, provider, model)
 DO UPDATE SET
     input_tokens = EXCLUDED.input_tokens,
     output_tokens = EXCLUDED.output_tokens,
     cache_read_tokens = EXCLUDED.cache_read_tokens,
     cache_write_tokens = EXCLUDED.cache_write_tokens,
+    thinking_level = COALESCE(EXCLUDED.thinking_level, task_usage.thinking_level),
+    price_version = EXCLUDED.price_version,
+    computed_cost_usd = EXCLUDED.computed_cost_usd,
     updated_at = now();
 
 -- name: GetTaskUsage :many

@@ -167,6 +167,16 @@ type TaskUsageEntry struct {
 	OutputTokens     int64  `json:"output_tokens"`
 	CacheReadTokens  int64  `json:"cache_read_tokens"`
 	CacheWriteTokens int64  `json:"cache_write_tokens"`
+	// ThinkingLevel is copied from the claimed agent snapshot, never inferred
+	// from a mutable agent read or model suffix after execution.
+	ThinkingLevel string `json:"thinking_level,omitempty"`
+}
+
+func usageThinkingLevelFor(task Task) string {
+	if task.Agent == nil {
+		return ""
+	}
+	return task.Agent.ThinkingLevel
 }
 
 // TaskResult is the outcome of executing a task.

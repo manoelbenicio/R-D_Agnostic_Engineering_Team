@@ -3,6 +3,7 @@ package metrics
 import (
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
@@ -165,4 +166,19 @@ func exerciseEvent(m *BusinessMetrics, name string, props map[string]any) {
 		props = map[string]any{}
 	}
 	m.IncForEvent(analytics.Event{Name: name, Properties: props})
+}
+
+func TestBusinessMetricsTierAwarePricingFailsClosed(t *testing.T) {
+	m := NewBusinessMetrics()
+	effective := time.Date(2026, time.July, 29, 0, 0, 0, 0, time.UTC)
+
+	m.RecordTieredLLMUsage("issue", "local", "codex", "gpt-5.4", "high", effective, 1_000_000, 1_000_000, 0, 0)
+	if got := testutil.ToFloat64(m.llmCostUSD.WithLabelValues("openai", "gpt-5.4", "output", "local", "issue")); got != 30 {
+		t.Fatalf("high-tier output cost = %v, want 30", got)
+	}
+
+	m.RecordTieredLLMUsage("issue", "local", "codex", "gpt-5.4", "", effective, 7, 0, 0, 0)
+	if got := testutil.ToFloat64(m.llmUnpricedTokens.WithLabelValues("codex", "gpt-5.4", "input")); got != 7 {
+		t.Fatalf("missing-tier unpriced tokens = %v, want 7", got)
+	}
 }

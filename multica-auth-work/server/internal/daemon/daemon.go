@@ -3714,7 +3714,10 @@ runAttempt:
 		"agent_error", result.Error,
 	)
 
-	// Convert agent usage map to task usage entries.
+	// Convert agent usage map to task usage entries. The tier comes from the
+	// agent snapshot returned at claim time; model suffixes and later agent
+	// mutations are intentionally ignored.
+	usageThinkingLevel := usageThinkingLevelFor(task)
 	var usageEntries []TaskUsageEntry
 	for model, u := range result.Usage {
 		if u.InputTokens == 0 && u.OutputTokens == 0 && u.CacheReadTokens == 0 && u.CacheWriteTokens == 0 {
@@ -3727,6 +3730,7 @@ runAttempt:
 			OutputTokens:     u.OutputTokens,
 			CacheReadTokens:  u.CacheReadTokens,
 			CacheWriteTokens: u.CacheWriteTokens,
+			ThinkingLevel:    usageThinkingLevel,
 		})
 	}
 
