@@ -116,6 +116,8 @@ type AgentTaskQueue struct {
 	IsLeaderTask      bool               `json:"is_leader_task"`
 	WaitReason        pgtype.Text        `json:"wait_reason"`
 	InitiatorUserID   pgtype.UUID        `json:"initiator_user_id"`
+	// Provider account frozen on this task at claim/dispatch, resolved server-side from the approved assignment. Immutable once set. NULL = claimed before this column existed, or the agent had no approved assignment. Never supplied by the daemon.
+	CredentialAccountID pgtype.UUID `json:"credential_account_id"`
 }
 
 type ApprovedAccount struct {
@@ -758,6 +760,8 @@ type TaskUsage struct {
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 	// Reasoning tier declared by the agent config for this task (e.g. high, low, thinking). NULL = not declared by the reporting daemon. Never inferred from the model name.
 	ThinkingLevel pgtype.Text `json:"thinking_level"`
+	// Provider account that produced this usage, snapshotted at task claim time on agent_task_queue.credential_account_id and copied to task_usage upon report. Never live assignment lookup.
+	AccountID pgtype.UUID `json:"account_id"`
 	// Immutable pricing catalog version resolved from model, recorded thinking_level and task effective time.
 	PriceVersion pgtype.Text `json:"price_version"`
 	// Cost computed from this row token counters and its authoritative price version. NULL means unpriced, never zero-price fallback.
