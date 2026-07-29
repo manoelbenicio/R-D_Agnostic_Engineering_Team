@@ -37,6 +37,7 @@
 | blocked | `checkpoint/20260728/blocked/orq39` | `dc1ed12037d815962a4585cd86a563db7e400a25` |
 | blocked | `checkpoint/20260728/blocked/orq37-umask` | `90b56a55b87826e70706914737ecd3d0d44602d7` |
 | blocked | `checkpoint/20260728/blocked/orq43a` | `7d2f36fc485d0218f9e9e72bdcef3bb955a9bd88` |
+| integration checkpoint | `checkpoint/20260728/integration/gtm-cost-account-stack` | `f442747b724822f0aa4d83de279a4458e557aabd` |
 
 ## Interpretation
 
