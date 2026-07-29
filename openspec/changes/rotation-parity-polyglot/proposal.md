@@ -42,4 +42,4 @@ tudo isso, na linguagem certa para o hot path, mantido ativamente. Decisão do d
 - Caminho quente na linguagem certa (Rust) desde o dia 1 (prodex as-is), com endurecimento
   proprietário (fork) planejado.
 - Prioridade: **reset-claim é baixa** (caminho frio/aleatório) — será feito, mas por último.
-- Runtime-router Go supersedido; documentação e board reconciliados (ver `openspec/changes/rotation-router`).
+- Runtime-router Go supersedido; documentação e board reconciliados (ver `openspec/changes/archive/2026-07-04-rotation-router/status.md`).

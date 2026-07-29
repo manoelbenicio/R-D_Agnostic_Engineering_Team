@@ -50,7 +50,7 @@ Multica Go L4 (control plane, FRIO)          Rust L2 (runtime plane, QUENTE)
 
 ## Consequências
 - **Reverte "tudo em Go"** no caminho quente — decisão consciente do dono; prioriza robustez/escala/performance sobre trabalho já feito.
-- **Aposenta como runtime** o rotation-router Go (policy/fallback/loadbalance/proactive_reset): a autoridade runtime passa ao prodex/Rust L2. O Go retém **cadastro/policy/approved-accounts/observability** (control plane). Ver supersede em `openspec/changes/rotation-router`.
+- **Aposenta como runtime** o rotation-router Go (policy/fallback/loadbalance/proactive_reset): a autoridade runtime passa ao prodex/Rust L2. O Go retém **cadastro/policy/approved-accounts/observability** (control plane). Ver supersede em `openspec/changes/archive/2026-07-04-rotation-router/status.md`.
 - Passamos a operar (agora) e manter (marco) um artefato **Rust** — **staffing Rust confirmado** disponível.
 
 ## Riscos e mitigações

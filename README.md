@@ -76,7 +76,7 @@ python3 scripts/dashboard/plan_dashboard.py --once --ascii
 ```
 multica-auth-work/   # THE PRODUCT — Go backend, Next.js web, mobile, desktop, prodex-sidecar
 bin/prodex           # built Rust L2 binary (v0.246.0)
-openspec/changes/    # rotation-parity-polyglot, rotation-router, agent-credential-isolation
+openspec/changes/    # rotation-parity-polyglot, agent-credential-isolation, chat-orchestration-standard
 docs/                # RPP/prodex/Multica architecture, contracts, deploy runbooks
 .planning/           # GSD planning (PROJECT/REQUIREMENTS/ROADMAP/STATE/RCA)
 Diligencias/         # charter, context, dependency/crate/env matrices, phases

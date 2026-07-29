@@ -48,8 +48,8 @@ Per ADR-001 (Alternative A+D chosen):
 
 ## Related Files
 
-- `openspec/changes/rotation-router/proposal.md` — original proposal (has SUPERSEDED banner)
-- `openspec/changes/rotation-router/design.md` — original design (reference/legacy)
-- `openspec/changes/rotation-router/tasks.md` — original tasks (no longer active)
+- `openspec/changes/archive/2026-07-04-rotation-router/proposal.md` — original proposal (has SUPERSEDED banner)
+- `openspec/changes/archive/2026-07-04-rotation-router/design.md` — original design (reference/legacy)
+- `openspec/changes/archive/2026-07-04-rotation-router/tasks.md` — original tasks (no longer active)
 - `openspec/changes/rotation-parity-polyglot/` — successor change
 - `docs/rotation-parity-polyglot/02_ADR-001-arquitetura.md` — architecture decision
