@@ -1,0 +1,31 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T04:09:30Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "L5",
+  "task_ids": ["6.2"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/handoffs/L5-e2e-contract-freeze.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "gofmt -l internal/daemon/observability/e2e/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/observability/e2e/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "go test ./internal/daemon/observability/e2e/ -count=1", "exit_code": 0, "assertions_or_tests": 38, "result": "PASS"},
+    {"command": "CGO_ENABLED=1 go test -race ./internal/daemon/observability/e2e/ -count=1", "exit_code": 1, "assertions_or_tests": 0, "result": "NOT_AVAILABLE (gcc/cgo absent — environment, not a code defect)"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/handoffs/L5-e2e-contract-freeze.md"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["6.2"],
+  "summary": "PUBLISHED+FROZEN e2e correlation contract agent-brain.e2e.v1. Package verified GREEN (gofmt/vet/test); zero product edits required (already freeze-quality). Public API surface, join contract, metadata-only guardrails, and usage examples frozen for L6/L7/L1.",
+  "non_claims": ["no -race executed (cgo/gcc unavailable)", "no live run / no inference", "no caller/anchor edited (W1-serial in Wave C)", "L6/L7 finalization not performed here", "no OpenSpec/GSD edit"],
+  "blocker": null,
+  "product_edits": "none (server/internal/daemon/observability/e2e/** unchanged; git status empty for the path)",
+  "handoffs": [
+    {"to_lane": "L6", "reason": "build ingress/queue/persist helpers against frozen API §2/§3/§4/§5", "file": ".deploy-control/p0/handoffs/L5-e2e-contract-freeze.md"},
+    {"to_lane": "L7", "reason": "build WS/UI delivery helper against frozen API", "file": ".deploy-control/p0/handoffs/L5-e2e-contract-freeze.md"},
+    {"to_lane": "L1", "reason": "integrate shared-anchor call sites serially in Wave C", "file": ".deploy-control/p0/handoffs/L5-e2e-contract-freeze.md"}
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:45:30Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "F2",
+  "task_ids": ["5.2", "5.3"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/F2-server-matrix.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/daemon/{brain,gateway,runtimeenv,execenv,deploy}/ -count=1 (GOCACHE/GOTMPDIR/GOMODCACHE=/tmp)", "exit_code": 0, "assertions_or_tests": 470, "result": "PASS"},
+    {"command": "go build ./... (from multica-auth-work/server, /tmp caches)", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "go test ./... -count=1 (from multica-auth-work/server, /tmp caches)", "exit_code": 1, "assertions_or_tests": 44, "result": "FAIL (35 ok pkgs, 7 no-test, 2 FAIL pkgs routed)"},
+    {"command": "go test ./internal/daemon/ -count=1 (daemon pkg, within full run)", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS (ok 15.823s)"}
+  ],
+  "format_and_diff": {
+    "format": "NOT_AVAILABLE (product read-only; F2 wrote no product code)",
+    "git_diff_check": "NOT_APPLICABLE (no product edit by F2)"
+  },
+  "evidence": [".deploy-control/p0/evidence/F2-server-matrix.md"],
+  "requirements": [],
+  "openspec_tasks": ["5.2", "5.3"],
+  "summary": "F2 executed the full server matrix with /tmp caches (root disk full). 5.2 CONFIRMED: all product test packages pass except the two env-dependent ones below (daemon ok 15.823s incl.). 5.3 build PASS (go build ./... exit 0). 5.3 full test NOT green: go test ./... exit 1 with 2 FAIL packages (no compile/build errors; all failures are runtime test assertions).",
+  "non_claims": [
+    "5.3 is NOT claimed green: go test ./... exit 1 due to 2 routed env-dependent failures.",
+    "F2 did not fix any failure (verifier); routed by exact package/file/symbol to owners.",
+    "FIND-F2-2 (internal/service email tests) is NOT caused by the earlier REC-SERVICE-EMAIL edit (unused-import removal is behavior-neutral); it is a runtime backend-config env gate.",
+    "7 no-test packages are NOT counted as PASS.",
+    "No product edit, no deploy/inference/secret/dependency-install/commit/push/destructive-git, no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "manager/owner(internal/auth)", "reason": "FIND-F2-1 TestValidateJWTConfigurationAllowsExplicitDevelopmentAndConfiguredProduction (jwt_configuration_test.go:41) — JWT_SECRET env-dependent; confirm env-only or assign fix", "file": "multica-auth-work/server/internal/auth/jwt_configuration_test.go"},
+    {"to_lane": "manager/owner(internal/service)", "reason": "FIND-F2-2 TestSendVerificationCode_DevModeRedactsCode / TestSendInvitationEmail_DevModeRedactsURL (email_test.go:675/698) — 'email backend is not configured' SMTP_HOST/RESEND_API_KEY env-dependent; confirm env-only or assign fix", "file": "multica-auth-work/server/internal/service/email_test.go"}
+  ]
+}

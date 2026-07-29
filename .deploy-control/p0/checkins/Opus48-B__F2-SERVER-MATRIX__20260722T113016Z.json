@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/F2-server-matrix.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/F2-server-matrix.md"
+  ],
+  "finished_at": "2026-07-22T11:49:19Z",
+  "lane": "F2",
+  "last_heartbeat_at": "2026-07-22T11:49:19Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:30:16Z",
+  "status": "DONE",
+  "summary": "5.2 CONFIRMED; 5.3 build PASS; 5.3 full test NOT green (2 env-dependent failures routed by exact pkg/file/symbol to internal/auth + internal/service owners). F2 read-only verifier; no fix, no false-green claim.",
+  "task": "F2-SERVER-MATRIX",
+  "validation": "go build ./...=exit0 PASS; go test ./... -count=1=exit1 (35 ok, 7 no-test, 2 FAIL: internal/auth jwt_configuration_test.go:41 + internal/service email_test.go:675/698, both env-dependent test assertions, no compile errors); daemon pkg ok 15.823s; 5.2 independent matrix 470 tests exit0. Failures ROUTED not fixed."
+}

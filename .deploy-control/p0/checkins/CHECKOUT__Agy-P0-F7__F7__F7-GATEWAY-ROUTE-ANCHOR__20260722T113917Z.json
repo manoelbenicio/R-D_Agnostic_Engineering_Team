@@ -1,0 +1,47 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:39:17Z",
+  "agent": "Agy-P0-F7",
+  "pane_id": "wB:p1",
+  "lane": "F7",
+  "task_ids": ["F7"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/daemon/gateway/executor.go",
+    "multica-auth-work/server/internal/daemon/gateway/executor_test.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "GOCACHE=/tmp/gocache_f7 GOTMPDIR=/tmp/gotmp_f7 /home/ec2-user/goroot/go/bin/go test ./internal/daemon/gateway/...",
+      "exit_code": 0,
+      "assertions_or_tests": 46,
+      "result": "PASS"
+    },
+    {
+      "command": "GOCACHE=/tmp/gocache_f7 GOTMPDIR=/tmp/gotmp_f7 /home/ec2-user/goroot/go/bin/go vet ./internal/daemon/gateway/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    "multica-auth-work/server/internal/daemon/gateway/executor.go",
+    "multica-auth-work/server/internal/daemon/gateway/executor_test.go"
+  ],
+  "requirements": ["OpenSpec-21", "OpenSpec-28"],
+  "openspec_tasks": ["F7"],
+  "summary": "EmitProviderSpan is wired inside Executor.Execute on terminal request outcomes. Telemetry is sanitized with pseudonyms only (no account identity/credential/body), missing or invalid telemetry fails closed, exactly 1 hop is emitted per request outcome, retry/fallback counters are preserved, and partial output prevents replay.",
+  "non_claims": [
+    "No live cloud provider endpoints invoked (live_runs=false)",
+    "No deployment or system daemon restart performed",
+    "No out-of-lock files edited"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

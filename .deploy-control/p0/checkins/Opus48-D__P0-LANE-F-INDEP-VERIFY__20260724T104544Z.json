@@ -1,0 +1,21 @@
+{
+  "activity": "LANE A = PASS (with notes) to w5:p1: go build ./...=0, go vet ./...=0; 14 .go files all NIM-removal-scoped (content-verified, incl shared agent/models/config/daemon/execenv); groups 2+3 PRESENT (CLINIM identity.go:19,28; NIM_/NVIDIA_ deny policy.go:36,37,73). Notes: 14=removal-set not nim-named; daemon.go runtimeVersion native-http path removed; non-Go frontend/spec/bin changes present from other lanes. B/C/D/E still pending; C/D/E need authorized observation path.",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [],
+  "files_locked": [
+    ".deploy-control/p0/evidence/LANE-F-verification.md"
+  ],
+  "finished_at": null,
+  "lane": "F-verifier",
+  "last_heartbeat_at": "2026-07-24T11:01:06Z",
+  "pane_id": "w8:p2",
+  "progress": 35,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T10:45:44Z",
+  "status": "IN_PROGRESS",
+  "summary": null,
+  "task": "P0-LANE-F-INDEP-VERIFY",
+  "validation": null
+}

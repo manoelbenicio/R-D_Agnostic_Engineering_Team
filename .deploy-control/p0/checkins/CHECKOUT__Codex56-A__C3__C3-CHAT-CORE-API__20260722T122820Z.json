@@ -1,0 +1,44 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T12:28:20Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C3",
+  "task_ids": ["chat-orchestration-1.3"],
+  "status": "BLOCKED",
+  "supersedes": "CHECKOUT__Codex56-A__C3__C3-CHAT-CORE-API__20260722T122010Z.json (pre lock-expansion)",
+  "files_changed": [
+    "multica-auth-work/packages/core/types/chat.ts",
+    "multica-auth-work/packages/core/api/client.ts",
+    "multica-auth-work/packages/core/chat/mutations.ts",
+    "multica-auth-work/packages/core/api/client.test.ts"
+  ],
+  "files_created": [
+    "multica-auth-work/packages/core/chat/mutations.test.tsx",
+    ".deploy-control/p0/evidence/C3-chat-core-api.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "tsc --noEmit (packages/core)", "exit_code": null, "assertions_or_tests": 0, "result": "NOT_EXECUTED (node_modules absent; install prohibited)"},
+    {"command": "vitest run packages/core/api/client.test.ts packages/core/chat/mutations.test.tsx", "exit_code": null, "assertions_or_tests": 4, "result": "NOT_EXECUTED (node_modules absent; install prohibited)"},
+    {"command": "git diff --check (locked C3 files)", "exit_code": 0, "assertions_or_tests": "n/a", "result": "CLEAN"}
+  ],
+  "format_and_diff": {"format": "NOT_AVAILABLE (no JS toolchain)", "git_diff_check": "PASS"},
+  "evidence": [
+    ".deploy-control/p0/evidence/C3-chat-core-api.md",
+    ".deploy-control/p0/checkins/CHECKIN__Codex56-A__C3__C3-CHAT-CORE-API__20260722T122630Z.json"
+  ],
+  "requirements": ["chat-orchestration: default-TL routing (optional agent_id) + direct-agent escape hatch"],
+  "openspec_tasks": ["chat-orchestration-standard 1.3"],
+  "summary": "IMPLEMENTATION COMPLETE: added shared CreateChatSessionRequest {agent_id?: string; title?: string} to types/chat.ts; api/client.ts createChatSession + chat/mutations.ts useCreateChatSession now consume it (agent_id OPTIONAL = untargeted->default TL; explicit agent_id = direct escape hatch). Focused tests written: client.test.ts (both request bodies) + new chat/mutations.test.tsx (both modes, mirrors issues/mutations.test.tsx via setApiInstance/renderHook). Minimal, backward-compatible (required->optional), no core API-compat regression; mobile app has its own independent client (out of lock). git diff --check CLEAN.",
+  "non_claims": [
+    "typecheck + vitest NOT executed (node_modules ABSENT root+core; dependency-install prohibited; disk critical) -> validation is REVIEWED, not VERIFIED; no PASS claimed.",
+    "Server default-TL routing for missing agent_id is backend responsibility (out of lock); no client-side agent_id default fabricated.",
+    "ChatSession response type left unchanged (untargeted session still resolves to a TL agent per spec); no OmniRoute internals touched; no inference/secret/deploy; no OpenSpec checkbox closed.",
+    "apps/mobile client not touched (out of lock)."
+  ],
+  "blocker": "Focused typecheck/vitest cannot be executed in this pane: node_modules ABSENT (root + packages/core), vitest/tsc unavailable, dependency-install prohibited, disk critical. Implementation + tests are complete and type-correct/backward-compatible by inspection with git diff --check CLEAN. Next action: run `pnpm --filter @multica/core typecheck` and vitest on packages/core/api/client.test.ts + packages/core/chat/mutations.test.tsx in an env/lane with core JS deps (F2 final matrix / CI), /tmp caches. Owner: F2 runner / CI env + Principal.",
+  "handoffs": [
+    {"to_lane": "F2", "reason": "execute focused typecheck + vitest for the C3 change in an env with core JS deps installed", "file": "multica-auth-work/packages/core/{api/client.test.ts,chat/mutations.test.tsx}"}
+  ]
+}

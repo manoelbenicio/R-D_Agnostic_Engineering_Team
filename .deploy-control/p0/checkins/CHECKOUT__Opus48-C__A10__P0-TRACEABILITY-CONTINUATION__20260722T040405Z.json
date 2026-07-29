@@ -1,0 +1,21 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T04:04:05Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "A10",
+  "task_ids": ["P0-TRACEABILITY-CONTINUATION"],
+  "status": "BLOCKED",
+  "files_changed": [],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [],
+  "format_and_diff": {"format": "NOT_AVAILABLE", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/handoffs/A10-traceability-continuation.md"],
+  "requirements": [],
+  "openspec_tasks": ["5.6", "5.7", "5.8", "8.1", "8.2"],
+  "summary": "Released for L5 reassignment (manager 6h dispatch). Traceability map is current and accurate; Main-Brain P0 is code-complete + offline-validated (D1-D7+D6 integrated, R1/R3 focused-green, prod-integrity clean). Not DONE because external live-acceptance evidence is still pending.",
+  "non_claims": ["no live run executed", "no OpenSpec checkbox marked", "no product edit", "live-acceptance evidence not yet in"],
+  "blocker": "External live-acceptance evidence pending; owner: Principal Orchestrator (live_run token) + OmniRoute registry owner (BLK-KIMI/BLK-OPUS48-ID/BLK-AVAIL) + Product/OmniRoute Owner (D-V3-25B key revocation); next: consume per-family live acceptance evidence, append refs, check out. Lock A10-traceability-continuation.md is DISJOINT from L5 e2e/** (zero overlap).",
+  "handoffs": []
+}

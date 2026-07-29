@@ -1,0 +1,36 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T11:34:48Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "F5",
+  "task_ids": ["6.2"],
+  "plan_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_PROMPTS.md#F5",
+  "prompt_ref": ".deploy-control/p0/SIX_HOUR_CHECKIN_CONTRACT.md",
+  "files_locked": [
+    "multica-auth-work/server/internal/middleware/request_logger.go",
+    "multica-auth-work/server/internal/middleware/request_logger_test.go",
+    "multica-auth-work/server/internal/metrics/http.go",
+    "multica-auth-work/server/internal/metrics/http_test.go"
+  ],
+  "new_files_declared": [],
+  "dependencies": ["internal/middleware/obs_ingress.go (L6 EmitIngress, read-only consume)", "internal/daemon/observability/e2e (L5 frozen contract agent-brain.e2e.v1)"],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 330,
+    "toolchains": {"go": "go1.26.1 linux/amd64 (/home/ec2-user/goroot/go/bin/go)", "node": "v22.23.1"},
+    "disk_free": "187M (root 100% — CRITICAL; GOCACHE/GOTMPDIR under /tmp)"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true
+  },
+  "supersedes": "OBS2-INGRESS-ANCHOR (mislabeled; checked out as administrative relabel to release locks; acceptance claimed only under this F5-INGRESS-ANCHOR record)",
+  "design": "single ingress emission point in request_logger.go (same package as EmitIngress, no import cycle); non-breaking via package-level SetIngressRecorder (nil->no-op); fail-closed on missing request_id/task_id; bounded route TEMPLATE via chi RoutePattern (never raw path); no body/header/query read. metrics/http.go intentionally NOT emitting (avoids duplicate hop-1 span).",
+  "status": "IN_PROGRESS"
+}

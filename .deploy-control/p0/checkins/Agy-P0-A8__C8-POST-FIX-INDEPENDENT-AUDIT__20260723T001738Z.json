@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/POST-FIX-audit.md",
+    ".deploy-control/p0/handoffs/POST-FIX-audit-handoff.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/POST-FIX-audit.md",
+    ".deploy-control/p0/handoffs/POST-FIX-audit-handoff.md"
+  ],
+  "finished_at": "2026-07-23T00:18:59Z",
+  "lane": "C8",
+  "last_heartbeat_at": "2026-07-23T00:18:59Z",
+  "pane_id": "wB:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:17:38Z",
+  "status": "DONE",
+  "summary": "C8 post-fix independent audit complete; task-start race fix and error handling verified green",
+  "task": "C8-POST-FIX-INDEPENDENT-AUDIT",
+  "validation": "Task-start race fix and regression tests VERIFIED: StartTask invoked post-workdir creation, pgx.ErrNoRows benign only for proven superseded state, real DB errors not masked"
+}

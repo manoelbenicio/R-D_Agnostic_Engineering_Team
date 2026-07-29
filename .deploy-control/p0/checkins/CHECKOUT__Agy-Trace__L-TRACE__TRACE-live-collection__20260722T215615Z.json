@@ -1,0 +1,40 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T21:56:15Z",
+  "agent": "Agy-Trace",
+  "pane_id": "wK:p1",
+  "lane": "L-TRACE",
+  "task_ids": ["TRACE-live-collection"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/TRACE-live.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "cat .deploy-control/p0/evidence/TRACE-live.md",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/TRACE-live.md"
+  ],
+  "requirements": ["TRACE-live-collection"],
+  "openspec_tasks": ["TRACE-live-collection"],
+  "summary": "Collected 8-hop 9-safe-ID correlation for live task (d9079555). Recorded 6/8 present hops, missing Hops 4 (CLI) & 5 (Route) due to Hop 3 fail-closed pre-launch stop.",
+  "non_claims": [
+    "AcceptanceClaim=false",
+    "LiveEndpointUsed=false",
+    "No secrets or provider internals accessed or exposed",
+    "Hop 4 (CLI) and Hop 5 (Route) unreached due to pre-launch credential isolation boundary stop"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

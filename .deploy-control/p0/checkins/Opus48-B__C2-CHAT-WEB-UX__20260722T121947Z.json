@@ -1,0 +1,21 @@
+{
+  "activity": "verify new untargeted chat omits target + direct-agent picker sends explicit agent; focused chat web tests",
+  "agent": "Opus48#B",
+  "blocker": "REVIEWED in-lock: direct-agent picker sends explicit agent (AgentDropdown.onSelect(agent); test-encoded) — SATISFIED. Two blockers prevent completion: (1) BLK-C2-TESTS focused web tests cannot run — multica-auth-work/node_modules + vitest ABSENT and dependency-install FORBIDDEN; (2) BLK-C2-CONTRACT \"untargeted omits target\" has NO target concept in packages/views/chat (only DOM e.target); create-chat routing is useCreateChatSession/agent_id in packages/core (OUT OF LOCK), so omitting a target is a cross-boundary contract decision. No verifiable in-lock change made. | OWNER: Manager w5:p1 (provision vitest/node_modules or authorize install) + packages/core chat-orchestration owner/Principal (createChat untargeted contract) | NEXT: provision web runner -> run vitest run packages/views/chat; confirm createChat untargeted contract in packages/core; then C2 wires chat/** + verifies focused tests. Evidence: .deploy-control/p0/evidence/C2-chat-web-ux.md",
+  "depends_on": [],
+  "evidence": [],
+  "files_locked": [
+    "multica-auth-work/packages/views/chat"
+  ],
+  "finished_at": null,
+  "lane": "C2",
+  "last_heartbeat_at": "2026-07-22T12:23:01Z",
+  "pane_id": "w6:p2",
+  "progress": 0,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:19:47Z",
+  "status": "BLOCKED",
+  "summary": null,
+  "task": "C2-CHAT-WEB-UX",
+  "validation": null
+}

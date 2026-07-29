@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/R1-kimi-implementation-block.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/R1-kimi-implementation-block.md"
+  ],
+  "finished_at": "2026-07-22T04:02:51Z",
+  "lane": "R1-KIMI",
+  "last_heartbeat_at": "2026-07-22T04:02:51Z",
+  "pane_id": "w6:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T00:03:45Z",
+  "status": "DONE",
+  "summary": "Kimi readiness+block analysis DONE and handed off; Kimi IMPLEMENTATION remains externally blocked (BLK-KIMI, no certified exact RouteModel) and is NOT implemented — reassigned. Releasing control-artifact lock to take L1 Lead Integrator dispatch. Shared Cline base (GLM) already integrated+green; Kimi reuses it on the exact id.",
+  "task": "P0-KIMI-IMPLEMENTATION",
+  "validation": "No code written (correctly gated). BLK-KIMI verified open: A3 freeze UNDECLARED, control.json cline_kimi authorized=false, models.go:563 SUB-2 held. Readiness/block deliverable complete with full unblock plan."
+}

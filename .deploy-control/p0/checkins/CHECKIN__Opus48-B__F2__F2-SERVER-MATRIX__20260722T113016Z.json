@@ -1,0 +1,30 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T11:30:16Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "F2",
+  "task_ids": ["5.2", "5.3"],
+  "plan_ref": ".planning/agent-brain-v3/P0_SIX_HOUR_EXECUTION_PLAN.md",
+  "prompt_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_PROMPTS.md#F2",
+  "files_locked": [".deploy-control/p0/evidence/F2-server-matrix.md"],
+  "new_files_declared": [".deploy-control/p0/evidence/F2-server-matrix.md"],
+  "dependencies": ["producer checkouts for daemon-package + full-tree run (Opus48#A F1-DAEMON-ORDERING, Codex56#B adapters/F4, Opus48#C observability/e2e, Opus48#D obs anchors)"],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 331,
+    "toolchains": {"go": "go1.26.1 linux/amd64 (/home/ec2-user/goroot/go/bin/go)", "node": "v22.23.1"},
+    "disk_free": "root 186M (100% used); /tmp tmpfs 7.6G free -> GOCACHE/GOTMPDIR/GOMODCACHE routed to /tmp"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true,
+    "product_read_only": true
+  },
+  "status": "IN_PROGRESS"
+}

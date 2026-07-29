@@ -1,0 +1,27 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-F7",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    "multica-auth-work/server/internal/daemon/gateway/executor.go",
+    "multica-auth-work/server/internal/daemon/gateway/executor_test.go"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/gateway/executor.go",
+    "multica-auth-work/server/internal/daemon/gateway/executor_test.go",
+    "multica-auth-work/server/internal/daemon/gateway/obs_span.go",
+    "multica-auth-work/server/internal/daemon/gateway/obs_span_test.go"
+  ],
+  "finished_at": "2026-07-22T11:39:17Z",
+  "lane": "F7",
+  "last_heartbeat_at": "2026-07-22T11:39:17Z",
+  "pane_id": "wB:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:33:15Z",
+  "status": "DONE",
+  "summary": "Wired EmitProviderSpan in Executor.Execute for terminal OmniRoute outcome with sanitized Telemetry, fail-closed handling, 1 hop per outcome, retry/fallback semantics preserved, and no replay after partial output.",
+  "task": "F7-GATEWAY-ROUTE-ANCHOR",
+  "validation": "go test ./internal/daemon/gateway/...: PASS, go vet ./internal/daemon/gateway/...: PASS, gofmt -l: PASS, git diff --check: PASS"
+}

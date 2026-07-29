@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": "D1-D7 integrated and focused-green; single GLM live run remains unauthorized (live_runs.cline_glm=false) and externally blocked by BLK-AVAIL enriched OmniRoute registry availability plus BLK-25B key-revocation security stop | owner: OmniRoute registry owner + Product security owner + Principal Orchestrator | next action: after external clears and explicit one-run token, execute exactly one Kanban-to-terminal GLM acceptance and capture shared evidence | evidence: W1-final-integration-evidence.md + R1/R3 final records",
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/W1-final-integration-evidence.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/R1-glm-live-acceptance.md"
+  ],
+  "finished_at": "2026-07-22T04:25:28Z",
+  "lane": "A9-GLM",
+  "last_heartbeat_at": "2026-07-22T04:25:28Z",
+  "pane_id": "w7:p3",
+  "progress": 0,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:43:57Z",
+  "status": "FAILED",
+  "summary": "Prior-window GLM live acceptance closed without execution; external availability, security, and explicit authorization gates remain.",
+  "task": "P0-GLM-LIVE-ACCEPTANCE",
+  "validation": "BLOCKED: live_runs.cline_glm=false; no live run executed"
+}

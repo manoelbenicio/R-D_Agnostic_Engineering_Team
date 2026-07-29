@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-ReadinessObserver",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/READINESS-observer.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/READINESS-observer.md"
+  ],
+  "finished_at": "2026-07-23T00:09:13Z",
+  "lane": "readiness-observer",
+  "last_heartbeat_at": "2026-07-23T00:09:13Z",
+  "pane_id": "wK:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:08:49Z",
+  "status": "DONE",
+  "summary": "Quantified Main Brain /v1/models readiness poll timing (avg 4.3ms, 100% 401 unauthenticated rate). Recorded operator ticket details, daemon admission span correlation, and non-claims.",
+  "task": "READINESS-observer",
+  "validation": "cat .deploy-control/p0/evidence/READINESS-observer.md: PASS"
+}

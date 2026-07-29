@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-tests.md",
+    "multica-auth-work/server/internal/daemon/gateway/fetchmodels_classification_test.go"
+  ],
+  "finished_at": "2026-07-23T21:50:12Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T21:50:12Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T21:49:10Z",
+  "status": "DONE",
+  "summary": "ADDED gateway/fetchmodels_classification_test.go (3 deterministic tests, injected transport): transport(read/drain) fault after healthy 200 = retryable ErrorTransport; decode + registry-version-mismatch = ErrorProtocol. Test-only; no source edited.",
+  "task": "T20-FETCHMODELS-CLASSIFY",
+  "validation": "gofmt clean(0); go vet gateway(0); go test ./internal/daemon/gateway/ -run FetchModels(BodyReadFailure|InvalidJSON|RegistryVersionMismatch) -count=1 = 3/3 PASS ok 0.002s(0); git diff --check(0). Read failure after 200 -> ErrorTransport Retryable=true (errors.As asserted); invalid JSON + registry-version mismatch -> ErrorProtocol."
+}

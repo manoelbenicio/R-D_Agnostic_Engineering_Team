@@ -1,0 +1,44 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T04:11:30Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "L4",
+  "task_ids": ["5.1", "5.2"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/pkg/agent/antigravity.go",
+    "multica-auth-work/server/pkg/agent/antigravity_test.go",
+    "multica-auth-work/server/pkg/agent/codex_test.go",
+    "multica-auth-work/server/pkg/agent/kimi_test.go",
+    "multica-auth-work/server/pkg/agent/nim_test.go"
+  ],
+  "files_created": [
+    ".deploy-control/p0/evidence/L4-cli-adapters.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go vet ./pkg/agent/", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go test ./pkg/agent/ -run 'TestSafeAntigravityArgvForLogRedactsSensitiveValues|TestClaudeCommandLoggingRedactsSensitiveArgv|TestCodexCommandLoggingRedactsSensitiveArgv' -count=1 -v", "exit_code": 0, "assertions_or_tests": 3, "result": "PASS"},
+    {"command": "go test ./pkg/agent/ -count=1", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"}
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [".deploy-control/p0/evidence/L4-cli-adapters.md"],
+  "requirements": ["AB-REQ-07", "AB-REQ-19", "AB-REQ-21"],
+  "openspec_tasks": ["5.1", "5.2"],
+  "summary": "Verified argv/log structural redaction + protocol config for all 5 owned adapters. claude/codex redact via safeAgentArgvForLog (tests PASS, unmodified). kimi argv=[acp]+filtered (no sensitive values) and nim (HTTP, no argv log) reviewed safe. FIXED real defect: antigravity logged the full prompt (-p <prompt>) raw -> added antigravity-local safeAntigravityArgvForLog + regression test. gofmt-fixed kimi_test.go/nim_test.go (5.1). Fixed codex protected-command test broken by in-progress prodex debranding (wrapper->codex). Full pkg/agent suite PASS.",
+  "non_claims": [
+    "No live run / no inference / no deploy executed.",
+    "models.go and claude.go not modified.",
+    "codex fix assumes name-based protection contract; broader 'reject any repeated executable extension' rule NOT implemented (flagged to Principal).",
+    "gofmt violations in codebuddy_test.go and cursor_test.go are outside L4 ownership and were NOT edited (routed as finding)."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "manager", "reason": "gofmt violations outside L4 scope", "file": "multica-auth-work/server/pkg/agent/codebuddy_test.go"},
+    {"to_lane": "manager", "reason": "gofmt violations outside L4 scope", "file": "multica-auth-work/server/pkg/agent/cursor_test.go"}
+  ]
+}

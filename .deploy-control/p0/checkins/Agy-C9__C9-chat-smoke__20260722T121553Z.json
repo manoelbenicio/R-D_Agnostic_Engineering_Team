@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-C9",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/C9-chat-smoke.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/C9-chat-smoke.md"
+  ],
+  "finished_at": "2026-07-22T12:23:16Z",
+  "lane": "C9",
+  "last_heartbeat_at": "2026-07-22T12:23:16Z",
+  "pane_id": "wK:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:15:53Z",
+  "status": "DONE",
+  "summary": "Executed smallest non-inference focused chat smoke (brain package, 24/24 PASS). Recorded DB/service blockers and non-claims.",
+  "task": "C9-chat-smoke",
+  "validation": "/home/ec2-user/goroot/go/bin/go test ./internal/daemon/brain -v: PASS"
+}

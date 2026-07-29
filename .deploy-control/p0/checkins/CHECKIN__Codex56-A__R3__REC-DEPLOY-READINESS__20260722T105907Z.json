@@ -1,0 +1,38 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T10:59:07Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "R3",
+  "task_ids": ["5.2", "6.1"],
+  "plan_ref": ".planning/agent-brain-v3/P0_SIX_HOUR_EXECUTION_PLAN.md",
+  "prompt_ref": ".deploy-control/p0/SIX_HOUR_CHECKIN_CONTRACT.md",
+  "files_locked": [".deploy-control/p0/evidence/R3-deploy-readiness.md"],
+  "read_only_verification_scope": ["multica-auth-work/server/internal/daemon/deploy/**"],
+  "new_files_declared": [".deploy-control/p0/evidence/R3-deploy-readiness.md"],
+  "dependencies": [],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 300,
+    "toolchains": {"go": "go1.26.1 (/home/ec2-user/goroot/go/bin/go)", "gofmt": "present", "node": "v22.23.1"},
+    "disk_free": "866M (97% used)"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true
+  },
+  "authorization_gate": {
+    "implementation_authorized": false,
+    "authorized_lanes": [],
+    "source": "control.json updated_at 2026-07-22T00:54:55Z",
+    "mode": "VERIFICATION_ONLY",
+    "note": "Task = targeted deploy pkg tests + go vet (read-only) and 6.1 read-only revision/readiness evidence. No product edits; deploy/** not modified. 6.1 evidence-only, no inference, no secret."
+  },
+  "prior_assignment_note": "P0-GLM-LIVE-ACCEPTANCE remains ACTIVE/BLOCKED; its lock (evidence/R1-glm-live-acceptance.md) does not overlap deploy/** or this evidence file. Zero lock overlap holds.",
+  "status": "IN_PROGRESS"
+}

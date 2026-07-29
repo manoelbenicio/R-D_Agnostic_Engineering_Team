@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-KiroReadinessObserver",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/READINESS-observer.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/READINESS-observer.md"
+  ],
+  "finished_at": "2026-07-23T00:10:02Z",
+  "lane": "readiness-observer",
+  "last_heartbeat_at": "2026-07-23T00:10:02Z",
+  "pane_id": "wK:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:09:31Z",
+  "status": "DONE",
+  "summary": "Completed 10m time-series readiness observation over time (15 samples). Quantified P50 (4.9ms), P90 (10.4ms), and P99 tail spike (53.9ms) latency. Produced external operator ticket facts.",
+  "task": "READINESS-observer-10m",
+  "validation": "cat .deploy-control/p0/evidence/READINESS-observer.md: PASS"
+}

@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/E-runtimes-online-prep.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/E-runtimes-online-prep.md"
+  ],
+  "finished_at": "2026-07-24T10:56:51Z",
+  "lane": "E",
+  "last_heartbeat_at": "2026-07-24T10:56:51Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T10:52:43Z",
+  "status": "DONE",
+  "summary": "PREP READY (report to w5:p1). Installed 5/5 (codex/cline/agy/kiro-cli/opencode + claude, paths cited). Auth PROVISIONAL/UNVERIFIED (host NOT confirmed orq1; $HOME is cred slot slot-109; authoritative auth lives in ~/.agent-cred-homes enrollment not user home): codex/cline/kiro likely-authed (auth artifacts present); antigravity+opencode likely NOT authed (~/.gemini/antigravity-cli and opencode auth.json ABSENT) = expected work items. Registration path: daemon POST /api/daemon/register -> RegisterResponse.Runtimes (588ebcba = registered Claude Runtime row); runtimes online while daemon registered+heartbeating; built-in CLIKinds + optional runtime profiles; observe via multica runtime list. Start plan drafted per provider: auth(login/doctor per §2) -> configure runtime/agent -> LANE D daemon deploy auto-registers -> verify multica runtime list. STANDING BY: NO execution until LANE D done + explicit go.",
+  "task": "E-RUNTIMES-ONLINE-PREP",
+  "validation": "READ-ONLY prep: command -v + <cli> --help (no network/auth/state) + ls presence (no contents) + code inspection; NO runtime started, NO daemon restart, NO source/config edit, NO secret read/printed; git diff --check PASS"
+}

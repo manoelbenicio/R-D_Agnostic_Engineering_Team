@@ -1,0 +1,33 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T21:58:20Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "config-regression",
+  "task_ids": ["2.1"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/REG-gateway-required.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/daemon/brain/ -run 'TestTaskRequestSeparatesCLIModelAndOwner|TestStrictReadinessFailsClosed|TestLegacyTranslationAndTokenRedaction|TestGatewayAdmissionFailsClosed|TestRecoveryModeGatewayOutageFailsClosedWithoutFallback|TestInitialRouteHasNoCrossModelFallback' -count=1 -v", "exit_code": 0, "assertions_or_tests": 10, "result": "PASS (GatewayAdmissionFailsClosed = 5/5 subtests)"},
+    {"command": "go test ./internal/daemon/ -run 'AgentBrain' -count=1 -v", "exit_code": 0, "assertions_or_tests": 19, "result": "PASS (incl. RejectsDualRouterBeforeGatewayAccess, FailsClosedWhenGatewayNotReady, UsesInstalledOmniRouteHealthContract, positive OmniRoute plan)"},
+    {"command": "git diff --check -- .deploy-control/p0/evidence/REG-gateway-required.md", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "N/A (no code edited)", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/REG-gateway-required.md"],
+  "requirements": ["OpenSpec tasks.md 2.1", "omniroute-agent-routing spec (only-omniroute owner; no direct/alternate fallback)"],
+  "openspec_tasks": ["2.1"],
+  "summary": "VERIFIED (read-only): existing focused regressions prove daemon gateway-required mode routes via OmniRoute (GatewayRequired=true, RouterOwner=omniroute) and rejects native/dual/alternate-router fallback per OpenSpec 2.1. Ran brain + daemon focused suites: all PASS. Evidence maps each test:symbol -> assertion -> spec clause.",
+  "non_claims": [
+    "read-only lane: NO product/test code edited (the ' M' brain/*.go files in git status are pre-existing modifications from prior P0 lanes, NOT this lane)",
+    "no new regression test added (coverage already complete; no duplicate review)",
+    "no -race (cgo/gcc absent)",
+    "no OmniRoute internals probed; synthetic gateway is an in-process httptest stub, not live OmniRoute",
+    "no install; go.mod/go.sum unchanged",
+    "OpenSpec 2.1 checkbox NOT mutated by narrative (already [x]); this is reproducible evidence only",
+    "UNTARGETED-CHAT LIVE ACCEPTANCE (campaign header) NOT executed here: out of this read-only lane, needs live-run token (live_runs.*=false) + daemon/auth/OmniRoute live pipeline + Kiro-TL orchestration; no fake PASS"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

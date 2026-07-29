@@ -1,0 +1,41 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T00:10:01Z",
+  "agent": "Agy-KiroReadinessObserver",
+  "pane_id": "wK:p1",
+  "lane": "readiness-observer",
+  "task_ids": ["READINESS-observer-10m"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/READINESS-observer.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "cat .deploy-control/p0/evidence/READINESS-observer.md",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/READINESS-observer.md"
+  ],
+  "requirements": ["READINESS-observer-10m"],
+  "openspec_tasks": ["READINESS-observer-10m"],
+  "summary": "Completed 10m time-series readiness observation over time (15 samples). Quantified P50 (4.9ms), P90 (10.4ms), and P99 tail spike (53.9ms) latency. Produced external operator ticket facts.",
+  "non_claims": [
+    "AcceptanceClaim=false",
+    "LiveEndpointUsed=false",
+    "Zero inference cost incurred",
+    "OmniRoute internals not inspected or modified",
+    "Product code read-only (zero product source files edited)"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

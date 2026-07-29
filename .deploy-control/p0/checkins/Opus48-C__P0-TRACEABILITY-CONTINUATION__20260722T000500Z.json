@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": "RELEASED for L5 reassignment (manager 6h dispatch). Disposition BLOCKED (not complete): external live-acceptance evidence still pending | owner: Principal Orchestrator (token) + OmniRoute owner (BLK-KIMI/BLK-OPUS48-ID/BLK-AVAIL) + Product/OmniRoute Owner (D-V3-25B) | next: whoever the Principal assigns consumes per-family live evidence, appends refs, checks out | evidence: .deploy-control/p0/handoffs/A10-traceability-continuation.md | lock A10-traceability-continuation.md is DISJOINT from L5 e2e/** (zero overlap)",
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/A10-traceability-continuation.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/A10-traceability-continuation.md"
+  ],
+  "finished_at": "2026-07-22T04:25:28Z",
+  "lane": "A10",
+  "last_heartbeat_at": "2026-07-22T04:25:28Z",
+  "pane_id": "w8:p1",
+  "progress": 90,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T00:05:00Z",
+  "status": "FAILED",
+  "summary": "Prior-window traceability assignment closed as blocked/released; no live acceptance or completion claimed.",
+  "task": "P0-TRACEABILITY-CONTINUATION",
+  "validation": "BLOCKED: released for six-hour L5 assignment; external live acceptance remains unauthorized"
+}

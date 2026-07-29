@@ -1,0 +1,40 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T00:10:00Z",
+  "agent": "Agy-KiroTrace",
+  "pane_id": "wK:p2",
+  "lane": "KIRO-TRACE-UI-AUDIT",
+  "task_ids": ["KIRO-TRACE-UI-AUDIT"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/KIRO-trace-ui-audit.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "git diff --check -- .deploy-control/p0/evidence/KIRO-trace-ui-audit.md",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/KIRO-trace-ui-audit.md"
+  ],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["6.2", "6.5"],
+  "summary": "Completed Kiro Supervisor correlation and terminal/UI evidence collection plan for clean live task in .deploy-control/p0/evidence/KIRO-trace-ui-audit.md. Enforced safe correlation IDs only, metadata-only invariant (secrets_present=false), 8-hop trace mapping, and UI status/terminal presentation protocol.",
+  "non_claims": [
+    "Product code modifications (none made)",
+    "Live model inference (live_runs=false)",
+    "OmniRoute internal secrets or provider accounts (forbidden)",
+    "Deploy / restart / Docker / systemd"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

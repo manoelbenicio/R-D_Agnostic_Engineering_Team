@@ -1,0 +1,40 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T23:14:04Z",
+  "agent": "Agy-L8",
+  "pane_id": "wK:p1",
+  "lane": "L8",
+  "task_ids": ["L8-kanban-rerun"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/L8-kanban.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "cat .deploy-control/p0/evidence/L8-kanban.md",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/L8-kanban.md"
+  ],
+  "requirements": ["L8-kanban-rerun"],
+  "openspec_tasks": ["L8-kanban-rerun"],
+  "summary": "Captured post-deploy Kanban rerun pipeline trace (claim->admitted->launch boundary->persisted terminal). Recorded standby status, DB/gateway blockers, and non-claims.",
+  "non_claims": [
+    "AcceptanceClaim=false",
+    "LiveEndpointUsed=false",
+    "Zero inference cost incurred",
+    "Product code read-only (zero product source files edited)"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

@@ -1,5 +1,8 @@
 # Herdr — skill do Orquestrador (Opus 4.8)
 
+> **ORQ2 credential isolation:** read `CREDENTIAL_ISOLATION_ORQ2_RUNBOOK.md`
+> before starting, restoring, or authenticating any provider agent pane.
+
 > Herdr (herdr.dev, `ogulcancelik/herdr`) é a **plataforma de multiplexação** onde o fleet de agentes roda.
 > Ferramenta EXTERNA (não versionada aqui) — instalada por `curl`/`npx`. Este doc é a skill operacional do
 > Tech-Lead. Fonte canônica: https://herdr.dev/docs/ · CLI: /docs/cli-reference/ · Socket: /docs/socket-api/

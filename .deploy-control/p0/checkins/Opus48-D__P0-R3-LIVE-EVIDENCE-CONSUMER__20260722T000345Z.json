@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/R3-glm-lifecycle-evidence.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/R3-glm-lifecycle-evidence.md"
+  ],
+  "finished_at": "2026-07-22T04:02:54Z",
+  "lane": "A9-R3-EVIDENCE",
+  "last_heartbeat_at": "2026-07-22T04:02:54Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T00:03:45Z",
+  "status": "DONE",
+  "summary": "Plan/mapping delivered; live 8.2 consumption remains externally blocked and is handed back to the Principal for re-dispatch when the single authorized Codex56#A GLM run exists. Lock released for L6.",
+  "task": "P0-R3-LIVE-EVIDENCE-CONSUMER",
+  "validation": "Consumer interpretation PLAN + 8.2 axis mapping + fail-closed R3 unit complement delivered in the artifact. No live run consumed (token=false, BLK-AVAIL/BLK-25B); live consumption is externally deferred with no in-window ETA. Releasing lock for manager L6 reassignment."
+}

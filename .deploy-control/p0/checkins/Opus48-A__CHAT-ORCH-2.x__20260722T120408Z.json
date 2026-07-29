@@ -1,0 +1,21 @@
+{
+  "activity": "Reuse-only chat routing closeout: inspect accepted EV + chat.go routing + TestCreateChatSession_Routing, run focused smoke, write evidence",
+  "agent": "Opus48#A",
+  "blocker": "DB unreachable => focused smoke SKIPPED (not PASS). go test ./internal/handler/ -run TestCreateChatSession_Routing -count=1 returned ok/exit0 BUT -v shows TestMain \"Skipping tests: database not reachable ... 127.0.0.1:5432 connect: connection refused\" => zero routing assertions executed. Routing coverage (explicit agent_id->direct; omitted->squad TL) is REVIEWED by reading chat.go + chat_test.go, NOT verified by execution. Test is correct; no test-only fix needed (chat_test.go untouched). | owner: local test-env/infra provisioner via Manager w5:p1/Principal w5:p9 | next: bring up reachable Postgres (multica/multica @127.0.0.1:5432) or point harness at a test DB, then rerun -v and confirm --- PASS with both subpaths. No credentials accessed; no DB start attempted. Evidence: .deploy-control/p0/evidence/CHAT-CLOSEOUT.md",
+  "depends_on": [],
+  "evidence": [],
+  "files_locked": [
+    ".deploy-control/p0/evidence/CHAT-CLOSEOUT.md"
+  ],
+  "finished_at": null,
+  "lane": "CHAT-CLOSEOUT",
+  "last_heartbeat_at": "2026-07-22T12:06:33Z",
+  "pane_id": "w6:p1",
+  "progress": 0,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:04:08Z",
+  "status": "BLOCKED",
+  "summary": null,
+  "task": "CHAT-ORCH-2.x",
+  "validation": null
+}

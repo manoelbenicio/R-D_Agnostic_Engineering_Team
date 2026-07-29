@@ -1,0 +1,86 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T12:35:30Z",
+  "agent": "Agy-P0-A8",
+  "pane_id": "wB:p2",
+  "lane": "C8",
+  "task_ids": [
+    "C8-FINAL-DELTA-EVALUATION"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/C8-verification-report.md",
+    ".deploy-control/p0/handoffs/C8-handoff.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "GOCACHE=/tmp/gocache-c8 GOTMPDIR=/tmp/gotmp-c8 /home/ec2-user/goroot/go/bin/go build ./...",
+      "exit_code": 0,
+      "assertions_or_tests": 35,
+      "result": "PASS",
+      "detail": "100% clean compilation across all 35 packages in server module"
+    },
+    {
+      "command": "GOCACHE=/tmp/gocache-c8 GOTMPDIR=/tmp/gotmp-c8 /home/ec2-user/goroot/go/bin/go test ./... -count=1",
+      "exit_code": 0,
+      "assertions_or_tests": 35,
+      "result": "PASS",
+      "detail": "0 test failures across entire server module; DB integration test in internal/handler recorded as env-gated"
+    },
+    {
+      "command": "GOCACHE=/tmp/gocache-c8 GOTMPDIR=/tmp/gotmp-c8 /home/ec2-user/goroot/go/bin/go test ./internal/daemon/observability/e2e/... -count=1",
+      "exit_code": 0,
+      "assertions_or_tests": 38,
+      "result": "PASS",
+      "detail": "6.2 Trace assembly 8 ordered hops + HopTrace continuity + 9 safe IDs verified"
+    },
+    {
+      "command": "npx openspec validate --all --strict --json",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "PASS"
+    },
+    {
+      "command": "python3 scripts/orchestration/p0_control.py monitor --once",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS",
+      "detail": "0 active lock overlaps across canonical records"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/C8-verification-report.md",
+    ".deploy-control/p0/handoffs/C8-handoff.md"
+  ],
+  "requirements": [
+    "AB-REQ-5.3",
+    "AB-REQ-6.2",
+    "chat-orchestration-standard"
+  ],
+  "openspec_tasks": [
+    "5.3",
+    "6.2",
+    "chat-1.3"
+  ],
+  "summary": "C8 closing evaluation complete. Server-wide Go build (go build ./...) and test suite (go test ./...) verified 100% PASS with 0 compilation errors and 0 failing packages. 6.2 trace assembly verified across 8 ordered hops, HopTrace continuity, and 9 safe IDs. Zero-overlap GREEN and OpenSpec strict 100% valid. V1-V10 closure matrix delivered to Principal for 5.3, 6.2, and chat 1.3 final closures.",
+  "non_claims": [
+    "No product source code edits authored",
+    "No deployment, network, or inference executed",
+    "OmniRoute internals not probed/mapped/tested",
+    "DB/web vitest skipped tests recorded as env-gated non-failures"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "w5:p9",
+      "reason": "Final V1-V10 closure matrix delivered for Principal 5.3, 6.2, and chat 1.3 closures",
+      "file": ".deploy-control/p0/evidence/C8-verification-report.md"
+    }
+  ]
+}

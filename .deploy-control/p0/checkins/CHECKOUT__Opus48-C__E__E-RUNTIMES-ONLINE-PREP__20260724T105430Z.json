@@ -1,0 +1,38 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-24T10:54:30Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "E",
+  "task_ids": ["E-RUNTIMES-ONLINE-PREP"],
+  "status": "DONE",
+  "verdict": "PREP READY",
+  "reported_to": "w5:p1 (Opus48-Kiro)",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/E-runtimes-online-prep.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "command -v {codex,cline,agy,kiro-cli,opencode,claude}", "exit_code": 0, "assertions_or_tests": 6, "result": "all PRESENT (paths cited)"},
+    {"command": "<cli> --help | grep auth/login (read-only, no network/auth/state)", "exit_code": 0, "assertions_or_tests": 5, "result": "codex login/doctor; cline auth; opencode providers/auth; agy & kiro-cli interactive (no verb)"},
+    {"command": "ls presence of auth artifacts in /home/ec2-user (no contents)", "exit_code": 0, "assertions_or_tests": 0, "result": "codex/cline/kiro present; antigravity+opencode auth artifacts ABSENT"},
+    {"command": "git diff --check -- .deploy-control/p0/evidence/E-runtimes-online-prep.md", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "N/A (read-only prep)", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/E-runtimes-online-prep.md"],
+  "findings": {
+    "cli_installed": "5/5 (codex,cline,agy,kiro-cli,opencode) + claude",
+    "auth_provisional": "codex/cline/kiro likely-authed (artifacts present); antigravity+opencode likely NOT authed (auth artifacts absent) = expected work items; ALL UNVERIFIED authoritatively",
+    "registration_path": "daemon POST /api/daemon/register (client.go:459) -> RegisterResponse.Runtimes; 588ebcba = registered Claude Runtime row; online while daemon registered+heartbeating; built-in CLIKinds + runtime profiles; observe via `multica runtime list`",
+    "start_plan": "per provider: (1) auth (codex doctor / cline auth / kiro Builder-ID / agy Google eligibility+GODEBUG=netdns=cgo / opencode auth login) -> (2) configure runtime/agent -> (3) LANE D daemon deploy auto-registers (no manual per-runtime start) -> (4) verify `multica runtime list`"
+  },
+  "non_claims": [
+    "READ-ONLY: no runtime started, no login/register/daemon run, no daemon restart, no source/config edited, no secret read/printed (the M/D runtime/daemon files in git status are OTHER lanes' pre-existing changes, not this prep)",
+    "host NOT confirmed to be orq1; $HOME is credential-isolation slot slot-109 -> auth statuses are indirect/provisional and UNVERIFIED authoritatively; authoritative checks must run on orq1 as the runtime user",
+    "no `multica runtime list` executed (would query live backend); drafted as verification command",
+    "STANDING BY: no execution until LANE D completes AND explicit go (serialized after daemon deploy)"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "w5:p1 (lead) / LANE D", "reason": "PREP READY; execution gated — after LANE D daemon deploy + go, run §4 plan (auth agy+opencode primarily), then verify `multica runtime list` shows all 5 online", "file": ".deploy-control/p0/evidence/E-runtimes-online-prep.md"}
+  ]
+}

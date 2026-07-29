@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-C__C5__C5-EMAIL-TEST-HERMETIC__20260722T121840Z.json"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/service/email_test.go"
+  ],
+  "finished_at": "2026-07-22T12:28:48Z",
+  "lane": "C5",
+  "last_heartbeat_at": "2026-07-22T12:28:48Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:16:48Z",
+  "status": "DONE",
+  "summary": "Releasing to re-register C5 with expanded lock (email.go + email_test.go). Work continues under same task.",
+  "task": "C5-EMAIL-TEST-HERMETIC",
+  "validation": "administrative release to expand lock (email.go added by Principal); no acceptance claimed here"
+}

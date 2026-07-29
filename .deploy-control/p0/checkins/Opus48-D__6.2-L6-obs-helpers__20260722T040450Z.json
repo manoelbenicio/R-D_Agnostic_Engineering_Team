@@ -1,0 +1,28 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [
+    "L5-e2e-contract"
+  ],
+  "evidence": [
+    ".deploy-control/p0/handoffs/L6-obs-helpers-design-and-anchor-map.md",
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-D__L6__6.2-L6-obs-helpers__20260722T110300Z.json"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/middleware/obs_ingress.go",
+    "multica-auth-work/server/internal/service/obs_persist.go",
+    "multica-auth-work/server/internal/service/obs_queue.go"
+  ],
+  "finished_at": "2026-07-22T11:03:46Z",
+  "lane": "L6",
+  "last_heartbeat_at": "2026-07-22T11:03:46Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T04:04:50Z",
+  "status": "DONE",
+  "summary": "L6 DONE: ingress(hop1)/queue(hop2)/persist(hop6) metadata-only helpers + 7 tests green against frozen agent-brain.e2e.v1; gofmt/vet/diff clean; only frozen closed keys; SecretsPresent=false; fail-closed Emit; no shared-anchor edit (call-site insertion handed to L1). Service tests unblocked after R2 fixed email.go. No deploy/inference/secret/commit; no OpenSpec checkbox closed.",
+  "task": "6.2-L6-obs-helpers",
+  "validation": "go1.26.1. PASS: go test ./internal/middleware/ -run Ingress -count=1 (3 tests, ok 0.003s, exit 0); go test ./internal/service/ -run QueueSpan|PersistSpan -count=1 (4 tests, ok 0.007s, exit 0); go vet ./internal/middleware/ (0); go vet ./internal/service/ (0); gofmt -l 6 files empty (0); git diff --check (0). -race NOT_AVAILABLE (no gcc). Note: manager pattern ObsQueue|ObsPersist matched 0 tests; reran with QueueSpan|PersistSpan to truly execute."
+}

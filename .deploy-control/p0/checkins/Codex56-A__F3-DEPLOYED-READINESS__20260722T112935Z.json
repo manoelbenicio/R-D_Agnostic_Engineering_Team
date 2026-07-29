@@ -1,0 +1,21 @@
+{
+  "activity": "re-probing corrected ORQ1 Tailscale endpoint http://100.118.244.61:20128 for 6.1",
+  "agent": "Codex56#A",
+  "blocker": "CORRECTED: ORQ1 OmniRoute http://100.118.244.61:20128 REACHABLE (rc=0); PROVEN deployed non-secret: REQUIRE_API_KEY enforced (/v1/models->401, x-omniroute-route-class:CLIENT_API), reachability, mgmt UI (/->307 /dashboard, /status 200). UNPROVEN: immutable revision + registry consistency + selected-model (cp/cline-pass/glm-5.2) availability + selected-protocol readiness -- all behind auth-gated /v1/models; source /health/live|ready ->404 here. | owner: OmniRoute operator + Principal Orchestrator w5:p9 | next action: (a) expose non-secret readiness/revision endpoint or document real health path, OR (b) authorize ONE non-inference authenticated /v1/models metadata read (version + model availability + protocol; headers/bounded fields only, no body), OR (c) publish pinned image digest+registry revision out-of-band; D-V3-25(B) gates authenticated steps | evidence: .deploy-control/p0/evidence/F3-deployed-readiness.md#5",
+  "depends_on": [],
+  "evidence": [],
+  "files_locked": [
+    ".deploy-control/p0/evidence/F3-deployed-readiness.md"
+  ],
+  "finished_at": null,
+  "lane": "F3",
+  "last_heartbeat_at": "2026-07-22T11:39:19Z",
+  "pane_id": "w7:p3",
+  "progress": 40,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:29:35Z",
+  "status": "BLOCKED",
+  "summary": null,
+  "task": "F3-DEPLOYED-READINESS",
+  "validation": null
+}

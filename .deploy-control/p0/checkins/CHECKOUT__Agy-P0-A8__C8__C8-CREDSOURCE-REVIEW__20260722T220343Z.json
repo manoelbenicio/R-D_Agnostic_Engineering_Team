@@ -1,0 +1,67 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T22:03:43Z",
+  "agent": "Agy-P0-A8",
+  "pane_id": "wB:p2",
+  "lane": "C8",
+  "task_ids": [
+    "C8-CREDSOURCE-REVIEW"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/C8-credsource-review.md",
+    ".deploy-control/p0/handoffs/C8-credsource-review-handoff.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "GOCACHE=/tmp/gocache-c8 GOTMPDIR=/tmp/gotmp-c8 /home/ec2-user/goroot/go/bin/go test ./internal/daemon -run TestFileCredentialSource",
+      "exit_code": 0,
+      "assertions_or_tests": 12,
+      "result": "PASS",
+      "detail": "12 subtests covering happy path, symlink TOCTOU, mode rejection, owner enforcement, fail-closed cases, cancelled context, and callback error propagation PASS"
+    },
+    {
+      "command": "GOCACHE=/tmp/gocache-c8 GOTMPDIR=/tmp/gotmp-c8 /home/ec2-user/goroot/go/bin/go vet ./cmd/multica/... ./internal/daemon/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/gofmt -l cmd/multica/cmd_daemon.go internal/daemon/credential_file_source.go internal/daemon/credential_file_source_test.go",
+      "exit_code": 0,
+      "assertions_or_tests": 3,
+      "result": "PASS"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/C8-credsource-review.md",
+    ".deploy-control/p0/handoffs/C8-credsource-review-handoff.md"
+  ],
+  "requirements": [
+    "AB-REQ-39",
+    "AB-REQ-40"
+  ],
+  "openspec_tasks": [
+    "C8-CREDSOURCE-REVIEW"
+  ],
+  "summary": "Reviewed commit 880338b + working-tree cmd_daemon.go FileCredentialSource wiring for gateway-required development mode. Consume-only OmniRoute boundary preserved (0 native account creation added). Secret-file semantics intact (O_NOFOLLOW open, mode <=0600, owner check, max 4096 bytes, deterministic content-free error). Secret value is NEVER logged or cached. No native-account path reintroduced. PD-08 else-branch unchanged.",
+  "non_claims": [
+    "No product source code edits authored",
+    "No deployment, network, or inference executed",
+    "No secret values logged or handled"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

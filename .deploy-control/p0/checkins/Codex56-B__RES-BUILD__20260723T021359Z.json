@@ -1,0 +1,21 @@
+{
+  "activity": "standby: authoritative build + focused gateway/daemon tests once fix lands; readiness only",
+  "agent": "Codex56#B",
+  "blocker": "STANDBY: authoritative go build ./... + focused internal/daemon/gateway & internal/daemon tests deferred until fix lands/integrates | owner: manager w5:p1 / fix owner | next action: on landed signal run build+vet+focused gateway/daemon tests with /tmp caches, record commands+exit codes+source sha256 provenance in .deploy-control/p0/evidence/RES-build.md, check out | readiness verified: go1.26.1, root 4.3G, /tmp 2.3G; -race detector unavailable (CGO_ENABLED=0, no gcc)",
+  "depends_on": [],
+  "evidence": [],
+  "files_locked": [
+    ".deploy-control/p0/evidence/RES-build.md"
+  ],
+  "finished_at": null,
+  "lane": "build",
+  "last_heartbeat_at": "2026-07-23T02:14:17Z",
+  "pane_id": "w7:p4",
+  "progress": 0,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T02:13:59Z",
+  "status": "BLOCKED",
+  "summary": null,
+  "task": "RES-BUILD",
+  "validation": null
+}

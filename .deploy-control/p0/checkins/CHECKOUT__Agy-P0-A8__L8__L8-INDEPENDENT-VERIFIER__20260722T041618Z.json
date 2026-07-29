@@ -1,0 +1,73 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T04:16:18Z",
+  "agent": "Agy-P0-A8",
+  "pane_id": "wB:p2",
+  "lane": "L8",
+  "task_ids": [
+    "5.1",
+    "5.2",
+    "5.3",
+    "5.4",
+    "5.5",
+    "6.1"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/L8-verification-report.md",
+    ".deploy-control/p0/handoffs/L8-verifier-handoff.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./pkg/agent/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "openspec validate --all --strict --json",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/L8-verification-report.md",
+    ".deploy-control/p0/handoffs/L8-verifier-handoff.md"
+  ],
+  "requirements": [
+    "AB-REQ-01..40"
+  ],
+  "openspec_tasks": [
+    "5.1",
+    "5.2",
+    "5.3",
+    "5.4",
+    "5.5",
+    "6.1"
+  ],
+  "summary": "Full verification sweep completed with zero product code edits. Disjoint lock ownership verified (0 cross-lane collisions), git diff --check clean (exit code 0), OpenSpec strict validation 4/4 green, pkg/agent tests pass, residual scan clean.",
+  "non_claims": [
+    "No product code source edits were made",
+    "No deploy, Docker, or inference executed"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "L1",
+      "reason": "unformatted Go source file",
+      "file": "multica-auth-work/server/internal/daemon/client.go"
+    },
+    {
+      "to_lane": "L4",
+      "reason": "unformatted Go source file",
+      "file": "multica-auth-work/server/pkg/agent/codebuddy.go"
+    }
+  ]
+}

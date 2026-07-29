@@ -1,0 +1,43 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T12:18:57Z",
+  "agent": "Codex56#A",
+  "pane_id": "w7:p3",
+  "lane": "C3",
+  "task_ids": ["chat-orchestration-1.3"],
+  "plan_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_COMPLETION_PLAN.md",
+  "prompt_ref": "MANAGER DISPATCH C3",
+  "files_locked": ["multica-auth-work/packages/core/chat/mutations.ts"],
+  "read_only_inspected": [
+    "multica-auth-work/packages/core/chat/{index,queries,store,recent-context-store}.ts",
+    "multica-auth-work/packages/core/api/client.ts:1709 (out-of-lock)",
+    "multica-auth-work/packages/core/types/chat.ts (out-of-lock)",
+    "openspec/changes/chat-orchestration-standard/specs/chat-orchestration/spec.md"
+  ],
+  "new_files_declared": [],
+  "dependencies": [],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 383,
+    "toolchains": {"go": "go1.26.1 (not primary; TS package)", "node": "v22.23.1"},
+    "disk_free": "root was 100% full (check-in blocked); reclaimed own regenerable GOCACHE (go clean -cache, 116M in slot-110) -> 478M free",
+    "gocache_gotmpdir": "/tmp lane-specific (per dispatch); root disk critical"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true,
+    "omniroute_internals_forbidden": true
+  },
+  "authorization_gate": {
+    "implementation_authorized": false,
+    "authorized_lanes": [],
+    "mode": "VERIFICATION_ONLY",
+    "note": "Verify session-create optional agent_id + direct-target contract; assess whether a contract-correct fix is isolatable to packages/core/chat/**."
+  },
+  "status": "IN_PROGRESS"
+}

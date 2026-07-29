@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A7",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/C7-readiness-consumption.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/C7-readiness-consumption.md"
+  ],
+  "finished_at": "2026-07-22T12:21:28Z",
+  "lane": "C7",
+  "last_heartbeat_at": "2026-07-22T12:21:28Z",
+  "pane_id": "wB:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:16:02Z",
+  "status": "DONE",
+  "summary": "Proved Main Brain consumes ready/not-ready status via GatewayReadinessChecker interface and fails closed on all failures. Identified exact remaining gaps (D-V3-25B authorization token, W1 execution call-site wiring, OmniRoute enriched models schema).",
+  "task": "C7-READINESS-CONSUMPTION",
+  "validation": "go test ./internal/daemon/brain/...: PASS, go vet ./internal/daemon/brain/...: PASS, git diff --check: PASS"
+}

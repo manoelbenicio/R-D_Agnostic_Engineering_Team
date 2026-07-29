@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-otlp-receiver.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver.go",
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver_test.go"
+  ],
+  "finished_at": "2026-07-24T00:35:06Z",
+  "lane": "OTLP-RECV",
+  "last_heartbeat_at": "2026-07-24T00:35:06Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T00:26:20Z",
+  "status": "DONE",
+  "summary": "Documented service.name+event.name identification; undocumented/untrusted scope ignored entirely (closed schema). All 14 tests PASS. Only otlpreceiver files edited.",
+  "task": "OTLP-SCOPE-SERVICE-FIX",
+  "validation": "gofmt clean(0); go build(0); go vet(0); go test ./internal/daemon/observability/otlpreceiver/ -count=1 -timeout=60s = 14/14 PASS ok 0.038s(0); git diff --check(0). Target=documented service.name=claude-code + event.name=api_request; ExpectedScopeName removed; scope IGNORED entirely (no gate, no persist, closed schema, no Scope field) proven vs arbitrary/malicious scope; 5 shape fixes + wait-state idempotency intact."
+}

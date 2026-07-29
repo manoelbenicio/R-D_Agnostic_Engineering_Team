@@ -1,0 +1,33 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T22:58:40Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "T20-WAVE",
+  "task_ids": ["6.2"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    "multica-auth-work/server/internal/daemon/observability/e2ewiring/doc.go",
+    "multica-auth-work/server/internal/daemon/observability/e2ewiring/wiring_integration_test.go"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/daemon/observability/e2ewiring/ -count=1", "exit_code": 0, "assertions_or_tests": 2, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/observability/e2ewiring/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-prod-wiring-tests.md"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["6.2"],
+  "summary": "PASS: new leaf pkg e2ewiring with a production-wiring integration test driving all 7 REAL seam emitters (middleware ingress, service queue/persist, brain admission, daemon cli, gateway route, daemonws delivery) into one sink -> 7 real hops, 9 IDs, Assemble AllContinuous, 0 gaps/orphans/anomalies, leak-clean, one persist + one delivery (CLI joins admission's read-back launch_id). Plus a dedicated route-hop test from an actual gateway.Telemetry fixture. SyntheticTraceSpans retained as contract regression.",
+  "non_claims": [
+    "Created one test file + one no-logic package anchor (doc.go); no production seam source edited; new leaf package = zero import cycles (verified free).",
+    "Exercises real emitter FUNCTIONS with real IDs, NOT a live daemon/HTTP/DB/WS run; call-site wiring in shared anchors (hub.go/task.go/router) is L1 Wave-C, out of scope.",
+    "No inference/secret/deploy/commit/push; no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "L1", "reason": "shared-anchor call-site insertion (metrics/router, task.go enqueue/persist, hub.go delivery) that invokes these emitters remains Wave-C serial integration", "file": "multica-auth-work/server/internal/service/task.go"}
+  ]
+}

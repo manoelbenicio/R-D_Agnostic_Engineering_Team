@@ -1,0 +1,40 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T12:18:40Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "C5",
+  "task_ids": ["C5-EMAIL-TEST-HERMETIC"],
+  "status": "BLOCKED",
+  "files_changed": [],
+  "files_created": [],
+  "files_deleted": [],
+  "files_locked": ["multica-auth-work/server/internal/service/email_test.go"],
+  "tests": [
+    {"command": "go test ./internal/service/ -run 'TestSendVerificationCode_DevModeRedactsCode|TestSendInvitationEmail_DevModeRedactsURL' -count=1", "exit_code": 1, "assertions_or_tests": 0, "result": "BLOCKED (setup failed): GOMODCACHE on full root fs; service deps (prometheus/protobuf/gorilla/resend) uncached + unfetchable (no space + no-install)"},
+    {"command": "gofmt -l internal/service/email_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "listed (baseline file is gofmt-dirty pre-existing; NOT modified by me)"},
+    {"command": "git diff --check -- internal/service/email_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS (no change)"},
+    {"command": "git diff --stat HEAD -- internal/service/email_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "empty (email_test.go unmodified)"}
+  ],
+  "format_and_diff": {"format": "N/A (no edit made)", "git_diff_check": "PASS (no change)"},
+  "evidence": [".deploy-control/p0/checkins/Opus48-C__C5-EMAIL-TEST-HERMETIC__20260722T121648Z.json"],
+  "requirements": [],
+  "openspec_tasks": ["5.2"],
+  "summary": "BLOCKED, no edit made. Diagnosis (read-only): the two dev-mode tests assert a DEV-mode redacted-logging behavior (err==nil AND log contains [REDACTED CREDENTIAL]) that email.go does NOT implement — SendVerificationCode/SendInvitationEmail with &EmailService{} return ErrEmailBackendNotConfigured and log nothing; [REDACTED CREDENTIAL] lives only in pkg/redact and the tests use a plain slog handler. So the tests cannot be made hermetic-AND-green from email_test.go alone; the required DEV redacted-logging branch is in email.go = OUTSIDE my exact lock. Separately, focused test/vet verification is impossible: GOMODCACHE is on the 100%-full root fs and the service package deps cannot be built.",
+  "non_claims": [
+    "no edit to email_test.go (unmodified vs HEAD)",
+    "no go test/vet executed (service package cannot build; disk-full GOMODCACHE)",
+    "did not touch email.go (out of lock) or pkg/redact",
+    "did not rewrite/gut the test assertions to force a pass (prohibited: never hard-code / optimize-to-pass)",
+    "OpenSpec not closed"
+  ],
+  "proposed_resolution": {
+    "email.go (owner L1/Principal)": "add a DEV-mode branch to SendVerificationCode/SendInvitationEmail: when smtpHost=='' and client==nil, log a redacted line (via pkg/redact-backed logger) and return nil instead of ErrEmailBackendNotConfigured",
+    "email_test.go (this lane, after email.go)": "hermetic isolation: t.Setenv(FRONTEND_ORIGIN, fixed) + clear SMTP_*/RESEND_* so behavior is env-independent; then gofmt -w + verify"
+  },
+  "blocker": "see events blocker text: (1) out-of-lock email.go DEV-redaction dependency (owner: email.go owner/L1 + Principal); (2) disk-full GOMODCACHE prevents service build/test (owner: infra/manager).",
+  "handoffs": [
+    {"to_lane": "L1/Principal", "reason": "add DEV-mode redacted-logging branch returning nil in email.go send functions", "file": "multica-auth-work/server/internal/service/email.go"},
+    {"to_lane": "manager/infra", "reason": "free root fs or provide populated off-root GOMODCACHE so service tests/vet can run", "file": "GOMODCACHE=~/.agent-cred-homes/slots/slot-109/home/go/pkg/mod"}
+  ]
+}

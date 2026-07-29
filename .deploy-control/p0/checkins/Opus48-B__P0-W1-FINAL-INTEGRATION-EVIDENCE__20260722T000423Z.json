@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/W1-final-integration-evidence.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/W1-final-integration-evidence.md"
+  ],
+  "finished_at": "2026-07-22T00:04:45Z",
+  "lane": "W1-EVIDENCE",
+  "last_heartbeat_at": "2026-07-22T00:04:45Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T00:04:23Z",
+  "status": "DONE",
+  "summary": "Final integration evidence consolidated with exact R1/R3 refs. Succeeded by P0-W1-LIVE-READINESS holding the external GLM live-prereq block.",
+  "task": "P0-W1-FINAL-INTEGRATION-EVIDENCE",
+  "validation": "D1-D7 green; R1 DONE PASS 0.017s; R3 DONE NO-REVALIDATION-NEEDED; live_runs.cline_glm=false. Superseded by P0-W1-LIVE-READINESS."
+}

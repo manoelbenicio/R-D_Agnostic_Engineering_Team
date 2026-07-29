@@ -1,0 +1,32 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T11:29:26Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "F4",
+  "task_ids": ["6.2"],
+  "plan_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_COMPLETION_PLAN.md",
+  "prompt_ref": ".planning/agent-brain-v3/POST_T360_10_AGENT_PROMPTS.md#F4",
+  "files_locked": [
+    "multica-auth-work/server/internal/daemonws/hub.go",
+    "multica-auth-work/server/internal/daemonws/hub_test.go"
+  ],
+  "new_files_declared": [],
+  "dependencies": ["internal/daemonws/obs_delivery.go DeliveryRecorder/EmitDelivery (frozen helper, R4 verified)"],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d50986aee7f1981a323b29c9d90f175b4b6f8b",
+    "git_status_count": 330,
+    "toolchains": {"go": "go1.26.1 (/home/ec2-user/goroot/go/bin/go)", "gocache_gotmpdir": "/tmp (root disk 100% full)"},
+    "disk_free": "root 188M (100% used); /tmp 7.6G (2% used)"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true
+  },
+  "status": "IN_PROGRESS"
+}

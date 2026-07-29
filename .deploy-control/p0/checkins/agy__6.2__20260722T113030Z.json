@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "agy",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/checkins/CHECKOUT__Agy-F10__F10__6.2-CLI-HOP__20260722T113200Z.json"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/cli_observability.go",
+    "multica-auth-work/server/internal/daemon/cli_observability_test.go"
+  ],
+  "finished_at": "2026-07-22T11:31:42Z",
+  "lane": "F10",
+  "last_heartbeat_at": "2026-07-22T11:31:42Z",
+  "pane_id": "wK:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:30:30Z",
+  "status": "DONE",
+  "summary": "HopCLI metadata-only helper cli_observability.go implemented and verified with focused tests, vet, gofmt, diff, leakscan PASS",
+  "task": "6.2",
+  "validation": "go test ./internal/daemon -run Test.*CLI.*: PASS"
+}

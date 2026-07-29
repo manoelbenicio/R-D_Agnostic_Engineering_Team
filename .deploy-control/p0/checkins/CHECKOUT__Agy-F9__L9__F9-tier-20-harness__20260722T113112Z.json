@@ -1,0 +1,59 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:31:12Z",
+  "agent": "Agy-F9",
+  "pane_id": "wK:p1",
+  "lane": "L9",
+  "task_ids": ["6.3"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/daemon/observability/realtime_process_linux_test.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "export GOCACHE=/tmp/gocache_f9 GOTMPDIR=/tmp/gotmp_f9 && /home/ec2-user/goroot/go/bin/go test ./internal/daemon/observability -v",
+      "exit_code": 0,
+      "assertions_or_tests": 30,
+      "result": "PASS"
+    },
+    {
+      "command": "export GOCACHE=/tmp/gocache_f9 GOTMPDIR=/tmp/gotmp_f9 && /home/ec2-user/goroot/go/bin/go vet ./internal/daemon/observability",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/gofmt -l internal/daemon/observability/harness.go internal/daemon/observability/synthetic.go internal/daemon/observability/realtime_process.go internal/daemon/observability/realtime_process_linux.go internal/daemon/observability/realtime_process_linux_test.go internal/daemon/observability/realtime_process_tree_linux.go internal/daemon/observability/realtime_process_tree_unsupported.go internal/daemon/observability/realtime_process_unsupported.go",
+      "exit_code": 0,
+      "assertions_or_tests": 8,
+      "result": "PASS"
+    },
+    {
+      "command": "git diff --check multica-auth-work/server/internal/daemon/observability/realtime_process_linux_test.go",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    "multica-auth-work/server/internal/daemon/observability/realtime_process_linux_test.go"
+  ],
+  "requirements": ["6.3"],
+  "openspec_tasks": ["6.3"],
+  "summary": "Reproduced and fixed offline realtime harness failure in TestOfflineRealtimeHarnessMeasuresShortLivedLocalProcess. Validated 20-task synthetic lifecycle, failure cases, counters, and measurement boundaries.",
+  "non_claims": [
+    "AcceptanceClaim=false",
+    "LiveEndpointUsed=false",
+    "CapacityTierEnabled=false",
+    "Modeled resources are not tier-20 host measurements",
+    "No live endpoint or production deployment executed"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

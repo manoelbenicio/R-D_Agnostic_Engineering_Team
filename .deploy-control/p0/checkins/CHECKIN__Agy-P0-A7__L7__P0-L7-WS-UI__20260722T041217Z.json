@@ -1,0 +1,48 @@
+{
+  "event": "CHECKIN",
+  "timestamp_utc": "2026-07-22T04:12:17Z",
+  "agent": "Agy-P0-A7",
+  "pane_id": "wB:p1",
+  "lane": "L7",
+  "task_ids": ["P0-L7-WS-UI", "6.2"],
+  "plan_ref": ".planning/agent-brain-v3/P0_SIX_HOUR_EXECUTION_PLAN.md",
+  "prompt_ref": ".planning/agent-brain-v3/P0_SIX_HOUR_AGENT_PROMPTS.md#L7",
+  "files_locked": [
+    "server/internal/daemonws/obs_delivery.go",
+    "server/internal/daemonws/obs_delivery_test.go",
+    "packages/views/issues/components/board-view.tsx",
+    "packages/views/issues/components/issue-detail.tsx",
+    "packages/views/issues/components/execution-log-section.tsx"
+  ],
+  "new_files_declared": [
+    "server/internal/daemonws/obs_delivery.go",
+    "server/internal/daemonws/obs_delivery_test.go"
+  ],
+  "dependencies": ["L5 correlation API contract (must freeze before L7 finalizes)"],
+  "preflight": {
+    "cwd": "/home/ec2-user/workspace/R-D_Agnostic_Engineering_Team",
+    "git_head": "a6d5098",
+    "git_status_count": 275,
+    "toolchains": {
+      "go": "unavailable — $HOME/.local/toolchains/go1.26.1/bin/go does not exist",
+      "node": "v22.23.1",
+      "pnpm": "10.28.2"
+    },
+    "disk_free": "1.9G"
+  },
+  "constraints_ack": {
+    "no_deploy": true,
+    "no_inference": true,
+    "no_secret_read": true,
+    "no_commit_push": true,
+    "no_reset_stash_revert_clean": true,
+    "ownership_exclusive": true
+  },
+  "status": "IN_PROGRESS",
+  "notes": [
+    "obs_delivery*.go files do not exist yet; will create as NEW",
+    "Go toolchain absent — Go helper implementation and tests cannot be compiled/run; will produce static/contract evidence and blocker",
+    "hub.go in daemonws is MUST-NOT-TOUCH; any hub anchor insertion is handoff to L1",
+    "Node deps (pnpm install) not permitted; UI tests may be blocked if node_modules absent"
+  ]
+}

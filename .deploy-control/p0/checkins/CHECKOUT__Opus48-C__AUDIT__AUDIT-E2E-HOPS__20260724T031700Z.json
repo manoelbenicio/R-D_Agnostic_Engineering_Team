@@ -1,0 +1,41 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-24T03:17:00Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "AUDIT",
+  "task_ids": ["AUDIT-E2E-HOPS"],
+  "status": "DONE",
+  "verdict": "PASS",
+  "reported_to": "w5:p1 (Opus48-Kiro)",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/AUDIT-e2e-hops.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "read-only source audit with file:line citations at HEAD a6d50986", "exit_code": 0, "assertions_or_tests": 0, "result": "VERIFIED"},
+    {"command": "git diff --check -- .deploy-control/p0/evidence/AUDIT-e2e-hops.md", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "N/A (audit; no code)", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/AUDIT-e2e-hops.md"],
+  "claims": {
+    "c1_all_7_hops_implemented": "PASS (obs_ingress.go:60, obs_queue.go:32, admission_observability.go:65, cli_observability.go:43, obs_span.go:28, obs_persist.go:35, obs_delivery.go:143)",
+    "c2_shared_per_process_recorder": "PASS (server e2e_recorder.go:64-73; daemon daemon.go:277-297,830)",
+    "c3_one_span_per_hop_canonical_joins": "PASS (RequiredIDs joins per hop; queue single-span-at-dequeue task.go:183-217; delivery idempotent dedup; cli only with real proc_id daemon.go:3820-3835)",
+    "c4_metadata_only_scan_clean": "PASS (NewSpan closed vocab + Recorder.Emit fail-closed validate; leak tests in e2e/leakscan_test.go, gateway/obs_span_test.go, brain/admission_observability_test.go, etc.)",
+    "c5_no_dead_delivery_seam": "PASS (emitTerminalDelivery reached from real fanout: listeners.go:197-205 -> TerminalBroadcaster.BroadcastTerminalToWorkspace -> Hub/DualWrite(redis_relay.go:561-564) BroadcastTerminalDelivery -> deliverScopeCounting + emit)"
+  },
+  "notes": [
+    "NOTE-1 (info): daemon admission uses raw daemonSpanSink while cli/route use daemonSpanRecorder wrapping the SAME sink -> single per-process export; consistent; admission still fails closed (admission_observability_test).",
+    "NOTE-2 (confirm): route receiver wiring + sole HopRoute emitter cited (daemon.go:830, obs_span.go:28) but the route_telemetry.go handler line invoking EmitProviderSpan was not directly read; recommend a one-line confirm of exactly-one-emit-per-record.",
+    "NOTE-3 (info): two SetDeliveryRecorder exist (realtime/obs_delivery.go:179 ACTIVE server hop vs daemonws/hub.go:235 separate *DeliveryRecorder variant); confirm the daemonws variant is not a second unwired delivery path."
+  ],
+  "non_claims": [
+    "read-only independent audit; no product/test/config edited",
+    "audits instrumentation SHAPE only (implemented/installed/one-span/joins/metadata-only/live-seam); does NOT assert LLM/OmniRoute route acceptance",
+    "no inference/deploy/secret/live run"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "w5:p1 (manager) / Principal", "reason": "PASS with NOTE-2/NOTE-3 confirms", "file": ".deploy-control/p0/evidence/AUDIT-e2e-hops.md"}
+  ]
+}

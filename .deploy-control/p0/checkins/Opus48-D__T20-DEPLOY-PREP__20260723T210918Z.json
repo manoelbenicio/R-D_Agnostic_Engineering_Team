@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-deploy.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-deploy.md"
+  ],
+  "finished_at": "2026-07-23T21:10:11Z",
+  "lane": "tier20-deploy",
+  "last_heartbeat_at": "2026-07-23T21:10:11Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T21:09:18Z",
+  "status": "DONE",
+  "summary": "Standby tier-20 deploy-prep at T20-deploy.md: stage fixed /tmp/multica-auth-fixed (sha256 1233b118...) to orq1:/tmp/multica-auth preserving launcher (claude-code + claude_code_kimi_2.7_Code) and adding AGENT_BRAIN_TASK_CAPACITY_TIER=20 + capacity-gate env (gateway-required/strict-readiness/secret-file/legacy-off), restart via at + health gate, per canonical FIX-deploy-prep.md (not duplicated). Flagged: TIER=20 is schema-only and fail-closes to dev admission limit; real 20-task capacity needs the separate 9.1/9.2 acceptance gate (capacity_tier_authorized unset). Deploy gated on deploy_authorized + authorized orq1 access + verified build; nothing executed.",
+  "task": "T20-DEPLOY-PREP",
+  "validation": "STANDBY/DRAFT — read-only checks only: fixed artifact /tmp/multica-auth-fixed sha256=1233b118... (ELF, rebuilt since RES-deploy); control.json deploy_authorized/live_runs_authorized/capacity_tier_authorized all unset; confirmed AGENT_BRAIN_TASK_CAPACITY_TIER env + effectiveTaskAdmissionLimit fail-closes to dev limit regardless of tier. No build/scp/ssh/env-set/swap/at/restart/observe/inference/secret."
+}

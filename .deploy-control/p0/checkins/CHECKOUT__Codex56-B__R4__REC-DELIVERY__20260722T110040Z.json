@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:00:40Z",
+  "agent": "Codex56#B",
+  "pane_id": "w7:p4",
+  "lane": "R4",
+  "task_ids": ["6.2"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/daemonws/obs_delivery.go"
+  ],
+  "files_created": [
+    ".deploy-control/p0/evidence/R4-obs-delivery.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go vet ./internal/daemonws/", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go test ./internal/daemonws/ -run 'EmitDelivery|Delivery' -count=1 -v", "exit_code": 0, "assertions_or_tests": 5, "result": "PASS"},
+    {"command": "go test ./internal/daemonws/ -count=1", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"}
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [".deploy-control/p0/evidence/R4-obs-delivery.md"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["6.2"],
+  "summary": "Verified WS delivery helper obs_delivery.go: metadata-only HopDelivery span (session_id/delivery_id/bounded counters/outcome), fail-closed on missing required IDs, nil-recorder no-op, secrets_present=false. Applied gofmt (struct field alignment, formatting-only). go vet PASS; 5 EmitDelivery tests PASS; full daemonws package test ok. Files are new/untracked.",
+  "non_claims": [
+    "No live run / no inference / no deploy / no secret read.",
+    "hub.go (shared anchor) NOT edited; call-site wiring handed to R1.",
+    "UI Kanban components are outside this lock; no Node deps installed, no UI runner executed (STATIC only).",
+    "No OpenSpec/GSD edits; no checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "R1", "reason": "wire EmitDelivery call site at WS delivery-confirmed/dropped/backpressure point; helper not yet referenced in hub.go", "file": "multica-auth-work/server/internal/daemonws/hub.go"}
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/FIX-build.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/FIX-build.md"
+  ],
+  "finished_at": "2026-07-23T00:20:09Z",
+  "lane": "build-test",
+  "last_heartbeat_at": "2026-07-23T00:20:09Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T00:08:46Z",
+  "status": "DONE",
+  "summary": "POST-FIX VALIDATION PASS against exact deployed race-fix artifact: authoritative server build green + 8/8 targeted race-fix tests (service task-complete finalize-once + daemon StartTask-after-workdir ordering) PASS. Provenance recorded by sha256. Limitation: -race detector not runnable (no CGO/C compiler) -> functional ordering validated, not a detector pass; flagged for a C-toolchain host. No duplicate baseline; no edits/deploy.",
+  "task": "FIX-BUILD-TEST",
+  "validation": "Provenance: race fix = working tree at HEAD a6d5098 (sha256 recorded: task.go dc184cb0, daemon.go 98183047, task_complete_race_test 41b574c3, workdir_race_test 903bf0ca). go build ./...: exit 0. go test service 5 race-fix tests: 5/5 PASS (0). go test daemon 3 race-fix tests: 3/3 PASS (0). -race detector unavailable (CGO_ENABLED=0, no gcc)."
+}

@@ -1,0 +1,42 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/W1-implementation-D6.md",
+    ".deploy-control/p0/handoffs/W1-implementation.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/W1-implementation-D6.md",
+    "multica-auth-work/server/cmd/multica/cmd_daemon.go",
+    "multica-auth-work/server/go.mod",
+    "multica-auth-work/server/internal/daemon/brain_integration.go",
+    "multica-auth-work/server/internal/daemon/config.go",
+    "multica-auth-work/server/internal/daemon/daemon.go",
+    "multica-auth-work/server/internal/daemon/execenv/cline_home.go",
+    "multica-auth-work/server/internal/daemon/health.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/adapter.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/assert.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/assert_test.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/env.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/home.go",
+    "multica-auth-work/server/internal/daemon/runtimeenv/policy.go",
+    "multica-auth-work/server/internal/handler/agent_thinking_test.go",
+    "multica-auth-work/server/pkg/agent/models.go",
+    "multica-auth-work/server/pkg/agent/models_test.go",
+    "multica-auth-work/server/pkg/agent/nim.go",
+    "multica-auth-work/server/pkg/agent/nim_test.go"
+  ],
+  "finished_at": "2026-07-21T23:58:12Z",
+  "lane": "W1",
+  "last_heartbeat_at": "2026-07-21T23:58:12Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T23:41:43Z",
+  "status": "DONE",
+  "summary": "W1 GLM-ready serial implementation D1-D7 COMPLETE. Source (7): adapter.go,env.go,config.go,cline_home.go,brain_integration.go,assert.go,models.go. W1 tests (2): assert_test.go,models_test.go. R1(4)+R3(3) tests disjoint/green. No Kimi/Opus48/NIM/auth/fallback/Prodex touched. Remaining P0 = externally-gated GLM live run (BLK-AVAIL+BLK-25B), not W1 source.",
+  "task": "P0-W1-IMPLEMENTATION-D6",
+  "validation": "D1-D7 complete+focused-green: gofmt clean all W1 files; go test ./internal/daemon/runtimeenv/ -run Assert|Cline=ok 0.006s; go test ./pkg/agent/ -run StaticModels|Cline=ok 0.016s; go build daemon+execenv+runtimeenv+pkg/agent=OK; R1 D1/D2 + R3 D3-D6 focused suites GREEN (consumed). D7: models.go:562 cp/cline-pass/glm-5.2, models_test.go:172 lockstep; Kimi:563/NIM:572/nim.go:25 untouched (rg-verified). No live run (live_runs_authorized=false)."
+}

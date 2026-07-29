@@ -1,0 +1,39 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:17:30Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "R1",
+  "task_ids": ["5.2", "5.3"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/daemon/daemon_test.go",
+    "multica-auth-work/server/internal/daemon/native_runtime_wiring_test.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "edit_note": "daemon_test.go: +newTestDaemon (verbatim HEAD, 16 lines) and removed unused bytes import. native_runtime_wiring_test.go: removed stale daemon-level TestRequiresCredentialIsolationIncludesNIM (9 ins / 7 del, replaced with a migration comment), kept TestNIMUsesNativeHTTPRuntimeVersion. daemon.go NOT touched.",
+  "adjudication_applied": "Verified runtimeenv provides equivalent (stronger) NIM/NVIDIA credential isolation: policy.go denies NVIDIA_API_KEY/NIM_* keys; runtimeenv/env_test.go TestBuildMinimalInheritedRemovesCredentialAndRoutingSurface + isolation_g4_test.go assert NVIDIA_API_KEY exclusion. Therefore removed the stale daemon-level test; did NOT restore requiresCredentialIsolation and did NOT touch daemon.go. No credential/account rotation reintroduced.",
+  "tests": [
+    {"command": "gofmt -l internal/daemon/daemon_test.go internal/daemon/native_runtime_wiring_test.go", "exit_code": 0, "assertions_or_tests": 2, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go test ./internal/daemon/ -count=1 (5.2 full daemon matrix)", "exit_code": 1, "assertions_or_tests": 1, "result": "RAN_WITH_1_FAILURE", "detail": "Package now COMPILES and the matrix RUNS (was build-failed before this task). Sole failure: TestRunTask_StartTaskCalledAfterWorkdirOnDisk (workdir_race_test.go:149) — pre-existing source/test mismatch in daemon.go runTask, OUT OF LOCK, does not use newTestDaemon. All other daemon tests pass."},
+    {"command": "go build ./... (5.3 server-wide build)", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go test ./... (5.3 server-wide test)", "exit_code": null, "assertions_or_tests": 0, "result": "NOT_RUN", "detail": "Disk critical (139M, 100% used after warm-cache dep downloads). Running the full server-wide test matrix would exhaust shared-host disk; withheld per the disk-critical global constraint."}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/checkins/Opus48-A__REC-DAEMON-TEST__20260722T105853Z.json"],
+  "requirements": [],
+  "openspec_tasks": ["5.2", "5.3"],
+  "summary": "REC-DAEMON-TEST core deliverable DONE: daemon package test build UNBLOCKED. Restored over-deleted newTestDaemon (verbatim HEAD) + removed unused bytes import in daemon_test.go; removed stale daemon-level TestRequiresCredentialIsolationIncludesNIM in native_runtime_wiring_test.go per Principal adjudication (isolation now enforced in runtimeenv, verified). Intentional rotation/L2 deletions kept; daemon.go untouched. go vet clean; 5.2 matrix now runs; 5.3 server-wide build passes.",
+  "non_claims": [
+    "5.2 not fully green: 1 pre-existing OUT-OF-LOCK failure TestRunTask_StartTaskCalledAfterWorkdirOnDisk (daemon.go runTask StartTask placement / workdir_race_test.go), unrelated to this task; escalated.",
+    "5.3 server-wide TEST (go test ./...) NOT run: disk at 139M/100% — withheld to avoid exhausting shared-host disk; 5.3 BUILD passed.",
+    "did not touch daemon.go, workdir_race_test.go, or any non-locked file; no rotation restored; no deploy/inference/secret/commit/destructive-git."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "manager/L1-source", "reason": "pre-existing failure: daemon.go runTask no longer calls /start where workdir_race_test.go:149 expects ('Fix A StartTask placement missing'); source-level, out of my lock.", "file": "multica-auth-work/server/internal/daemon/workdir_race_test.go"},
+    {"to_lane": "manager", "reason": "run 5.3 server-wide go test ./... once disk is freed (currently 100%).", "file": "multica-auth-work/server"}
+  ]
+}

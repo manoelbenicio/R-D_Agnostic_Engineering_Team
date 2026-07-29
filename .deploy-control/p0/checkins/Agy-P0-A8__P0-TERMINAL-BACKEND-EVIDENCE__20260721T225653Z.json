@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "blocker": "Integrated D1-D7 build evidence exists, but no authorized GLM/Opus48 live terminal result exists (all live_runs=false; external route/security prerequisites remain) | owner: route live-run owners + OmniRoute/Product security + Principal Orchestrator | next action: capture backend persisted terminal result from the same single authorized run; do not initiate or duplicate execution",
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/A8-terminal-backend-evidence.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/A8-terminal-backend-evidence.md"
+  ],
+  "finished_at": "2026-07-22T04:12:03Z",
+  "lane": "A8-EVIDENCE",
+  "last_heartbeat_at": "2026-07-22T04:12:03Z",
+  "pane_id": "wB:p2",
+  "progress": 0,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:56:53Z",
+  "status": "FAILED",
+  "summary": "Task blocked waiting for live run evidence; checking out to transition lane to L8 INDEPENDENT VERIFIER.",
+  "task": "P0-TERMINAL-BACKEND-EVIDENCE",
+  "validation": "BLOCKED: integrated build and live run evidence do not exist yet"
+}

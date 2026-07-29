@@ -1,0 +1,26 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/W1-final-integration-evidence.md",
+    ".deploy-control/p0/handoffs/W1-implementation-D6.md",
+    ".deploy-control/p0/handoffs/R1-final-integration-validation.md",
+    ".deploy-control/p0/handoffs/R3-final-integration-validation.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/W1-final-integration-evidence.md"
+  ],
+  "finished_at": "2026-07-22T00:02:23Z",
+  "lane": "W1-EVIDENCE",
+  "last_heartbeat_at": "2026-07-22T00:02:23Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T23:59:21Z",
+  "status": "DONE",
+  "summary": "W1 final integration evidence COMPLETE: D1-D7 GLM-ready implementation + R1/R3 final validations all green; no W1 pending work. Only remaining P0 = externally-gated single GLM live run (live_runs.cline_glm=false; BLK-AVAIL+BLK-25B+Principal token), owned by Principal+OmniRoute. Kimi(5.7)/Opus48(5.8) external-blocked, not W1 source.",
+  "task": "P0-W1-FINAL-INTEGRATION-EVIDENCE",
+  "validation": "Consolidated (no rerun): W1 D1-D7 focused-green (runtimeenv Assert|Cline ok 0.006s; pkg/agent StaticModels|Cline ok 0.016s; build daemon+execenv+runtimeenv+pkg/agent OK; gofmt clean). R1 final PASS 0.017s no edits (DONE). R3 final NO-REVALIDATION-NEEDED (DONE; three locked tests use cp/cline-pass/glm-5.2 literal directly). live_runs all authorized=false."
+}

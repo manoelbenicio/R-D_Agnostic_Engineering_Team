@@ -1,0 +1,32 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T23:50:10Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "tier20-workload",
+  "task_ids": ["9.1-prep", "6.2-verify"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [".deploy-control/p0/evidence/T20-verifier.md"],
+  "files_deleted": [],
+  "tests": [
+    {"command": "git diff --check -- .deploy-control/p0/evidence/T20-verifier.md", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "verify no product .go written (assemble_from_logs_verify_test.go ABSENT)", "exit_code": 0, "assertions_or_tests": 0, "result": "NONE (No product source honored)"}
+  ],
+  "format_and_diff": {"format": "N/A (no code written to tree)", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-verifier.md"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["9.1 (prep)", "6.2 (verify)"],
+  "summary": "Instrumented tier-20 harness update + full AssembleFromLogs verifier delivered in evidence. Harness: 20 tasks + deterministic hold emit redacted agent-brain.e2e.v1 spans and export them to backend {ingress,queue,persist,delivery} + daemon {admission,cli,route} JSON files (7 emitting hops; hold emits the cli hop without LLM). Verifier (package e2e test, env-gated inert until exports exist): AssembleFromLogs merges the export files -> Assemble -> asserts len(Traces)==20; AllContinuous; Orphans==0; Anomalies==0; each trace 7 emitting hops present (+assembled HopTrace = 8 hops); union of Correlation.Get covers all 9 IDs; delivery drop_count==0 (dropped=0); plus ScanSpans leak-clean. Uses only the frozen public e2e API (no new product contract).",
+  "non_claims": [
+    "No product source: verifier delivered VERBATIM in evidence, NOT added to the module tree (it belongs in-module since it imports internal/e2e); no product .go edited",
+    "verifier NOT compiled/run here (would require writing into the module + a run); it references only confirmed frozen e2e symbols (Assemble/ScanSpans/EmittingHops/OrderedHops/Correlation.Get/AssemblyReport/Trace{Present,Continuous,Hops}/HopDelivery/Counters[drop_count])",
+    "NOT run: no instrumented harness executed, no export files produced, no inference, no live call (live_runs.*=false)",
+    "no new AssembleFromLogs added to the product package (verifier-local wrapper in the test file)",
+    "verifies concurrency/trace/persistence-accounting shape only; does NOT prove LLM/OmniRoute protocol behavior; no model-route acceptance; does not authorize 9.2/tiers/cutover"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "writer (authorized)", "reason": "if the verifier is to run in-tree, drop §2 source at internal/daemon/observability/e2e/assemble_from_logs_verify_test.go; instrument the harness exports (§1); run §3 recipe after an authorized tier-20 run", "file": "multica-auth-work/server/internal/daemon/observability/e2e/"}
+  ]
+}

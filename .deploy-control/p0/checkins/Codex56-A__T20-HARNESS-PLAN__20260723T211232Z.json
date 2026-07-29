@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-harness-plan.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-harness-plan.md"
+  ],
+  "finished_at": "2026-07-23T21:13:59Z",
+  "lane": "LANE2",
+  "last_heartbeat_at": "2026-07-23T21:13:59Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T21:12:32Z",
+  "status": "DONE",
+  "summary": "Documented deterministic 20-task submission harness: offered load = 20 tasks x (direct-target session-create {agent_id} + read-only cwd message), concurrency=20 burst via ThreadPoolExecutor, per-task index #i markers (server-assigned session/task UUIDs), receipt sorted by i -> /tmp/t20_receipt.json, success=201+task_id. Reproducibility: deterministic load shape (pin by sha256) vs per-run UUIDs/timings; not idempotent (creates 20 new sessions/tasks); preconditions listed. Flagged execution as a GATED live run (live_runs=false, tier-20/6.3 external) -> operator+Principal owns any authorized run. Not executed here.",
+  "task": "T20-HARNESS-PLAN",
+  "validation": "documentation-only, no execution, no :18080 probe, no live submission (git diff --check CLEAN). Read /tmp/t20_workload.py (sha256 6d266266..., 46 lines) and documented exact design."
+}

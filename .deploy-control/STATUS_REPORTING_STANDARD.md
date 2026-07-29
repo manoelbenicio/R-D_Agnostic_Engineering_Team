@@ -46,3 +46,13 @@ Anyone who does not sign the ACK line = NON-COMPLIANT.
 Contact the Tech-Lead/POC first for any question/doubt/blocker/status via:
 `bash /mnt/c/VMs/Projects/RD_Agnostic_Engineering_Team/.deploy-control/ping-opus.sh "[<AgentName>] <msg>"`
 Do NOT use bare `herdr agent send` (it strands without Enter).
+
+
+## 5. Main Brain P0 specialization (2026-07-21)
+
+For active Main Brain P0 assignments, `.deploy-control/p0/PROTOCOL.md` and
+`scripts/orchestration/p0_control.py` are the namespaced source of truth. They tighten the
+heartbeat cadence from 30 to **10 minutes**, use structured JSON check-in/check-out records,
+and require evidence plus focused validation at checkout. This applies only to assigned
+`IN_PROGRESS`/`BLOCKED` agents. Unassigned, `DONE`, or standby panes may remain idle and must
+not receive duplicate QA or synthetic busywork.

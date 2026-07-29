@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "agy",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/checkins/CHECKOUT__Agy-C10__C10__C10-OFFICIAL-PRACTICES__20260722T121615Z.json"
+  ],
+  "files_locked": [
+    ".planning/agent-brain-v3/FULL_PRODUCT_OFFICIAL_PRACTICES.md"
+  ],
+  "finished_at": "2026-07-22T12:16:20Z",
+  "lane": "C10",
+  "last_heartbeat_at": "2026-07-22T12:16:20Z",
+  "pane_id": "wK:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:15:57Z",
+  "status": "DONE",
+  "summary": "Official practices document written with Anthropic and OpenAI sources cited and exact prompt/DAG rules established",
+  "task": "C10-OFFICIAL-PRACTICES",
+  "validation": "git diff --check .planning/agent-brain-v3/FULL_PRODUCT_OFFICIAL_PRACTICES.md: PASS"
+}

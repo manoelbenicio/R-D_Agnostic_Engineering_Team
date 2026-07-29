@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/L2-gateway-readiness-evidence.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/gateway"
+  ],
+  "finished_at": "2026-07-22T04:07:39Z",
+  "lane": "L2",
+  "last_heartbeat_at": "2026-07-22T04:07:39Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T04:03:45Z",
+  "status": "DONE",
+  "summary": "L2 gateway VERIFIED green + acceptance criteria REVIEWED; no defect, no minimal fix warranted. Pre-existing NOT-authored benign test-only mod in gateway/contracts_test.go:65 (RouterOwnerLegacyGo -> \"alternate_router\", equivalent fail-closed assertion, suite green) flagged to manager/L8, not reverted (prohibited). Non-claims: no live/inference/secret/deploy/source-edit/OpenSpec.",
+  "task": "P0-6H-L2-GATEWAY",
+  "validation": "gofmt -l internal/daemon/gateway/ =clean exit0; go vet ./internal/daemon/gateway/ =exit0; go test ./internal/daemon/gateway/ -count=1 =ok 0.278s exit0; git diff --check -- internal/daemon/gateway/ =exit0. Acceptance: distinct readiness gates (Live/Authenticated/ModelRegistryReady/SelectedModelReady/SelectedProtocolReady) REVIEWED; /v1/models-not-inference REVIEWED; no credential/account lifecycle/retry/fallback in Brain gateway REVIEWED; deterministic fail-closed VERIFIED. No source edit by L2."
+}

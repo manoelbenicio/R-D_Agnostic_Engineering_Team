@@ -1,0 +1,34 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T23:58:20Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "OTLP-RECV",
+  "task_ids": [],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver.go",
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver_test.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/daemon/observability/otlpreceiver/ -count=1", "exit_code": 0, "assertions_or_tests": 8, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/observability/otlpreceiver/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-otlp-receiver.md"],
+  "requirements": [],
+  "openspec_tasks": [],
+  "summary": "Applied official OTLP live-shape corrections: event.name value=api_request with separate scope validation (claude_code); trusted correlation read from resource.attributes (agent_brain.task_id/request_id) merged into records with NO log override; fail-closed drop+count for target records missing request_id or trusted correlation; idempotency dedup keyed by trusted_request_id|request_id|client_request_id with duplicate counter and release-on-sink-error re-persist; official-shape fixture + Stats counters. All tests PASS; gofmt/build/vet/diff clean.",
+  "non_claims": [
+    "Edited only the two new otlpreceiver package files (self-owned); no shared/existing source edited.",
+    "Idempotency handles sequential OTLP client retries (incl. retry-after-sink-error re-persist); concurrent identical keys are reserved atomically. Dedup set bounded FIFO (MaxDedupKeys).",
+    "Tests use httptest ServeHTTP + RemoteAddr; no real socket; no live run. Scope name assumed 'claude_code' (constant ExpectedScopeName) — integrator adjusts if the live scope differs.",
+    "No inference/secret/deploy/commit/push; no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "L1/integrator", "reason": "start LoopbackServer + wire a persistence Sink; confirm live instrumentation scope name matches ExpectedScopeName", "file": "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver.go"}
+  ]
+}

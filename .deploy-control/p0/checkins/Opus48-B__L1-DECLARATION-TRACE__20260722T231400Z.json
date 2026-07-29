@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/L1-declaration-trace.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/L1-declaration-trace.md"
+  ],
+  "finished_at": "2026-07-22T23:15:27Z",
+  "lane": "L1-TRACE",
+  "last_heartbeat_at": "2026-07-22T23:15:27Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T23:14:00Z",
+  "status": "DONE",
+  "summary": "Traced daemon consumption of enriched readiness declaration: OmniRoute /v1/models header+enriched rows -> TTL Registry -> strict ReadinessChecker (liveness/auth/registry-version/selected-model-available/selected-protocol). Only operator override = OMNIROUTE_DEV_MODELS_COMPAT env projection; no static declaration file. Evidence with exact line refs.",
+  "task": "L1-DECLARATION-TRACE",
+  "validation": "READ-ONLY trace (no edits). Registry version: header X-OmniRoute-Registry-Version reconciled header-wins vs body registry_version, mismatch fail-closed (client.go:195-200), validated in buildSnapshot (registry.go:221). capability.protocol: per-row protocol -> protocolFromWire (4 allowed) -> ModelSpec.Capability.Protocol (registry.go:261-263); enriched-row completeness fail-closed; consumed by ReadinessChecker.SelectedProtocolReady + ValidateCapability. Operator surface: NO static capability declaration file; only OMNIROUTE_DEV_MODELS_COMPAT=1 projection (single selectable route claude_code_kimi_2.7_Code). Registry wired brain_integration.go:210, TTL-cached; readiness checker :232."
+}

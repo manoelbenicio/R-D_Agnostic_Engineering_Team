@@ -1,0 +1,27 @@
+{
+  "activity": "checkout",
+  "agent": "agy",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/checkins/CHECKOUT__Agy-C1__C1__C1-CHAT-BACKEND__20260722T122410Z.json"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/handler/agent.go",
+    "multica-auth-work/server/internal/handler/chat.go",
+    "multica-auth-work/server/internal/handler/chat_test.go",
+    "multica-auth-work/server/internal/handler/workspace.go",
+    "multica-auth-work/server/internal/handler/workspace_test.go"
+  ],
+  "finished_at": "2026-07-22T12:24:19Z",
+  "lane": "C1",
+  "last_heartbeat_at": "2026-07-22T12:24:19Z",
+  "pane_id": "wK:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T12:22:29Z",
+  "status": "DONE",
+  "summary": "Reconciled default Kiro TL squad + coder membership and chat routing in internal/handler; gofmt & diff clean",
+  "task": "C1-CHAT-BACKEND",
+  "validation": "go test ./internal/handler: SKIPPED_NO_DB (connection refused 127.0.0.1:5432)"
+}

@@ -1,0 +1,103 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:00:59Z",
+  "agent": "Agy-P0-A8",
+  "pane_id": "wB:p2",
+  "lane": "R8",
+  "task_ids": [
+    "REC-INDEP-EVAL"
+  ],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/R8-post-t360-verification-report.md",
+    ".deploy-control/p0/handoffs/R8-post-t360-handoff.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./internal/daemon/gateway/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./internal/daemon/runtimeenv/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./pkg/agent/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./internal/daemon/observability/e2e/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./internal/middleware/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "/home/ec2-user/goroot/go/bin/go test ./internal/daemonws/...",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    },
+    {
+      "command": "openspec validate --all --strict --json",
+      "exit_code": 0,
+      "assertions_or_tests": 4,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/R8-post-t360-verification-report.md",
+    ".deploy-control/p0/handoffs/R8-post-t360-handoff.md"
+  ],
+  "requirements": [
+    "AB-REQ-01..40"
+  ],
+  "openspec_tasks": [
+    "REC-INDEP-EVAL"
+  ],
+  "summary": "POST-T360 R8 Independent Evaluation completed cleanly with 0 product code edits. R3/L2, R4/L4, R5/L3, R6/L5+L6-ingress, R7/L7-WS verified green; R1/L1 and R2/service blocked with routed findings FND-L8-01 to FND-L8-06.",
+  "non_claims": [
+    "No product code source edits were made",
+    "No deploy, Docker, or inference executed"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {
+      "to_lane": "L1",
+      "reason": "unformatted Go source file & missing symbols build error",
+      "file": "multica-auth-work/server/internal/daemon/client.go"
+    },
+    {
+      "to_lane": "L4",
+      "reason": "unformatted Go source file",
+      "file": "multica-auth-work/server/pkg/agent/codebuddy.go"
+    },
+    {
+      "to_lane": "L7",
+      "reason": "unformatted Go source file",
+      "file": "multica-auth-work/server/internal/daemonws/obs_delivery.go"
+    },
+    {
+      "to_lane": "R2",
+      "reason": "unused import blocking service package",
+      "file": "multica-auth-work/server/internal/service/email.go"
+    }
+  ]
+}

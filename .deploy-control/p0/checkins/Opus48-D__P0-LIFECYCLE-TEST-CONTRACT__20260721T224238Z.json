@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/R3-lifecycle-focused-tests.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/R3-lifecycle-focused-tests.md"
+  ],
+  "finished_at": "2026-07-21T22:44:56Z",
+  "lane": "R3-TEST-DESIGN",
+  "last_heartbeat_at": "2026-07-21T22:44:56Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:42:38Z",
+  "status": "DONE",
+  "summary": "Delivered focused-test contract converting L3c (Cline credentialless adapter acceptance + providers.json materialization + buildLaunch env/secret wiring + AssertPreLaunch Cline layout + fail-closed admission guard incl. NVIDIA exclusion) and L7b (controlled-home GC reclamation) + capacity-release-on-prelaunch-failure into exact test names/files/fixtures/assertions/pass-fail. Cancel/terminal/usage explicitly reused as equivalent evidence (no re-test). Package-scoped runner cmds via canonical go path; W1-serial ownership for daemon-pkg tests, A1/R1 for runtimeenv; A3 IDs BLOCKED_EXTERNAL (tests parameterized over clineAgentBrainRoutes). No product code, no product tests authored, no broad regression, no live run.",
+  "task": "P0-LIFECYCLE-TEST-CONTRACT",
+  "validation": "Design-only, product source untouched (lock only on the handoff doc). Preflight recorded with canonical /home/ec2-user/goroot/go/bin/go => go1.26.1 linux/amd64. Grounded every test in verified existing helpers: brain_integration_test.go (newSyntheticGateway/syntheticAgentBrainConfig/syntheticGatewayTask/syntheticCredentialSource/isolation-child re-exec/launch.Environment.Keys()/Exec()), runtimeenv/assert_test.go (controlledTestDirectories/BuildGatewayEnvironment/LaunchPlan/AssertPreLaunch/ErrPreLaunchPolicy/createTestDirectorySymlink), runtimeenv/cline_test.go (NewClineConfigContract/ValidateClineConfigBytes/ClineSecretReferenceSentinel/clineAgentBrainRoutes). No go build/test executed (R3 owns no source lock)."
+}

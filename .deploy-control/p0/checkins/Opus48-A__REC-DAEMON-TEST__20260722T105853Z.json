@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/checkins/CHECKOUT__Opus48-A__R1__REC-DAEMON-TEST__20260722T111730Z.json"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/daemon_test.go",
+    "multica-auth-work/server/internal/daemon/native_runtime_wiring_test.go"
+  ],
+  "finished_at": "2026-07-22T11:18:15Z",
+  "lane": "R1",
+  "last_heartbeat_at": "2026-07-22T11:18:15Z",
+  "pane_id": "w6:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T10:58:53Z",
+  "status": "DONE",
+  "summary": "Daemon test build UNBLOCKED: restored newTestDaemon (verbatim HEAD)+removed unused bytes import; removed stale TestRequiresCredentialIsolationIncludesNIM per Principal adjudication (runtimeenv provides equivalent NIM isolation, verified) keeping TestNIMUsesNativeHTTPRuntimeVersion; kept intentional rotation/L2 deletions; no daemon.go edit, no rotation. 5.2 matrix now compiles+runs (1 pre-existing out-of-lock failure escalated); 5.3 build passes; 5.3 full test withheld (disk 100%).",
+  "task": "REC-DAEMON-TEST",
+  "validation": "gofmt -l (2 files)=clean; go vet ./internal/daemon/=exit0; go test ./internal/daemon/ -count=1 =exit1 RAN with 1 pre-existing OUT-OF-LOCK failure TestRunTask_StartTaskCalledAfterWorkdirOnDisk (workdir_race_test.go:149, daemon.go runTask), all other daemon tests pass; go build ./... =exit0; git diff --check=exit0. go test ./... NOT run (disk 139M/100%). daemon.go untouched."
+}

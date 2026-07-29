@@ -1,0 +1,37 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-24T00:31:30Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "OTLP-RECV",
+  "task_ids": [],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver.go",
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver_test.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/daemon/observability/otlpreceiver/ -count=1 -timeout=60s", "exit_code": 0, "assertions_or_tests": 14, "result": "PASS"},
+    {"command": "go build ./internal/daemon/observability/otlpreceiver/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/observability/otlpreceiver/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-otlp-receiver.md"],
+  "requirements": [],
+  "openspec_tasks": [],
+  "summary": "Corrected target identification to documented signals: resource service.name=claude-code + log event.name=api_request; removed the undocumented ExpectedScopeName gate. Instrumentation scope is IGNORED entirely (per Principal retraction of 'record observed scope') - not gating, not persisted; SanitizedRecord remains a closed schema with no scope field. Tests prove arbitrary/malicious scope neither gates nor is marshaled. All 5 shape fixes + the wait-state idempotency race fix remain intact. 14/14 tests PASS; build/vet/gofmt/diff clean.",
+  "non_claims": [
+    "Edited only the two otlpreceiver package files.",
+    "Required Claude Code exporter env documented in evidence (integrator/operator config; receiver does not consume env).",
+    "Build cache relocated to root fs (/home/ec2-user/f2cache,f2tmp) because /tmp tmpfs was full; -race still unavailable (no CGO).",
+    "Three TestConcurrentIdenticalPOSTs_* tests remain present (not authored by me; parallel edit) and pass.",
+    "CLI hop ID correction remains OUT OF this lane (daemon.go/pkg/agent/cli_observability.go = L1 shared source).",
+    "No live/deploy/inference/secret/commit/push; no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "live-smoke", "reason": "final live smoke must report fixed classification scope_ignored=true (never raw scope) and confirm real events with an undocumented scope are still persisted", "file": "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver.go"}
+  ]
+}

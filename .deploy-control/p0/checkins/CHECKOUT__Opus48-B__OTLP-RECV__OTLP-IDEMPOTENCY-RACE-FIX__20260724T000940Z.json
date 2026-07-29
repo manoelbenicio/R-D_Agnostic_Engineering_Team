@@ -1,0 +1,36 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-24T00:09:40Z",
+  "agent": "Opus48#B",
+  "pane_id": "w6:p2",
+  "lane": "OTLP-RECV",
+  "task_ids": [],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver.go",
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver_test.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "tests": [
+    {"command": "go test ./internal/daemon/observability/otlpreceiver/ -count=1 -timeout=60s", "exit_code": 0, "assertions_or_tests": 13, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/observability/otlpreceiver/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": [".deploy-control/p0/evidence/T20-otlp-receiver.md"],
+  "requirements": [],
+  "openspec_tasks": [],
+  "summary": "Fixed the concurrent idempotency lost-ack race in the OTLP receiver: replaced reserve/release (which treated in-flight as persisted) with a wait/state protocol (acquire/commit/abort over keyState{done,committed}). A concurrent duplicate now waits for the leader's outcome: duplicate only if the leader COMMITTED; if the leader ABORTED (sink failed), exactly one waiter re-leads and retries. Guarantees no acknowledged loss, exactly one eventual persist, and correct counters. Restored top-of-loop ctx check (canceled->408, no persist). All 13 package tests PASS (incl. the pre-existing concurrent race tests that previously deadlocked the old code, and 2 new gate-sink regressions). gofmt/build/vet/diff clean.",
+  "non_claims": [
+    "Edited only the two otlpreceiver package files; no shared source.",
+    "CONCERN: -race not run (CGO_ENABLED=0/no gcc + tmpfs full during race build); correctness via deterministic gate-sink handshakes + go vet.",
+    "Three TestConcurrentIdenticalPOSTs_* tests present in this file were not authored by me (parallel edit on same concern; no active-lock overlap at my check-in) — they pass with the fix; flagged to manager.",
+    "CLI hop ID correction (LaunchID=brain.AdmissionLaunchID, ProcID=real PID via agent.Session.ProcessID) is L1-owned shared source (daemon.go/pkg/agent/cli_observability.go) — OUT OF this lane; recipe handed to L1.",
+    "No live/deploy/inference/secret/commit/push; no OpenSpec checkbox closed."
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "L1", "reason": "CLI hop IDs: set LaunchID=brain.AdmissionLaunchID(corr) + ProcID=real child PID (agent.Session.ProcessID from cmd.Process.Pid, propagated via executeAndDrainForTask); never synthesize/backfill; zero PID => no valid CLI span; do not ignore EmitCLI errors", "file": "multica-auth-work/server/internal/daemon/daemon.go"},
+    {"to_lane": "manager", "reason": "unexpected TestConcurrentIdenticalPOSTs_* tests present in OTLP-owned file (parallel edit?)", "file": "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver_test.go"}
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/D6-prelaunch-adjudication.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/D6-prelaunch-adjudication.md"
+  ],
+  "finished_at": "2026-07-21T23:38:26Z",
+  "lane": "A10-DESIGN",
+  "last_heartbeat_at": "2026-07-21T23:38:26Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T23:35:44Z",
+  "status": "DONE",
+  "summary": "D6 verdict: assert.go MUST change (3 edits) + env.go add ChildEnvironment.clineDataDir field (4 total), correcting R1-DESIGN D2 no-field claim. CLINE_DATA_DIR needs two-layer containment (compose-time done + new pre-launch exactPathWithin). Config-byte validation stays in cline.go (assert stays content/secret-free). W1-exclusive serial (F-ASSERT + F14 amend), before Cline live run; assert_test.go/R3 test additions. 8 stop conditions. Until landed, AssertPreLaunch fail-closes Cline -> GLM/Kimi live runs cannot succeed.",
+  "task": "P0-D6-PRELAUNCH-ADJUDICATION",
+  "validation": "read-only source verified at HEAD a6d5098: assert.go AssertPreLaunch fails closed for CLIOpenAICompatible (switch default + trustedEntryAllowed no-case + launchRootsAreControlled skips Cline containment); env.go ChildEnvironment has no clineDataDir field; adapter.go/env.go-inject/execenv writer/cline.go byte-validation already done. No compile/test/live run."
+}

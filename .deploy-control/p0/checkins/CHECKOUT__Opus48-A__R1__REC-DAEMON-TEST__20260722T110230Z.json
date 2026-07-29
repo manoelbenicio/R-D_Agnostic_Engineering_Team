@@ -1,0 +1,38 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:02:30Z",
+  "agent": "Opus48#A",
+  "pane_id": "w6:p1",
+  "lane": "R1",
+  "task_ids": ["5.2"],
+  "status": "BLOCKED",
+  "files_changed": ["multica-auth-work/server/internal/daemon/daemon_test.go"],
+  "files_created": [],
+  "files_deleted": [],
+  "edit_note": "Single minimal edit: +16 lines restoring newTestDaemon verbatim from HEAD. The -742 lines in git diff --stat are pre-existing D-work (intentional rotation/L2 test + fake deletions), not authored here; kept deleted.",
+  "restored_helpers": ["newTestDaemon"],
+  "kept_deleted_intentional": ["daemonFakeRotationService + methods (callCount, onlyCall)", "daemonFakeL2RuntimeClient + methods (counts, startRequest)", "Test*ProactiveRotation* / Test*L2Session* / TestF0NoRouterOwner* / TestEventIngestNonRouting* (all refs=0)"],
+  "tests": [
+    {"command": "gofmt -l internal/daemon/daemon_test.go", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS"},
+    {"command": "go vet ./internal/daemon/", "exit_code": 1, "assertions_or_tests": 1, "result": "BLOCKED", "detail": "sole remaining error is native_runtime_wiring_test.go:20 undefined requiresCredentialIsolation (out-of-lock); daemon_test.go itself no longer reports any undefined symbol"},
+    {"command": "go test ./internal/daemon/ -run <newTestDaemon callers> -count=1", "exit_code": null, "assertions_or_tests": 0, "result": "NOT_RUN", "detail": "package test build blocked by native_runtime_wiring_test.go (out of lock)"}
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [".deploy-control/p0/checkins/Opus48-A__REC-DAEMON-TEST__20260722T105853Z.json"],
+  "requirements": [],
+  "openspec_tasks": ["5.2"],
+  "summary": "daemon_test.go over-deletion FIXED: restored the only referenced over-deleted helper (newTestDaemon, refs=10) verbatim from HEAD; intentional rotation/L2 test+fake deletions kept. gofmt clean; git diff --check clean; go vet now reports ONLY the out-of-lock native_runtime_wiring_test.go, proving daemon_test.go compiles clean.",
+  "non_claims": [
+    "daemon focused tests NOT run: daemon package test build still blocked by native_runtime_wiring_test.go:20 (undefined requiresCredentialIsolation), which is NOT in my daemon_test.go-only lock",
+    "did not touch daemon.go (non-test source; requiresCredentialIsolation removal is an L1 source finding, do-not-touch per dispatch)",
+    "did not touch native_runtime_wiring_test.go (out of lock)",
+    "no deploy/inference/live-run/secret/commit/push/destructive-git"
+  ],
+  "blocker": "native_runtime_wiring_test.go:20 references requiresCredentialIsolation, removed from daemon.go:4128 in the credentialless transition; blocks daemon package test compilation. Owner: manager/Principal to adjudicate (restore source fn vs remove/adjust the test). daemon_test.go restore is complete and held under lock.",
+  "handoffs": [
+    {"to_lane": "manager", "reason": "adjudicate + assign the native_runtime_wiring_test.go / daemon.go requiresCredentialIsolation mismatch so daemon focused tests can run; I can run+capture once resolved (still hold daemon_test.go lock).", "file": "multica-auth-work/server/internal/daemon/native_runtime_wiring_test.go"}
+  ]
+}

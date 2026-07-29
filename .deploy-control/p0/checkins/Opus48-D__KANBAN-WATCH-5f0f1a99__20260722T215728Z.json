@@ -1,0 +1,21 @@
+{
+  "activity": "Read-only watch request for live task 5f0f1a99 on ORQ1; verifying authorization gate before any observe/SSH",
+  "agent": "Opus48#D",
+  "blocker": "ARMED single-clean-run read-only watcher, awaiting trigger. Gate check @00:17Z: strict_ready/window=none (no open window), live_runs_authorized unset + all families authorized:false + no codex family (no authorized run), no authorized orq1 read path for this lane; separate LIVE-watch.md lane exists (avoid duplicate/hammering). Owner: Principal (w5:p9) to open strict-ready window + authorize a run + designate the read-only observation path/watcher. Auto-trigger on ALL of: authorized read path + open window/authorized run + this lane designated non-duplicate watcher -> then capture ONE run claim/start/CLI/gateway(readiness only)/persist/terminal via status-only polling (>=5s, 30-min cap, exit on first terminal), never claim/enqueue/rerun/restart. No SSH/inference/rerun/fabricated trace performed.",
+  "depends_on": [],
+  "evidence": [],
+  "files_locked": [
+    ".deploy-control/p0/evidence/KANBAN-watch.md"
+  ],
+  "finished_at": null,
+  "lane": "kanban-watcher",
+  "last_heartbeat_at": "2026-07-23T00:18:57Z",
+  "pane_id": "w8:p2",
+  "progress": 0,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T21:57:28Z",
+  "status": "BLOCKED",
+  "summary": null,
+  "task": "KANBAN-WATCH-5f0f1a99",
+  "validation": null
+}

@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#D",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/R3-final-integration-validation.md",
+    ".deploy-control/p0/handoffs/R3-test-implementation.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/R3-final-integration-validation.md"
+  ],
+  "finished_at": "2026-07-22T00:00:00Z",
+  "lane": "A9-R3",
+  "last_heartbeat_at": "2026-07-22T00:00:00Z",
+  "pane_id": "w8:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T23:56:49Z",
+  "status": "DONE",
+  "summary": "W1 final D7 (pkg/agent GLM prefix only, Kimi/NIM untouched) has zero impact on the three locked R3 tests: they use the final cp/cline-pass/glm-5.2 literal directly and do not consume pkg/agent clineStaticModels/catalog. No rerun; R3-test-implementation.md (7 tests green) stands as equivalent evidence. No source edited, no test executed, no duplicate run.",
+  "task": "P0-R3-FINAL-INTEGRATION-VALIDATION",
+  "validation": "NO-REVALIDATION-NEEDED. Impact grep: three locked test files consume route as direct brain.RouteModel(\"cp/cline-pass/glm-5.2\") literal (config_test.go:929, brain_integration_test.go:885/915) = final post-D7 value; execenv/cline_home_test.go has no route literal; clineStaticModels only in pkg/agent/models.go+models_test.go (the D7 files), absent from all three locked files; none import pkg/agent. D7 GLM prefix is catalog-confined and does not touch the GLM literal, cline/cline mapping, or CLINE_DATA_DIR/secret/carrier path asserted by R3. No test run (avoids duplicating the already-green R3 suite)."
+}

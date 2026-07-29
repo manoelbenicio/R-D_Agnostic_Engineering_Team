@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/R1-cline-route-source-delta.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/R1-cline-route-source-delta.md"
+  ],
+  "finished_at": "2026-07-21T22:41:40Z",
+  "lane": "R1-DESIGN",
+  "last_heartbeat_at": "2026-07-21T22:41:40Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:37:59Z",
+  "status": "DONE",
+  "summary": "Exact minimal Cline route source delta: 7 model-agnostic wiring edits (D1 adapter gate flip, D2 trusted env CLINE_DATA_DIR/CLINE_OMNIROUTE_API_KEY, D3 cline executable map, D4 config Validate accept, D5 new WriteCredentiallessClineConfig, D6 buildLaunch Cline branch, D7=A3 SUB-1 catalog cp/ prefix) fully implementable NOW for GLM cp/cline-pass/glm-5.2. Kimi (5.7) reuses identical path; only exact ID (K1, A3 BLK-KIMI) + one-line fixtures K2/K3 + live run K5 blocked. No auth/fallback/invented IDs; NVIDIA stays OmniRoute-only. Product source untouched; W1 applies edits.",
+  "task": "P0-CLINE-ROUTE-SOURCE-DELTA",
+  "validation": "read-only design; no product edits, no live run. Old-behavior snippets verified by direct source AST lookup: config.go:141-150 agentBrainBuiltInCLIFor; config.go:194-198 AgentBrainIntegrationConfig.Validate; runtimeenv/env.go:195-224 trustedAdapterEntries + BuildGatewayEnvironment; brain_integration.go:277-361 buildLaunch; execenv/codex_home.go:87-102 WriteCredentiallessCodexConfig; AdapterEnvironment env.go:107-113; models.go:562/563/572; cline_test.go:19. Focused test/verify commands specified (not executed in read-only phase)."
+}

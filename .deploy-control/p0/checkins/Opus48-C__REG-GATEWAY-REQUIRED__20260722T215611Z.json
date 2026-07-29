@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/REG-gateway-required.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/REG-gateway-required.md"
+  ],
+  "finished_at": "2026-07-22T21:58:25Z",
+  "lane": "config-regression",
+  "last_heartbeat_at": "2026-07-22T21:58:25Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T21:56:11Z",
+  "status": "DONE",
+  "summary": "VERIFIED (OpenSpec 2.1): existing focused regressions prove daemon gateway-required mode routes via OmniRoute (GatewayRequired=true, RouterOwner=omniroute) and rejects native/dual/alternate-router fallback (accept-omniroute + reject-alternate-router in TaskRequest.Validate; RejectsDualRouterBeforeGatewayAccess; FailsClosedWhenGatewayNotReady; RecoveryOutageFailsClosedWithoutFallback; GatewayAdmissionFailsClosed 5/5). Read-only: no product edit, evidence-only. Untargeted-chat live acceptance is out of this lane (needs live-run token; not executed; no fake PASS).",
+  "task": "REG-GATEWAY-REQUIRED",
+  "validation": "go test ./internal/daemon/brain/ -run (TaskRequestSeparates|StrictReadinessFailsClosed|LegacyTranslation|GatewayAdmissionFailsClosed|RecoveryModeGatewayOutage|InitialRouteNoCrossModelFallback) -count=1: PASS exit0 (GatewayAdmissionFailsClosed 5/5 subtests); go test ./internal/daemon/ -run AgentBrain -count=1: PASS exit0 (RejectsDualRouter, FailsClosedWhenGatewayNotReady, UsesInstalledOmniRouteHealthContract, positive OmniRoute plan); git diff --check evidence: PASS; no product code edited"
+}

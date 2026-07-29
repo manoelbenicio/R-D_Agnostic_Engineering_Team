@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-live-correlation-audit.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-live-correlation-audit.md"
+  ],
+  "finished_at": "2026-07-24T00:12:08Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-24T00:12:08Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T00:07:07Z",
+  "status": "DONE",
+  "summary": "Live correlation audit: even fully wired, Assemble never AllContinuous. M1 ingress task_id never stamped (no prod SetIngressTaskID caller) -> ingress absent + route unjoinable. M2 launch_id mismatch: admission admissionSafeID(TaskID:SessionID:RequestID) vs CLI safeCorrelationID(RequestID) -> cli orphan. M3 route request_id different namespace + no prod EmitProviderSpan caller. M4 delivery session_id = WS nextWSSessionID not agent session -> delivery orphan. M5 queue double-emits (enqueued+dequeued, same task_id) -> duplicate_task_hop. task_id joins iff corr.TaskID==row id. Passing wiring tests are FIXTURE ALIGNMENT (hand-aligned/read-back IDs), not production. Minimal canonical propagation contract specified (5 items) mapping each to the join it repairs; source edits out of lane (W1/Principal, P0-gated).",
+  "task": "T20-LIVE-CORRELATION-AUDIT",
+  "validation": "read-only audit; no edits (git diff --check clean). All mismatches cited file:line and verified by reading production sources: request_logger.go:143/236/296-303, task.go:161/186/199/227, daemon.go:3756/3779/3998-4011, admission_observability.go AdmissionLaunchID/:128, brain_integration.go:531, obs_span.go:37-40, hub.go:111/304/415."
+}

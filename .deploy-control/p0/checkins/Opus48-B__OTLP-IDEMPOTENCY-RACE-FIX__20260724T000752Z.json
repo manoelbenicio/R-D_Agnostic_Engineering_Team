@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-otlp-receiver.md"
+  ],
+  "files_locked": [
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver.go",
+    "multica-auth-work/server/internal/daemon/observability/otlpreceiver/otlpreceiver_test.go"
+  ],
+  "finished_at": "2026-07-24T00:24:38Z",
+  "lane": "OTLP-RECV",
+  "last_heartbeat_at": "2026-07-24T00:24:38Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T00:07:52Z",
+  "status": "DONE",
+  "summary": "Concurrent idempotency lost-ack race FIXED in otlpreceiver (wait/state). All 13 tests PASS incl. pre-existing concurrent race tests that deadlocked old reserve/release. Only otlpreceiver files edited. CLI-hop ID fix handed to L1 (shared source, out of lane).",
+  "task": "OTLP-IDEMPOTENCY-RACE-FIX",
+  "validation": "gofmt clean(0); go build(0); go vet(0); go test ./internal/daemon/observability/otlpreceiver/ -count=1 -timeout=60s = 13/13 PASS ok 0.035s(0); git diff --check(0). Wait/state acquire/commit/abort: concurrent duplicate waits for leader; dup only if committed; re-leads if leader aborted -> no acknowledged loss, exactly one persist, correct counters. ctx-cancel->408 no persist restored. CONCERN: -race unavailable (no CGO + tmpfs full)."
+}

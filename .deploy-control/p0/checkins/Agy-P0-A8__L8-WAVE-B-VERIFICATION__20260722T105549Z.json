@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/L8-verification-report.md",
+    ".deploy-control/p0/handoffs/L8-verifier-handoff.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/L8-verification-report.md",
+    ".deploy-control/p0/handoffs/L8-verifier-handoff.md"
+  ],
+  "finished_at": "2026-07-22T10:59:15Z",
+  "lane": "L8",
+  "last_heartbeat_at": "2026-07-22T10:59:15Z",
+  "pane_id": "wB:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T10:55:49Z",
+  "status": "DONE",
+  "summary": "L8 Wave B/C Independent Evaluation completed cleanly. Evidence report and handoff updated; transitioning to POST-T360 R8 verifier pass.",
+  "task": "L8-WAVE-B-VERIFICATION",
+  "validation": "Wave B/C evaluation completed: L2, L3, L4, L5, L7 VERIFIED green; L1, L6 BLOCKED with routed findings FND-L8-01 to FND-L8-06; zero lock overlap PASS"
+}

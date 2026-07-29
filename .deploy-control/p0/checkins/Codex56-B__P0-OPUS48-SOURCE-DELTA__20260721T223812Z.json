@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/R2-opus48-source-delta.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/R2-opus48-source-delta.md"
+  ],
+  "finished_at": "2026-07-21T22:42:03Z",
+  "lane": "R2-DESIGN",
+  "last_heartbeat_at": "2026-07-21T22:42:03Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:38:12Z",
+  "status": "DONE",
+  "summary": "Design DONE. Proven minimal delta = ZERO product source lines: Opus48 route is config (AGENT_BRAIN_CLI_KIND=claude-code + AGENT_BRAIN_ROUTE_MODEL=<opus48 id>) + provider=claude agent w/ model=<id> + external OmniRoute registry row. Accepted Anthropic frontend = claude-code (CLIClaudeCode). Route policy has no model allow-list; config loader is env-driven; no hard-coded id. External blocker isolated to the exact Opus48 AWS RouteModel (OmniRoute registry owner). Native kiro provider mapping explicitly rejected (provider-mismatch + credential-sensitive, non-minimal). File/symbol/test matrix mapped for 5.8/8.1/8.2; one live run reserved to W1, gated by D-V3-25(B). Zero credential/account ownership.",
+  "task": "P0-OPUS48-SOURCE-DELTA",
+  "validation": "Read-only trace at HEAD a6d5098: config.go loadAgentBrainIntegrationConfig(841-842)+Validate(179)+agentBrainBuiltInCLIFor; daemon.go resolveTaskAgentEntry(~3255) + admitTask call site(3316-3323); brain_integration.go admitTask(152); gateway/policy.go RoutePolicy.Validate + FrozenTier20CanaryPolicy; runtimeenv adapter/model. Preflight: git 2.50.1, python3 3.9.25, rg 15.2.0, go1.26.1 (/home/ec2-user/goroot/go/bin/go). No-secret registry probe 127.0.0.1:20128 refused. No compile/live run (read-only design). No product source modified; only R2-opus48-source-delta.md written."
+}

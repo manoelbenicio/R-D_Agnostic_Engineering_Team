@@ -1,0 +1,47 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T12:23:16Z",
+  "agent": "Agy-C9",
+  "pane_id": "wK:p1",
+  "lane": "C9",
+  "task_ids": ["C9-chat-smoke"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/C9-chat-smoke.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "export GOCACHE=/tmp/gocache_c9 GOTMPDIR=/tmp/gotmp_c9 GOPATH=/tmp/gopath_c9 && /home/ec2-user/goroot/go/bin/go test ./internal/daemon/brain -v",
+      "exit_code": 0,
+      "assertions_or_tests": 24,
+      "result": "PASS"
+    },
+    {
+      "command": "export GOCACHE=/tmp/gocache_c9 GOTMPDIR=/tmp/gotmp_c9 GOPATH=/tmp/gopath_c9 && /home/ec2-user/goroot/go/bin/go vet ./internal/daemon/brain",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/C9-chat-smoke.md"
+  ],
+  "requirements": ["C9-chat-smoke"],
+  "openspec_tasks": ["C9-chat-smoke"],
+  "summary": "Executed smallest non-inference focused chat smoke (brain package, 24/24 PASS). Recorded DB/service blockers and non-claims.",
+  "non_claims": [
+    "AcceptanceClaim=false",
+    "LiveEndpointUsed=false",
+    "CapacityTierEnabled=false",
+    "No live inference or credential probing performed",
+    "Full DB/Redis-backed handler integration test blocked due to unconfigured test DB/Redis"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

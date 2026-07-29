@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "agy",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/READINESS-routes.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/READINESS-routes.md"
+  ],
+  "finished_at": "2026-07-22T21:57:31Z",
+  "lane": "LANE-readiness-metadata",
+  "last_heartbeat_at": "2026-07-22T21:57:31Z",
+  "pane_id": "wK:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T21:57:07Z",
+  "status": "DONE",
+  "summary": "Recorded declared OmniRoute readiness routes (cp/cline-pass/glm-5.2, nvidia/z-ai/glm-5.2, claude_code_kimi_2.7_Code) and audited live acceptance receipts",
+  "task": "6.1-READINESS-METADATA",
+  "validation": "git diff --check .deploy-control/p0/evidence/READINESS-routes.md: PASS"
+}

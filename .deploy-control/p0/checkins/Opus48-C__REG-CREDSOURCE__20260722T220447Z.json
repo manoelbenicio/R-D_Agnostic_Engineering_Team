@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/REG-credsource.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/REG-credsource.md",
+    "multica-auth-work/server/internal/daemon/credsource_regression_test.go"
+  ],
+  "finished_at": "2026-07-22T22:06:38Z",
+  "lane": "regression",
+  "last_heartbeat_at": "2026-07-22T22:06:38Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T22:04:47Z",
+  "status": "DONE",
+  "summary": "Added focused PD-08 regression internal/daemon/credsource_regression_test.go (3 tests): (1) dev+gateway wires non-nil daemon.FileCredentialSource, else nil (branch/type intent across all flag combos); (2) nil CredentialSource -> admitTask fails closed credential_source_unavailable; (3) FileCredentialSource clears the PD-08 nil gate (never credential_source_unavailable). Verified at daemon/brain_integration level via newAgentBrainRuntime/admitTask. NEW test file only; no product edit; go.mod unchanged.",
+  "task": "REG-CREDSOURCE",
+  "validation": "gofmt -l new test: clean; go vet ./internal/daemon/: exit0; go test ./internal/daemon/ -run TestPD08 -count=1: PASS 3/3 exit0; go test ./internal/daemon/ -count=1 full pkg: ok 15.174s exit0 (no regression); git diff --check new test: PASS"
+}

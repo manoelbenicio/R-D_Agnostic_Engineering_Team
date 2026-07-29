@@ -1,0 +1,24 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-verifier-hardening.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-verifier-hardening.md",
+    "multica-auth-work/server/internal/daemon/observability/e2e/t20_hardened_verify_test.go"
+  ],
+  "finished_at": "2026-07-24T00:12:26Z",
+  "lane": "tier20-workload",
+  "last_heartbeat_at": "2026-07-24T00:12:26Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T00:08:11Z",
+  "status": "DONE",
+  "summary": "Hardened tier-20 verifier with 7 anti-fabrication gates (test-only, package e2e over frozen agent-brain.e2e.v1): manifest-present (non-run provenance), within-window (stale/cumulative), exact-task-set (fabricated/extra), exact-7-hop cardinality (inflated/missing/dup), real proc_id>0 tied to launched process (sentinel/synthetic rejected), no generated <prefix><task_id> IDs (SyntheticTraceSpans rejected), 20 unique persisted outcomes (dup/lost). RAN: accept-real passes all gates; 9 fabrication vectors each rejected. Encodes that synthetic/barrier fixtures cannot pass real acceptance (fail real-proc + generated-id gates). Only a _test.go added; no product/shared source; no inference/deploy.",
+  "task": "T20-VERIFIER-HARDENING",
+  "validation": "gofmt -l clean; go vet ./...e2e exit0; go test -run TestT20Hardened -count=1: PASS (accept-real + 9 reject-fabrication subtests) ok 0.005s exit0; full e2e pkg go test: ok 0.012s exit0 (no regression); git diff --check PASS; -race NOT_AVAILABLE (gcc/cgo absent)"
+}

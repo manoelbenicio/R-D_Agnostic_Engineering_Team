@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/R9-native-runtime-isolation.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/R9-native-runtime-isolation.md"
+  ],
+  "finished_at": "2026-07-22T11:15:09Z",
+  "lane": "R9",
+  "last_heartbeat_at": "2026-07-22T11:15:09Z",
+  "pane_id": "w6:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T11:13:59Z",
+  "status": "DONE",
+  "summary": "STOOD DOWN / superseded: REC-NATIVE-RUNTIME-ISOLATION was a duplicate of REC-DAEMON-TEST. Principal consolidated ownership -> R1 is single daemon-package owner of daemon_test.go + native_runtime_wiring_test.go. No edit by R9; finding recorded in R9-native-runtime-isolation.md. Returning to standby.",
+  "task": "REC-NATIVE-RUNTIME-ISOLATION",
+  "validation": "No product edit. Product-file check-in was rejected by lock overlap (Opus48#A/REC-DAEMON-TEST owns daemon_test.go + native_runtime_wiring_test.go). Read-only finding: file already at target contract (stale test removed, NIM native-http test kept, requiresCredentialIsolation retired; runtimeenv policy.go deny-list covers NIM/NVIDIA). STOOD DOWN per manager; Principal consolidated both files under R1."
+}

@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/A3-route-freeze.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/A3-route-freeze.md"
+  ],
+  "finished_at": "2026-07-21T22:35:39Z",
+  "lane": "A3",
+  "last_heartbeat_at": "2026-07-21T22:35:39Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:30:04Z",
+  "status": "DONE",
+  "summary": "GLM(5.6) FROZEN cp/cline-pass/glm-5.2 (OpenAI Chat); one SUB-1 prefix fix in W1-owned models.go:562. NVIDIA fallback nvidia/z-ai/glm-5.2 FROZEN, non-Brain-selectable. Kimi(5.7) BLOCKED_EXTERNAL: exact versioned model UNDECLARED (BLK-KIMI, owner=OmniRoute architect). Availability(8.1) BLOCKED_EXTERNAL: enriched registry rows unpublished (BLK-AVAIL). Substitutions+impacted symbols delivered to A1/W1. Product source untouched.",
+  "task": "P0-ROUTE-FREEZE",
+  "validation": "read-only reconciliation (no product edits, no live run). Verified cited literals via sed: models.go:562=cline-pass/glm-5.2, :563=cline-pass/kimi-k2.7-code, :572=z-ai/glm-5.2; cline_test.go:19=cline-kimi-k2.7-dedicated, :20=cp/cline-pass/glm-5.2; model_projection.go:46=claude_code_kimi_2.7_Code; acceptance-checklist:58/172/173/174 confirm cp/cline-pass namespace + cp/cline-pass/glm-5.2 + nvidia/z-ai/glm-5.2 + Kimi 'Architect to confirm'."
+}

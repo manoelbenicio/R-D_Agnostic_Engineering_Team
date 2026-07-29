@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Agy-P0-A8",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/handoffs/A8-production-integrity-backend.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/handoffs/A8-production-integrity-backend.md"
+  ],
+  "finished_at": "2026-07-21T22:55:50Z",
+  "lane": "A8",
+  "last_heartbeat_at": "2026-07-21T22:55:50Z",
+  "pane_id": "wB:p2",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:38:22Z",
+  "status": "DONE",
+  "summary": "NO_REACHABLE_RESIDUAL: backend/config/deploy outside W1/runtimeenv/gateway has zero production-reachable mocks fake-success QA-routes placeholders demo-persistence or synthetic defaults. All dev guards fail-closed. No corrections needed.",
+  "task": "P0-PROD-INTEGRITY-BE",
+  "validation": "rg scans 12+ patterns in server/ non-test Go + deploy/config/docker/helm; zero production-reachable mocks/fakes/QA-routes/demo-persistence; all dev guards fail-closed in APP_ENV=production; Go 1.26.1 verified at /home/ec2-user/goroot/go/bin/go"
+}

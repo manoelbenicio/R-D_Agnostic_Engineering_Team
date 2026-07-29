@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#B",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/R2-opus48-live-acceptance.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/R2-opus48-live-acceptance.md"
+  ],
+  "finished_at": "2026-07-22T04:02:49Z",
+  "lane": "A9-OPUS48",
+  "last_heartbeat_at": "2026-07-22T04:02:49Z",
+  "pane_id": "w7:p4",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-21T22:44:02Z",
+  "status": "DONE",
+  "summary": "Reservation artifact COMPLETE and lock released for L4 reassignment. The single Opus48 live run was NOT executed and remains externally gated (exact RouteModel uncertified; live_runs.opus48 authorized=false; D-V3-25(B) security-stop). Ownership of the future single run handed back to Principal Orchestrator; preconditions + plan preserved in the evidence file.",
+  "task": "P0-OPUS48-LIVE-ACCEPTANCE",
+  "validation": "Reservation deliverable only: preflight recorded + single-run plan + preconditions documented; block was recorded 2026-07-21T22:44:38Z. NO live run executed. Preflight re-confirmed 04:01Z: go1.26.1 @/home/ec2-user/goroot/go/bin/go; registry 127.0.0.1:20128 refused; HEAD a6d5098."
+}

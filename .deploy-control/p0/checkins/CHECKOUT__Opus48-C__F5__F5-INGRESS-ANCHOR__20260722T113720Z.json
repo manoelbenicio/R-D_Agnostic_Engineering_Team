@@ -1,0 +1,41 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-22T11:37:20Z",
+  "agent": "Opus48#C",
+  "pane_id": "w8:p1",
+  "lane": "F5",
+  "task_ids": ["6.2"],
+  "status": "DONE",
+  "files_changed": [
+    "multica-auth-work/server/internal/middleware/request_logger.go",
+    "multica-auth-work/server/internal/middleware/request_logger_test.go"
+  ],
+  "files_created": [],
+  "files_deleted": [],
+  "files_unchanged_in_lock": [
+    "multica-auth-work/server/internal/metrics/http.go",
+    "multica-auth-work/server/internal/metrics/http_test.go"
+  ],
+  "tests": [
+    {"command": "gofmt -l internal/middleware/request_logger.go internal/middleware/request_logger_test.go internal/metrics/http.go internal/metrics/http_test.go", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS (clean)"},
+    {"command": "go vet ./internal/middleware/", "exit_code": 0, "assertions_or_tests": 0, "result": "PASS"},
+    {"command": "go test ./internal/middleware/ -run 'Ingress|RouteTemplate|Outcome' -count=1 -v", "exit_code": 0, "assertions_or_tests": 8, "result": "PASS"},
+    {"command": "go test ./internal/middleware/ -count=1 (full package regression)", "exit_code": 0, "assertions_or_tests": 1, "result": "PASS (ok 0.155s)"}
+  ],
+  "format_and_diff": {"format": "PASS", "git_diff_check": "PASS"},
+  "evidence": ["multica-auth-work/server/internal/middleware/request_logger.go", "multica-auth-work/server/internal/middleware/request_logger_test.go"],
+  "requirements": ["AB-REQ-39", "AB-REQ-40"],
+  "openspec_tasks": ["6.2"],
+  "summary": "Wired OBS-2 hop-1 ingress span at a single point in request_logger.go: emitIngressSpan (after ServeHTTP) calls middleware.EmitIngress with real request_id (chimw.GetReqID) + task_id (SetIngressTaskID context) and bounded method / route-template (chi RoutePattern, never raw path) / principal-class (SetIngressPrincipalClass context) / HTTP status class / latency_ms. Fail-closed: no emit when recorder unset or request_id/task_id missing; recorder re-validates fail-closed. No body/header/query/raw-path read. Non-breaking: SetIngressRecorder defaults nil (no-op). Added SetIngressRecorder/SetIngressTaskID/SetIngressPrincipalClass + 5 focused tests.",
+  "non_claims": [
+    "router wiring of SetIngressRecorder and handler calls to SetIngressTaskID/SetIngressPrincipalClass are OUT OF LOCK -> handoff to L1/handler owners (cmd/server/router.go, task-creating handlers)",
+    "no live run / no inference (live_runs=false)",
+    "no -race run (cgo/gcc absent in env)",
+    "metrics/http.go intentionally not edited (single emission point avoids duplicate hop-1 span)",
+    "OpenSpec 6.2 not closed by narrative"
+  ],
+  "blocker": null,
+  "handoffs": [
+    {"to_lane": "L1", "reason": "wire middleware.SetIngressRecorder(rec) at router construction and have task-creating handlers call middleware.SetIngressTaskID (and optionally SetIngressPrincipalClass) after task id is known", "file": "multica-auth-work/server/cmd/server/router.go"}
+  ]
+}

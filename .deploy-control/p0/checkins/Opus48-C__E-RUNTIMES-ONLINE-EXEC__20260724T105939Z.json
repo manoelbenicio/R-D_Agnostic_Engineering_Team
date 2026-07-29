@@ -1,0 +1,23 @@
+{
+  "activity": "checkout",
+  "agent": "Opus48#C",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/E-runtimes-online-prep.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/E-runtimes-online-exec.md"
+  ],
+  "finished_at": "2026-07-24T11:09:01Z",
+  "lane": "E",
+  "last_heartbeat_at": "2026-07-24T11:09:01Z",
+  "pane_id": "w8:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-24T10:59:39Z",
+  "status": "DONE",
+  "summary": "STOOD DOWN + HANDOFF to w5:p9 (Principal) + w5:p1. Prep findings: CLIs installed 5/5 (codex/cline/agy/kiro-cli/opencode + claude, paths in prep evidence). AUTH (provisional, UNVERIFIED authoritatively - host not confirmed orq1, $HOME=cred slot, real auth in ~/.agent-cred-homes enrollment): codex/cline/kiro LIKELY-AUTHED (auth artifacts present); antigravity+opencode LIKELY NOT AUTHED (~/.gemini/antigravity-cli and opencode auth.json ABSENT) = the two work items. START PLAN: per provider (1) auth [codex doctor / cline auth / kiro Builder-ID / agy Google eligibility+GODEBUG=netdns=cgo per A5 / opencode auth login; agy+opencode are credential-owner steps] (2) ensure runtime/agent configured (built-in CLIKind or multica runtime profile set-path) (3) LANE D healthy new-sha daemon re-registers via POST /api/daemon/register - NO manual per-runtime start/daemon restart (4) verify multica runtime list / agent_runtime shows all 5 ONLINE alongside claude 588ebcba. Evidence: E-runtimes-online-prep.md (full plan+auth table), E-runtimes-online-exec.md (gate/hold record). Handing lane to w5:p9.",
+  "task": "E-RUNTIMES-ONLINE-EXEC",
+  "validation": "STAND DOWN per lead: LANE E reassigned to Principal (w5:p9). Nothing executed (gate never opened: no LANE D daemon-healthy-on-new-sha confirmation; backend unreachable from this pane). Read-only prep handed off. No source/secret/daemon action."
+}

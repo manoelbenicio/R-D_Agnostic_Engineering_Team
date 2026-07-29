@@ -1,0 +1,40 @@
+{
+  "event": "CHECKOUT",
+  "timestamp_utc": "2026-07-23T00:18:20Z",
+  "agent": "Agy-Ticket",
+  "pane_id": "wK:p2",
+  "lane": "EXTERNAL-OPERATOR-TICKET",
+  "task_ids": ["OPERATOR-TICKET-OMNIROUTE"],
+  "status": "DONE",
+  "files_changed": [],
+  "files_created": [
+    ".deploy-control/p0/evidence/OMNIROUTE-operator-ticket.md"
+  ],
+  "files_deleted": [],
+  "tests": [
+    {
+      "command": "git diff --check -- .deploy-control/p0/evidence/OMNIROUTE-operator-ticket.md",
+      "exit_code": 0,
+      "assertions_or_tests": 1,
+      "result": "PASS"
+    }
+  ],
+  "format_and_diff": {
+    "format": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "evidence": [
+    ".deploy-control/p0/evidence/OMNIROUTE-operator-ticket.md"
+  ],
+  "requirements": ["AB-REQ-01", "AB-REQ-33"],
+  "openspec_tasks": ["6.1"],
+  "summary": "Drafted precise OmniRoute operator ticket in .deploy-control/p0/evidence/OMNIROUTE-operator-ticket.md based strictly on factual empirical evidence. Documented expected readiness contract, observed probe results (ORQ1 Tailscale 100.118.244.61:20128 status 200 HTML vs /v1/models 401), direct endpoint health metadata, business impact on 6.1, and 2 concrete operator remediation options.",
+  "non_claims": [
+    "Product code modifications (none made)",
+    "Live model inference (live_runs=false)",
+    "OmniRoute internal secrets or provider accounts (forbidden)",
+    "Internal diagnosis speculation (excluded)"
+  ],
+  "blocker": null,
+  "handoffs": []
+}

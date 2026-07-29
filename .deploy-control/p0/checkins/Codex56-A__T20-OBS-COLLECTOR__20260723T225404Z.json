@@ -1,0 +1,25 @@
+{
+  "activity": "checkout",
+  "agent": "Codex56#A",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [
+    ".deploy-control/p0/evidence/T20-obs-collector.md"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/T20-obs-collector.md",
+    "multica-auth-work/server/internal/daemon/observability/e2e/collector.go",
+    "multica-auth-work/server/internal/daemon/observability/e2e/collector_test.go"
+  ],
+  "finished_at": "2026-07-23T23:01:23Z",
+  "lane": "T20-WAVE",
+  "last_heartbeat_at": "2026-07-23T23:01:23Z",
+  "pane_id": "w7:p3",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-23T22:54:04Z",
+  "status": "DONE",
+  "summary": "Implemented cross-process span-log collector (collector.go + collector_test.go, package e2e). Adapted to the ACTUAL current durable API (concurrent edit replaced StructuredLogSink with JSONLSink + ParseSpanLine): CollectSpans reads each process JSONL export, reconstructs+revalidates via ParseSpanLine (fail-closed, bounded 4MiB line, no busy loop, metadata-only bounded drop reasons), AssembleFromLogs feeds e2e.Assemble. Focused tests PASS: cross-process 7-hop merge Dropped()==0 + AllContinuous; secrets_present line fails closed (Dropped=1, not assembled); blank/non-JSON ignored. dropped=0 acceptance met (durable log source). Foreign failure in export_sink_test.go separately evidenced (concurrent lane, not mine).",
+  "task": "T20-OBS-COLLECTOR",
+  "validation": "gofmt -l collector.go collector_test.go: empty (exit 0); go vet ./internal/daemon/observability/e2e/...: exit 0; go test -run Collect|AssembleFromLogs -v ...: PASS (3/3, exit 0). Full-package go test: 2 FAILURES in export_sink_test.go (foreign/concurrent lane: span label key not in approved metadata set) — unrelated to collector, routed to JSONLSink/contract owner."
+}

@@ -1,0 +1,21 @@
+{
+  "activity": "scope done: ingress RequestLogger anchor(multi-task,canonical)+server recorder both TaskServices(fail-closed,per-instance close)+daemon boot tests UNGATED+PASS; not touching realtime(w8:p2); awaiting delivery handback for main.go install+7hop Assemble; 6.3 blocked",
+  "agent": "Opus48-Kiro",
+  "blocker": null,
+  "depends_on": [],
+  "evidence": [],
+  "files_locked": [
+    ".deploy-control/p0/kiro-audit.jsonl"
+  ],
+  "finished_at": null,
+  "lane": "KIRO-SUPERVISOR",
+  "last_heartbeat_at": "2026-07-24T01:23:18Z",
+  "pane_id": "w5:p1",
+  "progress": 99,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-07-22T10:57:48Z",
+  "status": "IN_PROGRESS",
+  "summary": null,
+  "task": "P0-RECOVERY-SUPERVISION",
+  "validation": null
+}
