@@ -944,7 +944,7 @@ func commentMentionsAnyone(content string) bool {
 // are skipped (parking lot), and the leader agent must have a runtime and
 // not be archived.
 func (h *Handler) shouldEnqueueSquadLeaderOnAssign(ctx context.Context, issue db.Issue) bool {
-	if issue.Status == "backlog" {
+	if issue.Status == "backlog" || issue.Status == "done" || issue.Status == "cancelled" || issue.Status == "in_review" {
 		return false
 	}
 	return h.isSquadLeaderReady(ctx, issue)
