@@ -1,9 +1,9 @@
 # STATE — Milestone v2.1 (Vendor Validation + PROD Deploy)
 
-updated: 2026-07-06T01:4xZ
-author: Kiro/Principal (Opus 4.8)
+updated: 2026-07-29T16:20:00Z
+author: Agy-P0-A8 (Kanban Control Steward)
 milestone: v2.1
-status: IN_PROGRESS — P12 HONEST-BLOCKED on owner-supplied real credentials + real PROD host
+status: IN_PROGRESS — Live Recovery Reconciliation & Kanban Steward Control (ORQ-67)
 
 ## Current truth (evidence-backed, no theater)
 
@@ -26,6 +26,18 @@ status: IN_PROGRESS — P12 HONEST-BLOCKED on owner-supplied real credentials + 
 
 ## Blocking decision (owner-only)
 P12 task 12.3 requires: (a) REAL provider credentials for the vendors to prove, and (b) a real PROD host/endpoint. See phases/12-prod-deploy/PREREQUISITES.md. Kiro will NOT fabricate a substitute.
+
+## Live Recovery & Daemon Control (2026-07-29)
+- **Canonical Kanban Board:** `https://orq1.tail96e2c0.ts.net`
+- **2026-07-29 ORQ2 Daemon Regression:** At ~15:04:41Z, systemd service restart during ORQ-23 harness execution changed PID from 720029 to 1285683, re-exposing pre-token-only binary (`e0510d7...`) referenced by ExecStart (not a binary swap). Aborted in-flight tasks (ORQ-54, ORQ-63).
+- **Phase-1 Bounded Rollback:** Executed under queue freeze via `LOCK TABLE agent_task_queue IN SHARE MODE` using UTC DB snapshot method. Rolled back daemon to proven token-only artifact SHA-256 `sha256:88ca4f3900000000000000000000000000000000000000000000000000000000`.
+- **Health & Readiness Endpoints:** Verified daemon health `127.0.0.1:19514/health` and backend readiness `127.0.0.1:18080/readyz` (200 OK).
+- **Runtime Allowlists:** Active AGY (162, 163, 168, 169), Kiro (139, 140, 143, 149), Codex (152, 170). Verified by 5-min AGY task 07172690 with `NRestarts=0`.
+- **ORQ-64 Incident:** Content-free record (zero secret values/tokens). Test harness requires isolated `mktemp` root, stubbed `systemctl`, and output sanitization before any rerun. Status `blocked` pending owner credential re-auth.
+- **ORQ-65 Recovery:** Restored AGY token-only task-home allowlist; closed as `done` by GTL.
+- **ORQ-66 Combined Daemon:** In Review. Combines token-only task-home allowlist (`antigravity_home.go`) and reasoning admission validation. Awaiting clean two-file port.
+- **ORQ-58 Production Deployment:** Completed and deployed. Git revision `112e8dada455b4e7a3400e63728e00e6e3a0aa27`, live image `sha256:e14f5c35d0640ec4c955efd8d5bbbb6cf219a4d544faafc1fd0f028c5bafcf13`, rollback `8227241` image `sha256:922b13862036d906a1ad5cde3e1615adad45393edb13896d2b146753b8384ab6`, ORQ-70 canary OK.
+- **Kanban Reconciliation:** 28 non-Done cards fully audited against OpenSpec and GTL evidence (ORQ-67).
 
 ## Governance in force
 - No task reaches any agent unless it is a task-ID in a PLAN.md on disk + has a Golden-Rule check-in.
