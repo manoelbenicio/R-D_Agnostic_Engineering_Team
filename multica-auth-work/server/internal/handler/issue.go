@@ -2563,8 +2563,10 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Cancel active tasks when the issue is completed, cancelled, or placed in review.
-	if statusChanged && (issue.Status == "done" || issue.Status == "cancelled" || issue.Status == "in_review") {
+	// Cancel active tasks only for an explicit cancellation. Agent-managed
+	// done/in_review transitions must let the current run finish; in_review can
+	// also be the state in which a reviewer is dispatched.
+	if statusChanged && issue.Status == "cancelled" {
 		h.TaskService.CancelTasksForIssue(r.Context(), issue.ID)
 	}
 
@@ -2659,7 +2661,7 @@ func (h *Handler) validateAssigneePair(ctx context.Context, r *http.Request, wor
 // triggering execution. Moving out of backlog is handled separately in
 // UpdateIssue.
 func (h *Handler) shouldEnqueueAgentTask(ctx context.Context, issue db.Issue) bool {
-	if issue.Status == "backlog" || issue.Status == "done" || issue.Status == "cancelled" || issue.Status == "in_review" {
+	if issue.Status == "backlog" || issue.Status == "done" || issue.Status == "cancelled" {
 		return false
 	}
 	return h.isAgentAssigneeReady(ctx, issue)
@@ -3052,8 +3054,9 @@ func (h *Handler) BatchUpdateIssues(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Cancel active tasks when the issue is completed, cancelled, or placed in review.
-		if statusChanged && (issue.Status == "done" || issue.Status == "cancelled" || issue.Status == "in_review") {
+		// Cancel active tasks only for an explicit cancellation. Agent-managed
+		// done/in_review transitions must let the current run finish.
+		if statusChanged && issue.Status == "cancelled" {
 			h.TaskService.CancelTasksForIssue(r.Context(), issue.ID)
 		}
 
