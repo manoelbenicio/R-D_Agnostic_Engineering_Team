@@ -39,12 +39,21 @@ RETURNING *;
 -- the agent crashed before establishing one) cannot wipe out a previously
 -- recorded resume pointer. This makes the chat memory robust against
 -- intermittent agent failures.
+--
+-- The agent_id predicate keeps this pointer owned by the session's own agent.
+-- With the direct `@agent` escape hatch another agent can run a single turn in
+-- this session; letting its completion write here would overwrite the owner's
+-- session_id/runtime_id and the owner's next turn would resume the wrong CLI
+-- session. A mentioned agent's continuity comes from its own task rows
+-- (GetLastChatTaskSession, filtered by agent), so a no-op here is correct
+-- rather than a lost pointer.
 UPDATE chat_session
 SET session_id = COALESCE(sqlc.narg('session_id'), session_id),
     work_dir = COALESCE(sqlc.narg('work_dir'), work_dir),
     runtime_id = COALESCE(sqlc.narg('runtime_id'), runtime_id),
     updated_at = now()
-WHERE id = sqlc.arg('id');
+WHERE id = sqlc.arg('id')
+  AND agent_id = sqlc.arg('agent_id');
 
 -- name: LockChatSessionForDelete :one
 -- Acquires an exclusive (FOR UPDATE) row lock on chat_session(id). Used by
@@ -113,15 +122,22 @@ VALUES ($1, $2, NULL, 'queued', $3, $4, $5)
 RETURNING *;
 
 -- name: GetLastChatTaskSession :one
--- Returns the most recent task in this chat session that managed to record a
--- session_id. Includes both completed and failed tasks: even a failed task
--- may have established a real agent session before failing, and we'd rather
--- resume there than start over and lose conversation memory. Used as a
--- fallback when chat_session.session_id is NULL. Resume-unsafe failures are
--- excluded because replaying those sessions deterministically reproduces the
--- same terminal state.
+-- Returns the most recent task in this chat session, BY THIS AGENT, that
+-- managed to record a session_id. Includes both completed and failed tasks:
+-- even a failed task may have established a real agent session before failing,
+-- and we'd rather resume there than start over and lose conversation memory.
+-- Used as a fallback when chat_session.session_id is NULL. Resume-unsafe
+-- failures are excluded because replaying those sessions deterministically
+-- reproduces the same terminal state.
+--
+-- The agent_id filter makes the pointer explicitly (chat_session, agent). With
+-- the direct `@agent` escape hatch a single chat session accumulates task rows
+-- from several agents, and a session_id is only meaningful to the CLI process
+-- that created it — an unfiltered lookup would hand the squad TL the mentioned
+-- agent's session (and vice versa) whenever they share a runtime.
 SELECT session_id, work_dir, runtime_id FROM agent_task_queue
-WHERE chat_session_id = $1
+WHERE chat_session_id = sqlc.arg('chat_session_id')
+  AND agent_id = sqlc.arg('agent_id')
   AND (
     status = 'completed'
     OR (

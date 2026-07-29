@@ -1491,17 +1491,16 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 					resp.Repos = repos
 				}
 			}
-			// A mention-routed turn runs on an agent that does not own this
-			// chat session (the direct `@agent` escape hatch). The stored
-			// resume pointers — chat_session.session_id and the
-			// GetLastChatTaskSession fallback — are session-scoped, not
-			// agent-scoped, so handing them to a different agent would make it
-			// resume someone else's CLI session whenever the two agents happen
-			// to share a runtime. Only the session's own agent resumes; the
-			// mentioned agent starts a fresh session and answers from the
-			// unanswered-message prompt built below.
+			// Resume pointers are agent-scoped now that the direct `@agent`
+			// escape hatch lets several agents run turns in one chat session.
+			// chat_session.session_id belongs to the session's own agent (the
+			// completion path refuses to write it for anyone else), while a
+			// mention-routed agent's continuity comes from its own task rows —
+			// a session_id only means anything to the CLI process that created
+			// it, so handing it to another agent that happens to share the
+			// runtime would resume the wrong conversation.
 			ownsChatSession := task.AgentID == cs.AgentID
-			if !task.ForceFreshSession && ownsChatSession {
+			if !task.ForceFreshSession {
 				// Resume chat sessions only when the stored pointer was produced
 				// by the same runtime as the claiming task. When the chat_session
 				// pointer is missing (legacy NULL runtime_id), stale (last task
@@ -1510,13 +1509,16 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 				// otherwise a single failed turn would silently drop the entire
 				// conversation memory on the next message. The fallback also
 				// requires runtime to match.
-				if cs.SessionID.Valid && cs.RuntimeID.Valid && cs.RuntimeID == task.RuntimeID {
+				if ownsChatSession && cs.SessionID.Valid && cs.RuntimeID.Valid && cs.RuntimeID == task.RuntimeID {
 					resp.PriorSessionID = cs.SessionID.String
 				}
-				if cs.WorkDir.Valid {
+				if ownsChatSession && cs.WorkDir.Valid {
 					resp.PriorWorkDir = cs.WorkDir.String
 				}
-				if prior, err := h.Queries.GetLastChatTaskSession(r.Context(), cs.ID); err == nil && prior.SessionID.Valid {
+				if prior, err := h.Queries.GetLastChatTaskSession(r.Context(), db.GetLastChatTaskSessionParams{
+					ChatSessionID: cs.ID,
+					AgentID:       task.AgentID,
+				}); err == nil && prior.SessionID.Valid {
 					if resp.PriorSessionID == "" && prior.RuntimeID == task.RuntimeID {
 						resp.PriorSessionID = prior.SessionID.String
 					}
