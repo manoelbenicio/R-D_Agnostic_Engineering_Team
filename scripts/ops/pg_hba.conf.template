@@ -1,0 +1,28 @@
+# ============================================================================
+# Multica PostgreSQL Client Authentication Configuration (pg_hba.conf)
+# Security Posture: ORQ-35 / ORQ-60 Hardened Posture
+#
+# Rules are evaluated sequentially top-to-bottom; first matching rule applies.
+# ============================================================================
+
+# TYPE  DATABASE        USER              ADDRESS                 METHOD  OPTIONS
+
+# 1. ORQ-35 OS Peer Map Confinement for Recovery Authority
+# Confines multica_recovery (LOGIN SUPERUSER) strictly to local unix socket connections
+# mapped to container OS user 'postgres' via pg_ident.conf (recovery_map).
+local   all             multica_recovery                          peer    map=recovery_map
+
+# 2. Local Unix Socket Access for Application & Migration Roles
+# All local unix socket connections for other users enforce SCRAM-SHA-256 password auth.
+local   all             all                                       scram-sha-256
+
+# 3. IPv4 Loopback Access (Host Port Forwarding)
+# Enforces SCRAM-SHA-256 password auth for local loopback connections.
+host    all             all               127.0.0.1/32            scram-sha-256
+
+# 4. IPv6 Loopback Access
+host    all             all               ::1/128                 scram-sha-256
+
+# 5. Network / Container Bridge Access
+# Enforces SCRAM-SHA-256 password auth for all remote/bridge TCP connections.
+host    all             all               all                     scram-sha-256

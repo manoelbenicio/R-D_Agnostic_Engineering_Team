@@ -113,6 +113,30 @@ To restore previous superuser status using the ORQ-35 OS peer-mapped recovery se
 docker exec -i -u postgres multica-dev-transition-postgres-1 psql -U multica_recovery -d multica_transition < scripts/ops/least_privilege_rollback.sql
 ```
 
+### Peer Map & SCRAM Client Authentication (ORQ-35 / ORQ-60 Hardening)
+
+To eliminate unauthenticated local/loopback `trust` bypasses while preserving recovery authority access, PostgreSQL client authentication is configured via `pg_hba.conf` and `pg_ident.conf`:
+
+#### `pg_ident.conf` Configuration
+```conf
+# Map OS process owner 'postgres' to DB recovery authority role 'multica_recovery'
+recovery_map    postgres                multica_recovery
+```
+
+#### `pg_hba.conf` Configuration
+```conf
+# 1. OS Peer Map Confinement for Recovery Authority (local unix socket only)
+local   all             multica_recovery                          peer    map=recovery_map
+
+# 2. Local Unix Socket Access for Application & Migration Roles (SCRAM required)
+local   all             all                                       scram-sha-256
+
+# 3. Loopback & Network Access (SCRAM required)
+host    all             all               127.0.0.1/32            scram-sha-256
+host    all             all               ::1/128                 scram-sha-256
+host    all             all               all                     scram-sha-256
+```
+
 ---
 
 ## 7. Coordination Matrix

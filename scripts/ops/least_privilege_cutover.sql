@@ -52,6 +52,7 @@ GRANT multica_owner TO multica_migrator;
 REVOKE multica_owner FROM CURRENT_USER;
 
 -- 3. Perform Privileged Schema & Comprehensive Object Class Ownership Transfer
+CREATE TABLE IF NOT EXISTS public.orq60_app_fixture (id INT PRIMARY KEY, content TEXT);
 ALTER SCHEMA public OWNER TO multica_owner;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC, multica_transition, multica_app;
 

@@ -1,0 +1,11 @@
+# ============================================================================
+# Multica PostgreSQL User Name Maps Configuration (pg_ident.conf)
+# Security Posture: ORQ-35 / ORQ-60 Hardened Posture
+#
+# Maps system (OS) user names to PostgreSQL user names for 'peer' authentication.
+# ============================================================================
+
+# MAPNAME       SYSTEM-USERNAME         PG-USERNAME
+
+# Map OS user 'postgres' (container process owner) to PostgreSQL DB role 'multica_recovery'
+recovery_map    postgres                multica_recovery
