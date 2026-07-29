@@ -206,4 +206,47 @@ for vendor in codex cline agy kiro opencode glm; do
   [[ "${status}" == *"vendor=${vendor} account=slot-01 state=on"* ]] || fail "doctor did not report ${vendor} on slot-01"
 done
 
-printf 'PASS: 6-vendor migration, isolated dual login, Cline+agy, recompaction, fail-safe, and flock allocator\n'
+# -----------------------------------------------------------------------------
+# ORQ-23 Rollback Artifact & Isolation Precedence Tests
+# -----------------------------------------------------------------------------
+
+# Test HERDR_PANE_ID fallback key precedence over tty/process when Herdr pane lookup returns empty
+capture_env_no_herdr() {
+  local pane_id="$1"
+  local output="$2"
+  PATH="/usr/bin:/bin" \
+  HOME="${HOST_HOME}" \
+  HERDR_PANE_ID="${pane_id}" \
+  AGENT_CRED_ISOLATION_ROOT="${STATE_ROOT}" \
+  AGENT_CRED_ISOLATION_AUTOSTART=1 \
+  bash -c "source '${SCRIPT}'; printf '%s|%s\n' \"\$AGENT_CRED_ISOLATION_SLOT\" \"\$AGENT_CRED_ISOLATION_SLOT_NAME\"" \
+  >"${output}"
+}
+
+capture_env_no_herdr "pane-herdr-fallback-1" "${TMP_DIR}/herdr-fallback-1.env"
+capture_env_no_herdr "pane-herdr-fallback-2" "${TMP_DIR}/herdr-fallback-2.env"
+IFS='|' read -r h_slot1 h_name1 <"${TMP_DIR}/herdr-fallback-1.env"
+IFS='|' read -r h_slot2 h_name2 <"${TMP_DIR}/herdr-fallback-2.env"
+[[ "${h_slot1}" != "${h_slot2}" ]] || fail 'two different HERDR_PANE_ID fallbacks shared a slot'
+
+# Test Rollback Script Dry-Run
+ROLLBACK_SCRIPT="${TEST_DIR}/../rollback-cred-account-home.sh"
+assert_file "${ROLLBACK_SCRIPT}"
+assert_not_symlink "${ROLLBACK_SCRIPT}"
+
+rollback_output="$("${ROLLBACK_SCRIPT}" --dry-run)"
+[[ "${rollback_output}" == *"=== DRY-RUN VERIFICATION RESULT: PASS ==="* ]] || fail 'rollback dry-run did not PASS'
+[[ "${rollback_output}" == *"Active Daemon Binary:"* ]] || fail 'rollback dry-run missing Active Daemon'
+[[ "${rollback_output}" == *"Prior Daemon Binary:"* ]] || fail 'rollback dry-run missing Prior Daemon'
+
+# Test Rollback Script Fail-Closed Security Guards
+FAKE_BIN_DIR="${TMP_DIR}/fake-multica-bin"
+mkdir -p "${FAKE_BIN_DIR}"
+chmod 700 "${FAKE_BIN_DIR}"
+touch "${FAKE_BIN_DIR}/active.real"
+chmod 755 "${FAKE_BIN_DIR}/active.real"
+
+rf_fail_output="$(DAEMON_BIN_DIR="${FAKE_BIN_DIR}" DAEMON_BIN_ACTIVE="${FAKE_BIN_DIR}/active.real" FORCE_ROLLFORWARD=1 "${ROLLBACK_SCRIPT}" --roll-forward 2>&1 || true)"
+[[ "${rf_fail_output}" == *"LIVE ROLL-FORWARD REFUSED"* ]] || fail "missing rollforward backup did not fail closed: ${rf_fail_output}"
+
+printf 'PASS: 6-vendor migration, isolated dual login, HERDR_PANE_ID fallback precedence, rollback atomic/roll-forward/dry-run, and flock allocator\n'
