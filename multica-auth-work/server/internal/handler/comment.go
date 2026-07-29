@@ -769,17 +769,40 @@ func (h *Handler) fetchCommentsForList(ctx context.Context, args fetchCommentsAr
 }
 
 type CreateCommentRequest struct {
-	Content          string   `json:"content"`
-	Type             string   `json:"type"`
-	ParentID         *string  `json:"parent_id"`
-	AttachmentIDs    []string `json:"attachment_ids"`
+	Content       string   `json:"content"`
+	Type          string   `json:"type"`
+	ParentID      *string  `json:"parent_id"`
+	AttachmentIDs []string `json:"attachment_ids"`
+	// SuppressAgentIDs skips specific agents that would otherwise be
+	// triggered by this comment.
 	SuppressAgentIDs []string `json:"suppress_agent_ids"`
+	// DocumentationOnly marks this write as evidence/documentation: the
+	// comment is persisted and readable like any other, but NO execution
+	// trigger may fire from it — not the issue assignee, not a squad leader,
+	// and not any @agent mention. Fail-closed and independent of content, so
+	// callers do not have to enumerate which agents a comment would wake
+	// (ORQ-41). Defaults to false, preserving existing comment semantics.
+	DocumentationOnly bool `json:"documentation_only"`
+}
+
+// commentExecutionIntent carries the caller's execution-trigger intent for a
+// comment write. Zero value = current default behaviour (all computed triggers
+// fire).
+type commentExecutionIntent struct {
+	// DocumentationOnly suppresses every trigger, fail-closed.
+	DocumentationOnly bool
+	// SuppressAgentIDs suppresses individually named agents.
+	SuppressAgentIDs []pgtype.UUID
 }
 
 type CommentTriggerPreviewRequest struct {
 	Content          string  `json:"content"`
 	ParentID         *string `json:"parent_id"`
 	EditingCommentID *string `json:"editing_comment_id"`
+	// DocumentationOnly previews the documentation-only write: the answer is
+	// always "no agent will be triggered", matching what CreateComment /
+	// UpdateComment will actually do (ORQ-41).
+	DocumentationOnly bool `json:"documentation_only"`
 }
 
 type CommentTriggerPreviewResponse struct {
@@ -898,7 +921,7 @@ func (h *Handler) PreviewCommentTriggers(w http.ResponseWriter, r *http.Request)
 	}
 
 	content := req.Content
-	if content == "" {
+	if content == "" || req.DocumentationOnly {
 		writeJSON(w, http.StatusOK, CommentTriggerPreviewResponse{Agents: []CommentTriggerAgentResponse{}})
 		return
 	}
@@ -1064,7 +1087,10 @@ func (h *Handler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	// must keep the resolved root in sync.
 	h.TaskService.AutoUnresolveThreadOnReply(r.Context(), rootComment, uuidToString(issue.WorkspaceID), authorType, authorID)
 
-	h.triggerTasksForComment(r.Context(), issue, comment, parentComment, authorType, authorID, suppressAgentIDs)
+	h.triggerTasksForComment(r.Context(), issue, comment, parentComment, authorType, authorID, commentExecutionIntent{
+		DocumentationOnly: req.DocumentationOnly,
+		SuppressAgentIDs:  suppressAgentIDs,
+	})
 
 	writeJSON(w, http.StatusCreated, resp)
 }
@@ -1087,13 +1113,22 @@ func isNoteComment(content string) bool {
 	return strings.EqualFold(firstToken, noteCommentPrefix)
 }
 
-func (h *Handler) triggerTasksForComment(ctx context.Context, issue db.Issue, comment db.Comment, parentComment *db.Comment, actorType, actorID string, suppressAgentIDs []pgtype.UUID) {
+func (h *Handler) triggerTasksForComment(ctx context.Context, issue db.Issue, comment db.Comment, parentComment *db.Comment, actorType, actorID string, intent commentExecutionIntent) {
+	// ORQ-41 fail-closed gate: a documentation-only write never dispatches.
+	// Checked before triggers are computed AND again inside
+	// enqueueCommentAgentTriggers, so no future caller can reach an enqueue
+	// through this path by skipping one layer.
+	if intent.DocumentationOnly {
+		slog.Info("documentation-only comment: all agent triggers suppressed",
+			"issue_id", uuidToString(issue.ID), "comment_id", uuidToString(comment.ID))
+		return
+	}
 	if isNoteComment(comment.Content) {
 		return
 	}
 	triggers := h.computeCommentAgentTriggers(ctx, issue, comment.Content, parentComment, actorType, actorID, commentTriggerComputeOptions{})
-	triggers = filterSuppressedCommentAgentTriggers(triggers, suppressAgentIDs)
-	h.enqueueCommentAgentTriggers(ctx, issue, comment.ID, triggers)
+	triggers = filterSuppressedCommentAgentTriggers(triggers, intent.SuppressAgentIDs)
+	h.enqueueCommentAgentTriggers(ctx, issue, comment.ID, triggers, intent)
 }
 
 func filterSuppressedCommentAgentTriggers(triggers []commentAgentTrigger, suppressAgentIDs []pgtype.UUID) []commentAgentTrigger {
@@ -1119,7 +1154,12 @@ func filterSuppressedCommentAgentTriggers(triggers []commentAgentTrigger, suppre
 	return filtered
 }
 
-func (h *Handler) enqueueCommentAgentTriggers(ctx context.Context, issue db.Issue, triggerCommentID pgtype.UUID, triggers []commentAgentTrigger) {
+func (h *Handler) enqueueCommentAgentTriggers(ctx context.Context, issue db.Issue, triggerCommentID pgtype.UUID, triggers []commentAgentTrigger, intent commentExecutionIntent) {
+	// Defensive second layer of the ORQ-41 documentation-only gate: refuse to
+	// enqueue anything, whatever the computed trigger set contains.
+	if intent.DocumentationOnly {
+		return
+	}
 	for _, trigger := range triggers {
 		switch trigger.Source {
 		case commentTriggerSourceIssueAssignee:
@@ -1508,6 +1548,9 @@ func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {
 		Content          string    `json:"content"`
 		AttachmentIDs    *[]string `json:"attachment_ids"`
 		SuppressAgentIDs []string  `json:"suppress_agent_ids"`
+		// DocumentationOnly mirrors CreateCommentRequest: an edit saved in
+		// documentation-only mode re-triggers nothing (ORQ-41).
+		DocumentationOnly bool `json:"documentation_only"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -1586,7 +1629,10 @@ func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			h.triggerTasksForComment(r.Context(), issue, comment, parentComment, actorType, actorID, suppressAgentIDs)
+			h.triggerTasksForComment(r.Context(), issue, comment, parentComment, actorType, actorID, commentExecutionIntent{
+				DocumentationOnly: req.DocumentationOnly,
+				SuppressAgentIDs:  suppressAgentIDs,
+			})
 		}
 	}
 

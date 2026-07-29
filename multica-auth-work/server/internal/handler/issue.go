@@ -2542,19 +2542,15 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Trigger the assigned agent when an issue moves out of backlog. Backlog
-	// acts as a parking lot — moving to an active status signals the issue is
-	// ready for work. Agent actors are allowed here so the documented
-	// serial sub-task workflow works (parent agent finishes Step 1, then
-	// promotes Step 2 from backlog→todo, regardless of who Step 2 is
-	// assigned to). The only excluded case is the real self-loop: an agent
-	// promoting the same issue its current task is running on. Same-agent,
-	// cross-issue handoff (Agent A finishing one task and promoting another
-	// issue assigned to A) must still fire — that is the documented serial
-	// chain.
-	if statusChanged && !assigneeChanged &&
-		prevIssue.Status == "backlog" && issue.Status != "done" && issue.Status != "cancelled" &&
-		!h.isAgentRunningOnIssue(r, actorType, issue) {
+	// Trigger the assigned agent only when this update carries execution
+	// intent (ORQ-41). Without an assignee transition, the single qualifying
+	// case is the first activation of a backlog-parked issue whose assignee
+	// has never run on it — the documented serial sub-task promotion. Pure
+	// status/title/description/priority bookkeeping on an issue whose
+	// assignee already ran enqueues nothing, in any status. Agent actors are
+	// allowed so the serial chain works; the excluded case is the real
+	// self-loop (an agent promoting the same issue its current task runs on).
+	if !assigneeChanged && h.fieldOnlyUpdateCarriesExecutionIntent(r, prevIssue, issue, statusChanged, actorType) {
 		if h.isAgentAssigneeReady(r.Context(), issue) {
 			h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
 		}
@@ -2748,6 +2744,93 @@ func (h *Handler) isAgentAssigneeReady(ctx context.Context, issue db.Issue) bool
 	}
 
 	return true
+}
+
+// executableAssigneeAgentID resolves the agent a non-assignee issue update
+// would dispatch: the agent assignee itself, or the leader of the assigned
+// squad. Returns an invalid UUID when the issue has nothing dispatchable
+// (unassigned, member-assigned, or an unreadable squad).
+func (h *Handler) executableAssigneeAgentID(ctx context.Context, issue db.Issue) pgtype.UUID {
+	if !issue.AssigneeType.Valid || !issue.AssigneeID.Valid {
+		return pgtype.UUID{}
+	}
+	switch issue.AssigneeType.String {
+	case "agent":
+		return issue.AssigneeID
+	case "squad":
+		squad, err := h.Queries.GetSquadInWorkspace(ctx, db.GetSquadInWorkspaceParams{
+			ID:          issue.AssigneeID,
+			WorkspaceID: issue.WorkspaceID,
+		})
+		if err != nil {
+			return pgtype.UUID{}
+		}
+		return squad.LeaderID
+	}
+	return pgtype.UUID{}
+}
+
+// assigneeIsHistorical reports whether the issue's dispatchable assignee has
+// ALREADY been given a task for this issue — any agent_task_queue row for the
+// (issue, agent) pair, active or terminal.
+//
+// ORQ-41: that row is what makes an assignee "historical/stale". Once an
+// assignment has bought execution at least once, later status/title/
+// description/priority edits on the issue are Kanban bookkeeping and must
+// never buy execution again (see the ORQ-33 live regression, 2026-07-29T15:33Z:
+// a status-only transition to done with a leftover agent assignee created paid
+// task 1a096683). Only an explicit assignee transition — or the very first
+// activation of a never-dispatched assignment — may enqueue.
+//
+// Fails closed: anything we cannot positively establish as "never dispatched"
+// counts as historical, so the no-enqueue branch is taken.
+func (h *Handler) assigneeIsHistorical(ctx context.Context, issue db.Issue) bool {
+	agentID := h.executableAssigneeAgentID(ctx, issue)
+	if !agentID.Valid {
+		return true
+	}
+	hasTask, err := h.Queries.HasAnyTaskForIssueAndAgent(ctx, db.HasAnyTaskForIssueAndAgentParams{
+		IssueID: issue.ID,
+		AgentID: agentID,
+	})
+	if err != nil {
+		slog.Warn("assignee task-history lookup failed; treating assignee as historical",
+			"issue_id", uuidToString(issue.ID), "agent_id", uuidToString(agentID), "error", err)
+		return true
+	}
+	return hasTask
+}
+
+// fieldOnlyUpdateCarriesExecutionIntent decides whether an issue update that
+// does NOT change the assignee is still allowed to dispatch paid work.
+//
+// ORQ-41 contract. Exactly one case qualifies: the first activation of an
+// issue parked in backlog whose pre-assigned agent / squad leader has never
+// been dispatched for it. That is the documented serial sub-task promotion
+// (create the child in backlog, flip it to todo when its turn comes) and it is
+// genuine execution intent, not bookkeeping.
+//
+// Everything else enqueues zero tasks, for every status — in_progress,
+// in_review, done, backlog, cancelled or any other:
+//   - no status change at all (title / description / priority / date edits),
+//   - a status change from any non-backlog status,
+//   - a backlog→active flip on an issue whose assignee already ran on it
+//     (historical/stale assignee),
+//   - an agent flipping the very issue its own current task is running on.
+func (h *Handler) fieldOnlyUpdateCarriesExecutionIntent(r *http.Request, prevIssue, issue db.Issue, statusChanged bool, actorType string) bool {
+	if !statusChanged {
+		return false
+	}
+	if prevIssue.Status != "backlog" {
+		return false
+	}
+	if issue.Status == "backlog" || issue.Status == "done" || issue.Status == "cancelled" {
+		return false
+	}
+	if h.isAgentRunningOnIssue(r, actorType, issue) {
+		return false
+	}
+	return !h.assigneeIsHistorical(r.Context(), issue)
 }
 
 func (h *Handler) DeleteIssue(w http.ResponseWriter, r *http.Request) {
@@ -3039,13 +3122,12 @@ func (h *Handler) BatchUpdateIssues(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Trigger agent when moving out of backlog (batch). Mirrors the
-		// single-update path above — agent actors are allowed so serial
-		// sub-task chains work, and the same task-issue self-loop guard
-		// prevents an agent from re-triggering itself on the same issue.
-		if statusChanged && !assigneeChanged &&
-			prevIssue.Status == "backlog" && issue.Status != "done" && issue.Status != "cancelled" &&
-			!h.isAgentRunningOnIssue(r, actorType, issue) {
+		// Execution-intent gate, mirrored from UpdateIssue (ORQ-41): a batch
+		// update without an assignee transition may only dispatch the first
+		// activation of a backlog-parked issue whose assignee has never run
+		// on it. Status-only batch edits on issues with a historical/stale
+		// agent or squad assignee enqueue zero tasks.
+		if !assigneeChanged && h.fieldOnlyUpdateCarriesExecutionIntent(r, prevIssue, issue, statusChanged, actorType) {
 			if h.isAgentAssigneeReady(r.Context(), issue) {
 				h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
 			}

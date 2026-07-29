@@ -641,6 +641,16 @@ WHERE issue_id = @issue_id
   AND status IN ('queued', 'dispatched')
   AND trigger_comment_id IS DISTINCT FROM @exclude_trigger_comment_id::uuid;
 
+-- name: HasAnyTaskForIssueAndAgent :one
+-- Returns true if this agent has EVER had a task for the given issue, in any
+-- state — queued, dispatched, running, completed, failed or cancelled.
+-- ORQ-41 uses this to tell a fresh assignment (never dispatched: activating it
+-- is genuine execution intent) from a historical/stale assignment (already
+-- bought execution at least once: later status/metadata edits are bookkeeping
+-- and must not enqueue paid work).
+SELECT count(*) > 0 AS has_task FROM agent_task_queue
+WHERE issue_id = $1 AND agent_id = $2;
+
 -- name: GetLatestTaskIsLeaderForIssueAndAgent :one
 -- Returns the is_leader_task flag of the agent's most recent task on this
 -- issue, or NULL if the agent has never had a task on this issue. Used by
