@@ -10,15 +10,20 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DRY_RUN=1
 MUTATED=0
 ROLLBACK_RUNNING=0
-ROLLBACK_BACKUP=""
+ADMISSION_HELD=0
+ADMISSION_PID=""
+ADMISSION_IN_FD=""
+ADMISSION_OUT_FD=""
 ROLLBACK_STATE=""
 ROLLBACK_OVERRIDE=""
+ROLL_FORWARD_CONFIG=""
 RENDERED_CONFIG=""
 
 ENV_FILE="/home/ec2-user/.config/multica-transition/dev.env"
 IMAGES_FILE="/home/ec2-user/.config/multica-transition/images.yml"
 BACKEND_ENV_OVERRIDE="/home/ec2-user/.config/multica-transition/backend-env.override.yml"
 STATE_DIR="/home/ec2-user/.config/multica-transition/rollback"
+LAST_KNOWN_GOOD_FILE="/home/ec2-user/.config/multica-transition/last-known-good.yml"
 PROJECT_NAME="multica-dev-transition"
 EXPECTED_DB_USER="multica_transition"
 EXPECTED_DB_NAME="multica_transition"
@@ -35,6 +40,7 @@ if [[ "${DEPLOY_WRAPPER_TEST_MODE:-0}" == "1" ]]; then
   IMAGES_FILE="$TEST_ROOT/images.yml"
   BACKEND_ENV_OVERRIDE="$TEST_ROOT/backend-env.override.yml"
   STATE_DIR="$TEST_ROOT/state"
+  LAST_KNOWN_GOOD_FILE="$TEST_ROOT/last-known-good.yml"
 fi
 
 GUARD_FILE="$ROOT_DIR/deploy/multica-transition.guard.yml"
@@ -119,6 +125,72 @@ compose_rollback() {
   MULTICA_DEPLOY_ENV_FILE_LABEL="$ENV_FILE" "${args[@]}" "$@"
 }
 
+start_admission_freeze() {
+  local marker
+  ((ADMISSION_HELD == 0)) || die "admission freeze is already held"
+
+  coproc ADMISSION_DB {
+    # shellcheck disable=SC2016 # $1/$2 must expand inside the container child.
+    compose exec -T postgres sh -c \
+      'IFS= read -r PGPASSWORD; export PGPASSWORD; exec psql -X --no-psqlrc -qAt -v ON_ERROR_STOP=1 -h postgres -U "$1" -d "$2"' \
+      sh "$EXPECTED_DB_USER" "$EXPECTED_DB_NAME"
+  }
+  ADMISSION_PID="$ADMISSION_DB_PID"
+  ADMISSION_OUT_FD="${ADMISSION_DB[0]}"
+  ADMISSION_IN_FD="${ADMISSION_DB[1]}"
+
+  # The password travels only over the private stdin pipe. It is exported by
+  # the container child immediately before execing psql; it never appears in
+  # docker/psql argv, Compose flags, logs, or wrapper output.
+  if ! read_env_value POSTGRES_PASSWORD >&"$ADMISSION_IN_FD"; then
+    kill "$ADMISSION_PID" 2>/dev/null || true
+    wait "$ADMISSION_PID" 2>/dev/null || true
+    die "cannot provide authenticated database child environment"
+  fi
+  cat >&"$ADMISSION_IN_FD" <<'SQL'
+BEGIN;
+SET lock_timeout = '15s';
+LOCK TABLE agent_task_queue IN SHARE MODE;
+SELECT CASE WHEN EXISTS (
+  SELECT 1 FROM agent_task_queue
+  WHERE status IN ('queued','dispatched','running','waiting_local_directory')
+) THEN 'ACTIVE_QUEUE_PRESENT' ELSE 'ADMISSION_FREEZE_HELD' END;
+SQL
+
+  if ! IFS= read -r -t 20 marker <&"$ADMISSION_OUT_FD"; then
+    kill "$ADMISSION_PID" 2>/dev/null || true
+    wait "$ADMISSION_PID" 2>/dev/null || true
+    die "authenticated admission freeze failed before lock confirmation"
+  fi
+  ADMISSION_HELD=1
+  if [[ "$marker" == "ACTIVE_QUEUE_PRESENT" ]]; then
+    release_admission_freeze rollback || true
+    die "disruptive recreate blocked: active task queue is not zero"
+  fi
+  [[ "$marker" == "ADMISSION_FREEZE_HELD" ]] || {
+    release_admission_freeze rollback || true
+    die "admission freeze returned an invalid content-free marker"
+  }
+  log "admission freeze held: task queue writes blocked and active queue is zero"
+}
+
+release_admission_freeze() {
+  local action="${1:-rollback}" sql="ROLLBACK" rc=0
+  ((ADMISSION_HELD == 1)) || return 0
+  [[ "$action" == "commit" ]] && sql="COMMIT"
+  printf '%s;\n\\q\n' "$sql" 1>&"$ADMISSION_IN_FD" 2>/dev/null || rc=1
+  wait "$ADMISSION_PID" 2>/dev/null || rc=1
+  # The coprocess has exited after \q; Bash closes its pipe endpoints. Avoid
+  # invoking the special `exec` builtin solely for fd closure because that can
+  # terminate non-interactive shells on some Bash versions.
+  ADMISSION_IN_FD=""
+  ADMISSION_OUT_FD=""
+  ADMISSION_HELD=0
+  ADMISSION_PID=""
+  log "admission freeze released ($action)"
+  return "$rc"
+}
+
 validate_files_and_identity() {
   local file
   command -v docker >/dev/null 2>&1 || die "docker is required"
@@ -190,17 +262,127 @@ image = str(backend.get("image", ""))
 if not image or image.endswith(":latest"):
     fail("pinned backend image")
 PY
+  CANDIDATE_IMAGE="$(python3 - "$RENDERED_CONFIG" <<'PY'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    print(json.load(handle)["services"]["backend"]["image"])
+PY
+)" || die "cannot read candidate image from rendered config"
+  [[ "$CANDIDATE_IMAGE" =~ ^[A-Za-z0-9./:_@-]+$ ]] || die "rendered candidate image reference is unsafe"
 }
 
-assert_queue_zero() {
-  local count
-  count="$(compose exec -T postgres psql -U "$EXPECTED_DB_USER" -d "$EXPECTED_DB_NAME" -Atqc \
-    "SELECT count(*) FROM agent_task_queue WHERE status IN ('queued','dispatched','running','waiting_local_directory')")" \
-    || die "active task queue preflight failed"
-  count="${count//$'\r'/}"
-  count="${count//$'\n'/}"
-  [[ "$count" =~ ^[0-9]+$ ]] || die "active task queue preflight returned an invalid count"
-  [[ "$count" == "0" ]] || die "disruptive recreate blocked: active task queue is not zero"
+read_backend_image_override() {
+  local file="$1"
+  python3 - "$file" <<'PY'
+import pathlib, re, sys
+path = pathlib.Path(sys.argv[1])
+services_indent = backend_indent = None
+values = []
+for raw in path.read_text(encoding="utf-8").splitlines():
+    clean = raw.split("#", 1)[0].rstrip()
+    if not clean.strip():
+        continue
+    indent = len(clean) - len(clean.lstrip(" "))
+    text = clean.strip()
+    if text == "services:":
+        services_indent = indent
+        backend_indent = None
+        continue
+    if services_indent is not None and indent > services_indent and text == "backend:":
+        backend_indent = indent
+        continue
+    if backend_indent is not None and indent <= backend_indent:
+        backend_indent = None
+    if backend_indent is not None and indent > backend_indent:
+        match = re.fullmatch(r"image:\s*(\S.*?)\s*", text)
+        if match:
+            value = match.group(1)
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                value = value[1:-1]
+            values.append(value)
+if len(values) != 1:
+    raise SystemExit("backend image override must appear exactly once")
+print(values[0])
+PY
+}
+
+write_last_known_good() {
+  local image_ref="$1" tmp
+  [[ "$image_ref" =~ ^[A-Za-z0-9./:_@-]+$ ]] || die "unsafe image reference for last-known-good config"
+  mkdir -p "$(dirname "$LAST_KNOWN_GOOD_FILE")"
+  tmp="$(mktemp "$(dirname "$LAST_KNOWN_GOOD_FILE")/.last-known-good.XXXXXX")"
+  cat >"$tmp" <<EOF
+services:
+  backend:
+    image: $image_ref
+EOF
+  chmod 600 "$tmp"
+  mv -f "$tmp" "$LAST_KNOWN_GOOD_FILE"
+}
+
+pin_images_file_image() {
+  local image_ref="$1"
+  [[ "$image_ref" =~ ^[A-Za-z0-9./:_@-]+$ ]] || return 1
+  python3 - "$IMAGES_FILE" "$image_ref" <<'PY'
+import os, pathlib, re, stat, sys, tempfile
+path = pathlib.Path(sys.argv[1])
+image = sys.argv[2]
+lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+services_indent = backend_indent = None
+indexes = []
+for index, raw in enumerate(lines):
+    clean = raw.split("#", 1)[0].rstrip()
+    if not clean.strip():
+        continue
+    indent = len(clean) - len(clean.lstrip(" "))
+    text = clean.strip()
+    if text == "services:":
+        services_indent = indent
+        backend_indent = None
+        continue
+    if services_indent is not None and indent > services_indent and text == "backend:":
+        backend_indent = indent
+        continue
+    if backend_indent is not None and indent <= backend_indent:
+        backend_indent = None
+    if backend_indent is not None and indent > backend_indent and re.match(r"image:\s*", text):
+        indexes.append((index, len(raw) - len(raw.lstrip(" "))))
+if len(indexes) != 1:
+    raise SystemExit("images.yml must contain exactly one services.backend.image")
+index, indent = indexes[0]
+ending = "\n" if lines[index].endswith("\n") else ""
+lines[index] = " " * indent + "image: " + image + ending
+mode = stat.S_IMODE(path.stat().st_mode)
+fd, tmp_name = tempfile.mkstemp(prefix=".images.", dir=path.parent)
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as out:
+        out.writelines(lines)
+        out.flush()
+        os.fsync(out.fileno())
+    os.chmod(tmp_name, mode)
+    os.replace(tmp_name, path)
+    dir_fd = os.open(path.parent, os.O_DIRECTORY)
+    try:
+        os.fsync(dir_fd)
+    finally:
+        os.close(dir_fd)
+except Exception:
+    try:
+        os.unlink(tmp_name)
+    except FileNotFoundError:
+        pass
+    raise
+PY
+}
+
+validate_last_known_good() {
+  local durable_image
+  if [[ ! -f "$LAST_KNOWN_GOOD_FILE" ]]; then
+    log "last-known-good config absent; execute would initialize it from the running image"
+    return 0
+  fi
+  durable_image="$(read_backend_image_override "$LAST_KNOWN_GOOD_FILE")" || die "last-known-good config is invalid"
+  [[ "$durable_image" == "$PREVIOUS_IMAGE_REF" ]] || die "running backend image differs from durable last-known-good config"
 }
 
 curl_status() {
@@ -230,42 +412,72 @@ capture_current_image() {
   docker image inspect "$PREVIOUS_IMAGE_REF" >/dev/null 2>&1 || die "rollback image is not present locally"
 }
 
+assert_deployed_candidate() {
+  local container deployed_ref
+  container="$(compose ps -q backend)" || die "cannot identify recreated backend container"
+  [[ -n "$container" ]] || die "recreated backend container is not running"
+  deployed_ref="$(docker inspect --format '{{.Config.Image}}' "$container")" || die "cannot inspect recreated backend image"
+  [[ "$deployed_ref" == "$CANDIDATE_IMAGE" ]] || die "healthy backend is not running the rendered candidate image"
+}
+
 write_rollback_state() {
-  local stamp
+  local stamp durable_image
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
   mkdir -p "$STATE_DIR"
   chmod 700 "$STATE_DIR"
-  ROLLBACK_BACKUP="$STATE_DIR/images.yml.${stamp}.bak"
   ROLLBACK_STATE="$STATE_DIR/backend.${stamp}.state"
   ROLLBACK_OVERRIDE="$STATE_DIR/backend.${stamp}.rollback.yml"
-  cp -p "$IMAGES_FILE" "$ROLLBACK_BACKUP"
-  cat >"$ROLLBACK_OVERRIDE" <<EOF
-services:
-  backend:
-    image: $PREVIOUS_IMAGE_REF
-EOF
+  ROLL_FORWARD_CONFIG="$STATE_DIR/images.yml.${stamp}.roll-forward"
+
+  # Archive the requested candidate for an explicit future roll-forward, but
+  # keep the operational last-known-good file pinned to the running image.
+  cp -p "$IMAGES_FILE" "$ROLL_FORWARD_CONFIG"
+  if [[ ! -f "$LAST_KNOWN_GOOD_FILE" ]]; then
+    write_last_known_good "$PREVIOUS_IMAGE_REF"
+  fi
+  durable_image="$(read_backend_image_override "$LAST_KNOWN_GOOD_FILE")" || die "last-known-good config is invalid"
+  [[ "$durable_image" == "$PREVIOUS_IMAGE_REF" ]] || die "last-known-good config does not match the running image"
+  cp -p "$LAST_KNOWN_GOOD_FILE" "$ROLLBACK_OVERRIDE"
+
   cat >"$ROLLBACK_STATE" <<EOF
 project=$PROJECT_NAME
 service=backend
 previous_image_ref=$PREVIOUS_IMAGE_REF
 previous_image_id=$PREVIOUS_IMAGE_ID
+candidate_image_ref=$CANDIDATE_IMAGE
 env_file=$ENV_FILE
-images_backup=$ROLLBACK_BACKUP
+last_known_good_config=$LAST_KNOWN_GOOD_FILE
+roll_forward_config=$ROLL_FORWARD_CONFIG
 rollback_override=$ROLLBACK_OVERRIDE
 created_at=$stamp
 EOF
-  chmod 600 "$ROLLBACK_BACKUP" "$ROLLBACK_OVERRIDE" "$ROLLBACK_STATE"
+  chmod 600 "$ROLL_FORWARD_CONFIG" "$ROLLBACK_OVERRIDE" "$ROLLBACK_STATE" "$LAST_KNOWN_GOOD_FILE"
 }
 
 rollback() {
   ((ROLLBACK_RUNNING == 0)) || return 1
   ROLLBACK_RUNNING=1
   log "deployment check failed; starting automatic rollback"
-  if [[ -z "$ROLLBACK_BACKUP" || ! -f "$ROLLBACK_BACKUP" || -z "$ROLLBACK_OVERRIDE" || ! -f "$ROLLBACK_OVERRIDE" ]]; then
-    log "ROLLBACK FAILED: preserved rollback files are unavailable"
+  if [[ -z "$ROLLBACK_OVERRIDE" || ! -f "$ROLLBACK_OVERRIDE" || ! -f "$LAST_KNOWN_GOOD_FILE" ]]; then
+    log "ROLLBACK FAILED: durable last-known-good files are unavailable"
     return 1
   fi
-  cp -p "$ROLLBACK_BACKUP" "$IMAGES_FILE"
+  # Atomically repoint both durable LKG and the normal operational images.yml
+  # before recreating. Any later ordinary Compose call therefore remains on
+  # the known-good image; the failed candidate survives only in the explicit
+  # roll-forward archive.
+  if ! write_last_known_good "$PREVIOUS_IMAGE_REF"; then
+    log "ROLLBACK FAILED: could not restore durable last-known-good config"
+    return 1
+  fi
+  if ! pin_images_file_image "$PREVIOUS_IMAGE_REF"; then
+    log "ROLLBACK FAILED: could not atomically restore images.yml"
+    return 1
+  fi
+  if [[ "$(read_backend_image_override "$IMAGES_FILE" 2>/dev/null || true)" != "$PREVIOUS_IMAGE_REF" ]]; then
+    log "ROLLBACK FAILED: images.yml did not verify as last-known-good"
+    return 1
+  fi
   if ! compose_rollback up -d --force-recreate --no-deps backend >/dev/null; then
     log "ROLLBACK FAILED: backend recreate failed"
     return 1
@@ -286,38 +498,58 @@ on_exit() {
   if ((rc != 0 && MUTATED == 1)); then
     rollback || true
   fi
+  if ((ADMISSION_HELD == 1)); then
+    release_admission_freeze rollback || true
+  fi
   exit "$rc"
 }
 trap on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 main() {
   parse_args "$@"
   reject_shell_overrides
   validate_files_and_identity
   render_and_assert_config
-  assert_queue_zero
 
   local api_me_baseline
   api_me_baseline="$(curl_status "${BASE_URL}/api/me" 2>/dev/null || true)"
   [[ "$api_me_baseline" == "200" || "$api_me_baseline" == "401" ]] || die "preflight /api/me did not return the expected reachable/authenticated status"
   capture_current_image
+  validate_last_known_good
+
+  if ((DRY_RUN == 0)); then
+    [[ "${DEPLOY_ALLOW_EXECUTE:-0}" == "1" ]] || die "execution blocked: set DEPLOY_ALLOW_EXECUTE=1 after an approved deploy window opens"
+  fi
+
+  # Queue-zero is checked only after the table lock is held. The same
+  # transaction remains open through recreate, post-checks, or rollback.
+  start_admission_freeze
 
   if ((DRY_RUN == 1)); then
-    log "DRY-RUN PASS: config identity, env-file label, pinned image, queue-zero, rollback image, and /api/me baseline verified"
-    log "DRY-RUN: would preserve images.yml, force-recreate backend only, verify health/readiness and /api/me, then auto-rollback on failure"
+    release_admission_freeze rollback || die "dry-run could not confirm admission freeze release"
+    log "DRY-RUN PASS: live config identity, authenticated queue-zero under admission freeze, env-file label, pinned image, durable rollback posture, and /api/me baseline verified"
+    log "DRY-RUN: no recreate or deployment mutation was performed"
     exit 0
   fi
 
-  [[ "${DEPLOY_ALLOW_EXECUTE:-0}" == "1" ]] || die "execution blocked: set DEPLOY_ALLOW_EXECUTE=1 after an approved deploy window opens"
   write_rollback_state
   MUTATED=1
   compose up -d --force-recreate --no-deps backend >/dev/null
   wait_for_status /health 200 60 || die "post-recreate /health failed"
   wait_for_status /readyz 200 30 || die "post-recreate /readyz failed"
   wait_for_status /api/me "$api_me_baseline" 10 || die "post-recreate /api/me status changed"
-  printf 'deploy_status=healthy\n' >>"$ROLLBACK_STATE"
+  assert_deployed_candidate
+
+  # Promote while the critical section is still held. If promotion or release
+  # fails, rollback rewrites both durable LKG and images.yml to the previous
+  # image before releasing admission.
+  write_last_known_good "$CANDIDATE_IMAGE"
+  release_admission_freeze commit || die "could not confirm admission freeze release"
+  printf 'deploy_status=healthy\nlast_known_good_promoted=true\n' >>"$ROLLBACK_STATE"
   MUTATED=0
-  log "PASS: backend-only forced recreate is healthy; rollback state preserved at $ROLLBACK_STATE"
+  log "PASS: backend-only forced recreate is healthy; durable last-known-good is $CANDIDATE_IMAGE"
 }
 
 main "$@"
