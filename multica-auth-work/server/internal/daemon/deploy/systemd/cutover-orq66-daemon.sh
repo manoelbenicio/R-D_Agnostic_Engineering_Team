@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 readonly REQUIRED_ROLLBACK_REVISION="88ca4f39"
-readonly INSTALL_MODE="755"
+readonly INSTALL_MODE="0755"
 
 usage() {
   cat >&2 <<'USAGE'
@@ -52,7 +52,7 @@ file_sha256() {
 }
 
 file_mode() {
-  stat -c '%a' -- "$1"
+  stat -c '%#a' -- "$1"
 }
 
 verify_artifact() {

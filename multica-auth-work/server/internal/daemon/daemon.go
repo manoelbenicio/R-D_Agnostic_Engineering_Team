@@ -3718,10 +3718,18 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// malicious override of daemon-set values.
 	var customEnvironment map[string]string
 	var exactAgentEnvironment []string
-	if task.Agent != nil {
+	if task.Agent != nil && agentBrainPlan == nil {
+		for key, value := range task.Agent.CustomEnv {
+			if isBlockedEnvKey(key) {
+				d.logger.Warn("custom_env: blocked key skipped", "key", key)
+				continue
+			}
+			agentEnv[key] = value
+		}
+	} else if task.Agent != nil {
 		customEnvironment = task.Agent.CustomEnv
 	}
-	{
+	if agentBrainPlan != nil {
 		if task.Agent != nil && len(task.Agent.McpConfig) > 0 {
 			return TaskResult{}, &agentBrainAdmissionError{class: "managed_mcp_not_accepted_in_g3_slice"}
 		}

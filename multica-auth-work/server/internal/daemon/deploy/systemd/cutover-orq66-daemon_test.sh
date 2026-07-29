@@ -81,7 +81,7 @@ run_cutover() {
 : >"$log"
 run_cutover
 assert_eq "$(sha "$target")" "$candidate_sha" "successful target hash"
-assert_eq "$(stat -c '%a' -- "$target")" "755" "successful target mode"
+assert_eq "$(stat -c '%#a' -- "$target")" "0755" "successful target mode"
 assert_eq "$(grep -c '^restart ' "$log")" "1" "successful restart count"
 assert_eq "$(sed -n '1p' "$log")" "restart $candidate_sha --user restart multica-daemon-orq2-credential.service" "restart after candidate install"
 assert_eq "$(sed -n '2p' "$log")" "health $candidate_sha ready" "health after candidate restart"
@@ -95,7 +95,7 @@ if ORQ66_TEST_FAIL_CANDIDATE_RESTART=1 run_cutover; then
   fail "candidate restart failure unexpectedly succeeded"
 fi
 assert_eq "$(sha "$target")" "$rollback_sha" "restart-failure rollback hash"
-assert_eq "$(stat -c '%a' -- "$target")" "755" "restart-failure rollback mode"
+assert_eq "$(stat -c '%#a' -- "$target")" "0755" "restart-failure rollback mode"
 assert_eq "$(grep -c '^restart ' "$log")" "2" "restart-failure restart count"
 assert_eq "$(sed -n '1p' "$log")" "restart $candidate_sha --user restart multica-daemon-orq2-credential.service" "failed candidate restart ordering"
 assert_eq "$(sed -n '2p' "$log")" "restart $rollback_sha --user restart multica-daemon-orq2-credential.service" "rollback restart ordering"

@@ -544,6 +544,72 @@ func TestCredentiallessCodexPrepareDoesNotCreateAuthState(t *testing.T) {
 	}
 }
 
+func TestAgentBrainDisabledNilPlanLaunchesNativeBackend(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	config := syntheticAgentBrainConfig(t, "http://127.0.0.1:1")
+	config.DevelopmentEnabled = false
+	runtime, err := newAgentBrainRuntime(config, AgentBrainDependencies{}, logger)
+	if err != nil {
+		t.Fatalf("newAgentBrainRuntime: %v", err)
+	}
+	if runtime.enabled() {
+		t.Fatal("synthetic Agent Brain runtime unexpectedly enabled")
+	}
+
+	marker := filepath.Join(t.TempDir(), "native-launched")
+	fakeClaude := filepath.Join(t.TempDir(), "claude")
+	if err := os.WriteFile(fakeClaude, []byte("#!/bin/sh\n: > \"$ORQ75_NATIVE_LAUNCH_MARKER\"\nexit 1\n"), 0o700); err != nil {
+		t.Fatalf("write fake native backend: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		response.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	daemon := &Daemon{
+		cfg: Config{
+			WorkspacesRoot: t.TempDir(), ServerBaseURL: server.URL,
+			Agents: map[string]AgentEntry{"claude": {Path: fakeClaude}},
+		},
+		client:         NewClient(server.URL),
+		agentBrain:     runtime,
+		logger:         logger,
+		runtimeIndex:   map[string]Runtime{"native-runtime": {ID: "native-runtime", Provider: "claude"}},
+		activeEnvRoots: make(map[string]int),
+	}
+	task := Task{
+		ID: "native-task", AgentID: "native-agent", RuntimeID: "native-runtime",
+		IssueID: "native-issue", WorkspaceID: "native-workspace", AuthToken: "mat_synthetic_task_scope",
+		Agent: &AgentData{
+			ID: "native-agent", Name: "native", CustomEnv: map[string]string{"ORQ75_NATIVE_LAUNCH_MARKER": marker},
+			McpConfig: json.RawMessage(`{"mcpServers":{"synthetic":{"command":"printf"}}}`),
+		},
+	}
+
+	_, runErr := daemon.runTask(context.Background(), task, "claude", 0, logger)
+	var admissionErr *agentBrainAdmissionError
+	if errors.As(runErr, &admissionErr) && (admissionErr.class == "launch_plan_unavailable" || admissionErr.class == "managed_mcp_not_accepted_in_g3_slice") {
+		t.Fatalf("disabled native task was rejected by gateway-only launch policy: %v", runErr)
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Fatalf("native backend was not launched: %v (run error: %v)", err, runErr)
+	}
+}
+
+func TestAgentBrainEnabledNilPlanStillFailsClosed(t *testing.T) {
+	runtime, err := newAgentBrainRuntime(
+		syntheticAgentBrainConfig(t, "http://127.0.0.1:1"),
+		AgentBrainDependencies{},
+		slog.New(slog.NewTextHandler(io.Discard, nil)),
+	)
+	if err != nil {
+		t.Fatalf("newAgentBrainRuntime: %v", err)
+	}
+	_, err = runtime.buildLaunch(context.Background(), nil, &execenv.Environment{RootDir: t.TempDir()}, nil, nil)
+	assertAgentBrainAdmissionClass(t, err, "launch_plan_unavailable")
+}
+
 func newAgentBrainSecurityTestDaemon(t *testing.T, customRuntime bool) (*Daemon, *countingSyntheticCredentialSource, string) {
 	t.Helper()
 	config := syntheticAgentBrainConfig(t, "http://127.0.0.1:1")
