@@ -762,6 +762,10 @@ type TaskUsage struct {
 	ThinkingLevel pgtype.Text `json:"thinking_level"`
 	// Provider account that produced this usage, snapshotted at task claim time on agent_task_queue.credential_account_id and copied to task_usage upon report. Never live assignment lookup.
 	AccountID pgtype.UUID `json:"account_id"`
+	// Immutable pricing catalog version resolved from model, recorded thinking_level and task effective time.
+	PriceVersion pgtype.Text `json:"price_version"`
+	// Cost computed from this row token counters and its authoritative price version. NULL means unpriced, never zero-price fallback.
+	ComputedCostUsd pgtype.Float8 `json:"computed_cost_usd"`
 }
 
 type TaskUsageHourly struct {

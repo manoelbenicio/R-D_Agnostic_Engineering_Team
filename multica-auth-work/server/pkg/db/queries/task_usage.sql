@@ -19,11 +19,17 @@
 -- EXCLUDED.account_id) fills a NULL and is otherwise a no-op, so a recorded
 -- attribution is immutable. The reverse order would let a later report rewrite
 -- history after a rotation.
-INSERT INTO task_usage (task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, thinking_level, account_id, updated_at)
+-- price_version and computed_cost_usd are replaced as a pair from the same
+-- deterministic task effective time; both remain NULL when the row is unpriced.
+INSERT INTO task_usage (
+    task_id, provider, model,
+    input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
+    thinking_level, account_id, price_version, computed_cost_usd, updated_at
+)
 VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8,
     (SELECT q.credential_account_id FROM agent_task_queue q WHERE q.id = $1),
-    now()
+    $9, $10, now()
 )
 ON CONFLICT (task_id, provider, model)
 DO UPDATE SET
@@ -33,6 +39,8 @@ DO UPDATE SET
     cache_write_tokens = EXCLUDED.cache_write_tokens,
     thinking_level = COALESCE(EXCLUDED.thinking_level, task_usage.thinking_level),
     account_id = COALESCE(task_usage.account_id, EXCLUDED.account_id),
+    price_version = EXCLUDED.price_version,
+    computed_cost_usd = EXCLUDED.computed_cost_usd,
     updated_at = now();
 
 -- name: GetTaskUsage :many

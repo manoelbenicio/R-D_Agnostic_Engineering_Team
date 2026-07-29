@@ -45,7 +45,7 @@ func (q *Queries) GetIssueUsageSummary(ctx context.Context, issueID pgtype.UUID)
 }
 
 const getTaskUsage = `-- name: GetTaskUsage :many
-SELECT id, task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, created_at, updated_at, thinking_level, account_id FROM task_usage
+SELECT id, task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, created_at, updated_at, thinking_level, account_id, price_version, computed_cost_usd FROM task_usage
 WHERE task_id = $1
 ORDER BY model
 `
@@ -72,6 +72,8 @@ func (q *Queries) GetTaskUsage(ctx context.Context, taskID pgtype.UUID) ([]TaskU
 			&i.UpdatedAt,
 			&i.ThinkingLevel,
 			&i.AccountID,
+			&i.PriceVersion,
+			&i.ComputedCostUsd,
 		); err != nil {
 			return nil, err
 		}
@@ -515,11 +517,15 @@ func (q *Queries) ListTaskUsageByAccount(ctx context.Context, arg ListTaskUsageB
 }
 
 const upsertTaskUsage = `-- name: UpsertTaskUsage :exec
-INSERT INTO task_usage (task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, thinking_level, account_id, updated_at)
+INSERT INTO task_usage (
+    task_id, provider, model,
+    input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
+    thinking_level, account_id, price_version, computed_cost_usd, updated_at
+)
 VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8,
     (SELECT q.credential_account_id FROM agent_task_queue q WHERE q.id = $1),
-    now()
+    $9, $10, now()
 )
 ON CONFLICT (task_id, provider, model)
 DO UPDATE SET
@@ -529,6 +535,8 @@ DO UPDATE SET
     cache_write_tokens = EXCLUDED.cache_write_tokens,
     thinking_level = COALESCE(EXCLUDED.thinking_level, task_usage.thinking_level),
     account_id = COALESCE(task_usage.account_id, EXCLUDED.account_id),
+    price_version = EXCLUDED.price_version,
+    computed_cost_usd = EXCLUDED.computed_cost_usd,
     updated_at = now()
 `
 
@@ -540,7 +548,9 @@ type UpsertTaskUsageParams struct {
 	OutputTokens     int64       `json:"output_tokens"`
 	CacheReadTokens  int64       `json:"cache_read_tokens"`
 	CacheWriteTokens int64       `json:"cache_write_tokens"`
-	ThinkingLevel    pgtype.Text `json:"thinking_level"`
+	ThinkingLevel    pgtype.Text   `json:"thinking_level"`
+	PriceVersion     pgtype.Text   `json:"price_version"`
+	ComputedCostUsd  pgtype.Float8 `json:"computed_cost_usd"`
 }
 
 // Bumps `updated_at` on INSERT and on conflict so the hourly-rollup worker
@@ -573,6 +583,8 @@ func (q *Queries) UpsertTaskUsage(ctx context.Context, arg UpsertTaskUsageParams
 		arg.CacheReadTokens,
 		arg.CacheWriteTokens,
 		arg.ThinkingLevel,
+		arg.PriceVersion,
+		arg.ComputedCostUsd,
 	)
 	return err
 }

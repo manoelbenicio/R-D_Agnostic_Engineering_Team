@@ -2143,8 +2143,27 @@ type TaskUsagePayload struct {
 // Whitespace is trimmed so a stray " high" cannot create a second, distinct
 // tier value.
 func thinkingLevelText(level string) pgtype.Text {
-	trimmed := strings.TrimSpace(level)
+	trimmed := strings.ToLower(strings.TrimSpace(level))
 	return pgtype.Text{String: trimmed, Valid: trimmed != ""}
+}
+
+func taskUsageEffectiveAt(task db.AgentTaskQueue) time.Time {
+	if task.StartedAt.Valid {
+		return task.StartedAt.Time.UTC()
+	}
+	if task.CreatedAt.Valid {
+		return task.CreatedAt.Time.UTC()
+	}
+	return time.Time{}
+}
+
+func taskUsagePriceSnapshot(u TaskUsagePayload, effectiveAt time.Time) (pgtype.Text, pgtype.Float8) {
+	price, ok := obsmetrics.ResolveModelPrice(u.Model, u.ThinkingLevel, effectiveAt)
+	if !ok {
+		return pgtype.Text{}, pgtype.Float8{}
+	}
+	cost := obsmetrics.ComputeCostUSD(price.ModelPrice, u.InputTokens, u.OutputTokens, u.CacheReadTokens, u.CacheWriteTokens)
+	return pgtype.Text{String: price.Version, Valid: true}, pgtype.Float8{Float64: cost, Valid: true}
 }
 
 func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
@@ -2184,11 +2203,9 @@ func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
 			}
 			provider = runtimeProvider
 		}
-		// An absent or blank tier is stored as SQL NULL, never as an empty
-		// string: NULL means "the reporting daemon did not declare a tier",
-		// which a pricing lookup must treat as a gap rather than as the
-		// model's base tier.
-		thinkingLevel := strings.TrimSpace(u.ThinkingLevel)
+		thinkingLevel := thinkingLevelText(u.ThinkingLevel)
+		effectiveAt := taskUsageEffectiveAt(task)
+		priceVersion, computedCostUSD := taskUsagePriceSnapshot(u, effectiveAt)
 		if err := h.Queries.UpsertTaskUsage(r.Context(), db.UpsertTaskUsageParams{
 			TaskID:           parseUUID(taskID),
 			Provider:         provider,
@@ -2197,12 +2214,14 @@ func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
 			OutputTokens:     u.OutputTokens,
 			CacheReadTokens:  u.CacheReadTokens,
 			CacheWriteTokens: u.CacheWriteTokens,
-			ThinkingLevel:    thinkingLevelText(thinkingLevel),
+			ThinkingLevel:    thinkingLevel,
+			PriceVersion:     priceVersion,
+			ComputedCostUsd:  computedCostUSD,
 		}); err != nil {
 			slog.Warn("upsert task usage failed", "task_id", taskID, "model", u.Model, "error", err)
 			continue
 		}
-		h.TaskService.CaptureTaskUsage(r.Context(), task, provider, u.Model, u.InputTokens, u.OutputTokens, u.CacheReadTokens, u.CacheWriteTokens)
+		h.TaskService.CaptureTaskUsage(r.Context(), task, provider, u.Model, thinkingLevel.String, effectiveAt, u.InputTokens, u.OutputTokens, u.CacheReadTokens, u.CacheWriteTokens)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
