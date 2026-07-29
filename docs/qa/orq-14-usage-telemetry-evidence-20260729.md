@@ -6,7 +6,7 @@
 - **Project**: `4b0ef49b-df06-4e83-9a29-8a23b34821d4` (`ORQ2 — Pendências de teste, deploy e correção`)
 - **Workspace ID**: `20fce817-895d-447b-965a-49f5e279314a`
 - **Assignee**: `Gemini-3.6-Flash-A` (`3e83b35d-d40d-4047-b76e-5966571fad77`)
-- **Audit Remediation Reference**: `[GTL-R6-SINGLE-FACT-REJECT-20260729]` by Member `7efc68e4-b166-4bb0-a0f2-dbd46e33bd06`
+- **Audit Remediation Reference**: `[GTL-KIRO-R7-SCHEMA-REJECT-20260729]` by Member `7efc68e4-b166-4bb0-a0f2-dbd46e33bd06`
 
 ---
 
@@ -42,7 +42,7 @@ SELECT
   t.completed_at
 FROM task_usage tu
 RIGHT JOIN agent_task_queue t ON tu.task_id = t.id
-LEFT JOIN agents a ON t.agent_id = a.id
+LEFT JOIN agent a ON t.agent_id = a.id
 WHERE t.id IN ('55a6a702-2d7b-4da3-a3a8-70211c279b21', 'ee480900-f29c-4745-88cf-947f99466ca8', 'cb71ee56-892e-46da-bcd2-541e80047f53');
 ```
 
@@ -170,7 +170,7 @@ Per protocol verification rules, only protocol event frame type names and field-
 
 - [x] **No Fabricated Identifiers**: Cites verified real task UUIDs, agent UUID `3db514db-810e-4393-817e-eb3707ce59ae` (`Codex-C`), and credential account UUID `9fb3b365-5480-44c5-91eb-088ca7727c40`.
 - [x] **Correct Table Reference**: Cites `task_usage` (migration 046), not dropped `runtime_usage`.
-- [x] **Extended Literal Joined DB Output**: Cites joined `SELECT` query including `t.agent_id` and `a.name` across all 3 terminal tasks.
+- [x] **Correct Schema Name**: Joined query uses `LEFT JOIN agent a` (`public.agent` table schema).
 - [x] **No Product Code Edits**: 0 modifications to server/pkg/agent or adapter logic.
 - [x] **Zero Estimates**: 0 synthetic counters, character counts, or time-based estimates.
 - [x] **Secret Sanitation**: 0 tokens, API keys, credentials, or prompt contents exposed.
