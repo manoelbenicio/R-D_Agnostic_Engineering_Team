@@ -111,6 +111,34 @@ test.describe("Squad model dropdown", () => {
       "Access-Control-Allow-Origin": new URL(page.url()).origin,
       "Access-Control-Allow-Credentials": "true",
     };
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    const workspace = (await api.getWorkspaces())[0]!;
+    const rawRes = await fetch(`${API_BASE}/api/runtimes/${fixture!.runtimeId}/models`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${api.getToken()}`,
+        "X-Workspace-ID": workspace.id,
+      },
+    });
+    expect(rawRes.status).toBe(200);
+    const rawBody = (await rawRes.json()) as {
+      id?: string;
+      runtime_id?: string;
+      status?: string;
+      supported?: boolean;
+      created_at?: string;
+      updated_at?: string;
+    };
+    expect(rawBody).toMatchObject({
+      runtime_id: fixture!.runtimeId,
+      status: "pending",
+      supported: true,
+    });
+    expect(typeof rawBody.id).toBe("string");
+    expect(typeof rawBody.created_at).toBe("string");
+    expect(typeof rawBody.updated_at).toBe("string");
+
     // UI-only contract: assert a populated dropdown without coupling this test to
     // backend/daemon model discovery, whose response contract needs a separate gate.
     await page.route(`**/api/runtimes/${fixture!.runtimeId}/models`, async (route) => {
@@ -137,7 +165,6 @@ test.describe("Squad model dropdown", () => {
       });
     });
 
-    const workspace = (await api.getWorkspaces())[0]!;
     await page.goto(`/${workspace.slug}/squads`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "Squads" })).toBeVisible();
     await page.getByRole("button", { name: "New Squad" }).click();
