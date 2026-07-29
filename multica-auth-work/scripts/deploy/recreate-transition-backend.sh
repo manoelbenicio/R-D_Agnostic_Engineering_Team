@@ -307,17 +307,34 @@ PY
 }
 
 write_last_known_good() {
-  local image_ref="$1" tmp
+  local image_ref="$1"
   [[ "$image_ref" =~ ^[A-Za-z0-9./:_@-]+$ ]] || die "unsafe image reference for last-known-good config"
-  mkdir -p "$(dirname "$LAST_KNOWN_GOOD_FILE")"
-  tmp="$(mktemp "$(dirname "$LAST_KNOWN_GOOD_FILE")/.last-known-good.XXXXXX")"
-  cat >"$tmp" <<EOF
-services:
-  backend:
-    image: $image_ref
-EOF
-  chmod 600 "$tmp"
-  mv -f "$tmp" "$LAST_KNOWN_GOOD_FILE"
+  python3 - "$LAST_KNOWN_GOOD_FILE" "$image_ref" <<'PY'
+import os, pathlib, sys, tempfile
+path = pathlib.Path(sys.argv[1])
+image = sys.argv[2]
+path.parent.mkdir(parents=True, exist_ok=True)
+payload = f"services:\n  backend:\n    image: {image}\n"
+fd, tmp_name = tempfile.mkstemp(prefix=".last-known-good.", dir=path.parent)
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as out:
+        out.write(payload)
+        out.flush()
+        os.fsync(out.fileno())
+    os.chmod(tmp_name, 0o600)
+    os.replace(tmp_name, path)
+    dir_fd = os.open(path.parent, os.O_DIRECTORY)
+    try:
+        os.fsync(dir_fd)
+    finally:
+        os.close(dir_fd)
+except Exception:
+    try:
+        os.unlink(tmp_name)
+    except FileNotFoundError:
+        pass
+    raise
+PY
 }
 
 pin_images_file_image() {
