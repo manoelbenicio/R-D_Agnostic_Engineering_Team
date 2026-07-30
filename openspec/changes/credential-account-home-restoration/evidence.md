@@ -167,3 +167,44 @@ O artefato foi produzido a partir da base Git acima mais as alteracoes nao commi
 - Snapshot de controle: 24 cards, 18 Done (75%), 1 In Progress, 4 In Review, 1 Blocked e zero
   task ativa. A tabela canonica e
   `.deploy-control/p0/evidence/current-pending-tasks.md`, versao 5.0.
+
+## Reconciliacao de stewardship — evidencia de 2026-07-29
+
+As qualificacoes abaixo sao deliberadas: `implementacao` e `teste` descrevem codigo-fonte e
+reproducao; `candidate` descreve artefato apto a uma decisao de cutover; `live` descreve
+somente o que foi observado em producao; `blocker` impede promover uma dessas qualificacoes.
+
+### ORQ-66, ORQ-74 e ORQ-75 — daemon
+
+- O daemon candidate identificado por `9c8b5401` falhou nos lancamentos ORQ-74/ORQ-75 com
+  `launch_plan_unavailable`. O artefato da tentativa falha foi preservado, sem conteudo de
+  credencial, como `multica-auth-credential-home-v1.failed-orq66-20260729T182744Z`; isso nao
+  constitui aceitacao nem estado live.
+- O rollback live continua no binario de SHA-256
+  `88ca4f397ef841edac091f15e77b2ba52754045a471acaa311c280827d2dd1f8`. ORQ-74 ainda nao
+  foi repetida depois do rollback.
+- A implementacao de remediacao ORQ-75, task
+  `223f0eaf-efa2-47a1-8b5c-b8418b2bca4a`, foi concluida no commit
+  `e354ff456135183a764109880b1bab9652cd2760`, sobre
+  `08a25925fa6b07ea11d64aaf0c0d88a08bd06ece`.
+- Em reproducao limpa, os testes focados, o teste de cutover, `go vet` e dois builds default
+  deterministas com `-trimpath` passaram. Os dois builds produziram SHA-256
+  `53ad1f348391478b4ff6fcb67366ad231d76ea32750af341d3649395b7b27e82`, tamanho
+  `21340765` e modo `0755`. Esses resultados qualificam implementacao/teste, nao deploy.
+- A revisao obrigatoria Principal Kiro/Opus5 nao aconteceu: Herdr e a task Kanban
+  `724ea77d-a572-47b5-913b-c5502cb5e909` falharam antes da revisao por quota mensal do
+  provider. Portanto ORQ-75 permanece bloqueada, sem aceite e sem deploy; o commit e o
+  artefato acima nao substituem essa revisao.
+
+### ORQ-13, ORQ-41 e ORQ-54 — backend
+
+- O commit exato do backend candidate combinado e
+  `63ead4df72ff1b43c00150d99f4f341ff7d7d39f`; o label da imagem preservada corresponde a
+  esse commit.
+- O gate focado em PostgreSQL 17 e o parecer `KIRO ACCEPT DEPLOY` qualificam a integracao
+  como testada e aceita na fonte. Nao qualificam o candidate como production-live.
+- A producao permanece na revisao
+  `15626386da2725af8e8d4ac611754cffe359fe31`; a migration 129 nao esta implantada.
+  ORQ-13, ORQ-41 e ORQ-54 permanecem `in_review`, aguardando cutover conjunto.
+- ORQ-69 permanece bloqueada e depende da restauracao posterior ao cutover. Nenhuma destas
+  evidencias registra sua conclusao antecipada.
