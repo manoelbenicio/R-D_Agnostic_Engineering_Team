@@ -38,7 +38,8 @@ Open <http://localhost:3100>. The backend health endpoint is <http://127.0.0.1:8
 
 Use the neutral Agent Brain configuration surface:
 
-- `AGENT_BRAIN_GATEWAY_REQUIRED=true`
+- `AGENT_BRAIN_DEVELOPMENT_ENABLED=true`
+- `AGENT_BRAIN_GATEWAY_REQUIRED=true` (valid only when `AGENT_BRAIN_DEVELOPMENT_ENABLED=true`)
 - `AGENT_BRAIN_GATEWAY_BASE_URL` (host/WSL default: `http://127.0.0.1:20128`)
 - `AGENT_BRAIN_GATEWAY_SECRET_FILE` (restricted file reference; never commit its value)
 - `AGENT_BRAIN_CLI_KIND`
