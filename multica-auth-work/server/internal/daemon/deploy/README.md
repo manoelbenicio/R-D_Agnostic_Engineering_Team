@@ -8,13 +8,19 @@ active daemon.
 
 | Purpose | Frozen name / value |
 |---|---|
-| gateway required | `AGENT_BRAIN_GATEWAY_REQUIRED` |
+| development slice enabled | `AGENT_BRAIN_DEVELOPMENT_ENABLED` |
+| gateway required | `AGENT_BRAIN_GATEWAY_REQUIRED` (valid only when development slice is enabled) |
 | gateway base URL | `AGENT_BRAIN_GATEWAY_BASE_URL` |
 | secret-file reference | `AGENT_BRAIN_GATEWAY_SECRET_FILE` |
 | readiness policy | `AGENT_BRAIN_GATEWAY_READINESS_POLICY` (`strict`) |
 | capacity tier | `AGENT_BRAIN_TASK_CAPACITY_TIER` (`20` only in the authorized canary scope) |
 | host/WSL gateway | `http://127.0.0.1:20128` |
 | future same-network container gateway | `http://omniroute:20128` |
+
+Configuration loading rejects `AGENT_BRAIN_GATEWAY_REQUIRED=true` unless
+`AGENT_BRAIN_DEVELOPMENT_ENABLED=true`. Native execution keeps gateway-required
+mode disabled; it must not rely on an ambiguous required-without-development
+combination.
 
 The host daemon must never receive the container DNS default. The container
 default is future-only and requires explicit deployment topology selection.

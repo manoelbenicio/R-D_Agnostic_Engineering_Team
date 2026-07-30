@@ -884,6 +884,24 @@ func TestAgentBrainBuiltInCLIForAcceptsOpenAICompatibleAndPreservesClaudeCodex(t
 	}
 }
 
+func TestAgentBrainIntegrationConfigRejectsGatewayRequiredWithoutDevelopment(t *testing.T) {
+	config := syntheticAgentBrainConfig(t, "http://127.0.0.1:20128")
+	config.DevelopmentEnabled = false
+	if err := config.Validate(); err == nil || !strings.Contains(err.Error(), "AGENT_BRAIN_GATEWAY_REQUIRED requires AGENT_BRAIN_DEVELOPMENT_ENABLED") {
+		t.Fatalf("Validate error=%v, want explicit gateway/development contract", err)
+	}
+
+	developmentEnabled := false
+	gatewayRequired := true
+	_, err := loadAgentBrainIntegrationConfig(Overrides{
+		AgentBrainDevelopment: &developmentEnabled,
+		AgentBrainGateway:     &gatewayRequired,
+	}, "ws://synthetic-control.invalid/ws")
+	if err == nil || !strings.Contains(err.Error(), "AGENT_BRAIN_GATEWAY_REQUIRED requires AGENT_BRAIN_DEVELOPMENT_ENABLED") {
+		t.Fatalf("loadAgentBrainIntegrationConfig error=%v, want explicit gateway/development contract", err)
+	}
+}
+
 func TestAgentBrainIntegrationConfigValidateAcceptsOpenAICompatibleCline(t *testing.T) {
 	config := syntheticAgentBrainConfig(t, "http://127.0.0.1:20128")
 	config.CLIKind = brain.CLIOpenAICompatible

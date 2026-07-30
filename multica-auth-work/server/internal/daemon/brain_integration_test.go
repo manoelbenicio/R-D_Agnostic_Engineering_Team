@@ -548,6 +548,7 @@ func TestAgentBrainDisabledNilPlanLaunchesNativeBackend(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	config := syntheticAgentBrainConfig(t, "http://127.0.0.1:1")
 	config.DevelopmentEnabled = false
+	config.Neutral.Gateway.Required = false
 	runtime, err := newAgentBrainRuntime(config, AgentBrainDependencies{}, logger)
 	if err != nil {
 		t.Fatalf("newAgentBrainRuntime: %v", err)
@@ -594,6 +595,74 @@ func TestAgentBrainDisabledNilPlanLaunchesNativeBackend(t *testing.T) {
 	}
 	if _, err := os.Stat(marker); err != nil {
 		t.Fatalf("native backend was not launched: %v (run error: %v)", err, runErr)
+	}
+}
+
+func TestRunTaskGatewayRequiredRejectsUnavailablePlan(t *testing.T) {
+	daemon, credential, launchMarker := newAgentBrainSecurityTestDaemon(t, false)
+	disabledConfig := daemon.cfg.AgentBrain
+	disabledConfig.DevelopmentEnabled = false
+	disabledConfig.Neutral.Gateway.Required = false
+	disabledRuntime, err := newAgentBrainRuntime(disabledConfig, AgentBrainDependencies{}, daemon.logger)
+	if err != nil {
+		t.Fatalf("new disabled Agent Brain runtime: %v", err)
+	}
+	daemon.agentBrain = disabledRuntime
+
+	_, err = daemon.runTask(context.Background(), syntheticGatewayTask(), "claude", 0, daemon.logger)
+	assertAgentBrainAdmissionClass(t, err, "gateway_required")
+	if credential.calls != 0 {
+		t.Fatalf("credential source called %d times for unavailable plan", credential.calls)
+	}
+	if _, statErr := os.Stat(launchMarker); !os.IsNotExist(statErr) {
+		t.Fatal("synthetic executable ran without an admitted gateway plan")
+	}
+}
+
+func TestRunTaskGatewayPlanRejectsManagedMCPBeforeLaunch(t *testing.T) {
+	gatewayServer := newSyntheticGateway(t, true)
+	defer gatewayServer.Close()
+	apiServer := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		response.WriteHeader(http.StatusOK)
+	}))
+	defer apiServer.Close()
+
+	config := syntheticAgentBrainConfig(t, gatewayServer.URL)
+	credential := &countingSyntheticCredentialSource{}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	runtime, err := newAgentBrainRuntime(config, AgentBrainDependencies{
+		CredentialSource: credential,
+		HTTPClient:       gatewayServer.Client(),
+	}, logger)
+	if err != nil {
+		t.Fatalf("newAgentBrainRuntime: %v", err)
+	}
+	launchMarker := filepath.Join(t.TempDir(), "gateway-launched")
+	fakeClaude := filepath.Join(t.TempDir(), "claude")
+	if err := os.WriteFile(fakeClaude, []byte("#!/bin/sh\n: > \""+launchMarker+"\"\nexit 0\n"), 0o700); err != nil {
+		t.Fatalf("write fake gateway backend: %v", err)
+	}
+	daemon := &Daemon{
+		cfg: Config{
+			AgentBrain: config, WorkspacesRoot: t.TempDir(), ServerBaseURL: apiServer.URL,
+			Agents: map[string]AgentEntry{"claude": {Path: fakeClaude}},
+		},
+		client:         NewClient(apiServer.URL),
+		agentBrain:     runtime,
+		logger:         logger,
+		runtimeIndex:   map[string]Runtime{"synthetic-runtime": {ID: "synthetic-runtime", Provider: "claude"}},
+		activeEnvRoots: make(map[string]int),
+	}
+	task := syntheticGatewayTask()
+	task.Agent.McpConfig = json.RawMessage(`{"mcpServers":{"synthetic":{"command":"printf"}}}`)
+
+	_, err = daemon.runTask(context.Background(), task, "claude", 0, logger)
+	assertAgentBrainAdmissionClass(t, err, "managed_mcp_not_accepted_in_g3_slice")
+	if credential.calls == 0 {
+		t.Fatal("gateway admission did not reach authenticated readiness")
+	}
+	if _, statErr := os.Stat(launchMarker); !os.IsNotExist(statErr) {
+		t.Fatal("synthetic executable ran after managed-MCP gateway rejection")
 	}
 }
 

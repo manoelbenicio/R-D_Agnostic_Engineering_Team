@@ -182,6 +182,9 @@ func resolveAgentBrainBuiltInEntry(kind brain.CLIKind) (string, AgentEntry, erro
 }
 
 func (c AgentBrainIntegrationConfig) Validate() error {
+	if c.Neutral.Gateway.Required && !c.DevelopmentEnabled {
+		return fmt.Errorf("AGENT_BRAIN_GATEWAY_REQUIRED requires AGENT_BRAIN_DEVELOPMENT_ENABLED")
+	}
 	if err := c.Neutral.Validate(); err != nil {
 		return err
 	}
