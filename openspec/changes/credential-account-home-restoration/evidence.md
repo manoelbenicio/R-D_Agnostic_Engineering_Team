@@ -208,3 +208,25 @@ somente o que foi observado em producao; `blocker` impede promover uma dessas qu
   ORQ-13, ORQ-41 e ORQ-54 permanecem `in_review`, aguardando cutover conjunto.
 - ORQ-69 permanece bloqueada e depende da restauracao posterior ao cutover. Nenhuma destas
   evidencias registra sua conclusao antecipada.
+
+## ORQ-64 — contencao de fonte e teste — 2026-07-30
+
+- A contencao aceita esta no commit `55e18db967dc88e12f576218fc6bf8b35974ef0e`,
+  sobre o parent `b6571299b00c8e388abefe7ef9dcbcf8ac715d7f`, com delta de um unico arquivo:
+  `scripts/ops/tests/agent-cred-isolation-harness.sh`.
+- O harness passou a exigir uma fixture root privada criada por `mktemp` e a validar,
+  antes de carregar o script sob teste, as raizes sinteticas de login, origem, XDG,
+  estado e destino.
+- O contrato fail-closed rejeita raizes fora da fixture, com traversal, ausentes,
+  symlink ou representacao nao canonica.
+- Falhas de mismatch foram estruturalmente redigidas: informam somente a classe da
+  verificacao, sem ecoar valores observados ou esperados.
+- A regressao com sentinel sintetico confirmou sua ausencia em `stdout` e `stderr`
+  capturados, tanto no caminho de sucesso quanto nos caminhos de mismatch.
+- Os gates `bash -n`, ShellCheck, harness completo, scan explicito do sentinel e
+  `git diff --check` passaram.
+- Esta evidencia qualifica somente contencao em fonte e teste. Ela nao constitui
+  revogacao de credencial, reautenticacao, deploy nem encerramento do incidente.
+- A acao restante do owner e revogar e reautenticar a credencial afetada e executar
+  a verificacao de residuos somente por metadados. ORQ-64 permanece bloqueada ate
+  a confirmacao desses gates humanos.
