@@ -721,22 +721,47 @@ func (h *Handler) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Invalidate membership cache for all workspace members before deletion.
-	// After CASCADE deletes the member rows, cache entries become harmless
-	// orphans (downstream lookups for the deleted workspace will fail), but
-	// proactive invalidation prevents any stale-access window up to TTL.
-	if members, err := h.Queries.ListMembers(r.Context(), requester.WorkspaceID); err == nil {
-		for _, m := range members {
-			h.MembershipCache.Invalidate(r.Context(), uuidToString(m.UserID), workspaceID)
-		}
-	}
+	// Resolve members before deletion, but defer every cache side effect until
+	// after commit so a failed transaction leaves both DB and caches unchanged.
+	members, membersErr := h.Queries.ListMembers(r.Context(), requester.WorkspaceID)
 
-	// At this point workspaceMember has resolved → workspaceID is a valid UUID
-	// (the lookup would have errored otherwise), so reuse the resolved value.
-	if err := h.Queries.DeleteWorkspace(r.Context(), requester.WorkspaceID); err != nil {
+	// Revoke every daemon token and delete the workspace in one transaction.
+	// Cache invalidation deliberately happens only after commit: invalidating
+	// first would make a rolled-back token disappear from cache even though it
+	// remains valid in the database.
+	tx, err := h.TxStarter.Begin(r.Context())
+	if err != nil {
 		slog.Warn("delete workspace failed", append(logger.RequestAttrs(r), "error", err, "workspace_id", workspaceID)...)
 		writeError(w, http.StatusInternalServerError, "failed to delete workspace")
 		return
+	}
+	defer tx.Rollback(r.Context())
+
+	qtx := h.Queries.WithTx(tx)
+	revokedTokenHashes, err := qtx.DeleteDaemonTokensByWorkspace(r.Context(), requester.WorkspaceID)
+	if err != nil {
+		slog.Warn("delete workspace failed", append(logger.RequestAttrs(r), "error", err, "workspace_id", workspaceID)...)
+		writeError(w, http.StatusInternalServerError, "failed to delete workspace")
+		return
+	}
+	if err := qtx.DeleteWorkspace(r.Context(), requester.WorkspaceID); err != nil {
+		slog.Warn("delete workspace failed", append(logger.RequestAttrs(r), "error", err, "workspace_id", workspaceID)...)
+		writeError(w, http.StatusInternalServerError, "failed to delete workspace")
+		return
+	}
+	if err := tx.Commit(r.Context()); err != nil {
+		slog.Warn("delete workspace failed", append(logger.RequestAttrs(r), "error", err, "workspace_id", workspaceID)...)
+		writeError(w, http.StatusInternalServerError, "failed to delete workspace")
+		return
+	}
+
+	for _, hash := range revokedTokenHashes {
+		h.DaemonTokenCache.Invalidate(r.Context(), hash)
+	}
+	if membersErr == nil {
+		for _, member := range members {
+			h.MembershipCache.Invalidate(r.Context(), uuidToString(member.UserID), workspaceID)
+		}
 	}
 
 	slog.Info("workspace deleted", append(logger.RequestAttrs(r), "workspace_id", workspaceID)...)
