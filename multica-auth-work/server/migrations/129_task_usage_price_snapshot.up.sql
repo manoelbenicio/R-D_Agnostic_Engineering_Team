@@ -13,11 +13,14 @@ BEGIN
             (price_version IS NULL AND computed_cost_usd IS NULL)
             OR
             (price_version IS NOT NULL AND computed_cost_usd IS NOT NULL AND computed_cost_usd >= 0)
-        );
+        ) NOT VALID;
 EXCEPTION
     WHEN duplicate_object THEN NULL;
 END
 $$;
+
+ALTER TABLE task_usage
+    VALIDATE CONSTRAINT task_usage_price_snapshot_consistent;
 
 COMMENT ON COLUMN task_usage.price_version IS
     'Immutable pricing catalog version resolved from model, recorded thinking_level and task effective time.';
