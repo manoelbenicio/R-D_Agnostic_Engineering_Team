@@ -1,19 +1,5 @@
 #!/usr/bin/env bash
-# ORQ-37 / Wave B structural — user-scoped umask 0077 + private TMPDIR.
-#
-# Why this exists: /etc/bashrc sets `umask 002`, so every artifact created by
-# the execution user is born world-readable and any containment has to be
-# re-applied by hand. This installer hardens only what the execution user owns:
-# a systemd *user* drop-in for the relevant units and an opt-in shell fragment.
-# It never edits /etc/bashrc, never touches a system-scope unit, and never
-# reads, moves or inspects a credential file.
-#
-# Default mode is a dry run: it prints exactly what would change and exits 0
-# without writing. `--apply` writes; `--rollback` removes only what this script
-# created. Both are idempotent.
-#
-# The target root is parameterizable so the test harness can exercise the real
-# code path against a sandbox instead of the live home directory.
+# Install a user-scoped UMask/TMPDIR drop-in without touching services.
 set -euo pipefail
 
 readonly MANAGED_BEGIN='# >>> orq37 umask hardening (managed) >>>'
@@ -21,241 +7,203 @@ readonly MANAGED_END='# <<< orq37 umask hardening (managed) <<<'
 readonly DROPIN_NAME='10-orq37-umask-hardening.conf'
 
 usage() {
-  cat <<'USAGE'
-Usage: install-umask-hardening.sh [--apply|--rollback] [--root DIR] [--unit NAME]...
-
-  --apply       write the drop-in and shell fragment (default: dry run)
-  --rollback    remove only the artifacts this script created
-  --root DIR    treat DIR as the user's home (default: $HOME); used by tests
-  --unit NAME   systemd *user* unit to harden (repeatable). Default:
-                multica-daemon-orq2-credential.service
-  --tmpdir DIR  private TMPDIR to export (default: <root>/.private-tmp)
-
-Exit codes: 0 ok, 2 usage, 3 refused (unsafe state).
-USAGE
+  printf '%s\n' 'Usage: install-umask-hardening.sh [--apply|--rollback] [--root DIR] [--tmpdir DIR] [--unit NAME]...'
 }
+
+die_usage() { printf 'E_USAGE %s\n' "$1" >&2; usage >&2; exit 2; }
+die_refused() { printf '%s\n' "$1" >&2; exit 3; }
+need_value() { [ "$#" -ge 2 ] && [ -n "$2" ] && [[ "$2" != --* ]] || die_usage "$1 requires a value"; }
 
 mode=dryrun
+mode_seen=0
 root="${HOME:-}"
-tmpdir=""
+tmpdir=
 units=()
-
-while [ $# -gt 0 ]; do
+while [ "$#" -gt 0 ]; do
   case "$1" in
-    --apply) mode=apply; shift ;;
-    --rollback) mode=rollback; shift ;;
-    --root) root="${2:-}"; shift 2 ;;
-    --tmpdir) tmpdir="${2:-}"; shift 2 ;;
-    --unit) units+=("${2:-}"); shift 2 ;;
-    -h|--help) usage; exit 0 ;;
-    *) printf 'E_USAGE unknown argument: %s\n' "$1" >&2; usage >&2; exit 2 ;;
-  esac
-done
-
-[ -n "$root" ] || { printf 'E_ROOT_REQUIRED\n' >&2; exit 2; }
-[ -d "$root" ] || { printf 'E_ROOT_NOT_A_DIRECTORY %s\n' "$root" >&2; exit 3; }
-[ ${#units[@]} -gt 0 ] || units=("multica-daemon-orq2-credential.service")
-[ -n "$tmpdir" ] || tmpdir="$root/.private-tmp"
-
-# Canonicalize root and validate ownership and system path restrictions
-readonly canonical_root="$(realpath -m "$root" 2>/dev/null || readlink -f "$root" 2>/dev/null || echo "$root")"
-
-# Refuse symlink root pointing to system paths
-if [ -L "$root" ]; then
-  target_root="$(realpath "$root" 2>/dev/null || echo "")"
-  case "$target_root" in
-    /|/etc|/etc/*|/usr|/usr/*|/var|/var/*|/tmp|/tmp/*|/sys|/sys/*|/proc|/proc/*|/dev|/dev/*|/boot|/boot/*|/run|/run/*|/lib|/lib*|/opt|/opt/*|/srv|/srv/*)
-      printf 'E_ROOT_REFUSED %s (symlink target %s)\n' "$root" "$target_root" >&2
-      exit 3
+    --apply|--rollback)
+      [ "$mode_seen" -eq 0 ] || die_usage 'choose exactly one of --apply and --rollback'
+      mode_seen=1
+      [ "$1" = --apply ] && mode=apply || mode=rollback
+      shift
       ;;
+    --root|--tmpdir|--unit)
+      need_value "$@"
+      case "$1" in
+        --root) root="$2" ;;
+        --tmpdir) tmpdir="$2" ;;
+        --unit) units+=("$2") ;;
+      esac
+      shift 2
+      ;;
+    -h|--help) usage; exit 0 ;;
+    *) die_usage "unknown argument: $1" ;;
   esac
-fi
-
-# Ownership check for root directory
-current_uid="$(id -u)"
-root_owner="$(stat -c '%u' "$root" 2>/dev/null || true)"
-if [ -n "$root_owner" ] && [ "$root_owner" -ne "$current_uid" ]; then
-  printf 'E_ROOT_OWNERSHIP_MISMATCH root owner %s != current uid %s\n' "$root_owner" "$current_uid" >&2
-  exit 3
-fi
-
-# Refuse absolute-root or system paths outright (including canonicalized paths)
-case "$canonical_root" in
-  /|/etc|/etc/*|/usr|/usr/*|/var|/var/*|/tmp|/sys|/sys/*|/proc|/proc/*|/dev|/dev/*|/boot|/boot/*|/run|/run/*|/lib|/lib*|/opt|/opt/*|/srv|/srv/*)
-    printf 'E_ROOT_REFUSED %s\n' "$canonical_root" >&2
-    exit 3
-    ;;
-esac
-
-# Validate unit names against path traversal, slashes, whitespace, and invalid characters
-for unit in "${units[@]}"; do
-  if [ -z "$unit" ] || [[ "$unit" =~ [/\\[:space:]] ]] || [[ "$unit" == *..* ]] || ! [[ "$unit" =~ ^[a-zA-Z0-9_.-]+$ ]]; then
-    printf 'E_UNIT_INVALID %s\n' "$unit" >&2
-    exit 3
-  fi
 done
 
-# Canonicalize and validate tmpdir
-readonly canonical_tmpdir="$(realpath -m "$tmpdir" 2>/dev/null || echo "$tmpdir")"
-case "$canonical_tmpdir" in
-  /|/etc|/etc/*|/usr|/usr/*|/var|/var/*|/tmp|/sys|/sys/*|/proc|/proc/*|/dev|/dev/*|/boot|/boot/*|/run|/run/*|/lib|/lib*|/opt|/opt/*|/srv|/srv/*)
-    printf 'E_TMPDIR_REFUSED %s\n' "$canonical_tmpdir" >&2
-    exit 3
-    ;;
-esac
+[ -n "$root" ] || die_usage '--root is empty'
+[ -e "$root" ] || die_refused "E_ROOT_MISSING $root"
+[ ! -L "$root" ] || die_refused "E_ROOT_SYMLINK $root"
+[ -d "$root" ] || die_refused "E_ROOT_NOT_DIRECTORY $root"
+canonical_root="$(realpath -e -- "$root")" || die_refused "E_ROOT_INVALID $root"
+[ "$canonical_root" != / ] || die_refused 'E_ROOT_REFUSED /'
+caller_uid="$(id -u)"
+[ "$(stat -c %u -- "$canonical_root")" = "$caller_uid" ] || die_refused "E_ROOT_NOT_OWNED $canonical_root"
 
-if [[ "$canonical_tmpdir" != "$canonical_root"* ]]; then
-  printf 'E_TMPDIR_OUTSIDE_ROOT %s outside %s\n' "$canonical_tmpdir" "$canonical_root" >&2
-  exit 3
-fi
+[ "${#units[@]}" -gt 0 ] || units=('multica-daemon-orq2-credential.service')
+deduped=()
+for unit in "${units[@]}"; do
+  [[ "$unit" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]*\.service$ ]] || die_refused "E_UNIT_INVALID $unit"
+  seen=0
+  for prior in "${deduped[@]}"; do [ "$prior" = "$unit" ] && seen=1; done
+  [ "$seen" -eq 1 ] || deduped+=("$unit")
+done
+units=("${deduped[@]}")
 
-if [ -L "$tmpdir" ]; then
-  printf 'E_TMPDIR_SYMLINK %s\n' "$tmpdir" >&2
-  exit 3
-fi
+[ -n "$tmpdir" ] || tmpdir="$canonical_root/.private-tmp"
+case "$tmpdir" in /*) ;; *) die_refused "E_TMPDIR_NOT_ABSOLUTE $tmpdir" ;; esac
+canonical_tmpdir="$(realpath -m -- "$tmpdir")"
+case "$canonical_tmpdir" in "$canonical_root"/*) ;; *) die_refused "E_TMPDIR_OUTSIDE_ROOT $canonical_tmpdir" ;; esac
+[[ "$canonical_tmpdir" =~ ^/[A-Za-z0-9_./-]+$ ]] || die_refused "E_TMPDIR_UNSAFE_CHARACTERS $canonical_tmpdir"
+tmpdir="$canonical_tmpdir"
 
-if [ -e "$tmpdir" ]; then
-  if [ ! -d "$tmpdir" ]; then
-    printf 'E_TMPDIR_NOT_A_DIRECTORY %s\n' "$tmpdir" >&2
-    exit 3
-  fi
-  tmpdir_owner="$(stat -c '%u' "$tmpdir" 2>/dev/null || true)"
-  if [ -n "$tmpdir_owner" ] && [ "$tmpdir_owner" -ne "$current_uid" ]; then
-    printf 'E_TMPDIR_OWNERSHIP_MISMATCH %s owner %s != current uid %s\n' "$tmpdir" "$tmpdir_owner" "$current_uid" >&2
-    exit 3
-  fi
-fi
+assert_existing_component_chain() {
+  local target="$1" rel current component
+  case "$target" in "$canonical_root"|"$canonical_root"/*) ;; *) die_refused "E_PATH_OUTSIDE_ROOT $target" ;; esac
+  rel="${target#"$canonical_root"}"
+  current="$canonical_root"
+  IFS=/ read -r -a components <<<"${rel#/}"
+  for component in "${components[@]}"; do
+    [ -n "$component" ] || continue
+    current="$current/$component"
+    [ -e "$current" ] || [ -L "$current" ] || break
+    [ ! -L "$current" ] || die_refused "E_COMPONENT_SYMLINK $current"
+    [ -d "$current" ] || die_refused "E_COMPONENT_NOT_DIRECTORY $current"
+    [ "$(stat -c %u -- "$current")" = "$caller_uid" ] || die_refused "E_COMPONENT_NOT_OWNED $current"
+  done
+}
 
-readonly systemd_user_dir="$root/.config/systemd/user"
-readonly fragment="$root/.config/orq37-umask-hardening.sh"
-
-assert_path_safe() {
-  local p="$1"
-  local canon
-  canon="$(realpath -m "$p" 2>/dev/null || echo "$p")"
-  if [[ "$canon" != "$canonical_root"* ]]; then
-    printf 'E_PATH_TRAVERSAL %s outside %s\n' "$p" "$canonical_root" >&2
-    exit 3
-  fi
-  if [ -L "$p" ]; then
-    printf 'E_SYMLINK_REFUSED %s\n' "$p" >&2
-    exit 3
+assert_target_type() {
+  local target="$1"
+  [ ! -L "$target" ] || die_refused "E_TARGET_SYMLINK $target"
+  if [ -e "$target" ]; then
+    [ -f "$target" ] || die_refused "E_TARGET_NOT_REGULAR $target"
+    [ "$(stat -c %u -- "$target")" = "$caller_uid" ] || die_refused "E_TARGET_NOT_OWNED $target"
   fi
 }
 
-emit() { printf '%s\n' "$*"; }
+systemd_user_dir="$canonical_root/.config/systemd/user"
+fragment="$canonical_root/.config/orq37-umask-hardening.sh"
+temps=()
+cleanup() { local p; for p in "${temps[@]}"; do rm -f -- "$p"; done; }
+trap cleanup EXIT HUP INT TERM
 
 render_dropin() {
-  cat <<EOF
-[Service]
-# ORQ-37 Wave B structural: files created by this unit must not be
-# world-readable. 0077 clears group and other bits at creation time, which is
-# what keeps a fresh credential artifact from starting life at 0664.
-UMask=0077
-# Keep scratch state out of the shared 1777 /tmp.
-Environment=TMPDIR=$tmpdir
-Environment=TMP=$tmpdir
-EOF
+  printf '%s\n' '[Service]' \
+    '# ORQ-37 managed user hardening.' \
+    'UMask=0077' \
+    "Environment=TMPDIR=$tmpdir" \
+    "Environment=TMP=$tmpdir"
 }
 
 render_fragment() {
-  cat <<EOF
-$MANAGED_BEGIN
-# Source this from an interactive shell to inherit the hardened defaults:
-#   [ -f "\$HOME/.config/orq37-umask-hardening.sh" ] && . "\$HOME/.config/orq37-umask-hardening.sh"
-# It is deliberately NOT auto-installed into .bashrc: enabling it for a live
-# session is a separate, explicit decision (host cutover).
-umask 0077
-export TMPDIR="$tmpdir"
-export TMP="\$TMPDIR"
-$MANAGED_END
-EOF
+  # TMPDIR must remain literal in the generated fragment.
+  # shellcheck disable=SC2016
+  printf '%s\n' "$MANAGED_BEGIN" \
+    '# Opt-in only; this installer never edits shell startup files.' \
+    'umask 0077' \
+    "export TMPDIR=$(printf '%q' "$tmpdir")" \
+    'export TMP="$TMPDIR"' "$MANAGED_END"
 }
 
-plan_paths() {
-  local unit
-  for unit in "${units[@]}"; do
-    emit "$systemd_user_dir/$unit.d/$DROPIN_NAME"
-  done
-  emit "$fragment"
-  emit "$tmpdir"
+expected_matches() {
+  local target="$1" renderer="$2" expected
+  expected="$(mktemp "$(dirname "$target")/.orq37.expected.XXXXXX")"
+  temps+=("$expected")
+  chmod 600 "$expected"
+  "$renderer" >"$expected"
+  cmp -s -- "$expected" "$target"
+}
+
+atomic_install() {
+  local target="$1" renderer="$2" tmp
+  assert_target_type "$target"
+  if [ -e "$target" ] && ! expected_matches "$target" "$renderer"; then
+    die_refused "E_UNMANAGED_TARGET $target"
+  fi
+  tmp="$(mktemp "$(dirname "$target")/.orq37.install.XXXXXX")"
+  temps+=("$tmp")
+  chmod 600 "$tmp"
+  "$renderer" >"$tmp"
+  mv -- "$tmp" "$target"
+}
+
+verify_dropin() {
+  local dropin="$1" verify_unit
+  verify_unit="$(mktemp "$(dirname "$dropin")/.orq37-verify-XXXXXX.service")"
+  temps+=("$verify_unit")
+  chmod 600 "$verify_unit"
+  { printf '%s\n' '[Unit]' 'Description=ORQ-37 verification' '[Service]' 'Type=oneshot' 'ExecStart=/bin/true'; render_dropin | sed '1d'; } >"$verify_unit"
+  systemd-analyze verify "$verify_unit" >/dev/null 2>&1 || die_refused "E_SYSTEMD_VERIFY $dropin"
+}
+
+ensure_dir() {
+  local dir="$1"
+  assert_existing_component_chain "$dir"
+  install -d -m 700 -- "$dir"
+  [ ! -L "$dir" ] && [ -d "$dir" ] || die_refused "E_DIRECTORY_UNSAFE $dir"
+  [ "$(stat -c %u -- "$dir")" = "$caller_uid" ] || die_refused "E_DIRECTORY_NOT_OWNED $dir"
+  chmod 700 -- "$dir"
 }
 
 do_apply() {
-  local unit dir dropin_path
-  assert_path_safe "$root/.config"
-  assert_path_safe "$systemd_user_dir"
-  install -d -m 700 "$tmpdir"
-  chmod 700 "$tmpdir"
-  install -d -m 700 "$root/.config"
-  chmod 700 "$root/.config"
-  install -d -m 700 "$systemd_user_dir"
-  chmod 700 "$systemd_user_dir"
-
+  local unit dir dropin
+  ensure_dir "$tmpdir"
+  ensure_dir "$canonical_root/.config"
+  ensure_dir "$canonical_root/.config/systemd"
+  ensure_dir "$systemd_user_dir"
   for unit in "${units[@]}"; do
     dir="$systemd_user_dir/$unit.d"
-    dropin_path="$dir/$DROPIN_NAME"
-    assert_path_safe "$dir"
-    assert_path_safe "$dropin_path"
-    assert_path_safe "$dropin_path.tmp"
-
-    install -d -m 700 "$dir"
-    chmod 700 "$dir"
-    render_dropin >"$dropin_path.tmp"
-    chmod 600 "$dropin_path.tmp"
-    mv -f "$dropin_path.tmp" "$dropin_path"
-    emit "APPLIED drop-in $dropin_path"
+    ensure_dir "$dir"
+    dropin="$dir/$DROPIN_NAME"
+    verify_dropin "$dropin"
+    atomic_install "$dropin" render_dropin
+    printf 'APPLIED drop-in %s\n' "$dropin"
   done
+  atomic_install "$fragment" render_fragment
+  printf 'APPLIED fragment %s\n' "$fragment"
+  printf '%s\n' 'NOTE daemon reload and restart are separate authorized steps; neither was invoked.'
+}
 
-  assert_path_safe "$fragment"
-  assert_path_safe "$fragment.tmp"
-  render_fragment >"$fragment.tmp"
-  chmod 600 "$fragment.tmp"
-  mv -f "$fragment.tmp" "$fragment"
-  emit "APPLIED fragment $fragment"
-  emit "NOTE daemon reload and unit restart are a SEPARATE authorized step; this script does not touch a running unit."
+remove_if_managed() {
+  local target="$1" renderer="$2"
+  assert_existing_component_chain "$(dirname "$target")"
+  assert_target_type "$target"
+  if [ ! -e "$target" ]; then printf 'ABSENT %s\n' "$target"; return; fi
+  expected_matches "$target" "$renderer" || die_refused "E_UNMANAGED_TARGET $target"
+  rm -- "$target"
+  printf 'ROLLED BACK %s\n' "$target"
 }
 
 do_rollback() {
-  local unit dir dropin_path
+  local unit dir dropin
   for unit in "${units[@]}"; do
     dir="$systemd_user_dir/$unit.d"
-    dropin_path="$dir/$DROPIN_NAME"
-    if [ -L "$dropin_path" ]; then
-      printf 'E_SYMLINK_REFUSED %s\n' "$dropin_path" >&2
-      exit 3
-    fi
-    if [ -f "$dropin_path" ]; then
-      rm -f "$dropin_path"
-      emit "ROLLED BACK drop-in $dropin_path"
-      rmdir "$dir" 2>/dev/null && emit "REMOVED empty $dir" || true
-    else
-      emit "ABSENT drop-in $dropin_path"
-    fi
+    dropin="$dir/$DROPIN_NAME"
+    remove_if_managed "$dropin" render_dropin
+    rmdir -- "$dir" 2>/dev/null || true
   done
-
-  if [ -L "$fragment" ]; then
-    printf 'E_SYMLINK_REFUSED %s\n' "$fragment" >&2
-    exit 3
-  fi
-
-  if [ -f "$fragment" ] && grep -qF "$MANAGED_BEGIN" "$fragment"; then
-    rm -f "$fragment"
-    emit "ROLLED BACK fragment $fragment"
-  else
-    emit "ABSENT or unmanaged fragment $fragment (left untouched)"
-  fi
-  emit "NOTE the private TMPDIR is left in place on purpose: it may hold task state, and removing data is not this script's job."
+  remove_if_managed "$fragment" render_fragment
+  printf '%s\n' 'NOTE the private TMPDIR is left in place on purpose; it may hold task state.'
 }
 
 case "$mode" in
   dryrun)
-    emit "DRY RUN — nothing written. Paths that --apply would create:"
-    plan_paths
-    emit "Drop-in content that would be written:"
+    printf '%s\n' 'DRY RUN — nothing written.'
+    for unit in "${units[@]}"; do printf '%s\n' "$systemd_user_dir/$unit.d/$DROPIN_NAME"; done
+    printf '%s\n' "$fragment" "$tmpdir" 'Drop-in content:'
     render_dropin | sed 's/^/  | /'
     ;;
   apply) do_apply ;;
   rollback) do_rollback ;;
 esac
-

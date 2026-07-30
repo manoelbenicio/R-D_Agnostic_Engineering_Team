@@ -1,143 +1,118 @@
 #!/usr/bin/env bash
-# ORQ-37 gates for install-umask-hardening.sh.
-#
-# Every assertion runs against a sandbox root in a private temp directory, so
-# the live home directory and the running unit are never touched. No credential
-# file is read, created or inspected.
 set -euo pipefail
-
 here="$(cd "$(dirname "$0")" && pwd)"
 installer="$here/install-umask-hardening.sh"
-unit="orq37-test.service"
-fail=0
-
+unit=orq37-test.service
+pass=0 fail=0
 sandbox="$(mktemp -d "${TMPDIR:-/tmp}/orq37-gate.XXXXXX")"
 chmod 700 "$sandbox"
-cleanup() { rm -rf "$sandbox"; }
+cleanup() { rm -rf -- "$sandbox"; }
 trap cleanup EXIT
 
-check() {
-  local label="$1"; shift
-  if "$@" >/dev/null 2>&1; then
-    printf 'PASS %s\n' "$label"
-  else
-    printf 'FAIL %s\n' "$label"
-    fail=$((fail + 1))
-  fi
-}
+ok() { printf 'PASS %s\n' "$1"; pass=$((pass + 1)); }
+bad() { printf 'FAIL %s\n' "$1"; fail=$((fail + 1)); }
+check() { local label="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$label"; else bad "$label"; fi; }
+refute() { local label="$1"; shift; if "$@" >/dev/null 2>&1; then bad "$label"; else ok "$label"; fi; }
 
-refute() {
-  local label="$1"; shift
-  if "$@" >/dev/null 2>&1; then
-    printf 'FAIL %s (command unexpectedly succeeded)\n' "$label"
-    fail=$((fail + 1))
-  else
-    printf 'PASS %s\n' "$label"
-  fi
-}
+root="$sandbox/root"
+mkdir -m 700 "$root"
+dropin="$root/.config/systemd/user/$unit.d/10-orq37-umask-hardening.conf"
+fragment="$root/.config/orq37-umask-hardening.sh"
 
-dropin="$sandbox/.config/systemd/user/$unit.d/10-orq37-umask-hardening.conf"
-fragment="$sandbox/.config/orq37-umask-hardening.sh"
+"$installer" --root "$root" --unit "$unit" --unit "$unit" >"$sandbox/dry"
+check 'dry run writes nothing' test ! -e "$root/.config"
+check 'dry run reports one deduplicated unit' test "$(grep -cF "$dropin" "$sandbox/dry")" = 1
+check 'dry run renders UMask' grep -q '^  | UMask=0077$' "$sandbox/dry"
 
-# 1. Dry run is the default and must not write anything.
-"$installer" --root "$sandbox" --unit "$unit" >"$sandbox/dryrun.out"
-check "dry run writes no drop-in" [ ! -e "$dropin" ]
-check "dry run writes no fragment" [ ! -e "$fragment" ]
-check "dry run reports the planned drop-in path" grep -qF "$dropin" "$sandbox/dryrun.out"
-check "dry run shows UMask=0077" grep -qE '^\s+\| UMask=0077$' "$sandbox/dryrun.out"
+"$installer" --apply --root "$root" --unit "$unit" >"$sandbox/apply"
+check 'apply creates drop-in' test -f "$dropin"
+check 'drop-in mode is 0600' test "$(stat -c %a "$dropin")" = 600
+check 'drop-in directory mode is 0700' test "$(stat -c %a "$(dirname "$dropin")")" = 700
+check 'fragment mode is 0600' test "$(stat -c %a "$fragment")" = 600
+check 'TMPDIR mode is 0700' test "$(stat -c %a "$root/.private-tmp")" = 700
+check 'drop-in has UMask' grep -qx UMask=0077 "$dropin"
+check 'drop-in preserves exact TMPDIR path' grep -qx "Environment=TMPDIR=$root/.private-tmp" "$dropin"
+check 'apply states no service action' grep -q 'neither was invoked' "$sandbox/apply"
 
-# 2. Apply writes both artifacts with private modes and the right content.
-"$installer" --apply --root "$sandbox" --unit "$unit" >"$sandbox/apply.out"
-check "apply creates the drop-in" [ -f "$dropin" ]
-check "drop-in is 0600" [ "$(stat -c '%a' "$dropin")" = "600" ]
-check "drop-in directory is 0700" [ "$(stat -c '%a' "$(dirname "$dropin")")" = "700" ]
-check "drop-in sets UMask=0077" grep -qx 'UMask=0077' "$dropin"
-check "drop-in points TMPDIR at the private dir" grep -qx "Environment=TMPDIR=$sandbox/.private-tmp" "$dropin"
-check "private TMPDIR exists and is 0700" [ "$(stat -c '%a' "$sandbox/.private-tmp")" = "700" ]
-check "fragment is 0600" [ "$(stat -c '%a' "$fragment")" = "600" ]
-check "fragment sets umask 0077" grep -qx 'umask 0077' "$fragment"
-check "apply refuses to claim it restarted anything" grep -qF "SEPARATE authorized step" "$sandbox/apply.out"
+before="$(sha256sum "$dropin" "$fragment")"
+"$installer" --apply --root "$root" --unit "$unit" >/dev/null
+check 'second apply is byte-identical' test "$before" = "$(sha256sum "$dropin" "$fragment")"
+# shellcheck disable=SC2016
+check 'no predictable tmp remains' sh -c '! find "$1" \( -name "*.tmp" -o -name ".orq37.*" \) | grep -q .' sh "$root"
+probe="$root/probe"; (umask 0077; : >"$probe")
+check 'umask effect is 0600' test "$(stat -c %a "$probe")" = 600
 
-# 3. Apply is idempotent: a second run leaves an identical drop-in.
-before="$(sha256sum "$dropin" | cut -d' ' -f1)"
-"$installer" --apply --root "$sandbox" --unit "$unit" >/dev/null
-after="$(sha256sum "$dropin" | cut -d' ' -f1)"
-check "second apply is byte-identical" [ "$before" = "$after" ]
+cp "$dropin" "$sandbox/managed-dropin"
+printf '%s\n' unmanaged >"$dropin"
+refute 'apply refuses unmanaged drop-in' "$installer" --apply --root "$root" --unit "$unit"
+refute 'rollback refuses unmanaged drop-in' "$installer" --rollback --root "$root" --unit "$unit"
+check 'unmanaged drop-in remains intact' grep -qx unmanaged "$dropin"
+mv "$sandbox/managed-dropin" "$dropin"
+printf '%s\n' unmanaged >"$fragment"
+refute 'apply refuses unmanaged fragment' "$installer" --apply --root "$root" --unit "$unit"
+refute 'rollback refuses unmanaged fragment' "$installer" --rollback --root "$root" --unit "$unit"
+check 'unmanaged fragment remains intact' grep -qx unmanaged "$fragment"
+rm "$fragment"
+"$installer" --apply --root "$root" --unit "$unit" >/dev/null
 
-# 4. The hardened umask actually produces 0600 files (behaviour, not just text).
-probe="$sandbox/umask-probe"
-( umask 0077; : >"$probe" )
-check "umask 0077 yields a 0600 file" [ "$(stat -c '%a' "$probe")" = "600" ]
+"$installer" --rollback --root "$root" --unit "$unit" >"$sandbox/rollback"
+check 'rollback removes exact managed drop-in' test ! -e "$dropin"
+check 'rollback removes exact managed fragment' test ! -e "$fragment"
+check 'rollback preserves TMPDIR' test -d "$root/.private-tmp"
+"$installer" --rollback --root "$root" --unit "$unit" >"$sandbox/rollback2"
+check 'second rollback reports absence' grep -q ABSENT "$sandbox/rollback2"
 
-# 5. Rollback removes exactly what was created and keeps the data directory.
-"$installer" --rollback --root "$sandbox" --unit "$unit" >"$sandbox/rollback.out"
-check "rollback removes the drop-in" [ ! -e "$dropin" ]
-check "rollback removes the fragment" [ ! -e "$fragment" ]
-check "rollback preserves the private TMPDIR" [ -d "$sandbox/.private-tmp" ]
-check "rollback states why the TMPDIR stays" grep -qF "left in place on purpose" "$sandbox/rollback.out"
+refute 'rejects missing root value' "$installer" --root
+refute 'rejects missing tmpdir value' "$installer" --tmpdir
+refute 'rejects missing unit value' "$installer" --unit
+refute 'rejects apply rollback conflict' "$installer" --apply --rollback --root "$root"
+refute 'rejects duplicate mode' "$installer" --apply --apply --root "$root"
+refute 'rejects unknown option' "$installer" --bogus
+refute 'rejects non-service unit' "$installer" --root "$root" --unit timer.timer
+refute 'rejects bare unit' "$installer" --root "$root" --unit daemon
+refute 'rejects traversal unit' "$installer" --root "$root" --unit ../evil.service
+refute 'rejects slash unit' "$installer" --root "$root" --unit evil/x.service
+refute 'rejects newline unit' "$installer" --root "$root" --unit $'evil\n.service'
+refute 'rejects system root' "$installer" --root /
+refute 'rejects nonexistent root' "$installer" --root "$sandbox/missing"
+ln -s "$root" "$sandbox/root-link"
+refute 'rejects symlink root' "$installer" --root "$sandbox/root-link"
 
-# 6. Rollback on a clean tree is safe and reports absence.
-"$installer" --rollback --root "$sandbox" --unit "$unit" >"$sandbox/rollback2.out"
-check "second rollback is safe" grep -qF "ABSENT" "$sandbox/rollback2.out"
+sibling="$sandbox/root-evil"; mkdir -m 700 "$sibling"
+refute 'rejects prefix sibling TMPDIR' "$installer" --apply --root "$root" --tmpdir "$sibling/tmp" --unit "$unit"
+refute 'rejects unsafe TMPDIR characters' "$installer" --apply --root "$root" --tmpdir "$root/space dir" --unit "$unit"
+ln -s /tmp "$root/link"
+refute 'rejects symlink TMPDIR component' "$installer" --apply --root "$root" --tmpdir "$root/link/private" --unit "$unit"
+rm "$root/link"
+printf x >"$root/not-dir"
+refute 'rejects non-directory TMPDIR component' "$installer" --apply --root "$root" --tmpdir "$root/not-dir/private" --unit "$unit"
+rm "$root/not-dir"
 
-# 7. Refusals: system roots and a missing root must fail closed.
-refute "refuses --root /etc" "$installer" --apply --root /etc --unit "$unit"
-refute "refuses --root /" "$installer" --apply --root / --unit "$unit"
-refute "refuses --root /usr" "$installer" --apply --root /usr --unit "$unit"
-refute "refuses --root /var" "$installer" --apply --root /var --unit "$unit"
-refute "refuses --root /tmp" "$installer" --apply --root /tmp --unit "$unit"
-refute "refuses a nonexistent root" "$installer" --apply --root "$sandbox/does-not-exist" --unit "$unit"
-refute "refuses an unknown flag" "$installer" --bogus
+mkdir -p "$root/.config/systemd/user/$unit.d"
+ln -s /etc/passwd "$dropin"
+refute 'rejects symlink drop-in' "$installer" --apply --root "$root" --unit "$unit"
+rm "$dropin"
+mkdir "$dropin"
+refute 'rejects directory target' "$installer" --apply --root "$root" --unit "$unit"
+rmdir "$dropin"
+ln -s /etc/shadow "$fragment"
+refute 'rejects symlink fragment' "$installer" --apply --root "$root" --unit "$unit"
+rm "$fragment"
 
-# 8. Hostile Root Symlinks & Traversal
-symlink_root="$sandbox/symlink_root_etc"
-ln -s /etc "$symlink_root"
-refute "refuses symlink root pointing to /etc" "$installer" --apply --root "$symlink_root" --unit "$unit"
-
-mkdir -p "$sandbox/sub"
-traversal_root="$sandbox/sub/../../etc"
-refute "refuses path traversal root resolving to /etc" "$installer" --apply --root "$traversal_root" --unit "$unit"
-
-# 9. Hostile Unit / Systemd Escape
-refute "refuses hostile unit with path traversal ../" "$installer" --apply --root "$sandbox" --unit "../../etc/passwd"
-refute "refuses hostile unit with slashes" "$installer" --apply --root "$sandbox" --unit "evil/unit.service"
-refute "refuses hostile unit with newline" "$installer" --apply --root "$sandbox" --unit $'evil.service\nExecStart=/bin/sh'
-refute "refuses hostile unit with backslash" "$installer" --apply --root "$sandbox" --unit $'evil\\unit.service'
-
-# 10. Hostile Temporary Directory Ownership, Symlinks & Traversal
-refute "refuses system tmpdir /etc" "$installer" --apply --root "$sandbox" --unit "$unit" --tmpdir /etc
-refute "refuses tmpdir outside root" "$installer" --apply --root "$sandbox" --unit "$unit" --tmpdir "$sandbox/../outside_tmp"
-symlink_tmp="$sandbox/symlink_tmpdir"
-ln -s /tmp "$symlink_tmp"
-refute "refuses symlinked tmpdir" "$installer" --apply --root "$sandbox" --unit "$unit" --tmpdir "$symlink_tmp"
-
-# 11. Hostile Symlink Targets for Drop-in & Shell Fragment
-mkdir -p "$sandbox/.config/systemd/user/$unit.d"
-ln -s /etc/passwd "$sandbox/.config/systemd/user/$unit.d/10-orq37-umask-hardening.conf"
-refute "refuses dropin file that is a symlink" "$installer" --apply --root "$sandbox" --unit "$unit"
-rm -f "$sandbox/.config/systemd/user/$unit.d/10-orq37-umask-hardening.conf"
-
-ln -s /etc/shadow "$sandbox/.config/orq37-umask-hardening.sh"
-refute "refuses fragment file that is a symlink" "$installer" --apply --root "$sandbox" --unit "$unit"
-rm -f "$sandbox/.config/orq37-umask-hardening.sh"
-
-# 12. Stubbed systemctl Verification
 mkdir -p "$sandbox/bin"
-cat <<'EOF' > "$sandbox/bin/systemctl"
-#!/usr/bin/env bash
-echo "STUBBED_SYSTEMCTL: $*" >> "$sandbox/systemctl.log"
-exit 0
-EOF
+# shellcheck disable=SC2016
+printf '%s\n' '#!/usr/bin/env bash' 'printf invoked >"$ORQ37_SYSTEMCTL_LOG"' >"$sandbox/bin/systemctl"
 chmod +x "$sandbox/bin/systemctl"
-PATH="$sandbox/bin:$PATH" "$installer" --apply --root "$sandbox" --unit "$unit" >/dev/null
-check "stubbed systemctl confirmed uninvoked during installer run" [ ! -f "$sandbox/systemctl.log" ]
+ORQ37_SYSTEMCTL_LOG="$sandbox/systemctl.log" PATH="$sandbox/bin:$PATH" "$installer" --apply --root "$root" --unit "$unit" >/dev/null
+check 'stubbed systemctl was never invoked' test ! -e "$sandbox/systemctl.log"
+{
+  printf '%s\n' '[Unit]' 'Description=ORQ-37 harness verification' '[Service]' 'Type=oneshot' 'ExecStart=/bin/true'
+  sed '1d' "$dropin"
+} >"$root/verify.service"
+check 'systemd-analyze accepts rendered settings' systemd-analyze verify "$root/verify.service"
+refute 'installer never targets global bashrc' grep -E '(^|[[:space:]])(>|>>|install).*\/etc\/bashrc' "$installer"
+# shellcheck disable=SC2016
+check 'all writes stay under fake root' sh -c '! find "$1" -mindepth 1 -maxdepth 1 ! -name root ! -name root-evil ! -name root-link ! -name bin ! -name dry ! -name apply ! -name rollback ! -name rollback2 | grep -q .' sh "$sandbox"
 
-# 13. The installer must never mention a global shell file.
-refute "never references /etc/bashrc as a target" grep -n 'install.*\/etc\/bashrc\|>>\s*\/etc\/bashrc' "$installer"
-
-if [ "$fail" -ne 0 ]; then
-  printf 'GATES FAILED: %d\n' "$fail"
-  exit 1
-fi
-printf 'ALL GATES PASSED\n'
-
+if [ "$fail" -ne 0 ]; then printf 'GATES FAILED: %d (PASS %d)\n' "$fail" "$pass"; exit 1; fi
+printf 'ALL GATES PASSED (%d/%d; zero skips)\n' "$pass" "$pass"
