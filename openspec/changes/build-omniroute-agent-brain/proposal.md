@@ -44,3 +44,17 @@ backend image. A production Kiro canary with `thinking_level=high` reached ACP, 
 messages and executed tools without `thinking_not_approved`; this proves the supported
 non-empty admission path for Kiro. Codex and Kiro agents read back `high`, while AGY agents
 remain `NULL` because their reasoning tier is embedded in the model identifier.
+
+## Verified deployment update — 2026-07-30
+
+- Backend revision `edd7b932`, image `f9e6b777`, was observed healthy and ready with
+  `RestartCount=0`; migration 129 was validated and rollback evidence was preserved.
+- Daemon revision `f20b3e`, binary `f40ab0`, was observed active with `RestartCount=0`; its
+  rollback evidence was preserved.
+- ORQ-13 is deployed, but its observed post-deploy row still has `thinking_level`,
+  `price_version`, and `cost` as `NULL`; accounting completion is not claimed.
+- ORQ-41 currently proves only that a `documentation_only` activation enqueued zero task and
+  one explicit assignment enqueued exactly one task.
+- ORQ-54 still lacks the focused routing/resume smoke. ORQ-69 still waits for ORQ-74, which is
+  blocked exactly on slots `162` and `163`.
+- Queue depth was zero at cutover only; it is not asserted as a timeless production state.

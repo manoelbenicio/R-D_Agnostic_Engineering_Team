@@ -17,8 +17,8 @@ Evidence MUST retain its layer and exact revision:
    source behavior only; it is not a production smoke or UAT result.
 3. **Candidate:** the same revision is an integration candidate, not the live production
    revision and not evidence of acceptance.
-4. **Live:** production remains at `15626386da2725af8e8d4ac611754cffe359fe31`,
-   where `MULTICA_CLINE_PATH=/run/multica-disabled/cline` explicitly prevents Cline enablement.
+4. **Live:** production is verified at `edd7b932`, image `f9e6b777`, with Cline still
+   explicitly disabled. The observed healthy deployment does not constitute Cline rollout.
 5. **Blocker:** the owner has not selected Cline architecture option A or B.
 
 No lower evidence layer may be reported as proof of a higher layer.
@@ -39,6 +39,9 @@ behavior reviewed for that account model.
 
 Existing candidate code SHALL NOT be treated as the owner's selection. Production Cline SHALL
 remain disabled while the choice or its prerequisites are unresolved.
+
+ORQ-42 evidence is limited to offline tooling. ORQ-53 remains unresolved because neither
+option A nor option B has been selected and accepted.
 
 ## Conditional integration sequence
 

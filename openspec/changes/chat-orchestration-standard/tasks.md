@@ -21,3 +21,5 @@
 - [ ] 2.3 Check-ins DONE + evidência em `.deploy-control/`
 - [x] 2.4 Smoke de despacho nativo: ORQ-12 atribuido por Kanban gerou exatamente uma task;
   follow-up ocorreu somente apos terminal, sem duplicata Herdr
+- [x] 2.5 Evidencia live limitada de ORQ-41: ativacao `documentation_only` gerou zero task e
+  atribuicao explicita gerou exatamente uma task

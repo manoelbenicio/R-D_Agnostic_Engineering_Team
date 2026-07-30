@@ -46,6 +46,12 @@ activation SHALL enqueue exactly one product task. Herdr SHALL be supervision-on
 - **THEN** the card SHALL record the assignee and enqueue exactly one task
 - **AND** no terminal-side duplicate execution SHALL be launched
 
+#### Scenario: Documentation-only activation
+
+- **WHEN** an activation is explicitly classified as `documentation_only`
+- **THEN** it SHALL NOT enqueue a product task
+- **AND** a later explicit assignment SHALL enqueue exactly one product task
+
 #### Scenario: Operator encounters ambiguity
 
 - **WHEN** scope, priority, acceptance or ownership is ambiguous

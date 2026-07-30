@@ -42,3 +42,19 @@
 - [x] 4.3 Canario T2 com daemon-id `orq2-credential-runtime-v1` e device-name `ORQ2 Credential Runtime`
 - [x] 4.4 Restaurar `~/cred-bak-20260726` e quarentenar as copias globais
 - [ ] 4.5 GATE F4: rollback testado em 1 comando
+
+## Reconciliacao pos-deploy — 2026-07-30
+
+- [x] 5.1 Registrar backend live `edd7b932`, imagem `f9e6b777`, health/readiness,
+  migration 129 validada e rollback preservado.
+- [x] 5.2 Registrar daemon live `f20b3e`, binario `f40ab0`, servico ativo,
+  `RestartCount=0` e rollback preservado.
+- [x] 5.3 Registrar ORQ-66 concluida e o bloqueio exato de ORQ-74 nos slots `162` e `163`.
+- [ ] 5.4 ORQ-74: remover o bloqueio dos slots `162` e `163` com evidencia aceita.
+- [ ] 5.5 ORQ-69: restaurar somente depois da liberacao de ORQ-74.
+- [ ] 5.6 ORQ-13/Fase 3: preencher e validar `thinking_level`, `price_version` e `cost`; a
+  linha pos-deploy ainda contem `NULL` nesses campos.
+- [ ] 5.7 ORQ-54: executar e registrar smoke focado de routing/resume.
+
+Os gates 5.4–5.7 permanecem deliberadamente desmarcados. A fila zerada e evidencia somente
+do instante do cutover.

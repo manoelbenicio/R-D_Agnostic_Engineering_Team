@@ -6,9 +6,8 @@
   `89a236e3adda784492771a6ca1c60dae1eb823bf`.
 - [x] 0.2 Record candidate source/test evidence at
   `63ead4df72ff1b43c00150d99f4f341ff7d7d39f` separately from live production.
-- [x] 0.3 Record live production at `15626386da2725af8e8d4ac611754cffe359fe31`
-  with Cline explicitly disabled by
-  `MULTICA_CLINE_PATH=/run/multica-disabled/cline`.
+- [x] 0.3 Record live production at `edd7b932`, image `f9e6b777`, with Cline explicitly
+  disabled.
 - [x] 0.4 Remove native NIM implementation, acceptance, deployment, smoke, and token-usage
   claims from this change.
 
@@ -51,7 +50,8 @@ evidence.
 - [ ] 3.7 Record the exact live revision, enabled configuration, canary result, and acceptance
   evidence before claiming Cline online or onboarding accepted.
 
-Until 3.1 and 3.2 are resolved, production remains at
-`15626386da2725af8e8d4ac611754cffe359fe31` with Cline disabled. This documentation-only
+Until 3.1 and 3.2 are resolved, production remains at the verified revision `edd7b932`, image
+`f9e6b777`, with Cline disabled. ORQ-42 remains offline-tooling evidence only and ORQ-53
+remains unresolved. This documentation-only
 reconciliation performs none of tasks 3.3–3.7 and creates no `.planning` or `.deploy-control`
 artifacts.

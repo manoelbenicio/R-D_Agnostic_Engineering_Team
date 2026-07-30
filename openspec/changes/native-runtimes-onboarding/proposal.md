@@ -37,11 +37,15 @@ The proposal SHALL NOT infer this choice from the existing candidate implementat
 | --- | --- | --- |
 | OpenSpec base | `89a236e3adda784492771a6ca1c60dae1eb823bf` | Documentation baseline for this reconciliation. |
 | Source/test candidate | `63ead4df72ff1b43c00150d99f4f341ff7d7d39f` | Contains the credentialless Agent Brain Cline source, factory/config wiring, task-home isolation, fail-closed tests, `POST /auth/login`, and frontend login client/UI. |
-| Live production | `15626386da2725af8e8d4ac611754cffe359fe31` | Production revision; Cline is explicitly disabled with `MULTICA_CLINE_PATH=/run/multica-disabled/cline`. |
+| Live production | `edd7b932` / image `f9e6b777` | Verified production revision and image; Cline remains explicitly disabled. |
 | Blocker | Owner decision pending | Select A (OmniRoute-only) or B (native credential-isolated account) before integration or rollout. |
 
 Candidate source and passing source tests are not deployment, production readiness, smoke,
 UAT, or acceptance evidence.
+
+The verified deployment had `RestartCount=0` and successful health/readiness checks, but it
+does not resolve the Cline architecture choice. ORQ-42 remains offline-tooling evidence only,
+and ORQ-53 remains blocked on the owner choice between A and B.
 
 ## Impact
 

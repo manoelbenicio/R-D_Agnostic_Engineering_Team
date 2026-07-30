@@ -230,3 +230,39 @@ somente o que foi observado em producao; `blocker` impede promover uma dessas qu
 - A acao restante do owner e revogar e reautenticar a credencial afetada e executar
   a verificacao de residuos somente por metadados. ORQ-64 permanece bloqueada ate
   a confirmacao desses gates humanos.
+
+## Reconciliacao pos-deploy verificada — 2026-07-30
+
+As observacoes abaixo substituem apenas os estados live anteriores. Elas nao promovem gates
+sem evidencia nem transformam ausencia de smoke em aceite.
+
+### Backend
+
+- A revisao live verificada e `edd7b932`, na imagem identificada por `f9e6b777`.
+- O container foi observado com `RestartCount=0`; `/health` e `/readyz` responderam com
+  sucesso.
+- A migration 129 foi validada no ambiente implantado. O caminho de rollback foi preservado.
+- ORQ-13 esta implantada. A linha observada depois do deploy tem `account_id`, mas
+  `thinking_level`, `price_version` e `cost` permanecem `NULL`; isso nao satisfaz os gates de
+  preco por tier, uso real nem custo validado.
+- Para ORQ-41, a evidencia atual de producao cobre uma ativacao `documentation_only` que gerou
+  zero task e uma atribuicao explicita que gerou exatamente uma task. Ela nao amplia esse
+  resultado para outros caminhos de ativacao.
+- O smoke focado de roteamento/resume exigido por ORQ-54 ainda nao existe.
+
+### Daemon
+
+- O daemon live verificado corresponde ao commit `f20b3e`, com binario identificado por
+  `f40ab0`; o servico foi observado ativo e com `RestartCount=0`.
+- A evidencia de rollback do daemon foi preservada.
+- ORQ-66 esta concluida no estado observado.
+- ORQ-74 permanece bloqueada exatamente pelos slots `162` e `163`; ORQ-69 continua aguardando
+  ORQ-74.
+- A fila estava zerada no instante do cutover. Isso e um snapshot daquele momento, nao uma
+  afirmacao atemporal sobre a fila.
+
+### Limites restantes
+
+- ORQ-42 qualifica somente tooling offline.
+- Cline permanece desabilitado em producao e a decisao arquitetural A/B de ORQ-53 continua
+  sem resolucao.
