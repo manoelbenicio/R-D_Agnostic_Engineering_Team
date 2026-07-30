@@ -1,28 +1,57 @@
 # Tasks
 
-> Execução: coders (codex & cia). Validação de cada entrega: Kiro. Check-in START/DONE por agente.
+## OpenSpec reconciliation — 2026-07-30
 
-## Wave 1 — paralela
-- [x] 1.1 Agent-1: `server/pkg/agent/nim.go` — backend NIM OpenAI-compatible (SSE, loop agêntico, usageMetadata→TokenUsage) + testes — VALIDADO Kiro (container `pkg/agent` verde)
-- [x] 1.2 Agent-2: isolamento/rotação NIM — `execenv/nim_home.go`, `rotation_detector_nim.go`, `rotation/detector_nim.go` + testes
-- [x] 1.3 Agent-3: `server/pkg/agent/cline.go` — backend nativo Cline 3.x via `cline --acp` (ACP JSON-RPC 2.0 por stdin/stdout); `--json` é modo separado incompatível e é filtrado, conforme teste direto do argv
-- [x] 1.4 Agent-4: descoberta de modelos — timeout + cache + surface de erro no fluxo model-list; UI popula — VALIDADO Kiro (container `pkg/agent` + `internal/daemon` verdes)
-- [x] 1.5 Agent-5: onboarding (FRONTEND) — remover `(landing)`/`features/landing`/`content/use-cases`/sponsors + fluxo de código por email; `AuthService` interface + `SimpleAuthService`→`api.login()` (Firebase-ready) + UI login/senha no design-system; manter Google OAuth/CLI callback/desktop handoff. **A5 é o dono da remoção de marketing/landing/sponsors** (A6 NÃO remove marketing).
-- [ ] 1.6 Agent-6: paridade de design (tokens/cores kanban/agentes), limpeza de i18n, harness build/test do web e QA. **NÃO remove marketing (isso é A5)**; arquivos disjuntos de A5.
-- [x] 1.7 Agent-1 (BACKEND, novo — desbloqueia 1.5): `POST /auth/login` (username/senha) em `cmd/server/router.go` + credential store (Postgres, hash bcrypt/argon2) atrás de interface `AuthProvider` (Firebase-ready, sem rework); remover `/auth/send-code` + `/auth/verify-code`; manter `/auth/google` + `/auth/logout`. Contrato request/response coordenado pelo Kiro com Agent-5 (`packages/core/api/client.ts` + UI).
+- [x] 0.1 Reconcile this change against OpenSpec base
+  `89a236e3adda784492771a6ca1c60dae1eb823bf`.
+- [x] 0.2 Record candidate source/test evidence at
+  `63ead4df72ff1b43c00150d99f4f341ff7d7d39f` separately from live production.
+- [x] 0.3 Record live production at `15626386da2725af8e8d4ac611754cffe359fe31`
+  with Cline explicitly disabled by
+  `MULTICA_CLINE_PATH=/run/multica-disabled/cline`.
+- [x] 0.4 Remove native NIM implementation, acceptance, deployment, smoke, and token-usage
+  claims from this change.
 
-## Wave 2 — integração (Kiro)
-- [x] 2.1 Wiring `config.go`: probes `nim` e `cline`
-- [x] 2.2 Wiring `agent.go`: `New()` cases + `SupportedTypes` (nim, cline)
-- [x] 2.3 `requiresCredentialIsolation` += `nim`
-- [ ] 2.4 Rebuild `server/bin/multica` + imagem backend; restart daemon; runtimes `nim`/`cline` online
-- [ ] 2.5 Build + subir web local; validar onboarding novo
+## Superseded native NIM work — not implemented or accepted
 
-## Wave 3 — verificação (Kiro valida)
-- [ ] 3.1 Testes verdes Go + web em container
-- [ ] 3.2 Smoke: criar agente em `nim` e `cline`, rodar 1 task, ver execução + tokens
-- [ ] 3.3 UAT onboarding (sem sponsors/email-code; cores idênticas)
-- [ ] 3.4 Check-ins DONE + relatório de integração em `.deploy-control/`
+- [x] 1.1 **SUPERSEDED 2026-07-30:** native NIM backend and tests. Native NIM is absent from
+  accepted current source; NVIDIA access is OmniRoute-owned.
+- [x] 1.2 **SUPERSEDED 2026-07-30:** NIM credential isolation and rotation.
+- [x] 1.3 **SUPERSEDED 2026-07-30:** NIM probe, factory, `SupportedTypes`, and shared wiring.
+- [x] 1.4 **SUPERSEDED 2026-07-30:** NIM rebuild, deploy, online verification, smoke, and token
+  usage. These checkmarks close obsolete planning items; they do not denote implementation,
+  deployment, or acceptance.
 
-## Decisão (resolvida pelo dono — 2026-07-12)
-- [x] 0.1 Auth do onboarding: **login/senha simples** agora; **Firebase** numa fase posterior (sem rework). Task 1.5 desbloqueada.
+Any native NIM revival requires a separate owner-approved proposal with transport/runtime
+evidence.
+
+## Verified candidate evidence — not deployment or acceptance
+
+- [x] 2.1 Verify that candidate `63ead4df72ff1b43c00150d99f4f341ff7d7d39f`
+  contains credentialless Agent Brain Cline source, factory/config wiring, task-home isolation,
+  and focused fail-closed tests.
+- [x] 2.2 Verify that the same candidate contains `POST /auth/login` and frontend login
+  client/UI source.
+- [ ] 2.3 Production onboarding UAT and acceptance. Candidate source is insufficient evidence;
+  this remains unverified.
+
+## Owner decision and conditional Cline rollout
+
+- [ ] 3.1 **BLOCKED — owner decision:** select (A) credentialless Agent Brain / OmniRoute-only
+  Cline or (B) native credential-isolated Cline account.
+- [ ] 3.2 **BLOCKED BY 3.1:** for option A, verify ORQ-44 inference-key lifecycle/readiness and
+  an authorized exact model route; for option B, establish account ownership and login
+  authority.
+- [ ] 3.3 Reconcile the selected option with candidate source and obtain review for the daemon
+  configuration that would enable Cline.
+- [ ] 3.4 Run targeted and containerized integration tests for the selected architecture.
+- [ ] 3.5 Deploy through the canonical wrapper only after the authorized rollout wave.
+- [ ] 3.6 Run one bounded production Cline canary, capture token usage, and perform onboarding
+  UAT.
+- [ ] 3.7 Record the exact live revision, enabled configuration, canary result, and acceptance
+  evidence before claiming Cline online or onboarding accepted.
+
+Until 3.1 and 3.2 are resolved, production remains at
+`15626386da2725af8e8d4ac611754cffe359fe31` with Cline disabled. This documentation-only
+reconciliation performs none of tasks 3.3–3.7 and creates no `.planning` or `.deploy-control`
+artifacts.

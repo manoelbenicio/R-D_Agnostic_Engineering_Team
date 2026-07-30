@@ -1,55 +1,76 @@
-# Design — Agentic Execution Plan
+# Design — Evidence-gated Cline integration
 
-## Roles
-- **Kiro (orchestrator)** — NÃO produz código. Coordena waves, sequencia edições de arquivos
-  compartilhados, revisa check-ins, roda build/test de integração, valida cada entrega, dá DONE.
-- **6 coder agents (codex & cia)** — produzem o código nas suas trilhas.
+## Purpose
 
-## Check-in protocol (obrigatório)
-Cada agente escreve em `.deploy-control/`:
-- ANTES: `CHECKIN_<agentname>_<UTC-ISO8601>_START.md` (escopo, arquivos, deps, riscos).
-- DEPOIS: `CHECKIN_<agentname>_<UTC-ISO8601>_DONE.md` (o que fez, arquivos, evidência de build/test).
-- Verde-em-container antes de DONE. Sem segredo em log. Commits atômicos.
+This document describes the decision and evidence gates for Cline. It does not authorize an
+implementation or deployment. Native NIM is intentionally excluded because it is absent from
+accepted current source and NVIDIA model access belongs to OmniRoute.
 
-## Ownership de arquivos (anti-colisão)
-- Backends em arquivos próprios (`nim.go`, `cline.go`) → sem conflito.
-- Arquivos COMPARTILHADOS (`internal/daemon/config.go` probe, `pkg/agent/agent.go` factory+SupportedTypes,
-  `requiresCredentialIsolation`) → **somente Kiro edita** na Wave 2, juntando NIM+Cline num passo.
+## Verified evidence layers
 
-## Waves
+Evidence MUST retain its layer and exact revision:
 
-### Wave 1 (6 agentes paralelos, arquivos disjuntos)
-```
-Agent-1 NIM-Core      -> server/pkg/agent/nim.go (+test): OpenAI-compat, SSE, loop agêntico, usageMetadata
-Agent-2 NIM-Isolation -> execenv/nim_home.go, rotation_detector_nim.go, rotation/detector_nim.go (+tests)
-Agent-3 Cline-Core    -> server/pkg/agent/cline.go (+test) via `cline --acp` (ACP JSON-RPC por stdin/stdout)
-Agent-4 Discovery-Fix -> internal/daemon (model-list flow) + models.go discovery: timeout/cache/erro
-Agent-5 Frontend-Auth -> apps/web/app/(auth), packages/views/auth; remover (landing)/sponsors/use-cases/email-code
-Agent-6 Frontend-QA   -> design-system (paridade de cores kanban/agentes), i18n, build/test web
-```
+1. **Source:** candidate revision `63ead4df72ff1b43c00150d99f4f341ff7d7d39f`
+   contains credentialless Agent Brain Cline source, config/factory wiring, task-home isolation,
+   auth/login source, and frontend login source.
+2. **Test:** the candidate includes focused wiring and fail-closed coverage. This demonstrates
+   source behavior only; it is not a production smoke or UAT result.
+3. **Candidate:** the same revision is an integration candidate, not the live production
+   revision and not evidence of acceptance.
+4. **Live:** production remains at `15626386da2725af8e8d4ac611754cffe359fe31`,
+   where `MULTICA_CLINE_PATH=/run/multica-disabled/cline` explicitly prevents Cline enablement.
+5. **Blocker:** the owner has not selected Cline architecture option A or B.
 
-### Wave 2 (integração — Kiro, sequencial)
-- Aplicar wiring: `config.go` probes (`MULTICA_NIM_PATH`/`nim`, `MULTICA_CLINE_PATH`/`cline`);
-  `agent.go` `New()` cases + `SupportedTypes`; `requiresCredentialIsolation` (+`nim`).
-- Rebuild `server/bin/multica` + imagem backend; restart daemon; runtimes `nim` e `cline` aparecem.
-- Integrar frontend: build web local, validar login novo sem sponsors/email-code.
+No lower evidence layer may be reported as proof of a higher layer.
 
-### Wave 3 (verificação/gates — Kiro valida)
-- Testes verdes (Go + web) em container. Smoke: criar agente em `nim` e `cline`, rodar 1 task, ver execução + tokens.
-- UAT do onboarding. Check-ins DONE + relatório de integração em `.deploy-control/`.
+## Owner decision gate
 
-## Paralelismo
-- Wave 1 = 6 agentes 100% paralelos. Frontend (5/6) independe do Go → integra em paralelo.
-- Wave 2 depende de Wave 1. Wave 3 valida tudo.
+### Option A — credentialless Agent Brain / OmniRoute-only Cline
 
-## Decisões / riscos
-- **Auth do onboarding**: decisão do dono RESOLVIDA em 2026-07-12 — login/senha simples
-  agora, por interface `AuthProvider` Firebase-ready. Agent-5 nao esta mais bloqueado por decisao.
-- **NIM auth**: validar credencial/fluxo do gateway antes de codar o loop; documentar fonte.
-- **Compatibilidade Cline 3.x**: usar somente `cline --acp` para o transporte ACP. Apesar de
-  as mensagens ACP serem JSON-RPC 2.0, o flag CLI `--json` seleciona outro modo headless e
-  encerra antes do handshake quando combinado com `--acp`. O teste direto do backend fornece
-  `--json` como argumento customizado hostil e confirma que o argv final o remove, preservando
-  `--acp` e a sessão ACP por stdin/stdout.
-- `agy models` lento → item 3 precisa timeout+cache.
-- Shared files → só Kiro edita (Wave 2).
+Cline remains a credentialless carrier and model inference is routed only through OmniRoute.
+This path cannot proceed until ORQ-44 supplies an operational inference-key lifecycle,
+readiness evidence, and an authorized exact model route.
+
+### Option B — native credential-isolated Cline account
+
+Cline uses a native account in an isolated task home. This path cannot proceed until account
+ownership and login authority are established, with credential isolation and fail-closed
+behavior reviewed for that account model.
+
+Existing candidate code SHALL NOT be treated as the owner's selection. Production Cline SHALL
+remain disabled while the choice or its prerequisites are unresolved.
+
+## Conditional integration sequence
+
+Only after an explicit owner decision and prerequisite evidence may a later implementation
+change:
+
+1. reconcile the selected option against the candidate source;
+2. review the daemon configuration change that removes the disabled Cline path;
+3. run targeted source tests and containerized integration tests;
+4. deploy through the canonical wrapper after the authorized rollout wave;
+5. run one bounded Cline production canary and onboarding UAT;
+6. record live revision, configuration, smoke, token-usage, and acceptance evidence.
+
+Each step requires its own evidence. A build, test, candidate commit, or installed Cline CLI is
+insufficient to claim that the runtime is online.
+
+## Transport constraint for native Cline
+
+If the selected architecture uses the existing native ACP backend, it launches `cline --acp`
+and exchanges ACP JSON-RPC 2.0 over stdin/stdout. It must not combine `--json` with `--acp`:
+`--json` selects the separate headless prompt-output mode and prevents the ACP handshake.
+This constraint describes candidate source behavior and does not imply rollout approval.
+
+## NIM disposition
+
+All prior native NIM design, isolation, wiring, deployment, smoke, and token-usage items are
+superseded as of 2026-07-30, not completed or accepted. A native NIM revival requires a
+separate owner-approved OpenSpec proposal with transport/runtime evidence; it cannot be added
+implicitly to the Cline decision.
+
+## Documentation-change boundary
+
+This reconciliation edits OpenSpec only. It creates no `.planning` or `.deploy-control`
+artifacts and makes no runtime, configuration, build, restart, deployment, smoke, or UAT
+change.
