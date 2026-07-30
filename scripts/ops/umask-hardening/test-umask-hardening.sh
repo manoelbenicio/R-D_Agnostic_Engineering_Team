@@ -99,6 +99,39 @@ ln -s /etc/shadow "$fragment"
 refute 'rejects symlink fragment' "$installer" --apply --root "$root" --unit "$unit"
 rm "$fragment"
 
+# Existing final targets must have exactly one link. Each gate also proves
+# refusal leaves both names and their shared inode untouched.
+"$installer" --apply --root "$root" --unit "$unit" >/dev/null
+ln "$dropin" "$root/dropin-hardlink"
+reject_preserve_dropin_hardlink() {
+  ! "$installer" --apply --root "$root" --unit "$unit" >/dev/null 2>&1 &&
+    [ "$dropin" -ef "$root/dropin-hardlink" ] &&
+    [ "$(stat -c %h "$dropin")" = 2 ]
+}
+check 'rejects and preserves hardlinked drop-in' reject_preserve_dropin_hardlink
+rm "$root/dropin-hardlink"
+
+ln "$fragment" "$root/fragment-hardlink"
+reject_preserve_fragment_hardlink() {
+  ! "$installer" --apply --root "$root" --unit "$unit" >/dev/null 2>&1 &&
+    [ "$fragment" -ef "$root/fragment-hardlink" ] &&
+    [ "$(stat -c %h "$fragment")" = 2 ]
+}
+check 'rejects and preserves hardlinked fragment' reject_preserve_fragment_hardlink
+rm "$root/fragment-hardlink"
+"$installer" --rollback --root "$root" --unit "$unit" >/dev/null
+
+# Managed provenance includes the rendered TMPDIR. Rollback must replay the
+# identical custom value; omission/mismatch fails closed and preserves files.
+custom_tmpdir="$root/custom-tmp"
+"$installer" --apply --root "$root" --tmpdir "$custom_tmpdir" --unit "$unit" >/dev/null
+refute 'mismatched TMPDIR rollback fails closed' "$installer" --rollback --root "$root" --unit "$unit"
+# shellcheck disable=SC2016
+check 'mismatched TMPDIR rollback preserves managed files' sh -c '[ -f "$1" ] && [ -f "$2" ]' sh "$dropin" "$fragment"
+"$installer" --rollback --root "$root" --tmpdir "$custom_tmpdir" --unit "$unit" >/dev/null
+# shellcheck disable=SC2016
+check 'matched TMPDIR rollback removes managed files' sh -c '[ ! -e "$1" ] && [ ! -e "$2" ]' sh "$dropin" "$fragment"
+
 mkdir -p "$sandbox/bin"
 # shellcheck disable=SC2016
 printf '%s\n' '#!/usr/bin/env bash' 'printf invoked >"$ORQ37_SYSTEMCTL_LOG"' >"$sandbox/bin/systemctl"

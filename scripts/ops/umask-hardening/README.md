@@ -10,8 +10,8 @@ startup files, invokes `systemctl`, reads credentials, or performs a host cutove
 - Units must use the strict `*.service` grammar and repeats are deduplicated.
 - Root must be an existing, non-symlink directory owned by the caller. TMPDIR must be an absolute,
   canonical descendant. Existing descendant components must be owned directories and cannot be symlinks.
-- Targets must be caller-owned regular files. Existing content must exactly match the content this invocation
-  renders; apply never overwrites and rollback never deletes an unmanaged destination.
+- Targets must be caller-owned, single-link regular files. Existing content must exactly match the content this
+  invocation renders; apply never overwrites and rollback never deletes an unmanaged or multiply-linked destination.
 - Writes use unpredictable same-directory `0600` temporary files, `systemd-analyze verify`, atomic rename,
   and trap cleanup. The harness uses a private fake root and proves the stubbed `systemctl` is never called.
 
@@ -36,4 +36,6 @@ and zero service invocation.
 After an authorized dry-run, `--apply` writes only the managed files. Reload/restart is deliberately absent and
 requires a separately authorized zero-queue window, rollback plan, and post-apply runtime/credential-mode canary.
 `--rollback` removes only byte-exact managed files and preserves the private TMPDIR because it may contain state.
+Because TMPDIR is part of both managed files, rollback must repeat the exact `--tmpdir DIR` used by apply. Omitting
+or changing a custom value intentionally fails closed with `E_UNMANAGED_TARGET` and leaves both files untouched.
 External IAM/SMA resolution remains a separate blocker. Do not combine this cutover with ORQ-58.

@@ -89,6 +89,7 @@ assert_target_type() {
   if [ -e "$target" ]; then
     [ -f "$target" ] || die_refused "E_TARGET_NOT_REGULAR $target"
     [ "$(stat -c %u -- "$target")" = "$caller_uid" ] || die_refused "E_TARGET_NOT_OWNED $target"
+    [ "$(stat -c %h -- "$target")" = 1 ] || die_refused "E_TARGET_MULTIPLY_LINKED $target"
   fi
 }
 
