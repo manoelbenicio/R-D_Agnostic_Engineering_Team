@@ -3,12 +3,15 @@
 ## 1. Authority and system boundary
 
 This document is canonical for Runtime Standards, Runtime Sessions, workspace bindings,
-runtime configuration, native ORQ2 account-home selection, and task snapshots. In a conflict,
-this contract supersedes OmniRoute-only provider-account ownership language for these subjects
-without changing OmniRoute's exclusive ownership of gateway routing and gateway inference
-credentials. Native execution and gateway execution are distinct: gateway launches are
-credentialless and receive no home reference; approved native launches resolve an opaque,
-exclusive ORQ2 account-home reference. Ambiguity fails closed.
+runtime configuration, native ORQ2 account-home selection, and task snapshots, together with
+the reconciled `build-omniroute-agent-brain` authority. Every launch pins exactly one immutable
+transport binding. `omniroute` means OmniRoute is the sole inference router and account/credential
+owner, the child is provider-credentialless, and no native home is resolved or supplied.
+`native_credential_home` means R3 resolves exactly one approved exclusive opaque home for one
+existing logical runtime/agent before launch, the daemon supplies only daemon-local isolated-home
+references required by that native CLI, and OmniRoute is not contacted or used. There is no
+fallback, translation, rotation, or silent remapping between bindings. Missing, ambiguous,
+stale, unauthorized, unhealthy, unsupported, or conflicting state fails closed.
 
 The design reuses existing agent rows, runtime rows, workspace, and
 `orq2-credential-runtime-v1`. It creates no daemon, container, runtime installation, agent,
@@ -60,7 +63,7 @@ rejected, not ignored.
 
 | Group | Required contract |
 |---|---|
-| routing | `provider`, optional opaque `subscription_ref`, `transport` (`gateway` or `native`) |
+| routing | `provider`, optional opaque `subscription_ref`, `transport_binding` (`omniroute` or `native_credential_home`) |
 | model | literal `model_id`, provider catalog/version, capability digest |
 | reasoning | mode/level/budget exactly as provider capability advertises; no ID normalization |
 | limits | context, input, output and total token ceilings; wall/idle timeout |
@@ -136,22 +139,30 @@ and `retired`. Metadata has `first_seen_at`, `last_seen_at`, `last_full_scan_at`
 watermark, missing watermark and retention deadline. Active task references prevent retirement.
 Missing entries remain tombstoned through TTL and retention; generation never decreases and
 opaque refs are never reused. Low/high/critical watermarks emit state changes and can close
-admission. No lifecycle action copies, moves, deletes, truncates, sanitizes, overwrites, chmods,
-or authenticates a source home.
+admission. No lifecycle action copies, moves, deletes, truncates, sanitizes, overwrites, chmods, changes
+ownership of, or authenticates a source home. Retention expiry may retire metadata only. Cleanup
+is limited to task-local non-source material and occurs only after active-reference checks.
 
 ## 8. Exclusive assignment and admission
 
 An active home assignment is unique by opaque `home_ref` and unique by binding. One persistent
-agent maps to one existing runtime row and one Runtime Session projection; native work requiring
-an account must have exactly one healthy exclusive assignment. Enrollment attaches a newly
-legitimate subscription/home to the existing binding without recreation. Deterministic selection
-operates only among healthy, eligible, unassigned entries and persists the assignment before
-claim. Stale generations, conflicts and ORQ2-dev reservations fail closed.
+agent maps to one existing runtime row and one Runtime Session projection. A
+`native_credential_home` launch must have exactly one healthy exclusive assignment resolved by
+R3 and persisted before claim for that existing logical runtime/agent. The daemon resolves the
+opaque reference internally and supplies only isolated task-local home references required by
+the native CLI; no global HOME, source raw path, account identity, or credential value crosses a
+product/API/event/log boundary. Enrollment attaches a newly legitimate subscription/home to the
+existing binding without recreation. Deterministic initial assignment operates only among
+healthy, eligible, unassigned entries. It is not task-time rotation. Stale generations,
+conflicts and ORQ2-dev reservations fail closed.
 
 Concurrency limits are configuration policy and are independent of the number of catalog homes.
-A home is never shared merely to satisfy concurrency. Gateway transport has no home assignment.
-Fallback may choose only prevalidated routes in the pinned configuration; native-to-global,
-cross-workspace, unauthorized native-to-gateway, and ORQ2-dev fallback are forbidden.
+A home is never shared merely to satisfy concurrency. An `omniroute` binding has no home
+assignment and requires OmniRoute readiness; a `native_credential_home` binding does not probe,
+contact, or use OmniRoute. Fallback may choose only a prevalidated route that preserves the
+pinned binding and, for native execution, the pinned exclusive `home_ref`. It MUST NOT switch,
+translate, rotate, or retry across bindings or homes. Global HOME, cross-workspace,
+stale-generation, and ORQ2-dev fallback are forbidden.
 
 ## 9. Task snapshot
 
@@ -247,3 +258,14 @@ hard revoke is audited with actor type/opaque ID, workspace/resource IDs, reques
 old/new versions or generations, redacted diff, reason code and UTC time. Audit and task
 snapshots are retained at least as long as task/usage evidence; catalog tombstones outlive the
 maximum task retention plus reconciliation TTL. Retention never authorizes source-home deletion.
+
+## 13. Repository/OpenSpec synchronization gate
+
+Before any future handoff or deployment, all affected OpenSpecs MUST strict-validate and a
+cross-authority scan MUST prove the active transport, credential ownership, lifecycle, rollback,
+and secrecy texts agree. The Git index and worktree MUST contain zero staged, modified, or
+untracked owned files. The exact local commit MUST be published to its configured non-main
+remote branch; local HEAD and upstream SHA MUST be identical, and ahead/behind MUST be `0/0`.
+Deployment evidence MUST pin that exact SHA. Pending owned files, a missing/non-main upstream,
+unpublished commits, SHA mismatch, or any divergence fails closed. This is a future handoff and
+deployment gate only; documenting it performs no publish or deployment.

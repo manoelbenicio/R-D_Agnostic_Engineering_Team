@@ -4,16 +4,31 @@
 
 ### Requirement: REQ-01 Canonical authority and fail-closed boundary
 
-This change MUST govern Runtime Standards, Runtime Sessions, workspace bindings, runtime
-configuration, native account-home selection and task snapshots. It MUST supersede incompatible
-OmniRoute-only account ownership for those subjects while preserving OmniRoute as sole gateway
-router and inference credential owner.
+This change and the reconciled `build-omniroute-agent-brain` change MUST jointly govern Runtime
+Standards, Runtime Sessions, workspace bindings, runtime configuration, account-home selection,
+and task snapshots. Every launch MUST pin exactly one transport binding:
+`omniroute` or `native_credential_home`.
 
-#### Scenario: Authority conflict
-- **WHEN** active documentation gives OmniRoute exclusive ownership of a native ORQ2 account-home
-- **THEN** this specification MUST control that native account-home
-- **AND** gateway execution MUST remain credentialless with no home reference
-- **AND** ambiguity MUST block admission rather than select a fallback
+#### Scenario: OmniRoute binding
+- **WHEN** the pinned binding is `omniroute`
+- **THEN** OmniRoute MUST be the sole inference router and account/credential owner
+- **AND** the child MUST be provider-credentialless with no native home reference
+- **AND** missing gateway readiness MUST block launch
+
+#### Scenario: Native credential-home binding
+- **WHEN** the pinned binding is `native_credential_home`
+- **THEN** R3 MUST resolve exactly one approved exclusive opaque home for one existing logical
+  runtime/agent before launch
+- **AND** the daemon MUST supply only daemon-local isolated-home references required by the CLI
+- **AND** OmniRoute MUST NOT be probed, contacted, or used
+- **AND** global HOME, raw path, account identity, and credential data MUST NOT enter product
+  APIs, events, logs, or evidence
+
+#### Scenario: Binding ambiguity or failure
+- **WHEN** the binding is missing, ambiguous, stale, unauthorized, unhealthy, unsupported, or
+  conflicts with an active assignment
+- **THEN** admission MUST fail closed
+- **AND** the system MUST NOT fallback, translate, rotate, or retry between bindings or homes
 
 ### Requirement: REQ-02 Owner-global versioned Runtime Standards
 
@@ -77,7 +92,9 @@ reference protection, watermarks, tombstones and retention.
 - **WHEN** a home is absent from a full scan but an active task references its generation
 - **THEN** it MUST become missing/draining and remain tombstoned
 - **AND** it MUST NOT be reassigned, retired or have its opaque reference reused
-- **AND** source data MUST NOT be copied, moved, deleted, truncated, sanitized or overwritten
+- **AND** source data MUST NOT be copied, moved, deleted, truncated, sanitized, overwritten,
+  chmodded, or have ownership changed
+- **AND** cleanup MUST be limited to task-local non-source material after active-reference checks
 
 #### Scenario: Duplicate or invalid identity
 - **WHEN** aliases, symlink escape, wrong ownership/mode, invalid layout or duplicate filesystem
@@ -102,7 +119,8 @@ and one binding MUST have at most one active home assignment.
 
 ### Requirement: REQ-09 Configuration completeness
 
-Every versioned runtime configuration MUST cover routing/provider/subscription, literal model,
+Every versioned runtime configuration MUST cover `transport_binding`, provider and opaque
+subscription reference, literal model,
 reasoning, context/input/output/total token limits, concurrency, timeout/retry, CLI flags,
 environment allowlist, skills, tools/MCP, filesystem/network permissions, eligibility, health
 and fallback.
@@ -187,13 +205,15 @@ the count of catalog homes.
 ### Requirement: REQ-16 Controlled fallback
 
 Fallback MUST be ordered, bounded, capability-validated, health-gated and frozen in the task's
-effective configuration.
+effective configuration. Every fallback route MUST preserve the pinned transport binding and,
+for native execution, the pinned exclusive `home_ref`.
 
 #### Scenario: Preferred route is unhealthy
 - **WHEN** the preferred route is unhealthy
-- **THEN** only a prevalidated eligible fallback MAY run
-- **AND** global HOME, cross-workspace, stale-generation, unauthorized native/gateway switching
-  and ORQ2-dev fallback MUST be forbidden
+- **THEN** only a prevalidated eligible route within the same pinned binding MAY run
+- **AND** fallback, translation, rotation, or retry between `omniroute` and
+  `native_credential_home`, or between native homes, MUST be forbidden
+- **AND** global HOME, cross-workspace, stale-generation, and ORQ2-dev fallback MUST be forbidden
 
 ### Requirement: REQ-17 Frozen migration identities
 
@@ -254,7 +274,8 @@ retained through all active references and evidence windows.
 #### Scenario: Stale health or active reference
 - **WHEN** health TTL expires or retirement is requested for a referenced home
 - **THEN** new claims MUST fail with `health_stale` or `active_reference`
-- **AND** active/source credential material MUST remain untouched
+- **AND** every source credential home MUST remain untouched regardless of TTL or retention age
+- **AND** only task-local non-source material MAY be cleaned after active-reference checks
 
 ### Requirement: REQ-22 Existing ORQ2 topology and release boundary
 
@@ -267,3 +288,19 @@ bindings, and remain fail closed until approved implementation and assurance gat
   authorization
 - **AND** K3 review, integrated gates, Council acceptance and separate rollout authorization MUST
   remain mandatory
+
+### Requirement: REQ-23 Repository/OpenSpec synchronization gate
+
+Before any future handoff or deployment, every affected OpenSpec MUST pass strict validation,
+the cross-authority residual scan MUST pass, and the Git index/worktree MUST have zero staged,
+modified, or untracked owned files. The exact local commit MUST be published to its configured
+non-main remote branch; local HEAD and upstream SHA MUST match and ahead/behind MUST be `0/0`.
+Deployment evidence MUST pin that exact SHA. This requirement documents a future gate and does
+not itself authorize publishing or deployment.
+
+#### Scenario: Pending file or repository divergence
+- **WHEN** an owned file is staged, modified, or untracked, an affected OpenSpec or authority
+  scan fails, the exact commit is unpublished, upstream is absent or points to main, local and
+  upstream SHAs differ, or ahead/behind is not `0/0`
+- **THEN** handoff and deployment MUST fail closed
+- **AND** no deployment evidence may claim a different or unresolved SHA

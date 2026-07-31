@@ -24,7 +24,7 @@
       "state": "DEFERRED",
       "condition": "After UUID prerequisites pass and before recording documentation execution",
       "method": "PUT",
-      "path_template": "/api/issues/{issue_uuid}",
+      "path_template": "/api/issues/{issue_uuid}/",
       "path_parameters": {
         "issue_uuid": null
       },
@@ -42,7 +42,8 @@
         "issue_uuid": null
       },
       "body": {
-        "content": "/note SPE-5 documentation phase: canonical credential-account-home-restoration OpenSpec now freezes owner-global versioned Runtime Standards, reusable accountless Runtime Sessions, existing-row workspace bindings, opaque dynamic account-home catalog, exclusive assignment, complete versioned runtime configuration precedence/capability/apply contracts, lifecycle reconciliation, REST/events, authorization, redaction, snapshots and rollback. Documentation only; no executable/schema/runtime/credential/production/SharePoint mutation. Awaiting independent K3 review before in_review."
+        "content": "/note SPE-5 documentation phase: canonical credential-account-home-restoration OpenSpec now freezes owner-global versioned Runtime Standards, reusable accountless Runtime Sessions, existing-row workspace bindings, opaque dynamic account-home catalog, exclusive assignment, complete versioned runtime configuration precedence/capability/apply contracts, lifecycle reconciliation, REST/events, authorization, redaction, snapshots and rollback. Documentation only; no executable/schema/runtime/credential/production/SharePoint mutation. Awaiting independent K3 review before in_review.",
+        "type": "comment"
       }
     },
     {
@@ -50,7 +51,7 @@
       "state": "DEFERRED_PENDING_K3",
       "condition": "Only after K3 independently accepts the frozen interfaces and operation 2 GET-back is verified",
       "method": "PUT",
-      "path_template": "/api/issues/{issue_uuid}",
+      "path_template": "/api/issues/{issue_uuid}/",
       "path_parameters": {
         "issue_uuid": null
       },

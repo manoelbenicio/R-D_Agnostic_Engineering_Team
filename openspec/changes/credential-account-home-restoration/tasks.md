@@ -8,8 +8,9 @@
 
 - [x] 1.1 Declare this change canonical for Runtime Standards, Runtime Sessions, workspace
   bindings, runtime configuration, native account-home selection and task snapshots.
-- [x] 1.2 Supersede incompatible OmniRoute-only account ownership for those subjects without
-  editing the conflicting change or weakening OmniRoute gateway routing ownership.
+- [x] 1.2 Reconcile the active `build-omniroute-agent-brain` proposal, design, tasks and
+  affected specs to the same mutually exclusive transport-binding contract without weakening
+  OmniRoute ownership inside the `omniroute` binding.
 - [x] 1.3 Freeze fail-closed behavior and immutable ORQ2-dev reservations.
 
 ## 2. Runtime and configuration contracts
@@ -33,7 +34,8 @@
   catalog generations.
 - [x] 3.3 Freeze filesystem-identity deduplication, TTL, quarantine, active references,
   watermarks, tombstones and retention.
-- [x] 3.4 Prohibit copy/move/delete/truncate/sanitize/overwrite of source credential homes.
+- [x] 3.4 Prohibit copy/move/delete/truncate/sanitize/overwrite/chmod of source credential homes;
+  permit cleanup only for task-local non-source material after active-reference checks.
 - [x] 3.5 Make configured concurrency independent of account inventory.
 
 ## 4. Shared interface freeze
@@ -52,9 +54,12 @@
 
 - [x] 5.1 Run strict OpenSpec validation.
 - [x] 5.2 Parse the deferred JSON payload and run `git diff --check`.
-- [x] 5.3 Verify topic coverage, documentation-only scope, exactly five owned paths and no
+- [x] 5.3 Verify topic coverage, documentation-only allowlist scope and no
   path/account/credential disclosure.
-- [ ] 5.4 K3 independently reviews and signs the frozen interfaces.
+- [x] 5.4 Freeze the pre-handoff/deploy repository/OpenSpec synchronization gate: strict
+  validation, cross-authority scan, clean owned index/worktree, published non-main branch,
+  exact upstream/local SHA equality with 0/0 divergence, and deployment evidence SHA pinning.
+- [ ] 5.5 K3 independently reviews and signs the reconciled frozen interfaces.
 
 ## 6. Downstream implementation - not authorized by SPE-5
 

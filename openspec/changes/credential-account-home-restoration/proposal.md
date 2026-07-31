@@ -2,13 +2,15 @@
 
 ## Authority amendment
 
-This canonical change is the authority for owner-global Runtime Standards, Runtime Sessions,
-workspace runtime bindings, native credential account-home isolation, and task snapshots. For
-those subjects it supersedes incompatible active text that assigns all provider-account or
-credential ownership exclusively to OmniRoute. That other change is not edited here.
-OmniRoute remains the sole model router for gateway-routed inference; native approved coding
-CLI execution on ORQ2 may use only the opaque, exclusive account-home contract defined here.
-All conflicts fail closed and preserve the existing ORQ2-dev reservations.
+This canonical change and the reconciled `build-omniroute-agent-brain` change jointly freeze
+one transport authority. Every launch pins exactly one binding: `omniroute` or
+`native_credential_home`. With `omniroute`, OmniRoute is the sole inference router and the sole
+account/credential owner, and native homes are forbidden. With `native_credential_home`, R3
+resolves one approved exclusive opaque home for one existing logical runtime/agent before
+launch, the daemon supplies only daemon-local isolated-home references required by the native
+CLI, and OmniRoute is not used. Neither binding may fall back, translate, or rotate to the other.
+Both fail closed, preserve existing ORQ2-dev reservations, and expose no global HOME, raw path,
+account identity, or credential data through product APIs, events, logs, or evidence.
 
 ## Why
 
@@ -45,8 +47,9 @@ work independently without leaking paths or changing existing infrastructure.
 
 1. One account-home is exclusively bound to at most one active agent/runtime binding.
 2. Runtime/session concurrency is policy-driven and independent of physical account count.
-3. No process copies, moves, deletes, truncates, sanitizes, overwrites, or exposes a source
-   credential home or credential artifact.
+3. No process copies, moves, deletes, truncates, sanitizes, overwrites, chmods, or exposes a
+   source credential home or credential artifact. Cleanup is limited to task-local non-source
+   material after active-reference checks.
 4. Discovery uses hints plus periodic full reconciliation, supports overflow, deduplicates by
    filesystem identity, and publishes monotonic generations.
 5. Missing, stale, ambiguous, unhealthy, unsupported, unauthorized, or conflicting state

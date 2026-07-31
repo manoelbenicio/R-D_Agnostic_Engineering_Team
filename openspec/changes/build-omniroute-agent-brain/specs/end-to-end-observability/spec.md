@@ -1,14 +1,19 @@
 ## ADDED Requirements
 
 ### Requirement: Metadata-only correlation schema
-The system SHALL define versioned safe identifiers joining ingress, DB queue, daemon admission/lifecycle, CLI process, OmniRoute, terminal persistence and WS/UI delivery.
+The system SHALL define versioned safe identifiers joining ingress, DB queue, daemon
+admission/lifecycle, CLI process, the pinned transport hop (`omniroute` or
+`native_credential_home`), terminal persistence and WS/UI delivery.
 
 #### Scenario: Required join identifier is missing
 - **WHEN** a hop cannot be joined to its task/session
 - **THEN** trace assembly reports an orphan and observability acceptance fails
 
 ### Requirement: Content and secret exclusion
-Spans, labels, metrics and logs SHALL contain only safe identifiers, classifications, counters and latency. They MUST NOT contain credentials, authorization headers, cookies, prompts, tool payloads, repository content, reasoning, account emails or connection strings.
+Spans, labels, metrics and logs SHALL contain only safe identifiers, classifications, counters
+and latency. They MUST NOT contain credentials, authorization headers, cookies, prompts, tool
+payloads, repository content, reasoning, account emails/identity, raw source paths, isolated-home
+paths, global HOME values, or connection strings.
 
 #### Scenario: Task contains sensitive content
 - **WHEN** a hop emits observability for the task
