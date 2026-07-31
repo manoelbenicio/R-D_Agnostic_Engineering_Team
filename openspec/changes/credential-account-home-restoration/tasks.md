@@ -1,44 +1,69 @@
-# Tasks
+# Tasks - SPE-5 Runtime Manager Contract Freeze
 
-> Escritor unico: Codex56-TL. KIRO-PRINCIPAL-TL fornece diagnostico e valida a evidencia.
+> SPE-5 is documentation/OpenSpec only. Checkmarks below certify contract documentation, not
+> executable implementation or production readiness. K1 is the sole canonical writer; K3 is an
+> independent non-editing reviewer.
 
-## Fase 0 — Decisoes do owner (bloqueiam tudo)
-- [x] 0.1 Topologia T2 escolhida pelo owner
-- [x] 0.2 Rebuild Go e relancamento T2 autorizados
-- [x] 0.3 Definir inventario elegivel sem valores de credencial
-- [x] 0.4 Reverter a copia de credencial no HOME global do ORQ1 a partir de `~/cred-bak-20260726`
+## 1. Canonical authority freeze
 
-## Fase 1 — Resolver de AccountHome (~15 min + rebuild)
-- [x] 1.1 Novo `credential_home.go` com inventario, rendezvous-hash e persistencia atomica
-- [x] 1.2 Validacao absoluta, prefixo, `EvalSymlinks`, `Lstat` e artefato nativo; erro fail-closed
-- [x] 1.3 Substituir `daemon.go:3448` literal vazio pela chamada ao resolver
-- [x] 1.4 Restaurar injecao de `CredentialEnv` no caminho nativo e cobrir Prepare/Reuse
-- [x] 1.5 Tornar `CredentiallessGateway` e `buildLaunch` condicionais ao plano gateway
-- [x] 1.6 GATE F1: `go build ./...` e `go vet ./...` exit 0
-- [x] 1.7 Tornar `validateThinking` seguro no caminho nativo sem plano Agent Brain
-- [x] 1.8 Executar discovery AGY sob HOME elegivel, com cache por HOME e fallback entre slots
-- [x] 1.9 Expor e persistir `thinking_level` no criar/duplicar para catalogos estruturados,
-  sem duplicar os tiers embutidos nos IDs AGY
-- [x] 1.10 Copiar para o task-home AGY somente `antigravity-oauth-token` fisico `0600`,
-  ignorando logs, symlinks, caches, bancos e demais artefatos irmaos
+- [x] 1.1 Declare this change canonical for Runtime Standards, Runtime Sessions, workspace
+  bindings, runtime configuration, native account-home selection and task snapshots.
+- [x] 1.2 Supersede incompatible OmniRoute-only account ownership for those subjects without
+  editing the conflicting change or weakening OmniRoute gateway routing ownership.
+- [x] 1.3 Freeze fail-closed behavior and immutable ORQ2-dev reservations.
 
-## Fase 2 — Aceitacao de isolamento
-- [x] 2.1 Testes unitarios do resolver, traversal/symlink, afinidade e slot inelegivel
-- [x] 2.2 Testes de Prepare e Reuse para antigravity, codex e kiro
-- [ ] 2.3 GATE F2: duas tasks em contas distintas sem sobreposicao
-- [x] 2.4 GATE F2: Kiro sem `data.sqlite3` falha explicitamente
+## 2. Runtime and configuration contracts
 
-## Fase 3 — Contabilizacao (pos-cutover, bloqueia producao financeira)
-- [x] 3.1 Persistir slot pseudonimo/account_id em `task_usage` — implementado em
-  `785a8ac` + `ea1eee7`, migration 128 e gate combinado verde; integracao conjunta com
-  ORQ-21 e revisao independente permanecem gates de release
-- [ ] 3.2 Adicionar preco por tier de reasoning
-- [ ] 3.3 Extrair uso real de agy e kiro
-- [ ] 3.4 GATE F3: custo por conta e tier validado
+- [x] 2.1 Freeze owner-global versioned Runtime Standards and owner-global reusable accountless
+  Runtime Sessions.
+- [x] 2.2 Freeze workspace enrollment onto existing agent/runtime rows and the existing daemon,
+  without recreation.
+- [x] 2.3 Freeze one agent/runtime/exclusive home and subagent inheritance semantics.
+- [x] 2.4 Freeze platform > standard > runtime > explicit delegable task precedence.
+- [x] 2.5 Enumerate model, reasoning, limits, concurrency, retry, flags, env, skills, MCP/tools,
+  permissions, eligibility, health and fallback fields.
+- [x] 2.6 Freeze per-field capability validation, delegability, hot/restart apply class,
+  activation, audit, redaction, drift and rollback.
+- [x] 2.7 Freeze claim-time generation/version/digest task snapshots and reclaim invariants.
 
-## Fase 4 — Durabilidade e cutover
-- [x] 4.1 Artefato duravel fora de `/tmp`, com hash e attestation
-- [x] 4.2 Unidades systemd de usuario: tunel primeiro, daemon depois
-- [x] 4.3 Canario T2 com daemon-id `orq2-credential-runtime-v1` e device-name `ORQ2 Credential Runtime`
-- [x] 4.4 Restaurar `~/cred-bak-20260726` e quarentenar as copias globais
-- [ ] 4.5 GATE F4: rollback testado em 1 comando
+## 3. Dynamic credential-home catalog
+
+- [x] 3.1 Replace slot allowlists/raw paths with opaque arbitrary-child controlled-root discovery.
+- [x] 3.2 Freeze hint plus periodic full reconciliation, overflow handling and monotonic atomic
+  catalog generations.
+- [x] 3.3 Freeze filesystem-identity deduplication, TTL, quarantine, active references,
+  watermarks, tombstones and retention.
+- [x] 3.4 Prohibit copy/move/delete/truncate/sanitize/overwrite of source credential homes.
+- [x] 3.5 Make configured concurrency independent of account inventory.
+
+## 4. Shared interface freeze
+
+- [x] 4.1 Reserve migration names `130_runtime_standards`, `131_runtime_sessions`,
+  `132_credential_home_catalog`, `133_runtime_bindings`, and
+  `134_runtime_configuration_snapshots`, subject to registrar recheck.
+- [x] 4.2 Freeze pathless REST resources, exact methods/routes/body fields, pagination,
+  idempotency and status codes.
+- [x] 4.3 Freeze event envelope/types, at-least-once deduplication and generation-gap recovery.
+- [x] 4.4 Freeze owner/admin/daemon/workspace authorization, canonical errors, audit and secrecy.
+- [x] 4.5 Create a deferred, unsent SPE-5 Kanban payload with no invented UUID and a UUID lookup
+  prerequisite; final in-review transition is conditional on K3 review.
+
+## 5. Validation and handoff
+
+- [x] 5.1 Run strict OpenSpec validation.
+- [x] 5.2 Parse the deferred JSON payload and run `git diff --check`.
+- [x] 5.3 Verify topic coverage, documentation-only scope, exactly five owned paths and no
+  path/account/credential disclosure.
+- [ ] 5.4 K3 independently reviews and signs the frozen interfaces.
+
+## 6. Downstream implementation - not authorized by SPE-5
+
+- [ ] 6.1 C2 rechecks migration identities immediately before implementation; any collision
+  blocks work and requires a canonical amendment.
+- [ ] 6.2 C1/C2/C3/C4/K2 implement registry, schema, Runtime Manager, UI/CLI and catalog only in
+  their assigned worktrees after approval.
+- [ ] 6.3 K1 integrates reviewed commits and shared daemon/protocol wiring in SPE-9.
+- [ ] 6.4 C5/K3 execute independent migration, race, privacy, capability, recovery, drift,
+  rollback and end-to-end evidence gates.
+- [ ] 6.5 Council accepts, K3 pins a release recommendation, and owner separately authorizes
+  production rollout. SharePoint remains prohibited.

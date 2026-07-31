@@ -1,160 +1,269 @@
-# Spec — credential-account-home
+# Spec - credential-account-home
 
 ## ADDED Requirements
 
-### Requirement: REQ-01 Resolucao por provider
+### Requirement: REQ-01 Canonical authority and fail-closed boundary
 
-O daemon MUST resolver a raiz de credencial especifica de cada provider obrigatorio.
+This change MUST govern Runtime Standards, Runtime Sessions, workspace bindings, runtime
+configuration, native account-home selection and task snapshots. It MUST supersede incompatible
+OmniRoute-only account ownership for those subjects while preserving OmniRoute as sole gateway
+router and inference credential owner.
 
-#### Scenario: Preparar uma task obrigatoria
+#### Scenario: Authority conflict
+- **WHEN** active documentation gives OmniRoute exclusive ownership of a native ORQ2 account-home
+- **THEN** this specification MUST control that native account-home
+- **AND** gateway execution MUST remain credentialless with no home reference
+- **AND** ambiguity MUST block admission rather than select a fallback
 
-- **WHEN** o daemon prepara ambiente de execucao para uma task
-- **THEN** `CredentialAccountHome` MUST ser resolvido pela raiz especifica do vendor dentro do
-  slot, conforme: antigravity/agy `<slot>/home`, kiro `<slot>/xdg-data` e
-  codex `<slot>/codex`
-- **AND** MUST NOT usar um caminho unico para todos os providers
+### Requirement: REQ-02 Owner-global versioned Runtime Standards
 
-### Requirement: REQ-02 Validacao fail-closed do caminho
+The platform MUST provide owner-global Runtime Standards with immutable versions, validation,
+activation, audit and rollback.
 
-O daemon MUST rejeitar todo AccountHome ausente, invalido ou fora do root autorizado.
+#### Scenario: Activate a standard version
+- **WHEN** an owner activates a validated version using the expected active version
+- **THEN** activation MUST be compare-and-swap and auditable
+- **AND** existing versions MUST remain immutable
+- **AND** rollback MUST activate a prior version without rewriting history
 
-#### Scenario: Validar AccountHome
+### Requirement: REQ-03 Accountless reusable Runtime Sessions
 
-- **WHEN** um caminho de `AccountHome` e resolvido
-- **THEN** MUST ser absoluto, MUST estar sob o root permitido, MUST passar por `EvalSymlinks` e
-  `Stat`
-- **AND** caminho ou artefato nativo ausente MUST retornar erro e bloquear a task
-- **AND** MUST NOT converter erro em HOME global
+Runtime Sessions MUST be owner-global, reusable and accountless.
 
-### Requirement: REQ-03 Codex honra AccountHome
+#### Scenario: Reuse a session in another authorized workspace
+- **WHEN** an owner enrolls a session into an authorized workspace
+- **THEN** the platform MUST project it onto an existing runtime row, agent and daemon
+- **AND** MUST NOT create or recreate an agent, runtime, daemon, container or credential home
+- **AND** subscription/home attachment MUST remain a separate operation
 
-O daemon MUST separar o transporte credentialless do uso nativo de AccountHome pelo Codex.
+### Requirement: REQ-04 Existing-row workspace binding
 
-#### Scenario: Executar por gateway
+Each active workspace binding MUST identify exactly one existing agent, runtime row and Runtime
+Session, and MUST preserve existing ORQ2-dev reservations.
 
-- **WHEN** existe plano gateway
-- **THEN** `CredentiallessGateway` MUST ser verdadeiro e `AccountHome` MUST estar vazio
+#### Scenario: Enrollment references a missing or reserved row
+- **WHEN** enrollment references a nonexistent row, another workspace, or protected ORQ2-dev binding
+- **THEN** enrollment MUST fail before mutation
+- **AND** MUST NOT move, share, borrow or steal any existing assignment
 
-#### Scenario: Executar nativamente
+### Requirement: REQ-05 Opaque dynamic controlled-root registry
 
-- **WHEN** a execucao e nativa
-- **THEN** `CredentiallessGateway` MUST ser falso e `AccountHome` MUST ser valido
+The daemon MUST discover arbitrary child homes under validated controlled roots without slot
+allowlists or product-visible raw paths.
 
-### Requirement: REQ-04 Cobertura de Prepare e Reuse
+#### Scenario: New valid child appears beyond prior capacity
+- **WHEN** a full reconciliation sees a valid arbitrary child not present in the prior generation
+- **THEN** it MUST issue a new opaque home reference and publish a higher atomic generation
+- **AND** no slot number grammar or fixed capacity allowlist may reject it
+- **AND** APIs, events, logs and evidence MUST NOT expose the raw path
 
-O daemon MUST aplicar as mesmas garantias de isolamento aos caminhos Prepare e Reuse.
+### Requirement: REQ-06 Reconciliation completeness and monotonicity
 
-#### Scenario: Preparar ou reutilizar ambiente
+Filesystem notifications MUST be hints; startup, overflow, hint loss, watcher restart and
+interval expiry MUST trigger a complete scan.
 
-- **WHEN** o patch e aplicado
-- **THEN** MUST cobrir o caminho Prepare e o caminho Reuse, que duplicam as mesmas condicoes
+#### Scenario: Watcher overflows
+- **WHEN** the filesystem watcher reports overflow
+- **THEN** admission MUST use the last complete generation or fail closed
+- **AND** a full scan MUST publish only after completion
+- **AND** catalog generation MUST increase monotonically and never be reused
 
-### Requirement: REQ-05 Atribuicao estavel
+### Requirement: REQ-07 Catalog lifecycle safety
 
-O daemon MUST manter afinidade deterministica e persistida entre agente, provider e slot.
+Catalog lifecycle MUST implement filesystem-identity deduplication, TTL, quarantine, active
+reference protection, watermarks, tombstones and retention.
 
-#### Scenario: Repetir tasks do mesmo agente
+#### Scenario: Home disappears while referenced
+- **WHEN** a home is absent from a full scan but an active task references its generation
+- **THEN** it MUST become missing/draining and remain tombstoned
+- **AND** it MUST NOT be reassigned, retired or have its opaque reference reused
+- **AND** source data MUST NOT be copied, moved, deleted, truncated, sanitized or overwritten
 
-- **WHEN** um agente executa tasks repetidas
-- **THEN** a selecao de slot MUST usar rendezvous-hash de `AgentID+provider` e MUST persistir a
-  escolha
-- **AND** MUST NOT usar round-robin
-- **AND** um slot persistido inelegivel MUST falhar em vez de remapear silenciosamente
+#### Scenario: Duplicate or invalid identity
+- **WHEN** aliases, symlink escape, wrong ownership/mode, invalid layout or duplicate filesystem
+  identity is detected
+- **THEN** every ambiguous candidate MUST be quarantined metadata-only
+- **AND** new admission MUST fail closed
 
-### Requirement: REQ-06 Runtimes obrigatorios
+### Requirement: REQ-08 Exclusive account-home assignment
 
-O T2 MUST manter antigravity/agy, Codex e Kiro operacionais em todo cenario suportado.
+A healthy native account-home MUST be exclusive to one active persistent agent/runtime binding,
+and one binding MUST have at most one active home assignment.
 
-#### Scenario: Avaliar o escopo T2
+#### Scenario: Concurrent assignment
+- **WHEN** two bindings race to assign the same opaque home reference
+- **THEN** exactly one compare-and-swap MUST succeed
+- **AND** the loser MUST receive `exclusive_assignment_conflict`
 
-- **WHEN** qualquer cenario e avaliado
-- **THEN** antigravity/agy, codex e kiro MUST estar operacionais
-- **AND** cline, opencode e demais providers estao fora de escopo
+#### Scenario: Attach a new subscription
+- **WHEN** a legitimate newly enrolled home becomes healthy and unassigned
+- **THEN** it MAY attach to the existing binding
+- **AND** agent, runtime, session and daemon IDs MUST remain unchanged
 
-#### Scenario: Descobrir modelos Antigravity
+### Requirement: REQ-09 Configuration completeness
 
-- **WHEN** a UI solicita o catalogo do runtime antigravity
-- **THEN** `agy models` MUST executar com HOME de um slot validado da allowlist
-- **AND** o HOME global do daemon MUST NOT ser usado
-- **AND** uma sessao que retorna erro MUST permitir tentativa no proximo HOME elegivel
+Every versioned runtime configuration MUST cover routing/provider/subscription, literal model,
+reasoning, context/input/output/total token limits, concurrency, timeout/retry, CLI flags,
+environment allowlist, skills, tools/MCP, filesystem/network permissions, eligibility, health
+and fallback.
 
-#### Scenario: Preparar task-home Antigravity
+#### Scenario: Unknown or missing field contract
+- **WHEN** a configuration contains an unregistered field or a required group lacks a schema
+- **THEN** validation MUST fail with `invalid_configuration`
+- **AND** the field MUST NOT be ignored or passed to a runtime
 
-- **WHEN** o daemon prepara uma task com AccountHome AGY elegivel
-- **THEN** MUST copiar somente `.gemini/antigravity-cli/antigravity-oauth-token`
-- **AND** o token de destino MUST ser arquivo fisico regular com modo `0600`
-- **AND** logs, symlinks, caches, bancos e demais artefatos irmaos MUST NOT ser copiados
-- **AND** token ausente, symlink ou nao regular MUST falhar explicitamente
+### Requirement: REQ-10 Deterministic precedence
 
-### Requirement: REQ-07 Topologia T2
+Effective configuration MUST resolve each field using
+`platform > standard > runtime > explicitly delegable task`.
 
-O executor credential-isolated MUST rodar no ORQ2 e substituir o executor do ORQ1.
+#### Scenario: Lower layer widens policy
+- **WHEN** runtime or task configuration attempts to widen a platform/standard limit, permission,
+eligibility, fallback or exposure boundary
+- **THEN** resolution MUST reject the version or task before launch
+- **AND** omission MUST inherit rather than erase higher policy
 
-#### Scenario: Executar com conta isolada
+### Requirement: REQ-11 Capability, delegability and apply class
 
-- **WHEN** o daemon executa uma task com conta isolada
-- **THEN** ele MUST estar no ORQ2 e consumir somente slots locais sob o root 0700
-- **AND** o daemon ORQ1 MUST deixar de ser elegivel antes da primeira task T2
+Every configurable leaf MUST declare type, capability predicate, redaction, delegability and
+`hot` or `restart` apply class.
 
-### Requirement: REQ-08 Durabilidade
+#### Scenario: Unsupported reasoning or model
+- **WHEN** a model/reasoning/limit combination is absent from the pinned capability catalog
+- **THEN** activation MUST fail with a field-addressed `capability_unsupported`
+- **AND** validation MUST NOT make an inference request
 
-O tunel e o daemon T2 MUST reiniciar automaticamente em ordem apos reboot do ORQ2.
+#### Scenario: Non-delegable task override
+- **WHEN** a task overrides a non-delegable field
+- **THEN** claim or launch MUST fail before process creation
 
-#### Scenario: Reiniciar o host ORQ2
+#### Scenario: Restart-class activation
+- **WHEN** a restart-required version is activated
+- **THEN** it MUST remain pending until the existing runtime process restarts and acknowledges it
+- **AND** running tasks MUST retain their pinned prior version
 
-- **WHEN** o T2 entra em operacao
-- **THEN** binario e tunel MUST ser geridos fora de `/tmp`
-- **AND** reinicio do host MUST restaurar tunel antes do daemon
+### Requirement: REQ-12 Activation, audit, redaction, drift and rollback
 
-### Requirement: REQ-09 Configuracao de reasoning
+Configuration activation and rollback MUST be compare-and-swap, redacted and auditable; daemon
+application MUST be acknowledged and continuously compared for drift.
 
-A UI MUST preservar o formato de reasoning anunciado pelo runtime e MUST persistir a escolha
-explicita do owner sem nivel chumbado.
+#### Scenario: Digest drift
+- **WHEN** daemon-applied version/digest differs from desired state
+- **THEN** `runtime_configuration.drift_detected` MUST be emitted
+- **AND** new claims on that binding MUST fail closed until reconciled
+- **AND** audit/events MUST contain no secret, raw path, argv/env value or provider response
 
-#### Scenario: Modelo com niveis estruturados
+### Requirement: REQ-13 Immutable task snapshots
 
-- **WHEN** o modelo selecionado anuncia `thinking.supported_levels`
-- **THEN** criar e duplicar agente MUST mostrar um seletor separado com os tokens anunciados
-- **AND** a escolha MUST ser enviada e persistida em `thinking_level`
-- **AND** a ausencia de escolha MUST manter o comportamento nativo do CLI
+Atomic claim MUST pin session/runtime/agent/workspace IDs, standard and runtime configuration
+version IDs, effective digest, binding ID/generation, capability digest, and for native tasks the
+opaque home reference/catalog generation.
 
-#### Scenario: Tier embutido no ID AGY
+#### Scenario: Configuration or assignment changes after claim
+- **WHEN** active configuration or home assignment changes after a task is claimed
+- **THEN** that attempt and its subagents MUST retain the original snapshot
+- **AND** reclaim/reuse MUST NOT perform a live lookup that rewrites history
 
-- **WHEN** o modelo selecionado nao anuncia `thinking.supported_levels` e seu tier ja faz
-  parte do ID
-- **THEN** a UI MUST manter o ID literal como escolha de modelo
-- **AND** MUST NOT mostrar um segundo seletor de reasoning
+### Requirement: REQ-14 Subagent inheritance
 
-#### Scenario: Trocar para catalogo incompativel
+Subagents MUST inherit their parent's task snapshot and MAY receive only explicitly delegable,
+bounded task overrides.
 
-- **WHEN** runtime ou modelo muda e o `thinking_level` atual nao existe no novo catalogo
-- **THEN** a UI MUST limpar o override obsoleto antes de criar o agente
+#### Scenario: Spawn subagent
+- **WHEN** a task spawns a subagent
+- **THEN** no persistent runtime/session/account-home row MUST be created
+- **AND** it MUST share the parent binding/home and count against configured concurrency
 
-### Requirement: REQ-10 Snapshot imutavel da conta produtora
+### Requirement: REQ-15 Concurrency independent of accounts
 
-O backend MUST congelar a conta aprovada que produz cada tentativa no claim atomico e MUST
-copiar somente esse snapshot para `task_usage`. O daemon MUST NOT enviar `account_id`.
+Session, task and subagent concurrency MUST be explicit configuration and MUST NOT derive from
+the count of catalog homes.
 
-#### Scenario: Assignment muda depois do claim
+#### Scenario: Concurrency exceeds home inventory
+- **WHEN** configured native concurrency cannot be served without sharing an exclusive home
+- **THEN** excess work MUST queue or fail with `capacity_exhausted`
+- **AND** no home or ORQ2-dev assignment may be shared
 
-- **WHEN** a task e reivindicada com conta A e o agente e depois reatribuido para conta B
-- **THEN** a task e todos os reports dessa tentativa MUST permanecer atribuidos a A
-- **AND** um report posterior MUST NOT reescrever a historia usando a assignment corrente
+### Requirement: REQ-16 Controlled fallback
 
-#### Scenario: Reclaim de linha com snapshot
+Fallback MUST be ordered, bounded, capability-validated, health-gated and frozen in the task's
+effective configuration.
 
-- **WHEN** uma task dispatched ja possui `credential_account_id`
-- **THEN** reclaim MUST preservar exatamente esse snapshot
+#### Scenario: Preferred route is unhealthy
+- **WHEN** the preferred route is unhealthy
+- **THEN** only a prevalidated eligible fallback MAY run
+- **AND** global HOME, cross-workspace, stale-generation, unauthorized native/gateway switching
+  and ORQ2-dev fallback MUST be forbidden
 
-#### Scenario: Reclaim de linha legada sem snapshot
+### Requirement: REQ-17 Frozen migration identities
 
-- **WHEN** uma task de provider coberto ja esta dispatched com snapshot NULL durante o cutover
-- **THEN** ela MUST continuar visivel ao claim/reclaim gate
-- **AND** MUST ser cancelada fail-closed pelo contrato ORQ-21
-- **AND** MUST NOT receber uma conta por lookup vivo ou backfill retroativo
+Implementation MUST reserve migrations 130-134 as named in the design, subject to an immediate
+registrar recheck.
 
-#### Scenario: Uso nao atribuivel
+#### Scenario: Registrar detects collision
+- **WHEN** any identity 130-134 is occupied before implementation
+- **THEN** schema work MUST stop
+- **AND** K1 MUST amend the canonical contract before any replacement name is used
 
-- **WHEN** nenhuma conta aprovada foi congelada
-- **THEN** `task_usage.account_id` MUST permanecer NULL
-- **AND** relatorios MUST expor o bucket NULL em vez de omiti-lo dos totais
+### Requirement: REQ-18 Frozen REST contracts
+
+Implementations MUST use the methods, routes, body fields, pagination, idempotency, response
+status and error envelope frozen in the design.
+
+#### Scenario: Administrative mutation
+- **WHEN** a Runtime Standard, session, enrollment, binding, assignment or configuration is mutated
+- **THEN** an authenticated authorized human owner/admin and `Idempotency-Key` MUST be required
+- **AND** expected version/generation MUST be checked where specified
+- **AND** task actors and cross-workspace actors MUST receive `forbidden`
+
+#### Scenario: Error response
+- **WHEN** a request fails
+- **THEN** it MUST return `{error:{code,message,field?,request_id,retryable}}`
+- **AND** message/field data MUST NOT reveal a path, account identity, credential, env value or
+  provider response body
+
+### Requirement: REQ-19 Frozen event contracts
+
+Runtime-manager events MUST use the frozen envelope and type names, at-least-once delivery and
+per-resource monotonic generations.
+
+#### Scenario: Duplicate or gap
+- **WHEN** a consumer receives a duplicate event
+- **THEN** it MUST deduplicate by `event_id`
+- **WHEN** it observes a generation gap
+- **THEN** it MUST GET/reconcile complete state rather than infer missing changes
+
+### Requirement: REQ-20 Authorization and path secrecy
+
+Owner-global administration MUST be owner-only; workspace administrators MUST be confined to
+their workspace; daemons MUST report only authorized daemon/binding state.
+
+#### Scenario: Read catalog or evidence
+- **WHEN** an authorized actor reads catalog, event, audit or task evidence
+- **THEN** only opaque refs, states, versions, generations, digests, reason codes and counters MAY
+  be returned
+- **AND** raw paths, filesystem identity, account identity, credential names/data, prompts and
+  provider response bodies MUST be absent
+
+### Requirement: REQ-21 Health, revoke and retention
+
+Eligibility MUST require fresh health and catalog data. Revocation MUST drain by default; hard
+revoke requires explicit policy and audit. Audit/task snapshots and catalog tombstones MUST be
+retained through all active references and evidence windows.
+
+#### Scenario: Stale health or active reference
+- **WHEN** health TTL expires or retirement is requested for a referenced home
+- **THEN** new claims MUST fail with `health_stale` or `active_reference`
+- **AND** active/source credential material MUST remain untouched
+
+### Requirement: REQ-22 Existing ORQ2 topology and release boundary
+
+The solution MUST reuse the existing ORQ2 daemon and existing rows, preserve all ORQ2-dev
+bindings, and remain fail closed until approved implementation and assurance gates pass.
+
+#### Scenario: Documentation completion
+- **WHEN** SPE-5 documentation validates
+- **THEN** it MUST NOT imply executable implementation, production authorization or SharePoint
+  authorization
+- **AND** K3 review, integrated gates, Council acceptance and separate rollout authorization MUST
+  remain mandatory

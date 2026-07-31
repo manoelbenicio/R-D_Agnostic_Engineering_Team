@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "generated_at_utc": "2026-07-31T22:39:02Z",
+  "state": "DEFERRED_UNSENT",
+  "sent": false,
+  "workspace": {
+    "identifier": null,
+    "id": null
+  },
+  "issue": {
+    "identifier": "SPE-5",
+    "id": null
+  },
+  "prerequisites": [
+    "Resolve the authoritative workspace UUID from the approved Kanban source.",
+    "Resolve SPE-5 to its authoritative issue UUID within that workspace.",
+    "Verify both values are UUIDs and GET /api/issues/{issue_uuid} returns identifier SPE-5 in the resolved workspace.",
+    "Do not execute any operation while workspace.id or issue.id is null, non-UUID, mismatched, or unverified.",
+    "K3 independent review is required before operation 3."
+  ],
+  "operations": [
+    {
+      "sequence": 1,
+      "state": "DEFERRED",
+      "condition": "After UUID prerequisites pass and before recording documentation execution",
+      "method": "PUT",
+      "path_template": "/api/issues/{issue_uuid}",
+      "path_parameters": {
+        "issue_uuid": null
+      },
+      "body": {
+        "status": "in_progress"
+      }
+    },
+    {
+      "sequence": 2,
+      "state": "DEFERRED",
+      "condition": "After operation 1 succeeds and GET-back confirms in_progress",
+      "method": "POST",
+      "path_template": "/api/issues/{issue_uuid}/comments",
+      "path_parameters": {
+        "issue_uuid": null
+      },
+      "body": {
+        "content": "/note SPE-5 documentation phase: canonical credential-account-home-restoration OpenSpec now freezes owner-global versioned Runtime Standards, reusable accountless Runtime Sessions, existing-row workspace bindings, opaque dynamic account-home catalog, exclusive assignment, complete versioned runtime configuration precedence/capability/apply contracts, lifecycle reconciliation, REST/events, authorization, redaction, snapshots and rollback. Documentation only; no executable/schema/runtime/credential/production/SharePoint mutation. Awaiting independent K3 review before in_review."
+      }
+    },
+    {
+      "sequence": 3,
+      "state": "DEFERRED_PENDING_K3",
+      "condition": "Only after K3 independently accepts the frozen interfaces and operation 2 GET-back is verified",
+      "method": "PUT",
+      "path_template": "/api/issues/{issue_uuid}",
+      "path_parameters": {
+        "issue_uuid": null
+      },
+      "body": {
+        "status": "in_review"
+      }
+    }
+  ],
+  "prohibitions": [
+    "No fake or placeholder UUID may be substituted.",
+    "No operation is authorized by this file; an approved human/API executor must perform and GET-back each mutation.",
+    "Do not mutate assignee, create a product task, trigger inference, or advance to done.",
+    "Do not expose credentials, account identities, raw paths, secrets, or production data."
+  ]
+}
