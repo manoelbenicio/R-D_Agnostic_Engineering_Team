@@ -9,13 +9,13 @@ WHERE token_hash = $1 AND expires_at > now();
 
 -- name: DeleteDaemonTokensByWorkspace :many
 WITH locked_workspace AS (
-    SELECT id
+    SELECT workspace.id
     FROM workspace
-    WHERE id = $1
+    WHERE workspace.id = $1
     FOR UPDATE
 )
 DELETE FROM daemon_token
-WHERE workspace_id IN (SELECT id FROM locked_workspace)
+WHERE workspace_id IN (SELECT locked_workspace.id FROM locked_workspace)
 RETURNING token_hash;
 
 -- name: DeleteDaemonTokensByWorkspaceAndDaemons :many
