@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run Guarded Release"
+  short_description: "Queue-safe release, rollback, and smoke gates"
+  default_prompt: "Use $run-guarded-release to execute this release with admission lock, rollback, and verified smokes."

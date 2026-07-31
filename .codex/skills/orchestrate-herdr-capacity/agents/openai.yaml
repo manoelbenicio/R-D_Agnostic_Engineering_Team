@@ -1,0 +1,4 @@
+interface:
+  display_name: "Orchestrate Herdr Capacity"
+  short_description: "Keep healthy Herdr agent capacity productively assigned"
+  default_prompt: "Use $orchestrate-herdr-capacity to inspect agent capacity and assign only deduplicated runnable work."
