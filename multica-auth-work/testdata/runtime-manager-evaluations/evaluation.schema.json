@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://multica.local/schemas/runtime-manager-evaluations/v1",
+  "title": "Runtime Manager deterministic evaluation suite",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "frozen_commit",
+    "canonical_change",
+    "scenarios"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "runtime-manager-evaluations.v1"
+    },
+    "frozen_commit": {
+      "const": "a57c12e8424cd88cda178499563b69569d244d84"
+    },
+    "canonical_change": {
+      "const": "credential-account-home-restoration"
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    }
+  },
+  "$defs": {
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "classification",
+        "title",
+        "requirement_refs",
+        "operation",
+        "state_before",
+        "request",
+        "expected"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(golden|forbidden)-[a-z0-9-]+$"
+        },
+        "classification": {
+          "enum": ["golden", "forbidden"]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requirement_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^REQ-(0[1-9]|1[0-9]|2[0-3])$"
+          }
+        },
+        "operation": {
+          "enum": [
+            "reuse_runtime_session",
+            "attach_exclusive_subscription",
+            "hot_apply_model_reasoning",
+            "rollback_runtime_configuration",
+            "spawn_subagent",
+            "expose_raw_path",
+            "share_account_home",
+            "copy_source_credentials",
+            "move_source_credentials",
+            "delete_source_credentials",
+            "configure_static_slot_allowlist",
+            "fallback_across_transport_binding",
+            "create_custom_infrastructure",
+            "perform_sharepoint_work"
+          ]
+        },
+        "state_before": {
+          "type": "object"
+        },
+        "request": {
+          "type": "object"
+        },
+        "expected": {
+          "oneOf": [
+            { "$ref": "#/$defs/goldenExpected" },
+            { "$ref": "#/$defs/forbiddenExpected" }
+          ]
+        }
+      }
+    },
+    "goldenExpected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "error_code",
+        "fail_closed",
+        "preserved_ids",
+        "created_resource_types",
+        "events",
+        "state_after",
+        "assertions"
+      ],
+      "properties": {
+        "decision": { "const": "accept" },
+        "error_code": { "type": "null" },
+        "fail_closed": { "const": false },
+        "preserved_ids": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "created_resource_types": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "runtime_binding",
+              "home_assignment",
+              "runtime_configuration_version",
+              "activation_audit"
+            ]
+          }
+        },
+        "events": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "runtime_session.enrolled",
+              "runtime_binding.home_assigned",
+              "runtime_configuration.version_created",
+              "runtime_configuration.activated",
+              "runtime_configuration.applied",
+              "runtime_configuration.rolled_back"
+            ]
+          }
+        },
+        "state_after": { "type": "object" },
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "forbiddenExpected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "error_code",
+        "fail_closed",
+        "mutation_count",
+        "side_effects",
+        "assertions"
+      ],
+      "properties": {
+        "decision": { "const": "reject" },
+        "error_code": {
+          "enum": [
+            "invalid_argument",
+            "forbidden",
+            "exclusive_assignment_conflict",
+            "invalid_configuration",
+            "capability_unsupported"
+          ]
+        },
+        "fail_closed": { "const": true },
+        "mutation_count": { "const": 0 },
+        "side_effects": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
