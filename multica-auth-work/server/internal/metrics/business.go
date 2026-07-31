@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"sync"
+	"time"
 
 	"github.com/multica-ai/multica/server/pkg/taskfailure"
 	"github.com/prometheus/client_golang/prometheus"
@@ -257,6 +258,34 @@ func (m *BusinessMetrics) RecordLLMUsage(source, runtimeMode, rawProvider, model
 	source = NormalizeTaskSource(source)
 	runtimeMode = NormalizeRuntimeMode(runtimeMode)
 	price, priced := PriceForModelAlias(modelAlias)
+	if !priced {
+		provider := NormalizeRuntimeProvider(rawProvider)
+		alias := NormalizeModelAlias(modelAlias)
+		m.recordUnpricedTokens(provider, alias, "input", inputTokens)
+		m.recordUnpricedTokens(provider, alias, "output", outputTokens)
+		m.recordUnpricedTokens(provider, alias, "cache_read", cacheReadTokens)
+		m.recordUnpricedTokens(provider, alias, "cache_write", cacheWriteTokens)
+		m.llmRequests.WithLabelValues(provider, "unknown", runtimeMode).Inc()
+		return
+	}
+
+	m.recordPricedTokens(price.Provider, price.Model, "input", runtimeMode, source, inputTokens, tokenCostUSD(inputTokens, price.InputPerM))
+	m.recordPricedTokens(price.Provider, price.Model, "output", runtimeMode, source, outputTokens, tokenCostUSD(outputTokens, price.OutputPerM))
+	m.recordPricedTokens(price.Provider, price.Model, "cache_read", runtimeMode, source, cacheReadTokens, tokenCostUSD(cacheReadTokens, price.CacheReadPerM))
+	m.recordPricedTokens(price.Provider, price.Model, "cache_write", runtimeMode, source, cacheWriteTokens, tokenCostUSD(cacheWriteTokens, price.CacheWritePerM))
+	m.llmRequests.WithLabelValues(price.Provider, price.Model, runtimeMode).Inc()
+}
+
+// RecordTieredLLMUsage is the production usage path. Unlike the legacy metric
+// helper, it requires the authoritative thinking-level snapshot and task
+// effective time, so tier-dependent models cannot silently use a base rate.
+func (m *BusinessMetrics) RecordTieredLLMUsage(source, runtimeMode, rawProvider, modelAlias, thinkingLevel string, effectiveAt time.Time, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens int64) {
+	if m == nil {
+		return
+	}
+	source = NormalizeTaskSource(source)
+	runtimeMode = NormalizeRuntimeMode(runtimeMode)
+	price, priced := ResolveModelPrice(modelAlias, thinkingLevel, effectiveAt)
 	if !priced {
 		provider := NormalizeRuntimeProvider(rawProvider)
 		alias := NormalizeModelAlias(modelAlias)

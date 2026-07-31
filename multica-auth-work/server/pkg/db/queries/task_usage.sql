@@ -3,14 +3,44 @@
 -- detects the row as dirty and re-aggregates its bucket.
 -- Without the conflict-side bump, a correction to historical token counts
 -- would never propagate to the rollup.
-INSERT INTO task_usage (task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+-- thinking_level is nullable and reported by the daemon; COALESCE on conflict
+-- keeps a previously recorded tier when a later legacy report omits it, so a
+-- partial re-report can never erase the tier that produced the tokens.
+-- price_version and computed_cost_usd are replaced as a pair from the same
+-- deterministic task effective time; both remain NULL when the row is unpriced.
+-- account_id is COPIED from the task, never accepted from the caller and never
+-- re-resolved here. agent_task_queue.credential_account_id is frozen at
+-- claim/dispatch (see ClaimAgentTask), so this row records the account that
+-- ACTUALLY produced the tokens even if the agent has rotated since. Resolving
+-- assignments at report time would file the spend under whatever account the
+-- agent happens to hold now.
+-- The subquery yields NULL when the task predates the column, when the agent had
+-- no approved assignment, or when the task row is gone; NULL means "producing
+-- account unknown" and is stored as such rather than guessed.
+-- On conflict the EXISTING value wins: COALESCE(task_usage.account_id,
+-- EXCLUDED.account_id) fills a NULL and is otherwise a no-op, so a recorded
+-- attribution is immutable. The reverse order would let a later report rewrite
+-- history after a rotation.
+INSERT INTO task_usage (
+    task_id, provider, model,
+    input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
+    thinking_level, price_version, computed_cost_usd, account_id, updated_at
+)
+VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+    (SELECT q.credential_account_id FROM agent_task_queue q WHERE q.id = $1),
+    now()
+)
 ON CONFLICT (task_id, provider, model)
 DO UPDATE SET
     input_tokens = EXCLUDED.input_tokens,
     output_tokens = EXCLUDED.output_tokens,
     cache_read_tokens = EXCLUDED.cache_read_tokens,
     cache_write_tokens = EXCLUDED.cache_write_tokens,
+    thinking_level = COALESCE(EXCLUDED.thinking_level, task_usage.thinking_level),
+    price_version = EXCLUDED.price_version,
+    computed_cost_usd = EXCLUDED.computed_cost_usd,
+    account_id = COALESCE(task_usage.account_id, EXCLUDED.account_id),
     updated_at = now();
 
 -- name: GetTaskUsage :many
@@ -156,3 +186,49 @@ WHERE a.workspace_id = $1
   AND (sqlc.narg('project_id')::uuid IS NULL OR i.project_id = sqlc.narg('project_id'))
 GROUP BY atq.agent_id
 ORDER BY total_seconds DESC;
+
+-- name: ListTaskUsageByAccount :many
+-- ORQ-12 report: token totals per provider account for a window, plus the
+-- unattributable tail.
+--
+-- The NULL bucket is reported EXPLICITLY instead of being filtered out. Hiding
+-- it would make the per-account totals look complete while legacy rows and rows
+-- from unassigned agents silently vanished, which is the exact misreading this
+-- column exists to prevent. `attributable` lets a caller separate the two
+-- without inspecting NULL semantics itself.
+-- WORKSPACE-SCOPED. The join to agent is not decorative: task_usage has no
+-- workspace column, so without it this query would sum every tenant's spend and
+-- hand it to whoever called. Scope first, aggregate second.
+SELECT
+    tu.account_id,
+    (tu.account_id IS NOT NULL)::bool                        AS attributable,
+    COALESCE(SUM(tu.input_tokens), 0)::bigint                AS total_input_tokens,
+    COALESCE(SUM(tu.output_tokens), 0)::bigint               AS total_output_tokens,
+    COALESCE(SUM(tu.cache_read_tokens), 0)::bigint           AS total_cache_read_tokens,
+    COALESCE(SUM(tu.cache_write_tokens), 0)::bigint          AS total_cache_write_tokens,
+    COUNT(DISTINCT tu.task_id)::int                          AS task_count,
+    COUNT(*)::int                                            AS row_count
+FROM task_usage tu
+JOIN agent_task_queue q ON q.id = tu.task_id
+JOIN agent a ON a.id = q.agent_id
+WHERE a.workspace_id = @workspace_id
+  AND tu.updated_at >= @from_ts AND tu.updated_at < @to_ts
+GROUP BY tu.account_id
+ORDER BY attributable DESC, total_input_tokens DESC, tu.account_id;
+
+-- name: GetTaskUsageAccountAttribution :one
+-- Coverage counter for the same window: how many rows carry an account and how
+-- many do not. A rotation window can be accepted only if the attributable share
+-- behaves as expected, so the two numbers are returned together and never as a
+-- single ratio that would hide a zero denominator.
+-- WORKSPACE-SCOPED for the same reason as ListTaskUsageByAccount.
+SELECT
+    COUNT(*)::int                                                  AS total_rows,
+    COUNT(tu.account_id)::int                                      AS attributed_rows,
+    (COUNT(*) - COUNT(tu.account_id))::int                         AS unattributed_rows,
+    COUNT(DISTINCT tu.account_id)::int                             AS distinct_accounts
+FROM task_usage tu
+JOIN agent_task_queue q ON q.id = tu.task_id
+JOIN agent a ON a.id = q.agent_id
+WHERE a.workspace_id = @workspace_id
+  AND tu.updated_at >= @from_ts AND tu.updated_at < @to_ts;
