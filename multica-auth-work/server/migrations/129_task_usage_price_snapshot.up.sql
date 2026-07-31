@@ -5,13 +5,22 @@ ALTER TABLE task_usage
     ADD COLUMN IF NOT EXISTS price_version TEXT,
     ADD COLUMN IF NOT EXISTS computed_cost_usd DOUBLE PRECISION;
 
+DO $$
+BEGIN
+    ALTER TABLE task_usage
+        ADD CONSTRAINT task_usage_price_snapshot_consistent
+        CHECK (
+            (price_version IS NULL AND computed_cost_usd IS NULL)
+            OR
+            (price_version IS NOT NULL AND computed_cost_usd IS NOT NULL AND computed_cost_usd >= 0)
+        ) NOT VALID;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$$;
+
 ALTER TABLE task_usage
-    ADD CONSTRAINT task_usage_price_snapshot_consistent
-    CHECK (
-        (price_version IS NULL AND computed_cost_usd IS NULL)
-        OR
-        (price_version IS NOT NULL AND computed_cost_usd IS NOT NULL AND computed_cost_usd >= 0)
-    );
+    VALIDATE CONSTRAINT task_usage_price_snapshot_consistent;
 
 COMMENT ON COLUMN task_usage.price_version IS
     'Immutable pricing catalog version resolved from model, recorded thinking_level and task effective time.';
