@@ -126,7 +126,11 @@ func readRESPCommand(r *bufio.Reader) ([]string, error) {
 	return args, nil
 }
 
-type failingCommitStarter struct{ pool interface{ Begin(context.Context) (pgx.Tx, error) } }
+type failingCommitStarter struct {
+	pool interface {
+		Begin(context.Context) (pgx.Tx, error)
+	}
+}
 
 func (s failingCommitStarter) Begin(ctx context.Context) (pgx.Tx, error) {
 	tx, err := s.pool.Begin(ctx)
