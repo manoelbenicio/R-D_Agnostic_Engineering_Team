@@ -654,6 +654,65 @@ type RuntimeProfile struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
+type RuntimeSession struct {
+	ID          pgtype.UUID        `json:"id"`
+	OwnerID     pgtype.UUID        `json:"owner_id"`
+	StandardID  pgtype.UUID        `json:"standard_id"`
+	Name        string             `json:"name"`
+	Provider    string             `json:"provider"`
+	RuntimeKind string             `json:"runtime_kind"`
+	CreatedBy   pgtype.UUID        `json:"created_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type RuntimeSessionEnrollment struct {
+	ID            pgtype.UUID        `json:"id"`
+	SessionID     pgtype.UUID        `json:"session_id"`
+	WorkspaceID   pgtype.UUID        `json:"workspace_id"`
+	RuntimeID     pgtype.UUID        `json:"runtime_id"`
+	AgentID       pgtype.UUID        `json:"agent_id"`
+	EnrolledBy    pgtype.UUID        `json:"enrolled_by"`
+	State         string             `json:"state"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	DeactivatedAt pgtype.Timestamptz `json:"deactivated_at"`
+}
+
+type RuntimeStandard struct {
+	ID              pgtype.UUID        `json:"id"`
+	OwnerID         pgtype.UUID        `json:"owner_id"`
+	Name            string             `json:"name"`
+	Description     pgtype.Text        `json:"description"`
+	ActiveVersionID pgtype.UUID        `json:"active_version_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type RuntimeStandardActivation struct {
+	ID                pgtype.UUID        `json:"id"`
+	StandardID        pgtype.UUID        `json:"standard_id"`
+	PreviousVersionID pgtype.UUID        `json:"previous_version_id"`
+	NewVersionID      pgtype.UUID        `json:"new_version_id"`
+	ActorID           pgtype.UUID        `json:"actor_id"`
+	RequestID         string             `json:"request_id"`
+	CorrelationID     pgtype.Text        `json:"correlation_id"`
+	Reason            string             `json:"reason"`
+	CapabilityDigest  string             `json:"capability_digest"`
+	ActivatedAt       pgtype.Timestamptz `json:"activated_at"`
+}
+
+type RuntimeStandardVersion struct {
+	ID                  pgtype.UUID        `json:"id"`
+	StandardID          pgtype.UUID        `json:"standard_id"`
+	VersionNumber       int64              `json:"version_number"`
+	Configuration       []byte             `json:"configuration"`
+	ConfigurationDigest string             `json:"configuration_digest"`
+	CreatedBy           pgtype.UUID        `json:"created_by"`
+	Reason              string             `json:"reason"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
+
 type Skill struct {
 	ID          pgtype.UUID        `json:"id"`
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`
@@ -760,7 +819,7 @@ type TaskUsage struct {
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 	// Reasoning tier declared by the agent config for this task (e.g. high, low, thinking). NULL = not declared by the reporting daemon. Never inferred from the model name.
 	ThinkingLevel pgtype.Text `json:"thinking_level"`
-	// Provider account that produced this usage, snapshotted at report time by resolving agent_task_queue.agent_id through assignments. NULL = not attributable (legacy row, or the agent had no assignment). Never inferred.
+	// Provider account that produced this usage, snapshotted at task claim time on agent_task_queue.credential_account_id and copied to task_usage upon report. Never live assignment lookup.
 	AccountID pgtype.UUID `json:"account_id"`
 }
 

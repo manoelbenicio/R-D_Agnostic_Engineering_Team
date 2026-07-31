@@ -1,17 +1,9 @@
 -- ORQ-12: snapshot the provider account that produced each usage row.
 --
--- Expected version once the registrar assigns one: 128 (127 is the highest
--- materialized migration in this lineage). That number is an EXPECTATION
--- recorded in prose, NOT a materialization: the filename still carries the
--- NEXT_CANONICAL_ placeholder, and only the registrar turns it into a number.
---
--- VERSION NUMBER IS DELIBERATELY ABSENT. The file lives under
--- migrations/staging/ with the placeholder name
--- NEXT_CANONICAL_task_usage_account_id, and it acquires a number only after the
--- central registrar scans for the next free version above 127
--- (127_task_usage_thinking_level is the highest materialized migration in this
--- lineage). internal/migrations.Files globs "<dir>/*.up.sql" NON-RECURSIVELY,
--- so nothing here is ever applied by `migrate up` while it stays staged.
+-- Version 128, assigned after a fresh collision scan confirmed it as the next
+-- free version above 127 (127_task_usage_thinking_level is the previous
+-- migration in this lineage): no local branch, no fetched remote head and no
+-- other checkout carries a 128_ migration.
 --
 -- NULLABLE on purpose, and additive only:
 --   * legacy rows keep NULL: they predate the column and no account can be
@@ -29,11 +21,61 @@
 --     would let one task hold two rows for the same model and double-count.
 --   * rollups (073/084/101/102) are intentionally NOT touched: this phase only
 --     records the dimension.
+-- ORQ-12 preflight / backfill: canonicalize existing provider/vendor data to exact
+-- lowercase trimmed representations ('codex', 'kiro', 'antigravity') and fail closed
+-- if any non-canonical or unmapped alias drift remains.
+UPDATE accounts
+SET vendor = 'antigravity'
+WHERE lower(btrim(vendor)) = 'agy';
+
+UPDATE agent_runtime
+SET provider = 'antigravity'
+WHERE lower(btrim(provider)) = 'agy';
+
+UPDATE accounts
+SET vendor = lower(btrim(vendor))
+WHERE lower(btrim(vendor)) IN ('codex', 'kiro', 'antigravity')
+  AND vendor <> lower(btrim(vendor));
+
+UPDATE agent_runtime
+SET provider = lower(btrim(provider))
+WHERE lower(btrim(provider)) IN ('codex', 'kiro', 'antigravity')
+  AND provider <> lower(btrim(provider));
+
+DO $$
+DECLARE
+    invalid_vendors TEXT;
+    invalid_providers TEXT;
+BEGIN
+    SELECT string_agg(DISTINCT vendor, ', ' ORDER BY vendor)
+      INTO invalid_vendors
+      FROM accounts
+      WHERE lower(btrim(vendor)) IN ('codex', 'kiro', 'antigravity', 'agy')
+        AND vendor NOT IN ('codex', 'kiro', 'antigravity');
+    IF invalid_vendors IS NOT NULL THEN
+        RAISE EXCEPTION
+            'ORQ-12 preflight: non-canonical account vendors found: %. Preflight must normalize before applying migration.',
+            invalid_vendors;
+    END IF;
+
+    SELECT string_agg(DISTINCT provider, ', ' ORDER BY provider)
+      INTO invalid_providers
+      FROM agent_runtime
+      WHERE lower(btrim(provider)) IN ('codex', 'kiro', 'antigravity', 'agy')
+        AND provider NOT IN ('codex', 'kiro', 'antigravity');
+    IF invalid_providers IS NOT NULL THEN
+        RAISE EXCEPTION
+            'ORQ-12 preflight: non-canonical runtime providers found: %. Preflight must normalize before applying migration.',
+            invalid_providers;
+    END IF;
+END
+$$;
+
 ALTER TABLE task_usage
     ADD COLUMN IF NOT EXISTS account_id UUID REFERENCES accounts(account_id) ON DELETE SET NULL;
 
 COMMENT ON COLUMN task_usage.account_id IS
-    'Provider account that produced this usage, snapshotted at report time by resolving agent_task_queue.agent_id through assignments. NULL = not attributable (legacy row, or the agent had no assignment). Never inferred.';
+    'Provider account that produced this usage, snapshotted at task claim time on agent_task_queue.credential_account_id and copied to task_usage upon report. Never live assignment lookup.';
 
 -- Partial index: only attributable rows are ever grouped by account, and the
 -- NULL-heavy legacy tail would otherwise bloat the index for no reader.
