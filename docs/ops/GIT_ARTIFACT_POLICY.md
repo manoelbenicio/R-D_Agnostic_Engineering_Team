@@ -16,7 +16,7 @@ Allowlist rows are `path<TAB>bytes<TAB>blob_oid`. Paths are repository-relative 
 ## Enforcement
 
 - `.githooks/pre-commit` scans introduced or changed staged blob identities.
-- `.githooks/pre-push` receives Git's target remote name and scans commits newly reachable relative only to `refs/remotes/<target>/*`. Missing remote mapping or target baseline fails closed; refs from another remote cannot suppress scanning.
+- `.githooks/pre-push` passes both Git hook arguments and requires an exact destination binding before any exclusion: the named remote must exist, have exactly one fetch URL and exactly one effective push URL, both URLs must be identical, and that value must exactly equal Git's actual hook destination. Divergent fetch/push URLs, multiple URLs, URL-only or unknown remotes, destination mismatch, or missing target refs fail closed. Only then may `refs/remotes/<target>/*` define exclusions; another remote can never suppress scanning.
 - Root CI scans `trusted-baseline..tip`: the PR base SHA for pull requests, the before SHA for existing-branch pushes, and the merge base with the fetched default branch for new branches. A missing default ref or merge base fails closed, and inherited history before the baseline is not rescanned.
 - The rollback-only source ref `refs/heads/task16-rc-16bfcb4` is denied.
 - Known restricted omission blob identities are denied in every outgoing range.

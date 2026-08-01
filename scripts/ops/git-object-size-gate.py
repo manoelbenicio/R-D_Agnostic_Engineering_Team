@@ -161,25 +161,44 @@ def inspect(blobs: Iterable[Blob], allowlist: dict[str, tuple[int, str]]) -> int
     return 1 if errors else 0
 
 
-def target_remote_baselines(remote_name: str | None) -> list[str]:
-    if not remote_name:
-        raise RuntimeError("pre-push target remote name unavailable")
+def target_remote_baselines(
+    remote_name: str | None, remote_location: str | None
+) -> list[str]:
+    if not remote_name or not remote_location:
+        raise RuntimeError("pre-push target remote name or location unavailable")
     git(["check-ref-format", f"refs/remotes/{remote_name}/baseline"])
-    if not git(["remote", "get-url", "--all", remote_name]).splitlines():
-        raise RuntimeError(f"pre-push target remote mapping unavailable: {remote_name}")
+    remote_names = {
+        line.decode("utf-8", "surrogateescape")
+        for line in git(["remote"]).splitlines()
+        if line
+    }
+    if remote_name not in remote_names:
+        raise RuntimeError("pre-push named remote mapping unavailable")
+    fetch_urls = git(["remote", "get-url", "--all", remote_name]).splitlines()
+    push_urls = git(["remote", "get-url", "--push", "--all", remote_name]).splitlines()
+    if len(fetch_urls) != 1 or len(push_urls) != 1:
+        raise RuntimeError("pre-push remote URL mapping is ambiguous")
+    fetch_url = fetch_urls[0].decode("utf-8", "surrogateescape")
+    push_url = push_urls[0].decode("utf-8", "surrogateescape")
+    if fetch_url != push_url:
+        raise RuntimeError("pre-push fetch and push destinations diverge")
+    if push_url != remote_location:
+        raise RuntimeError("pre-push actual destination does not match named remote")
     raw = git([
         "for-each-ref", "--format=%(objectname)", f"refs/remotes/{remote_name}/"
     ])
     baselines = sorted({line.decode() for line in raw.splitlines() if line})
     if not baselines:
-        raise RuntimeError(f"pre-push target remote baseline unavailable: {remote_name}")
+        raise RuntimeError("pre-push target remote baseline unavailable")
     if any(not re.fullmatch(r"[0-9a-f]{40}", oid) for oid in baselines):
-        raise RuntimeError(f"invalid pre-push target remote baseline: {remote_name}")
+        raise RuntimeError("invalid pre-push target remote baseline")
     return baselines
 
 
-def ranges_from_pre_push(stdin: Iterable[str], remote_name: str | None) -> list[list[str]]:
-    target_baselines = target_remote_baselines(remote_name)
+def ranges_from_pre_push(
+    stdin: Iterable[str], remote_name: str | None, remote_location: str | None
+) -> list[list[str]]:
+    target_baselines = target_remote_baselines(remote_name, remote_location)
     ranges: list[list[str]] = []
     for number, line in enumerate(stdin, 1):
         fields = line.split()
@@ -193,8 +212,7 @@ def ranges_from_pre_push(stdin: Iterable[str], remote_name: str | None) -> list[
         if not re.fullmatch(r"[0-9a-f]{40}", local_oid):
             raise RuntimeError(f"invalid local OID on pre-push row {number}")
         if remote_oid == ZERO_OID:
-            # Exclude only refs known on the target remote. Another remote must never
-            # hide objects that are new to this target.
+            # Exclude only refs proved to belong to this exact destination.
             ranges.append([local_oid, *[f"^{oid}" for oid in target_baselines]])
         elif re.fullmatch(r"[0-9a-f]{40}", remote_oid):
             ranges.append([local_oid, f"^{remote_oid}"])
@@ -210,6 +228,7 @@ def main() -> int:
     mode.add_argument("--range", dest="revision_range")
     mode.add_argument("--pre-push", action="store_true")
     parser.add_argument("--remote-name")
+    parser.add_argument("--remote-location")
     args = parser.parse_args()
     try:
         allowlist = load_allowlist(repository_root())
@@ -218,7 +237,9 @@ def main() -> int:
         elif args.revision_range:
             blobs = revision_blobs([args.revision_range])
         else:
-            ranges = ranges_from_pre_push(sys.stdin, args.remote_name)
+            ranges = ranges_from_pre_push(
+                sys.stdin, args.remote_name, args.remote_location
+            )
             blobs = [blob for revisions in ranges for blob in revision_blobs(revisions)]
         return inspect(blobs, allowlist)
     except (OSError, RuntimeError, ValueError) as exc:

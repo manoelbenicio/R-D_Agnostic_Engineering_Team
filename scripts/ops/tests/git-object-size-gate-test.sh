@@ -97,15 +97,25 @@ printf base > "$PUSH/base.txt"; git -C "$PUSH" add .; git -C "$PUSH" commit -qm 
 git init --bare -q "$TMP/target.git"; git init --bare -q "$TMP/other.git"; git init --bare -q "$TMP/empty.git"
 git -C "$PUSH" remote add target "$TMP/target.git"; git -C "$PUSH" remote add other "$TMP/other.git"; git -C "$PUSH" remote add empty "$TMP/empty.git"
 git -C "$PUSH" update-ref refs/remotes/target/main "$P0"; git -C "$PUSH" update-ref refs/remotes/other/main "$P0"
-prepush() { input=$1; (cd "$PUSH" && printf '%s\n' "$input" | python3 gate.py --pre-push --remote-name target); }
+prepush() { input=$1; (cd "$PUSH" && printf '%s\n' "$input" | python3 gate.py --pre-push --remote-name target --remote-location "$TMP/target.git"); }
 
 printf one > "$PUSH/one.txt"; git -C "$PUSH" add one.txt; git -C "$PUSH" commit -qm one; P1=$(git -C "$PUSH" rev-parse HEAD)
 expect_pass prepush "refs/heads/main $P1 refs/heads/main $P0"
 expect_pass prepush "refs/heads/new-small $P1 refs/heads/new-small $ZERO"
 expect_pass prepush "(delete) $ZERO refs/heads/old $P0"
-expect_fail bash -c "cd '$PUSH' && printf '%s\\n' 'refs/heads/new-small $P1 refs/heads/new-small $ZERO' | python3 gate.py --pre-push --remote-name missing"
-expect_fail bash -c "cd '$PUSH' && printf '%s\\n' 'refs/heads/new-small $P1 refs/heads/new-small $ZERO' | python3 gate.py --pre-push --remote-name empty"
+expect_fail bash -c "cd '$PUSH' && printf '%s\\n' 'refs/heads/new-small $P1 refs/heads/new-small $ZERO' | python3 gate.py --pre-push --remote-name missing --remote-location '$TMP/target.git'"
+expect_fail bash -c "cd '$PUSH' && printf '%s\\n' 'refs/heads/new-small $P1 refs/heads/new-small $ZERO' | python3 gate.py --pre-push --remote-name empty --remote-location '$TMP/empty.git'"
+expect_fail bash -c "cd '$PUSH' && printf '%s\\n' 'refs/heads/new-small $P1 refs/heads/new-small $ZERO' | python3 gate.py --pre-push --remote-name '$TMP/target.git' --remote-location '$TMP/target.git'"
+expect_fail bash -c "cd '$PUSH' && printf '%s\\n' 'refs/heads/new-small $P1 refs/heads/new-small $ZERO' | python3 gate.py --pre-push --remote-name target --remote-location '$TMP/other.git'"
 expect_fail prepush "refs/heads/task16-rc-16bfcb4 $P1 refs/heads/forbidden $ZERO"
+
+# Ambiguous and divergent named mappings must fail before baseline exclusion.
+git -C "$PUSH" remote add split "$TMP/target.git"; git -C "$PUSH" remote set-url --push split "$TMP/other.git"; git -C "$PUSH" update-ref refs/remotes/split/main "$P0"
+expect_fail bash -c "cd '$PUSH' && printf '%s\\n' 'refs/heads/new-small $P1 refs/heads/new-small $ZERO' | python3 gate.py --pre-push --remote-name split --remote-location '$TMP/other.git'"
+git -C "$PUSH" remote add multifetch "$TMP/target.git"; git -C "$PUSH" remote set-url --add multifetch "$TMP/other.git"; git -C "$PUSH" update-ref refs/remotes/multifetch/main "$P0"
+expect_fail bash -c "cd '$PUSH' && printf '%s\\n' 'refs/heads/new-small $P1 refs/heads/new-small $ZERO' | python3 gate.py --pre-push --remote-name multifetch --remote-location '$TMP/target.git'"
+git -C "$PUSH" remote add multipush "$TMP/target.git"; git -C "$PUSH" remote set-url --add --push multipush "$TMP/target.git"; git -C "$PUSH" remote set-url --add --push multipush "$TMP/other.git"; git -C "$PUSH" update-ref refs/remotes/multipush/main "$P0"
+expect_fail bash -c "cd '$PUSH' && printf '%s\\n' 'refs/heads/new-small $P1 refs/heads/new-small $ZERO' | python3 gate.py --pre-push --remote-name multipush --remote-location '$TMP/target.git'"
 
 truncate -s 10485760 "$PUSH/new-large.bin"; git -C "$PUSH" add new-large.bin; git -C "$PUSH" commit -qm large; P2=$(git -C "$PUSH" rev-parse HEAD)
 expect_fail prepush "refs/heads/main $P1 refs/heads/main $P0
@@ -122,5 +132,35 @@ git -C "$PUSH" checkout -q -b merge-side "$P0"
 truncate -s 10485760 "$PUSH/side-large.bin"; git -C "$PUSH" add side-large.bin; git -C "$PUSH" commit -qm merge-side
 git -C "$PUSH" checkout -q merge-main; git -C "$PUSH" merge -q --no-ff merge-side -m merge; MERGE=$(git -C "$PUSH" rev-parse HEAD)
 expect_fail prepush "refs/heads/merge-main $MERGE refs/heads/merge-main $P0"
+
+# Actual local push regression: fetch=A/push=B must be blocked and B unchanged.
+ACT=$TMP/actual-push; A=$TMP/fetch-a.git; B=$TMP/push-b.git
+mkdir "$ACT"; git -C "$ACT" init -q; git -C "$ACT" config user.name fixture; git -C "$ACT" config user.email fixture@example.invalid
+mkdir -p "$ACT/scripts/ops" "$ACT/.githooks"
+cp "$GATE" "$ACT/scripts/ops/git-object-size-gate.py"; cp "$ROOT/.githooks/pre-push" "$ACT/.githooks/pre-push"; chmod +x "$ACT/.githooks/pre-push"
+printf '# path<TAB>bytes<TAB>blob_oid\n' > "$ACT/.git-large-files.allow"; printf base > "$ACT/base.txt"
+git -C "$ACT" add .; git -C "$ACT" commit -qm base; ABASE=$(git -C "$ACT" rev-parse HEAD)
+git init --bare -q "$A"; git init --bare -q "$B"
+git -C "$ACT" push -q "$A" HEAD:refs/heads/main; git -C "$ACT" push -q "$B" HEAD:refs/heads/main
+truncate -s 10485760 "$ACT/split-large.bin"; git -C "$ACT" add split-large.bin; git -C "$ACT" commit -qm split-large; SPLIT=$(git -C "$ACT" rev-parse HEAD); SPLIT_BLOB=$(git -C "$ACT" rev-parse HEAD:split-large.bin)
+git -C "$ACT" push -q "$A" HEAD:refs/heads/main
+git -C "$ACT" remote add target "$A"; git -C "$ACT" remote set-url --push target "$B"; git -C "$ACT" fetch -q target main:refs/remotes/target/main
+git -C "$ACT" config core.hooksPath .githooks
+set +e
+git -C "$ACT" push target HEAD:refs/heads/leak >"$TMP/split-push.stdout" 2>"$TMP/split-push.stderr"; SPLIT_RC=$?
+set -e
+test "$SPLIT_RC" -ne 0
+! git --git-dir="$B" show-ref --verify --quiet refs/heads/leak
+! git --git-dir="$B" cat-file -e "$SPLIT_BLOB" 2>/dev/null
+# Same fetch/push destination with a target baseline and a small delta must pass.
+git -C "$ACT" checkout -q -b normal "$ABASE"; printf normal > "$ACT/normal.txt"; git -C "$ACT" add normal.txt; git -C "$ACT" commit -qm normal
+git -C "$ACT" remote add same "$B"; git -C "$ACT" fetch -q same main:refs/remotes/same/main
+git -C "$ACT" push same HEAD:refs/heads/normal >"$TMP/same-push.stdout" 2>"$TMP/same-push.stderr"
+git --git-dir="$B" show-ref --verify --quiet refs/heads/normal
+if [[ -n "${GATE_FIXTURE_EVIDENCE_DIR:-}" ]]; then
+    mkdir -p "$GATE_FIXTURE_EVIDENCE_DIR"
+    cp "$TMP/split-push.stdout" "$TMP/split-push.stderr" "$TMP/same-push.stdout" "$TMP/same-push.stderr" "$GATE_FIXTURE_EVIDENCE_DIR/"
+    printf 'split_push_rc=%s\nsplit_destination_ref_absent=true\nsplit_blob_absent_from_destination=true\nsame_destination_push_rc=0\nsame_destination_ref_present=true\nexternal_network=false\n' "$SPLIT_RC" > "$GATE_FIXTURE_EVIDENCE_DIR/RESULT.txt"
+fi
 
 echo 'git-object-size-gate fixtures: PASS'
