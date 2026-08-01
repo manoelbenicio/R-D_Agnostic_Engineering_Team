@@ -17,12 +17,12 @@ import (
 const privateModeMask = os.FileMode(0o077)
 
 var (
-	ErrInvalidRoot     = errors.New("credential catalog: invalid controlled root")
-	ErrRootChanged     = errors.New("credential catalog: controlled root identity changed")
-	ErrHomeNotHealthy  = errors.New("credential catalog: home is not healthy")
-	ErrHomeTombstoned  = errors.New("credential catalog: home is tombstoned")
-	ErrHomeNotFound    = errors.New("credential catalog: home ref not found")
-	ErrRefUnderflow    = errors.New("credential catalog: active ref underflow")
+	ErrInvalidRoot      = errors.New("credential catalog: invalid controlled root")
+	ErrRootChanged      = errors.New("credential catalog: controlled root identity changed")
+	ErrHomeNotHealthy   = errors.New("credential catalog: home is not healthy")
+	ErrHomeTombstoned   = errors.New("credential catalog: home is tombstoned")
+	ErrHomeNotFound     = errors.New("credential catalog: home ref not found")
+	ErrRefUnderflow     = errors.New("credential catalog: active ref underflow")
 	ErrRevalidateFailed = errors.New("credential catalog: launch-time revalidation failed")
 )
 
@@ -55,6 +55,8 @@ type Catalog struct {
 	hasCurrent       bool
 	activeRefs       map[string]int
 	tombstones       map[string]time.Time
+	tombstonedNames  map[string]struct{}
+	tombstonedRefs   map[string]struct{}
 	draining         map[string]discoveredHome
 	watcherOverflows uint64
 	lastOverflowAt   time.Time
@@ -78,7 +80,7 @@ func New(config Config) (*Catalog, error) {
 
 	ttl := config.TTL
 	if ttl <= 0 {
-		ttl = 24 * time.Hour
+		ttl = 15 * time.Minute
 	}
 	retention := config.RetentionPeriod
 	if retention <= 0 {
@@ -104,6 +106,8 @@ func New(config Config) (*Catalog, error) {
 		lowWatermark:    lowWM,
 		activeRefs:      make(map[string]int),
 		tombstones:      make(map[string]time.Time),
+		tombstonedNames: make(map[string]struct{}),
+		tombstonedRefs:  make(map[string]struct{}),
 		draining:        make(map[string]discoveredHome),
 	}, nil
 }
@@ -118,6 +122,7 @@ func (c *Catalog) Reconcile() (Snapshot, error) {
 }
 
 func (c *Catalog) reconcileLocked() (Snapshot, error) {
+	now := time.Now().UTC()
 	rootIdentity, err := inspectControlledRoot(c.root)
 	if err != nil {
 		return Snapshot{}, err
@@ -126,7 +131,7 @@ func (c *Catalog) reconcileLocked() (Snapshot, error) {
 		return Snapshot{}, ErrRootChanged
 	}
 
-	c.pruneTombstonesLocked(time.Now().UTC())
+	c.pruneTombstonesLocked(now)
 
 	snapshot, scannedHomes, err := c.scanLocked()
 	if err != nil {
@@ -138,7 +143,12 @@ func (c *Catalog) reconcileLocked() (Snapshot, error) {
 	// Filter out healthy entries that are tombstoned
 	healthyEntries := make([]Entry, 0, len(snapshot.entries))
 	for _, entry := range snapshot.entries {
-		if _, tomb := c.tombstones[entry.homeRef]; tomb {
+		if _, tomb := c.tombstonedRefs[entry.homeRef]; tomb {
+			snapshot.quarantined = append(snapshot.quarantined, Quarantine{
+				candidateRef: entry.homeRef,
+				provider:     c.provider,
+				reason:       ReasonTombstoned,
+			})
 			continue
 		}
 		entry.activeRefs = c.activeRefs[entry.homeRef]
@@ -153,8 +163,8 @@ func (c *Catalog) reconcileLocked() (Snapshot, error) {
 		drainingEntries = append(drainingEntries, entry)
 	}
 
-	tombstonedList := make([]string, 0, len(c.tombstones))
-	for ref := range c.tombstones {
+	tombstonedList := make([]string, 0, len(c.tombstonedRefs))
+	for ref := range c.tombstonedRefs {
 		tombstonedList = append(tombstonedList, ref)
 	}
 
@@ -162,7 +172,8 @@ func (c *Catalog) reconcileLocked() (Snapshot, error) {
 	snapshot.draining = drainingEntries
 	snapshot.tombstoned = tombstonedList
 	snapshot.generation = c.generation + 1
-	snapshot.capturedAt = time.Now().UTC()
+	snapshot.capturedAt = now
+	snapshot.ttl = c.ttl
 	sortSnapshot(&snapshot)
 
 	c.enforceWatermarksLocked(&snapshot)
@@ -173,12 +184,20 @@ func (c *Catalog) reconcileLocked() (Snapshot, error) {
 	return cloneSnapshot(snapshot), nil
 }
 
-// Current returns a copy of the last complete snapshot.
+// Current returns a copy of the last complete snapshot. If the current snapshot
+// has passed its TTL, an automatic background reconcile is triggered.
 func (c *Catalog) Current() (Snapshot, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if !c.hasCurrent {
 		return Snapshot{}, false
+	}
+	now := time.Now().UTC()
+	if c.current.IsExpired(now) {
+		snap, err := c.reconcileLocked()
+		if err == nil {
+			return snap, true
+		}
 	}
 	return cloneSnapshot(c.current), true
 }
@@ -189,7 +208,7 @@ func (c *Catalog) AcquireRef(homeRef string) (func(), error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if _, tomb := c.tombstones[homeRef]; tomb {
+	if _, tomb := c.tombstonedRefs[homeRef]; tomb {
 		return nil, ErrHomeTombstoned
 	}
 
@@ -247,6 +266,7 @@ func (c *Catalog) ReleaseRef(homeRef string) error {
 		if _, draining := c.draining[homeRef]; draining {
 			delete(c.draining, homeRef)
 			c.tombstones[homeRef] = time.Now().UTC()
+			c.tombstonedRefs[homeRef] = struct{}{}
 		}
 	} else {
 		c.activeRefs[homeRef] = count
@@ -267,7 +287,7 @@ func (c *Catalog) Revalidate(homeRef string) (Entry, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if _, tomb := c.tombstones[homeRef]; tomb {
+	if _, tomb := c.tombstonedRefs[homeRef]; tomb {
 		return Entry{}, ErrHomeTombstoned
 	}
 
@@ -300,7 +320,7 @@ func (c *Catalog) Revalidate(homeRef string) (Entry, error) {
 	candidateName := filepath.Base(candidateDir)
 	discovered, quarantine := c.inspectCandidate(candidateDir, candidateName)
 	if quarantine != nil || discovered == nil || discovered.entry.homeRef != homeRef {
-		c.quarantineHomeLocked(homeRef, targetEntry)
+		c.quarantineHomeLocked(homeRef, candidateName, targetEntry)
 		return Entry{}, ErrRevalidateFailed
 	}
 
@@ -308,11 +328,12 @@ func (c *Catalog) Revalidate(homeRef string) (Entry, error) {
 	return targetEntry, nil
 }
 
-// NotifyHint signals a watcher event for a path.
-func (c *Catalog) NotifyHint(path string) {
+// NotifyHint signals a watcher event for a path and immediately triggers reconciliation.
+func (c *Catalog) NotifyHint(path string) (Snapshot, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.lastHintAt = time.Now().UTC()
+	return c.reconcileLocked()
 }
 
 // NotifyWatcherOverflow signals an inotify/fsnotify event loss or buffer overflow,
@@ -332,7 +353,11 @@ func (c *Catalog) WatcherOverflowCount() uint64 {
 	return c.watcherOverflows
 }
 
-func (c *Catalog) quarantineHomeLocked(homeRef string, entry Entry) {
+func (c *Catalog) quarantineHomeLocked(homeRef, candidateName string, entry Entry) {
+	nameRef := opaqueNameRef(c.rootIdentity, c.provider, candidateName)
+	c.tombstonedNames[nameRef] = struct{}{}
+	c.tombstonedRefs[homeRef] = struct{}{}
+
 	if count := c.activeRefs[homeRef]; count > 0 {
 		c.draining[homeRef] = discoveredHome{entry: entry}
 	} else {
@@ -349,11 +374,8 @@ func (c *Catalog) reconcileLifecycleLocked(scannedHomes map[string]discoveredHom
 		ref := prevEntry.homeRef
 		if _, exists := scannedHomes[ref]; !exists {
 			// Previously healthy home is now missing from scan
-			if count := c.activeRefs[ref]; count > 0 {
-				c.draining[ref] = discoveredHome{entry: prevEntry}
-			} else {
-				c.tombstones[ref] = time.Now().UTC()
-			}
+			candidateName := filepath.Base(filepath.Dir(prevEntry.homePath))
+			c.quarantineHomeLocked(ref, candidateName, prevEntry)
 		}
 	}
 }
@@ -368,8 +390,15 @@ func (c *Catalog) pruneTombstonesLocked(now time.Time) {
 
 func (c *Catalog) enforceWatermarksLocked(snapshot *Snapshot) {
 	if len(snapshot.entries) > c.highWatermark {
-		// Retain up to lowWatermark entries deterministically
+		excess := snapshot.entries[c.lowWatermark:]
 		snapshot.entries = snapshot.entries[:c.lowWatermark]
+		for _, entry := range excess {
+			snapshot.quarantined = append(snapshot.quarantined, Quarantine{
+				candidateRef: entry.homeRef,
+				provider:     c.provider,
+				reason:       ReasonWatermarkExceeded,
+			})
+		}
 	}
 }
 
@@ -392,12 +421,31 @@ func (c *Catalog) scanLocked() (Snapshot, map[string]discoveredHome, error) {
 	scannedMap := make(map[string]discoveredHome, len(directoryEntries))
 	quarantined := make([]Quarantine, 0)
 	for _, directoryEntry := range directoryEntries {
+		nameRef := opaqueNameRef(c.rootIdentity, c.provider, directoryEntry.Name())
+		if _, tombName := c.tombstonedNames[nameRef]; tombName {
+			quarantined = append(quarantined, Quarantine{
+				candidateRef: nameRef,
+				provider:     c.provider,
+				reason:       ReasonTombstoned,
+			})
+			continue
+		}
+
 		candidatePath := filepath.Join(c.root, directoryEntry.Name())
 		home, quarantine := c.inspectCandidate(candidatePath, directoryEntry.Name())
 		if quarantine != nil {
 			quarantined = append(quarantined, *quarantine)
 			continue
 		}
+		if _, tombRef := c.tombstonedRefs[home.entry.homeRef]; tombRef {
+			quarantined = append(quarantined, Quarantine{
+				candidateRef: home.entry.homeRef,
+				provider:     c.provider,
+				reason:       ReasonTombstoned,
+			})
+			continue
+		}
+
 		discovered = append(discovered, *home)
 		scannedMap[home.entry.homeRef] = *home
 	}
@@ -469,6 +517,7 @@ func (c *Catalog) inspectCandidate(candidatePath, candidateName string) (*discov
 			state:        StateHealthy,
 			homePath:     homePath,
 			artifactPath: artifactPath,
+			discoveredAt: candidateInfo.ModTime().UTC(),
 		},
 		homeID:     homeID,
 		artifactID: artifactID,

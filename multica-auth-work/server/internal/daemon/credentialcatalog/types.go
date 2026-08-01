@@ -90,6 +90,7 @@ const (
 	ReasonFilesystemIdentityConflict QuarantineReason = "filesystem_identity_conflict"
 	ReasonTombstoned                 QuarantineReason = "tombstoned"
 	ReasonRevalidationFailed         QuarantineReason = "revalidation_failed"
+	ReasonWatermarkExceeded          QuarantineReason = "watermark_exceeded"
 )
 
 // Entry is an immutable, daemon-local catalog entry. Paths are intentionally
@@ -102,14 +103,16 @@ type Entry struct {
 	homePath     string
 	artifactPath string
 	activeRefs   int
+	discoveredAt time.Time
 }
 
-func (e Entry) HomeRef() string      { return e.homeRef }
-func (e Entry) Provider() Provider   { return e.provider }
-func (e Entry) State() State         { return e.state }
-func (e Entry) HomePath() string     { return e.homePath }
-func (e Entry) ArtifactPath() string { return e.artifactPath }
-func (e Entry) ActiveRefs() int      { return e.activeRefs }
+func (e Entry) HomeRef() string        { return e.homeRef }
+func (e Entry) Provider() Provider     { return e.provider }
+func (e Entry) State() State           { return e.state }
+func (e Entry) HomePath() string       { return e.homePath }
+func (e Entry) ArtifactPath() string   { return e.artifactPath }
+func (e Entry) ActiveRefs() int        { return e.activeRefs }
+func (e Entry) DiscoveredAt() time.Time { return e.discoveredAt }
 
 // Quarantine records only an opaque candidate reference and a reason code.
 // It deliberately contains no child name, raw path, account identity, or
@@ -131,6 +134,7 @@ func (q Quarantine) Reason() QuarantineReason { return q.reason }
 type Snapshot struct {
 	generation  uint64
 	capturedAt  time.Time
+	ttl         time.Duration
 	provider    Provider
 	entries     []Entry
 	quarantined []Quarantine
@@ -140,7 +144,15 @@ type Snapshot struct {
 
 func (s Snapshot) Generation() uint64    { return s.generation }
 func (s Snapshot) CapturedAt() time.Time { return s.capturedAt }
+func (s Snapshot) TTL() time.Duration    { return s.ttl }
 func (s Snapshot) Provider() Provider    { return s.provider }
+
+func (s Snapshot) IsExpired(now time.Time) bool {
+	if s.ttl <= 0 {
+		return false
+	}
+	return now.Sub(s.capturedAt) > s.ttl
+}
 
 func (s Snapshot) Entries() []Entry {
 	return append([]Entry(nil), s.entries...)

@@ -397,6 +397,49 @@ func TestActiveRefCountingAndDrainingLifecycle(t *testing.T) {
 	}
 }
 
+func TestDurableTombstoneNameNonReuse(t *testing.T) {
+	root := newPrivateRoot(t)
+	_, _ = writeFakeHome(t, root, "reused-slot", ProviderCodex)
+	catalog := mustCatalog(t, root, ProviderCodex)
+
+	snap1, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap1.HealthyCount() != 1 {
+		t.Fatalf("snap1 healthy count = %d, want 1", snap1.HealthyCount())
+	}
+
+	// Remove physical candidate directory
+	if err := os.RemoveAll(filepath.Join(root, "reused-slot")); err != nil {
+		t.Fatal(err)
+	}
+
+	snap2, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap2.HealthyCount() != 0 || snap2.TombstonedCount() != 1 {
+		t.Fatalf("snap2 healthy=%d tombstoned=%d", snap2.HealthyCount(), snap2.TombstonedCount())
+	}
+
+	// Re-create a directory with the exact same name "reused-slot"
+	_, _ = writeFakeHome(t, root, "reused-slot", ProviderCodex)
+
+	snap3, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Re-created directory MUST be quarantined as Tombstoned, NEVER healthy!
+	if snap3.HealthyCount() != 0 || snap3.QuarantinedCount() != 1 {
+		t.Fatalf("snap3 healthy=%d quarantined=%d", snap3.HealthyCount(), snap3.QuarantinedCount())
+	}
+	if snap3.Quarantined()[0].Reason() != ReasonTombstoned {
+		t.Fatalf("quarantine reason = %q, want ReasonTombstoned", snap3.Quarantined()[0].Reason())
+	}
+}
+
 func TestFastLaunchRevalidation(t *testing.T) {
 	root := newPrivateRoot(t)
 	_, artifact := writeFakeHome(t, root, "revalidate-slot", ProviderAntigravity)
@@ -426,6 +469,28 @@ func TestFastLaunchRevalidation(t *testing.T) {
 	}
 }
 
+func TestNotifyHintTriggersReconciliation(t *testing.T) {
+	root := newPrivateRoot(t)
+	writeFakeHome(t, root, "slot-initial", ProviderKiro)
+	catalog := mustCatalog(t, root, ProviderKiro)
+
+	if _, err := catalog.Reconcile(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Add new directory physically
+	writeFakeHome(t, root, "slot-hinted", ProviderKiro)
+
+	// NotifyHint must trigger reconciliation immediately
+	snap, err := catalog.NotifyHint("slot-hinted")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap.HealthyCount() != 2 {
+		t.Fatalf("healthy count after hint = %d, want 2", snap.HealthyCount())
+	}
+}
+
 func TestWatcherOverflowRecovery(t *testing.T) {
 	root := newPrivateRoot(t)
 	writeFakeHome(t, root, "slot-1", ProviderKiro)
@@ -451,7 +516,7 @@ func TestWatcherOverflowRecovery(t *testing.T) {
 	}
 }
 
-func TestWatermarkEnforcementScale(t *testing.T) {
+func TestWatermarkEnforcementQuarantinesExcessNoSilentDrop(t *testing.T) {
 	root := newPrivateRoot(t)
 	for i := 0; i < 25; i++ {
 		writeFakeHome(t, root, fmt.Sprintf("child-%03d", i), ProviderCodex)
@@ -475,6 +540,16 @@ func TestWatermarkEnforcementScale(t *testing.T) {
 
 	if snap.HealthyCount() != 15 {
 		t.Fatalf("healthy count after watermark enforcement = %d, want 15", snap.HealthyCount())
+	}
+
+	// Excess 10 entries MUST be explicitly recorded in Quarantined with ReasonWatermarkExceeded
+	if snap.QuarantinedCount() != 10 {
+		t.Fatalf("quarantined count = %d, want 10", snap.QuarantinedCount())
+	}
+	for _, q := range snap.Quarantined() {
+		if q.Reason() != ReasonWatermarkExceeded {
+			t.Fatalf("quarantine reason = %q, want ReasonWatermarkExceeded", q.Reason())
+		}
 	}
 }
 
@@ -504,7 +579,7 @@ func TestConcurrentAcquireReleaseRevalidateUnderRace(t *testing.T) {
 						time.Sleep(100 * time.Microsecond)
 						rel()
 					}
-					catalog.NotifyHint("synthetic")
+					_, _ = catalog.NotifyHint("synthetic")
 				}
 			}(ref)
 		}
