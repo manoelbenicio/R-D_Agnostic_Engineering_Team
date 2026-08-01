@@ -1,4 +1,4 @@
-.PHONY: help makehelp dev server daemon cli multica build test migrate-up migrate-down sqlc seed clean setup start stop check worktree-env setup-main start-main stop-main check-main setup-worktree start-worktree stop-worktree check-worktree db-up db-down db-reset selfhost selfhost-build selfhost-stop
+.PHONY: help makehelp dev server daemon cli multica build test migrate-up migrate-down sqlc seed clean setup start stop check worktree-env setup-main start-main stop-main check-main setup-worktree start-worktree stop-worktree check-worktree db-up db-down db-reset selfhost selfhost-build selfhost-stop repository-integrity repository-integrity-tests hook-install
 
 MAIN_ENV_FILE ?= .env
 WORKTREE_ENV_FILE ?= .env.worktree
@@ -334,3 +334,6 @@ repository-integrity: ## Scan currently staged blob identities
 repository-integrity-tests: ## Run object-size and read-only autostop fixtures
 	cd .. && bash scripts/ops/tests/git-object-size-gate-test.sh
 	cd .. && bash scripts/ops/tests/agent-idle-autostop-harness.sh
+
+hook-install: ## Provision repository hooks in local Git config (requires separate authorization)
+	cd .. && git config --local core.hooksPath .githooks

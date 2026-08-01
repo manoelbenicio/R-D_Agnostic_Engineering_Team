@@ -1,4 +1,5 @@
 #!/bin/sh
 set -eu
+[ "$#" -ge 1 ] || { echo 'pre-push remote name unavailable' >&2; exit 2; }
 ROOT=$(git rev-parse --show-toplevel)
-exec python3 "$ROOT/scripts/ops/git-object-size-gate.py" --pre-push
+exec python3 "$ROOT/scripts/ops/git-object-size-gate.py" --pre-push --remote-name "$1"
