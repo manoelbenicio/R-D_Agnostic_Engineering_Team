@@ -18,6 +18,7 @@ var (
 	ErrAccountUnavailable          = errors.New("credential registry: account unavailable")
 	ErrInvalidMetadata             = errors.New("credential registry: invalid assignment metadata")
 	ErrGenerationConflict          = errors.New("credential registry: generation conflict")
+	ErrTaskConflict                = errors.New("credential registry: task claim conflict")
 	ErrCapacityExhausted           = errors.New("credential registry: task concurrency exhausted")
 	ErrRegistryUnavailable         = errors.New("credential registry: assignment store unavailable")
 )
@@ -44,28 +45,42 @@ const (
 	StatusLeased    AccountStatus = "leased"
 )
 
-// Candidate is the metadata-only snapshot returned after a successful atomic
-// reservation. Internal admission predicates are excluded from JSON. The type
-// intentionally has no account ID, source path, credential reference, or secret.
+// Candidate is the locked metadata-only snapshot validated before an atomic
+// reservation and returned after commit. Internal admission predicates are
+// excluded from JSON. The type intentionally has no account ID, source path,
+// credential reference, or secret.
 type Candidate struct {
-	AgentID              string        `json:"-"`
-	WorkspaceID          string        `json:"-"`
-	Provider             string        `json:"-"`
-	HomeRef              HomeRef       `json:"home_ref"`
-	BindingGeneration    uint64        `json:"binding_generation"`
-	CatalogGeneration    uint64        `json:"catalog_generation"`
-	Approval             ApprovalState `json:"-"`
-	Status               AccountStatus `json:"-"`
-	WorktypeScope        string        `json:"-"`
-	AssignmentOwners     int           `json:"-"`
-	ActiveTasks          int           `json:"-"`
-	TaskConcurrencyLimit int           `json:"-"`
+	TaskID                      string        `json:"-"`
+	TaskStatus                  string        `json:"-"`
+	BindingID                   string        `json:"-"`
+	AgentID                     string        `json:"-"`
+	WorkspaceID                 string        `json:"-"`
+	RuntimeID                   string        `json:"-"`
+	RuntimeSessionID            string        `json:"-"`
+	StandardVersionID           string        `json:"-"`
+	ConfigurationVersionID      string        `json:"-"`
+	ConfigurationDigest         string        `json:"-"`
+	CapabilityDigest            string        `json:"-"`
+	Provider                    string        `json:"-"`
+	HomeRef                     HomeRef       `json:"home_ref"`
+	BindingGeneration           uint64        `json:"binding_generation"`
+	AssignmentCatalogGeneration uint64        `json:"-"`
+	CatalogGeneration           uint64        `json:"catalog_generation"`
+	Approval                    ApprovalState `json:"-"`
+	Status                      AccountStatus `json:"-"`
+	WorktypeScope               string        `json:"-"`
+	AssignmentOwners            int           `json:"-"`
+	BindingAssignments          int           `json:"-"`
+	ActiveTasks                 int           `json:"-"`
+	TaskConcurrencyLimit        int           `json:"-"`
 }
 
 // Request is the complete fenced identity supplied at admission. Both expected
 // generations are mandatory: accepting an unfenced claim would permit a revoked
 // or replaced assignment to be silently remapped.
 type Request struct {
+	TaskID                    string
+	BindingID                 string
 	AgentID                   string
 	WorkspaceID               string
 	Provider                  string
@@ -73,14 +88,28 @@ type Request struct {
 	ExpectedCatalogGeneration uint64
 }
 
-// Store owns the durable atomic mutation. ReserveAssignment must, in one CAS or
-// serializable transaction, verify the exact agent/workspace/provider binding,
-// approval, exclusive home ownership, account usability, all Candidate metadata,
-// both expected generations, and configured capacity before adding one active
-// task reference. It must not rotate or remap a binding/home. A failed check
-// must not reserve.
+// CandidateValidator is the sole admission authority. A Store must invoke it
+// after locking durable state and before mutating the task, reservation, or
+// snapshot. This prevents a validation failure from leaking capacity.
+type CandidateValidator func(Candidate) error
+
+// Store owns durable atomic mutations. ReserveAssignment must lock the exact
+// task, binding, assignment, and catalog state; invoke validate; and only then
+// atomically claim the task and persist its immutable snapshot. ReleaseAssignment
+// ends exactly that task's active reference. Neither operation may rotate or
+// remap a binding/home.
 type Store interface {
-	ReserveAssignment(ctx context.Context, request Request) (Candidate, error)
+	ReserveAssignment(ctx context.Context, request Request, validate CandidateValidator) (Candidate, error)
+	ReleaseAssignment(ctx context.Context, request ReleaseRequest) error
+}
+
+// ReleaseRequest identifies one previously persisted reservation. Generations
+// fence completion so it cannot decrement another task or replacement binding.
+type ReleaseRequest struct {
+	TaskID            string
+	BindingID         string
+	BindingGeneration uint64
+	CatalogGeneration uint64
 }
 
 // Assignment is the bounded claim snapshot that may cross into shared
@@ -132,7 +161,8 @@ func RequiresApprovedAssignment(provider string) bool {
 // assignment or fails closed. Concurrency comes from explicit policy and is
 // never inferred from the number of catalog homes.
 func (r *Resolver) Resolve(ctx context.Context, request Request) (Assignment, error) {
-	if r == nil || r.store == nil || strings.TrimSpace(request.AgentID) == "" ||
+	if r == nil || r.store == nil || strings.TrimSpace(request.TaskID) == "" ||
+		strings.TrimSpace(request.BindingID) == "" || strings.TrimSpace(request.AgentID) == "" ||
 		strings.TrimSpace(request.WorkspaceID) == "" || !RequiresApprovedAssignment(request.Provider) {
 		return Assignment{}, ErrNoApprovedAssignment
 	}
@@ -142,40 +172,11 @@ func (r *Resolver) Resolve(ctx context.Context, request Request) (Assignment, er
 
 	provider := CanonicalProvider(request.Provider)
 	request.Provider = provider
-	candidate, err := r.store.ReserveAssignment(ctx, request)
+	candidate, err := r.store.ReserveAssignment(ctx, request, func(candidate Candidate) error {
+		return validateCandidate(request, candidate)
+	})
 	if err != nil {
 		return Assignment{}, boundedStoreError(err)
-	}
-
-	// Identity and approval failures intentionally collapse to one error so a
-	// caller cannot enumerate cross-workspace or revoked assignments.
-	if candidate.AgentID != request.AgentID || candidate.WorkspaceID != request.WorkspaceID ||
-		candidate.Approval != ApprovalApproved {
-		return Assignment{}, ErrNoApprovedAssignment
-	}
-	if candidate.Provider != provider {
-		return Assignment{}, ErrProviderMismatch
-	}
-	if candidate.BindingGeneration != request.ExpectedBindingGeneration ||
-		candidate.CatalogGeneration != request.ExpectedCatalogGeneration {
-		return Assignment{}, ErrGenerationConflict
-	}
-	if candidate.AssignmentOwners > 1 {
-		return Assignment{}, ErrExclusiveAssignmentConflict
-	}
-	if candidate.AssignmentOwners != 1 {
-		return Assignment{}, ErrNoApprovedAssignment
-	}
-	if candidate.Status != StatusAvailable && candidate.Status != StatusLeased {
-		return Assignment{}, ErrAccountUnavailable
-	}
-	if candidate.WorktypeScope != "GENERAL" || !ValidHomeRef(candidate.HomeRef) ||
-		candidate.BindingGeneration == 0 || candidate.CatalogGeneration == 0 ||
-		candidate.ActiveTasks <= 0 || candidate.TaskConcurrencyLimit <= 0 {
-		return Assignment{}, ErrInvalidMetadata
-	}
-	if candidate.ActiveTasks > candidate.TaskConcurrencyLimit {
-		return Assignment{}, ErrCapacityExhausted
 	}
 
 	return Assignment{
@@ -188,6 +189,62 @@ func (r *Resolver) Resolve(ctx context.Context, request Request) (Assignment, er
 	}, nil
 }
 
+// Release ends one active task reference. The durable store is responsible for
+// idempotency when the same task-completion signal is delivered more than once.
+func (r *Resolver) Release(ctx context.Context, request ReleaseRequest) error {
+	if r == nil || r.store == nil || strings.TrimSpace(request.TaskID) == "" ||
+		strings.TrimSpace(request.BindingID) == "" || request.BindingGeneration == 0 ||
+		request.CatalogGeneration == 0 {
+		return ErrGenerationConflict
+	}
+	if err := r.store.ReleaseAssignment(ctx, request); err != nil {
+		return boundedStoreError(err)
+	}
+	return nil
+}
+
+func validateCandidate(request Request, candidate Candidate) error {
+	// Identity and approval failures intentionally collapse to one error so a
+	// caller cannot enumerate cross-workspace or revoked assignments.
+	if candidate.TaskID != request.TaskID || candidate.BindingID != request.BindingID ||
+		candidate.AgentID != request.AgentID || candidate.WorkspaceID != request.WorkspaceID ||
+		candidate.Approval != ApprovalApproved {
+		return ErrNoApprovedAssignment
+	}
+	if candidate.Provider != request.Provider {
+		return ErrProviderMismatch
+	}
+	if candidate.TaskStatus != "queued" {
+		return ErrTaskConflict
+	}
+	if candidate.BindingGeneration != request.ExpectedBindingGeneration ||
+		candidate.CatalogGeneration != request.ExpectedCatalogGeneration ||
+		candidate.AssignmentCatalogGeneration != candidate.CatalogGeneration {
+		return ErrGenerationConflict
+	}
+	if candidate.AssignmentOwners > 1 {
+		return ErrExclusiveAssignmentConflict
+	}
+	if candidate.AssignmentOwners != 1 || candidate.BindingAssignments != 1 {
+		return ErrNoApprovedAssignment
+	}
+	if candidate.Status != StatusAvailable && candidate.Status != StatusLeased {
+		return ErrAccountUnavailable
+	}
+	if candidate.WorktypeScope != "GENERAL" || !ValidHomeRef(candidate.HomeRef) ||
+		candidate.BindingGeneration == 0 || candidate.CatalogGeneration == 0 ||
+		candidate.ActiveTasks < 0 || candidate.TaskConcurrencyLimit <= 0 ||
+		strings.TrimSpace(candidate.RuntimeID) == "" || strings.TrimSpace(candidate.RuntimeSessionID) == "" ||
+		strings.TrimSpace(candidate.StandardVersionID) == "" || strings.TrimSpace(candidate.ConfigurationVersionID) == "" ||
+		strings.TrimSpace(candidate.ConfigurationDigest) == "" || strings.TrimSpace(candidate.CapabilityDigest) == "" {
+		return ErrInvalidMetadata
+	}
+	if candidate.ActiveTasks >= candidate.TaskConcurrencyLimit {
+		return ErrCapacityExhausted
+	}
+	return nil
+}
+
 func boundedStoreError(err error) error {
 	for _, bounded := range []error{
 		ErrNoApprovedAssignment,
@@ -196,6 +253,7 @@ func boundedStoreError(err error) error {
 		ErrAccountUnavailable,
 		ErrInvalidMetadata,
 		ErrGenerationConflict,
+		ErrTaskConflict,
 		ErrCapacityExhausted,
 	} {
 		if errors.Is(err, bounded) {

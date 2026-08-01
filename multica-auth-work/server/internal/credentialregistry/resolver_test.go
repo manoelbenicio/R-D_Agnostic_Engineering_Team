@@ -11,47 +11,79 @@ import (
 	"testing"
 )
 
-type reserveFunc func(context.Context, Request) (Candidate, error)
+type testStore struct {
+	reserve func(context.Context, Request, CandidateValidator) (Candidate, error)
+	release func(context.Context, ReleaseRequest) error
+}
 
-func (f reserveFunc) ReserveAssignment(ctx context.Context, request Request) (Candidate, error) {
-	return f(ctx, request)
+func (s *testStore) ReserveAssignment(ctx context.Context, request Request, validate CandidateValidator) (Candidate, error) {
+	return s.reserve(ctx, request, validate)
+}
+
+func (s *testStore) ReleaseAssignment(ctx context.Context, request ReleaseRequest) error {
+	if s.release == nil {
+		return nil
+	}
+	return s.release(ctx, request)
 }
 
 func approvedCandidate() Candidate {
 	return Candidate{
-		AgentID:              "agent-a",
-		WorkspaceID:          "workspace-a",
-		Provider:             "antigravity",
-		HomeRef:              "home_01JABCDEFGHJKMNPQRSTVWXYZ",
-		BindingGeneration:    11,
-		CatalogGeneration:    17,
-		Approval:             ApprovalApproved,
-		Status:               StatusAvailable,
-		WorktypeScope:        "GENERAL",
-		AssignmentOwners:     1,
-		ActiveTasks:          3,
-		TaskConcurrencyLimit: 4,
+		TaskID:                      "00000000-0000-0000-0000-000000000101",
+		TaskStatus:                  "queued",
+		BindingID:                   "00000000-0000-0000-0000-000000000102",
+		AgentID:                     "00000000-0000-0000-0000-000000000103",
+		WorkspaceID:                 "00000000-0000-0000-0000-000000000104",
+		RuntimeID:                   "00000000-0000-0000-0000-000000000105",
+		RuntimeSessionID:            "00000000-0000-0000-0000-000000000106",
+		StandardVersionID:           "00000000-0000-0000-0000-000000000107",
+		ConfigurationVersionID:      "00000000-0000-0000-0000-000000000108",
+		ConfigurationDigest:         "sha256:configuration-digest",
+		CapabilityDigest:            "sha256:capability-digest",
+		Provider:                    "antigravity",
+		HomeRef:                     "home_01JABCDEFGHJKMNPQRSTVWXYZ",
+		BindingGeneration:           11,
+		AssignmentCatalogGeneration: 17,
+		CatalogGeneration:           17,
+		Approval:                    ApprovalApproved,
+		Status:                      StatusAvailable,
+		WorktypeScope:               "GENERAL",
+		AssignmentOwners:            1,
+		BindingAssignments:          1,
+		ActiveTasks:                 2,
+		TaskConcurrencyLimit:        4,
 	}
 }
 
 func approvedRequest() Request {
 	return Request{
-		AgentID:                   "agent-a",
-		WorkspaceID:               "workspace-a",
+		TaskID:                    "00000000-0000-0000-0000-000000000101",
+		BindingID:                 "00000000-0000-0000-0000-000000000102",
+		AgentID:                   "00000000-0000-0000-0000-000000000103",
+		WorkspaceID:               "00000000-0000-0000-0000-000000000104",
 		Provider:                  "agy",
 		ExpectedBindingGeneration: 11,
 		ExpectedCatalogGeneration: 17,
 	}
 }
 
+func resolvingStore(candidate Candidate, storeErr error) *testStore {
+	return &testStore{reserve: func(_ context.Context, _ Request, validate CandidateValidator) (Candidate, error) {
+		if storeErr != nil {
+			return Candidate{}, storeErr
+		}
+		if err := validate(candidate); err != nil {
+			return Candidate{}, err
+		}
+		candidate.ActiveTasks++
+		return candidate, nil
+	}}
+}
+
 func TestCanonicalProvider(t *testing.T) {
 	for input, want := range map[string]string{
-		"agy":         "antigravity",
-		" AGY ":       "antigravity",
-		"ANTIGRAVITY": "antigravity",
-		" kiro ":      "kiro",
-		"codex":       "codex",
-		"openclaw":    "openclaw",
+		"agy": "antigravity", " AGY ": "antigravity", "ANTIGRAVITY": "antigravity",
+		" kiro ": "kiro", "codex": "codex", "openclaw": "openclaw",
 	} {
 		if got := CanonicalProvider(input); got != want {
 			t.Fatalf("CanonicalProvider(%q)=%q, want %q", input, got, want)
@@ -74,17 +106,15 @@ func TestRequiresApprovedAssignment(t *testing.T) {
 
 func TestValidHomeRef(t *testing.T) {
 	for _, ref := range []HomeRef{
-		"home_01JABCDEFGHJKMNPQRSTVWXYZ",
-		"0194f956-5e6c-7f6b-9a76-1b2759d2bf31",
-		"catalog.home~opaque_0001",
+		"home_01JABCDEFGHJKMNPQRSTVWXYZ", "0194f956-5e6c-7f6b-9a76-1b2759d2bf31", "catalog.home~opaque_0001",
 	} {
 		if !ValidHomeRef(ref) {
 			t.Fatalf("ValidHomeRef(%q)=false, want true", ref)
 		}
 	}
 	for _, ref := range []HomeRef{
-		"", "short", "/var/lib/credential/home", `C:\\credential-home`,
-		"https://catalog/home", "home ref with spaces", "../opaque-home-reference", "home_opaque\nreference",
+		"", "short", "/var/lib/credential/home", `C:\\credential-home`, "https://catalog/home",
+		"home ref with spaces", "../opaque-home-reference", "home_opaque\nreference",
 	} {
 		if ValidHomeRef(ref) {
 			t.Fatalf("ValidHomeRef(%q)=true, want false", ref)
@@ -92,39 +122,48 @@ func TestValidHomeRef(t *testing.T) {
 	}
 }
 
-func TestResolveAtomicallyReservesApprovedAssignment(t *testing.T) {
-	for _, status := range []AccountStatus{StatusAvailable, StatusLeased} {
-		t.Run(string(status), func(t *testing.T) {
-			candidate := approvedCandidate()
-			candidate.Status = status
-			calls := 0
-			resolver := NewResolver(reserveFunc(func(_ context.Context, request Request) (Candidate, error) {
-				calls++
-				if request != (Request{
-					AgentID:                   "agent-a",
-					WorkspaceID:               "workspace-a",
-					Provider:                  "antigravity",
-					ExpectedBindingGeneration: 11,
-					ExpectedCatalogGeneration: 17,
-				}) {
-					t.Fatalf("reservation request=%+v", request)
-				}
-				return candidate, nil
-			}))
+func TestResolveValidatesBeforeStoreMutation(t *testing.T) {
+	candidate := approvedCandidate()
+	mutations := 0
+	store := &testStore{reserve: func(_ context.Context, request Request, validate CandidateValidator) (Candidate, error) {
+		if request.Provider != "antigravity" {
+			t.Fatalf("provider was not canonicalized: %q", request.Provider)
+		}
+		if err := validate(candidate); err != nil {
+			return Candidate{}, err
+		}
+		mutations++
+		candidate.ActiveTasks++
+		return candidate, nil
+	}}
 
-			got, err := resolver.Resolve(context.Background(), approvedRequest())
-			if err != nil {
-				t.Fatalf("Resolve() error=%v", err)
-			}
-			if calls != 1 {
-				t.Fatalf("atomic reservation calls=%d, want 1", calls)
-			}
-			if got.HomeRef != candidate.HomeRef || got.BindingGeneration != 11 ||
-				got.CatalogGeneration != 17 || got.Provider != "antigravity" ||
-				got.Status != status || got.TaskConcurrencyLimit != 4 {
-				t.Fatalf("Resolve()=%+v", got)
-			}
-		})
+	got, err := NewResolver(store).Resolve(context.Background(), approvedRequest())
+	if err != nil {
+		t.Fatalf("Resolve() error=%v", err)
+	}
+	if mutations != 1 || got.BindingGeneration != 11 || got.CatalogGeneration != 17 {
+		t.Fatalf("mutations=%d assignment=%+v", mutations, got)
+	}
+}
+
+func TestResolveRejectedCandidateCannotLeakCapacity(t *testing.T) {
+	candidate := approvedCandidate()
+	candidate.Approval = ApprovalRevoked
+	mutations := 0
+	store := &testStore{reserve: func(_ context.Context, _ Request, validate CandidateValidator) (Candidate, error) {
+		if err := validate(candidate); err != nil {
+			return Candidate{}, err
+		}
+		mutations++
+		return candidate, nil
+	}}
+
+	_, err := NewResolver(store).Resolve(context.Background(), approvedRequest())
+	if !errors.Is(err, ErrNoApprovedAssignment) {
+		t.Fatalf("Resolve() error=%v, want revoked failure", err)
+	}
+	if mutations != 0 {
+		t.Fatalf("rejected validation leaked %d mutations", mutations)
 	}
 }
 
@@ -133,75 +172,78 @@ func TestResolveFailsClosed(t *testing.T) {
 	tests := []struct {
 		name      string
 		mutate    func(*Candidate)
-		request   Request
 		storeErr  error
 		wantError error
 	}{
-		{name: "nil resolver", request: Request{}, wantError: ErrNoApprovedAssignment},
-		{name: "missing agent", request: Request{WorkspaceID: "workspace-a", Provider: "kiro", ExpectedBindingGeneration: 11, ExpectedCatalogGeneration: 17}, wantError: ErrNoApprovedAssignment},
-		{name: "missing workspace", request: Request{AgentID: "agent-a", Provider: "kiro", ExpectedBindingGeneration: 11, ExpectedCatalogGeneration: 17}, wantError: ErrNoApprovedAssignment},
-		{name: "uncovered provider", request: Request{AgentID: "agent-a", WorkspaceID: "workspace-a", Provider: "claude", ExpectedBindingGeneration: 11, ExpectedCatalogGeneration: 17}, wantError: ErrNoApprovedAssignment},
-		{name: "missing binding fence", mutate: nil, request: Request{AgentID: "agent-a", WorkspaceID: "workspace-a", Provider: "agy", ExpectedCatalogGeneration: 17}, wantError: ErrGenerationConflict},
-		{name: "missing catalog fence", mutate: nil, request: Request{AgentID: "agent-a", WorkspaceID: "workspace-a", Provider: "agy", ExpectedBindingGeneration: 11}, wantError: ErrGenerationConflict},
 		{name: "missing row", storeErr: ErrNoApprovedAssignment, wantError: ErrNoApprovedAssignment},
+		{name: "store task conflict", storeErr: ErrTaskConflict, wantError: ErrTaskConflict},
 		{name: "store generation conflict", storeErr: ErrGenerationConflict, wantError: ErrGenerationConflict},
-		{name: "store exclusive conflict", storeErr: ErrExclusiveAssignmentConflict, wantError: ErrExclusiveAssignmentConflict},
-		{name: "store capacity exhausted", storeErr: ErrCapacityExhausted, wantError: ErrCapacityExhausted},
-		{name: "store failure is bounded", storeErr: storeFailure, wantError: ErrRegistryUnavailable},
-		{name: "agent mismatch", mutate: func(c *Candidate) { c.AgentID = "agent-b" }, wantError: ErrNoApprovedAssignment},
-		{name: "workspace mismatch", mutate: func(c *Candidate) { c.WorkspaceID = "workspace-b" }, wantError: ErrNoApprovedAssignment},
+		{name: "store failure bounded", storeErr: storeFailure, wantError: ErrRegistryUnavailable},
+		{name: "task mismatch", mutate: func(c *Candidate) { c.TaskID = "other-task" }, wantError: ErrNoApprovedAssignment},
+		{name: "task already claimed", mutate: func(c *Candidate) { c.TaskStatus = "dispatched" }, wantError: ErrTaskConflict},
+		{name: "binding mismatch", mutate: func(c *Candidate) { c.BindingID = "other-binding" }, wantError: ErrNoApprovedAssignment},
+		{name: "agent mismatch", mutate: func(c *Candidate) { c.AgentID = "other-agent" }, wantError: ErrNoApprovedAssignment},
+		{name: "workspace mismatch", mutate: func(c *Candidate) { c.WorkspaceID = "other-workspace" }, wantError: ErrNoApprovedAssignment},
 		{name: "approval pending", mutate: func(c *Candidate) { c.Approval = ApprovalPending }, wantError: ErrNoApprovedAssignment},
 		{name: "approval revoked", mutate: func(c *Candidate) { c.Approval = ApprovalRevoked }, wantError: ErrNoApprovedAssignment},
 		{name: "provider mismatch", mutate: func(c *Candidate) { c.Provider = "kiro" }, wantError: ErrProviderMismatch},
-		{name: "stored provider alias drift", mutate: func(c *Candidate) { c.Provider = "agy" }, wantError: ErrProviderMismatch},
 		{name: "stale binding generation", mutate: func(c *Candidate) { c.BindingGeneration++ }, wantError: ErrGenerationConflict},
+		{name: "stale assignment generation", mutate: func(c *Candidate) { c.AssignmentCatalogGeneration-- }, wantError: ErrGenerationConflict},
 		{name: "stale catalog generation", mutate: func(c *Candidate) { c.CatalogGeneration++ }, wantError: ErrGenerationConflict},
 		{name: "no owner", mutate: func(c *Candidate) { c.AssignmentOwners = 0 }, wantError: ErrNoApprovedAssignment},
 		{name: "multiple owners", mutate: func(c *Candidate) { c.AssignmentOwners = 2 }, wantError: ErrExclusiveAssignmentConflict},
+		{name: "ambiguous binding homes", mutate: func(c *Candidate) { c.BindingAssignments = 2 }, wantError: ErrNoApprovedAssignment},
 		{name: "unavailable status", mutate: func(c *Candidate) { c.Status = "cooldown" }, wantError: ErrAccountUnavailable},
 		{name: "unsupported scope", mutate: func(c *Candidate) { c.WorktypeScope = "HEAVY" }, wantError: ErrInvalidMetadata},
-		{name: "missing home ref", mutate: func(c *Candidate) { c.HomeRef = "" }, wantError: ErrInvalidMetadata},
 		{name: "path home ref", mutate: func(c *Candidate) { c.HomeRef = "/private/credential/home" }, wantError: ErrInvalidMetadata},
-		{name: "missing binding generation", mutate: func(c *Candidate) { c.BindingGeneration = 0 }, wantError: ErrGenerationConflict},
-		{name: "missing catalog generation", mutate: func(c *Candidate) { c.CatalogGeneration = 0 }, wantError: ErrGenerationConflict},
-		{name: "reservation not recorded", mutate: func(c *Candidate) { c.ActiveTasks = 0 }, wantError: ErrInvalidMetadata},
+		{name: "missing runtime", mutate: func(c *Candidate) { c.RuntimeID = "" }, wantError: ErrInvalidMetadata},
+		{name: "missing session", mutate: func(c *Candidate) { c.RuntimeSessionID = "" }, wantError: ErrInvalidMetadata},
+		{name: "missing standard version", mutate: func(c *Candidate) { c.StandardVersionID = "" }, wantError: ErrInvalidMetadata},
+		{name: "missing config version", mutate: func(c *Candidate) { c.ConfigurationVersionID = "" }, wantError: ErrInvalidMetadata},
+		{name: "missing config digest", mutate: func(c *Candidate) { c.ConfigurationDigest = "" }, wantError: ErrInvalidMetadata},
+		{name: "missing capability digest", mutate: func(c *Candidate) { c.CapabilityDigest = "" }, wantError: ErrInvalidMetadata},
 		{name: "negative active tasks", mutate: func(c *Candidate) { c.ActiveTasks = -1 }, wantError: ErrInvalidMetadata},
 		{name: "missing concurrency policy", mutate: func(c *Candidate) { c.TaskConcurrencyLimit = 0 }, wantError: ErrInvalidMetadata},
-		{name: "capacity exceeded", mutate: func(c *Candidate) { c.ActiveTasks = c.TaskConcurrencyLimit + 1 }, wantError: ErrCapacityExhausted},
+		{name: "capacity exhausted", mutate: func(c *Candidate) { c.ActiveTasks = c.TaskConcurrencyLimit }, wantError: ErrCapacityExhausted},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var resolver *Resolver
-			calls := 0
-			if test.name != "nil resolver" {
-				resolver = NewResolver(reserveFunc(func(context.Context, Request) (Candidate, error) {
-					calls++
-					candidate := approvedCandidate()
-					if test.mutate != nil {
-						test.mutate(&candidate)
-					}
-					return candidate, test.storeErr
-				}))
+			candidate := approvedCandidate()
+			if test.mutate != nil {
+				test.mutate(&candidate)
 			}
-			request := test.request
-			if request == (Request{}) && test.name != "nil resolver" {
-				request = approvedRequest()
-			}
-			got, err := resolver.Resolve(context.Background(), request)
+			got, err := NewResolver(resolvingStore(candidate, test.storeErr)).Resolve(context.Background(), approvedRequest())
 			if !errors.Is(err, test.wantError) {
 				t.Fatalf("Resolve() error=%v, want %v", err, test.wantError)
 			}
 			if got != (Assignment{}) {
 				t.Fatalf("Resolve() on failure returned %+v", got)
 			}
-			if (test.name == "missing binding fence" || test.name == "missing catalog fence") && calls != 0 {
-				t.Fatalf("unfenced request reached store")
-			}
 			if test.storeErr == storeFailure && strings.Contains(err.Error(), "/private/path") {
 				t.Fatalf("bounded error leaked store detail: %v", err)
 			}
 		})
+	}
+}
+
+func TestResolveRejectsIncompleteRequestBeforeStore(t *testing.T) {
+	requests := []Request{
+		{},
+		{TaskID: "task", BindingID: "binding", AgentID: "agent", WorkspaceID: "workspace", Provider: "claude", ExpectedBindingGeneration: 1, ExpectedCatalogGeneration: 1},
+		{TaskID: "task", BindingID: "binding", AgentID: "agent", WorkspaceID: "workspace", Provider: "agy", ExpectedCatalogGeneration: 1},
+		{TaskID: "task", BindingID: "binding", AgentID: "agent", WorkspaceID: "workspace", Provider: "agy", ExpectedBindingGeneration: 1},
+	}
+	for i, request := range requests {
+		called := false
+		store := &testStore{reserve: func(context.Context, Request, CandidateValidator) (Candidate, error) {
+			called = true
+			return Candidate{}, nil
+		}}
+		_, err := NewResolver(store).Resolve(context.Background(), request)
+		if err == nil || called {
+			t.Fatalf("case %d: err=%v called=%v", i, err, called)
+		}
 	}
 }
 
@@ -212,11 +254,7 @@ func TestAssignmentSurfaceIsPathless(t *testing.T) {
 			t.Fatalf("Candidate exposes forbidden field %s", forbidden)
 		}
 	}
-
-	resolver := NewResolver(reserveFunc(func(context.Context, Request) (Candidate, error) {
-		return approvedCandidate(), nil
-	}))
-	assignment, err := resolver.Resolve(context.Background(), approvedRequest())
+	assignment, err := NewResolver(resolvingStore(approvedCandidate(), nil)).Resolve(context.Background(), approvedRequest())
 	if err != nil {
 		t.Fatalf("Resolve() error=%v", err)
 	}
@@ -225,7 +263,7 @@ func TestAssignmentSurfaceIsPathless(t *testing.T) {
 		t.Fatalf("Marshal() error=%v", err)
 	}
 	text := string(encoded)
-	for _, forbidden := range []string{"agent-a", "workspace-a", "account", "home_dir", "config_dir", "/"} {
+	for _, forbidden := range []string{"00000000-", "account", "home_dir", "config_dir", "/"} {
 		if strings.Contains(text, forbidden) {
 			t.Fatalf("assignment JSON %s contains forbidden %q", text, forbidden)
 		}
@@ -235,42 +273,51 @@ func TestAssignmentSurfaceIsPathless(t *testing.T) {
 type atomicStore struct {
 	mu        sync.Mutex
 	candidate Candidate
+	active    map[string]ReleaseRequest
+	released  map[string]bool
 }
 
-func newAtomicStore(activeTasks, limit int) *atomicStore {
+func newAtomicStore(limit int) *atomicStore {
 	candidate := approvedCandidate()
-	candidate.ActiveTasks = activeTasks
+	candidate.ActiveTasks = 0
 	candidate.TaskConcurrencyLimit = limit
-	return &atomicStore{candidate: candidate}
+	return &atomicStore{candidate: candidate, active: make(map[string]ReleaseRequest), released: make(map[string]bool)}
 }
 
-func (s *atomicStore) ReserveAssignment(_ context.Context, request Request) (Candidate, error) {
+func (s *atomicStore) ReserveAssignment(_ context.Context, request Request, validate CandidateValidator) (Candidate, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
+	if _, exists := s.active[request.TaskID]; exists || s.released[request.TaskID] {
+		return Candidate{}, ErrTaskConflict
+	}
 	candidate := s.candidate
-	if candidate.AgentID != request.AgentID || candidate.WorkspaceID != request.WorkspaceID ||
-		candidate.Approval != ApprovalApproved {
-		return Candidate{}, ErrNoApprovedAssignment
-	}
-	if candidate.Provider != request.Provider {
-		return Candidate{}, ErrProviderMismatch
-	}
-	if candidate.BindingGeneration != request.ExpectedBindingGeneration ||
-		candidate.CatalogGeneration != request.ExpectedCatalogGeneration {
-		return Candidate{}, ErrGenerationConflict
-	}
-	if candidate.AssignmentOwners != 1 {
-		return Candidate{}, ErrExclusiveAssignmentConflict
-	}
-	if candidate.Status != StatusAvailable && candidate.Status != StatusLeased {
-		return Candidate{}, ErrAccountUnavailable
-	}
-	if candidate.ActiveTasks >= candidate.TaskConcurrencyLimit {
-		return Candidate{}, ErrCapacityExhausted
+	candidate.TaskID = request.TaskID
+	if err := validate(candidate); err != nil {
+		return Candidate{}, err
 	}
 	s.candidate.ActiveTasks++
-	return s.candidate, nil
+	s.active[request.TaskID] = ReleaseRequest{
+		TaskID: request.TaskID, BindingID: request.BindingID,
+		BindingGeneration: request.ExpectedBindingGeneration, CatalogGeneration: request.ExpectedCatalogGeneration,
+	}
+	candidate.ActiveTasks = s.candidate.ActiveTasks
+	return candidate, nil
+}
+
+func (s *atomicStore) ReleaseAssignment(_ context.Context, request ReleaseRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.released[request.TaskID] {
+		return nil
+	}
+	want, exists := s.active[request.TaskID]
+	if !exists || want != request {
+		return ErrNoApprovedAssignment
+	}
+	delete(s.active, request.TaskID)
+	s.released[request.TaskID] = true
+	s.candidate.ActiveTasks--
+	return nil
 }
 
 func (s *atomicStore) snapshot() Candidate {
@@ -279,50 +326,29 @@ func (s *atomicStore) snapshot() Candidate {
 	return s.candidate
 }
 
-func (s *atomicStore) revoke() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.candidate.Approval = ApprovalRevoked
-	s.candidate.BindingGeneration++
-}
-
-func (s *atomicStore) publishBindingGeneration() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.candidate.BindingGeneration++
-}
-
-func (s *atomicStore) publishCatalogGeneration() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.candidate.CatalogGeneration++
-}
-
 func TestResolveConcurrentClaimsReserveOnlyConfiguredCapacity(t *testing.T) {
-	const (
-		workers = 128
-		limit   = 7
-	)
-	store := newAtomicStore(0, limit)
+	const workers, limit = 128, 7
+	store := newAtomicStore(limit)
 	resolver := NewResolver(store)
 	start := make(chan struct{})
 	results := make(chan error, workers)
 	var wg sync.WaitGroup
-	wg.Add(workers)
 	for i := 0; i < workers; i++ {
-		go func() {
+		wg.Add(1)
+		go func(i int) {
 			defer wg.Done()
 			<-start
-			_, err := resolver.Resolve(context.Background(), approvedRequest())
+			request := approvedRequest()
+			request.TaskID = fmt.Sprintf("00000000-0000-0000-0001-%012d", i)
+			_, err := resolver.Resolve(context.Background(), request)
 			results <- err
-		}()
+		}(i)
 	}
 	close(start)
 	wg.Wait()
 	close(results)
 
-	succeeded := 0
-	capacityFailures := 0
+	succeeded, capacityFailures := 0, 0
 	for err := range results {
 		switch {
 		case err == nil:
@@ -333,51 +359,37 @@ func TestResolveConcurrentClaimsReserveOnlyConfiguredCapacity(t *testing.T) {
 			t.Errorf("unexpected concurrent result: %v", err)
 		}
 	}
-	if succeeded != limit || capacityFailures != workers-limit {
-		t.Fatalf("success=%d capacity_failures=%d, want %d/%d", succeeded, capacityFailures, limit, workers-limit)
-	}
-	if got := store.snapshot().ActiveTasks; got != limit {
-		t.Fatalf("active tasks=%d, want %d", got, limit)
+	if succeeded != limit || capacityFailures != workers-limit || store.snapshot().ActiveTasks != limit {
+		t.Fatalf("success=%d capacity_failures=%d active=%d", succeeded, capacityFailures, store.snapshot().ActiveTasks)
 	}
 }
 
-func TestResolveRevokedAndStaleGenerationsDoNotReserve(t *testing.T) {
-	tests := []struct {
-		name      string
-		change    func(*atomicStore)
-		wantError error
-	}{
-		{name: "revoked binding", change: (*atomicStore).revoke, wantError: ErrNoApprovedAssignment},
-		{name: "stale binding generation", change: (*atomicStore).publishBindingGeneration, wantError: ErrGenerationConflict},
-		{name: "stale catalog generation", change: (*atomicStore).publishCatalogGeneration, wantError: ErrGenerationConflict},
+func TestReleaseIsFencedIdempotentAndRestoresCapacity(t *testing.T) {
+	store := newAtomicStore(1)
+	resolver := NewResolver(store)
+	request := approvedRequest()
+	if _, err := resolver.Resolve(context.Background(), request); err != nil {
+		t.Fatalf("Resolve() error=%v", err)
 	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			store := newAtomicStore(0, 1)
-			test.change(store)
-			_, err := NewResolver(store).Resolve(context.Background(), approvedRequest())
-			if !errors.Is(err, test.wantError) {
-				t.Fatalf("Resolve() error=%v, want %v", err, test.wantError)
-			}
-			if got := store.snapshot().ActiveTasks; got != 0 {
-				t.Fatalf("failed fenced claim reserved %d tasks", got)
-			}
-		})
+	release := ReleaseRequest{
+		TaskID: request.TaskID, BindingID: request.BindingID,
+		BindingGeneration: request.ExpectedBindingGeneration, CatalogGeneration: request.ExpectedCatalogGeneration,
 	}
-}
-
-func TestResolveNeverRetriesOrRemapsConflict(t *testing.T) {
-	calls := 0
-	resolver := NewResolver(reserveFunc(func(context.Context, Request) (Candidate, error) {
-		calls++
-		return Candidate{}, fmt.Errorf("changed during claim: %w", ErrGenerationConflict)
-	}))
-	_, err := resolver.Resolve(context.Background(), approvedRequest())
-	if !errors.Is(err, ErrGenerationConflict) {
-		t.Fatalf("Resolve() error=%v, want generation conflict", err)
+	stale := release
+	stale.CatalogGeneration++
+	if err := resolver.Release(context.Background(), stale); !errors.Is(err, ErrNoApprovedAssignment) {
+		t.Fatalf("stale Release() error=%v", err)
 	}
-	if calls != 1 {
-		t.Fatalf("reservation calls=%d, want exactly one", calls)
+	if got := store.snapshot().ActiveTasks; got != 1 {
+		t.Fatalf("stale release changed capacity to %d", got)
+	}
+	if err := resolver.Release(context.Background(), release); err != nil {
+		t.Fatalf("Release() error=%v", err)
+	}
+	if err := resolver.Release(context.Background(), release); err != nil {
+		t.Fatalf("idempotent Release() error=%v", err)
+	}
+	if got := store.snapshot().ActiveTasks; got != 0 {
+		t.Fatalf("released active tasks=%d", got)
 	}
 }
