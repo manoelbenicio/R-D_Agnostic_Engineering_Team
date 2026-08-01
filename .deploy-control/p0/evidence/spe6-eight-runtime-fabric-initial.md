@@ -11,18 +11,18 @@
 
 The fabric has exactly eight persistent logical seats: three Kiro and five Codex. These are identity-preserving bindings to existing product agent/runtime rows in the target new workspace; they are not permission to insert, clone, rename, archive, reassign, or delete rows. Before any later attachment, the implementation must resolve the exact existing `workspace_id`, `agent_id`, `runtime_id`, and daemon by read-only lookup and fail closed on absence, ambiguity, workspace mismatch, duplicate name, stale generation, or protected assignment. No UUID may be invented.
 
-| Seat | CLI composition | Responsibility | First-wave branch/worktree | Initial immutable SHA |
+| Seat | CLI composition | Frozen accountability | First-wave branch/worktree | Initial immutable SHA |
 |---|---|---|---|---|
-| K1 | Kiro | TL orchestration, integration and all shared-file decisions; no producer code in this wave | `plan/spe6-eight-runtime-fabric` / `spe6-eight-runtime-fabric` | `a57c12e8424cd88cda178499563b69569d244d84` |
-| K2 | Kiro | Runtime Manager UI/UX consumer | `feature/spe6-runtime-manager-ui` / `spe6-runtime-manager-ui` | `a57c12e8424cd88cda178499563b69569d244d84` |
-| K3 | Kiro | independent baseline/risk and golden/forbidden verifier; non-author acceptance | `audit/spe18-baseline-risk` / `spe18-baseline-risk`, then `test/spe7-golden-forbidden` / `spe7-golden-forbidden` | `a57c12e8424cd88cda178499563b69569d244d84` |
-| C1 | Codex | R3 registry core | `feature/spe6-r3-registry-core` / `spe6-r3-registry-core` | `a57c12e8424cd88cda178499563b69569d244d84` |
-| C2 | Codex | runtime schema and migrations 130-134, subject to registrar recheck | `feature/spe6-runtime-schema` / `spe6-runtime-schema` | `a57c12e8424cd88cda178499563b69569d244d84` |
-| C3 | Codex | Runtime Manager API against frozen pathless contracts | `feature/spe6-runtime-manager-api` / `spe6-runtime-manager-api` | `a57c12e8424cd88cda178499563b69569d244d84` |
-| C4 | Codex | registry authorization, workspace, secrecy and boundary enforcement | `feature/spe8-registry-boundaries` / `spe8-registry-boundaries` | `a57c12e8424cd88cda178499563b69569d244d84` |
-| C5 | Codex | dynamic opaque credential-home catalog | `feature/spe10-credential-catalog` / `spe10-credential-catalog` | `a57c12e8424cd88cda178499563b69569d244d84` |
+| K1 | Kiro | TL orchestration, sole integration and all shared-file decisions; no producer code in this wave | `plan/spe6-eight-runtime-fabric` / `spe6-eight-runtime-fabric` | `a57c12e8424cd88cda178499563b69569d244d84` |
+| K2 | Kiro | Dynamic credential-home catalog, reconciliation, lifecycle, drift, watermarks and incident controls | `feature/spe10-credential-catalog` / `spe10-credential-catalog` | `a57c12e8424cd88cda178499563b69569d244d84` |
+| K3 | Kiro | Independent baseline risk, evidence and release review only; never producer source | `audit/spe18-baseline-risk` / `spe18-baseline-risk` | `a57c12e8424cd88cda178499563b69569d244d84` |
+| C1 | Codex | R3 registry core plus registry/admin security boundaries | `feature/spe6-r3-registry-core` / `spe6-r3-registry-core`; `feature/spe8-registry-boundaries` / `spe8-registry-boundaries` | `a57c12e8424cd88cda178499563b69569d244d84` |
+| C2 | Codex | Runtime schema, migrations 128 and 130-134, queries and generated DB output | `feature/spe6-runtime-schema` / `spe6-runtime-schema` | `a57c12e8424cd88cda178499563b69569d244d84` |
+| C3 | Codex | Runtime Standard/configuration service and API against frozen pathless contracts | `feature/spe6-runtime-manager-api` / `spe6-runtime-manager-api` | `a57c12e8424cd88cda178499563b69569d244d84` |
+| C4 | Codex | Runtime Manager UI/CLI and SPE-7 golden/forbidden evaluations | `feature/spe6-runtime-manager-ui` / `spe6-runtime-manager-ui`; `test/spe7-golden-forbidden` / `spe7-golden-forbidden` | `a57c12e8424cd88cda178499563b69569d244d84` |
+| C5 | Codex | Independent integration/validation harness, performance, accessibility and release evidence | `test/spe20-runtime-harness` / `spe20-runtime-harness` | `a57c12e8424cd88cda178499563b69569d244d84` |
 
-K3 owns two serial verifier worktrees but remains one logical seat. K1 is the ninth Git worktree only because integration is isolated from producers; K1 is one of the eight product seats and does not create a ninth agent/runtime row. At wave start, all eight producer worktrees listed above existed, were clean (`status=0`), and pointed exactly to the frozen source SHA.
+Real pane agents may execute delegated bounded work, but accountability and file ownership remain exactly as above. K3 and C5 remain independent reviewers and never become producer owners. The listed worktrees are isolated Git execution surfaces, not additional product agents or runtime rows.
 
 ## Existing-row and protected-assignment reconciliation
 
@@ -58,13 +58,14 @@ Also frozen: migration order `130_runtime_standards` -> `131_runtime_sessions` -
 
 ## Dependency and merge order
 
-1. **Gate 0 - K3/SPE-18:** independently inventory baseline risk and confirm no protected-row, secret, infrastructure, producer-file, or shared-interface violation. C2 also performs the mandatory global migration-registrar recheck; any collision stops the wave.
-2. **Foundation - C1 and C2:** C1 registry core and C2 schema may proceed in parallel only against the frozen interfaces and disjoint files. Neither edits shared daemon/router/protocol wiring.
-3. **Boundaries - C4 and C5:** after reviewed C1+C2 interface-compatible commits, C4 lands authorization/workspace/secrecy boundaries and C5 lands catalog discovery/lifecycle. They may run in parallel on disjoint files.
-4. **API - C3:** consume reviewed C1+C2+C4+C5 interfaces; do not invent compatibility shims or alter frozen contracts.
-5. **UI - K2:** consume the reviewed C3 API and opaque/pathless types. UI may prepare against the freeze earlier, but its merge waits for C3's immutable reviewed SHA.
-6. **Verification - K3/SPE-7:** compose the reviewed producer SHAs and run golden/forbidden, migration, race, privacy, authorization, capability, recovery, drift, rollback, and end-to-end non-production gates. K3 does not review its own SPE-18/SPE-7 authored evidence as producer acceptance; a distinct reviewer is required where independence would otherwise collapse.
-7. **Integration - K1:** serially merge only reviewed immutable producer commits in this order: SPE-18 evidence -> C1 -> C2 -> C4 -> C5 -> C3 -> K2 -> SPE-7 evidence. K1 records each accepted commit SHA before merge. Shared router/protocol/daemon wiring is deferred to SPE-9 and is not authorized by this initial file.
+1. **Unified authority:** integration starts from a reviewed descendant of `88e2f2255995aeb56878c2268cb654d6107a915e`, which contains both accepted SPE-4 and SPE-5 histories. Sibling producer bases are preparation surfaces only until K1 merges the authority baseline into them without rewriting producer SHAs.
+2. **Gate 0 - K3/SPE-18:** independently inventory baseline risk and confirm no protected-row, secret, infrastructure, producer-file, or shared-interface violation. C2 also performs the mandatory global migration-registrar recheck; any collision stops the wave.
+3. **Foundation - C1 and C2:** C1 registry core and C2 schema may proceed in parallel only against the frozen interfaces and disjoint files. Neither edits shared daemon/router/protocol wiring.
+4. **Boundaries - C1 and K2:** after reviewed C1+C2 interface-compatible commits, C1-owned SPE-8 authorization/workspace/secrecy boundaries and K2 catalog discovery/lifecycle may proceed in parallel on disjoint files.
+5. **API - C3:** consume reviewed C1+C2+C1-boundary+K2 interfaces. Raw lowercase 64-hex is the only effective-digest representation; do not invent compatibility shims or alter frozen contracts.
+6. **UI - C4:** consume the reviewed C3 API and opaque/pathless types. UI may prepare against the freeze earlier, but acceptance and merge wait for C3's reviewed immutable SHA.
+7. **Evaluations and independent verification:** C4 binds SPE-7 golden/forbidden fixtures only after the reviewed UI/API chain. C5 and K3 independently run migration, race, privacy, authorization, capability, recovery, drift, rollback, accessibility and end-to-end gates. Neither edits producer source or self-approves authored artifacts.
+8. **Integration - K1:** serially merge only reviewed immutable commits in this order: unified authority -> SPE-18 -> C1 -> C2 -> C1/SPE-8 + K2/catalog -> C3 -> C4/UI -> C4/SPE-7 -> C5/K3 evidence. K1 records each accepted commit SHA before merge. Shared router/protocol/daemon wiring is deferred to SPE-9.
 
 A downstream commit is never merged before all declared predecessors have a reviewed immutable SHA. Merge conflict, interface drift, overlapping ownership, dirty producer state, skipped test, or missing evidence is a hard stop, not permission for K1 to rewrite producer code.
 
