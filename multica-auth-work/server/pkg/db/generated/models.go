@@ -291,6 +291,49 @@ type Credential struct {
 	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
 }
 
+type CredentialHomeCatalog struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	DaemonID    string             `json:"daemon_id"`
+	Generation  int64              `json:"generation"`
+	State       string             `json:"state"`
+	Watermark   string             `json:"watermark"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type CredentialHomeCatalogEntry struct {
+	ID                pgtype.UUID        `json:"id"`
+	GenerationID      pgtype.UUID        `json:"generation_id"`
+	CatalogID         pgtype.UUID        `json:"catalog_id"`
+	Generation        int64              `json:"generation"`
+	HomeRef           pgtype.UUID        `json:"home_ref"`
+	Provider          string             `json:"provider"`
+	Approved          bool               `json:"approved"`
+	State             string             `json:"state"`
+	ReasonCode        pgtype.Text        `json:"reason_code"`
+	FirstSeenAt       pgtype.Timestamptz `json:"first_seen_at"`
+	LastSeenAt        pgtype.Timestamptz `json:"last_seen_at"`
+	LastFullScanAt    pgtype.Timestamptz `json:"last_full_scan_at"`
+	HealthWatermark   pgtype.Timestamptz `json:"health_watermark"`
+	MissingWatermark  pgtype.Timestamptz `json:"missing_watermark"`
+	Ttl               pgtype.Interval    `json:"ttl"`
+	RetentionDeadline pgtype.Timestamptz `json:"retention_deadline"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+type CredentialHomeCatalogGeneration struct {
+	ID                 pgtype.UUID        `json:"id"`
+	CatalogID          pgtype.UUID        `json:"catalog_id"`
+	PreviousGeneration int64              `json:"previous_generation"`
+	Generation         int64              `json:"generation"`
+	ScanKind           string             `json:"scan_kind"`
+	Counters           []byte             `json:"counters"`
+	CatalogDigest      string             `json:"catalog_digest"`
+	StartedAt          pgtype.Timestamptz `json:"started_at"`
+	PublishedAt        pgtype.Timestamptz `json:"published_at"`
+}
+
 type DaemonConnection struct {
 	ID              pgtype.UUID        `json:"id"`
 	AgentID         pgtype.UUID        `json:"agent_id"`
@@ -639,6 +682,82 @@ type RotationEvent struct {
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 }
 
+type RuntimeBinding struct {
+	ID                           pgtype.UUID        `json:"id"`
+	EnrollmentID                 pgtype.UUID        `json:"enrollment_id"`
+	SessionID                    pgtype.UUID        `json:"session_id"`
+	WorkspaceID                  pgtype.UUID        `json:"workspace_id"`
+	RuntimeID                    pgtype.UUID        `json:"runtime_id"`
+	AgentID                      pgtype.UUID        `json:"agent_id"`
+	TransportBinding             string             `json:"transport_binding"`
+	Generation                   int64              `json:"generation"`
+	MaxConcurrentTasks           int32              `json:"max_concurrent_tasks"`
+	ActiveTaskCount              int32              `json:"active_task_count"`
+	State                        string             `json:"state"`
+	CreatedBy                    pgtype.UUID        `json:"created_by"`
+	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                    pgtype.Timestamptz `json:"updated_at"`
+	DeactivatedAt                pgtype.Timestamptz `json:"deactivated_at"`
+	ActiveConfigurationVersionID pgtype.UUID        `json:"active_configuration_version_id"`
+	EffectiveConfigurationDigest pgtype.Text        `json:"effective_configuration_digest"`
+}
+
+type RuntimeConfigurationAcknowledgement struct {
+	ID                         pgtype.UUID        `json:"id"`
+	BindingID                  pgtype.UUID        `json:"binding_id"`
+	ConfigurationVersionID     pgtype.UUID        `json:"configuration_version_id"`
+	BindingGeneration          int64              `json:"binding_generation"`
+	DaemonID                   string             `json:"daemon_id"`
+	Status                     string             `json:"status"`
+	AppliedConfigurationDigest pgtype.Text        `json:"applied_configuration_digest"`
+	ReasonCode                 pgtype.Text        `json:"reason_code"`
+	AcknowledgedAt             pgtype.Timestamptz `json:"acknowledged_at"`
+}
+
+type RuntimeConfigurationActivation struct {
+	ID                           pgtype.UUID        `json:"id"`
+	BindingID                    pgtype.UUID        `json:"binding_id"`
+	PreviousVersionID            pgtype.UUID        `json:"previous_version_id"`
+	NewVersionID                 pgtype.UUID        `json:"new_version_id"`
+	BindingGeneration            int64              `json:"binding_generation"`
+	EffectiveConfigurationDigest string             `json:"effective_configuration_digest"`
+	CapabilityDigest             string             `json:"capability_digest"`
+	ApplyClass                   string             `json:"apply_class"`
+	ActorID                      pgtype.UUID        `json:"actor_id"`
+	RequestID                    string             `json:"request_id"`
+	CorrelationID                pgtype.Text        `json:"correlation_id"`
+	Reason                       string             `json:"reason"`
+	ActivatedAt                  pgtype.Timestamptz `json:"activated_at"`
+}
+
+type RuntimeConfigurationVersion struct {
+	ID                  pgtype.UUID        `json:"id"`
+	BindingID           pgtype.UUID        `json:"binding_id"`
+	VersionNumber       int64              `json:"version_number"`
+	Configuration       []byte             `json:"configuration"`
+	ConfigurationDigest string             `json:"configuration_digest"`
+	ApplyClass          string             `json:"apply_class"`
+	CreatedBy           pgtype.UUID        `json:"created_by"`
+	Reason              string             `json:"reason"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
+
+type RuntimeHomeAssignment struct {
+	ID                pgtype.UUID        `json:"id"`
+	BindingID         pgtype.UUID        `json:"binding_id"`
+	WorkspaceID       pgtype.UUID        `json:"workspace_id"`
+	CatalogID         pgtype.UUID        `json:"catalog_id"`
+	CatalogEntryID    pgtype.UUID        `json:"catalog_entry_id"`
+	CatalogGeneration int64              `json:"catalog_generation"`
+	HomeRef           pgtype.UUID        `json:"home_ref"`
+	BindingGeneration int64              `json:"binding_generation"`
+	State             string             `json:"state"`
+	AssignedBy        pgtype.UUID        `json:"assigned_by"`
+	AssignedAt        pgtype.Timestamptz `json:"assigned_at"`
+	ReleasedAt        pgtype.Timestamptz `json:"released_at"`
+	ReasonCode        pgtype.Text        `json:"reason_code"`
+}
+
 type RuntimeProfile struct {
 	ID             pgtype.UUID        `json:"id"`
 	WorkspaceID    pgtype.UUID        `json:"workspace_id"`
@@ -711,6 +830,33 @@ type RuntimeStandardVersion struct {
 	CreatedBy           pgtype.UUID        `json:"created_by"`
 	Reason              string             `json:"reason"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
+
+type RuntimeTaskSnapshot struct {
+	TaskID                        pgtype.UUID        `json:"task_id"`
+	RuntimeSessionID              pgtype.UUID        `json:"runtime_session_id"`
+	RuntimeID                     pgtype.UUID        `json:"runtime_id"`
+	AgentID                       pgtype.UUID        `json:"agent_id"`
+	WorkspaceID                   pgtype.UUID        `json:"workspace_id"`
+	RuntimeStandardVersionID      pgtype.UUID        `json:"runtime_standard_version_id"`
+	RuntimeConfigurationVersionID pgtype.UUID        `json:"runtime_configuration_version_id"`
+	EffectiveConfigurationDigest  string             `json:"effective_configuration_digest"`
+	RuntimeBindingID              pgtype.UUID        `json:"runtime_binding_id"`
+	BindingGeneration             int64              `json:"binding_generation"`
+	TransportBinding              string             `json:"transport_binding"`
+	HomeAssignmentID              pgtype.UUID        `json:"home_assignment_id"`
+	HomeRef                       pgtype.UUID        `json:"home_ref"`
+	CatalogGeneration             pgtype.Int8        `json:"catalog_generation"`
+	CapabilityDigest              string             `json:"capability_digest"`
+	CreatedAt                     pgtype.Timestamptz `json:"created_at"`
+}
+
+type RuntimeTaskSnapshotRelease struct {
+	TaskID           pgtype.UUID        `json:"task_id"`
+	RuntimeBindingID pgtype.UUID        `json:"runtime_binding_id"`
+	ReleasedBy       pgtype.UUID        `json:"released_by"`
+	ReasonCode       string             `json:"reason_code"`
+	ReleasedAt       pgtype.Timestamptz `json:"released_at"`
 }
 
 type Skill struct {
