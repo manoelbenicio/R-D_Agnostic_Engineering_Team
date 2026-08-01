@@ -18,18 +18,18 @@ import (
 const privateModeMask = os.FileMode(0o077)
 
 var (
-	ErrInvalidRoot       = errors.New("credential catalog: invalid controlled root")
-	ErrRootChanged       = errors.New("credential catalog: controlled root identity changed")
-	ErrHomeNotHealthy    = errors.New("credential catalog: home is not healthy")
-	ErrHomeTombstoned    = errors.New("credential catalog: home is tombstoned")
-	ErrHomeNotFound      = errors.New("credential catalog: home ref not found")
-	ErrRefUnderflow      = errors.New("credential catalog: active ref underflow")
-	ErrRevalidateFailed  = errors.New("credential catalog: launch-time revalidation failed")
-	ErrMissingTombstoneStore = errors.New("credential catalog: tombstone store is required")
+	ErrInvalidRoot           = errors.New("credential catalog: invalid controlled root")
+	ErrRootChanged           = errors.New("credential catalog: controlled root identity changed")
+	ErrHomeNotHealthy        = errors.New("credential catalog: home is not healthy")
+	ErrHomeTombstoned        = errors.New("credential catalog: home is tombstoned")
+	ErrHomeNotFound          = errors.New("credential catalog: home ref not found")
+	ErrRefUnderflow          = errors.New("credential catalog: active ref underflow")
+	ErrRevalidateFailed      = errors.New("credential catalog: launch-time revalidation failed")
+	ErrMissingTombstoneStore = errors.New("credential catalog: durable lifecycle store is required")
 )
 
 // Config defines one private controlled root and one provider layout, along
-// with optional lifecycle, retention, watermark, and tombstone persistence parameters.
+// with optional lifecycle, retention, watermark, and durable store parameters.
 type Config struct {
 	Root            string
 	Provider        Provider
@@ -37,13 +37,13 @@ type Config struct {
 	RetentionPeriod time.Duration
 	HighWatermark   int
 	LowWatermark    int
-	Store           TombstoneStore
+	Store           LifecycleStore
 }
 
 // Catalog serializes complete scans, manages lifecycle transitions (healthy,
-// draining, retired, tombstoned), tracks active reference counts, performs
+// missing, draining, retired, tombstoned), tracks active reference counts, performs
 // fast launch-time revalidations, handles watcher overflow recovery, and
-// persists tombstones across daemon restarts.
+// enforces crash-safe persistence prior to snapshot publication.
 type Catalog struct {
 	mu               sync.RWMutex
 	root             string
@@ -54,22 +54,28 @@ type Catalog struct {
 	retentionPeriod  time.Duration
 	highWatermark    int
 	lowWatermark     int
-	store            TombstoneStore
+	store            LifecycleStore
 	generation       uint64
 	current          Snapshot
 	hasCurrent       bool
-	activeRefs       map[string]int
-	tombstones       map[string]time.Time
-	tombstonedNames  map[string]struct{}
-	tombstonedRefs   map[string]struct{}
-	draining         map[string]discoveredHome
-	watcherOverflows uint64
-	lastOverflowAt   time.Time
-	lastHintAt       time.Time
+	activeRefs          map[string]int
+	tombstones          map[string]time.Time
+	tombstonedNames     map[string]struct{}
+	tombstonedRefs      map[string]struct{}
+	tombstoneHomeToName map[string]string
+	draining            map[string]discoveredHome
+	missingMap          map[string]discoveredHome
+	retiredMap          map[string]discoveredHome
+	watcherOverflows    uint64
+	lastOverflowAt      time.Time
+	lastHintAt          time.Time
 }
 
-// New validates the controlled root and initializes persistent tombstone state.
+// New validates the controlled root and initializes persistent lifecycle state.
 func New(config Config) (*Catalog, error) {
+	if config.Store == nil {
+		return nil, ErrMissingTombstoneStore
+	}
 	layout, ok := LayoutFor(config.Provider)
 	if !ok {
 		return nil, fmt.Errorf("credential catalog: unsupported provider")
@@ -100,53 +106,82 @@ func New(config Config) (*Catalog, error) {
 		lowWM = 8000
 	}
 
-	store := config.Store
-	if store == nil {
-		store = NewMemoryTombstoneStore()
-	}
-
 	cat := &Catalog{
-		root:            root,
-		rootIdentity:    identity,
-		provider:        config.Provider,
-		layout:          layout,
-		ttl:             ttl,
-		retentionPeriod: retention,
-		highWatermark:   highWM,
-		lowWatermark:    lowWM,
-		store:           store,
-		activeRefs:      make(map[string]int),
-		tombstones:      make(map[string]time.Time),
-		tombstonedNames: make(map[string]struct{}),
-		tombstonedRefs:  make(map[string]struct{}),
-		draining:        make(map[string]discoveredHome),
+		root:                root,
+		rootIdentity:        identity,
+		provider:            config.Provider,
+		layout:              layout,
+		ttl:                 ttl,
+		retentionPeriod:     retention,
+		highWatermark:       highWM,
+		lowWatermark:        lowWM,
+		store:               config.Store,
+		activeRefs:          make(map[string]int),
+		tombstones:          make(map[string]time.Time),
+		tombstonedNames:     make(map[string]struct{}),
+		tombstonedRefs:      make(map[string]struct{}),
+		tombstoneHomeToName: make(map[string]string),
+		draining:            make(map[string]discoveredHome),
+		missingMap:          make(map[string]discoveredHome),
+		retiredMap:          make(map[string]discoveredHome),
 	}
 
-	if err := cat.loadDurableTombstonesLocked(context.Background()); err != nil {
-		return nil, fmt.Errorf("credential catalog: failed to load durable tombstones: %w", err)
+	if err := cat.loadDurableLifecycleLocked(context.Background()); err != nil {
+		return nil, fmt.Errorf("credential catalog: failed to load durable lifecycle: %w", err)
 	}
 
 	return cat, nil
 }
 
-func (c *Catalog) loadDurableTombstonesLocked(ctx context.Context) error {
-	records, err := c.store.LoadTombstones(ctx, c.provider)
+func (c *Catalog) loadDurableLifecycleLocked(ctx context.Context) error {
+	records, err := c.store.LoadLifecycle(ctx, c.provider)
 	if err != nil {
 		return err
 	}
 	for _, rec := range records {
-		c.tombstones[rec.HomeRef] = rec.TombstonedAt
-		c.tombstonedRefs[rec.HomeRef] = struct{}{}
-		if rec.NameRef != "" {
-			c.tombstonedNames[rec.NameRef] = struct{}{}
+		if rec.ActiveRefs > 0 {
+			c.activeRefs[rec.HomeRef] = rec.ActiveRefs
+		}
+		switch rec.State {
+		case StateTombstoned:
+			c.tombstones[rec.HomeRef] = rec.UpdatedAt
+			c.tombstonedRefs[rec.HomeRef] = struct{}{}
+			if rec.NameRef != "" {
+				c.tombstonedNames[rec.NameRef] = struct{}{}
+				c.tombstoneHomeToName[rec.HomeRef] = rec.NameRef
+			}
+		case StateDraining:
+			c.draining[rec.HomeRef] = discoveredHome{
+				entry: Entry{
+					homeRef:  rec.HomeRef,
+					provider: rec.Provider,
+					state:    StateDraining,
+				},
+			}
+		case StateMissing:
+			c.missingMap[rec.HomeRef] = discoveredHome{
+				entry: Entry{
+					homeRef:  rec.HomeRef,
+					provider: rec.Provider,
+					state:    StateMissing,
+				},
+			}
+		case StateRetired:
+			c.retiredMap[rec.HomeRef] = discoveredHome{
+				entry: Entry{
+					homeRef:  rec.HomeRef,
+					provider: rec.Provider,
+					state:    StateRetired,
+				},
+			}
 		}
 	}
 	return nil
 }
 
 // Reconcile performs one full scan. Candidate-specific failures are published
-// as metadata-only quarantine records. Root-level failures abort publication,
-// preserving the previous complete generation.
+// as metadata-only quarantine records. Persistence failure aborts snapshot
+// publication, preserving the prior generation intact.
 func (c *Catalog) Reconcile() (Snapshot, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -170,9 +205,16 @@ func (c *Catalog) reconcileLocked() (Snapshot, error) {
 		return Snapshot{}, err
 	}
 
-	c.reconcileLifecycleLocked(scannedHomes)
+	c.reconcileLifecycleLocked(scannedHomes, now)
 
-	// Filter out healthy entries that are tombstoned
+	// PERSIST-BEFORE-PUBLISH:
+	// Save lifecycle state records to durable store BEFORE updating generation or publishing snapshot!
+	toPersist := c.collectLifecycleRecordsLocked(now)
+	if err := c.store.SaveLifecycle(context.Background(), toPersist); err != nil {
+		return Snapshot{}, fmt.Errorf("credential catalog: persistence failed prior to publication: %w", err)
+	}
+
+	// Filter healthy entries
 	healthyEntries := make([]Entry, 0, len(snapshot.entries))
 	for _, entry := range snapshot.entries {
 		if _, tomb := c.tombstonedRefs[entry.homeRef]; tomb {
@@ -195,6 +237,20 @@ func (c *Catalog) reconcileLocked() (Snapshot, error) {
 		drainingEntries = append(drainingEntries, entry)
 	}
 
+	missingEntries := make([]Entry, 0, len(c.missingMap))
+	for _, home := range c.missingMap {
+		entry := home.entry
+		entry.state = StateMissing
+		missingEntries = append(missingEntries, entry)
+	}
+
+	retiredEntries := make([]Entry, 0, len(c.retiredMap))
+	for _, home := range c.retiredMap {
+		entry := home.entry
+		entry.state = StateRetired
+		retiredEntries = append(retiredEntries, entry)
+	}
+
 	tombstonedList := make([]string, 0, len(c.tombstonedRefs))
 	for ref := range c.tombstonedRefs {
 		tombstonedList = append(tombstonedList, ref)
@@ -202,6 +258,8 @@ func (c *Catalog) reconcileLocked() (Snapshot, error) {
 
 	snapshot.entries = healthyEntries
 	snapshot.draining = drainingEntries
+	snapshot.missing = missingEntries
+	snapshot.retired = retiredEntries
 	snapshot.tombstoned = tombstonedList
 	snapshot.generation = c.generation + 1
 	snapshot.capturedAt = now
@@ -235,13 +293,16 @@ func (c *Catalog) Current() (Snapshot, bool) {
 }
 
 // AcquireRef increments the active reference count for a healthy or draining home.
-// It returns a release function and an error if the home is tombstoned or unknown.
+// It returns a release function and an error if the home is tombstoned, retired, or unknown.
 func (c *Catalog) AcquireRef(homeRef string) (func(), error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if _, tomb := c.tombstonedRefs[homeRef]; tomb {
 		return nil, ErrHomeTombstoned
+	}
+	if _, ret := c.retiredMap[homeRef]; ret {
+		return nil, ErrHomeNotHealthy
 	}
 
 	var found bool
@@ -283,7 +344,7 @@ func (c *Catalog) AcquireRef(homeRef string) (func(), error) {
 }
 
 // ReleaseRef decrements the active reference count for a homeRef. If the home
-// is in draining state and activeRefs reaches 0, it transitions to tombstoned.
+// is in draining state and activeRefs reaches 0, it transitions to retired -> tombstoned.
 func (c *Catalog) ReleaseRef(homeRef string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -298,6 +359,7 @@ func (c *Catalog) ReleaseRef(homeRef string) error {
 		if drainingHome, draining := c.draining[homeRef]; draining {
 			delete(c.draining, homeRef)
 			candidateName := filepath.Base(filepath.Dir(drainingHome.entry.homePath))
+			c.retiredMap[homeRef] = drainingHome
 			c.recordTombstoneLocked(homeRef, candidateName)
 		}
 	} else {
@@ -397,18 +459,78 @@ func (c *Catalog) recordTombstoneLocked(homeRef, candidateName string) {
 	nameRef := opaqueNameRef(c.rootIdentity, c.provider, candidateName)
 	c.tombstonedNames[nameRef] = struct{}{}
 	c.tombstonedRefs[homeRef] = struct{}{}
+	c.tombstoneHomeToName[homeRef] = nameRef
 	c.tombstones[homeRef] = now
-
-	rec := TombstoneRecord{
-		HomeRef:      homeRef,
-		NameRef:      nameRef,
-		Provider:     c.provider,
-		TombstonedAt: now,
-	}
-	_ = c.store.SaveTombstone(context.Background(), rec)
 }
 
-func (c *Catalog) reconcileLifecycleLocked(scannedHomes map[string]discoveredHome) {
+func (c *Catalog) collectLifecycleRecordsLocked(now time.Time) []LifecycleRecord {
+	records := make([]LifecycleRecord, 0, len(c.tombstonedRefs)+len(c.draining)+len(c.missingMap))
+	seen := make(map[string]struct{})
+
+	for ref := range c.tombstonedRefs {
+		nameRef := c.tombstoneHomeToName[ref]
+		records = append(records, LifecycleRecord{
+			HomeRef:    ref,
+			NameRef:    nameRef,
+			Provider:   c.provider,
+			State:      StateTombstoned,
+			ActiveRefs: 0,
+			UpdatedAt:  now,
+		})
+		seen[ref] = struct{}{}
+	}
+	for ref, home := range c.draining {
+		if _, ok := seen[ref]; ok {
+			continue
+		}
+		candidateName := filepath.Base(filepath.Dir(home.entry.homePath))
+		nameRef := opaqueNameRef(c.rootIdentity, c.provider, candidateName)
+		records = append(records, LifecycleRecord{
+			HomeRef:    ref,
+			NameRef:    nameRef,
+			Provider:   c.provider,
+			State:      StateDraining,
+			ActiveRefs: c.activeRefs[ref],
+			UpdatedAt:  now,
+		})
+		seen[ref] = struct{}{}
+	}
+	for ref, home := range c.missingMap {
+		if _, ok := seen[ref]; ok {
+			continue
+		}
+		candidateName := filepath.Base(filepath.Dir(home.entry.homePath))
+		nameRef := opaqueNameRef(c.rootIdentity, c.provider, candidateName)
+		records = append(records, LifecycleRecord{
+			HomeRef:    ref,
+			NameRef:    nameRef,
+			Provider:   c.provider,
+			State:      StateMissing,
+			ActiveRefs: 0,
+			UpdatedAt:  now,
+		})
+		seen[ref] = struct{}{}
+	}
+	for ref, home := range c.retiredMap {
+		if _, ok := seen[ref]; ok {
+			continue
+		}
+		candidateName := filepath.Base(filepath.Dir(home.entry.homePath))
+		nameRef := opaqueNameRef(c.rootIdentity, c.provider, candidateName)
+		records = append(records, LifecycleRecord{
+			HomeRef:    ref,
+			NameRef:    nameRef,
+			Provider:   c.provider,
+			State:      StateRetired,
+			ActiveRefs: 0,
+			UpdatedAt:  now,
+		})
+		seen[ref] = struct{}{}
+	}
+	return records
+}
+
+func (c *Catalog) reconcileLifecycleLocked(scannedHomes map[string]discoveredHome, now time.Time) {
 	if !c.hasCurrent {
 		return
 	}
@@ -416,11 +538,12 @@ func (c *Catalog) reconcileLifecycleLocked(scannedHomes map[string]discoveredHom
 	for _, prevEntry := range c.current.entries {
 		ref := prevEntry.homeRef
 		if _, exists := scannedHomes[ref]; !exists {
-			// Previously healthy home is now missing from scan
 			candidateName := filepath.Base(filepath.Dir(prevEntry.homePath))
 			if count := c.activeRefs[ref]; count > 0 {
 				c.draining[ref] = discoveredHome{entry: prevEntry}
 			} else {
+				c.missingMap[ref] = discoveredHome{entry: prevEntry}
+				c.retiredMap[ref] = discoveredHome{entry: prevEntry}
 				c.recordTombstoneLocked(ref, candidateName)
 			}
 		}

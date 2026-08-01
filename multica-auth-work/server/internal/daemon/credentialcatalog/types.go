@@ -149,6 +149,8 @@ type Snapshot struct {
 	entries               []Entry
 	quarantined           []Quarantine
 	draining              []Entry
+	missing               []Entry
+	retired               []Entry
 	tombstoned            []string
 }
 
@@ -178,6 +180,14 @@ func (s Snapshot) Draining() []Entry {
 	return append([]Entry(nil), s.draining...)
 }
 
+func (s Snapshot) Missing() []Entry {
+	return append([]Entry(nil), s.missing...)
+}
+
+func (s Snapshot) Retired() []Entry {
+	return append([]Entry(nil), s.retired...)
+}
+
 func (s Snapshot) Tombstoned() []string {
 	return append([]string(nil), s.tombstoned...)
 }
@@ -185,6 +195,8 @@ func (s Snapshot) Tombstoned() []string {
 func (s Snapshot) HealthyCount() int     { return len(s.entries) }
 func (s Snapshot) QuarantinedCount() int { return len(s.quarantined) }
 func (s Snapshot) DrainingCount() int    { return len(s.draining) }
+func (s Snapshot) MissingCount() int     { return len(s.missing) }
+func (s Snapshot) RetiredCount() int     { return len(s.retired) }
 func (s Snapshot) TombstonedCount() int  { return len(s.tombstoned) }
 
 func cloneSnapshot(source Snapshot) Snapshot {
@@ -192,6 +204,8 @@ func cloneSnapshot(source Snapshot) Snapshot {
 	clone.entries = source.Entries()
 	clone.quarantined = source.Quarantined()
 	clone.draining = source.Draining()
+	clone.missing = source.Missing()
+	clone.retired = source.Retired()
 	clone.tombstoned = source.Tombstoned()
 	return clone
 }
@@ -208,6 +222,12 @@ func sortSnapshot(snapshot *Snapshot) {
 	})
 	sort.Slice(snapshot.draining, func(i, j int) bool {
 		return snapshot.draining[i].homeRef < snapshot.draining[j].homeRef
+	})
+	sort.Slice(snapshot.missing, func(i, j int) bool {
+		return snapshot.missing[i].homeRef < snapshot.missing[j].homeRef
+	})
+	sort.Slice(snapshot.retired, func(i, j int) bool {
+		return snapshot.retired[i].homeRef < snapshot.retired[j].homeRef
 	})
 	sort.Strings(snapshot.tombstoned)
 }

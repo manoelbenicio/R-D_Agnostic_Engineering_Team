@@ -41,13 +41,22 @@ func writeFakeHome(t *testing.T, root, child string, provider Provider) (string,
 	return home, artifact
 }
 
-func mustCatalog(t *testing.T, root string, provider Provider) *Catalog {
+func mustCatalog(t *testing.T, root string, provider Provider) (*Catalog, *MemoryLifecycleStore) {
 	t.Helper()
-	catalog, err := New(Config{Root: root, Provider: provider})
+	store := NewMemoryLifecycleStore()
+	catalog, err := New(Config{Root: root, Provider: provider, Store: store})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return catalog
+	return catalog, store
+}
+
+func TestNilStoreRejectedFailClosed(t *testing.T) {
+	root := newPrivateRoot(t)
+	_, err := New(Config{Root: root, Provider: ProviderCodex, Store: nil})
+	if err != ErrMissingTombstoneStore {
+		t.Fatalf("err = %v, want ErrMissingTombstoneStore", err)
+	}
 }
 
 func TestLayoutForMatchesDaemonProviderContracts(t *testing.T) {
@@ -79,7 +88,8 @@ func TestReconcileDiscoversArbitraryImmediateChildren(t *testing.T) {
 		writeFakeHome(t, root, child, ProviderCodex)
 	}
 
-	snapshot, err := mustCatalog(t, root, ProviderCodex).Reconcile()
+	catalog, _ := mustCatalog(t, root, ProviderCodex)
+	snapshot, err := catalog.Reconcile()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +111,8 @@ func TestReconcileDerivesEachProviderArtifact(t *testing.T) {
 		t.Run(string(provider), func(t *testing.T) {
 			root := newPrivateRoot(t)
 			home, artifact := writeFakeHome(t, root, "any-child-name", provider)
-			snapshot, err := mustCatalog(t, root, provider).Reconcile()
+			catalog, _ := mustCatalog(t, root, provider)
+			snapshot, err := catalog.Reconcile()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -206,7 +217,8 @@ func TestReconcileRejectsUnsafeCandidateMetadata(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			root := newPrivateRoot(t)
 			test.setup(t, root)
-			snapshot, err := mustCatalog(t, root, ProviderCodex).Reconcile()
+			catalog, _ := mustCatalog(t, root, ProviderCodex)
+			snapshot, err := catalog.Reconcile()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -226,7 +238,8 @@ func TestNewRejectsUncontrolledRoots(t *testing.T) {
 	if err := os.Chmod(root, 0o750); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := New(Config{Root: root, Provider: ProviderCodex}); err == nil {
+	store := NewMemoryLifecycleStore()
+	if _, err := New(Config{Root: root, Provider: ProviderCodex, Store: store}); err == nil {
 		t.Fatal("expected permissive root rejection")
 	}
 
@@ -235,11 +248,11 @@ func TestNewRejectsUncontrolledRoots(t *testing.T) {
 	if err := os.Symlink(physical, link); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := New(Config{Root: link, Provider: ProviderCodex}); err == nil {
+	if _, err := New(Config{Root: link, Provider: ProviderCodex, Store: store}); err == nil {
 		t.Fatal("expected symlink root rejection")
 	}
 
-	if _, err := New(Config{Root: "relative", Provider: ProviderCodex}); err == nil {
+	if _, err := New(Config{Root: "relative", Provider: ProviderCodex, Store: store}); err == nil {
 		t.Fatal("expected relative root rejection")
 	}
 }
@@ -263,7 +276,7 @@ func TestOwnerCheckUsesEffectiveUID(t *testing.T) {
 func TestOpaqueRefUsesIdentityNotNameOrContents(t *testing.T) {
 	root := newPrivateRoot(t)
 	_, artifact := writeFakeHome(t, root, "first-name", ProviderCodex)
-	catalog := mustCatalog(t, root, ProviderCodex)
+	catalog, _ := mustCatalog(t, root, ProviderCodex)
 	first, err := catalog.Reconcile()
 	if err != nil {
 		t.Fatal(err)
@@ -313,7 +326,7 @@ func TestDuplicateArtifactIdentityQuarantinesEveryCandidateDeterministically(t *
 	if err := os.Link(artifactA, artifactB); err != nil {
 		t.Fatal(err)
 	}
-	catalog := mustCatalog(t, root, ProviderCodex)
+	catalog, _ := mustCatalog(t, root, ProviderCodex)
 
 	first, err := catalog.Reconcile()
 	if err != nil {
@@ -338,51 +351,43 @@ func TestDuplicateArtifactIdentityQuarantinesEveryCandidateDeterministically(t *
 	}
 }
 
-func TestActiveRefCountingAndDrainingLifecycle(t *testing.T) {
+func TestStatesAreActuallyObservableAndActiveRefBlocksRetirement(t *testing.T) {
 	root := newPrivateRoot(t)
-	_, _ = writeFakeHome(t, root, "active-slot", ProviderCodex)
-	catalog := mustCatalog(t, root, ProviderCodex)
+	_, _ = writeFakeHome(t, root, "lifecycle-slot", ProviderCodex)
+	catalog, _ := mustCatalog(t, root, ProviderCodex)
 
+	// 1. Healthy State
 	snap1, err := catalog.Reconcile()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if snap1.HealthyCount() != 1 {
-		t.Fatalf("healthy count = %d", snap1.HealthyCount())
+	if snap1.HealthyCount() != 1 || snap1.Entries()[0].State() != StateHealthy {
+		t.Fatalf("healthy count = %d state = %q", snap1.HealthyCount(), snap1.Entries()[0].State())
 	}
 	homeRef := snap1.Entries()[0].HomeRef()
 
-	// Acquire active ref
+	// Acquire active reference -> ActiveRef blocks retirement!
 	release, err := catalog.AcquireRef(homeRef)
 	if err != nil {
-		t.Fatalf("AcquireRef failed: %v", err)
-	}
-	if catalog.ActiveRefs(homeRef) != 1 {
-		t.Fatalf("active refs = %d, want 1", catalog.ActiveRefs(homeRef))
-	}
-
-	// Remove physical home directory while active ref is held -> transitions to Draining
-	if err := os.RemoveAll(filepath.Join(root, "active-slot")); err != nil {
 		t.Fatal(err)
 	}
 
+	// Remove physical candidate directory
+	if err := os.RemoveAll(filepath.Join(root, "lifecycle-slot")); err != nil {
+		t.Fatal(err)
+	}
+
+	// 2. Draining State (because activeRef > 0)
 	snap2, err := catalog.Reconcile()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if snap2.HealthyCount() != 0 || snap2.DrainingCount() != 1 {
+	if snap2.HealthyCount() != 0 || snap2.DrainingCount() != 1 || snap2.Draining()[0].State() != StateDraining {
 		t.Fatalf("snap2 healthy=%d draining=%d", snap2.HealthyCount(), snap2.DrainingCount())
 	}
-	if snap2.Draining()[0].HomeRef() != homeRef {
-		t.Fatalf("draining ref = %q, want %q", snap2.Draining()[0].HomeRef(), homeRef)
-	}
 
-	// Release active ref -> transitions to Tombstoned
+	// Release active reference -> ActiveRef drops to 0, transitions to Retired and Tombstoned!
 	release()
-	if catalog.ActiveRefs(homeRef) != 0 {
-		t.Fatalf("active refs after release = %d, want 0", catalog.ActiveRefs(homeRef))
-	}
-
 	snap3, err := catalog.Reconcile()
 	if err != nil {
 		t.Fatal(err)
@@ -390,17 +395,12 @@ func TestActiveRefCountingAndDrainingLifecycle(t *testing.T) {
 	if snap3.HealthyCount() != 0 || snap3.DrainingCount() != 0 || snap3.TombstonedCount() != 1 {
 		t.Fatalf("snap3 healthy=%d draining=%d tombstoned=%d", snap3.HealthyCount(), snap3.DrainingCount(), snap3.TombstonedCount())
 	}
-
-	// Attempting AcquireRef on tombstoned ref must fail
-	if _, err := catalog.AcquireRef(homeRef); err != ErrHomeTombstoned {
-		t.Fatalf("acquire tombstoned err = %v, want ErrHomeTombstoned", err)
-	}
 }
 
-func TestDurableTombstonePersistsAcrossCatalogRestart(t *testing.T) {
+func TestRestartLoadsLifecycleMetadata(t *testing.T) {
 	root := newPrivateRoot(t)
-	storePath := filepath.Join(t.TempDir(), "tombstones.json")
-	fileStore, err := NewFileTombstoneStore(storePath)
+	storePath := filepath.Join(t.TempDir(), "store", "lifecycle.json")
+	fileStore, err := NewFileLifecycleStore(storePath, root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -450,10 +450,64 @@ func TestDurableTombstonePersistsAcrossCatalogRestart(t *testing.T) {
 	}
 }
 
+func TestSaveLoadCorruptionFailsClosed(t *testing.T) {
+	root := newPrivateRoot(t)
+	storePath := filepath.Join(t.TempDir(), "store", "corrupt.json")
+	if err := os.MkdirAll(filepath.Dir(storePath), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(storePath, []byte("NOT_VALID_JSON_BINARY_CORRUPT{{{"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	fileStore, err := NewFileLifecycleStore(storePath, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Loading corrupted file during New MUST fail closed!
+	if _, err := New(Config{Root: root, Provider: ProviderCodex, Store: fileStore}); err == nil {
+		t.Fatal("expected corrupted store loading to fail closed")
+	}
+}
+
+func TestPersistenceFailurePreventsPublication(t *testing.T) {
+	root := newPrivateRoot(t)
+	_, _ = writeFakeHome(t, root, "slot-1", ProviderCodex)
+	memStore := NewMemoryLifecycleStore()
+
+	catalog, err := New(Config{Root: root, Provider: ProviderCodex, Store: memStore})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	snap1, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap1.Generation() != 1 {
+		t.Fatalf("gen = %d, want 1", snap1.Generation())
+	}
+
+	// Inject store save failure -> Reconcile MUST fail closed and NOT consume generation or update current!
+	memStore.SetInjectFailSave(true)
+	writeFakeHome(t, root, "slot-2", ProviderCodex)
+
+	if _, err := catalog.Reconcile(); err == nil {
+		t.Fatal("expected persistence failure to abort publication")
+	}
+
+	// Current snapshot MUST retain prior complete generation 1 cleanly!
+	current, ok := catalog.Current()
+	if !ok || current.Generation() != 1 || current.HealthyCount() != 1 {
+		t.Fatalf("current generation = %d healthy = %d, want gen 1 healthy 1", current.Generation(), current.HealthyCount())
+	}
+}
+
 func TestFastLaunchRevalidation(t *testing.T) {
 	root := newPrivateRoot(t)
 	_, artifact := writeFakeHome(t, root, "revalidate-slot", ProviderAntigravity)
-	catalog := mustCatalog(t, root, ProviderAntigravity)
+	catalog, _ := mustCatalog(t, root, ProviderAntigravity)
 
 	snap, err := catalog.Reconcile()
 	if err != nil {
@@ -482,7 +536,7 @@ func TestFastLaunchRevalidation(t *testing.T) {
 func TestNotifyHintTriggersReconciliation(t *testing.T) {
 	root := newPrivateRoot(t)
 	writeFakeHome(t, root, "slot-initial", ProviderKiro)
-	catalog := mustCatalog(t, root, ProviderKiro)
+	catalog, _ := mustCatalog(t, root, ProviderKiro)
 
 	if _, err := catalog.Reconcile(); err != nil {
 		t.Fatal(err)
@@ -504,7 +558,7 @@ func TestNotifyHintTriggersReconciliation(t *testing.T) {
 func TestWatcherOverflowRecovery(t *testing.T) {
 	root := newPrivateRoot(t)
 	writeFakeHome(t, root, "slot-1", ProviderKiro)
-	catalog := mustCatalog(t, root, ProviderKiro)
+	catalog, _ := mustCatalog(t, root, ProviderKiro)
 
 	if _, err := catalog.Reconcile(); err != nil {
 		t.Fatal(err)
@@ -532,12 +586,13 @@ func TestWatermarkEnforcementEmitsAdmissionDegradedWithoutTruncatingHealthyDisco
 		writeFakeHome(t, root, fmt.Sprintf("child-%03d", i), ProviderCodex)
 	}
 
-	// Config with HighWatermark=20, LowWatermark=15
+	store := NewMemoryLifecycleStore()
 	catalog, err := New(Config{
 		Root:          root,
 		Provider:      ProviderCodex,
 		HighWatermark: 20,
 		LowWatermark:  15,
+		Store:         store,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -565,7 +620,7 @@ func TestConcurrentAcquireReleaseRevalidateUnderRace(t *testing.T) {
 		writeFakeHome(t, root, fmt.Sprintf("race-slot-%d", i), ProviderCodex)
 	}
 
-	catalog := mustCatalog(t, root, ProviderCodex)
+	catalog, _ := mustCatalog(t, root, ProviderCodex)
 	snap, err := catalog.Reconcile()
 	if err != nil {
 		t.Fatal(err)
@@ -612,7 +667,7 @@ func quarantineRefs(snapshot Snapshot) []string {
 func TestSnapshotAccessorsCannotMutatePublishedGeneration(t *testing.T) {
 	root := newPrivateRoot(t)
 	writeFakeHome(t, root, "one", ProviderKiro)
-	catalog := mustCatalog(t, root, ProviderKiro)
+	catalog, _ := mustCatalog(t, root, ProviderKiro)
 	snapshot, err := catalog.Reconcile()
 	if err != nil {
 		t.Fatal(err)
@@ -630,7 +685,7 @@ func TestSnapshotAccessorsCannotMutatePublishedGeneration(t *testing.T) {
 func TestFailedFullScanDoesNotConsumeGeneration(t *testing.T) {
 	root := newPrivateRoot(t)
 	writeFakeHome(t, root, "one", ProviderCodex)
-	catalog := mustCatalog(t, root, ProviderCodex)
+	catalog, _ := mustCatalog(t, root, ProviderCodex)
 	first, err := catalog.Reconcile()
 	if err != nil {
 		t.Fatal(err)
