@@ -24,7 +24,8 @@ DENIED_BLOB_OIDS = {
 }
 WINDOWS_DRIVE_ROOT = re.compile(r"^[A-Za-z]:")
 SESSION_AUDIT_EXPORT = re.compile(
-    r"(?:^|/)[^/]*(?:session|audit)[^/]*\.(?:json|jsonl|ndjson|csv|zip|tar|tgz|gz)$",
+    r"^(?:[^/]*(?:session|audit)[^/]*\.(?:json|jsonl|ndjson|csv|zip|tar|tgz|gz)|"
+    r"(?:exports?|sessions?|audit-exports?)/.*\.(?:json|jsonl|ndjson|csv|zip|tar|tgz|gz))$",
     re.IGNORECASE,
 )
 

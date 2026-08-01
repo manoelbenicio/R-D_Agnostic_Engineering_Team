@@ -20,7 +20,7 @@ Allowlist rows are `path<TAB>bytes<TAB>blob_oid`. Paths are repository-relative 
 - Root CI scans every push and pull request.
 - The rollback-only source ref `refs/heads/task16-rc-16bfcb4` is denied.
 - Known restricted omission blob identities are denied in every outgoing range.
-- Root Windows-drive-like names and session/audit export paths are rejected regardless of size.
+- Root session/audit export names and files under designated `export`, `exports`, `session`, `sessions`, or `audit-exports` directories are rejected regardless of size. Structured repository evidence under `.deploy-control` is not an export and remains permitted.
 
 The hook files are repository source only. This change does not install `core.hooksPath` or modify user/system Git configuration.
 

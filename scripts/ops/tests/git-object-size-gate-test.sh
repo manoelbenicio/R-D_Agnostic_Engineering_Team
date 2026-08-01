@@ -28,6 +28,12 @@ git -C "$REPO" add senior-audit-session.json
 expect_fail run_gate
 reset_case
 
+mkdir -p "$REPO/.deploy-control/p0/checkins"
+printf x > "$REPO/.deploy-control/p0/checkins/INDEPENDENT-AUDIT.json"
+git -C "$REPO" add .deploy-control/p0/checkins/INDEPENDENT-AUDIT.json
+run_gate >/dev/null
+reset_case
+
 truncate -s 5242880 "$REPO/warn.bin"
 git -C "$REPO" add warn.bin
 run_gate 2>"$TMP/warn.stderr"
