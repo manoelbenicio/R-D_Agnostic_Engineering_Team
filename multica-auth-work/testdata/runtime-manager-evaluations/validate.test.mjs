@@ -198,6 +198,40 @@ test("all forbidden actions fail closed with no mutation or side effect", () => 
   }
 });
 
+test("forbidden actions carry no outcome that could imply a write", () => {
+  for (const operation of forbiddenOperations) {
+    const blocked = scenario(operation);
+    for (const key of ["state_after", "created_resource_types", "events", "preserved_ids"]) {
+      assert.equal(
+        Object.hasOwn(blocked.expected, key),
+        false,
+        `${operation} must not declare ${key}: a rejected action has no outcome`,
+      );
+    }
+    assert.notEqual(blocked.expected.error_code, null, `${operation} must name a rejection code`);
+  }
+});
+
+test("every digest is a normalized prefixed synthetic digest", () => {
+  const serialized = JSON.stringify(suite);
+  assert.doesNotMatch(
+    serialized,
+    /"[0-9a-fA-F]{64}"/,
+    "raw 64-hex digests must be normalized to the sha256:<hex> form",
+  );
+  const digests = serialized.match(/sha256:[0-9a-f]{64}/g) ?? [];
+  assert.ok(digests.length > 0, "suite must exercise at least one digest");
+  for (const digest of digests) {
+    const hex = digest.slice("sha256:".length);
+    if (hex === suite.canonical_spec.digest.slice("sha256:".length)) continue;
+    assert.equal(
+      new Set(hex).size,
+      1,
+      `${digest} must stay a single-nibble synthetic value so it cannot be mistaken for a real digest`,
+    );
+  }
+});
+
 test("fixtures contain no literal source-home path or credential payload", () => {
   const serialized = JSON.stringify(suite);
   assert.doesNotMatch(serialized, /(?:^|["'])\/(?:home|root|Users|var|opt|tmp)\//);

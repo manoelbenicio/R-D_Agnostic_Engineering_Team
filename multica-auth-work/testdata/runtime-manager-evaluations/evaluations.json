@@ -2,6 +2,29 @@
   "contract_version": "runtime-manager-evaluations.v1",
   "frozen_commit": "a57c12e8424cd88cda178499563b69569d244d84",
   "canonical_change": "credential-account-home-restoration",
+  "canonical_spec": {
+    "path": "openspec/changes/credential-account-home-restoration/specs/credential-account-home/spec.md",
+    "digest": "sha256:1cc2a91d7a0e0acdc7ab6d5f7d2ab9c708a50b227b66218fe5b4acb834c3e018",
+    "declared_requirements": 23
+  },
+  "pending_contracts": {
+    "note": "Vocabulary this suite asserts that has no product implementation yet. contract-binding.test.mjs recomputes both lists from real source and fails when either drifts, so an entry must be deleted as soon as its real contract lands.",
+    "unregistered_events": [
+      "runtime_binding:home_assigned",
+      "runtime_configuration:activated",
+      "runtime_configuration:applied",
+      "runtime_configuration:rolled_back",
+      "runtime_configuration:version_created",
+      "runtime_session:enrolled"
+    ],
+    "absent_source_symbols": [
+      "apply_class",
+      "effective_configuration_digest",
+      "runtime_binding",
+      "runtime_configuration",
+      "runtime_session"
+    ]
+  },
   "scenarios": [
     {
       "id": "golden-session-reuse",
@@ -35,7 +58,7 @@
           "daemon_id": "66666666-6666-4666-8666-666666666666"
         },
         "created_resource_types": ["runtime_binding"],
-        "events": ["runtime_session.enrolled"],
+        "events": ["runtime_session:enrolled"],
         "state_after": {
           "binding_id": "77777777-7777-4777-8777-777777777777",
           "home_assignment": null,
@@ -82,7 +105,7 @@
           "binding_id": "77777777-7777-4777-8777-777777777777"
         },
         "created_resource_types": ["home_assignment"],
-        "events": ["runtime_binding.home_assigned"],
+        "events": ["runtime_binding:home_assigned"],
         "state_after": {
           "binding_generation": 13,
           "home_ref": "home_opaque_02",
@@ -110,9 +133,9 @@
         "binding_generation": 13,
         "process_id": "runtime-process-01",
         "active_version_id": "88888888-8888-4888-8888-888888888881",
-        "active_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "active_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "running_task_version_id": "88888888-8888-4888-8888-888888888881",
-        "capability_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "capability_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "registered_apply_classes": {
           "model.model_id": "hot",
           "reasoning.mode": "hot",
@@ -139,14 +162,14 @@
         },
         "created_resource_types": ["runtime_configuration_version"],
         "events": [
-          "runtime_configuration.version_created",
-          "runtime_configuration.activated",
-          "runtime_configuration.applied"
+          "runtime_configuration:version_created",
+          "runtime_configuration:activated",
+          "runtime_configuration:applied"
         ],
         "state_after": {
           "active_version_id": "88888888-8888-4888-8888-888888888882",
           "applied_version_id": "88888888-8888-4888-8888-888888888882",
-          "active_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "active_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "apply_class": "hot",
           "daemon_acknowledged": true,
           "process_restarted": false,
@@ -192,8 +215,8 @@
         },
         "created_resource_types": ["activation_audit"],
         "events": [
-          "runtime_configuration.rolled_back",
-          "runtime_configuration.applied"
+          "runtime_configuration:rolled_back",
+          "runtime_configuration:applied"
         ],
         "state_after": {
           "active_version_id": "88888888-8888-4888-8888-888888888881",
@@ -227,7 +250,7 @@
           "agent_id": "44444444-4444-4444-8444-444444444444",
           "workspace_id": "22222222-2222-4222-8222-222222222222",
           "configuration_version_id": "88888888-8888-4888-8888-888888888882",
-          "effective_configuration_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "effective_configuration_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "binding_id": "77777777-7777-4777-8777-777777777777",
           "binding_generation": 13,
           "home_ref": "home_opaque_02",
