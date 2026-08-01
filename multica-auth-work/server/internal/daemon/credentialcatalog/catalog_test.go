@@ -397,46 +397,56 @@ func TestActiveRefCountingAndDrainingLifecycle(t *testing.T) {
 	}
 }
 
-func TestDurableTombstoneNameNonReuse(t *testing.T) {
+func TestDurableTombstonePersistsAcrossCatalogRestart(t *testing.T) {
 	root := newPrivateRoot(t)
-	_, _ = writeFakeHome(t, root, "reused-slot", ProviderCodex)
-	catalog := mustCatalog(t, root, ProviderCodex)
+	storePath := filepath.Join(t.TempDir(), "tombstones.json")
+	fileStore, err := NewFileTombstoneStore(storePath)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	snap1, err := catalog.Reconcile()
+	// Instance 1: Create candidate, reconcile, remove directory, reconcile
+	cat1, err := New(Config{Root: root, Provider: ProviderCodex, Store: fileStore})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _ = writeFakeHome(t, root, "restart-slot", ProviderCodex)
+	snap1, err := cat1.Reconcile()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if snap1.HealthyCount() != 1 {
-		t.Fatalf("snap1 healthy count = %d, want 1", snap1.HealthyCount())
+		t.Fatalf("snap1 healthy = %d", snap1.HealthyCount())
 	}
 
-	// Remove physical candidate directory
-	if err := os.RemoveAll(filepath.Join(root, "reused-slot")); err != nil {
+	if err := os.RemoveAll(filepath.Join(root, "restart-slot")); err != nil {
 		t.Fatal(err)
 	}
-
-	snap2, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if snap2.HealthyCount() != 0 || snap2.TombstonedCount() != 1 {
-		t.Fatalf("snap2 healthy=%d tombstoned=%d", snap2.HealthyCount(), snap2.TombstonedCount())
-	}
-
-	// Re-create a directory with the exact same name "reused-slot"
-	_, _ = writeFakeHome(t, root, "reused-slot", ProviderCodex)
-
-	snap3, err := catalog.Reconcile()
+	_, err = cat1.Reconcile()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Re-created directory MUST be quarantined as Tombstoned, NEVER healthy!
-	if snap3.HealthyCount() != 0 || snap3.QuarantinedCount() != 1 {
-		t.Fatalf("snap3 healthy=%d quarantined=%d", snap3.HealthyCount(), snap3.QuarantinedCount())
+	// Instance 2: Restart Catalog with new instance from same root and file store
+	cat2, err := New(Config{Root: root, Provider: ProviderCodex, Store: fileStore})
+	if err != nil {
+		t.Fatal(err)
 	}
-	if snap3.Quarantined()[0].Reason() != ReasonTombstoned {
-		t.Fatalf("quarantine reason = %q, want ReasonTombstoned", snap3.Quarantined()[0].Reason())
+
+	// Recreate physical directory with same name "restart-slot"
+	_, _ = writeFakeHome(t, root, "restart-slot", ProviderCodex)
+
+	snap2, err := cat2.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Must be quarantined as ReasonTombstoned across restart!
+	if snap2.HealthyCount() != 0 || snap2.QuarantinedCount() != 1 {
+		t.Fatalf("post-restart healthy=%d quarantined=%d", snap2.HealthyCount(), snap2.QuarantinedCount())
+	}
+	if snap2.Quarantined()[0].Reason() != ReasonTombstoned {
+		t.Fatalf("post-restart reason = %q, want ReasonTombstoned", snap2.Quarantined()[0].Reason())
 	}
 }
 
@@ -516,7 +526,7 @@ func TestWatcherOverflowRecovery(t *testing.T) {
 	}
 }
 
-func TestWatermarkEnforcementQuarantinesExcessNoSilentDrop(t *testing.T) {
+func TestWatermarkEnforcementEmitsAdmissionDegradedWithoutTruncatingHealthyDiscovery(t *testing.T) {
 	root := newPrivateRoot(t)
 	for i := 0; i < 25; i++ {
 		writeFakeHome(t, root, fmt.Sprintf("child-%03d", i), ProviderCodex)
@@ -538,18 +548,14 @@ func TestWatermarkEnforcementQuarantinesExcessNoSilentDrop(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if snap.HealthyCount() != 15 {
-		t.Fatalf("healthy count after watermark enforcement = %d, want 15", snap.HealthyCount())
+	// ZERO healthy discovery entries sliced or dropped! All 25 remain in Healthy discovery.
+	if snap.HealthyCount() != 25 {
+		t.Fatalf("healthy count = %d, want 25 (no silent drop)", snap.HealthyCount())
 	}
 
-	// Excess 10 entries MUST be explicitly recorded in Quarantined with ReasonWatermarkExceeded
-	if snap.QuarantinedCount() != 10 {
-		t.Fatalf("quarantined count = %d, want 10", snap.QuarantinedCount())
-	}
-	for _, q := range snap.Quarantined() {
-		if q.Reason() != ReasonWatermarkExceeded {
-			t.Fatalf("quarantine reason = %q, want ReasonWatermarkExceeded", q.Reason())
-		}
+	// Watermark signal is emitted via AdmissionStatus and HighWatermarkExceeded
+	if snap.AdmissionStatus() != AdmissionDegraded || !snap.HighWatermarkExceeded() {
+		t.Fatalf("admission status=%q exceeded=%v", snap.AdmissionStatus(), snap.HighWatermarkExceeded())
 	}
 }
 

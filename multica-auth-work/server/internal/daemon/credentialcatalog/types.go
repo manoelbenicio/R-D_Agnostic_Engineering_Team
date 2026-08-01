@@ -74,6 +74,14 @@ const (
 	StateTombstoned  State = "tombstoned"
 )
 
+// AdmissionStatus represents the watermark and capacity admission status.
+type AdmissionStatus string
+
+const (
+	AdmissionNormal   AdmissionStatus = "normal"
+	AdmissionDegraded AdmissionStatus = "degraded"
+)
+
 // QuarantineReason is a stable, pathless reason code.
 type QuarantineReason string
 
@@ -132,20 +140,24 @@ func (q Quarantine) Reason() QuarantineReason { return q.reason }
 // and every accessor returns a copy, so a published generation cannot be
 // changed by callers.
 type Snapshot struct {
-	generation  uint64
-	capturedAt  time.Time
-	ttl         time.Duration
-	provider    Provider
-	entries     []Entry
-	quarantined []Quarantine
-	draining    []Entry
-	tombstoned  []string
+	generation            uint64
+	capturedAt            time.Time
+	ttl                   time.Duration
+	provider              Provider
+	admissionStatus       AdmissionStatus
+	highWatermarkExceeded bool
+	entries               []Entry
+	quarantined           []Quarantine
+	draining              []Entry
+	tombstoned            []string
 }
 
-func (s Snapshot) Generation() uint64    { return s.generation }
-func (s Snapshot) CapturedAt() time.Time { return s.capturedAt }
-func (s Snapshot) TTL() time.Duration    { return s.ttl }
-func (s Snapshot) Provider() Provider    { return s.provider }
+func (s Snapshot) Generation() uint64            { return s.generation }
+func (s Snapshot) CapturedAt() time.Time         { return s.capturedAt }
+func (s Snapshot) TTL() time.Duration            { return s.ttl }
+func (s Snapshot) Provider() Provider            { return s.provider }
+func (s Snapshot) AdmissionStatus() AdmissionStatus { return s.admissionStatus }
+func (s Snapshot) HighWatermarkExceeded() bool   { return s.highWatermarkExceeded }
 
 func (s Snapshot) IsExpired(now time.Time) bool {
 	if s.ttl <= 0 {

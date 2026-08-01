@@ -1,6 +1,7 @@
 package credentialcatalog
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
@@ -17,17 +18,18 @@ import (
 const privateModeMask = os.FileMode(0o077)
 
 var (
-	ErrInvalidRoot      = errors.New("credential catalog: invalid controlled root")
-	ErrRootChanged      = errors.New("credential catalog: controlled root identity changed")
-	ErrHomeNotHealthy   = errors.New("credential catalog: home is not healthy")
-	ErrHomeTombstoned   = errors.New("credential catalog: home is tombstoned")
-	ErrHomeNotFound     = errors.New("credential catalog: home ref not found")
-	ErrRefUnderflow     = errors.New("credential catalog: active ref underflow")
-	ErrRevalidateFailed = errors.New("credential catalog: launch-time revalidation failed")
+	ErrInvalidRoot       = errors.New("credential catalog: invalid controlled root")
+	ErrRootChanged       = errors.New("credential catalog: controlled root identity changed")
+	ErrHomeNotHealthy    = errors.New("credential catalog: home is not healthy")
+	ErrHomeTombstoned    = errors.New("credential catalog: home is tombstoned")
+	ErrHomeNotFound      = errors.New("credential catalog: home ref not found")
+	ErrRefUnderflow      = errors.New("credential catalog: active ref underflow")
+	ErrRevalidateFailed  = errors.New("credential catalog: launch-time revalidation failed")
+	ErrMissingTombstoneStore = errors.New("credential catalog: tombstone store is required")
 )
 
 // Config defines one private controlled root and one provider layout, along
-// with optional lifecycle, retention, and watermark parameters.
+// with optional lifecycle, retention, watermark, and tombstone persistence parameters.
 type Config struct {
 	Root            string
 	Provider        Provider
@@ -35,11 +37,13 @@ type Config struct {
 	RetentionPeriod time.Duration
 	HighWatermark   int
 	LowWatermark    int
+	Store           TombstoneStore
 }
 
 // Catalog serializes complete scans, manages lifecycle transitions (healthy,
 // draining, retired, tombstoned), tracks active reference counts, performs
-// fast launch-time revalidations, and handles watcher overflow recovery.
+// fast launch-time revalidations, handles watcher overflow recovery, and
+// persists tombstones across daemon restarts.
 type Catalog struct {
 	mu               sync.RWMutex
 	root             string
@@ -50,6 +54,7 @@ type Catalog struct {
 	retentionPeriod  time.Duration
 	highWatermark    int
 	lowWatermark     int
+	store            TombstoneStore
 	generation       uint64
 	current          Snapshot
 	hasCurrent       bool
@@ -63,7 +68,7 @@ type Catalog struct {
 	lastHintAt       time.Time
 }
 
-// New validates the controlled root without reading any child artifact.
+// New validates the controlled root and initializes persistent tombstone state.
 func New(config Config) (*Catalog, error) {
 	layout, ok := LayoutFor(config.Provider)
 	if !ok {
@@ -95,7 +100,12 @@ func New(config Config) (*Catalog, error) {
 		lowWM = 8000
 	}
 
-	return &Catalog{
+	store := config.Store
+	if store == nil {
+		store = NewMemoryTombstoneStore()
+	}
+
+	cat := &Catalog{
 		root:            root,
 		rootIdentity:    identity,
 		provider:        config.Provider,
@@ -104,12 +114,34 @@ func New(config Config) (*Catalog, error) {
 		retentionPeriod: retention,
 		highWatermark:   highWM,
 		lowWatermark:    lowWM,
+		store:           store,
 		activeRefs:      make(map[string]int),
 		tombstones:      make(map[string]time.Time),
 		tombstonedNames: make(map[string]struct{}),
 		tombstonedRefs:  make(map[string]struct{}),
 		draining:        make(map[string]discoveredHome),
-	}, nil
+	}
+
+	if err := cat.loadDurableTombstonesLocked(context.Background()); err != nil {
+		return nil, fmt.Errorf("credential catalog: failed to load durable tombstones: %w", err)
+	}
+
+	return cat, nil
+}
+
+func (c *Catalog) loadDurableTombstonesLocked(ctx context.Context) error {
+	records, err := c.store.LoadTombstones(ctx, c.provider)
+	if err != nil {
+		return err
+	}
+	for _, rec := range records {
+		c.tombstones[rec.HomeRef] = rec.TombstonedAt
+		c.tombstonedRefs[rec.HomeRef] = struct{}{}
+		if rec.NameRef != "" {
+			c.tombstonedNames[rec.NameRef] = struct{}{}
+		}
+	}
+	return nil
 }
 
 // Reconcile performs one full scan. Candidate-specific failures are published
@@ -263,10 +295,10 @@ func (c *Catalog) ReleaseRef(homeRef string) error {
 	count--
 	if count == 0 {
 		delete(c.activeRefs, homeRef)
-		if _, draining := c.draining[homeRef]; draining {
+		if drainingHome, draining := c.draining[homeRef]; draining {
 			delete(c.draining, homeRef)
-			c.tombstones[homeRef] = time.Now().UTC()
-			c.tombstonedRefs[homeRef] = struct{}{}
+			candidateName := filepath.Base(filepath.Dir(drainingHome.entry.homePath))
+			c.recordTombstoneLocked(homeRef, candidateName)
 		}
 	} else {
 		c.activeRefs[homeRef] = count
@@ -354,15 +386,26 @@ func (c *Catalog) WatcherOverflowCount() uint64 {
 }
 
 func (c *Catalog) quarantineHomeLocked(homeRef, candidateName string, entry Entry) {
+	c.recordTombstoneLocked(homeRef, candidateName)
+	if count := c.activeRefs[homeRef]; count > 0 {
+		c.draining[homeRef] = discoveredHome{entry: entry}
+	}
+}
+
+func (c *Catalog) recordTombstoneLocked(homeRef, candidateName string) {
+	now := time.Now().UTC()
 	nameRef := opaqueNameRef(c.rootIdentity, c.provider, candidateName)
 	c.tombstonedNames[nameRef] = struct{}{}
 	c.tombstonedRefs[homeRef] = struct{}{}
+	c.tombstones[homeRef] = now
 
-	if count := c.activeRefs[homeRef]; count > 0 {
-		c.draining[homeRef] = discoveredHome{entry: entry}
-	} else {
-		c.tombstones[homeRef] = time.Now().UTC()
+	rec := TombstoneRecord{
+		HomeRef:      homeRef,
+		NameRef:      nameRef,
+		Provider:     c.provider,
+		TombstonedAt: now,
 	}
+	_ = c.store.SaveTombstone(context.Background(), rec)
 }
 
 func (c *Catalog) reconcileLifecycleLocked(scannedHomes map[string]discoveredHome) {
@@ -375,7 +418,11 @@ func (c *Catalog) reconcileLifecycleLocked(scannedHomes map[string]discoveredHom
 		if _, exists := scannedHomes[ref]; !exists {
 			// Previously healthy home is now missing from scan
 			candidateName := filepath.Base(filepath.Dir(prevEntry.homePath))
-			c.quarantineHomeLocked(ref, candidateName, prevEntry)
+			if count := c.activeRefs[ref]; count > 0 {
+				c.draining[ref] = discoveredHome{entry: prevEntry}
+			} else {
+				c.recordTombstoneLocked(ref, candidateName)
+			}
 		}
 	}
 }
@@ -390,15 +437,11 @@ func (c *Catalog) pruneTombstonesLocked(now time.Time) {
 
 func (c *Catalog) enforceWatermarksLocked(snapshot *Snapshot) {
 	if len(snapshot.entries) > c.highWatermark {
-		excess := snapshot.entries[c.lowWatermark:]
-		snapshot.entries = snapshot.entries[:c.lowWatermark]
-		for _, entry := range excess {
-			snapshot.quarantined = append(snapshot.quarantined, Quarantine{
-				candidateRef: entry.homeRef,
-				provider:     c.provider,
-				reason:       ReasonWatermarkExceeded,
-			})
-		}
+		snapshot.admissionStatus = AdmissionDegraded
+		snapshot.highWatermarkExceeded = true
+	} else {
+		snapshot.admissionStatus = AdmissionNormal
+		snapshot.highWatermarkExceeded = false
 	}
 }
 
