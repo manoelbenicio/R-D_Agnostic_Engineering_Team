@@ -21,16 +21,29 @@ Task or user custom environment and arguments MUST NOT override gateway URL/auth
 - **WHEN** custom settings contain a provider key or direct base URL
 - **THEN** pre-launch validation rejects the task before reading the gateway secret or creating a child process
 
-### Requirement: Login credential slot retention (24h, login-based)
-Per-login credential slot directories (`~/.agent-cred-homes/slots/slot-<N>`) SHALL be retained for at most 24h and then destroyed automatically, so credential material does not accumulate and exhaust disk. Retention is **login-based and time-based**, NOT task-based: a slot is never deleted merely because a task finished (a task may run from minutes to hours), and deletion is driven only by the slot's age.
+### Requirement: Credential slot cardinality (binding-based, not age-based)
+Credential slot directories (`~/.agent-cred-homes/slots/slot-<N>`) SHALL be reconciled to exactly
+one directory per stable active binding, with zero historical directories. Retention is
+**binding-based**, NOT age-based and NOT task-based: a slot is never deleted because it is old,
+and never deleted merely because a task finished. Non-reuse of a retired identity is guaranteed by
+persisted tombstone metadata, which is never deleted by a retention deadline. Deletion of physical
+directories is a policy-layer operation; the credential catalog performs no physical folder
+creation, copy, delete, or history behavior.
 
-#### Scenario: Slot exceeds 24h and is idle
-- **WHEN** a login credential slot is older than 24h and no live process is using it (no running process has its cwd or HOME inside the slot)
-- **THEN** the slot directory is deleted automatically on the next scheduled sweep, with no manual cleanup
+#### Scenario: Slot has no stable active binding
+- **WHEN** a credential slot directory corresponds to no stable active binding and no live process
+  references it
+- **THEN** the directory is removed by explicit stale reconciliation, and the corresponding
+  tombstone metadata is retained for non-reuse
 
-#### Scenario: Slot exceeds 24h but is still in use
-- **WHEN** a login credential slot is older than 24h but a live process still references it
-- **THEN** the slot is preserved (never deleted out from under a running agent) and is eligible for deletion only once it is no longer in use
+#### Scenario: Slot is still referenced by a live process
+- **WHEN** a credential slot directory is referenced by a live process
+- **THEN** the slot is preserved regardless of age, and becomes eligible for reconciliation only
+  once it is no longer referenced
+
+#### Scenario: Process audit is unavailable
+- **WHEN** production reconciliation cannot perform a privileged all-process `/proc` audit
+- **THEN** reconciliation fails closed and removes nothing
 
 ### Requirement: Secret-safe diagnostics
 Logs, metrics, traces, health and errors SHALL exclude credentials, authorization values, cookies, prompts, tool payloads, repository content and account identity.

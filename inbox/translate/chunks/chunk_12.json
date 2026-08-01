@@ -1,0 +1,4198 @@
+[
+{
+"id": 7445,
+"es": "Datos HOT"
+},
+{
+"id": 7446,
+"es": ": comprenden la información más reciente y de uso intensivo por las aplicaciones. Incluyen:"
+},
+{
+"id": 7447,
+"es": "Medidas de los últimos N meses."
+},
+{
+"id": 7448,
+"es": "Datos de inventario."
+},
+{
+"id": 7449,
+"es": "Tablas de trazabilidad operativa."
+},
+{
+"id": 7450,
+"es": "Datos COLD"
+},
+{
+"id": 7451,
+"es": ": representan el repositorio histórico donde se replican los datos de medida recibidos en HOT, asegurando la disponibilidad e integridad de la información para consultas analíticas, auditorías o cumplimiento normativo."
+},
+{
+"id": 7452,
+"es": "Notar que las acciones requeridas para la puesta en marcha de esta solución deben ser realizadas por un equipo de implantación autorizado o el administrador de la instalación."
+},
+{
+"id": 7453,
+"es": "Arquitectura de almacenamiento"
+},
+{
+"id": 7454,
+"es": "La solución está compuesta por "
+},
+{
+"id": 7455,
+"es": "dos bases de datos físicamente independientes"
+},
+{
+"id": 7456,
+"es": ", desplegadas en máquinas virtuales distintas para garantizar aislamiento y resiliencia:"
+},
+{
+"id": 7457,
+"es": "Base de datos HOT: "
+},
+{
+"id": 7458,
+"es": "destinada a almacenar la información reciente y accesible por el usuario desde la aplicación."
+},
+{
+"id": 7459,
+"es": "Corresponde a la base de datos transaccional de producción."
+},
+{
+"id": 7460,
+"es": "Es consumida directamente por el sistema "
+},
+{
+"id": 7461,
+"es": "OUM"
+},
+{
+"id": 7462,
+"es": ", tanto en sus módulos MDC como MDM."
+},
+{
+"id": 7463,
+"es": "Está optimizada para operaciones de lectura/escritura de alta frecuencia."
+},
+{
+"id": 7464,
+"es": "Base de datos COLD: "
+},
+{
+"id": 7465,
+"es": "destinada a conservar los datos históricos"
+},
+{
+"id": 7466,
+"es": "Consolida la totalidad de los registros históricos."
+},
+{
+"id": 7467,
+"es": "Su activación y exposición se ajusta a los requerimientos del proyecto."
+},
+{
+"id": 7468,
+"es": "Concebida para consultas analíticas y extracción de información a gran escala, sin impactar el rendimiento de la base HOT."
+},
+{
+"id": 7469,
+"es": "El acceso a los datos de este repositorio puede realizarse mediante configuración de datasource para el módulo de informes del sistema o bien mediante el acceso por herramientas de explotación externas autorizadas."
+},
+{
+"id": 7470,
+"es": "entidades "
+},
+{
+"id": 7471,
+"es": "que pueden configurarse para ser replicadas al repositorio Cold son las siguientes:"
+},
+{
+"id": 7472,
+"es": "measure_profile"
+},
+{
+"id": 7473,
+"es": "optimal_measure_profile"
+},
+{
+"id": 7474,
+"es": "billing_register_curve"
+},
+{
+"id": 7475,
+"es": "optimal_billing_register_curve"
+},
+{
+"id": 7476,
+"es": "reading"
+},
+{
+"id": 7477,
+"es": "optimal_reading"
+},
+{
+"id": 7478,
+"es": "optimal_reading_profile"
+},
+{
+"id": 7479,
+"es": "event"
+},
+{
+"id": 7480,
+"es": "instantaneous_value"
+},
+{
+"id": 7481,
+"es": "Procesos de Gestión de Datos"
+},
+{
+"id": 7482,
+"es": "La estrategia seguida en el producto busca que la Utility pueda reducir los costes operativos al limitar el almacenamiento en la base de datos Hot a la profundidad histórica de datos que realmente requiere su operación."
+},
+{
+"id": 7483,
+"es": "Para ello, la lógica de la estrategia Hot-Cold implementada se divide en dos etapas:"
+},
+{
+"id": 7484,
+"es": "Réplica de datos HOT → COLD"
+},
+{
+"id": 7485,
+"es": "El producto dispone de "
+},
+{
+"id": 7486,
+"es": "procesos automáticos de replicación asíncrona "
+},
+{
+"id": 7487,
+"es": "con periodicidad de ejecución configurable (ejemplo cada 10 minutos) sobre la base de datos Hot"
+},
+{
+"id": 7488,
+"es": "Estos procesos identifican automáticamente los registros nuevos o actualizados sobre las entidades configuradas como replicables. "
+},
+{
+"id": 7489,
+"es": "Una vez identificados, "
+},
+{
+"id": 7490,
+"es": "recupera lotes de registros y los ingesta en la base datos Cold "
+},
+{
+"id": 7491,
+"es": "de forma asíncrona "
+},
+{
+"id": 7492,
+"es": "Este proceso de transferencia masiva realiza commits en bloques periódicos para garantizar la consistencia, integridad referencial y minimizando la actividad sobre la base de datos Hot."
+},
+{
+"id": 7493,
+"es": "Ciclo de Vida de datos sobre la base de datos HOT"
+},
+{
+"id": 7494,
+"es": "En las entidades identificadas, el administrador puede fijar "
+},
+{
+"id": 7495,
+"es": "criterios temporales "
+},
+{
+"id": 7496,
+"es": "sobre las hypertablas asociadas a las entidades gestionadas para la "
+},
+{
+"id": 7497,
+"es": "ejecución automática de acciones"
+},
+{
+"id": 7498,
+"es": "Compresión"
+},
+{
+"id": 7499,
+"es": ": esta acción comprime los datos en la base de datos mientras sigue permitiendo su acceso desde el sistema de forma completamente transparente para el usuario."
+},
+{
+"id": 7500,
+"es": "Purgado"
+},
+{
+"id": 7501,
+"es": ": esta acción elimina completamente los datos de la base de datos."
+},
+{
+"id": 7502,
+"es": "Estas operaciones automáticas están delegadas completamente en las capacidades de "
+},
+{
+"id": 7503,
+"es": "TigerData "
+},
+{
+"id": 7504,
+"es": "que permite configurar políticas de ciclo de vida de datos en las series temporales mediante parámetros configurables en la implantación"
+},
+{
+"id": 7505,
+"es": "Compatibilidades"
+},
+{
+"id": 7506,
+"es": "Esta solución puede habilitarse sobre instalaciones del producto con base de datos "
+},
+{
+"id": 7507,
+"es": "PostgresSQL v17"
+},
+{
+"id": 7508,
+"es": "/TimescaleDB 18"
+},
+{
+"id": 7509,
+"es": " o superiores."
+},
+{
+"id": 7510,
+"es": "Magnitudes - Medidas de Cierre"
+},
+{
+"id": 7511,
+"es": "Magnitudes - Perfil de Carga y Perfil de Carga Absoluto"
+},
+{
+"id": 7512,
+"es": "Magnitudes - Valores Instantáneos"
+},
+{
+"id": 7513,
+"es": "La versión actual del Producto OM dispone de las siguientes magnitudes registradas en BBDD:"
+},
+{
+"id": 7514,
+"es": "Abreviatura"
+},
+{
+"id": 7515,
+"es": "ABSOLUTE_ACTIVE_ENERGY"
+},
+{
+"id": 7516,
+"es": "Abasolute Active Energy"
+},
+{
+"id": 7517,
+"es": "AAE"
+},
+{
+"id": 7518,
+"es": "Wh"
+},
+{
+"id": 7519,
+"es": "INCREMENTAL_ACTIVE_ENERGY"
+},
+{
+"id": 7520,
+"es": "Incremental Active Energy"
+},
+{
+"id": 7521,
+"es": "IAE"
+},
+{
+"id": 7522,
+"es": "EXCESS_POWER"
+},
+{
+"id": 7523,
+"es": "Excess Power"
+},
+{
+"id": 7524,
+"es": "EP"
+},
+{
+"id": 7525,
+"es": "VAh"
+},
+{
+"id": 7526,
+"es": "RESERVA_1"
+},
+{
+"id": 7527,
+"es": "Reserva 1"
+},
+{
+"id": 7528,
+"es": "RS1"
+},
+{
+"id": 7529,
+"es": "RESERVA_2"
+},
+{
+"id": 7530,
+"es": "Reserva 2"
+},
+{
+"id": 7531,
+"es": "RS2"
+},
+{
+"id": 7532,
+"es": "BRM_IMPORT_ACTIVE_ENERGY_PHASE_1"
+},
+{
+"id": 7533,
+"es": "Import Active Energy Phase 1 (kWh)"
+},
+{
+"id": 7534,
+"es": "IAP1"
+},
+{
+"id": 7535,
+"es": "kWh"
+},
+{
+"id": 7536,
+"es": "BRM_IMPORT_ACTIVE_ENERGY_PHASE_2"
+},
+{
+"id": 7537,
+"es": "Import Active Energy Phase 2 (kWh)"
+},
+{
+"id": 7538,
+"es": "IAP2"
+},
+{
+"id": 7539,
+"es": "BRM_IMPORT_ACTIVE_ENERGY_PHASE_3"
+},
+{
+"id": 7540,
+"es": "Import Active Energy Phase 3 (kWh)"
+},
+{
+"id": 7541,
+"es": "IAP3"
+},
+{
+"id": 7542,
+"es": "BRM_EXPORT_ACTIVE_ENERGY_PHASE_1"
+},
+{
+"id": 7543,
+"es": "Export Active Energy Phase 1 (kWh)"
+},
+{
+"id": 7544,
+"es": "EAP1"
+},
+{
+"id": 7545,
+"es": "BRM_EXPORT_ACTIVE_ENERGY_PHASE_2"
+},
+{
+"id": 7546,
+"es": "Export Active Energy Phase 2 (kWh)"
+},
+{
+"id": 7547,
+"es": "EAP2"
+},
+{
+"id": 7548,
+"es": "BRM_EXPORT_ACTIVE_ENERGY_PHASE_3"
+},
+{
+"id": 7549,
+"es": "Export Active Energy Phase 3 (kWh)"
+},
+{
+"id": 7550,
+"es": "EAP3"
+},
+{
+"id": 7551,
+"es": "BRM_Q1_REACTIVE_ENERGY_PHASE_1"
+},
+{
+"id": 7552,
+"es": "Q1 Reactive Energy Phase 1 (kVArh)"
+},
+{
+"id": 7553,
+"es": "kVArh"
+},
+{
+"id": 7554,
+"es": "BRM_Q1_REACTIVE_ENERGY_PHASE_2"
+},
+{
+"id": 7555,
+"es": "Q1 Reactive Energy Phase 2 (kVArh)"
+},
+{
+"id": 7556,
+"es": "BRM_Q1_REACTIVE_ENERGY_PHASE_3"
+},
+{
+"id": 7557,
+"es": "Q1 Reactive Energy Phase 3 (kVArh)"
+},
+{
+"id": 7558,
+"es": "BRM_Q2_REACTIVE_ENERGY_PHASE_1"
+},
+{
+"id": 7559,
+"es": "Q2 Reactive Energy Phase 1 (kVArh)"
+},
+{
+"id": 7560,
+"es": "BRM_Q2_REACTIVE_ENERGY_PHASE_2"
+},
+{
+"id": 7561,
+"es": "Q2 Reactive Energy Phase 2 (kVArh)"
+},
+{
+"id": 7562,
+"es": "BRM_Q2_REACTIVE_ENERGY_PHASE_3"
+},
+{
+"id": 7563,
+"es": "Q2 Reactive Energy Phase 3 (kVArh)"
+},
+{
+"id": 7564,
+"es": "BRM_Q3_REACTIVE_ENERGY_PHASE_1"
+},
+{
+"id": 7565,
+"es": "Q3 Reactive Energy Phase 1 (kVArh)"
+},
+{
+"id": 7566,
+"es": "BRM_Q3_REACTIVE_ENERGY_PHASE_2"
+},
+{
+"id": 7567,
+"es": "Q3 Reactive Energy Phase 2 (kVArh)"
+},
+{
+"id": 7568,
+"es": "BRM_Q3_REACTIVE_ENERGY_PHASE_3"
+},
+{
+"id": 7569,
+"es": "Q3 Reactive Energy Phase 3 (kVArh)"
+},
+{
+"id": 7570,
+"es": "BRM_Q4_REACTIVE_ENERGY_PHASE_1"
+},
+{
+"id": 7571,
+"es": "Q4 Reactive Energy Phase 1 (kVArh)"
+},
+{
+"id": 7572,
+"es": "BRM_Q4_REACTIVE_ENERGY_PHASE_2"
+},
+{
+"id": 7573,
+"es": "Q4 Reactive Energy Phase 2 (kVArh)"
+},
+{
+"id": 7574,
+"es": "BRM_Q4_REACTIVE_ENERGY_PHASE_3"
+},
+{
+"id": 7575,
+"es": "Q4 Reactive Energy Phase 3 (kVArh)"
+},
+{
+"id": 7576,
+"es": "Export Active Energy (kWh)"
+},
+{
+"id": 7577,
+"es": "Import Active Energy (kWh)"
+},
+{
+"id": 7578,
+"es": "Q1 Reactive Energy (kVArh)"
+},
+{
+"id": 7579,
+"es": "Q2 Reactive Energy (kVArh)"
+},
+{
+"id": 7580,
+"es": "Q3 Reactive Energy (kVArh)"
+},
+{
+"id": 7581,
+"es": "Q4 Reactive Energy (kVArh)"
+},
+{
+"id": 7582,
+"es": "BRM_MAXIMUM_POWER"
+},
+{
+"id": 7583,
+"es": "Maximum Power"
+},
+{
+"id": 7584,
+"es": "BRM_MAXIMUM_POWER_DATE"
+},
+{
+"id": 7585,
+"es": "Maximum Power Date"
+},
+{
+"id": 7586,
+"es": "MPD"
+},
+{
+"id": 7587,
+"es": "Import Active Energy"
+},
+{
+"id": 7588,
+"es": "Export Active Energy"
+},
+{
+"id": 7589,
+"es": "Reactive Energy Quadrant 1"
+},
+{
+"id": 7590,
+"es": "Reactive Energy Quadrant 2"
+},
+{
+"id": 7591,
+"es": "Reactive Energy Quadrant 3"
+},
+{
+"id": 7592,
+"es": "Reactive Energy Quadrant 4"
+},
+{
+"id": 7593,
+"es": "Total Active Power"
+},
+{
+"id": 7594,
+"es": "TAP"
+},
+{
+"id": 7595,
+"es": "Total Voltage"
+},
+{
+"id": 7596,
+"es": "TV"
+},
+{
+"id": 7597,
+"es": "Total Current"
+},
+{
+"id": 7598,
+"es": "TC"
+},
+{
+"id": 7599,
+"es": "Voltage Phase A"
+},
+{
+"id": 7600,
+"es": "Voltage Phase B"
+},
+{
+"id": 7601,
+"es": "Voltage Phase C"
+},
+{
+"id": 7602,
+"es": "Current Phase A"
+},
+{
+"id": 7603,
+"es": "Current Phase B"
+},
+{
+"id": 7604,
+"es": "Current Phase C"
+},
+{
+"id": 7605,
+"es": "Total Harmonic Distorsion Phase A"
+},
+{
+"id": 7606,
+"es": "THD_A"
+},
+{
+"id": 7607,
+"es": "Total Harmonic Distorsion Phase B"
+},
+{
+"id": 7608,
+"es": "THD_B"
+},
+{
+"id": 7609,
+"es": "Total Harmonic Distorsion Phase C"
+},
+{
+"id": 7610,
+"es": "THD_C"
+},
+{
+"id": 7611,
+"es": "Frequency"
+},
+{
+"id": 7612,
+"es": "FREQ"
+},
+{
+"id": 7613,
+"es": "Hz"
+},
+{
+"id": 7614,
+"es": "PF"
+},
+{
+"id": 7615,
+"es": "Temperature"
+},
+{
+"id": 7616,
+"es": "TEMP"
+},
+{
+"id": 7617,
+"es": "TOTAL_IMPORT_ACTIVE_POWER"
+},
+{
+"id": 7618,
+"es": "Total Import Active Power"
+},
+{
+"id": 7619,
+"es": "TIAP"
+},
+{
+"id": 7620,
+"es": "TOTAL_EXPORT_ACTIVE_POWER"
+},
+{
+"id": 7621,
+"es": "Total Export Active Power"
+},
+{
+"id": 7622,
+"es": "TEAP"
+},
+{
+"id": 7623,
+"es": "TOTAL_IMPORT_REACTIVE_POWER"
+},
+{
+"id": 7624,
+"es": "Total Import Reactive Power"
+},
+{
+"id": 7625,
+"es": "TIRP"
+},
+{
+"id": 7626,
+"es": "VAR"
+},
+{
+"id": 7627,
+"es": "TOTAL_EXPORT_REACTIVE_POWER"
+},
+{
+"id": 7628,
+"es": "Total Export Reactive Power"
+},
+{
+"id": 7629,
+"es": "TERP"
+},
+{
+"id": 7630,
+"es": "TOTAL_REACTIVE_POWER"
+},
+{
+"id": 7631,
+"es": "Total Reactive Power"
+},
+{
+"id": 7632,
+"es": "TRP"
+},
+{
+"id": 7633,
+"es": "ACTIVE_IMPORT"
+},
+{
+"id": 7634,
+"es": "Imported active energy"
+},
+{
+"id": 7635,
+"es": "kWh - Absolute"
+},
+{
+"id": 7636,
+"es": "ACTIVE_EXPORT"
+},
+{
+"id": 7637,
+"es": "Exported active energy"
+},
+{
+"id": 7638,
+"es": "REACTIVE_QUADRANT_I"
+},
+{
+"id": 7639,
+"es": "Reactive quadrant I"
+},
+{
+"id": 7640,
+"es": "kVArh – Absolute"
+},
+{
+"id": 7641,
+"es": "REACTIVE_QUADRANT_II"
+},
+{
+"id": 7642,
+"es": "Reactive quadrant II"
+},
+{
+"id": 7643,
+"es": "R_Q_II"
+},
+{
+"id": 7644,
+"es": "REACTIVE_QUADRANT_III"
+},
+{
+"id": 7645,
+"es": "Reactive quadrant III"
+},
+{
+"id": 7646,
+"es": "R_Q_III"
+},
+{
+"id": 7647,
+"es": "REACTIVE_QUADRANT_IV"
+},
+{
+"id": 7648,
+"es": "Reactive quadrant IV"
+},
+{
+"id": 7649,
+"es": "R_Q_IV"
+},
+{
+"id": 7650,
+"es": "ACTIVE_QUADRANT"
+},
+{
+"id": 7651,
+"es": "Active quadrant"
+},
+{
+"id": 7652,
+"es": "AQ"
+},
+{
+"id": 7653,
+"es": "METER_PHASE"
+},
+{
+"id": 7654,
+"es": "Phases connected to the meter"
+},
+{
+"id": 7655,
+"es": "CURRENT_SWITCH_STATE"
+},
+{
+"id": 7656,
+"es": "Current switch state"
+},
+{
+"id": 7657,
+"es": "PREVIOUS_SWITCH_STATE"
+},
+{
+"id": 7658,
+"es": "Previous switch state"
+},
+{
+"id": 7659,
+"es": "Esta sección recoge los detalles asociados al marco de integración del producto"
+},
+{
+"id": 7660,
+"es": "Enfoque estándar "
+},
+{
+"id": 7661,
+"es": "La perimetración/consolidación actual del producto está basada en la siguiente aproximación:"
+},
+{
+"id": 7662,
+"es": "Peticiones de entrada a producto"
+},
+{
+"id": 7663,
+"es": "APIRest (WS) "
+},
+{
+"id": 7664,
+"es": "para invocaciones por sistemas externos."
+},
+{
+"id": 7665,
+"es": "Si la petición tiene un caracter "
+},
+{
+"id": 7666,
+"es": "Síncrono "
+},
+{
+"id": 7667,
+"es": "el resultado de la operación se retorna como respuesta a la misma solicitud."
+},
+{
+"id": 7668,
+"es": "Si la petición tiene caracter "
+},
+{
+"id": 7669,
+"es": "Asíncrono "
+},
+{
+"id": 7670,
+"es": "la respuesta a la solicitud contiene un código de aceptación/rechazo a la misma pero los resultados de la operación se publicarán en un tópico Kafka."
+},
+{
+"id": 7671,
+"es": " para solicitudes o envío de información para consumo por producto en streaming "
+},
+{
+"id": 7672,
+"es": "Peticiones de salida desde producto "
+},
+{
+"id": 7673,
+"es": " para solicitudes o envío de información a terceros en streaming. Los distintos procesos del producto publicarán en tópicos diferenciados para consumo y procesamiento por sistemas terceros. "
+},
+{
+"id": 7674,
+"es": "Las especificaciones de los WS APIRest así como de la estructura de información asociada a cada tópico están accesibles en esta documentación de producto para uso por el equipo de implantación, así como la disponibilidad de un portal Swagger que habilite el acceso y prueba a las APIs (Rest) estándares del producto."
+},
+{
+"id": 7675,
+"es": "Consideraciones"
+},
+{
+"id": 7676,
+"es": "NO están expresamente en alcance de producto las integraciones con terceros mediante las siguientes opciones:"
+},
+{
+"id": 7677,
+"es": "Llamadas a WebServices de Terceros: "
+},
+{
+"id": 7678,
+"es": "se sugiere implementación de procesos custom para consumir los tópicos de interés y realizar llamadas a WS de terceros (a través de ESB o no)"
+},
+{
+"id": 7679,
+"es": "Publicación de Ficheros hacia Terceros:"
+},
+{
+"id": 7680,
+"es": " se sugiere implementación de procesos custom para consumir los tópicos de interés y publicar ficheros para terceros (a través de ESB o no)"
+},
+{
+"id": 7681,
+"es": "Ingesta de Ficheros desde Terceros:"
+},
+{
+"id": 7682,
+"es": " en función del objetivo de los mismos, se sugiere implementación de procesos custom que a partir de la información recibida realicen llamadas a las APIRest o registren como tópicos adecuados para procesamiento por producto (a través de ESB o no)"
+},
+{
+"id": 7683,
+"es": "Este tipo de integraciones pueden implementarse en cada proyecto a partir de los puntos de entrada/salida estándares proporcionados por el producto y detallados a continuación."
+},
+{
+"id": 7684,
+"es": "La integración de OM se centra en diferentes ámbitos, transversales al punto de medida:"
+},
+{
+"id": 7685,
+"es": "Gestión de Inventario"
+},
+{
+"id": 7686,
+"es": "ABMC entidades inventario"
+},
+{
+"id": 7687,
+"es": "Publicación cambios sobre inventario"
+},
+{
+"id": 7688,
+"es": "Consumo Medidas y Eventos "
+},
+{
+"id": 7689,
+"es": "Origen: medidas (perfil de carga), medidas de cierre, lecturas (perfil de carga absoluto)"
+},
+{
+"id": 7690,
+"es": "Óptimas: medidas (perfil de carga), medidas de cierre, lecturas (perfil de carga absoluto)"
+},
+{
+"id": 7691,
+"es": "Publicación Medidas y Eventos"
+},
+{
+"id": 7692,
+"es": "Telegestión"
+},
+{
+"id": 7693,
+"es": "Recepción de peticiones"
+},
+{
+"id": 7694,
+"es": "Publicación respuesta peticiones"
+},
+{
+"id": 7695,
+"es": "Consulta estado peticiones"
+},
+{
+"id": 7696,
+"es": "Solicitud de comandos a HES"
+},
+{
+"id": 7697,
+"es": "Recepción de respuesta a comandos"
+},
+{
+"id": 7698,
+"es": "Sistemas Integración"
+},
+{
+"id": 7699,
+"es": "Los sistemas, detallados en "
+},
+{
+"id": 7700,
+"es": ",  trabajan en los siguientes ámbitos:"
+},
+{
+"id": 7701,
+"es": "SISTEMAS"
+},
+{
+"id": 7702,
+"es": "Consumo de Medidas y Eventos"
+},
+{
+"id": 7703,
+"es": "Publicación de Medidas y Eventos"
+},
+{
+"id": 7704,
+"es": "Estructura y códigos de error"
+},
+{
+"id": 7705,
+"es": "Transporte de Mensajes"
+},
+{
+"id": 7706,
+"es": "Web Service"
+},
+{
+"id": 7707,
+"es": "Header"
+},
+{
+"id": 7708,
+"es": "Request - Mensaje de Solicitud"
+},
+{
+"id": 7709,
+"es": "Reply - Mensaje de Respuesta"
+},
+{
+"id": 7710,
+"es": "Ejemplo de codificación de un mensaje de respuesta de error"
+},
+{
+"id": 7711,
+"es": "Códigos de error"
+},
+{
+"id": 7712,
+"es": "CREATE"
+},
+{
+"id": 7713,
+"es": "DELETE"
+},
+{
+"id": 7714,
+"es": "CHANGE"
+},
+{
+"id": 7715,
+"es": "GET"
+},
+{
+"id": 7716,
+"es": "Kafka"
+},
+{
+"id": 7717,
+"es": "Header Kafka"
+},
+{
+"id": 7718,
+"es": "Request Kafka - Mensaje de Solicitud"
+},
+{
+"id": 7719,
+"es": "Reply Kafka - Mensaje de Respuesta"
+},
+{
+"id": 7720,
+"es": "Detalle de Respuesta informando error"
+},
+{
+"id": 7721,
+"es": "Payload"
+},
+{
+"id": 7722,
+"es": "Formato estándar Fecha-Hora"
+},
+{
+"id": 7723,
+"es": "Autenticación"
+},
+{
+"id": 7724,
+"es": "Servicios Web"
+},
+{
+"id": 7725,
+"es": "Excepciones de Verificación"
+},
+{
+"id": 7726,
+"es": "El transporte de mensajes se basa en el modelo de información común (CIM), CIM (IEC61968) que establece cómo los diversos mensajes pueden ser transportados de un sistema a otro."
+},
+{
+"id": 7727,
+"es": "La versión actual de CIM trata con ESB (Enterprise Service Bus) y JMS (Java Message System) como las barreras de los mensajes transportados."
+},
+{
+"id": 7728,
+"es": "Para establecer la interoperabilidad entre Onesait Metering (OM) y sus integraciones, la estructura de los mensajes debe cumplir con los estándares IEC61968."
+},
+{
+"id": 7729,
+"es": "Según IEC61968, la estructura general de los mensajes se define:"
+},
+{
+"id": 7730,
+"es": "Message"
+},
+{
+"id": 7731,
+"es": "Request"
+},
+{
+"id": 7732,
+"es": "Reply"
+},
+{
+"id": 7733,
+"es": "Elementos"
+},
+{
+"id": 7734,
+"es": "schema*"
+},
+{
+"id": 7735,
+"es": "protocol"
+},
+{
+"id": 7736,
+"es": "Protocolo utilizado en la comunicación"
+},
+{
+"id": 7737,
+"es": "version"
+},
+{
+"id": 7738,
+"es": "Ex: 1.0.0"
+},
+{
+"id": 7739,
+"es": "message"
+},
+{
+"id": 7740,
+"es": "Código de identificación del mensaje"
+},
+{
+"id": 7741,
+"es": "correlationId"
+},
+{
+"id": 7742,
+"es": "Código de identificación para una cadena de mensajes"
+},
+{
+"id": 7743,
+"es": "dateTime"
+},
+{
+"id": 7744,
+"es": "Fecha de creación del mensaje"
+},
+{
+"id": 7745,
+"es": "payload"
+},
+{
+"id": 7746,
+"es": "UUID"
+},
+{
+"id": 7747,
+"es": "operation"
+},
+{
+"id": 7748,
+"es": "Operación ejecutada: CREATE / DELETE / CHANGE"
+},
+{
+"id": 7749,
+"es": "source"
+},
+{
+"id": 7750,
+"es": "Código de identificación del emisor"
+},
+{
+"id": 7751,
+"es": "process"
+},
+{
+"id": 7752,
+"es": "ID identificativo para el receptor"
+},
+{
+"id": 7753,
+"es": "Nombre identificativo para el emisor"
+},
+{
+"id": 7754,
+"es": "target"
+},
+{
+"id": 7755,
+"es": "Código de identificación del receptor "
+},
+{
+"id": 7756,
+"es": "Nombre identificativo para el receptor"
+},
+{
+"id": 7757,
+"es": "*Solo en  Request - Mensaje de Solicitud"
+},
+{
+"id": 7758,
+"es": "Los mensajes de solicitud se utilizan para enviar consultas o comandos. Por ejemplo, un mensaje de solicitud podría ser enviado desde Onesait Metering a un HES para obtener un conjunto de lecturas de medidores."
+},
+{
+"id": 7759,
+"es": "Request Message"
+},
+{
+"id": 7760,
+"es": "Ver estructuras incluidas en las distintas interfaces "
+},
+{
+"id": 7761,
+"es": "Reply - Mensaje de Respuesta "
+},
+{
+"id": 7762,
+"es": "Los mensajes de respuesta se utilizan para devolver los datos correspondientes o la información de estado a un mensaje de solicitud. Se utilizan para indicar si una solicitud ha tenido éxito o si existe algún fallo al ejecutar el comando."
+},
+{
+"id": 7763,
+"es": "Reply Message"
+},
+{
+"id": 7764,
+"es": "status*"
+},
+{
+"id": 7765,
+"es": "OK / Failed "
+},
+{
+"id": 7766,
+"es": "element*"
+},
+{
+"id": 7767,
+"es": "type"
+},
+{
+"id": 7768,
+"es": "code**"
+},
+{
+"id": 7769,
+"es": "Ver "
+},
+{
+"id": 7770,
+"es": "Códigos de error de GIS"
+},
+{
+"id": 7771,
+"es": "details**"
+},
+{
+"id": 7772,
+"es": "Para los procesos de LECTURA consultar contenido de los JSON para cada caso "
+},
+{
+"id": 7773,
+"es": "*En procesos CREATE / DELETE / CHANGE"
+},
+{
+"id": 7774,
+"es": "** Este campo aparece solo cuando status=failed"
+},
+{
+"id": 7775,
+"es": "\"Failed\""
+},
+{
+"id": 7776,
+"es": "\"details\""
+},
+{
+"id": 7777,
+"es": "\"Element [Equipment with serial number AGN-TEST-SW-200] already exist\""
+},
+{
+"id": 7778,
+"es": "\"EQ_SN\""
+},
+{
+"id": 7779,
+"es": "\"AGN-TEST-SW-200\""
+},
+{
+"id": 7780,
+"es": "SITUACIÓN"
+},
+{
+"id": 7781,
+"es": "CÓDIGO HTTP"
+},
+{
+"id": 7782,
+"es": "CÓDIGO"
+},
+{
+"id": 7783,
+"es": "DETALLES"
+},
+{
+"id": 7784,
+"es": "Se usa una operación distinta de \"CREATE\""
+},
+{
+"id": 7785,
+"es": "Invalid operation"
+},
+{
+"id": 7786,
+"es": "Se intenta crear una instalación ya existente"
+},
+{
+"id": 7787,
+"es": "Element [Installation with name X] already exists"
+},
+{
+"id": 7788,
+"es": "El payload está vacío"
+},
+{
+"id": 7789,
+"es": "Payload is empty"
+},
+{
+"id": 7790,
+"es": "El tipo de instalación no se encuentra"
+},
+{
+"id": 7791,
+"es": "Inventory validation error: [Processing installation with name X] INSTALLATION_TYPE_INVALID: [Installation type not found: Y]"
+},
+{
+"id": 7792,
+"es": "La instalación padre no existe"
+},
+{
+"id": 7793,
+"es": "Inventory validation error: [Processing installation with name X] INSTALLATION_FATHER_NO_EXISTS: [Installation parent does not exist: Y]"
+},
+{
+"id": 7794,
+"es": "La latitud proporcionada no es válida"
+},
+{
+"id": 7795,
+"es": "Inventory validation error: [Processing installation with name X] LATITUDE_INVALID: [Latitude provided is invalid]"
+},
+{
+"id": 7796,
+"es": "La longitud proporcionada no es válida"
+},
+{
+"id": 7797,
+"es": "Inventory validation error: [Processing installation with name X] LONGITUDE_INVALID: [Longitude provided is invalid]"
+},
+{
+"id": 7798,
+"es": "La latitud no está en el rango posible(-90/90)"
+},
+{
+"id": 7799,
+"es": "Inventory validation error: [Processing installation with name X] LATITUDE_INVALID: [Latitude must be between -90 and 90]"
+},
+{
+"id": 7800,
+"es": "La longitud no está en el rango posible(-180/180)"
+},
+{
+"id": 7801,
+"es": "Inventory validation error: [Processing installation with name X] LONGITUDE_INVALID: [Longitude must be between -180 and 180]"
+},
+{
+"id": 7802,
+"es": "Se asigna un punto de medida de tipo instalación inexistente"
+},
+{
+"id": 7803,
+"es": "Inventory validation error: [Processing installation with name X] INSTALLATION_MP_DOES_NOT_EXIST: [Measuring point 'Y' does not exist]"
+},
+{
+"id": 7804,
+"es": "El tipo de asociación del punto de medida es nulo o distinto de tipo instalación"
+},
+{
+"id": 7805,
+"es": "Inventory validation error: [Processing installation with name X] INSTALLATION_MP_INCORRECT_TYPE: [Measuring point 'Y' has associationType='Z', expected 'Installation']"
+},
+{
+"id": 7806,
+"es": "El punto de medida de \"Tipo Instalación\" está asignado a otra instalación"
+},
+{
+"id": 7807,
+"es": "Inventory validation error: [Processing installation with name X] MP_ASSIGNED_TO_OTHER_INSTALLATION: [Measuring point 'Y' is already assigned to other installation]"
+},
+{
+"id": 7808,
+"es": "El equipo asignado no existe"
+},
+{
+"id": 7809,
+"es": "Inventory validation error: [Processing installation with name X] EQUIPMENT_POINT_CONFIG_NOT_EXIST: [Meter with serial number 'Y' does not exist]"
+},
+{
+"id": 7810,
+"es": "No se puede identificar de manera unívoca al equipo"
+},
+{
+"id": 7811,
+"es": "Inventory validation error: [Processing installation with name X] INSTALLATION_METER_NOT_UNIQUE: [Serial number 'Y' is not unique]"
+},
+{
+"id": 7812,
+"es": "El equipo asociado no está instalado en un punto de medida"
+},
+{
+"id": 7813,
+"es": "Inventory validation error: [Processing installation with name X] EQUIPMENT_POINT_CONFIG_NOT_EXIST: [Meter 'Y' has no measuring point configuration]"
+},
+{
+"id": 7814,
+"es": "Se usa una operación distinta de \"DELETE\""
+},
+{
+"id": 7815,
+"es": "No existe la instalación"
+},
+{
+"id": 7816,
+"es": "Element [Installation with name X] does not exist"
+},
+{
+"id": 7817,
+"es": "La instalación está asociada con algún punto de medida de tipo instalación"
+},
+{
+"id": 7818,
+"es": "Inventory validation error: [Processing installation with name X] INSTALLATION_HAS_RELATIONS: [Cannot delete installation 'X' because it has associated measuring points]"
+},
+{
+"id": 7819,
+"es": "La instalación está asociada con algún equipo"
+},
+{
+"id": 7820,
+"es": "Se usa una operación distinta de \"CHANGE\""
+},
+{
+"id": 7821,
+"es": "Se asigna un punto de medida inexistente"
+},
+{
+"id": 7822,
+"es": "No se encuentra ninguna instalación con ese nombre"
+},
+{
+"id": 7823,
+"es": "Se crea un equipo con número de serie ya existente"
+},
+{
+"id": 7824,
+"es": "Element [Equipment with serial number X] already exists"
+},
+{
+"id": 7825,
+"es": "Se intenta crear un equipo con un código ya existente"
+},
+{
+"id": 7826,
+"es": "Element [Equipment with code X] already exists"
+},
+{
+"id": 7827,
+"es": "El modelo del equipo no existe"
+},
+{
+"id": 7828,
+"es": "Inventory validation error: [Processing equipment with code X] EQUIPMENT_MODEL_INVALID: [Y]"
+},
+{
+"id": 7829,
+"es": "No se añade ningún numero de serie"
+},
+{
+"id": 7830,
+"es": "The serialNumber argument is required"
+},
+{
+"id": 7831,
+"es": "El equipo está/ha estado instalado en algún punto de medida"
+},
+{
+"id": 7832,
+"es": "Inventory validation error: [Processing equipment with code X] MEASURING_POINT_EQUIPMENT_ASSOCIATED: [Cannot delete equipment because it has relations]"
+},
+{
+"id": 7833,
+"es": "El número de serie no existe"
+},
+{
+"id": 7834,
+"es": "Element [Equipment with serial number X] does not exist"
+},
+{
+"id": 7835,
+"es": "No se adjunta número de serie"
+},
+{
+"id": 7836,
+"es": "No se encuentra ningún equipo"
+},
+{
+"id": 7837,
+"es": "Kafka se utilizará para la sincronización masiva de datos entre Onesait Metering y otros sistemas. Al igual que el Servicio Web, la definición de los mensajes seguirá el diseño de IEC61968."
+},
+{
+"id": 7838,
+"es": "Verb"
+},
+{
+"id": 7839,
+"es": "Identifica la acción "
+},
+{
+"id": 7840,
+"es": "Noun"
+},
+{
+"id": 7841,
+"es": "Identifica el tipo de mensaje"
+},
+{
+"id": 7842,
+"es": "Revision"
+},
+{
+"id": 7843,
+"es": "Identifica la versión XSD para las lecturas de medidores entrantes"
+},
+{
+"id": 7844,
+"es": "Timestamp"
+},
+{
+"id": 7845,
+"es": "Hora de envío del mensaje por el remitente (0000-00-00T00:00:00.000Z)"
+},
+{
+"id": 7846,
+"es": "MDM / HES / CIS / WS"
+},
+{
+"id": 7847,
+"es": "Target"
+},
+{
+"id": 7848,
+"es": "MDM / HES / CIS / WS "
+},
+{
+"id": 7849,
+"es": "AsyncReplyFlag*"
+},
+{
+"id": 7850,
+"es": "Verdadero/Falso"
+},
+{
+"id": 7851,
+"es": "AckRequired*"
+},
+{
+"id": 7852,
+"es": "Property*"
+},
+{
+"id": 7853,
+"es": "StarTime"
+},
+{
+"id": 7854,
+"es": "ExpireTime"
+},
+{
+"id": 7855,
+"es": "RetryTimes"
+},
+{
+"id": 7856,
+"es": "RetryInterval (unidad: min)"
+},
+{
+"id": 7857,
+"es": "Priority"
+},
+{
+"id": 7858,
+"es": "Valor de cada configuración de tarea"
+},
+{
+"id": 7859,
+"es": "MessageID"
+},
+{
+"id": 7860,
+"es": "CorrelationID"
+},
+{
+"id": 7861,
+"es": "ID de mensaje de solicitud"
+},
+{
+"id": 7862,
+"es": "*Solo en Request Kafka - Mensaje de Solicitud"
+},
+{
+"id": 7863,
+"es": "Al igual que en Servicio Web, los mensajes de solicitud se utilizan para enviar comandos, en este caso a un HES, para obtener o configurar datos de un medidor. "
+},
+{
+"id": 7864,
+"es": "En un mensaje asíncrono, hay un mensaje de respuesta, además del 'acuse de recibo' ACK (acknowledgement)."
+},
+{
+"id": 7865,
+"es": "Request*"
+},
+{
+"id": 7866,
+"es": "StartTime - Fecha de inicio del período solicitado"
+},
+{
+"id": 7867,
+"es": "EndTime - Fecha de fin del período solicitado"
+},
+{
+"id": 7868,
+"es": "Option: Ver "
+},
+{
+"id": 7869,
+"es": "Comandos de Medición"
+},
+{
+"id": 7870,
+"es": "According to verb and noun"
+},
+{
+"id": 7871,
+"es": "*Solo en comandos de medición, donde se solicitan datos del medidor"
+},
+{
+"id": 7872,
+"es": "Se utilizan para devolver los datos correspondientes o la información de estado en respuesta a los mensajes de solicitud."
+},
+{
+"id": 7873,
+"es": "Igual que para el mensaje de solicitud, en un mensaje asíncrono se devolverá un 'acuse de recibo' ACK."
+},
+{
+"id": 7874,
+"es": "Reply*"
+},
+{
+"id": 7875,
+"es": "Result"
+},
+{
+"id": 7876,
+"es": "OK / Failed / Partial**"
+},
+{
+"id": 7877,
+"es": "Payload***"
+},
+{
+"id": 7878,
+"es": "* Este campo aparece en cada mensaje de respuesta."
+},
+{
+"id": 7879,
+"es": "**  Si el resultado es OK el código de error informado es 0.0."
+},
+{
+"id": 7880,
+"es": "*** El campo Payload solo viene informado cuando se transfieren datos."
+},
+{
+"id": 7881,
+"es": "OK / Failed / Partial"
+},
+{
+"id": 7882,
+"es": "Error "
+},
+{
+"id": 7883,
+"es": "Code"
+},
+{
+"id": 7884,
+"es": "Códigos de Error"
+},
+{
+"id": 7885,
+"es": "Level"
+},
+{
+"id": 7886,
+"es": "INFORM / WARNING / FATAL / CATASTROPHIC"
+},
+{
+"id": 7887,
+"es": "Reason"
+},
+{
+"id": 7888,
+"es": "Object"
+},
+{
+"id": 7889,
+"es": "* En este nodo, se proporciona más detalle sobre el error."
+},
+{
+"id": 7890,
+"es": "** Identifica el número de paquete de datos en una respuesta PARCIAL, es decir, el Resultado=PARCIAL y operationId identifican qué número de paquete de datos se está enviando."
+},
+{
+"id": 7891,
+"es": "\"Reply\""
+},
+{
+"id": 7892,
+"es": "\"Result\""
+},
+{
+"id": 7893,
+"es": "\"FAILED\""
+},
+{
+"id": 7894,
+"es": "\"Error\""
+},
+{
+"id": 7895,
+"es": "\"level\""
+},
+{
+"id": 7896,
+"es": "\"INFORM\""
+},
+{
+"id": 7897,
+"es": "\"reason\""
+},
+{
+"id": 7898,
+"es": "\"Invalid Meter\""
+},
+{
+"id": 7899,
+"es": "\"object\""
+},
+{
+"id": 7900,
+"es": "\"mRID\""
+},
+{
+"id": 7901,
+"es": "\"objectType\""
+},
+{
+"id": 7902,
+"es": "\"METER\""
+},
+{
+"id": 7903,
+"es": "La estructura del apartado Payload incluye diferentes campos dependiendo de cada comando. Se puede consultar la estructura de cada uno consultando los diferentes comandos de HES "
+},
+{
+"id": 7904,
+"es": "No."
+},
+{
+"id": 7905,
+"es": "Éxito / Sin errores"
+},
+{
+"id": 7906,
+"es": "Success / No errors"
+},
+{
+"id": 7907,
+"es": "Resultado parcial (resultados adicionales transmitidos en mensajes separados)"
+},
+{
+"id": 7908,
+"es": "Partial result (additional results conveyed in separate messages)"
+},
+{
+"id": 7909,
+"es": "Resultado parcial (no hay más resultados por seguir)"
+},
+{
+"id": 7910,
+"es": "Partial result (no further results to follow)"
+},
+{
+"id": 7911,
+"es": "Reconocimiento simple"
+},
+{
+"id": 7912,
+"es": "Simple acknowledgment"
+},
+{
+"id": 7913,
+"es": "Elementos obligatorios del encabezado faltantes"
+},
+{
+"id": 7914,
+"es": "Mandatory Header elements missing"
+},
+{
+"id": 7915,
+"es": "Elementos obligatorios de la solicitud faltantes"
+},
+{
+"id": 7916,
+"es": "Mandatory Request elements missing"
+},
+{
+"id": 7917,
+"es": "Elementos obligatorios de la carga útil faltantes"
+},
+{
+"id": 7918,
+"es": "Mandatory Payload elements missing"
+},
+{
+"id": 7919,
+"es": "El formato de la solicitud no se valida contra el esquema"
+},
+{
+"id": 7920,
+"es": "Format of request does not validate against schema"
+},
+{
+"id": 7921,
+"es": "Revisión de mensaje no soportada en el encabezado"
+},
+{
+"id": 7922,
+"es": "Unsupported message revision in Header"
+},
+{
+"id": 7923,
+"es": "Medidor(es) inválido(s)"
+},
+{
+"id": 7924,
+"es": "Invalid Meter(s)"
+},
+{
+"id": 7925,
+"es": "Sustantivo inválido"
+},
+{
+"id": 7926,
+"es": "Invalid Noun"
+},
+{
+"id": 7927,
+"es": "Tipo(s) de lectura inválido(s)"
+},
+{
+"id": 7928,
+"es": "Invalid ReadingType(s)"
+},
+{
+"id": 7929,
+"es": "Verbo inválido"
+},
+{
+"id": 7930,
+"es": "Invalid Verb"
+},
+{
+"id": 7931,
+"es": "Tipo(s) de lectura no soportado(s)"
+},
+{
+"id": 7932,
+"es": "Unsupported ReadingType(s)"
+},
+{
+"id": 7933,
+"es": "Punto(s) de uso inválido(s)"
+},
+{
+"id": 7934,
+"es": "Invalid UsagePoint(s)"
+},
+{
+"id": 7935,
+"es": "Desajuste entre medidor y punto de uso"
+},
+{
+"id": 7936,
+"es": "Meter / UsagePoint mismatch"
+},
+{
+"id": 7937,
+"es": "Fuente inválida"
+},
+{
+"id": 7938,
+"es": "Invalid Source"
+},
+{
+"id": 7939,
+"es": "ID(s) de solicitud inválido(s)"
+},
+{
+"id": 7940,
+"es": "Invalid Request ID(s)"
+},
+{
+"id": 7941,
+"es": "Ubicación(es) de servicio inválida(s)"
+},
+{
+"id": 7942,
+"es": "Invalid ServiceLocation(s)"
+},
+{
+"id": 7943,
+"es": "Desajuste entre medidor y ubicación de servicio"
+},
+{
+"id": 7944,
+"es": "Meter / ServiceLocation mismatch"
+},
+{
+"id": 7945,
+"es": "Desajuste entre módulo de comunicación y medidor"
+},
+{
+"id": 7946,
+"es": "ComModule / Meter mismatch"
+},
+{
+"id": 7947,
+"es": "Cuenta(s) de cliente inválida(s)"
+},
+{
+"id": 7948,
+"es": "Invalid CustomerAccount(s)"
+},
+{
+"id": 7949,
+"es": "Proveedor(es) de servicio inválido(s)"
+},
+{
+"id": 7950,
+"es": "Invalid ServiceSupplier(s)"
+},
+{
+"id": 7951,
+"es": "Desajuste entre cuenta de cliente y proveedor de servicio"
+},
+{
+"id": 7952,
+"es": "CustomerAccount / ServiceSupplier mismatch"
+},
+{
+"id": 7953,
+"es": "Cliente(s) inválido(s)"
+},
+{
+"id": 7954,
+"es": "Invalid Customer(s)"
+},
+{
+"id": 7955,
+"es": "Desajuste entre cliente y cuenta de cliente"
+},
+{
+"id": 7956,
+"es": "Customer / CustomerAccount mismatch"
+},
+{
+"id": 7957,
+"es": "Acuerdo(s) de cliente inválido(s)"
+},
+{
+"id": 7958,
+"es": "Invalid CustomerAgreement(s)"
+},
+{
+"id": 7959,
+"es": "Desajuste entre cuenta de cliente y acuerdo de cliente"
+},
+{
+"id": 7960,
+"es": "CustomerAccount / CustomerAgreement mismatch"
+},
+{
+"id": 7961,
+"es": "Desajuste entre acuerdo de cliente y punto de uso"
+},
+{
+"id": 7962,
+"es": "CustomerAgreement / UsagePoint mismatch"
+},
+{
+"id": 7963,
+"es": "Desajuste entre cuenta de cliente y punto de uso"
+},
+{
+"id": 7964,
+"es": "CustomerAccount / UsagePoint mismatch"
+},
+{
+"id": 7965,
+"es": "Desajuste entre proveedor de servicio y punto de uso"
+},
+{
+"id": 7966,
+"es": "ServiceSupplier / UsagePoint mismatch"
+},
+{
+"id": 7967,
+"es": "Desajuste en la relación de objetos"
+},
+{
+"id": 7968,
+"es": "Object relationship mismatch"
+},
+{
+"id": 7969,
+"es": "Módulo(s) de comunicación inválido(s)"
+},
+{
+"id": 7970,
+"es": "Invalid ComModule(s)"
+},
+{
+"id": 7971,
+"es": "Categoría(s) de servicio inválida(s)"
+},
+{
+"id": 7972,
+"es": "Invalid ServiceCategory(ies)"
+},
+{
+"id": 7973,
+"es": "Ubicación(es) de punto de uso inválida(s)"
+},
+{
+"id": 7974,
+"es": "Invalid UsagePointLocation(s)"
+},
+{
+"id": 7975,
+"es": "Estructura(s) de precios inválida(s)"
+},
+{
+"id": 7976,
+"es": "Invalid PricingStructure(s)"
+},
+{
+"id": 7977,
+"es": "Demasiados elementos en la solicitud"
+},
+{
+"id": 7978,
+"es": "Too many items in request"
+},
+{
+"id": 7979,
+"es": "Demasiadas solicitudes pendientes"
+},
+{
+"id": 7980,
+"es": "Too many pending requests"
+},
+{
+"id": 7981,
+"es": "Solicitud agotada por tiempo"
+},
+{
+"id": 7982,
+"es": "Request timed out"
+},
+{
+"id": 7983,
+"es": "No se puede procesar la solicitud - alto nivel de actividad del sistema"
+},
+{
+"id": 7984,
+"es": "Unable to process the request - high system activity level"
+},
+{
+"id": 7985,
+"es": "No se puede procesar la solicitud - transacción no intentada"
+},
+{
+"id": 7986,
+"es": "Unable to process request -transaction not attempted"
+},
+{
+"id": 7987,
+"es": "No se puede procesar la solicitud - transacción intentada y fallida"
+},
+{
+"id": 7988,
+"es": "Unable to process the request - transaction attempted and failed"
+},
+{
+"id": 7989,
+"es": "No se puede procesar la solicitud - se encontraron múltiples tipos de errores"
+},
+{
+"id": 7990,
+"es": "Unable to process the request - multiple error types encountered"
+},
+{
+"id": 7991,
+"es": "Algunos o todos los tipos de lectura solicitados no están disponibles en MDMS"
+},
+{
+"id": 7992,
+"es": "Some or all of the requested ReadingTypes are unavailable in MDMS"
+},
+{
+"id": 7993,
+"es": "Algunos o todos los tipos de lectura solicitados no están disponibles en AMI"
+},
+{
+"id": 7994,
+"es": "Some or all of the requested ReadingTypes are unavailable in AMI"
+},
+{
+"id": 7995,
+"es": "Algunos o todos los datos solicitados no están disponibles"
+},
+{
+"id": 7996,
+"es": "Some or all of the requested data is unavailable"
+},
+{
+"id": 7997,
+"es": "No se puede procesar la solicitud - campo(s) obligatorio(s) faltante(s)"
+},
+{
+"id": 7998,
+"es": "Unable to process the request – mandatory field(s) missing"
+},
+{
+"id": 7999,
+"es": "Transacción abortada para mantener la integridad transaccional"
+},
+{
+"id": 8000,
+"es": "Transaction aborted to maintain transactional integrity"
+},
+{
+"id": 8001,
+"es": "Solicitud cancelada según la regla de negocio"
+},
+{
+"id": 8002,
+"es": "Request cancelled per business rule"
+},
+{
+"id": 8003,
+"es": "Solicitud puesta en espera según la regla de negocio"
+},
+{
+"id": 8004,
+"es": "Request placed on hold per business rule"
+},
+{
+"id": 8005,
+"es": "Solicitud reprogramada según la regla de negocio"
+},
+{
+"id": 8006,
+"es": "Request rescheduled per business rule"
+},
+{
+"id": 8007,
+"es": "Solicitud cancelada por el usuario"
+},
+{
+"id": 8008,
+"es": "Request cancelled by user"
+},
+{
+"id": 8009,
+"es": "Por determinar"
+},
+{
+"id": 8010,
+"es": "TBD"
+},
+{
+"id": 8011,
+"es": "Fallo temporal de autenticación"
+},
+{
+"id": 8012,
+"es": "Temporary authentication failure"
+},
+{
+"id": 8013,
+"es": "Autenticación requerida"
+},
+{
+"id": 8014,
+"es": "Authentication required"
+},
+{
+"id": 8015,
+"es": "Mecanismo de autenticación insuficiente"
+},
+{
+"id": 8016,
+"es": "Authentication mechanism insufficient"
+},
+{
+"id": 8017,
+"es": "Fallo de autenticación"
+},
+{
+"id": 8018,
+"es": "Authentication failure"
+},
+{
+"id": 8019,
+"es": "Acción no autorizada para el usuario"
+},
+{
+"id": 8020,
+"es": "Action not authorized for user"
+},
+{
+"id": 8021,
+"es": "El mecanismo de autenticación requiere cifrado"
+},
+{
+"id": 8022,
+"es": "Authentication mechanism requires encryption"
+},
+{
+"id": 8023,
+"es": "Violación de política"
+},
+{
+"id": 8024,
+"es": "Policy violation"
+},
+{
+"id": 8025,
+"es": "TimeStamp UTC"
+},
+{
+"id": 8026,
+"es": "\"dateTime\": \"yyyy-MM-ddTHH:mm:ss.SSSZ\"  "
+},
+{
+"id": 8027,
+"es": "La interfaz utilizará Autenticación Básica mediante Nombre de Usuario y Contraseña para el encabezado de autorización."
+},
+{
+"id": 8028,
+"es": "La autenticación básica implica enviar un nombre de usuario y una contraseña verificados con la solicitud."
+},
+{
+"id": 8029,
+"es": "En los encabezados de la solicitud, el encabezado de autorización pasa a la API una cadena codificada en Base64, que representa los valores del nombre de usuario y la contraseña, añadidos al texto “Basic” de la siguiente manera:"
+},
+{
+"id": 8030,
+"es": "Basic <nombre de usuario y contraseña codificados en Base64>"
+},
+{
+"id": 8031,
+"es": "Utiliza SASL de Kafka con usuario y contraseña (mecanismo simple). La información de autenticación de HES Kafka, CIS Kafka y OM Kafka se proporcionará durante la etapa de configuración de la integración."
+},
+{
+"id": 8032,
+"es": "Los mensajes deben ser verificados por la parte receptora en los siguientes casos:"
+},
+{
+"id": 8033,
+"es": "Todos los elementos obligatorios deben encontrarse en el mensaje."
+},
+{
+"id": 8034,
+"es": "Todos los elementos deben estar en la presentación correcta (tamaño y valor de cadena)."
+},
+{
+"id": 8035,
+"es": "Si la parte receptora falla en la verificación, debe responder con las siguientes descripciones de excepciones adicionales a la parte solicitante para un análisis posterior."
+},
+{
+"id": 8036,
+"es": "Caso"
+},
+{
+"id": 8037,
+"es": "Detalle del Error"
+},
+{
+"id": 8038,
+"es": "Si faltan elementos obligatorios del encabezado"
+},
+{
+"id": 8039,
+"es": "Elemento xxx faltante"
+},
+{
+"id": 8040,
+"es": "Si faltan elementos obligatorios de la solicitud"
+},
+{
+"id": 8041,
+"es": "Si faltan elementos obligatorios de la carga útil"
+},
+{
+"id": 8042,
+"es": "Si el formato de los datos es incorrecto, como longitud y latitud fuera del rango, formato de tiempo incorrecto, etc."
+},
+{
+"id": 8043,
+"es": "Error de validación del formato del elemento xxx"
+},
+{
+"id": 8044,
+"es": "Si el elemento es una matriz pero excede el tamaño establecido"
+},
+{
+"id": 8045,
+"es": "El valor de la matriz del elemento xxx excede el límite"
+},
+{
+"id": 8046,
+"es": "Si hay un error de valor opcional en la carga útil"
+},
+{
+"id": 8047,
+"es": "El valor del elemento xxx es inválido"
+},
+{
+"id": 8048,
+"es": "Si faltan campos obligatorios"
+},
+{
+"id": 8049,
+"es": "Si ocurre un error desconocido en el programa, como una falla del servidor"
+},
+{
+"id": 8050,
+"es": "Error interno del servidor"
+},
+{
+"id": 8051,
+"es": "Si la longitud del valor de la cadena excede el límite"
+},
+{
+"id": 8052,
+"es": "El valor de la cadena del elemento xxx excede el límite"
+},
+{
+"id": 8053,
+"es": "A continuación se presenta el listado de interfaces disponibles del sistema "
+},
+{
+"id": 8054,
+"es": " (OM) que permiten la integración con cualquier "
+},
+{
+"id": 8055,
+"es": "Sistema de Gestión Comercial (CIS) "
+},
+{
+"id": 8056,
+"es": "categorizadas según su funcionalidad. También se incluye la compatibilidad actual con el sistema comercial propio de Minsait, "
+},
+{
+"id": 8057,
+"es": "Onesait Customers (OC)"
+},
+{
+"id": 8058,
+"es": "Sentido "
+},
+{
+"id": 8059,
+"es": "Funcionalidad"
+},
+{
+"id": 8060,
+"es": "Interfaz"
+},
+{
+"id": 8061,
+"es": "Tipo de Respuesta"
+},
+{
+"id": 8062,
+"es": "Última Versión MDM"
+},
+{
+"id": 8063,
+"es": "Última Versión compatible MDM - OC"
+},
+{
+"id": 8064,
+"es": "Última Versión compatible OC - MDM"
+},
+{
+"id": 8065,
+"es": "CIS > OM"
+},
+{
+"id": 8066,
+"es": "Instalación de medidor"
+},
+{
+"id": 8067,
+"es": "Síncrona"
+},
+{
+"id": 8068,
+"es": "Levantamiento de medidor"
+},
+{
+"id": 8069,
+"es": "Desconexión de medidor"
+},
+{
+"id": 8070,
+"es": "Asíncrona"
+},
+{
+"id": 8071,
+"es": "Reconexión de medidor"
+},
+{
+"id": 8072,
+"es": "Solicitud de lecturas de cierre"
+},
+{
+"id": 8073,
+"es": "Solicitud de curvas de consumo"
+},
+{
+"id": 8074,
+"es": "Envío de lecturas tomadas en el sistema"
+},
+{
+"id": 8075,
+"es": "Solicitud de lectura"
+},
+{
+"id": 8076,
+"es": "Solicitud de medidor energizado"
+},
+{
+"id": 8077,
+"es": "Configuración del modo de pago mediante token"
+},
+{
+"id": 8078,
+"es": "Configuración de los precios unitarios de las tarifas"
+},
+{
+"id": 8079,
+"es": "Configuración del umbral de crédito bajo"
+},
+{
+"id": 8080,
+"es": "Envío de token de prepago"
+},
+{
+"id": 8081,
+"es": "Lectura del crédito de emergencia"
+},
+{
+"id": 8082,
+"es": "Lectura del crédito del equipo"
+},
+{
+"id": 8083,
+"es": "El producto "
+},
+{
+"id": 8084,
+"es": " (OM) puede estar integrado con cualquier S"
+},
+{
+"id": 8085,
+"es": "istema de Gestión Comercial (CIS) incluyendo el propio de "
+},
+{
+"id": 8086,
+"es": "Minsait"
+},
+{
+"id": 8087,
+"es": "Onesait Customers"
+},
+{
+"id": 8088,
+"es": "). Las integración para las interfaces mencionadas está certificada en ambos escenarios y su funcionamiento se detalla a continuación:"
+},
+{
+"id": 8089,
+"es": "Las integraciones entre productos de la suite "
+},
+{
+"id": 8090,
+"es": "Onesait Metering-Customers "
+},
+{
+"id": 8091,
+"es": "disponen de llamadas síncronas mediante WS Rest (chequear versiones compatibles instaladas)."
+},
+{
+"id": 8092,
+"es": "En este escenario, una petición para, por ejemplo, obtener el estado actual de energización (potencia) de un equipo,  seguiría el siguiente diagrama de secuencia, terminando la comunicación del resultado mediante llamada al WS Rest del producto "
+},
+{
+"id": 8093,
+"es": "Onesait Custome"
+},
+{
+"id": 8094,
+"es": "Las integraciones con otros sistemas CIS se instrumentalizan con la "
+},
+{
+"id": 8095,
+"es": "publicación por "
+},
+{
+"id": 8096,
+"es": "Onesait Metering "
+},
+{
+"id": 8097,
+"es": "de un mensaje ("
+},
+{
+"id": 8098,
+"es": "tópico "
+},
+{
+"id": 8099,
+"es": "Kafka)"
+},
+{
+"id": 8100,
+"es": " para su consumo/procesamiento por el sistema CIS externo.  "
+},
+{
+"id": 8101,
+"es": "Funcionalidades de Configuración"
+},
+{
+"id": 8102,
+"es": "CIS > MDM - Solicitud de medidor energizado"
+},
+{
+"id": 8103,
+"es": "Esquemas de Petición y Respuesta"
+},
+{
+"id": 8104,
+"es": "Mensaje de Petición"
+},
+{
+"id": 8105,
+"es": "Mensajes de Respuesta"
+},
+{
+"id": 8106,
+"es": "/rest/InCMS/endDeviceControls"
+},
+{
+"id": 8107,
+"es": "Método"
+},
+{
+"id": 8108,
+"es": "HTTP POST"
+},
+{
+"id": 8109,
+"es": "Réplica"
+},
+{
+"id": 8110,
+"es": "Asynchronous"
+},
+{
+"id": 8111,
+"es": "Este método asíncrono se utiliza para solicitar a Onesait Metering (OM) la ejecución de un servicio remoto (endDeviceControlType 3.26.84.54) para obtener el estado actual de energización (potencia) de un Contador solicitado."
+},
+{
+"id": 8112,
+"es": "Dependiendo de la forma en que esté funcionando el OM (como MDM y/o como MDC) esta solicitud provocará:"
+},
+{
+"id": 8113,
+"es": "El OM realizará una solicitud de lectura bajo demanda (emitiendo el comando "
+},
+{
+"id": 8114,
+"es": "READ_POWER_STATUS"
+},
+{
+"id": 8115,
+"es": ") al sistema de cabecera que esté operando el equipo para consultar el estado de energización actual del dispositivo solicitado."
+},
+{
+"id": 8116,
+"es": "La devolución de llamada con el mensaje de respuesta puede publicarse:"
+},
+{
+"id": 8117,
+"es": "a.       A la URL HTTP "
+},
+{
+"id": 8118,
+"es": "http://someserver/notifyme"
+},
+{
+"id": 8119,
+"es": " proporcionada por el sistema comercial Onesait Customers"
+},
+{
+"id": 8120,
+"es": "b.       Al tópico "
+},
+{
+"id": 8121,
+"es": "ouc_command-reply"
+},
+{
+"id": 8122,
+"es": " en el broker Kafka configurado."
+},
+{
+"id": 8123,
+"es": "Parámetros clave"
+},
+{
+"id": 8124,
+"es": "Energized Status"
+},
+{
+"id": 8125,
+"es": "Last energized"
+},
+{
+"id": 8126,
+"es": "de ejemplo"
+},
+{
+"id": 8127,
+"es": "CIS-MeterEnergized_Request.json"
+},
+{
+"id": 8128,
+"es": "CIS-MeterEnergized_Response_OK.json"
+},
+{
+"id": 8129,
+"es": "CIS-MeterEnergized_Response_KO.json"
+},
+{
+"id": 8130,
+"es": "En el caso en que el sistema HES sea el propio de Minsait, es decir, el sistema "
+},
+{
+"id": 8131,
+"es": ", el proceso se llevará a cabo de la siguiente forma:"
+},
+{
+"id": 8132,
+"es": "Sin embargo, en el caso en que el sistema utilizado por el cliente sea uno distinto al sistema "
+},
+{
+"id": 8133,
+"es": ", la respuesta pasará a través del Topic de Kafka quedando el esquema de la siguiente forma:"
+},
+{
+"id": 8134,
+"es": "\"timestamp\""
+},
+{
+"id": 8135,
+"es": "\"asyncReplyFlag\""
+},
+{
+"id": 8136,
+"es": "true"
+},
+{
+"id": 8137,
+"es": "\"messageId\""
+},
+{
+"id": 8138,
+"es": "\"INCMS\""
+},
+{
+"id": 8139,
+"es": "\"endDeviceControls\""
+},
+{
+"id": 8140,
+"es": "\"endDeviceControlType\""
+},
+{
+"id": 8141,
+"es": "\"endDevice\""
+},
+{
+"id": 8142,
+"es": "\"serialNumber\""
+},
+{
+"id": 8143,
+"es": "\"37990075345lab1\""
+},
+{
+"id": 8144,
+"es": "\"usagePoint\""
+},
+{
+"id": 8145,
+"es": "\"MP37990075345lab1\""
+},
+{
+"id": 8146,
+"es": "\"serialNumberComp\""
+},
+{
+"id": 8147,
+"es": "Parameter"
+},
+{
+"id": 8148,
+"es": "Type"
+},
+{
+"id": 8149,
+"es": "Mandatory"
+},
+{
+"id": 8150,
+"es": "Valid Values"
+},
+{
+"id": 8151,
+"es": "Default"
+},
+{
+"id": 8152,
+"es": "timestamp"
+},
+{
+"id": 8153,
+"es": "Date and time with format “YYYY-MM-DDThh:mm:ss” in which the request message is created."
+},
+{
+"id": 8154,
+"es": "String"
+},
+{
+"id": 8155,
+"es": "asyncReplyFlag"
+},
+{
+"id": 8156,
+"es": "Flag to indicate if the response message should be synchronous or asynchronous."
+},
+{
+"id": 8157,
+"es": "Because the transaction between OM and HES, or messaging between OM and meter, can take several seconds to be completely executed this method only should be invoked requesting asynchronous reply."
+},
+{
+"id": 8158,
+"es": "Boolean"
+},
+{
+"id": 8159,
+"es": "True"
+},
+{
+"id": 8160,
+"es": "messageId"
+},
+{
+"id": 8161,
+"es": "A string that uniquely identifies a message requested from the source system."
+},
+{
+"id": 8162,
+"es": "Not issue two messages using the same messageId."
+},
+{
+"id": 8163,
+"es": "A sequence number is recommended."
+},
+{
+"id": 8164,
+"es": "This parameter is used to ‘link’ messages together. This should be supplied on a request, so that the client (source system) can correlate the corresponding reply message issued by OM-MDM."
+},
+{
+"id": 8165,
+"es": "Onesait Metering will place the incoming CorrelationID value as the CorrelationID on the outgoing reply."
+},
+{
+"id": 8166,
+"es": " String"
+},
+{
+"id": 8167,
+"es": "Abbreviation of the system who is issuing the request. For example, ‘CIS’."
+},
+{
+"id": 8168,
+"es": "endDeviceControls"
+},
+{
+"id": 8169,
+"es": "Object used to convey the meter control command to execute."
+},
+{
+"id": 8170,
+"es": "endDeviceControlType"
+},
+{
+"id": 8171,
+"es": "Code that identifies the type of control to be performed into the meter:"
+},
+{
+"id": 8172,
+"es": "endDevice"
+},
+{
+"id": 8173,
+"es": "Internal ID used by the source system to identify the Meter."
+},
+{
+"id": 8174,
+"es": "MDM is not going to use this data."
+},
+{
+"id": 8175,
+"es": "Long"
+},
+{
+"id": 8176,
+"es": "serialNumber"
+},
+{
+"id": 8177,
+"es": "Serial Number assign by the Manufacturer."
+},
+{
+"id": 8178,
+"es": "usagePoint"
+},
+{
+"id": 8179,
+"es": "Unique reference on the Distribution Network where the physical Meter is located."
+},
+{
+"id": 8180,
+"es": "Remember that this value, is used as CODE of the ‘Metering Point” object into MDM system, and should be unique for every Meter that being serving for an individual Location ID."
+},
+{
+"id": 8181,
+"es": "serialNumberComp"
+},
+{
+"id": 8182,
+"es": "Complementary Serial Number assign by the Service Supplier (Distributor or Retailer company)."
+},
+{
+"id": 8183,
+"es": "Respuesta Válida"
+},
+{
+"id": 8184,
+"es": "\"MetEner_CIS_1020_002\""
+},
+{
+"id": 8185,
+"es": "\"MDM\""
+},
+{
+"id": 8186,
+"es": "\"result\""
+},
+{
+"id": 8187,
+"es": "\"endDeviceEvent\""
+},
+{
+"id": 8188,
+"es": "\"createdDateTime\""
+},
+{
+"id": 8189,
+"es": "\"energizedStatus\""
+},
+{
+"id": 8190,
+"es": "Respuesta Fallida"
+},
+{
+"id": 8191,
+"es": "\"errorsList\""
+},
+{
+"id": 8192,
+"es": "\"mandatory usagePoint value inexistent\""
+},
+{
+"id": 8193,
+"es": "Property"
+},
+{
+"id": 8194,
+"es": "Format"
+},
+{
+"id": 8195,
+"es": "Date and time with format “YYYY-MM-DDThh:mm:ss” in which the response message is created by Onesait Metering."
+},
+{
+"id": 8196,
+"es": "A string that uniquely identifies the reply message into Onesait Metering."
+},
+{
+"id": 8197,
+"es": "messageId value contained into the request message received from the Client system"
+},
+{
+"id": 8198,
+"es": "“MDM”"
+},
+{
+"id": 8199,
+"es": "result"
+},
+{
+"id": 8200,
+"es": "The reply result value. It is populated in the following manner:"
+},
+{
+"id": 8201,
+"es": "OK (if there are no errors and result have been returned)."
+},
+{
+"id": 8202,
+"es": "FAILED (if no result can be returned due to one or more errors, indicated with one or more errorsList elements)."
+},
+{
+"id": 8203,
+"es": "endDeviceEvent"
+},
+{
+"id": 8204,
+"es": "Object that contains information about the result after the request was completely processed by OM"
+},
+{
+"id": 8205,
+"es": "createdDateTime"
+},
+{
+"id": 8206,
+"es": "The date and time with format “YYYY-MM-DDThh:mm:ss” at which the control command was executed by the source (MDM) system."
+},
+{
+"id": 8207,
+"es": "Enumeration of the expected energization state using CIM standard:"
+},
+{
+"id": 8208,
+"es": "3.26.84.58 (Meter is Energized)"
+},
+{
+"id": 8209,
+"es": "3.26.54.85 (Meter is not energized)"
+},
+{
+"id": 8210,
+"es": "Internal ID used by the client system (received into the request message) to identify the Meter."
+},
+{
+"id": 8211,
+"es": "Serial Number assign by the Manufacturer"
+},
+{
+"id": 8212,
+"es": "This value, is used as CODE of the ‘Metering Point” object into MDM system, and should be unique for every Meter that being serving for an individual Location ID."
+},
+{
+"id": 8213,
+"es": "errorsList"
+},
+{
+"id": 8214,
+"es": "Object containing the error code list replied by the WEB API when result is not OK."
+},
+{
+"id": 8215,
+"es": "Integer"
+},
+{
+"id": 8216,
+"es": "A unique numeric code for the error."
+},
+{
+"id": 8217,
+"es": "reason"
+},
+{
+"id": 8218,
+"es": "Developer information about the provided error code."
+},
+{
+"id": 8219,
+"es": "Funcionalidades de Inventario"
+},
+{
+"id": 8220,
+"es": "CIS > MDM - Instalación de Punto de Medida"
+},
+{
+"id": 8221,
+"es": "CIS > MDM - Levantamiento de medidor"
+},
+{
+"id": 8222,
+"es": "CIS > MDM - Desconexión de medidor"
+},
+{
+"id": 8223,
+"es": "CIS > MDM - Reconexión de medidor"
+},
+{
+"id": 8224,
+"es": "Mensaje de Respuesta"
+},
+{
+"id": 8225,
+"es": "/rest/InCMS/operations"
+},
+{
+"id": 8226,
+"es": "Synchronous"
+},
+{
+"id": 8227,
+"es": "Este método síncrono se utiliza para notificar a Onesait Metering (OM) que se ha instalado un contador en campo. El OM actualizará su inventario para crear/mantener la información relacionada con ambas entidades (equipos y puntos de medida) y su asociación de forma coherente con la operación ejecutada. "
+},
+{
+"id": 8228,
+"es": "La carga útil del mensaje de solicitud se compone de varias operaciones."
+},
+{
+"id": 8229,
+"es": "El comando asociará un equipo a un Punto de Medida que pueda o no estar dado de alta en el sistema."
+},
+{
+"id": 8230,
+"es": "En caso de que el Punto de Medida no se encuentre en el sistema, será dado de alta automáticamente relacionándolo con el equipo."
+},
+{
+"id": 8231,
+"es": "En caso de que el Equipo propuesto no estuviera dado de alta en el sistema, éste se crearía automáticamente."
+},
+{
+"id": 8232,
+"es": "En el caso de un "
+},
+{
+"id": 8233,
+"es": "cambio de contador"
+},
+{
+"id": 8234,
+"es": ", el flujo de trabajo requiere la emisión tanto del mensaje de solicitud de retirada de contador como, posteriormente, del mensaje de solicitud de instalación de contador."
+},
+{
+"id": 8235,
+"es": "CIS-MPInstallation_Request.json"
+},
+{
+"id": 8236,
+"es": "CIS-MPInstallation_Response.json"
+},
+{
+"id": 8237,
+"es": "Esquemas de Petición y Respuesta "
+},
+{
+"id": 8238,
+"es": "\"TEST INT 4000\""
+},
+{
+"id": 8239,
+"es": "\"operations\""
+},
+{
+"id": 8240,
+"es": "\"operationId\""
+},
+{
+"id": 8241,
+"es": "\"noun\""
+},
+{
+"id": 8242,
+"es": "\"MeterConfig\""
+},
+{
+"id": 8243,
+"es": "\"verb\""
+},
+{
+"id": 8244,
+"es": "\"create\""
+},
+{
+"id": 8245,
+"es": "\"meterConfig\""
+},
+{
+"id": 8246,
+"es": "\"TESTINTFIN4000\""
+},
+{
+"id": 8247,
+"es": "\"amrSystem\""
+},
+{
+"id": 8248,
+"es": "\"configurationEvents\""
+},
+{
+"id": 8249,
+"es": "\"effectiveDateTime\""
+},
+{
+"id": 8250,
+"es": "\"endDeviceInfo\""
+},
+{
+"id": 8251,
+"es": "\"mark\""
+},
+{
+"id": 8252,
+"es": "\"ABB\""
+},
+{
+"id": 8253,
+"es": "\"model\""
+},
+{
+"id": 8254,
+"es": "\"DELTA\""
+},
+{
+"id": 8255,
+"es": "\"indPrepayment\""
+},
+{
+"id": 8256,
+"es": "false"
+},
+{
+"id": 8257,
+"es": "\"UsagePointConfig\""
+},
+{
+"id": 8258,
+"es": "\"usagePointConfig\""
+},
+{
+"id": 8259,
+"es": "\"amiBillingReady\""
+},
+{
+"id": 8260,
+"es": "\"connectionState\""
+},
+{
+"id": 8261,
+"es": "\"connected\""
+},
+{
+"id": 8262,
+"es": "\"indDisconnectable\""
+},
+{
+"id": 8263,
+"es": "\"readCycle\""
+},
+{
+"id": 8264,
+"es": "\"readRoute\""
+},
+{
+"id": 8265,
+"es": "\"customerAgreement\""
+},
+{
+"id": 8266,
+"es": "\"customerName\""
+},
+{
+"id": 8267,
+"es": "\"MINI  BAKERIES (U) LTD\""
+},
+{
+"id": 8268,
+"es": "\"accountNumber\""
+},
+{
+"id": 8269,
+"es": "\"customerKind\""
+},
+{
+"id": 8270,
+"es": "\"101 - 00101 - SCHOOLS\""
+},
+{
+"id": 8271,
+"es": "\"activityType\""
+},
+{
+"id": 8272,
+"es": "\"1000BILCLS - Residential\""
+},
+{
+"id": 8273,
+"es": "\"serviceCategory\""
+},
+{
+"id": 8274,
+"es": "\"ELECREG - Electricity Postpaid\""
+},
+{
+"id": 8275,
+"es": "\"operationalArea\""
+},
+{
+"id": 8276,
+"es": "null"
+},
+{
+"id": 8277,
+"es": "\"usagePointLocation\""
+},
+{
+"id": 8278,
+"es": "\"coordinateX\""
+},
+{
+"id": 8279,
+"es": "\"coordinateY\""
+},
+{
+"id": 8280,
+"es": "\"district\""
+},
+{
+"id": 8281,
+"es": "\"subdistrict\""
+},
+{
+"id": 8282,
+"es": "\"usagePointInfo\""
+},
+{
+"id": 8283,
+"es": "\"codAttribute\""
+},
+{
+"id": 8284,
+"es": "\"00001CPATT\""
+},
+{
+"id": 8285,
+"es": "\"426218 - XING XING FURNITURE NYANAMA\""
+},
+{
+"id": 8286,
+"es": "\"ACTTYP\""
+},
+{
+"id": 8287,
+"es": "\"SECONDARY SCHOOLS\""
+},
+{
+"id": 8288,
+"es": "\"CLOSEST\""
+},
+{
+"id": 8289,
+"es": "\"MTD - MUTUNDWE\""
+},
+{
+"id": 8290,
+"es": "\"meterPhase\""
+},
+{
+"id": 8291,
+"es": "\"THREE PHASE\""
+},
+{
+"id": 8292,
+"es": "\"FEEDER\""
+},
+{
+"id": 8293,
+"es": "\"MTD/BNM/11/1 - BUNAMWAYA 11 KV FROM MUTUNDWE\""
+},
+{
+"id": 8294,
+"es": "\"NETWORK\""
+},
+{
+"id": 8295,
+"es": "\"MASAKA RD-NALUKOLONGO\""
+},
+{
+"id": 8296,
+"es": "\"READSTRUC\""
+},
+{
+"id": 8297,
+"es": "\"LV\""
+},
+{
+"id": 8298,
+"es": "\"SEGMENT\""
+},
+{
+"id": 8299,
+"es": "\"Industrial\""
+},
+{
+"id": 8300,
+"es": "\"SELFREADER\""
+},
+{
+"id": 8301,
+"es": "\"nominalVoltageLevel\""
+},
+{
+"id": 8302,
+"es": "\"LOW VOLTAGE(240V)\""
+},
+{
+"id": 8303,
+"es": "\"MasterDataLinkageConfig\""
+},
+{
+"id": 8304,
+"es": "\"masterDataLinkageConfig\""
+},
+{
+"id": 8305,
+"es": "\"MeterReadings\""
+},
+{
+"id": 8306,
+"es": "\"created\""
+},
+{
+"id": 8307,
+"es": "\"meterReadingList\""
+},
+{
+"id": 8308,
+"es": "Obligatorio"
+},
+{
+"id": 8309,
+"es": "(Yes/No)"
+},
+{
+"id": 8310,
+"es": "Valores válidos"
+},
+{
+"id": 8311,
+"es": "A sequence number is recommended."
+},
+{
+"id": 8312,
+"es": "This parameter is used to ‘link’ messages together. This may be supplied on a request, so that the client (source system) can correlate the corresponding reply message issued by OM-MDM."
+},
+{
+"id": 8313,
+"es": "operations"
+},
+{
+"id": 8314,
+"es": "Individual Operations correlated to the Meter Installation."
+},
+{
+"id": 8315,
+"es": "Each operation has an operation id, verb and noun."
+},
+{
+"id": 8316,
+"es": "At the time of Meter installation is performed in the source system, 4 operationsId should be reported to MDM into the request message:"
+},
+{
+"id": 8317,
+"es": "0: Data of the installed meter."
+},
+{
+"id": 8318,
+"es": "1:  Data of the UsagePoint where the Meter was installed, and Customer agreement (contracted service) information."
+},
+{
+"id": 8319,
+"es": "2: Linkage between the installed Meter and the UsagePoint"
+},
+{
+"id": 8320,
+"es": "3: Initial Meter Readings at the time of its installation"
+},
+{
+"id": 8321,
+"es": "operationId"
+},
+{
+"id": 8322,
+"es": "This parameter describes the operational 'reason' performed on the system issuing the request that triggers the execution of this interface."
+},
+{
+"id": 8323,
+"es": "0: Data of the installed meter (meterConfig payload),"
+},
+{
+"id": 8324,
+"es": "1: Data of the UsagePoint where the Meter was installed, and Customer service agreement information. (usagePointConfig payload),"
+},
+{
+"id": 8325,
+"es": "2: Linkage between the installed Meter and the UsagePoint (masterDataLinkageConfig payload), and"
+},
+{
+"id": 8326,
+"es": "3: Initial Meter Readings at the time of its installation (meterReadings payload),"
+},
+{
+"id": 8327,
+"es": "noun"
+},
+{
+"id": 8328,
+"es": "The noun identifies the type of payload that should be provided on the request message."
+},
+{
+"id": 8329,
+"es": "MeterConfig"
+},
+{
+"id": 8330,
+"es": "UsagePointConfig"
+},
+{
+"id": 8331,
+"es": "MasterDataLinkageConfig"
+},
+{
+"id": 8332,
+"es": "MeterReadings"
+},
+{
+"id": 8333,
+"es": "verb"
+},
+{
+"id": 8334,
+"es": "Verb for transaction to execute into each operationId."
+},
+{
+"id": 8335,
+"es": "‘create’"
+},
+{
+"id": 8336,
+"es": "meterConfig"
+},
+{
+"id": 8337,
+"es": "Information about the meter in service (installed)."
+},
+{
+"id": 8338,
+"es": "Serial Number assigned by the Manufacturer."
+},
+{
+"id": 8339,
+"es": "Complementary Serial Number assigned by the Service Supplier (Distributor or Retailer company)."
+},
+{
+"id": 8340,
+"es": "Internal ID used by the source system to identify the Installed Meter."
+},
+{
+"id": 8341,
+"es": "Unique reference on the Distribution Network where the physical Meter was installed."
+},
+{
+"id": 8342,
+"es": "Remember that this value is used as CODE of the ‘Metering Point” object into MDM system, and should be unique for every Meter that being serving for an individual Location ID."
+},
+{
+"id": 8343,
+"es": "amrSystem"
+},
+{
+"id": 8344,
+"es": "Abbreviation of the AMR/AMI HES system who operates the remote collection of readings from the Meter using an AMI infrastructure."
+},
+{
+"id": 8345,
+"es": "If informed, this value is stored into MDM as a “property” of the Equipment object, and also into the HEAD-END SYSTEM attribute of the Metering Point object."
+},
+{
+"id": 8346,
+"es": "For example:"
+},
+{
+"id": 8347,
+"es": "LCG (Landys+GYR)"
+},
+{
+"id": 8348,
+"es": "TRL (Trilliant)"
+},
+{
+"id": 8349,
+"es": "ACL (Aclara)"
+},
+{
+"id": 8350,
+"es": "ratedPower"
+},
+{
+"id": 8351,
+"es": "Contracted power on customer service agreement."
+},
+{
+"id": 8352,
+"es": "configurationEvents"
+},
+{
+"id": 8353,
+"es": "configurationEvents occur each time a create, change, or delete operation is performed on the “meterConfig” data."
+},
+{
+"id": 8354,
+"es": "The date and time with format “YYYY-MM-DDThh:mm:ss” at which the installation transaction was recorded into the source system."
+},
+{
+"id": 8355,
+"es": "effectiveDateTime"
+},
+{
+"id": 8356,
+"es": "The effective date and time with format “YYYY-MM-DDThh:mm:ss” at which the Meter became officially installed from the business point of view."
+},
+{
+"id": 8357,
+"es": "It uses to be the official date and time which the meter comes to be in service."
+},
+{
+"id": 8358,
+"es": "endDeviceInfo"
+},
+{
+"id": 8359,
+"es": "mark"
+},
+{
+"id": 8360,
+"es": "Manufacturer of the Equipment."
+},
+{
+"id": 8361,
+"es": "Any NAME value of business master data Manufacturers Settings"
+},
+{
+"id": 8362,
+"es": "model"
+},
+{
+"id": 8363,
+"es": "Equipment model."
+},
+{
+"id": 8364,
+"es": "Any CODE value of business master data Equipment Models Settings"
+},
+{
+"id": 8365,
+"es": "indPrepayment"
+},
+{
+"id": 8366,
+"es": "Flag to indicate if the meter in service was installed working on Pre-Pay modality."
+},
+{
+"id": 8367,
+"es": "False"
+},
+{
+"id": 8368,
+"es": "Do not apply."
+},
+{
+"id": 8369,
+"es": "usagePointConfig"
+},
+{
+"id": 8370,
+"es": "Information related with the periodicity and conditions (meter reads capture remotely using AMI capabilities or capture by a human on scheduled routes) which meter readings are captured in the usage point."
+},
+{
+"id": 8371,
+"es": "amiBillingReady"
+},
+{
+"id": 8372,
+"es": "Tag value to indicate if the Usage Point is billed using readings collected/captured by a Head-End system (amiCapable); or is billed using readings obtained manually at field by a reader (human)."
+},
+{
+"id": 8373,
+"es": "amiCapable"
+},
+{
+"id": 8374,
+"es": "connectionState"
+},
+{
+"id": 8375,
+"es": "State of the contracted service after the Meter Installation."
+},
+{
+"id": 8376,
+"es": "connected"
+},
+{
+"id": 8377,
+"es": "indDisconnectable"
+},
+{
+"id": 8378,
+"es": "Flag to indicate if the contracted service linked to the Usage Point can be (or not) disconnected by the company supplier."
+},
+{
+"id": 8379,
+"es": "readCycle"
+},
+{
+"id": 8380,
+"es": "Frequency in which the Usage Point is read according to the terms contained in the customer service agreement."
+},
+{
+"id": 8381,
+"es": "Any CODE value of business master data Billing Cycles Settings"
+},
+{
+"id": 8382,
+"es": "readRoute"
+},
+{
+"id": 8383,
+"es": "Name of the route in which the Usage Point is read periodically when the meter reading is captured by human (reader), where the reader inputs meter data into a handheld device."
+},
+{
+"id": 8384,
+"es": "This information is not used by MDM."
+},
+{
+"id": 8385,
+"es": "configurationEvents occur each time a create, change, or delete operation is performed on the “usagePointConfig” object."
+},
+{
+"id": 8386,
+"es": "The transactional date and time with format “YYYY-MM-DDThh:mm:ss” at which the Usage Point was created/changed/deleted into the source system."
+},
+{
+"id": 8387,
+"es": "The effective date and time with format “YYYY-MM-DDThh:mm:ss” at which the Usage Point became as new, modified or deleted from the business point of view."
+},
+{
+"id": 8388,
+"es": "customerAgreement"
+},
+{
+"id": 8389,
+"es": "Information related to the contractual service conditions at the usage point."
+},
+{
+"id": 8390,
+"es": "customerName"
+},
+{
+"id": 8391,
+"es": "Customer name of the account holder."
+},
+{
+"id": 8392,
+"es": "Numero de contrato del apartado de Facturación de la pestaña de Caracteríastisas en el Punto de Medida."
+},
+{
+"id": 8393,
+"es": "accountNumber"
+},
+{
+"id": 8394,
+"es": "Reference of the customer account data into the CIS system."
+},
+{
+"id": 8395,
+"es": "This value is stored at OM into the Metering Point attribute CONTRACT NUMBER."
+},
+{
+"id": 8396,
+"es": "customerKind"
+},
+{
+"id": 8397,
+"es": "Reference of the business activity carried out into the Usage Point."
+},
+{
+"id": 8398,
+"es": "This value is stored at OM into the Metering Point attribute BUSINESS ACTIVITY."
+},
+{
+"id": 8399,
+"es": "Any DESCRIPTION value of business master data Business Activities Settings"
+},
+{
+"id": 8400,
+"es": "Example: 101 - 00101 - SCHOOLS"
+},
+{
+"id": 8401,
+"es": "activityType"
+},
+{
+"id": 8402,
+"es": "Reference of the usage segment to which this usage point is intended to be commercialized."
+},
+{
+"id": 8403,
+"es": "This value is stored at OM into the Metering Point attribute ACTIVITY."
+},
+{
+"id": 8404,
+"es": "Any ACTIVITY value of business master data Metering Point Activities Settings"
+},
+{
+"id": 8405,
+"es": "Example: 1000BILCLS - Residential"
+},
+{
+"id": 8406,
+"es": "serviceCategory"
+},
+{
+"id": 8407,
+"es": "Internal classification used by the CIS system to classify the different services commercialized."
+},
+{
+"id": 8408,
+"es": "Currently, this information is not used by MDM."
+},
+{
+"id": 8409,
+"es": "operationalArea"
+},
+{
+"id": 8410,
+"es": "Name of the commercial office responsible on the customer care & service."
+},
+{
+"id": 8411,
+"es": "Any NAME value of business master data Commercial Offices Settings"
+},
+{
+"id": 8412,
+"es": "usagePointLocation"
+},
+{
+"id": 8413,
+"es": "Location of the usage point. For residential or most businesses, it is typically the location of a meter on the customer's premises."
+},
+{
+"id": 8414,
+"es": "coordinateX"
+},
+{
+"id": 8415,
+"es": "GPS coordinate with mask (-)999.999999"
+},
+{
+"id": 8416,
+"es": "coordinateY"
+},
+{
+"id": 8417,
+"es": "distrit"
+},
+{
+"id": 8418,
+"es": "Used when OM works together Onesait Customer solution as CIS&Billing System."
+},
+{
+"id": 8419,
+"es": "This field reports the DESCRIPTION of level 10 linked to the street map used by Onesait Customer solution to code addresses."
+},
+{
+"id": 8420,
+"es": "subdistrit"
+},
+{
+"id": 8421,
+"es": "This field reports the DESCRIPTION of level 20 linked to the street map used by Onesait Customers solution to code addresses."
+},
+{
+"id": 8422,
+"es": "usagePoingInfo"
+},
+{
+"id": 8423,
+"es": "Customizable additional information about the Usage Point."
+},
+{
+"id": 8424,
+"es": "codAttibute"
+},
+{
+"id": 8425,
+"es": "Name of the attribute."
+},
+{
+"id": 8426,
+"es": "For example, VOLTAGE or TARIFF"
+},
+{
+"id": 8427,
+"es": "Value of the attribute."
+},
+{
+"id": 8428,
+"es": "phaseCode"
+},
+{
+"id": 8429,
+"es": "Field to indicate if the service is single-phase or Three-phase."
+},
+{
+"id": 8430,
+"es": "This value is stored at OM into the Metering Point attribute PHASE TYPE."
+},
+{
+"id": 8431,
+"es": "Single Phase"
+},
+{
+"id": 8432,
+"es": "Three Phase"
+},
+{
+"id": 8433,
+"es": "nominalServiceVoltage"
+},
+{
+"id": 8434,
+"es": "Nominal Voltage Level in which the Usage Point is supplied."
+},
+{
+"id": 8435,
+"es": "This value is stored at OM into the Metering Point attribute VOLTAGE LEVEL."
+},
+{
+"id": 8436,
+"es": "Low"
+},
+{
+"id": 8437,
+"es": "Medium"
+},
+{
+"id": 8438,
+"es": "High"
+},
+{
+"id": 8439,
+"es": "masterDataLinkageConfig"
+},
+{
+"id": 8440,
+"es": "configurationEvents occur each time a create, change, or delete operation is performed on the “masterDataLinkageConfig” object."
+},
+{
+"id": 8441,
+"es": "The transactional date and time with format “YYYY-MM-DDThh:mm:ss” at which the linkage between the Usage Point and the Meter was created/changed/deleted into the source system."
+},
+{
+"id": 8442,
+"es": "The effective date and time with format “YYYY-MM-DDThh:mm:ss” at which the linkage between the Usage Point and the Meter became effective as new, modified or deleted from the business point of view."
+},
+{
+"id": 8443,
+"es": "It used to be the official installation date and time."
+},
+{
+"id": 8444,
+"es": "meterReadings"
+},
+{
+"id": 8445,
+"es": "The initial readings of the newly installed meter. "
+},
+{
+"id": 8446,
+"es": "Serial Number of the meter."
+},
+{
+"id": 8447,
+"es": "meterReadingList"
+},
+{
+"id": 8448,
+"es": "Meter readings list."
+},
+{
+"id": 8449,
+"es": "timeStamp"
+},
+{
+"id": 8450,
+"es": "Date and time in which the reading value was captured with mask YYYY-MM-DDThh:mm:ss."
+},
+{
+"id": 8451,
+"es": "MDM is going to use this field as installation date."
+},
+{
+"id": 8452,
+"es": "NOTE"
+},
+{
+"id": 8453,
+"es": "When this reading field exists in the request, this date will be used as the "
+},
+{
+"id": 8454,
+"es": "installation date for the meter, measurement point, and their association"
+},
+{
+"id": 8455,
+"es": "Reading value."
+},
+{
+"id": 8456,
+"es": "Double"
+},
+{
+"id": 8457,
+"es": "readingQualityType"
+},
+{
+"id": 8458,
+"es": "To indicate that something"
+},
+{
+"id": 8459,
+"es": "remarkable (such as a power outage or clock adjustment) occurred during the time the reading value was captured."
+},
+{
+"id": 8460,
+"es": "Typically, this value use to be any of the codes defined by IEC 61968-11 standard for element readingQualityType but can be tailored to any other value."
+},
+{
+"id": 8461,
+"es": "idReading"
+},
+{
+"id": 8462,
+"es": "Internal ID of the reading record in the source system (CIS) that issue the request."
+},
+{
+"id": 8463,
+"es": "It is not used by MDM."
+},
+{
+"id": 8464,
+"es": "readingType"
+},
+{
+"id": 8465,
+"es": "CIM code related to the measured magnitude."
+},
+{
+"id": 8466,
+"es": "CIM code."
+},
+{
+"id": 8467,
+"es": "readingMp"
+},
+{
+"id": 8468,
+"es": "Internal ID of the readingType used by the source system (CIS) that issue the request as synonyms of the CIM code."
+},
+{
+"id": 8469,
+"es": "correlationId value received into the request message that provokes this reply."
+},
+{
+"id": 8470,
+"es": "FAILED"
+},
+{
+"id": 8471,
+"es": "Esquemas de Petición/Respuesta"
+},
+{
+"id": 8472,
+"es": "Mensaje Respuesta"
+},
+{
+"id": 8473,
+"es": "Este método síncrono se utiliza para notificar a Onesait Metering (OM) que un contador ha sido retirado del campo. El OM actualizará el inventario de la siguiente forma:"
+},
+{
+"id": 8474,
+"es": "Cambiará el Estado de Operación del Equipo a \"Baja\" asignándole la fecha de baja correspondiente."
+},
+{
+"id": 8475,
+"es": "Cambiará el estado de Ubicación a \"Retirado\""
+},
+{
+"id": 8476,
+"es": "Cambiará el estado de Comunicación a \"Desconocido\""
+},
+{
+"id": 8477,
+"es": "Deshará la asociación de el equipo y del punto de medida donde fue instalado."
+},
+{
+"id": 8478,
+"es": "La carga útil del mensaje de solicitud se compone de 2 operaciones:"
+},
+{
+"id": 8479,
+"es": "Intercambio de los datos del contador retirado"
+},
+{
+"id": 8480,
+"es": "Lecturas finales del contador retirado en el momento de su desinstalación"
+},
+{
+"id": 8481,
+"es": "CIS-Meter_Removal_Request.json"
+},
+{
+"id": 8482,
+"es": "CIS-Meter_Removal_Response.json"
+},
+{
+"id": 8483,
+"es": "\"delete\""
+},
+{
+"id": 8484,
+"es": "\"ANHCISDLMS\""
+},
+{
+"id": 8485,
+"es": "\"readingsList\""
+},
+{
+"id": 8486,
+"es": "Obligatorio (Yes/No)"
+},
+{
+"id": 8487,
+"es": "Valores Válidos"
+},
+{
+"id": 8488,
+"es": "Individual"
+},
+{
+"id": 8489,
+"es": "Operations correlated to the Meter Removal."
+},
+{
+"id": 8490,
+"es": "At the time of Meter removal is performed in the source system, 2 operationsId should be reported to MDM:"
+},
+{
+"id": 8491,
+"es": "0: Data of the removed meter."
+},
+{
+"id": 8492,
+"es": "1: Final Meter Readings of the removed meter at the time of its disassembly"
+},
+{
+"id": 8493,
+"es": "0: Data of the removed meter (meterConfig payload),"
+}
+]

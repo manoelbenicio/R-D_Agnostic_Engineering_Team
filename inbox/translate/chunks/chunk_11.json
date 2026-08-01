@@ -1,0 +1,3782 @@
+[
+{
+"id": 6500,
+"es": "•Someter las validaciones de configuración (métodos de validación BTV) en tiempo de ejecución de los procesos de validación relativos a la lectura de datos marcados como óptimos. Junto con la configuración de validaciones mencionada, se configura la 'Estrategia' que el sistema ejecutará como salida para cada validación ejecutada."
+},
+{
+"id": 6501,
+"es": "•Para identificar los tipos de eventos clave para los que MDM debe reaccionar durante el procesamiento de ingesta de eventos mediante la configuración \"Estrategia\"."
+},
+{
+"id": 6502,
+"es": "Patrón de origen"
+},
+{
+"id": 6503,
+"es": "Configuración que define una prioridad para elegir qué valor específico usar para marcar como medida \"óptima\" cuando existen varios para la misma marca de tiempo y tipo de lectura, en función del sistema o mecanismo (origen) que declara la medida recopilada, más el resultado (válido o no válido) después de aplicar las validaciones de origen sobre la medida."
+},
+{
+"id": 6504,
+"es": "Medida Optima (BTV)"
+},
+{
+"id": 6505,
+"es": "Relacionado con las medidas de energía (datos de perfil de carga capturados a intervalos regulares de tiempo de longitud fija o lecturas de facturación) que OM marca como el mejor valor de todas las medidas de fuente recibidas de igual magnitud y fecha y hora en la que se leyó la medida de energía."
+},
+{
+"id": 6506,
+"es": "Medida óptima"
+},
+{
+"id": 6507,
+"es": "Datos relacionados con una cantidad eléctrica que el medidor actualiza continuamente y, por lo general, se capturan a pedido desde el sistema HES como una \"instantánea\" de dicha cantidad eléctrica. Como cualquier otra cantidad medida, los valores instantáneos se nombran por su \"magnitud\" específica."
+},
+{
+"id": 6508,
+"es": "El perfil de carga es una secuencia de valores de datos (períodos) capturados regularmente por el medidor cada X tiempo de longitud fija."
+},
+{
+"id": 6509,
+"es": "El medidor podría capturar los datos de cada intervalo como:"
+},
+{
+"id": 6510,
+"es": "•Datos incrementales: en términos de consumo como la diferencia entre el valor absoluto al final del intervalo prescrito y el valor absoluto del intervalo actual. A este se le denomina "
+},
+{
+"id": 6511,
+"es": "Perfil de Carga Incremental"
+},
+{
+"id": 6512,
+"es": " o simplemente "
+},
+{
+"id": 6513,
+"es": "•Datos absolutos: se refiere principalmente al valor de lectura de la esfera y no al consumo durante el intervalo específico. A este se le denomina "
+},
+{
+"id": 6514,
+"es": "Registro de facturación"
+},
+{
+"id": 6515,
+"es": "El perfil de facturación se refiere a los valores finales de lecturas de energía registrados por un medidor al final de un período específico (diario, mensual). Estas lecturas son cruciales para calcular la cantidad de energía (consumo) que un cliente ha utilizado durante ese período y, en consecuencia, la cantidad a proporcionar al CIS para su facturación a cliente."
+},
+{
+"id": 6516,
+"es": "Los perfiles de facturación se clasifican por TIPO en MDM:"
+},
+{
+"id": 6517,
+"es": "•Fin del período: lecturas de facturación que el medidor captura regularmente al final del período de facturación actual (determinado por el día del ciclo de facturación)."
+},
+{
+"id": 6518,
+"es": "•Parcial: lecturas de facturación que generalmente a diario (hora de medianoche) son capturadas por el medidor al final de cada día."
+},
+{
+"id": 6519,
+"es": "Este término puede mencionarse en el presente documento como \"Registro de Facturación“ o “Cierre”."
+},
+{
+"id": 6520,
+"es": "Un evento comunica un cambio de estado/condición en un equipo inventariado en MDM que puede ser de interés potencial para la empresa. Cada evento se registra con un \"Tipo de evento\" y “Fecha\" como marca de tiempo de detección/registro por el dispositivo. Una vez que el evento es recogido por el producto este se correlaciona con el punto de medición en el que está instalado el equipo comunicante."
+},
+{
+"id": 6521,
+"es": "Tipo de evento"
+},
+{
+"id": 6522,
+"es": "Tipo de evento define el evento que se ha producido en el equipo. Es decir, cada evento tiene un CÓDIGO de evento, un NOMBRE y una GRAVEDAD específicos y únicos en el sistema."
+},
+{
+"id": 6523,
+"es": "Los tipos de eventos se pueden agrupar por \"categoría\". Cada tipo de evento se configura con una \"gravedad\" específica y se puede configurar con una \"Estrategia\" predeterminada que el sistema ejecutará automáticamente en tiempo de ejecución de la entrada de datos."
+},
+{
+"id": 6524,
+"es": "Los tipos de eventos son configurables a partir de los eventos proporcionados por la Utility durante el proceso de implantación del producto."
+},
+{
+"id": 6525,
+"es": "Este documento recoge los diferentes protocolos integrados en la aplicación Onesait Metering MDC (OM MDC)."
+},
+{
+"id": 6526,
+"es": "Para cada uno de estos protocolos se indicará el nombre, descripción, nivel de implementación junto con las peticiones asociadas y los parámetros de configuración asociados con el medidor y/o el concentrador, finalizando con un listado de los medidores integrados en nuestra aplicación."
+},
+{
+"id": 6527,
+"es": "2       Protocolos"
+},
+{
+"id": 6528,
+"es": "Un protocolo es un sistema de reglas que permiten que dos o más entidades de un sistema de comunicación se comuniquen entre ellas para transmitir información por medio de cualquier tipo de variación de una magnitud física. Se trata de las reglas o el estándar que define la sintaxis, semántica y sincronización de la comunicación, así como también los posibles métodos de recuperación de errores. Los protocolos pueden ser implementados por hardware, por software, o por una combinación de ambos."
+},
+{
+"id": 6529,
+"es": "Los protocolos que se describen a continuación están implementados en el sistema MDM y forman parte del módulo disponible de TELEMEDICIÓN, el cual permite a la aplicación la comunicación con los elementos físicos, medidores y concentradores de campo a través de la red establecida de comunicación configurada en el proyecto."
+},
+{
+"id": 6530,
+"es": "A continuación se describe cada uno de los protocolos integrados en el producto incluyendo la configuración de parámetros, propiedades y ficheros requerida, así como el catálogo de peticiones certificado y los parámetros asociados."
+},
+{
+"id": 6531,
+"es": "2.1      DLMS"
+},
+{
+"id": 6532,
+"es": "DLMS/COSEM (IEC 62056-53, IEC 62056-62) es una especificación estándar que utiliza COSEM para el equipo de modelado de interfaces y DLMS para el intercambio de datos de dicho equipo de medición. Comprende el modelo de objetos, el protocolo de capa de aplicación y los perfiles de comunicación para transportar los mensajes."
+},
+{
+"id": 6533,
+"es": "Implementado para medidores: Legacy and Smart Meter"
+},
+{
+"id": 6534,
+"es": "Nivel de implementación: Completo. Basado en plantillas a través del fichero mapping."
+},
+{
+"id": 6535,
+"es": "Parámetros de configuración de medidor:"
+},
+{
+"id": 6536,
+"es": ": Define el nivel de autenticación entre el cliente (ej. concentrador o software) y el medidor "
+},
+{
+"id": 6537,
+"es": "NONE"
+},
+{
+"id": 6538,
+"es": ": Sin autenticación"
+},
+{
+"id": 6539,
+"es": "LOW"
+},
+{
+"id": 6540,
+"es": ": Autenticación baja con PASSWORD"
+},
+{
+"id": 6541,
+"es": "HIGH_GMAC"
+},
+{
+"id": 6542,
+"es": ": Autenticación alta basada en claves criptográficas y GMAC (Galois Message Authentication Code)."
+},
+{
+"id": 6543,
+"es": ": Especifica el tipo de seguridad aplicada a la comunicación"
+},
+{
+"id": 6544,
+"es": "ENCRYPTION"
+},
+{
+"id": 6545,
+"es": ": Sólo cifrado de datos"
+},
+{
+"id": 6546,
+"es": ": Sólo autenticación"
+},
+{
+"id": 6547,
+"es": "AUTHENTICATION_ENCRYPTION"
+},
+{
+"id": 6548,
+"es": ": Ambas, autenticación y cifrado"
+},
+{
+"id": 6549,
+"es": "SECURITY-SUITE:"
+},
+{
+"id": 6550,
+"es": " Define el conjunto de algoritmos criptográficos utilizados "
+},
+{
+"id": 6551,
+"es": "SUITE_0: "
+},
+{
+"id": 6552,
+"es": "Seguridad básica (AES-GCM-128)"
+},
+{
+"id": 6553,
+"es": "SUITE_1: "
+},
+{
+"id": 6554,
+"es": "Seguridad intermedia (AES-GCM-128 con claves separadas)"
+},
+{
+"id": 6555,
+"es": "SUITE_2: "
+},
+{
+"id": 6556,
+"es": "Seguridad avanzada (AES-GCM-256)"
+},
+{
+"id": 6557,
+"es": "PASSWORD: "
+},
+{
+"id": 6558,
+"es": "Contraseña utilizada en autenticación de tipo LOW"
+},
+{
+"id": 6559,
+"es": ": Clave secreta utilizada para autenticación fuerte (HIGH_GMAC)"
+},
+{
+"id": 6560,
+"es": ": Clave utilizada para cifrado de datos en seguridad tipo ENCRYPTION o AUTHENTICATION_ENCRYPTION"
+},
+{
+"id": 6561,
+"es": ": Indica si se usa direccionamiento por nombre lógico (LN)"
+},
+{
+"id": 6562,
+"es": ": Se usa Logic Name"
+},
+{
+"id": 6563,
+"es": ": Se usa Short Name (SN)"
+},
+{
+"id": 6564,
+"es": ": Indica si se direcciona el medidor por su número de serie"
+},
+{
+"id": 6565,
+"es": ": Se usa el número de serie como dirección"
+},
+{
+"id": 6566,
+"es": ": Se usa dirección lógica o física"
+},
+{
+"id": 6567,
+"es": ": Tipo de interfaz de comunicación "
+},
+{
+"id": 6568,
+"es": "WRAPPER"
+},
+{
+"id": 6569,
+"es": ": Comunicación sin HDLC, más simple, usada en TCP/IP"
+},
+{
+"id": 6570,
+"es": ": Dirección del cliente (ej. software o concentrador). Puede ser un número entero (ej. 16, 1, etc.)."
+},
+{
+"id": 6571,
+"es": ": Dirección del servidor (medidor). Puede ser lógica (ej. 1.0.0.0.0.255) o física (número corto)"
+},
+{
+"id": 6572,
+"es": ": Número de serie del medidor, usado si se activa USE-SERIAL-NUMBER-ADDRESSING"
+},
+{
+"id": 6573,
+"es": ": Nombre lógico del objeto que contiene el contador de invocaciones (para evitar ataques de repetición). Por defecto: 0.0.43.1.0.255"
+},
+{
+"id": 6574,
+"es": ": Valor actual del contador de invocaciones. Se incrementa con cada mensaje para garantizar unicidad"
+},
+{
+"id": 6575,
+"es": "A continuación se incluye un ejemplo de configuración DLMS con los parámetros descritos: "
+},
+{
+"id": 6576,
+"es": "Ejemplo_Config_Parms_DLMS.txt"
+},
+{
+"id": 6577,
+"es": "Además de los parámetros de configuración del medidor, debe adjuntarse, bien sobre el propio modelo de medidor o sobre la propia configuración del equipo (la cual tiene prioridad sobre la de modelo), el fichero de configuración dlms.object.mapping que permite definir por plantillas la relación de los siguientes elementos del sistema con respecto al medidor:"
+},
+{
+"id": 6578,
+"es": "Peticiones del sistema"
+},
+{
+"id": 6579,
+"es": "Magnitudes del sistema"
+},
+{
+"id": 6580,
+"es": "Parámetros del sistema"
+},
+{
+"id": 6581,
+"es": "OBIS CODES definidos en el equipo"
+},
+{
+"id": 6582,
+"es": "Dicha configuración se detalla en el siguiente apartado de la documentación como parte de la implementación del protocolo DLMS por plantillas en el sistema: "
+},
+{
+"id": 6583,
+"es": " (Evolutivos desde proyectos → Mejoras en DLMS & Simulador)"
+},
+{
+"id": 6584,
+"es": "Adjuntamos aquí también los siguientes ficheros utilizados para certificar las peticiones DLMS en producto contra el simulador DLMS configurado:"
+},
+{
+"id": 6585,
+"es": "Plantilla DLMS .mapping: "
+},
+{
+"id": 6586,
+"es": "dlms.object.mapping"
+},
+{
+"id": 6587,
+"es": "Fichero de configuración del simulado (conf.txt): "
+},
+{
+"id": 6588,
+"es": "conf_simulador_20260126.txt"
+},
+{
+"id": 6589,
+"es": "2.1.1 Catálogo de Peticiones DLMS"
+},
+{
+"id": 6590,
+"es": "Category"
+},
+{
+"id": 6591,
+"es": "code"
+},
+{
+"id": 6592,
+"es": "name"
+},
+{
+"id": 6593,
+"es": "Description"
+},
+{
+"id": 6594,
+"es": "parent"
+},
+{
+"id": 6595,
+"es": "0 - Directo"
+},
+{
+"id": 6596,
+"es": "1- Padre"
+},
+{
+"id": 6597,
+"es": "properties"
+},
+{
+"id": 6598,
+"es": "telemetry_request_type"
+},
+{
+"id": 6599,
+"es": "0 - Read"
+},
+{
+"id": 6600,
+"es": "1- Write"
+},
+{
+"id": 6601,
+"es": "Remote Parameters DLMS"
+},
+{
+"id": 6602,
+"es": "Compatibilidad Simulador DLMS"
+},
+{
+"id": 6603,
+"es": "Detalles simulador DLMS"
+},
+{
+"id": 6604,
+"es": "Config"
+},
+{
+"id": 6605,
+"es": "GetDateTime"
+},
+{
+"id": 6606,
+"es": "Get Date Time"
+},
+{
+"id": 6607,
+"es": "Solicita la fecha y hora del equipo"
+},
+{
+"id": 6608,
+"es": "[{\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},{\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},{\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"PRIME STG-DC\"}]"
+},
+{
+"id": 6609,
+"es": "Fh-m"
+},
+{
+"id": 6610,
+"es": "Si"
+},
+{
+"id": 6611,
+"es": "GetConnectionStatus"
+},
+{
+"id": 6612,
+"es": "Obtener estado de conexión"
+},
+{
+"id": 6613,
+"es": "Solicita el estado del Relay"
+},
+{
+"id": 6614,
+"es": "[{'name':'Priority','type':'SELECT','value':'1,2,3','protocol':'PRIME STG-DC'},{'name':'Synchronism','type':'SELECT','value':'DCC,DCF,MET','protocol':'PRIME STG-DC'},{'name':'Timeout','type':'NUMBER','value':'','protocol':'PRIME STG-DC'}]"
+},
+{
+"id": 6615,
+"es": "MeterSwitchStatus"
+},
+{
+"id": 6616,
+"es": "- RELAY_STATUS"
+},
+{
+"id": 6617,
+"es": "- CONTROL_STATUS"
+},
+{
+"id": 6618,
+"es": "- MODE"
+},
+{
+"id": 6619,
+"es": "GetInstantaneousValues"
+},
+{
+"id": 6620,
+"es": "Obtener valores instantáneos"
+},
+{
+"id": 6621,
+"es": "Solicita los valores instantáneos del equipo"
+},
+{
+"id": 6622,
+"es": "No Parameters"
+},
+{
+"id": 6623,
+"es": "Lee una lista de registros definidos en el mapping.object"
+},
+{
+"id": 6624,
+"es": "GetDaylightSavingTimeDates"
+},
+{
+"id": 6625,
+"es": "Get Daylight Saving Time Dates"
+},
+{
+"id": 6626,
+"es": "Solicita el estado de configuración del DST (Daylight Saving Time Dates)"
+},
+{
+"id": 6627,
+"es": "DSTconfiguration"
+},
+{
+"id": 6628,
+"es": "- DST_BEGIN"
+},
+{
+"id": 6629,
+"es": "- DST_END"
+},
+{
+"id": 6630,
+"es": "- DST_DEVIATION"
+},
+{
+"id": 6631,
+"es": "- DST_ENABLED"
+},
+{
+"id": 6632,
+"es": "GetLoadProfileFromLast"
+},
+{
+"id": 6633,
+"es": "Get Load Profile From Last"
+},
+{
+"id": 6634,
+"es": "Solicita las medidas de Perfil de Carga"
+},
+{
+"id": 6635,
+"es": "Adaptador: FromLast"
+},
+{
+"id": 6636,
+"es": "Comprueba la última medida registrada en el sistema"
+},
+{
+"id": 6637,
+"es": "Solicita las lecturas"
+},
+{
+"id": 6638,
+"es": "fecha desde: 1min después a la fecha de la medida localizada"
+},
+{
+"id": 6639,
+"es": "fecha hasta: instante de la ejecución de la petición"
+},
+{
+"id": 6640,
+"es": "[{\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"0\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Interval\",\"type\":\"select\",\"value\":\"MIN15,H,D\",\"protocol\":\"DLMS\"}]"
+},
+{
+"id": 6641,
+"es": "GetLoadProfileBetweenDates"
+},
+{
+"id": 6642,
+"es": "Get Load Profile Between Dates"
+},
+{
+"id": 6643,
+"es": "Adaptador: BetweenDates"
+},
+{
+"id": 6644,
+"es": "fecha desde: Start Date configurado"
+},
+{
+"id": 6645,
+"es": "fecha hasta: End Date configurado"
+},
+{
+"id": 6646,
+"es": "[{\"name\":\"Start Date\",\"type\":\"datetime\",\"value\":\"\"},                     {\"name\":\"End Date\",\"type\":\"datetime\",\"value\":\"\"},                     {\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"0\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Interval\",\"type\":\"select\",\"value\":\"MIN15,H,D\",\"protocol\":\"DLMS\"}]"
+},
+{
+"id": 6647,
+"es": "GetEquipmentParameters"
+},
+{
+"id": 6648,
+"es": "Obtener parámetros del equipo"
+},
+{
+"id": 6649,
+"es": "Solicita los Parámetros del equipo"
+},
+{
+"id": 6650,
+"es": "MeterStatus"
+},
+{
+"id": 6651,
+"es": "- BATTERY_REMAINING"
+},
+{
+"id": 6652,
+"es": "- CT_DENOMINATOR"
+},
+{
+"id": 6653,
+"es": "- CT_NUMERATOR"
+},
+{
+"id": 6654,
+"es": "- FIRMWARE_VERSION"
+},
+{
+"id": 6655,
+"es": "- METER_IPV4_ADDRESS"
+},
+{
+"id": 6656,
+"es": "- POWER_OFF_TIMES"
+},
+{
+"id": 6657,
+"es": "- VT_DENOMINATOR"
+},
+{
+"id": 6658,
+"es": "- VT_NUMERATOR"
+},
+{
+"id": 6659,
+"es": "GetTariffStructure"
+},
+{
+"id": 6660,
+"es": "Obtener estructura tarifaria"
+},
+{
+"id": 6661,
+"es": "Solicita la Estructura Tarifaria del equipo"
+},
+{
+"id": 6662,
+"es": "CurrentActiveTariff"
+},
+{
+"id": 6663,
+"es": "- CURRENT_ACTIVE_TARIFF"
+},
+{
+"id": 6664,
+"es": "ActivityCalendarActive"
+},
+{
+"id": 6665,
+"es": "- CALENDAR_NAME_ACTIVE"
+},
+{
+"id": 6666,
+"es": "- SEASON_PROFILE_ACTIVE"
+},
+{
+"id": 6667,
+"es": "- WEEK_PROFILE_ACTIVE"
+},
+{
+"id": 6668,
+"es": "- DAY_PROFILE_ACTIVE"
+},
+{
+"id": 6669,
+"es": "ActivityCalendarPassive"
+},
+{
+"id": 6670,
+"es": "- CALENDAR_NAME_PASSIVE"
+},
+{
+"id": 6671,
+"es": "- SEASON_PROFILE_PASSIVE"
+},
+{
+"id": 6672,
+"es": "- WEEK_PROFILE_PASSIVE"
+},
+{
+"id": 6673,
+"es": "- DAY_PROFILE_PASSIVE"
+},
+{
+"id": 6674,
+"es": "GetAbsoluteLoadProfileFromLast"
+},
+{
+"id": 6675,
+"es": "Get Absolute Load Profile From Last"
+},
+{
+"id": 6676,
+"es": "Solicita las medidas de Perfil de Carga Absoluto"
+},
+{
+"id": 6677,
+"es": "GetAbsoluteLoadProfileBetweenDates"
+},
+{
+"id": 6678,
+"es": "Get Absolute Load Profile Between Dates"
+},
+{
+"id": 6679,
+"es": "GetBillingProfileFromLast"
+},
+{
+"id": 6680,
+"es": "Petición Cierres de contrato desde ultima lect."
+},
+{
+"id": 6681,
+"es": "Solicita las medidas de cierre de tipo MENSUAL o DIARIA (según parámetro del comando seleccionado)"
+},
+{
+"id": 6682,
+"es": "Parámetros para selección de tipo de medida:"
+},
+{
+"id": 6683,
+"es": "Interval:"
+},
+{
+"id": 6684,
+"es": "M (Mensual)"
+},
+{
+"id": 6685,
+"es": "D (DIARIA)"
+},
+{
+"id": 6686,
+"es": "Type:"
+},
+{
+"id": 6687,
+"es": "CLOSE (Cierre)"
+},
+{
+"id": 6688,
+"es": "[{\"name\": \"Contract\", \"type\": \"select\", \"value\": \"1,2,3\",\"protocol\": \"PRIME STG-DC\"},                     {\"name\": \"Priority\",\"type\": \"SELECT\", \"value\": \"1,2,3\",\"protocol\": \"PRIME STG-DC\"},                     {\"name\": \"Synchronism\",\"type\": \"SELECT\", \"value\": \"DCC,DCF,MET\",\"protocol\": \"PRIME STG-DC\"},                     {\"name\": \"Timeout\",\"type\": \"NUMBER\", \"value\": \"\",\"protocol\": \"PRIME STG-DC\"},                     {\"name\":\"Interval\",\"type\":\"select\",\"value\":\",D,M\",\"protocol\":\"DLMS\"},                     {\"name\": \"Type\",\"type\": \"SELECT\",\"value\":\"CLOSE,PARTIAL\",\"protocol\": \"DLMS\"}]"
+},
+{
+"id": 6689,
+"es": "GetBillingProfileBetweenDates"
+},
+{
+"id": 6690,
+"es": "Cierres de contrato entre fechas"
+},
+{
+"id": 6691,
+"es": "[{\"name\": \"Start Date\", \"type\": \"datetime\", \"value\": \"\"},                     {\"name\": \"End Date\", \"type\": \"datetime\", \"value\": \"\"},                     {\"name\": \"Contract\", \"type\": \"select\", \"value\": \"1,2,3\",\"protocol\": \"PRIME STG-DC\"},                     {\"name\": \"Priority\",\"type\": \"SELECT\", \"value\": \"1,2,3\",\"protocol\": \"PRIME STG-DC\"},                     {\"name\": \"Synchronism\",\"type\": \"SELECT\", \"value\": \"DCC,DCF,MET\",\"protocol\": \"PRIME STG-DC\"},                     {\"name\": \"Timeout\",\"type\": \"NUMBER\", \"value\": \"\",\"protocol\": \"PRIME STG-DC\"},                     {\"name\":\"Interval\",\"type\":\"select\",\"value\":\",D,M\",\"protocol\":\"DLMS\"},                     {\"name\": \"Type\",\"type\": \"SELECT\",\"value\":\"CLOSE,PARTIAL\",\"protocol\": \"DLMS\"}]"
+},
+{
+"id": 6692,
+"es": "OnDemandCutOffReconnection"
+},
+{
+"id": 6693,
+"es": "Corte/reconexión"
+},
+{
+"id": 6694,
+"es": "Permite la operación de Conexión o Desconexión del Relay del equipo"
+},
+{
+"id": 6695,
+"es": "[{\"name\":\"Operation\",\"type\":\"SELECT\",\"value\":\"Disconnect,Connect\",\"protocol\":\"DLMS\"}]"
+},
+{
+"id": 6696,
+"es": "SetDaylightSavingTimeDates"
+},
+{
+"id": 6697,
+"es": "Set Daylight Saving Time Dates"
+},
+{
+"id": 6698,
+"es": "Permite la configurara los parámetros que definen al configuración del DST"
+},
+{
+"id": 6699,
+"es": "[{\"name\":\"Daylight Savings Begin\", \"type\":\"datetime\",\"value\":\"\", \"protocol\":\"DLMS\"},                     {\"name\":\"Daylight Savings End\", \"type\":\"datetime\",\"value\":\"\", \"protocol\":\"DLMS\"},                     {\"name\":\"Daylight Savings Deviation\", \"type\":\"number\",\"value\":\"\",\"protocol\":\"DLMS\"},                     {\"name\":\"Daylight Savings Enabled\", \"type\":\"SELECT\",\"value\":\"True, False\", \"protocol\":\"DLMS\"}]"
+},
+{
+"id": 6700,
+"es": "GetLoadLimitThreshold"
+},
+{
+"id": 6701,
+"es": "Get Load Limit Threshold"
+},
+{
+"id": 6702,
+"es": "Solicita la configuración del Umbral de Corriente configurado en el equipo"
+},
+{
+"id": 6703,
+"es": "LoadLimitThresholdActive"
+},
+{
+"id": 6704,
+"es": "- MONITORED_VALUE"
+},
+{
+"id": 6705,
+"es": "- THRESHOLD_ACTIVE"
+},
+{
+"id": 6706,
+"es": "- MIN_OVER_THRESHOLD_DURATION"
+},
+{
+"id": 6707,
+"es": "SetLoadLimitThreshold"
+},
+{
+"id": 6708,
+"es": "Set Load Limit Threshold"
+},
+{
+"id": 6709,
+"es": "Permite la configuración de los parámetros que definen al configuración del Umbral de Corriente"
+},
+{
+"id": 6710,
+"es": "[{\"name\":\"THRESHOLD_ACTIVE\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"},                     {\"name\":\"MIN_OVER_THRESHOLD_DURATION\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"}]"
+},
+{
+"id": 6711,
+"es": "Synchronize"
+},
+{
+"id": 6712,
+"es": "Meter Synchronization"
+},
+{
+"id": 6713,
+"es": "Ejecuta la sincronización del equipo."
+},
+{
+"id": 6714,
+"es": "1- Solicita el DateTime al equipo"
+},
+{
+"id": 6715,
+"es": "2- Evalúa si la diferencia entre el valor recibido y la hora actual del sistema (siempre sincronizada) supera el DELAY configurado"
+},
+{
+"id": 6716,
+"es": "3- Si lo supera, sincroniza el equipo con al hora actual correcta"
+},
+{
+"id": 6717,
+"es": "4- Si no lo supera, finaliza la petición"
+},
+{
+"id": 6718,
+"es": "[{\"name\":\"Delay\",\"type\":\"NUMBER\",\"value\":\"\", \"protocol\":\"DLMS\"}]"
+},
+{
+"id": 6719,
+"es": "GetEventLogBetweenDates"
+},
+{
+"id": 6720,
+"es": "Get Event Log Between Dates"
+},
+{
+"id": 6721,
+"es": "Solicita los eventos del equipo"
+},
+{
+"id": 6722,
+"es": "Solicita los eventos"
+},
+{
+"id": 6723,
+"es": "[{\"name\":\"Start Date\",\"type\":\"datetime\",\"value\":\"\"},                     {\"name\":\"End Date\",\"type\":\"datetime\",\"value\":\"\"}]"
+},
+{
+"id": 6724,
+"es": "GetEventLogFromLast"
+},
+{
+"id": 6725,
+"es": "Get Event Log From Last"
+},
+{
+"id": 6726,
+"es": "Comprueba el último evento registrado en el sistema"
+},
+{
+"id": 6727,
+"es": "fecha desde: 1min después a la fecha del último evento registrado"
+},
+{
+"id": 6728,
+"es": "SendTokenPrepayment"
+},
+{
+"id": 6729,
+"es": "Enviar token"
+},
+{
+"id": 6730,
+"es": "Permite enviar un token hacia un equipo. Puede usarse para tokens de créditos o tokens técnicos."
+},
+{
+"id": 6731,
+"es": "Parámetros del comando:"
+},
+{
+"id": 6732,
+"es": "Token: Valor del token a enviar (20 dígitos numéricos)"
+},
+{
+"id": 6733,
+"es": "[{\"name\":\"Token\",\"type\":\"STRING\",\"value\":\"\"}]"
+},
+{
+"id": 6734,
+"es": "TokenStatus"
+},
+{
+"id": 6735,
+"es": "(Clase 115 - método 1)"
+},
+{
+"id": 6736,
+"es": "Tokens definidos en el simulador para hacer top-up de crédito:"
+},
+{
+"id": 6737,
+"es": "012345678900000XXXXX - Aumentar saldo, donde "
+},
+{
+"id": 6738,
+"es": "XXXXX "
+},
+{
+"id": 6739,
+"es": "indica en valor del top-up (entre 1 y 99999)-> Añade ese valor al balance credit del simulador"
+},
+{
+"id": 6740,
+"es": "SetLowCreditThreshold"
+},
+{
+"id": 6741,
+"es": "Configurar el umbral de crédito bajo"
+},
+{
+"id": 6742,
+"es": "Permite la configuración del umbral de crédito bajo en el contador prepago."
+},
+{
+"id": 6743,
+"es": "Threshold: Valor del umbral deseado"
+},
+{
+"id": 6744,
+"es": "[{\"name\":\"Threshold\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"}]"
+},
+{
+"id": 6745,
+"es": "(Clase 111 - atributo 16)"
+},
+{
+"id": 6746,
+"es": "GetLowCreditThreshold"
+},
+{
+"id": 6747,
+"es": "Obtener umbral de crédito bajo"
+},
+{
+"id": 6748,
+"es": "Permite consultar el umbral de crédito bajo que tiene un equipo prepago configurado."
+},
+{
+"id": 6749,
+"es": "LowCreditThreshold"
+},
+{
+"id": 6750,
+"es": "OnDemandSetPaymentMode"
+},
+{
+"id": 6751,
+"es": "Configurar modo de pago"
+},
+{
+"id": 6752,
+"es": "Permite cambiar el modo de operación de prepago a pospago y viceversa, a través de token técnico para ello."
+},
+{
+"id": 6753,
+"es": "Token: Valor del token a enviar para cambio de modo (20 dígitos numéricos)"
+},
+{
+"id": 6754,
+"es": "Tokens definidos en el simulador:"
+},
+{
+"id": 6755,
+"es": "11111222223333344444 - Pasar a prepago"
+},
+{
+"id": 6756,
+"es": "55555666667777788888 - Pasar a postpago"
+},
+{
+"id": 6757,
+"es": ": Cuando el simulador pasa a postpago, el balance de crédito prepago es seteado a 0."
+},
+{
+"id": 6758,
+"es": "OnDemandGetPaymentMode"
+},
+{
+"id": 6759,
+"es": "Obtener modo de pago"
+},
+{
+"id": 6760,
+"es": "Permite consultar el modo de pago que tiene un equipo (modo prepago o modo pospago)."
+},
+{
+"id": 6761,
+"es": "PaymentMode"
+},
+{
+"id": 6762,
+"es": "(Clase 111 - Atributo 2)"
+},
+{
+"id": 6763,
+"es": "GetUnitPricePerTariff"
+},
+{
+"id": 6764,
+"es": "Obtener precio unitario por tarifa"
+},
+{
+"id": 6765,
+"es": "Permite consultar la lista de precios unitarios por tarifa que tiene un equipo prepago configurado."
+},
+{
+"id": 6766,
+"es": "UnitPricePerTariff"
+},
+{
+"id": 6767,
+"es": "GetBalanceCredit"
+},
+{
+"id": 6768,
+"es": "Obtener crédito de balance"
+},
+{
+"id": 6769,
+"es": "Permite consultar el balance de crédito que tiene un equipo prepago."
+},
+{
+"id": 6770,
+"es": "BalanceCredit"
+},
+{
+"id": 6771,
+"es": "(Clase 111 - atributo 5)"
+},
+{
+"id": 6772,
+"es": "GetEmergencyCredit"
+},
+{
+"id": 6773,
+"es": "Obtener crédito de emergencia"
+},
+{
+"id": 6774,
+"es": "Permite consultar el balance de crédito de emergencia que tiene un equipo prepago."
+},
+{
+"id": 6775,
+"es": "EmergencyCredit"
+},
+{
+"id": 6776,
+"es": "SetTariffRates"
+},
+{
+"id": 6777,
+"es": "Configurar los precios unitarios de tarifa"
+},
+{
+"id": 6778,
+"es": "Permite la configuración de los precios unitarios de la tarifa prepago. El comando dispone de hasta 8 rates."
+},
+{
+"id": 6779,
+"es": "ActivationTime: Tiempo desde cuando se quiere indicar al medidor que entren en vigor los nuevos precios"
+},
+{
+"id": 6780,
+"es": "PriceR1"
+},
+{
+"id": 6781,
+"es": "PriceR2"
+},
+{
+"id": 6782,
+"es": "PriceR3"
+},
+{
+"id": 6783,
+"es": "PriceR4"
+},
+{
+"id": 6784,
+"es": "PriceR5"
+},
+{
+"id": 6785,
+"es": "PriceR6"
+},
+{
+"id": 6786,
+"es": "PriceR7"
+},
+{
+"id": 6787,
+"es": "PriceR8"
+},
+{
+"id": 6788,
+"es": "[{\"name\":\"ActivationTime\",\"type\":\"datetime\",\"value\":\"\",\"protocol\":\"DLMS\"},{\"name\":\"PriceR1\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"},{\"name\":\"PriceR2\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"},{\"name\":\"PriceR3\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"},{\"name\":\"PriceR4\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"},{\"name\":\"PriceR5\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"},{\"name\":\"PriceR6\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"},{\"name\":\"PriceR7\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"},{\"name\":\"PriceR8\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"DLMS\"}]"
+},
+{
+"id": 6789,
+"es": "GetCurrencyUnit"
+},
+{
+"id": 6790,
+"es": "Obtener unidad de moneda para cargo prepago"
+},
+{
+"id": 6791,
+"es": "Permite obtener la unidad monetaria del equipo en modo prepago, es decir:"
+},
+{
+"id": 6792,
+"es": "currency_name: Nombre de la unudad:"
+},
+{
+"id": 6793,
+"es": "EUR, UGX, GPB (segun la ISO 4217)"
+},
+{
+"id": 6794,
+"es": "min, hrs, sec"
+},
+{
+"id": 6795,
+"es": "kWh, Whr, mt3"
+},
+{
+"id": 6796,
+"es": "currency_scale: Indica el escalado del valor del balance"
+},
+{
+"id": 6797,
+"es": "currency_unit: Valores posibles son:"
+},
+{
+"id": 6798,
+"es": "(0) time"
+},
+{
+"id": 6799,
+"es": "(1) consumption"
+},
+{
+"id": 6800,
+"es": "(2) monetary"
+},
+{
+"id": 6801,
+"es": "CurrencyUnit"
+},
+{
+"id": 6802,
+"es": "(Clase 111 - atributo 15)"
+},
+{
+"id": 6803,
+"es": "Alarmas/Push"
+},
+{
+"id": 6804,
+"es": "OnDemandClearAlarms"
+},
+{
+"id": 6805,
+"es": "On Demand Clear Alarms"
+},
+{
+"id": 6806,
+"es": "Permite realizar un borrado de los registros y descriptores de alarma. "
+},
+{
+"id": 6807,
+"es": "AlarmRegisters"
+},
+{
+"id": 6808,
+"es": "SetPushSetupDestination"
+},
+{
+"id": 6809,
+"es": "Set Push Setup Destination"
+},
+{
+"id": 6810,
+"es": "Permite configurar el atributo destino de un Push Setup. "
+},
+{
+"id": 6811,
+"es": "Type: Tipo de push a configurar"
+},
+{
+"id": 6812,
+"es": "onAlarm"
+},
+{
+"id": 6813,
+"es": "onInstallation"
+},
+{
+"id": 6814,
+"es": "onConnectivity"
+},
+{
+"id": 6815,
+"es": "onPowerDown"
+},
+{
+"id": 6816,
+"es": "Destination: Ip y puerto (Ej. 10.1.2.11:7001)"
+},
+{
+"id": 6817,
+"es": "Service: Tipo de protocolo usado (TCP,UDP, etc)"
+},
+{
+"id": 6818,
+"es": "Message: Formato mensaje"
+},
+{
+"id": 6819,
+"es": "COSEM_APDU (este es el comúnmente usado)"
+},
+{
+"id": 6820,
+"es": "COSEM_APDU_XML"
+},
+{
+"id": 6821,
+"es": "[{\"name\":\"Type\",\"type\":\"SELECT\",\"value\":\"onAlarm,onInstallation,onConnectivity,onPowerDown\"},{\"name\":\"Destination\",\"type\":\"STRING\",\"value\":\"127.0.0.1:4059\"},{\"name\":\"Service\",\"type\":\"SELECT\",\"value\":\"TCP,UDP,FTP,SMTP,SMS,HDLC,M_BUS,ZIGBEE\"},{\"name\":\"Message\",\"type\":\"SELECT\",\"value\":\"COSEM_APDU,COSEM_APDU_XML\"}]"
+},
+{
+"id": 6822,
+"es": "(Clase 40 - Atributo 4)"
+},
+{
+"id": 6823,
+"es": "2.1.2 Funcionalidad data-notification DLMS (PUSH)"
+},
+{
+"id": 6824,
+"es": "2.1.2.1 Introducción"
+},
+{
+"id": 6825,
+"es": "En este apartado se describe la funcionalidad ofrecida por OUM para la recepción y gestión de push (data-notification) relativos al protocolo DLMS. "
+},
+{
+"id": 6826,
+"es": "Uno de los servicios definidos en el protocolo DLMS es la recepción en un cliente DLMS (Head End System) de los mensajes "
+},
+{
+"id": 6827,
+"es": "data-notification (push). "
+},
+{
+"id": 6828,
+"es": "Estos mensajes recibidos en el sistema OUM son recibidos y tratados como Push. "
+},
+{
+"id": 6829,
+"es": "Normalmente, el mecanismo "
+},
+{
+"id": 6830,
+"es": "PUSH"
+},
+{
+"id": 6831,
+"es": " se define para dar avisos y notificaciones por parte del contador eléctrico hacia el HES (en nuestro caso OUM). "
+},
+{
+"id": 6832,
+"es": "La información para enviar en esos PUSH es bajo definición del fabricante de equipos, del HES o lo establece un profile DLMS como IDIS. En cualquier caso, la información enviada debe ser concretada para su correcto funcionamiento. Con respecto a los usos comunes se definen: "
+},
+{
+"id": 6833,
+"es": "Push On Connectivity"
+},
+{
+"id": 6834,
+"es": ": Este mensaje se suele definir para dar aviso al HES de que el contador se ha conectado, encendido, etc. Es un proceso que puede usarse para detectar la nueva IP del equipo contador, en caso de que tenga una IP dinámica. "
+},
+{
+"id": 6835,
+"es": "Push On Installation"
+},
+{
+"id": 6836,
+"es": ": Este mensaje se suele usar para realizar el proceso de instalación y puesta en marcha del equipo en el sistema. "
+},
+{
+"id": 6837,
+"es": "Push On alarm"
+},
+{
+"id": 6838,
+"es": ": Este mensaje se suele usar para notificar de los cambios dados en los registros de alarma definidos en el contador, para que el HES pueda conocer el estado de esos registros de alarma y sus actualizaciones. "
+},
+{
+"id": 6839,
+"es": "Push PowerDown (o LastGasp)"
+},
+{
+"id": 6840,
+"es": ": Este mensaje se suele usar para notificar de que el contador se va a apagar por un power outage. "
+},
+{
+"id": 6841,
+"es": "Otros Push definidos para envío de medidas u otra información relevante. "
+},
+{
+"id": 6842,
+"es": "El desarrollo e implantación de esta funcionalidad en el sistema OUM se acota a: "
+},
+{
+"id": 6843,
+"es": "Permitir recibir PUSHES definidos en producto para los equipos DLMS telemedidos"
+},
+{
+"id": 6844,
+"es": "Permitir que el formato de PUSH esperado para un equipo o modelo, se pueda definir en un fichero configurable, tal como el fichero “object.mapping” de DLMS."
+},
+{
+"id": 6845,
+"es": "Permitir un autodescubrimiento de equipos DLMS."
+},
+{
+"id": 6846,
+"es": "Permitir recibir PUSH encriptados"
+},
+{
+"id": 6847,
+"es": "Listado de información que debemos manejar en los pushes:"
+},
+{
+"id": 6848,
+"es": "Número de serie de los equipos"
+},
+{
+"id": 6849,
+"es": "Logical Device Name"
+},
+{
+"id": 6850,
+"es": "Dirección IP"
+},
+{
+"id": 6851,
+"es": "Magnitudes de energía (para ingesta de los datos)"
+},
+{
+"id": 6852,
+"es": "Alarmas (Fraude, tamper, de prepago, etc) "
+},
+{
+"id": 6853,
+"es": "2.1.2.2 Desarrollo"
+},
+{
+"id": 6854,
+"es": "Para continuar con la versatilidad de la herramienta de configuración y uso en nuestro sistema, se va a definir la estructura de los PUSHES esperados, para cada modelo o equipo, a través del fichero "
+},
+{
+"id": 6855,
+"es": "object.mapping"
+},
+{
+"id": 6856,
+"es": "Además, la escucha por parte de nuestro sistema para atender estas notificaciones debe ser tratado en micros diferenciados. Por defecto, se va a atender cada tipo de PUSH en el sistema, por un puerto de escucha diferente, es decir, como ejemplo: "
+},
+{
+"id": 6857,
+"es": "Push On Connectivity: Puerto de escucha en OUM (IP_HES:Port_x1) "
+},
+{
+"id": 6858,
+"es": "Push On Installation: Puerto de escucha en OUM (IP_HES:Port_x2) "
+},
+{
+"id": 6859,
+"es": "Push On Alarm: Puerto de escucha en OUM (IP_HES:Port_x3) "
+},
+{
+"id": 6860,
+"es": "Push Power Down: Puerto de escucha en OUM (IP_HES:Port_x4) "
+},
+{
+"id": 6861,
+"es": "Estos puertos de escucha son configurables (solo con permisos de acceso a Base de Datos) y visibles, porque son necesarios conocerlos para configurar los equipos de manera remota en caso de ser necesario. "
+},
+{
+"id": 6862,
+"es": "pushes "
+},
+{
+"id": 6863,
+"es": "recibidos (tanto fallidos como correctos) son mostrados en la sección de "
+},
+{
+"id": 6864,
+"es": "Telemetría → Monitor de llamadas"
+},
+{
+"id": 6865,
+"es": " como entrantes. Todos ellos son tratados como prioridad ALTA. "
+},
+{
+"id": 6866,
+"es": "Además, por cada push recibido se muestran trazas de DEBUG indicando la siguiente información: "
+},
+{
+"id": 6867,
+"es": "Frame del push recibido y desencriptado, en su caso. Mostrar la lista de bytes recibidos. Esto puede ser indicado como parámetro configurable en el sistema. "
+},
+{
+"id": 6868,
+"es": "En caso de fallo, informar de: "
+},
+{
+"id": 6869,
+"es": "Si la IP es desconocida "
+},
+{
+"id": 6870,
+"es": "Si no se recibe una plantilla de PUSH esperada. "
+},
+{
+"id": 6871,
+"es": "Los datos recibidos en el push, son tratados por OUM para:"
+},
+{
+"id": 6872,
+"es": "ingestar medidas"
+},
+{
+"id": 6873,
+"es": "ingestar eventos notificados"
+},
+{
+"id": 6874,
+"es": "detección de alarmas"
+},
+{
+"id": 6875,
+"es": "actualizar algún parámetro de estado del equipo"
+},
+{
+"id": 6876,
+"es": "mostrar un valor de una parámetro definido "
+},
+{
+"id": 6877,
+"es": "Como se ha indicado anteriormente, se definen 4 tipos de PUSH para esta versión inicial de la funcionalidad DATA-NOTIFICATION. Los pushes definidos, con la estructura por defecto, son: "
+},
+{
+"id": 6878,
+"es": "Push On Connectivity "
+},
+{
+"id": 6879,
+"es": "Tipo de push"
+},
+{
+"id": 6880,
+"es": "Objeto"
+},
+{
+"id": 6881,
+"es": "Push object (Obis, atributo, nombre)"
+},
+{
+"id": 6882,
+"es": "Push on Connectivity "
+},
+{
+"id": 6883,
+"es": "(0.0.42.0.0.255, 2) - COSEM Logical device name "
+},
+{
+"id": 6884,
+"es": "(0.0.96.1.1.255, 2) - Utility Serial Number "
+},
+{
+"id": 6885,
+"es": "(0.0.25.1.0.255, 3) - IP Address "
+},
+{
+"id": 6886,
+"es": "(1.0.1.8.0.255, 2) - Total Active Energy Import (A+) "
+},
+{
+"id": 6887,
+"es": "(1.0.2.8.0.255, 2) -Total Active Energy export (A-) "
+},
+{
+"id": 6888,
+"es": "(1.0.3.8.0.255, 2) - Total Reactive Energy Import (Q+) "
+},
+{
+"id": 6889,
+"es": "(1.0.4.8.0.255, 2) -Total Reactive Energy export (Q-) "
+},
+{
+"id": 6890,
+"es": "Push On Installation "
+},
+{
+"id": 6891,
+"es": "Push on Installation "
+},
+{
+"id": 6892,
+"es": "Push On alarm "
+},
+{
+"id": 6893,
+"es": "Push On Alarm "
+},
+{
+"id": 6894,
+"es": "(0.0.97.98.0.255, 2) - Alarm register object #1 "
+},
+{
+"id": 6895,
+"es": "(0.0.97.98.20.255, 2) - Alarm descriptor object #1 "
+},
+{
+"id": 6896,
+"es": "(0.0.97.98.1.255, 2) - Alarm register object #2 "
+},
+{
+"id": 6897,
+"es": "(0.0.97.98.21.255, 2) - Alarm descriptor object #2 "
+},
+{
+"id": 6898,
+"es": ": Es necesario, en muchos tipos de contadores inteligentes, realizar un borrado del registro de alarmas, para que se vuelva a notificar la misma alarma en caso de una nueva ocurrencia. Por ello, se habilita un proceso de autolimpiado de los registros de alarmas tras recibir un push. Esta funcionalidad puede ser deshabilitada (por defecto, esta habilitada). El comando lanzado es \"On Demand Clear Alarms\". "
+},
+{
+"id": 6899,
+"es": "Push PowerDown (o LastGasp) "
+},
+{
+"id": 6900,
+"es": "Push on Power Down "
+},
+{
+"id": 6901,
+"es": "2.1.2.3 Funcionamiento (Caso de un equipo inventariado)"
+},
+{
+"id": 6902,
+"es": "Esta sección indica el flujo de operación y requisitos necesarios para la interpretación de PUSH recibidos de un equipo en operación, o precargado si éste aún está en proceso de instalación. "
+},
+{
+"id": 6903,
+"es": "A modo resumen, bajo este caso de uso podemos contemplar los siguientes escenarios: "
+},
+{
+"id": 6904,
+"es": "Escenario"
+},
+{
+"id": 6905,
+"es": "Cubierto"
+},
+{
+"id": 6906,
+"es": "Mensajes PUSH Encriptados "
+},
+{
+"id": 6907,
+"es": "Equipo sin uso de encriptación "
+},
+{
+"id": 6908,
+"es": "OK"
+},
+{
+"id": 6909,
+"es": "Equipo con claves encriptación "
+},
+{
+"id": 6910,
+"es": "IP origen (del medidor) "
+},
+{
+"id": 6911,
+"es": "IP estática "
+},
+{
+"id": 6912,
+"es": "A continuación se muestra un diagrama general en el proceso de recepción de un mensaje push:"
+},
+{
+"id": 6913,
+"es": "Por otro lado, para una correcta recepción del push, se debe:"
+},
+{
+"id": 6914,
+"es": "El equipo debe estar precargado en inventario (Inventario - Equipos) "
+},
+{
+"id": 6915,
+"es": "El equipo debe disponer de un Punto de medida asociado (Inventario – Punto de medida) "
+},
+{
+"id": 6916,
+"es": "El equipo debe disponer de una configuración de telemetría activa: "
+},
+{
+"id": 6917,
+"es": "Debe estar correctamente asociado una configuración de comunicación (Telemetria – Configuración comunicación) "
+},
+{
+"id": 6918,
+"es": "IP del equipo real para su conexión: Esta IP debe estar precargada y ser estática "
+},
+{
+"id": 6919,
+"es": "Se debe indicar antes o en el mismo proceso de instalación "
+},
+{
+"id": 6920,
+"es": "Protocolo DLMS "
+},
+{
+"id": 6921,
+"es": "Plantilla DLMS con todos los parámetros de conexión "
+},
+{
+"id": 6922,
+"es": "Si requiere de encriptación en el cliente preestablecido (PUSH), debe indicarse la clave correspondiente "
+},
+{
+"id": 6923,
+"es": "Los parámetros del cliente management "
+},
+{
+"id": 6924,
+"es": "Debe disponer del fichero (dlms.object.mapping) correspondiente (o adjuntado al modelo o al propio equipo). Siempre prevalece el del equipo, en caso de existir. "
+},
+{
+"id": 6925,
+"es": "En el fichero se debe disponer de la plantilla – formato de recepción de cada tipo de PUSH. En caso de no disponerlo, usar una plantilla por defecto o ignorar el push recibido. "
+},
+{
+"id": 6926,
+"es": "2.2      PRIME STG-DC"
+},
+{
+"id": 6927,
+"es": "Este protocolo contiene estadísticas de rendimiento del PHY y MAC de las capas de comunicaciones de PRIME."
+},
+{
+"id": 6928,
+"es": "Los diferentes valores se recogen de la base de datos PRIME, justo como se define en las PRIME V1.3.6 especificaciones."
+},
+{
+"id": 6929,
+"es": "Cada hora el DC registrará una entrada con los valores de esto atributos y mantendrá un histórico de al menos 24 horas. "
+},
+{
+"id": 6930,
+"es": "Catálogo de Peticiones STG"
+},
+{
+"id": 6931,
+"es": "Report"
+},
+{
+"id": 6932,
+"es": "Remote Parameters STG"
+},
+{
+"id": 6933,
+"es": "Ut"
+},
+{
+"id": 6934,
+"es": "Per"
+},
+{
+"id": 6935,
+"es": "Uswell"
+},
+{
+"id": 6936,
+"es": "Usag"
+},
+{
+"id": 6937,
+"es": "Cact"
+},
+{
+"id": 6938,
+"es": "Cges"
+},
+{
+"id": 6939,
+"es": "Clec"
+},
+{
+"id": 6940,
+"es": "Pro"
+},
+{
+"id": 6941,
+"es": "Vf"
+},
+{
+"id": 6942,
+"es": "Te"
+},
+{
+"id": 6943,
+"es": "Af"
+},
+{
+"id": 6944,
+"es": "Mod"
+},
+{
+"id": 6945,
+"es": "Fh"
+},
+{
+"id": 6946,
+"es": "Cnc"
+},
+{
+"id": 6947,
+"es": "Version"
+},
+{
+"id": 6948,
+"es": "IdPet"
+},
+{
+"id": 6949,
+"es": "IdRpt"
+},
+{
+"id": 6950,
+"es": "Solicita el estado el Relay"
+},
+{
+"id": 6951,
+"es": "Eacti"
+},
+{
+"id": 6952,
+"es": "Eanti"
+},
+{
+"id": 6953,
+"es": "PP"
+},
+{
+"id": 6954,
+"es": "Fc"
+},
+{
+"id": 6955,
+"es": "Valores Instantaneos"
+},
+{
+"id": 6956,
+"es": "Ca"
+},
+{
+"id": 6957,
+"es": "GetDailyBillingProfileBetweenDates"
+},
+{
+"id": 6958,
+"es": "Get Daily Billing Profile Between Dates"
+},
+{
+"id": 6959,
+"es": "Solicita las medidas de cierre de tipo CIERRE - DIARIO"
+},
+{
+"id": 6960,
+"es": "[{\"name\":\"Start Date\",\"type\":\"datetime\",\"value\":\"\"},{\"name\":\"End Date\",\"type\":\"datetime\",\"value\":\"\"},{\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},{\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},{\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"PRIME STG-DC\"}]"
+},
+{
+"id": 6961,
+"es": "GetLoadProfileGaps"
+},
+{
+"id": 6962,
+"es": "Get Load Profile Gaps"
+},
+{
+"id": 6963,
+"es": "Adaptador: Gaps"
+},
+{
+"id": 6964,
+"es": "El proceso es exactamente el mismo que para GAPs Between Dates teniendo en cuenta que las fechas de búsqueda utilizadas (start y end dates) son resultado de la resta de la fecha de ejecución y los parámetros de days y offset"
+},
+{
+"id": 6965,
+"es": "[{\"name\":\"Days\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Offset\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"0\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Days\",\"type\":\"NUMBER\",\"value\":\"30\",\"protocol\":\"DLMS\"},                     {\"name\":\"Interval\",\"type\":\"select\",\"value\":\"MIN15,H,D\",\"protocol\":\"DLMS\"}]"
+},
+{
+"id": 6966,
+"es": "GetDailyBillingProfileFromLast"
+},
+{
+"id": 6967,
+"es": "Get Daily Billing Profile From Last"
+},
+{
+"id": 6968,
+"es": "Solicita las medidas de cierre de tipo DIARIO"
+},
+{
+"id": 6969,
+"es": "GetMeterEventsBetweenDates"
+},
+{
+"id": 6970,
+"es": "Obtener eventos del medidor entre fechas"
+},
+{
+"id": 6971,
+"es": "GetEventsFromLast"
+},
+{
+"id": 6972,
+"es": "Obtener eventos desde el ultimo"
+},
+{
+"id": 6973,
+"es": "GetEventsBetweenDates"
+},
+{
+"id": 6974,
+"es": "Obtener eventos entre fechas"
+},
+{
+"id": 6975,
+"es": "Solicita los eventos del concentrador"
+},
+{
+"id": 6976,
+"es": "GetManagedMeters"
+},
+{
+"id": 6977,
+"es": "Obtener medidores administrados"
+},
+{
+"id": 6978,
+"es": "Proporciona el listado de meters gestionados actualmente por el concentrador"
+},
+{
+"id": 6979,
+"es": "STG – DC INTERFACE SPECIFICATION v3.4:"
+},
+{
+"id": 6980,
+"es": "List Of Managed Meters"
+},
+{
+"id": 6981,
+"es": "This report request can be made from the STG to receive meters  which are active or in temporary failure."
+},
+{
+"id": 6982,
+"es": "GetMetersStatus"
+},
+{
+"id": 6983,
+"es": "Obtener estado del medidor"
+},
+{
+"id": 6984,
+"es": "Proporciona los parámetros de estados más relevantes asociados a los meters gestionados por el concentrador"
+},
+{
+"id": 6985,
+"es": "Table of existing meters in the PLC network"
+},
+{
+"id": 6986,
+"es": "It contains the most important information for each of the meters that have been detected by the Base Node and are managed by the DC. This information will indicate the Management System not only the existence of a specific meter in the network, but also the main data about its status and its availability."
+},
+{
+"id": 6987,
+"es": "GetLoadProfileGapsBetweenDates"
+},
+{
+"id": 6988,
+"es": "Get Load Profile Gaps Between Dates"
+},
+{
+"id": 6989,
+"es": "Adaptador: GapsBetweenDates"
+},
+{
+"id": 6990,
+"es": "Objetivo: localizar huecos en las curvas de carga en el rango de días configurados en la petición (formato AAAA-MM-DD HH:MM:SS)"
+},
+{
+"id": 6991,
+"es": "Start Date"
+},
+{
+"id": 6992,
+"es": "End Date"
+},
+{
+"id": 6993,
+"es": "Tiene en cuenta exactamente la fecha inicial y final de la petición"
+},
+{
+"id": 6994,
+"es": "Cuando localiza un hueco en un día, solicita la curva de carga o lectura completa del mismo día"
+},
+{
+"id": 6995,
+"es": "Realizará tantas peticiones como días existen en el rango siempre que se localicen huecos en los mismo"
+},
+{
+"id": 6996,
+"es": "GetAbsoluteLoadProfileGaps"
+},
+{
+"id": 6997,
+"es": "Get Absolute Load Profile Gaps"
+},
+{
+"id": 6998,
+"es": "GetAbsoluteLoadProfileGapsBetweenDates"
+},
+{
+"id": 6999,
+"es": "Get Absolute Load Profile Gaps Between Dates"
+},
+{
+"id": 7000,
+"es": "Objetivo: localizar huecos en las curvas de carga Absoluta en el rango de días configurados en la petición (formato AAAA-MM-DD HH:MM:SS)"
+},
+{
+"id": 7001,
+"es": "Peticion Cierres de contrato desde ultima lect."
+},
+{
+"id": 7002,
+"es": "Solicita las medidas de cierre de tipo MENSUAL"
+},
+{
+"id": 7003,
+"es": "GetBillingProfileGaps"
+},
+{
+"id": 7004,
+"es": "Huecos en cierres de contrato"
+},
+{
+"id": 7005,
+"es": "El proceso es exactamente el mismo que para GAPs Between Dates teniendo en cuenta que las fechas de búsqueda utilizadas son las indicadas arriba, sin embargo, sólo aplica el parámetro DAYS, en este caso NO APLICA el OFFSET ya que es posible tener un cierre de este tipo en cualquier momento."
+},
+{
+"id": 7006,
+"es": "Fecha ejecución = 02/07/2025 15:00"
+},
+{
+"id": 7007,
+"es": "Days = 5"
+},
+{
+"id": 7008,
+"es": "Offset = NA"
+},
+{
+"id": 7009,
+"es": "Start Date = 27/06/2025 + 00:00:01"
+},
+{
+"id": 7010,
+"es": "[{\"name\":\"Days\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Contract\",\"type\":\"select\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"0\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Interval\",\"type\":\"select\",\"value\":\",D,M\",\"protocol\":\"DLMS\"},                     {\"name\": \"Type\",\"type\": \"SELECT\",\"value\":\"CLOSE,PARTIAL\",\"protocol\": \"DLMS\"}]"
+},
+{
+"id": 7011,
+"es": "GetBillingProfileGapsBetweenDates"
+},
+{
+"id": 7012,
+"es": "Huecos en cierres de contrato entre fechas"
+},
+{
+"id": 7013,
+"es": "Objetivo: localizar huecos en las medidas de CIERRE MENSUAL en el rango de días configurados en la petición (formato AAAA-MM-DD HH:MM:SS)"
+},
+{
+"id": 7014,
+"es": "En este caso buscará si existen medidas de cierre de tipo CIERRE MENSUAL dentro del intervalo"
+},
+{
+"id": 7015,
+"es": "Analizar los intervalos de cada cierre teniendo en cuenta las fechas de lectura anterior y fecha de lectura (actual) de cada cierre"
+},
+{
+"id": 7016,
+"es": "Ejemplo:"
+},
+{
+"id": 7017,
+"es": "Start Date: 03/06/2025 00:00:00"
+},
+{
+"id": 7018,
+"es": "End Date: 03/07/2025 00:00:00"
+},
+{
+"id": 7019,
+"es": "Medida de Cierre Mensual localizada:"
+},
+{
+"id": 7020,
+"es": "fechas de lectura: 01/07/2025 00:00:00"
+},
+{
+"id": 7021,
+"es": "fecha de lectura anterior: 15/06/2025 00:00:00"
+},
+{
+"id": 7022,
+"es": "Buscará medidas de cierre de tipo CIERRE MENSUAL en los intervalos que no están cubiertos con respecto a las fechas solicitadas:"
+},
+{
+"id": 7023,
+"es": "GAP: [03/06/2025 00:00:00 - 15/06/2025 00:00:00]"
+},
+{
+"id": 7024,
+"es": "[{\"name\":\"Start Date\",\"type\":\"datetime\",\"value\":\"\"},                     {\"name\":\"End Date\",\"type\":\"datetime\",\"value\":\"\"},                     {\"name\":\"Contract\",\"type\":\"select\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"0\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Interval\",\"type\":\"select\",\"value\":\",D,M\",\"protocol\":\"DLMS\"},                     {\"name\": \"Type\",\"type\": \"SELECT\",\"value\":\"CLOSE,PARTIAL\",\"protocol\": \"DLMS\"}]"
+},
+{
+"id": 7025,
+"es": "GetDailyBillingProfileGaps"
+},
+{
+"id": 7026,
+"es": "Get Daily Billing Profile Gaps"
+},
+{
+"id": 7027,
+"es": "[{\"name\":\"Days\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Offset\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Contract\",\"type\":\"select\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"0\",\"protocol\":\"PRIME STG-DC\"}]"
+},
+{
+"id": 7028,
+"es": "GetDailyBillingProfileGapsBetweenDates"
+},
+{
+"id": 7029,
+"es": "Get Daily Billing Profile Gaps Between Dates"
+},
+{
+"id": 7030,
+"es": "Objetivo: localizar huecos en medidas de tipo CIERRE DIARIO en el rango de días configurados en la petición (formato AAAA-MM-DD HH:MM:SS)"
+},
+{
+"id": 7031,
+"es": "[{\"name\":\"Start Date\",\"type\":\"datetime\",\"value\":\"\"},                     {\"name\":\"End Date\",\"type\":\"datetime\",\"value\":\"\"},                     {\"name\":\"Contract\",\"type\":\"select\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"0\",\"protocol\":\"PRIME STG-DC\"}]"
+},
+{
+"id": 7032,
+"es": "DCUGetEquipmentParameters"
+},
+{
+"id": 7033,
+"es": "Obtener parametros del equipo DCU"
+},
+{
+"id": 7034,
+"es": "Solicita los parámetros del equipo"
+},
+{
+"id": 7035,
+"es": "GetMeterEventsFromLast"
+},
+{
+"id": 7036,
+"es": "Obtener eventos del medidor desde el ultimo"
+},
+{
+"id": 7037,
+"es": "Adaptador: FromLast"
+},
+{
+"id": 7038,
+"es": "[{\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"PRIME STG-DC\"}]"
+},
+{
+"id": 7039,
+"es": "DCU Get Date Time"
+},
+{
+"id": 7040,
+"es": "Solicita la fecha y hora del concentrador"
+},
+{
+"id": 7041,
+"es": "Conectar"
+},
+{
+"id": 7042,
+"es": "Permite la operación de Conexión del Relay del equipo"
+},
+{
+"id": 7043,
+"es": "[{\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},                     {\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"0\",\"protocol\":\"PRIME STG-DC\"}]"
+},
+{
+"id": 7044,
+"es": "Disconnect"
+},
+{
+"id": 7045,
+"es": "Desconectar"
+},
+{
+"id": 7046,
+"es": "Permite la operación de Desconexión del Relay del equipo"
+},
+{
+"id": 7047,
+"es": "Reconnect"
+},
+{
+"id": 7048,
+"es": "Reconectar"
+},
+{
+"id": 7049,
+"es": "Permite la operación de Reconexión del Relay del equipo"
+},
+{
+"id": 7050,
+"es": "Aclaración Proceso Reconnect (valor 2 en STG):"
+},
+{
+"id": 7051,
+"es": "STG – DC INTERFACE SPECIFICATION v3.4:"
+},
+{
+"id": 7052,
+"es": "The value 2 (close reconnect) in field order is used when you want to reconnect remotely the meter and the internal state of the disconnect control object of the meter is in state Ready_for_reconnection (2). When the STG send a B03 with Order field to 2, the DC in the Operate the meter contactor step, should check previously the internal control_state of the meter. If the previous state is Disconnected (0) or Connected (1), the DC should abort the order execution notifying to the STG the final execution with MS=1 (ErrCat=3, ErrCode=6). If the previous state is Ready_for_reconnection (2), the DC should send a disconnect order to the meter, wait “ValuesCheckDelay” and verify the current control_state. The meter must pass to disconnected (0) state. In this moment, the DC should send a reconnect order to the meter and the meter will be to connected (1) state finally."
+},
+{
+"id": 7053,
+"es": "SetContractedPower"
+},
+{
+"id": 7054,
+"es": "Modificación de las Potencias por Contrato"
+},
+{
+"id": 7055,
+"es": "Permite la configuración de la estructura de Potencia contratada"
+},
+{
+"id": 7056,
+"es": "Power Modification"
+},
+{
+"id": 7057,
+"es": "The STG sends a request detailing the meters where to apply the power limit change. These values only apply to one contract  (contract 1) and can specify up to 6 tariff periods (should be defined consistently with the contract definition)."
+},
+{
+"id": 7058,
+"es": "[{\"name\":\"Activation Date\",\"type\":\"datetime\",\"value\":\"\"},                     {\"name\":\"Tariff Rate 1\",\"type\":\"NUMBER\",\"value\":\"\"},                     {\"name\":\"Tariff Rate 2\",\"type\":\"NUMBER\",\"value\":\"\"},                     {\"name\":\"Tariff Rate 3\",\"type\":\"NUMBER\",\"value\":\"\"},                     {\"name\":\"Tariff Rate 4\",\"type\":\"NUMBER\",\"value\":\"\"},                     {\"name\":\"Tariff Rate 5\",\"type\":\"NUMBER\",\"value\":\"\"},                     {\"name\":\"Tariff Rate 6\",\"type\":\"NUMBER\",\"value\":\"\"},                     {\"name\":\"Priority\",\"protocol\":\"PRIME STG-DC\",\"type\":\"SELECT\",\"value\":\"1,2,3\"},                     {\"name\":\"Synchronism\",\"protocol\":\"PRIME STG-DC\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\"},                     {\"name\":\"Timeout\",\"protocol\":\"PRIME STG-DC\",\"type\":\"NUMBER\",\"value\":\"0\"}]"
+},
+{
+"id": 7059,
+"es": "SetTariffStructure"
+},
+{
+"id": 7060,
+"es": "Set Tariff Structure"
+},
+{
+"id": 7061,
+"es": "Permite la configuración de la Estructura Tarifaria del equipo"
+},
+{
+"id": 7062,
+"es": "Contract Modifications"
+},
+{
+"id": 7063,
+"es": "The contract information is changed in the latent tariff with a date of activation. In this date, the meter will activate the latent tariff. B04 can configure up to 3 contracts in a single message. Meters are prepared to have either of them defined (and  therefore, active)."
+},
+{
+"id": 7064,
+"es": "[{\"name\":\"Tariff Structure Name C1\",\"type\":\"SELECT\",\"value\":\",STG_Test\"},{\"name\":\"Activation Date C1\",\"type\":\"datetime\",\"value\":\"\"},{\"name\":\"Tariff Structure Name C2\",\"type\":\"SELECT\",\"value\":\",STG_Test\"},{\"name\":\"Activation Date C2\",\"type\":\"datetime\",\"value\":\"\"},{\"name\":\"Tariff Structure Name C3\",\"type\":\"SELECT\",\"value\":\",STG_Test\"},{\"name\":\"Activation Date C3\",\"type\":\"datetime\",\"value\":\"\"},{\"name\":\"Priority\",\"type\":\"SELECT\",\"value\":\"1,2,3\",\"protocol\":\"PRIME STG-DC\"},{\"name\":\"Synchronism\",\"type\":\"SELECT\",\"value\":\"DCC,DCF,MET\",\"protocol\":\"PRIME STG-DC\"},{\"name\":\"Timeout\",\"type\":\"NUMBER\",\"value\":\"\",\"protocol\":\"PRIME STG-DC\"}]"
+},
+{
+"id": 7065,
+"es": "A continuación, se indican las marcas y modelos conocidas de los medidores que el sistema es capaz de gestionar mediante los diferentes protocolos indicados en el apartado "
+},
+{
+"id": 7066,
+"es": "Protocolos Integrados"
+},
+{
+"id": 7067,
+"es": ": la información contenida a continuación es meramente ilustrativa ya que gracias a la orientación hacia protocolos estándares del producto Onesait Metering, nuestros clientes pueden integrar nuevos fabricantes y modelos de forma transparente para el producto."
+},
+{
+"id": 7068,
+"es": "MANUFACTURER"
+},
+{
+"id": 7069,
+"es": "MODEL"
+},
+{
+"id": 7070,
+"es": "EQUIPMENT TYPE"
+},
+{
+"id": 7071,
+"es": "PROTOCOLO"
+},
+{
+"id": 7072,
+"es": "ACTARIS"
+},
+{
+"id": 7073,
+"es": "ACE6000"
+},
+{
+"id": 7074,
+"es": "Smart Meter / Counter"
+},
+{
+"id": 7075,
+"es": "PRIME STG-DC 3.4 (DLMS con CPU)"
+},
+{
+"id": 7076,
+"es": "ACE660C1"
+},
+{
+"id": 7077,
+"es": "ACE662B1"
+},
+{
+"id": 7078,
+"es": "ACE662C"
+},
+{
+"id": 7079,
+"es": "ACE662C1"
+},
+{
+"id": 7080,
+"es": "ACE8000"
+},
+{
+"id": 7081,
+"es": "ACTARISSL762A171"
+},
+{
+"id": 7082,
+"es": "CFEII"
+},
+{
+"id": 7083,
+"es": "E2Y4 ST LD3"
+},
+{
+"id": 7084,
+"es": "E2Y4-ST"
+},
+{
+"id": 7085,
+"es": "E2Y9-ST"
+},
+{
+"id": 7086,
+"es": "Quantum Q"
+},
+{
+"id": 7087,
+"es": "SL7000"
+},
+{
+"id": 7088,
+"es": "SL7000 SL762A"
+},
+{
+"id": 7089,
+"es": "SL7000 SL762B"
+},
+{
+"id": 7090,
+"es": "SL7000 SL762C"
+},
+{
+"id": 7091,
+"es": "SL72B160"
+},
+{
+"id": 7092,
+"es": "SL760-2A"
+},
+{
+"id": 7093,
+"es": "SL760-2A171"
+},
+{
+"id": 7094,
+"es": "SL760-2B"
+},
+{
+"id": 7095,
+"es": "SL760-2B171"
+},
+{
+"id": 7096,
+"es": "SL760-2C"
+},
+{
+"id": 7097,
+"es": "SL761B"
+},
+{
+"id": 7098,
+"es": "SL761C"
+},
+{
+"id": 7099,
+"es": "SL761D"
+},
+{
+"id": 7100,
+"es": "SL761E"
+},
+{
+"id": 7101,
+"es": "SL762"
+},
+{
+"id": 7102,
+"es": "SL762A"
+},
+{
+"id": 7103,
+"es": "SL762A040"
+},
+{
+"id": 7104,
+"es": "SL762A060"
+},
+{
+"id": 7105,
+"es": "SL762A160"
+},
+{
+"id": 7106,
+"es": "SL762A171"
+},
+{
+"id": 7107,
+"es": "SL762B"
+},
+{
+"id": 7108,
+"es": "SL762B040"
+},
+{
+"id": 7109,
+"es": "SL762B160"
+},
+{
+"id": 7110,
+"es": "SL762B161"
+},
+{
+"id": 7111,
+"es": "SL762B170"
+},
+{
+"id": 7112,
+"es": "SL762B171"
+},
+{
+"id": 7113,
+"es": "SL762B610"
+},
+{
+"id": 7114,
+"es": "SL762C"
+},
+{
+"id": 7115,
+"es": "SL762C110"
+},
+{
+"id": 7116,
+"es": "SL762C160"
+},
+{
+"id": 7117,
+"es": "SL762C170"
+},
+{
+"id": 7118,
+"es": "SL762D"
+},
+{
+"id": 7119,
+"es": "SL762D110"
+},
+{
+"id": 7120,
+"es": "SL76A160"
+},
+{
+"id": 7121,
+"es": "SL76B160"
+},
+{
+"id": 7122,
+"es": "SL76XX"
+},
+{
+"id": 7123,
+"es": "ACTARIS "
+},
+{
+"id": 7124,
+"es": "ACE5000D"
+},
+{
+"id": 7125,
+"es": "ACE6000 "
+},
+{
+"id": 7126,
+"es": "AMPER"
+},
+{
+"id": 7127,
+"es": "RLMIA-100B"
+},
+{
+"id": 7128,
+"es": "RLMIA-100BTIPOI"
+},
+{
+"id": 7129,
+"es": "RLMIA-100BTIPOII"
+},
+{
+"id": 7130,
+"es": "AMPY"
+},
+{
+"id": 7131,
+"es": "CdC"
+},
+{
+"id": 7132,
+"es": "BTR3"
+},
+{
+"id": 7133,
+"es": "TB5"
+},
+{
+"id": 7134,
+"es": "CEWE"
+},
+{
+"id": 7135,
+"es": "PROMETER"
+},
+{
+"id": 7136,
+"es": "CIRCUTOR"
+},
+{
+"id": 7137,
+"es": "402VT5AA0B10"
+},
+{
+"id": 7138,
+"es": "405MT5A10D"
+},
+{
+"id": 7139,
+"es": "405MT5A20D"
+},
+{
+"id": 7140,
+"es": "405UT5"
+},
+{
+"id": 7141,
+"es": "405UT5C10C"
+},
+{
+"id": 7142,
+"es": "405VT5"
+},
+{
+"id": 7143,
+"es": "405VT5A90B10"
+},
+{
+"id": 7144,
+"es": "405VT5AA0B10"
+},
+{
+"id": 7145,
+"es": "410MT5A30D"
+},
+{
+"id": 7146,
+"es": "410MT5A70B10"
+},
+{
+"id": 7147,
+"es": "410MT5A90B10"
+},
+{
+"id": 7148,
+"es": "410MT5AA0B10"
+},
+{
+"id": 7149,
+"es": "410QT5A90B00"
+},
+{
+"id": 7150,
+"es": "410UD1"
+},
+{
+"id": 7151,
+"es": "410UT5"
+},
+{
+"id": 7152,
+"es": "410UT5C10C"
+},
+{
+"id": 7153,
+"es": "410VT5AA0B10"
+},
+{
+"id": 7154,
+"es": "CIRWATT 402"
+},
+{
+"id": 7155,
+"es": "CIRWATT 405"
+},
+{
+"id": 7156,
+"es": "CIRWATT 405 - UT5A"
+},
+{
+"id": 7157,
+"es": "CIRWATT 405VT5A"
+},
+{
+"id": 7158,
+"es": "CIRWATT 410"
+},
+{
+"id": 7159,
+"es": "CIRWATT B200- RCP"
+},
+{
+"id": 7160,
+"es": "CIRWATT B405"
+},
+{
+"id": 7161,
+"es": "CIRWATT B410"
+},
+{
+"id": 7162,
+"es": "CIRWATT B410- RCP"
+},
+{
+"id": 7163,
+"es": "CIRWATT C405"
+},
+{
+"id": 7164,
+"es": "CIRWATT C410"
+},
+{
+"id": 7165,
+"es": "CIRWATT D402"
+},
+{
+"id": 7166,
+"es": "CIRWATT D405"
+},
+{
+"id": 7167,
+"es": "CIRWATT D410"
+},
+{
+"id": 7168,
+"es": "CIRWATT X05"
+},
+{
+"id": 7169,
+"es": "CIRWATT X10-D"
+},
+{
+"id": 7170,
+"es": "Compact DC"
+},
+{
+"id": 7171,
+"es": "MEP01"
+},
+{
+"id": 7172,
+"es": "MEP03-C/CR"
+},
+{
+"id": 7173,
+"es": "QNA 413"
+},
+{
+"id": 7174,
+"es": "Analyzer"
+},
+{
+"id": 7175,
+"es": "QNA 500"
+},
+{
+"id": 7176,
+"es": "DATAKORUM"
+},
+{
+"id": 7177,
+"es": "PIPE20DUODLMB-E"
+},
+{
+"id": 7178,
+"es": "MINSAIT"
+},
+{
+"id": 7179,
+"es": "PIPE20HUBDL"
+},
+{
+"id": 7180,
+"es": "PIPE20HUBDM"
+},
+{
+"id": 7181,
+"es": "PIPE20HUBEU"
+},
+{
+"id": 7182,
+"es": "EDMI"
+},
+{
+"id": 7183,
+"es": "GW30"
+},
+{
+"id": 7184,
+"es": "Mk10D"
+},
+{
+"id": 7185,
+"es": "Mk10E"
+},
+{
+"id": 7186,
+"es": "Mk10M"
+},
+{
+"id": 7187,
+"es": "Mk32H"
+},
+{
+"id": 7188,
+"es": "Mk6E"
+},
+{
+"id": 7189,
+"es": "Mk7M"
+},
+{
+"id": 7190,
+"es": "ELIOP"
+},
+{
+"id": 7191,
+"es": "5CTD-E1C-0114"
+},
+{
+"id": 7192,
+"es": "FRONTAX CRR1"
+},
+{
+"id": 7193,
+"es": "FRONTAX RT"
+},
+{
+"id": 7194,
+"es": "FRONTAX RTS2"
+},
+{
+"id": 7195,
+"es": "ELSTER/ABB"
+},
+{
+"id": 7196,
+"es": "A1700-VISION"
+},
+{
+"id": 7197,
+"es": "ALPH1800"
+},
+{
+"id": 7198,
+"es": "ALPHA AMC 1411"
+},
+{
+"id": 7199,
+"es": "AMC 1400"
+},
+{
+"id": 7200,
+"es": "AS1253  "
+},
+{
+"id": 7201,
+"es": "AS253   "
+},
+{
+"id": 7202,
+"es": "PPM2"
+},
+{
+"id": 7203,
+"es": "PPM3"
+},
+{
+"id": 7204,
+"es": "SM250   "
+},
+{
+"id": 7205,
+"es": "EMH"
+},
+{
+"id": 7206,
+"es": "L2QJ-XC100"
+},
+{
+"id": 7207,
+"es": "LZQJ-XC"
+},
+{
+"id": 7208,
+"es": "ENEL"
+},
+{
+"id": 7209,
+"es": "GIST"
+},
+{
+"id": 7210,
+"es": "ESYASOFT"
+},
+{
+"id": 7211,
+"es": "ES3020-MA1D1-I1-PI1-E"
+},
+{
+"id": 7212,
+"es": "ES3020-MA1E1D1-I1-PI1-E"
+},
+{
+"id": 7213,
+"es": "ES3020-MA1F1-I1-PI1-E"
+},
+{
+"id": 7214,
+"es": "ES3020-MA1-I1-PI1-E"
+},
+{
+"id": 7215,
+"es": "ES3020-MAR1-I1-PI1-E"
+},
+{
+"id": 7216,
+"es": "HELICONTAX"
+},
+{
+"id": 7217,
+"es": "INDRA"
+},
+{
+"id": 7218,
+"es": "ER-1905"
+},
+{
+"id": 7219,
+"es": "ION"
+},
+{
+"id": 7220,
+"es": "PowerLogic PM5000"
+},
+{
+"id": 7221,
+"es": "ISKRAEMECO"
+},
+{
+"id": 7222,
+"es": "COMBITAXMT851"
+},
+{
+"id": 7223,
+"es": "COMBITAXMT851-T1"
+},
+{
+"id": 7224,
+"es": "ME372   "
+},
+{
+"id": 7225,
+"es": "MT382   "
+},
+{
+"id": 7226,
+"es": "MT830"
+},
+{
+"id": 7227,
+"es": "MT831   "
+},
+{
+"id": 7228,
+"es": "MT880"
+},
+{
+"id": 7229,
+"es": "AM550EB"
+},
+{
+"id": 7230,
+"es": "AM550TD"
+},
+{
+"id": 7231,
+"es": "AM550TT"
+},
+{
+"id": 7232,
+"es": "MT880-M"
+},
+{
+"id": 7233,
+"es": "ISOLUX"
+},
+{
+"id": 7234,
+"es": "ISOREM 2000"
+},
+{
+"id": 7235,
+"es": "ITRON"
+},
+{
+"id": 7236,
+"es": "AC662D11"
+},
+{
+"id": 7237,
+"es": "ACE662"
+},
+{
+"id": 7238,
+"es": "ACE662B"
+},
+{
+"id": 7239,
+"es": "ACE662D"
+},
+{
+"id": 7240,
+"es": "ACE662D11"
+},
+{
+"id": 7241,
+"es": "SK762D110"
+},
+{
+"id": 7242,
+"es": "SL7000-760-2 B170"
+},
+{
+"id": 7243,
+"es": "SL7000-760-2 C170"
+},
+{
+"id": 7244,
+"es": "SL760-2B160"
+},
+{
+"id": 7245,
+"es": "SL760-2B170"
+},
+{
+"id": 7246,
+"es": "SL760-2C170"
+},
+{
+"id": 7247,
+"es": "SL762-171A"
+},
+{
+"id": 7248,
+"es": "SL762-A161"
+},
+{
+"id": 7249,
+"es": "SL762-A171"
+},
+{
+"id": 7250,
+"es": "ZMD402CTSATCTSCD"
+},
+{
+"id": 7251,
+"es": "ZMG410CTSAT"
+},
+{
+"id": 7252,
+"es": "ITRON   "
+},
+{
+"id": 7253,
+"es": "ECHODIS "
+},
+{
+"id": 7254,
+"es": "LANDIS & GYR"
+},
+{
+"id": 7255,
+"es": "7AA52"
+},
+{
+"id": 7256,
+"es": "7CA52"
+},
+{
+"id": 7257,
+"es": "7CB52"
+},
+{
+"id": 7258,
+"es": "7ED63"
+},
+{
+"id": 7259,
+"es": "E650 Serie 3 - ZMD405AT/CT"
+},
+{
+"id": 7260,
+"es": "EKM647Ma2e"
+},
+{
+"id": 7261,
+"es": "FL347htm"
+},
+{
+"id": 7262,
+"es": "MG5H"
+},
+{
+"id": 7263,
+"es": "ML240XHT"
+},
+{
+"id": 7264,
+"es": "RMC.T1"
+},
+{
+"id": 7265,
+"es": "RMC.T1.G"
+},
+{
+"id": 7266,
+"es": "RMC.T1/110"
+},
+{
+"id": 7267,
+"es": "RMC.T1M"
+},
+{
+"id": 7268,
+"es": "RMC.T2"
+},
+{
+"id": 7269,
+"es": "RMC.T2.E/110"
+},
+{
+"id": 7270,
+"es": "RMC.T2/110"
+},
+{
+"id": 7271,
+"es": "RMC.T2/110E"
+},
+{
+"id": 7272,
+"es": "RMC.T2/220"
+},
+{
+"id": 7273,
+"es": "RMC.T2M"
+},
+{
+"id": 7274,
+"es": "RMC.T2M/110"
+},
+{
+"id": 7275,
+"es": "RMC.T3"
+},
+{
+"id": 7276,
+"es": "RMC.T3/110"
+},
+{
+"id": 7277,
+"es": "RMCS.T1/110"
+},
+{
+"id": 7278,
+"es": "RMCS.T1/110.d"
+},
+{
+"id": 7279,
+"es": "RMCS.T1a/110.d"
+},
+{
+"id": 7280,
+"es": "RMIBF9"
+},
+{
+"id": 7281,
+"es": "RMIZF62AC"
+},
+{
+"id": 7282,
+"es": "RMT.T1"
+},
+{
+"id": 7283,
+"es": "RMT.T2"
+},
+{
+"id": 7284,
+"es": "RMTBF6"
+},
+{
+"id": 7285,
+"es": "RMTBF6M"
+},
+{
+"id": 7286,
+"es": "ZBM410CT116"
+},
+{
+"id": 7287,
+"es": "ZFB410CT"
+},
+{
+"id": 7288,
+"es": "ZFB410CT443"
+},
+{
+"id": 7289,
+"es": "ZFB450CT443"
+},
+{
+"id": 7290,
+"es": "ZMB310CT116"
+},
+{
+"id": 7291,
+"es": "ZMB310CT443"
+},
+{
+"id": 7292,
+"es": "ZMB405CT116"
+},
+{
+"id": 7293,
+"es": "ZMB405CT443"
+},
+{
+"id": 7294,
+"es": "ZMB405CT446"
+},
+{
+"id": 7295,
+"es": "ZMB405CT647"
+},
+{
+"id": 7296,
+"es": "ZMB410"
+},
+{
+"id": 7297,
+"es": "ZMB410CT"
+},
+{
+"id": 7298,
+"es": "ZMB410CT116"
+},
+{
+"id": 7299,
+"es": "ZMB410CT116CS"
+},
+{
+"id": 7300,
+"es": "ZMB410CT443"
+},
+{
+"id": 7301,
+"es": "ZMB410CTSRE"
+},
+{
+"id": 7302,
+"es": "ZMD310CTSCD.30S0"
+},
+{
+"id": 7303,
+"es": "ZMD310CTSCD.32S1"
+},
+{
+"id": 7304,
+"es": "ZMD402CT"
+},
+{
+"id": 7305,
+"es": "ZMD402CTSAT"
+},
+{
+"id": 7306,
+"es": "ZMD402CTSAT.32S1"
+},
+{
+"id": 7307,
+"es": "ZMD405CT"
+},
+{
+"id": 7308,
+"es": "ZMD405CTSAT"
+},
+{
+"id": 7309,
+"es": "ZMD405CTSAT.32S1"
+},
+{
+"id": 7310,
+"es": "ZMD405CTSBT.32S1"
+},
+{
+"id": 7311,
+"es": "ZMD405CTSBT.32S11"
+},
+{
+"id": 7312,
+"es": "ZMD410CT"
+},
+{
+"id": 7313,
+"es": "ZMD410CTS"
+},
+{
+"id": 7314,
+"es": "ZMD410CTSAT"
+},
+{
+"id": 7315,
+"es": "ZMD410CTSAT.32S1"
+},
+{
+"id": 7316,
+"es": "ZMD410CTSBT.2000"
+},
+{
+"id": 7317,
+"es": "ZMD410CTSBT.30S0"
+},
+{
+"id": 7318,
+"es": "ZMD410CTSBT.32S1"
+},
+{
+"id": 7319,
+"es": "ZMDTSAT"
+},
+{
+"id": 7320,
+"es": "ZMG310CT"
+},
+{
+"id": 7321,
+"es": "ZMG310CTSRE"
+},
+{
+"id": 7322,
+"es": "ZMG402CTSAT"
+},
+{
+"id": 7323,
+"es": "ZMG405CT"
+},
+{
+"id": 7324,
+"es": "ZMG405CTSAT"
+},
+{
+"id": 7325,
+"es": "ZMG405CTSRE"
+},
+{
+"id": 7326,
+"es": "ZMG405CTSRE32S1-6"
+},
+{
+"id": 7327,
+"es": "ZMG410"
+},
+{
+"id": 7328,
+"es": "ZMG410CTRS"
+},
+{
+"id": 7329,
+"es": "ZMG410CTSATSRE"
+},
+{
+"id": 7330,
+"es": "ZMG410CTSBT"
+},
+{
+"id": 7331,
+"es": "ZMG410CTSR"
+},
+{
+"id": 7332,
+"es": "ZMG410CTSRE"
+},
+{
+"id": 7333,
+"es": "ZMQ202"
+},
+{
+"id": 7334,
+"es": "ZMQ202.2R8F6"
+},
+{
+"id": 7335,
+"es": "ZMQ202C"
+},
+{
+"id": 7336,
+"es": "ZMQ202C4"
+},
+{
+"id": 7337,
+"es": "ZMQ202CTSAT"
+},
+{
+"id": 7338,
+"es": "ZMT102.1R14"
+},
+{
+"id": 7339,
+"es": "ZMU202"
+},
+{
+"id": 7340,
+"es": "ZMU202C"
+},
+{
+"id": 7341,
+"es": "ZMU202C4cr14r45"
+},
+{
+"id": 7342,
+"es": "ZMU202cr14a"
+},
+{
+"id": 7343,
+"es": "ZNG410CTSRE"
+},
+{
+"id": 7344,
+"es": "ZNMB"
+},
+{
+"id": 7345,
+"es": "METREGA"
+},
+{
+"id": 7346,
+"es": "ST33R"
+},
+{
+"id": 7347,
+"es": "NUCLEO"
+},
+{
+"id": 7348,
+"es": "ELICONTAX C25"
+},
+{
+"id": 7349,
+"es": "FRONTAXCRR1"
+},
+{
+"id": 7350,
+"es": "FRONTAXCRR4"
+},
+{
+"id": 7351,
+"es": "FRONTAXCRS1"
+},
+{
+"id": 7352,
+"es": "FRONTAXRTS1"
+},
+{
+"id": 7353,
+"es": "FRONTAXRTS4"
+},
+{
+"id": 7354,
+"es": "ORBIS"
+},
+{
+"id": 7355,
+"es": "D4HACL10T3"
+},
+{
+"id": 7356,
+"es": "ORBITAX"
+},
+{
+"id": 7357,
+"es": "R4HACL05DH5"
+},
+{
+"id": 7358,
+"es": "R4HACL10DH4"
+},
+{
+"id": 7359,
+"es": "R4HCCL05T3"
+},
+{
+"id": 7360,
+"es": "R4HCCL10T3"
+},
+{
+"id": 7361,
+"es": "RC500"
+},
+{
+"id": 7362,
+"es": "PHOENIX CONTACT"
+},
+{
+"id": 7363,
+"es": "ST24"
+},
+{
+"id": 7364,
+"es": "SACI"
+},
+{
+"id": 7365,
+"es": "CTMR"
+},
+{
+"id": 7366,
+"es": "SAGEMCOM"
+},
+{
+"id": 7367,
+"es": "cx2000-9"
+},
+{
+"id": 7368,
+"es": "SCHLUMBERGER"
+},
+{
+"id": 7369,
+"es": "ACE 8000"
+},
+{
+"id": 7370,
+"es": "QUAMTUM STQ-220"
+},
+{
+"id": 7371,
+"es": "QUAMTUM STQ-220 M"
+},
+{
+"id": 7372,
+"es": "QUANTUM D-200"
+},
+{
+"id": 7373,
+"es": "QUANTUM D-300"
+},
+{
+"id": 7374,
+"es": "QUANTUM Q1000"
+},
+{
+"id": 7375,
+"es": "QUANTUM STQ"
+},
+{
+"id": 7376,
+"es": "QUANTUM STQ-121"
+},
+{
+"id": 7377,
+"es": "QUANTUM1000"
+},
+{
+"id": 7378,
+"es": "QUANTUM-STQ"
+},
+{
+"id": 7379,
+"es": "QUANTUM-STQ 220 IEC"
+},
+{
+"id": 7380,
+"es": "QUANTUMST-Q121"
+},
+{
+"id": 7381,
+"es": "QUANTUMST-Q121-IEC"
+},
+{
+"id": 7382,
+"es": "QUANTUMSTQ-220-QDIF"
+},
+{
+"id": 7383,
+"es": "ST-Q220"
+},
+{
+"id": 7384,
+"es": "ST-Q220-IEC"
+},
+{
+"id": 7385,
+"es": "TEELINK"
+},
+{
+"id": 7386,
+"es": "TelmeTer"
+},
+{
+"id": 7387,
+"es": "4CCG"
+},
+{
+"id": 7388,
+"es": "4CCT"
+},
+{
+"id": 7389,
+"es": "PRIME STG-DC 3.4"
+},
+{
+"id": 7390,
+"es": "4CGCC0P200000EAB"
+},
+{
+"id": 7391,
+"es": "5CTD"
+},
+{
+"id": 7392,
+"es": "5CTDE"
+},
+{
+"id": 7393,
+"es": "5CTD-E1B-2114"
+},
+{
+"id": 7394,
+"es": "5CTD-E1B-211402UA"
+},
+{
+"id": 7395,
+"es": "5CTD-E1C"
+},
+{
+"id": 7396,
+"es": "5CTD-E1C-011400UA"
+},
+{
+"id": 7397,
+"es": "5CTD-E1C-011401UA"
+},
+{
+"id": 7398,
+"es": "5CTD-E1C-011405UA"
+},
+{
+"id": 7399,
+"es": "5CTD-E1C-051400UA"
+},
+{
+"id": 7400,
+"es": "5CTD-E1C-051402U"
+},
+{
+"id": 7401,
+"es": "5CTD-E1C-061400UA"
+},
+{
+"id": 7402,
+"es": "5CTD-E1C-06140UA"
+},
+{
+"id": 7403,
+"es": "5CTE"
+},
+{
+"id": 7404,
+"es": "5CTE-A"
+},
+{
+"id": 7405,
+"es": "5CTE-E11A-215402UA"
+},
+{
+"id": 7406,
+"es": "5CTE-E14-215402UA"
+},
+{
+"id": 7407,
+"es": "5CTE-E14-21B400"
+},
+{
+"id": 7408,
+"es": "5CTE-E1A"
+},
+{
+"id": 7409,
+"es": "5CTE-E1A-017400UE"
+},
+{
+"id": 7410,
+"es": "5CTE-E1A-211400UA-CL0.2S"
+},
+{
+"id": 7411,
+"es": "5CTE-E1A-211400UB-CL0.2S"
+},
+{
+"id": 7412,
+"es": "5CTE-E1A-215402UA"
+},
+{
+"id": 7413,
+"es": "5CTE-E1A-217400UE"
+},
+{
+"id": 7414,
+"es": "5CTE-E1A-219400UE"
+},
+{
+"id": 7415,
+"es": "5CTE-E1A-219400V-CLO.2S"
+},
+{
+"id": 7416,
+"es": "5CTE-E1A-21B400"
+},
+{
+"id": 7417,
+"es": "5CTE-E1B"
+},
+{
+"id": 7418,
+"es": "5CTE-E1B-211400UB-CL0.5S"
+},
+{
+"id": 7419,
+"es": "5CTE-E1B-215402UA"
+},
+{
+"id": 7420,
+"es": "5CTE-E1B-215402UB"
+},
+{
+"id": 7421,
+"es": "5CTE-E1B-217400UE"
+},
+{
+"id": 7422,
+"es": "5CTE-E1B-219400UE"
+},
+{
+"id": 7423,
+"es": "5CTE-E1B-B215402UA"
+},
+{
+"id": 7424,
+"es": "5CTE-E1C"
+},
+{
+"id": 7425,
+"es": "5CTE-E1C-061400UA"
+},
+{
+"id": 7426,
+"es": "5CTF"
+},
+{
+"id": 7427,
+"es": "5CTME"
+},
+{
+"id": 7428,
+"es": "5CTR"
+},
+{
+"id": 7429,
+"es": "5CTR-E1B"
+},
+{
+"id": 7430,
+"es": "5CTR-E1C"
+},
+{
+"id": 7431,
+"es": "5CTR-E1C-012402UA"
+},
+{
+"id": 7432,
+"es": "5CTR-E1C-051400U"
+},
+{
+"id": 7433,
+"es": "5CTR-E1C-052402UA"
+},
+{
+"id": 7434,
+"es": "5CTX-E1B"
+},
+{
+"id": 7435,
+"es": "PRIME"
+},
+{
+"id": 7436,
+"es": "PRIME T4"
+},
+{
+"id": 7437,
+"es": "TrifCombRpmT4Dir"
+},
+{
+"id": 7438,
+"es": "ZIV SUMADOR 4CGCC"
+},
+{
+"id": 7439,
+"es": "ZIV5CTD"
+},
+{
+"id": 7440,
+"es": "INHEMETER"
+},
+{
+"id": 7441,
+"es": "Descripción General"
+},
+{
+"id": 7442,
+"es": "La solución "
+},
+{
+"id": 7443,
+"es": "Hot/Cold"
+},
+{
+"id": 7444,
+"es": " implementa una política de segmentación de datos por antigüedad, con el objetivo de optimizar el rendimiento de la base de datos operativa y garantizar la preservación de información histórica. Para ello se definen dos categorías de almacenamiento:"
+}
+]

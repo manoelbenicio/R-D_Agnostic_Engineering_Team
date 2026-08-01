@@ -1,0 +1,2770 @@
+[
+{
+"id": 5808,
+"es": "record_date"
+},
+{
+"id": 5809,
+"es": "Si el valor configurado es "
+},
+{
+"id": 5810,
+"es": ", la incidencia no caduca."
+},
+{
+"id": 5811,
+"es": "Con la ejecución del proceso "
+},
+{
+"id": 5812,
+"es": "USER-INCIDENTS-JOB"
+},
+{
+"id": 5813,
+"es": "con frecuencia diaria, por ejemplo, se verifican las incidencias abiertas y resuelven aquellas que hayan alcanzado su periodo de "
+},
+{
+"id": 5814,
+"es": ", registrando en el histórico el cambio de estado, junto con el usuario, la fecha y el motivo."
+},
+{
+"id": 5815,
+"es": "En caso de que la incidencia resuelta esté marcada como "
+},
+{
+"id": 5816,
+"es": "actuación en campo"
+},
+{
+"id": 5817,
+"es": ", el cambio de estado se publica en Kafka."
+},
+{
+"id": 5818,
+"es": "Aplica a todas las incidencias en estado susceptible de ser resueltas, es decir, en estado diferente a RESOLVED, CLOSED, CANCELED o WORKING ON IT."
+},
+{
+"id": 5819,
+"es": "Nota: Este mismo proceso, reevalúa la criticidad de validaciones no superadas para las Incidencias de Tipo Validación, de manera que si se han superado validaciones, actualiza el grado de severidad asignado a la incidencia e, incluso, la ressuelve si se hubieran superado todas las validaciones."
+},
+{
+"id": 5820,
+"es": "El Operador de la incidencia, responsable del punto de medida sobre el que recae, o cualquier usuario con perfil administrador, tienen permisos para, desde la aplicación web, resolver cualquier incidencia que se encuentre en el estado necesario."
+},
+{
+"id": 5821,
+"es": "Como siempre que se modifica un estado, éste se registra en el histórico, junto con el usuario que realiza el cambio, la fecha y el motivo."
+},
+{
+"id": 5822,
+"es": "Un sistema de terceros, WFM, habrá recibido la información de una incidencia al ser publicada en Kafka. Cuando éste revisa la incidencia y actualiza el estado, responde a Onesait Metering mediante la "
+},
+{
+"id": 5823,
+"es": "API de Actualización estado Incidencia, "
+},
+{
+"id": 5824,
+"es": "enviando la información con el nuevo estado de la incidencia."
+},
+{
+"id": 5825,
+"es": "Los pasos que sigue el sistema son:"
+},
+{
+"id": 5826,
+"es": "Recepción datos de entrada: Identificador de la Incidencia, estado, fecha"
+},
+{
+"id": 5827,
+"es": "OM comprueba que existe la incidencia y su estado es coherente"
+},
+{
+"id": 5828,
+"es": "es válido el estado recibido, si se trata de un estado más avanzado en el flujo de estados que el de la incidencia en OM"
+},
+{
+"id": 5829,
+"es": "una incidencia Nueva sólo podrá pasar a "
+},
+{
+"id": 5830,
+"es": "En proceso, Resuelta o Cerrada"
+},
+{
+"id": 5831,
+"es": "En proceso"
+},
+{
+"id": 5832,
+"es": "Resuelta "
+},
+{
+"id": 5833,
+"es": "Cerrada"
+},
+{
+"id": 5834,
+"es": "En proceso "
+},
+{
+"id": 5835,
+"es": "Cancelada"
+},
+{
+"id": 5836,
+"es": "En caso contrario, presenta un error de respuesta"
+},
+{
+"id": 5837,
+"es": "OM actualiza la incidencia al estado recibido, y"
+},
+{
+"id": 5838,
+"es": " se registra en el histórico, junto con el usuario que realiza el cambio, la fecha y el motivo."
+},
+{
+"id": 5839,
+"es": "Si la incidencia está tipificada como actuación en campo, se publicará el cambio en Kafka."
+},
+{
+"id": 5840,
+"es": "OM envía información de respuesta:"
+},
+{
+"id": 5841,
+"es": "OK, o "
+},
+{
+"id": 5842,
+"es": "KO + código de error:"
+},
+{
+"id": 5843,
+"es": "Identificador de Incidencia no encontrada en el sistema"
+},
+{
+"id": 5844,
+"es": "Estado incompatible con el estado de la incidencia en OM."
+},
+{
+"id": 5845,
+"es": "Mensaje API Actualización Estado Incidencias"
+},
+{
+"id": 5846,
+"es": "\"*header\""
+},
+{
+"id": 5847,
+"es": "\"*message\""
+},
+{
+"id": 5848,
+"es": "\"*id\""
+},
+{
+"id": 5849,
+"es": "\"String\""
+},
+{
+"id": 5850,
+"es": "// Propuesta: UUID"
+},
+{
+"id": 5851,
+"es": "\"*correlationId\""
+},
+{
+"id": 5852,
+"es": "\"protocol\""
+},
+{
+"id": 5853,
+"es": "\"string\""
+},
+{
+"id": 5854,
+"es": "\"*dateTime\""
+},
+{
+"id": 5855,
+"es": "\"Date\""
+},
+{
+"id": 5856,
+"es": "\"payload\""
+},
+{
+"id": 5857,
+"es": "// Se asume \"INCIDENT\""
+},
+{
+"id": 5858,
+"es": "\"operation\""
+},
+{
+"id": 5859,
+"es": "\"CHANGE\""
+},
+{
+"id": 5860,
+"es": "\"*source\""
+},
+{
+"id": 5861,
+"es": "// WFM_ID"
+},
+{
+"id": 5862,
+"es": "\"version\""
+},
+{
+"id": 5863,
+"es": "\"target\""
+},
+{
+"id": 5864,
+"es": "\"id\""
+},
+{
+"id": 5865,
+"es": "// MDM_ID"
+},
+{
+"id": 5866,
+"es": "\"process\""
+},
+{
+"id": 5867,
+"es": "\"name\""
+},
+{
+"id": 5868,
+"es": "\"dateTime\""
+},
+{
+"id": 5869,
+"es": "\"schema\""
+},
+{
+"id": 5870,
+"es": "\"reply\""
+},
+{
+"id": 5871,
+"es": "\"error\""
+},
+{
+"id": 5872,
+"es": "\"*payload\""
+},
+{
+"id": 5873,
+"es": "\"*code\""
+},
+{
+"id": 5874,
+"es": "// Código de incidencia"
+},
+{
+"id": 5875,
+"es": "\"*status\""
+},
+{
+"id": 5876,
+"es": "\"NEW|WORKONIT|RESOLVED|CLOSED\""
+},
+{
+"id": 5877,
+"es": "\"*datetime\""
+},
+{
+"id": 5878,
+"es": "\"remark\""
+},
+{
+"id": 5879,
+"es": "// Observaciones"
+},
+{
+"id": 5880,
+"es": "\"severity\""
+},
+{
+"id": 5881,
+"es": "\"MINOR\""
+},
+{
+"id": 5882,
+"es": "\"dst\""
+},
+{
+"id": 5883,
+"es": "\"YES|NO\""
+},
+{
+"id": 5884,
+"es": "// Por defecto NO"
+},
+{
+"id": 5885,
+"es": "Comprobaciones:"
+},
+{
+"id": 5886,
+"es": "Obligatoriedad de campos marcados con *."
+},
+{
+"id": 5887,
+"es": "Consideraciones:"
+},
+{
+"id": 5888,
+"es": "El campo id de correlación (correlationId) identifica a un grupo de mensajes dentro del sistema."
+},
+{
+"id": 5889,
+"es": "El campo id de mensaje (messageId) identifica al mensaje dentro del grupo de mensajes."
+},
+{
+"id": 5890,
+"es": "Propuesta de cardinalidad:"
+},
+{
+"id": 5891,
+"es": "Máximo número de incidentes: 50 (máximo 100)."
+},
+{
+"id": 5892,
+"es": "Formato de los campos de tipo fecha: \"yyyy-MM-dd HH:mm:ss.SSS\"."
+},
+{
+"id": 5893,
+"es": "El campo DST se completa por defecto con NO"
+},
+{
+"id": 5894,
+"es": "Ejemplos de Actualización de Estado de Incidencia"
+},
+{
+"id": 5895,
+"es": "\"code\""
+},
+{
+"id": 5896,
+"es": "\"INC000000022001767792208758\""
+},
+{
+"id": 5897,
+"es": "\"title\""
+},
+{
+"id": 5898,
+"es": "\"Título\""
+},
+{
+"id": 5899,
+"es": "\"description\""
+},
+{
+"id": 5900,
+"es": "\"Descripción\""
+},
+{
+"id": 5901,
+"es": "\"Cierre de Incidencia\""
+},
+{
+"id": 5902,
+"es": "\"type\""
+},
+{
+"id": 5903,
+"es": "\"EVENT\""
+},
+{
+"id": 5904,
+"es": "\"status\""
+},
+{
+"id": 5905,
+"es": "\"WORKONIT\""
+},
+{
+"id": 5906,
+"es": "\"datetime\""
+},
+{
+"id": 5907,
+"es": "\"NO\""
+},
+{
+"id": 5908,
+"es": "\"header\""
+},
+{
+"id": 5909,
+"es": "\"message\""
+},
+{
+"id": 5910,
+"es": "\"correlationId\""
+},
+{
+"id": 5911,
+"es": "\"REGIONS_INFO\""
+},
+{
+"id": 5912,
+"es": "\"source\""
+},
+{
+"id": 5913,
+"es": "Code block "
+},
+{
+"id": 5914,
+"es": " To WOI"
+},
+{
+"id": 5915,
+"es": "\"INC000000022001767792209023\""
+},
+{
+"id": 5916,
+"es": "\"Título-Power Failure\""
+},
+{
+"id": 5917,
+"es": "\"Fallo de Energía Resuelto\""
+},
+{
+"id": 5918,
+"es": "\"Cierre de Incidencia - Observaciones\""
+},
+{
+"id": 5919,
+"es": "\"RESOLVED\""
+},
+{
+"id": 5920,
+"es": "\"Protocolo\""
+},
+{
+"id": 5921,
+"es": "\"Identificador mensaje X\""
+},
+{
+"id": 5922,
+"es": "\"CorrelationId\""
+},
+{
+"id": 5923,
+"es": "\"TELEMETRY\""
+},
+{
+"id": 5924,
+"es": " To Resolved"
+},
+{
+"id": 5925,
+"es": "\"Incidencia - Observaciones - Se CIERRA\""
+},
+{
+"id": 5926,
+"es": "\"CRITICAL\""
+},
+{
+"id": 5927,
+"es": "\"CLOSED\""
+},
+{
+"id": 5928,
+"es": " To Closed"
+},
+{
+"id": 5929,
+"es": "Mensaje Respuesta API Actualización Estado Incidencias"
+},
+{
+"id": 5930,
+"es": "\"*Id\""
+},
+{
+"id": 5931,
+"es": "\"REPLY\""
+},
+{
+"id": 5932,
+"es": "\"OK|KO\""
+},
+{
+"id": 5933,
+"es": "\"*element\""
+},
+{
+"id": 5934,
+"es": "\"*type\""
+},
+{
+"id": 5935,
+"es": "\"INC_CODE\""
+},
+{
+"id": 5936,
+"es": "// Valor fijo para código de incidente"
+},
+{
+"id": 5937,
+"es": "\"*value\""
+},
+{
+"id": 5938,
+"es": "Ejemplo Respuesta Actualización Estado Incidencia"
+},
+{
+"id": 5939,
+"es": "\"OK\""
+},
+{
+"id": 5940,
+"es": "\"element\""
+},
+{
+"id": 5941,
+"es": "\"value\""
+},
+{
+"id": 5942,
+"es": "\"8dbf500e-4267-4966-8978-f97e158c50ed\""
+},
+{
+"id": 5943,
+"es": "Publicación de Incidencias"
+},
+{
+"id": 5944,
+"es": "Publicación Incidencia en KAFKA"
+},
+{
+"id": 5945,
+"es": "Respuesta Publicación Incidencia en KAFKA (ACK)"
+},
+{
+"id": 5946,
+"es": "Asignación como responsable a otro operador"
+},
+{
+"id": 5947,
+"es": "Actualización de Severidad"
+},
+{
+"id": 5948,
+"es": "Determinadas incidencias necesitan de la actuación de sistemas de terceros, WFM, para ser resueltas, por lo que al ser detectadas y creadas en Onesait Metering se publican en Kafka, permitiendo así ser consultadas por éstos."
+},
+{
+"id": 5949,
+"es": "Los tipos de incidencia configurados como "
+},
+{
+"id": 5950,
+"es": ", son publicados automáticamente en Kafka tras su creación, o ante cualquier cambio relevante, de estado o criticidad."
+},
+{
+"id": 5951,
+"es": "Adicionalmente, las incidencias de tipos configurados como "
+},
+{
+"id": 5952,
+"es": ", pueden publicarse puntualmente a solicitud del responsable de la incidencia. Esta publicación se realizará únicamente bajo petición,  no se volverá a publicar ante cambios posteriores, salvo que exista una nueva actuación por parte del operador."
+},
+{
+"id": 5953,
+"es": "Datos de entrada: PM, equipo asociado en la fecha del suceso, identificador de la incidencia, severidad, tipo (Validación, Evento, Usuario), estado, fecha"
+},
+{
+"id": 5954,
+"es": "OM comprueba que el equipo está asociado al PM"
+},
+{
+"id": 5955,
+"es": "En caso contrario, presentará un error al operador"
+},
+{
+"id": 5956,
+"es": "OM publica en el tópico de Kafka la información de la incidencia"
+},
+{
+"id": 5957,
+"es": "OM compruebael tópico de NACK/ACK de Kafka"
+},
+{
+"id": 5958,
+"es": "Datos de salida:"
+},
+{
+"id": 5959,
+"es": "OK o"
+},
+{
+"id": 5960,
+"es": "Equipo no asociado a PM"
+},
+{
+"id": 5961,
+"es": "Estado actualizado de la incidencia"
+},
+{
+"id": 5962,
+"es": "Mensaje Publicación Incidencias"
+},
+{
+"id": 5963,
+"es": "Máximo número de elementos: 1 (máximo 10)."
+},
+{
+"id": 5964,
+"es": "El campo DST se completa por defecto con NO."
+},
+{
+"id": 5965,
+"es": "Ejemplo Publicación Incidencias"
+},
+{
+"id": 5966,
+"es": "\"INC000000023001768225399066\""
+},
+{
+"id": 5967,
+"es": "\"equipmentSerialNumber\""
+},
+{
+"id": 5968,
+"es": "\"EQMB003\""
+},
+{
+"id": 5969,
+"es": "\"MODERATE\""
+},
+{
+"id": 5970,
+"es": "\"eventDataType\""
+},
+{
+"id": 5971,
+"es": "\"POWER_FAILURE\""
+},
+{
+"id": 5972,
+"es": "Mensaje de Respuesta Respuesta Publicación Incidencia (ACK)"
+},
+{
+"id": 5973,
+"es": "Ante un “KO” MDM actualiza el campo informativo "
+},
+{
+"id": 5974,
+"es": "remark"
+},
+{
+"id": 5975,
+"es": " (agregando a la información existente) con la descripción indicada en el mensaje, y lleva a cabo un cambio de estado a cerrado (CLOSED)."
+},
+{
+"id": 5976,
+"es": "Ejemplo ACK Publicación Incidencia"
+},
+{
+"id": 5977,
+"es": "Las incidencias se asignan automáticamente al usuario responsable del punto de medida en el que se produce la incidencia."
+},
+{
+"id": 5978,
+"es": "Si el punto de medida no tuviera asignado un responsable, se asigna al "
+},
+{
+"id": 5979,
+"es": "usuario responsable de incidencias"
+},
+{
+"id": 5980,
+"es": ", del grupo de administradores, definido en el parámetro "
+},
+{
+"id": 5981,
+"es": "INCIDENT_USER"
+},
+{
+"id": 5982,
+"es": "Las incidencias asignadas a "
+},
+{
+"id": 5983,
+"es": " o a cualquier operador pueden cambiar de responsable mediante la funcionalidad de reasignar incidencia, habilitada para el grupo de Administradores del sistema en la aplicación web, desde la consulta de incidencias, con posibilidad de selección múltiple, y desde el detalle de una incidencia."
+},
+{
+"id": 5984,
+"es": "El cambio de responsable queda registrado en el histórico de la incidencia, pero no es un cambio a publicar en KAFKA en las incidencias de campo."
+},
+{
+"id": 5985,
+"es": "La severidad de la incidencia viene determinada por su tipo, y por procesos de actualización, indicado en "
+},
+{
+"id": 5986,
+"es": ", pero también el Operador responsable de la incidencia, de cualquier tipo, puede modificarla  si lo considera necesario."
+},
+{
+"id": 5987,
+"es": "En las incidencias de origen Validación, se actualiza a la severidad más alta, con: "
+},
+{
+"id": 5988,
+"es": "cada "
+},
+{
+"id": 5989,
+"es": "evaluación de Validaciones"
+},
+{
+"id": 5990,
+"es": ", que "
+},
+{
+"id": 5991,
+"es": "incrementa la severidad"
+},
+{
+"id": 5992,
+"es": " si no se supera una validación más crítica, y"
+},
+{
+"id": 5993,
+"es": "con el proceso automático "
+},
+{
+"id": 5994,
+"es": ", que en caso de haberse resuelto validaciones no superadas, puede "
+},
+{
+"id": 5995,
+"es": "rebajar la severidad"
+},
+{
+"id": 5996,
+"es": "resolver la incidencia "
+},
+{
+"id": 5997,
+"es": "si no quedan validaciones no superadas."
+},
+{
+"id": 5998,
+"es": "La opción está habilitada para el Operador responsable de la incidencia, en la aplicación web, desde la consulta de incidencias y desde el detalle."
+},
+{
+"id": 5999,
+"es": "El cambio de severidad queda registrado en el histórico de la incidencia, y es un cambio a publicar en KAFKA en las incidencias de campo."
+},
+{
+"id": 6000,
+"es": "Consulta de Incidencias"
+},
+{
+"id": 6001,
+"es": "Detalle de Incidencia"
+},
+{
+"id": 6002,
+"es": "Información Principal"
+},
+{
+"id": 6003,
+"es": "Histórico de Cambios de la Incidencia"
+},
+{
+"id": 6004,
+"es": "Detalle Incidencia de Validación"
+},
+{
+"id": 6005,
+"es": "Detalle Incidencia Evento"
+},
+{
+"id": 6006,
+"es": "Detalle Incidencia Usuario"
+},
+{
+"id": 6007,
+"es": "Acciones disponibles"
+},
+{
+"id": 6008,
+"es": "Alta de incidencia de usuario"
+},
+{
+"id": 6009,
+"es": "Acciones Disponibles"
+},
+{
+"id": 6010,
+"es": "Modificación de Incidencia"
+},
+{
+"id": 6011,
+"es": "Permite hacer el seguimiento de las Incidencias del sistema, y acceder al detalle de las mismas. "
+},
+{
+"id": 6012,
+"es": "Inicialmente, muestra todas las incidencias disponibles en el sistema, en orden de fecha descendente. "
+},
+{
+"id": 6013,
+"es": "Permite la selección múltiple para diversas acciones, que están disponibles según el rol del usuario y dependiendo de si es el operador es el responsable de la incidencia."
+},
+{
+"id": 6014,
+"es": "Criterios de Filtrado"
+},
+{
+"id": 6015,
+"es": "Código Incidencia"
+},
+{
+"id": 6016,
+"es": ": Lupa para búsqueda aproximada, localiza las incidencias que contengan los caracteres. "
+},
+{
+"id": 6017,
+"es": "Severidad: "
+},
+{
+"id": 6018,
+"es": "gravedad de la incidencia."
+},
+{
+"id": 6019,
+"es": "Tipo incidencia"
+},
+{
+"id": 6020,
+"es": ": Selector lista de categorías (Validación, Evento, Usuario)"
+},
+{
+"id": 6021,
+"es": ": Lupa con lista de tipos de evento que se hayan definido en Tipos de Incidencia para la Categoría seleccionada (si la categoría fuese Validación o Usuario no se cargan valores en subcategoría)"
+},
+{
+"id": 6022,
+"es": ": Nueva, En Proceso, Suspendida, Resuelta, Cerrada o Cancelada."
+},
+{
+"id": 6023,
+"es": "Tipo de Acción"
+},
+{
+"id": 6024,
+"es": ": Actuación necesaria para su resolución, con los valores \""
+},
+{
+"id": 6025,
+"es": "Fecha suceso (rango)"
+},
+{
+"id": 6026,
+"es": ": fechas desde y hasta"
+},
+{
+"id": 6027,
+"es": ": Selector de "
+},
+{
+"id": 6028,
+"es": ", que hace referencia del elemento al que afecta la incidencia, y viene determinado por su tipo."
+},
+{
+"id": 6029,
+"es": "Usuario Asignado: "
+},
+{
+"id": 6030,
+"es": "Operador responsable de la incidencia, por defecto el responsable del punto de medida."
+},
+{
+"id": 6031,
+"es": ": Lupa de búsqueda de punto de medida al que está asignada la incidencia. Al seleccionar por punto de medida, se inhabilita la búsqueda por equipo."
+},
+{
+"id": 6032,
+"es": ": Lupa de búsqueda de equipos, excluyente con la selección de un punto de medida, ya que la selección de un equipo implica la búsqueda del punto de medida donde se encuentre instalado para las fechas de búsqueda seleccionadas."
+},
+{
+"id": 6033,
+"es": "Columnas Resultados"
+},
+{
+"id": 6034,
+"es": "Código "
+},
+{
+"id": 6035,
+"es": "de incidencia"
+},
+{
+"id": 6036,
+"es": "Tipo de Incidencia (Categoría + Subcategoría)"
+},
+{
+"id": 6037,
+"es": ": “Event Incident - Meter box cover open event”, “Validation Incident”, etc."
+},
+{
+"id": 6038,
+"es": "Equipo "
+},
+{
+"id": 6039,
+"es": "instalado en el punto de medida, en el momento de la fecha del suceso"
+},
+{
+"id": 6040,
+"es": "Fecha suceso"
+},
+{
+"id": 6041,
+"es": "Contador de Eventos/Ocurrencias:"
+},
+{
+"id": 6042,
+"es": "en incidencias de Evento, indica las veces que se ha repetido el mismo tipo de evento que causa la incidencia, es decir, llega el mismo tipo evento en el día para el PM (en el caso de incidencias bloqueantes de punto de medida, para varios días mientras persista la incidencia y, por tanto, el bloqueo)."
+},
+{
+"id": 6043,
+"es": "en incidencias de Validación o Usuario no se muestra ningún valor"
+},
+{
+"id": 6044,
+"es": ": Operador o Campo"
+},
+{
+"id": 6045,
+"es": "Evento Corrector: "
+},
+{
+"id": 6046,
+"es": "Tipo de evento recibido que resuelve incidencia,  sólo sucede en incidencias categoría Evento, cuando llega un contra evento."
+},
+{
+"id": 6047,
+"es": "Responsable de la incidencia"
+},
+{
+"id": 6048,
+"es": "Búsqueda "
+},
+{
+"id": 6049,
+"es": ": Permite recuperar incidencias según los criterios rellenos en el formulario"
+},
+{
+"id": 6050,
+"es": "Nueva "
+},
+{
+"id": 6051,
+"es": ": Permite el alta de nueva incidencia de Usuario"
+},
+{
+"id": 6052,
+"es": ": Accede a la pantalla de detalle en modo consulta"
+},
+{
+"id": 6053,
+"es": ": Opción habilitada para el operador responsable de la incidencia o un administrador, que permite acceder al detalle y modificar: "
+},
+{
+"id": 6054,
+"es": "Reasignar a nuevo Operador responsable (sólo perfil administrador)"
+},
+{
+"id": 6055,
+"es": "Exporta el listado de incidencias recuperado, en los idiomas y formatos configurados en el sistema."
+},
+{
+"id": 6056,
+"es": "Cambio Estado"
+},
+{
+"id": 6057,
+"es": "Permite la selección múltiple de incidencias que se encuentren en el "
+},
+{
+"id": 6058,
+"es": "mismo estado"
+},
+{
+"id": 6059,
+"es": ", y cuyo tipo de incidencia tenga configurada la "
+},
+{
+"id": 6060,
+"es": "misma actuación o Tipo de Acción"
+},
+{
+"id": 6061,
+"es": " (campo u operador), y modificar el estado."
+},
+{
+"id": 6062,
+"es": "El usuario debe ser responsable de todas las incidencias o administrador del sistema."
+},
+{
+"id": 6063,
+"es": "Cambiar Asignación"
+},
+{
+"id": 6064,
+"es": ": derivar la incidencia a otro operador haciéndole responsable. Esta acción sólo está permitida a usuarios con perfil Administrador."
+},
+{
+"id": 6065,
+"es": "Permite selección múltiple de incidencias"
+},
+{
+"id": 6066,
+"es": "Operación sólo disponible para usuarios con perfil administrador."
+},
+{
+"id": 6067,
+"es": "Seleccionar Todo"
+},
+{
+"id": 6068,
+"es": ": Marca seleccionadas todas las incidencias recuperadas en la consulta."
+},
+{
+"id": 6069,
+"es": "Deseleccionar Todo"
+},
+{
+"id": 6070,
+"es": ": Quita la selección de todas las incidencias marcadas."
+},
+{
+"id": 6071,
+"es": "Publicar Incidencias"
+},
+{
+"id": 6072,
+"es": "Acción equivalente a enviar la incidencia a campo, dejándola publicada en KAFKA, disponible para la consulta por sistemas de terceros."
+},
+{
+"id": 6073,
+"es": "Permite la selección múltiple de incidencias "
+},
+{
+"id": 6074,
+"es": "Las incidencias tipificadas como actuación Operador, se pueden publicar desde esta operativa, las de campo se publican directamente en su creación o al modificar estado o severidad."
+},
+{
+"id": 6075,
+"es": "Información detallada de una incidencia, dispuesta en tres secciones:"
+},
+{
+"id": 6076,
+"es": "Información principal de la Incidencia"
+},
+{
+"id": 6077,
+"es": "Histórico de Cambios"
+},
+{
+"id": 6078,
+"es": "Información adicional según el Origen de la incidencia: sólo para Validación y Evento."
+},
+{
+"id": 6079,
+"es": "Cabecera con los detalles de la incidencia, para incidencias de cualquier categoría/origen."
+},
+{
+"id": 6080,
+"es": "Información principal"
+},
+{
+"id": 6081,
+"es": ": \"Validación\", “Evento + Tipo Evento”, “Usuario”"
+},
+{
+"id": 6082,
+"es": "Usuario Asignado"
+},
+{
+"id": 6083,
+"es": ": responsable del punto"
+},
+{
+"id": 6084,
+"es": "Usuario Creador"
+},
+{
+"id": 6085,
+"es": " (proceso o usuario)"
+},
+{
+"id": 6086,
+"es": "Tipo de Acción/Actuación"
+},
+{
+"id": 6087,
+"es": ": Flag indicativo de bloqueo del punto de medida por la incidencia detallada"
+},
+{
+"id": 6088,
+"es": "Contador de Eventos"
+},
+{
+"id": 6089,
+"es": "en incidencias de Validación y Usuario no existe valor."
+},
+{
+"id": 6090,
+"es": "en incidencias de Evento, la veces que se ha repetido la misma incidencia, es decir, llega el mismo tipo evento en el día para el PM"
+},
+{
+"id": 6091,
+"es": "Tipo evento que resuelve incidencia"
+},
+{
+"id": 6092,
+"es": ": sólo sucede en incidencias categoría Evento, cuando llega contra evento."
+},
+{
+"id": 6093,
+"es": "Sección común a cualquier incidencia, con los cambios de estado o actualizaciones que permite la incidencia."
+},
+{
+"id": 6094,
+"es": "Refleja el registro de alta y los cambios realizados por el operador, o cualquier proceso automático: publicación de la incidencia, resolución por recepción de actualización de estado desde WFM, resolución por recepción de evento corrector de la incidencia, etc."
+},
+{
+"id": 6095,
+"es": "Información en Histórico de cambios"
+},
+{
+"id": 6096,
+"es": "Fecha registro del cambio"
+},
+{
+"id": 6097,
+"es": "ACCIÓN / Cambio realizado"
+},
+{
+"id": 6098,
+"es": ": Actualización o nuevo estado"
+},
+{
+"id": 6099,
+"es": "Cambio"
+},
+{
+"id": 6100,
+"es": ": Información modificada y/o flujo de estados (estado inicial - estado final)"
+},
+{
+"id": 6101,
+"es": "que realiza el cambio (operador/proceso)"
+},
+{
+"id": 6102,
+"es": "Las secciones con el detalle de incidencia y el histórico son comunes a cualquier incidencia, en las de origen Validación se muestra la información específica de las validaciones no superadas."
+},
+{
+"id": 6103,
+"es": "Se organizan por el ámbito de validación (Origen, Óptimo y Perfil Óptimo), bien por secciones o incluyendo la clasificación en una columna."
+},
+{
+"id": 6104,
+"es": "Muestra la información completa de validaciones no superadas en el punto de medida para un día, que agrupa la incidencia."
+},
+{
+"id": 6105,
+"es": "Detalle Incidencia Validación"
+},
+{
+"id": 6106,
+"es": "Tipo Medida"
+},
+{
+"id": 6107,
+"es": " a la que afecta:"
+},
+{
+"id": 6108,
+"es": "Perfil de Carga Óptimo,"
+},
+{
+"id": 6109,
+"es": "Medidas Óptimas,"
+},
+{
+"id": 6110,
+"es": "Medidas de Cierre Óptimas"
+},
+{
+"id": 6111,
+"es": "Perfil de Carga Absoluto Óptimo,"
+},
+{
+"id": 6112,
+"es": "Medidas,"
+},
+{
+"id": 6113,
+"es": "Medidas de Cierre,"
+},
+{
+"id": 6114,
+"es": "Origen Medida"
+},
+{
+"id": 6115,
+"es": " (perfil de carga y cierres)"
+},
+{
+"id": 6116,
+"es": " (perfil de carga)"
+},
+{
+"id": 6117,
+"es": " (Valores negativos, gaps, etc.)"
+},
+{
+"id": 6118,
+"es": "Resultado Validación"
+},
+{
+"id": 6119,
+"es": "Sección con listado de todos los eventos, de cualquier tipo y diferente fecha, del mismo punto de medida."
+},
+{
+"id": 6120,
+"es": "Recupera los eventos del punto de medida desde un número de días definido en el parámetro del sistema - "
+},
+{
+"id": 6121,
+"es": "INCIDENT_NUM_DAYS_EVENT_FIND"
+},
+{
+"id": 6122,
+"es": " - hasta el momento actual."
+},
+{
+"id": 6123,
+"es": "Información Adicional"
+},
+{
+"id": 6124,
+"es": "Fecha de registro del evento"
+},
+{
+"id": 6125,
+"es": "Únicamente muestra las secciones "
+},
+{
+"id": 6126,
+"es": "Cabecera Detalle de Incidencia"
+},
+{
+"id": 6127,
+"es": "Editar "
+},
+{
+"id": 6128,
+"es": "- para operadores responsables de la incidencia o administradores permite modificar: "
+},
+{
+"id": 6129,
+"es": "Cambio de Estado:"
+},
+{
+"id": 6130,
+"es": "Permite el cambio de estado siguiendo el Workflow en función del tipo de incidencia (según actuación en campo u operador)."
+},
+{
+"id": 6131,
+"es": "El cambio de estado de una incidencia de campo implica su nueva publicación"
+},
+{
+"id": 6132,
+"es": "Asignar a otro operador (Administrador)"
+},
+{
+"id": 6133,
+"es": " (acción equivalente a enviar a campo)"
+},
+{
+"id": 6134,
+"es": "Las incidencias tipificadas como actuación Operador pueden publicarse desde esta operativa, las de campo se publican directamente en su creación."
+},
+{
+"id": 6135,
+"es": "Se registra un histórico de la modificación"
+},
+{
+"id": 6136,
+"es": "Sólo activo/visible desde el detalle de una incidencia en modo consulta, no cuando se está editando la incidencia."
+},
+{
+"id": 6137,
+"es": "Cierra la pantalla y vuelve al listado de incidencias."
+},
+{
+"id": 6138,
+"es": "Se permite generar una nueva incidencia, que se categoriza automáticamente como de incidencia de usuario."
+},
+{
+"id": 6139,
+"es": "Valores obligatorios"
+},
+{
+"id": 6140,
+"es": "Fecha del suceso"
+},
+{
+"id": 6141,
+"es": "Acciones Disponibles "
+},
+{
+"id": 6142,
+"es": "Comprueba que se han completado los atributos necesarios, en caso de que no sea así, marca los campos obligatorios indicándolo, "
+},
+{
+"id": 6143,
+"es": "registra la incidencia y "
+},
+{
+"id": 6144,
+"es": "cambia la pantalla a modo consulta."
+},
+{
+"id": 6145,
+"es": "Se muestra la misma pantalla de información detallada de una incidencia, del tipo que corresponda, permitiendo la modificación de los siguientes atributos:"
+},
+{
+"id": 6146,
+"es": "Cualquier estado válido siguiendo el flujo de estados según el tipo de actuación de la incidencia (operador o campo)."
+},
+{
+"id": 6147,
+"es": "Permitido para el Operador propietario de la incidencia o un usuario de perfil Administrador"
+},
+{
+"id": 6148,
+"es": "Cualquier valor de severidad: Crítica, Alta, Moderada o Baja."
+},
+{
+"id": 6149,
+"es": "Permitido sólo para incidencias el Operador propietario de la incidencia o un usuario de perfil Administrador"
+},
+{
+"id": 6150,
+"es": "Cualquier valor alfanumérico, no es un campo obligatorio. Se eliminan observaciones previas."
+},
+{
+"id": 6151,
+"es": "Operador responsable "
+},
+{
+"id": 6152,
+"es": "de la incidencia"
+},
+{
+"id": 6153,
+"es": "Lupa de búsqueda de usuarios de la aplicación"
+},
+{
+"id": 6154,
+"es": "Sólo permitido para un usuario de perfil Administrador"
+},
+{
+"id": 6155,
+"es": "El sistema muestra un mensaje de confirmación, indicando que se guardarán los cambios."
+},
+{
+"id": 6156,
+"es": "Comprueba que se han completado los atributos necesarios, en caso de que no sea así, marca los campos necesarios indicándolo"
+},
+{
+"id": 6157,
+"es": "Registra las modificaciones, publicando en Kafka los cambios si se trata de una incidencia de actuación en campo, y muestra un mensaje de confirmación, y"
+},
+{
+"id": 6158,
+"es": "Cambia la pantalla a modo consulta."
+},
+{
+"id": 6159,
+"es": "ESPAÑOL"
+},
+{
+"id": 6160,
+"es": "INGLÉS"
+},
+{
+"id": 6161,
+"es": "DEFINICIÓN"
+},
+{
+"id": 6162,
+"es": "Acciones (de Seguridad)"
+},
+{
+"id": 6163,
+"es": "Actions (Security Actions)"
+},
+{
+"id": 6164,
+"es": "Hace referencia a las rutas de las distintas pantallas de la aplicación. Se emplea para dar acceso a una determinada pestaña a los usuarios del sistema."
+},
+{
+"id": 6165,
+"es": "Activity"
+},
+{
+"id": 6166,
+"es": "Actividad del punto, relativa a su Ámbito de aplicación (Fotovoltaica, Hidroeléctrica, Residencial, etc.)"
+},
+{
+"id": 6167,
+"es": "Acuerdo de Servicio"
+},
+{
+"id": 6168,
+"es": "Service Agreement"
+},
+{
+"id": 6169,
+"es": "Código del contrato de suministro"
+},
+{
+"id": 6170,
+"es": "Alumbrado público "
+},
+{
+"id": 6171,
+"es": "Public  Lighting"
+},
+{
+"id": 6172,
+"es": "Segmento del mercado que representa servicios públicos con un alto consumo y que requieren control debido a aumentos o disminuciones de demanda en las luminarias."
+},
+{
+"id": 6173,
+"es": "Trade Type"
+},
+{
+"id": 6174,
+"es": "Negocio al que pertenece el punto (Comercialización, Distribución, Generación, Transporte)"
+},
+{
+"id": 6175,
+"es": "Balance"
+},
+{
+"id": 6176,
+"es": "Sistema que controla los flujos energéticos de un punto mediante el estudio comparativo de Energía Entrante y Saliente y las pérdidas asociadas"
+},
+{
+"id": 6177,
+"es": "Barrio desfavorecido"
+},
+{
+"id": 6178,
+"es": "Deprived neighbourhood"
+},
+{
+"id": 6179,
+"es": "Segmento del mercado que agrupa áreas caracterizadas por la falta de control del orden social o la presencia de actividades ilegales, que crean dificultades de gestión. Se pueden encontrar en áreas urbanas o rurales."
+},
+{
+"id": 6180,
+"es": "Lock"
+},
+{
+"id": 6181,
+"es": "Cuando un proceso necesita hacer una modificación en una tabla de BBDD, produce un bloqueo sobre la tabla para el resto de procesos para que no se sobreescriban."
+},
+{
+"id": 6182,
+"es": "(Best Time Value) Es el mejor valor según el Ranking asociado, en el caso de tener varios orígenes de la misma medida, lectura o Registro. "
+},
+{
+"id": 6183,
+"es": "Cargado /Tipo Cargado"
+},
+{
+"id": 6184,
+"es": "Loaded /Loaded Type"
+},
+{
+"id": 6185,
+"es": "Hace referencia a los orígenes mediante los cuales se cargan medidas directamente en el sistema. Generalmente: Manual, Ficheros y MDC"
+},
+{
+"id": 6186,
+"es": "Celda"
+},
+{
+"id": 6187,
+"es": "Cell"
+},
+{
+"id": 6188,
+"es": "Área eléctrica definida por puntos de control de la red. Se define para controlar y monitorizar la energía (entrada, salida y pérdidas) de un conjunto de feeders."
+},
+{
+"id": 6189,
+"es": "Billing Cycle"
+},
+{
+"id": 6190,
+"es": "Es el periodo de tiempo utilizado para ejecutar un proceso planificado sobre un punto. Cada ciclo está formado por diversos periodos de facturación (fecha inicio-fin). Los procesos se ejecutan el día indicado en la planificación para cada periodo."
+},
+{
+"id": 6191,
+"es": "Cierre de barras"
+},
+{
+"id": 6192,
+"es": "Bar Closing"
+},
+{
+"id": 6193,
+"es": "Método utilizado para identificar mediciones erróneas en los puntos de control de las subestaciones. Compara los balances de todas las medidas de entrada y/o salida de subestación o punto de control adicional. Se utiliza cuando hay un alto nivel de implementación de infraestructura de medición."
+},
+{
+"id": 6194,
+"es": "Clase de Cálculo"
+},
+{
+"id": 6195,
+"es": "Calculation Class"
+},
+{
+"id": 6196,
+"es": "Indica el tipo de punto (Real, Agregación, Balance u otros)"
+},
+{
+"id": 6197,
+"es": "Configuration Class"
+},
+{
+"id": 6198,
+"es": "Es un tipo de configuración predeterminada donde se definen los patrones de orígenes y las plantillas de validación. Se utiliza para asignación masiva a puntos de medida."
+},
+{
+"id": 6199,
+"es": "Conjunto de nodos del sistema"
+},
+{
+"id": 6200,
+"es": "Standard Profile Coefficient"
+},
+{
+"id": 6201,
+"es": "Factor que se tendrá en cuenta a la hora perfilar una curva de demanda dentro de un período seleccionado."
+},
+{
+"id": 6202,
+"es": "Comercial"
+},
+{
+"id": 6203,
+"es": "Commercial"
+},
+{
+"id": 6204,
+"es": "Segmento del mercado que representa activos con consumo económicamente significativo y altas tasas. Requieren un servicio continuo y permanente de la compañía."
+},
+{
+"id": 6205,
+"es": "Concentrador de Datos"
+},
+{
+"id": 6206,
+"es": "Data Concentrator"
+},
+{
+"id": 6207,
+"es": "Equipo que recoge las medidas de un conjuto de Contadores"
+},
+{
+"id": 6208,
+"es": "Concepto de Facturación"
+},
+{
+"id": 6209,
+"es": "Billing Model Concept"
+},
+{
+"id": 6210,
+"es": "Incluye todos los parámetros sobre los cuales se puede realizar una prefactura en el sistema. Se incluyen los impuestos dentro de estos conceptos"
+},
+{
+"id": 6211,
+"es": "Conf. Est. Hist"
+},
+{
+"id": 6212,
+"es": "Hist. Est. Ref"
+},
+{
+"id": 6213,
+"es": "(Configuración de Estimación Histórica). Tabla utilizada para la búsqueda de medidas históricas en método de Estimación: Historical Measures."
+},
+{
+"id": 6214,
+"es": "Constante de Lectura"
+},
+{
+"id": 6215,
+"es": "Current Transformers Ratio"
+},
+{
+"id": 6216,
+"es": "Constante por la cual se multiplican las medidas, lecturas,etc. provenientes de origen telemedido, antes de entrar al sistema. Esto es debido a que la lectura que toma el contador está en otra escala de medición."
+},
+{
+"id": 6217,
+"es": "Contador"
+},
+{
+"id": 6218,
+"es": "Meter"
+},
+{
+"id": 6219,
+"es": "Dispositivo físico (Equipo) destinado a la captura de datos"
+},
+{
+"id": 6220,
+"es": "CRI (Índice de recuperación de efectivo)"
+},
+{
+"id": 6221,
+"es": "CRI (Cash Recovery Index)"
+},
+{
+"id": 6222,
+"es": "El objetivo de este indicador es reflejar en un solo valor el desempeño operativo de las empresas de distribución, combinando el índice de pérdidas de energía y el Índice de cobro de la empresa. Se calcula como: (1-%Pérdidas) * (Energía Cobrada / Energía Facturada)."
+},
+{
+"id": 6223,
+"es": "Curva"
+},
+{
+"id": 6224,
+"es": "Profile"
+},
+{
+"id": 6225,
+"es": "Conjunto de valores de una magnitud con un mismo período de integración. Es la curva de carga"
+},
+{
+"id": 6226,
+"es": "Desbordamiento"
+},
+{
+"id": 6227,
+"es": "Overflow"
+},
+{
+"id": 6228,
+"es": "Tipo de Evento que se utiliza para detectar un desbordamiento del contador o lo que es lo mismo, una vuelta de contador"
+},
+{
+"id": 6229,
+"es": "Día Cierre"
+},
+{
+"id": 6230,
+"es": "Billing Clousure Day"
+},
+{
+"id": 6231,
+"es": "Día en el que por defecto se lleva a cabo el cierre del registro mensual. Generalmente día 1 de cada mes"
+},
+{
+"id": 6232,
+"es": "DST/ Desplazamiento DST"
+},
+{
+"id": 6233,
+"es": "DST/ DST Offset"
+},
+{
+"id": 6234,
+"es": "(Daylight saving time). Se utiliza para identificar si las lecturas, eventos, registros, valores instantáneos del sistema se encuentran en el periodo de verano (YES) o de invierno (NO). En caso de no tener cambio horario, siempre NO"
+},
+{
+"id": 6235,
+"es": "Energía"
+},
+{
+"id": 6236,
+"es": "Energy"
+},
+{
+"id": 6237,
+"es": "La energía es el consumo de potencia durante un determinado periodo de tiempo"
+},
+{
+"id": 6238,
+"es": "Energía Activa (AE, AS)"
+},
+{
+"id": 6239,
+"es": "Active Energy (IA, EA)"
+},
+{
+"id": 6240,
+"es": "Componente de la energía eléctrica útil: trabajo mecánico y calor.Se mide en kWh. "
+},
+{
+"id": 6241,
+"es": "Energía neta recibida"
+},
+{
+"id": 6242,
+"es": "Net received energy"
+},
+{
+"id": 6243,
+"es": "Cantidad total de energía recibida en una localización geográfica o en un nivel de tensión. Se utiliza en el cálculo del porcentaje de pérdidas."
+},
+{
+"id": 6244,
+"es": "Energía Reactiva (Q1, Q2, Q3, Q4)"
+},
+{
+"id": 6245,
+"es": "Reactive Energy (Q1, Q2, Q3, Q4)"
+},
+{
+"id": 6246,
+"es": "Componente de la energía eléctrica que no es aprovechable por los receptores. Se mide en kVArh. "
+},
+{
+"id": 6247,
+"es": "Equipment"
+},
+{
+"id": 6248,
+"es": "Dispositivo físico (Equipo) destinado a la captura de datos. También conocido como Contador o Medidor."
+},
+{
+"id": 6249,
+"es": "Equipo de medida (medidor)"
+},
+{
+"id": 6250,
+"es": "Measuring equipment (meter)"
+},
+{
+"id": 6251,
+"es": "Equipo que proporciona información del valor de las lecturas o de la energía en un determinado punto de la red."
+},
+{
+"id": 6252,
+"es": "Event"
+},
+{
+"id": 6253,
+"es": "Suceso que detecta un equipo de medición y que envía al sistema para su registro y posterior gestión"
+},
+{
+"id": 6254,
+"es": "Factor de Potencia"
+},
+{
+"id": 6255,
+"es": "Power Factor"
+},
+{
+"id": 6256,
+"es": "Factor que relaciona el consumo de energía activa y aparente de una instalación. La energía aparente a su vez depende de la energía activa y reactiva. "
+},
+{
+"id": 6257,
+"es": "Fraude"
+},
+{
+"id": 6258,
+"es": "Fraud"
+},
+{
+"id": 6259,
+"es": "Acción realizada por un usuario o un tercero con el consentimiento de este, con el fin de interrumpir el servicio de medición de consumo, producir anomalías en la conexión eléctrica o violar cualquiera de los requisitos del contrato de prestación de servicios o de la regulación del servicio público."
+},
+{
+"id": 6260,
+"es": "FTP"
+},
+{
+"id": 6261,
+"es": "Servidor File Transfer Protocol. Protocolo que utiliza dos canales de comunicación y envía y recibe los mensajes en formato texto"
+},
+{
+"id": 6262,
+"es": "Grandes clientes"
+},
+{
+"id": 6263,
+"es": "Large clients"
+},
+{
+"id": 6264,
+"es": "Segmento del mercado que agrupa organizaciones o clientes industriales con un alto consumo de energía. Representan un gran porcentaje de las ganancias de la compañía y se gestionan como “clientes especiales”."
+},
+{
+"id": 6265,
+"es": "Gubernamental"
+},
+{
+"id": 6266,
+"es": "Governmental "
+},
+{
+"id": 6267,
+"es": "Segmento del mercado que agrupa agencias gubernamentales (federal, provincial, municipal, etc.). Generalmente tienen ratios de deuda altos."
+},
+{
+"id": 6268,
+"es": "Head End System"
+},
+{
+"id": 6269,
+"es": "Plataforma central que gestiona la comunicación y el control de dispositivos eléctricos distribuidos, como medidores inteligentes, permitiendo la supervisión, recolección de datos y control remoto en redes eléctricas inteligentes."
+},
+{
+"id": 6270,
+"es": "HDFS"
+},
+{
+"id": 6271,
+"es": "Hadoop Data File System. HDFS es un sistema de ficheros distribuido, escalable y portátil escrito en Java y creado especialmente para trabajar con ficheros de gran tamaño."
+},
+{
+"id": 6272,
+"es": "Hueco"
+},
+{
+"id": 6273,
+"es": "Gap"
+},
+{
+"id": 6274,
+"es": "Se entiende por hueco en una curva, un valor ausente que debería estar registrado y por una u otra razón, no se dispone de él"
+},
+{
+"id": 6275,
+"es": "CMS"
+},
+{
+"id": 6276,
+"es": "CUSTOMERS, Sistema de Facturación Comercial de Onesait Metering"
+},
+{
+"id": 6277,
+"es": "Intensidad de Fase "
+},
+{
+"id": 6278,
+"es": "Current Phase"
+},
+{
+"id": 6279,
+"es": "Corriente que circula por una carga conectada a un sistema trifásico. Se mide en Amperios (A)"
+},
+{
+"id": 6280,
+"es": "Intrusión"
+},
+{
+"id": 6281,
+"es": "Tamper"
+},
+{
+"id": 6282,
+"es": "Tipo de Evento que se utiliza para detectar una posible alteración física en el contador"
+},
+{
+"id": 6283,
+"es": "Irregularidad"
+},
+{
+"id": 6284,
+"es": "Irregularity"
+},
+{
+"id": 6285,
+"es": "Anomalía técnica en la conexión y/o el medidor del cliente que, directa o indirectamente, afecta a la precisión de la medida, sin manipulación o intervención voluntaria del usuario o un tercero."
+},
+{
+"id": 6286,
+"es": "Reading"
+},
+{
+"id": 6287,
+"es": "Valor de un determinado contador, que mide una determinada magnitud. Estos valores se van incrementando a lo largo del tiempo, de forma que el siguiente siempre es mayor que el anterior (excepto en la vuelta de contador). También conocido como Perfil de Carga Absoluto"
+},
+{
+"id": 6288,
+"es": "Legado"
+},
+{
+"id": 6289,
+"es": "Legacy"
+},
+{
+"id": 6290,
+"es": "Tecnología analógica de los equipos de medición"
+},
+{
+"id": 6291,
+"es": "Meter Data Capture: Sistema de recogida de medidas de equipamiento en campo. Este rol puede realizarlo Onesait Metering o sistema externo (HES)"
+},
+{
+"id": 6292,
+"es": "Meter Data Management: Sistema de gestión de medidas procedentes de un contador. Este rol puede realizarlo Onesait Metering o sistema externo"
+},
+{
+"id": 6293,
+"es": "Medida"
+},
+{
+"id": 6294,
+"es": "Perfil de carga o cada uno de los n valores que componen una curva o perfil de una misma magnitud para un punto dado. Diferencia de lecturas (consumo)"
+},
+{
+"id": 6295,
+"es": "Las medidas de cierre o registros son medidas acumuladas que se suelen usar para la facturación; son similares a las medidas de curva, ya que representan el valor acumulado o consumo entre dos fechas determinadas; sin embargo suelen representar un intervalo más amplio formado por varios días (normalmente mensual), y agrupando las medidas en función de una determinada discriminación horaria (totalizadores)."
+},
+{
+"id": 6296,
+"es": "Medida estimada (Estimación)"
+},
+{
+"id": 6297,
+"es": "Estimated measure (Estimation)"
+},
+{
+"id": 6298,
+"es": "Medida no obtenida directamente del equipo de medida. Las razones principales para estimar una medida son que el valor del equipo esté fuera de los límites y que no haya medidor en el punto de control."
+},
+{
+"id": 6299,
+"es": "Medida Óptima"
+},
+{
+"id": 6300,
+"es": "BTV Measure"
+},
+{
+"id": 6301,
+"es": "Es el mejor valor de entre todas las medidas de Origen cargadas en el sistema"
+},
+{
+"id": 6302,
+"es": "Medida Origen"
+},
+{
+"id": 6303,
+"es": "Source Measure"
+},
+{
+"id": 6304,
+"es": "Todas las medidas cargadas en el sistema entran como medidas de Origen"
+},
+{
+"id": 6305,
+"es": "Medidor"
+},
+{
+"id": 6306,
+"es": "Dispositivo físico (Equipo) destinado a la captura de datos. También conocido como Contador."
+},
+{
+"id": 6307,
+"es": "Operaciones"
+},
+{
+"id": 6308,
+"es": "Actions"
+},
+{
+"id": 6309,
+"es": "Acciones que se llevan a cabo desde el sistema MDM sobre un tercer sistema como MDC. Un ejemplo puede ser una orden de cambio horario para el equipo asociado al punto sobre el que se ejecuta"
+},
+{
+"id": 6310,
+"es": "Óptimo"
+},
+{
+"id": 6311,
+"es": "Source"
+},
+{
+"id": 6312,
+"es": "Fuente de donde se obtienen las medidas"
+},
+{
+"id": 6313,
+"es": "Esta entidad permite agrupar para cada usuario, las acciones de acceso a las funcionalidades del sistema con su nivel de acceso"
+},
+{
+"id": 6314,
+"es": "Load Profile"
+},
+{
+"id": 6315,
+"es": "Perfil de carga o cada uno de los n valores de medidas que componen una curva o perfil de una misma magnitud para un punto dado. Diferencia de lecturas (consumo) o Medidas."
+},
+{
+"id": 6316,
+"es": "Absolute Load Profile"
+},
+{
+"id": 6317,
+"es": "Valor de un determinado contador, que mide una determinada magnitud. Estos valores se van incrementando a lo largo del tiempo, de forma que el siguiente siempre es mayor que el anterior (excepto en la vuelta de contador). También conocido como Lectura"
+},
+{
+"id": 6318,
+"es": "Perfil horario"
+},
+{
+"id": 6319,
+"es": "Hourly Profile"
+},
+{
+"id": 6320,
+"es": "Coeficiente que representa el peso del consumo en una hora sobre el total del año. Así mismo en el perfil horario se encuentra el precio de la energía en esa hora."
+},
+{
+"id": 6321,
+"es": "Periodo"
+},
+{
+"id": 6322,
+"es": "Period"
+},
+{
+"id": 6323,
+"es": "Los periodos de las medidas (nº de valores posibles en un día), dependen del periodo de integración. Esto es, si el periodo de integración es horario, el nº de periodos será 24, mientras que si es QH, el nº de periodos será 96."
+},
+{
+"id": 6324,
+"es": "Periodo de Ciclo de Facturación"
+},
+{
+"id": 6325,
+"es": "Billing Cycle Period"
+},
+{
+"id": 6326,
+"es": "Periodos de fechas (inicio-fin) que componen un Ciclo de Facturación."
+},
+{
+"id": 6327,
+"es": "Periodo de Integración"
+},
+{
+"id": 6328,
+"es": "Measurent Interval"
+},
+{
+"id": 6329,
+"es": "Frecuencia de lectura: Diezminutal, cuartohoraria, horaria, diaria, bimensual, etc"
+},
+{
+"id": 6330,
+"es": "Potencia"
+},
+{
+"id": 6331,
+"es": "Power"
+},
+{
+"id": 6332,
+"es": "La potencia eléctrica es la relación de paso de energía de un flujo por unidad de tiempo; es decir, la cantidad de energía entregada o absorbida por un elemento en un momento determinado."
+},
+{
+"id": 6333,
+"es": "Potencia Activa"
+},
+{
+"id": 6334,
+"es": "Active Power"
+},
+{
+"id": 6335,
+"es": "Es la componente de la potencia que se aprovecha como potencia útil. Se mide en kilo Watio (kW)"
+},
+{
+"id": 6336,
+"es": "Potencia Máxima"
+},
+{
+"id": 6337,
+"es": "Max Power"
+},
+{
+"id": 6338,
+"es": "Máxima potencia instantánea registrada durante un determinado periodo de tiempo"
+},
+{
+"id": 6339,
+"es": "Potencia Reactiva"
+},
+{
+"id": 6340,
+"es": "Reactive Power"
+},
+{
+"id": 6341,
+"es": "Es la potencia que necesitan las bobinas y los condensadores para generar campos magnéticos o eléctricos, pero que no se transforma en trabajo efectivo. Se mide en kilo Voltio Amperio reactivo (kVAr)"
+},
+{
+"id": 6342,
+"es": "Prepago"
+},
+{
+"id": 6343,
+"es": "Pre-payment"
+},
+{
+"id": 6344,
+"es": "Sistema de pago anticipado"
+},
+{
+"id": 6345,
+"es": "Puerta de Enlace"
+},
+{
+"id": 6346,
+"es": "Gateway"
+},
+{
+"id": 6347,
+"es": "Dispositivo que actúa de interfaz de conexión entre aparatos o dispositivos"
+},
+{
+"id": 6348,
+"es": "Punto de control"
+},
+{
+"id": 6349,
+"es": "Control Point"
+},
+{
+"id": 6350,
+"es": "Punto de la red usado para obtener valores intermedios de energía. Este punto de control puede tener un equipo de medida, tener datos cargados por ficheros o ser un punto calculado virtual."
+},
+{
+"id": 6351,
+"es": "Metering point"
+},
+{
+"id": 6352,
+"es": "Ente más importante del sistema. Es el elemento identificativo sobre el que se realizan todas las operaciones del sistema. Un punto de medida generalmente deberá tener asociado un equipo de medición"
+},
+{
+"id": 6353,
+"es": "Punto Dinámico"
+},
+{
+"id": 6354,
+"es": "Dynamic Metering Point"
+},
+{
+"id": 6355,
+"es": "Punto de medida que ha sido asociado a un grupo de forma dinámica mediante una regla de asociación"
+},
+{
+"id": 6356,
+"es": "Punto Estático"
+},
+{
+"id": 6357,
+"es": "Static Metering Point"
+},
+{
+"id": 6358,
+"es": "Punto de medida que ha sido seleccionado manualmente para su asociación a un grupo"
+},
+{
+"id": 6359,
+"es": "Puntos frontera"
+},
+{
+"id": 6360,
+"es": "Border Points"
+},
+{
+"id": 6361,
+"es": "Puntos de la red que conectan más de una actividad regulada (transmisión y distribución / generación y distribución / distribución y clientes en mercado libre). Pueden ser también puntos con la misma actividad y diferentes agentes. Todos los puntos frontera deben ser controlados porque sus medidas son fundamentales para las transacciones económicas entre agentes."
+},
+{
+"id": 6362,
+"es": "QH"
+},
+{
+"id": 6363,
+"es": "Periodo de Integración Cuarto-Horario"
+},
+{
+"id": 6364,
+"es": "Referencia Catastral"
+},
+{
+"id": 6365,
+"es": "Cadastral Reference"
+},
+{
+"id": 6366,
+"es": "Identificador oficial y obligatorio de los bienes inmuebles. "
+},
+{
+"id": 6367,
+"es": "Registrador de Datos"
+},
+{
+"id": 6368,
+"es": "Data Logger"
+},
+{
+"id": 6369,
+"es": "Equipo que registra las medidas de un contador en campo"
+},
+{
+"id": 6370,
+"es": "Las medidas de cierre son medidas acumuladas que se suelen usar para la facturación; son similares a las medidas de curva, ya que representan el valor acumulado o consumo entre dos fechas determinadas; sin embargo suelen representar un intervalo más amplio formado por varios días (normalmente mensual), y agrupando las medidas en función de una determinada discriminación horaria (totalizadores)."
+},
+{
+"id": 6371,
+"es": "Regla de Asociación"
+},
+{
+"id": 6372,
+"es": "Association Rule"
+},
+{
+"id": 6373,
+"es": "Condición por la cual se pueden agrupar un conjunto de puntos p.e Ámbito o Estructura tarifaria"
+},
+{
+"id": 6374,
+"es": "Residencial"
+},
+{
+"id": 6375,
+"es": "Residential"
+},
+{
+"id": 6376,
+"es": "Segmento del mercado que representa un gran porcentaje de los clientes. Sus tasas pueden variar según sus condiciones económicas (altas, medias o bajas). Los clientes con tasas más bajas, representan una tasa más alta de pérdidas no técnicas y de cartera. Están ubicados en áreas urbanas y legalmente establecidos (en propiedades)."
+},
+{
+"id": 6377,
+"es": "RTU"
+},
+{
+"id": 6378,
+"es": "Unidad Terminal Remota"
+},
+{
+"id": 6379,
+"es": "Rural"
+},
+{
+"id": 6380,
+"es": "Segmento del mercado que agrupa áreas con baja densidad de población, dispersión geográfica y bajo nivel económico, por lo que sus habitantes se dedican principalmente a actividades primarias. La falta de presencia de los servicios públicos en estas áreas es una característica común, que tiende a aumentar el problema de las pérdidas no técnicas."
+},
+{
+"id": 6381,
+"es": "Saldo"
+},
+{
+"id": 6382,
+"es": "Losses "
+},
+{
+"id": 6383,
+"es": "Pérdidas totales (técnicas y no técnicas) generalmente calculadas como diferencia de Energía Activa Entrante y Saliente. Magnitud empleada para resultado de balances."
+},
+{
+"id": 6384,
+"es": "Segmento de mercado"
+},
+{
+"id": 6385,
+"es": "Market Segment"
+},
+{
+"id": 6386,
+"es": "Clasificación de grupos de clientes o áreas geográficas de mercado para la empresa. Cada segmento tiene características similares como variables y patrones asociados con su forma de pago, consumo, precio, pérdidas, etc. Entre los segmentos de mercado se encuentran: alumbrado público, grandes clientes, comercial, gubernamental, residencial, rural, zonas desfavorecidas o irregulares y barrios desfavorecidos."
+},
+{
+"id": 6387,
+"es": "SFTP"
+},
+{
+"id": 6388,
+"es": "Servidor SSH File Transfer Protocol. Protocolo que usa un canal de comunicación, y envía y recibe los mensajes en binario "
+},
+{
+"id": 6389,
+"es": "Suministro"
+},
+{
+"id": 6390,
+"es": "Supply"
+},
+{
+"id": 6391,
+"es": "Lugar físico donde el cliente usa los servicios suministrados por la compañía, con la clase, tipo y características de carga previamente acordadas y sometiéndose a las condiciones del Contrato de Servicio."
+},
+{
+"id": 6392,
+"es": "Telemedido (punto)"
+},
+{
+"id": 6393,
+"es": "Tele-metered (Point) / Head-End"
+},
+{
+"id": 6394,
+"es": "Punto para el cual se pueden leer sus datos de forma remota"
+},
+{
+"id": 6395,
+"es": "Tensión de Fase"
+},
+{
+"id": 6396,
+"es": "Voltage Phase"
+},
+{
+"id": 6397,
+"es": "Tensión de cada una de las fases respecto al neutro para un sistema trifásico. Se mide en Voltios (V)"
+},
+{
+"id": 6398,
+"es": "Tipo Configuración Cálculo"
+},
+{
+"id": 6399,
+"es": "Calculation Type"
+},
+{
+"id": 6400,
+"es": "Configuración predeterminada de fórmulas asociadas a las distintas magnitudes que aplican sobre un punto de medida"
+},
+{
+"id": 6401,
+"es": "Tipo de Perfilado/Tipo Perfil"
+},
+{
+"id": 6402,
+"es": "Profiling Type"
+},
+{
+"id": 6403,
+"es": "Perfil de consumo asociado a un punto. El tipo de perfil se utiliza para perfilar una curva a partir de coeficientes predefinidos"
+},
+{
+"id": 6404,
+"es": "TOU (Time of Use) o Tarifa por Tiempo de Uso. Es un sistema en el que el consumo eléctrico se mide y se factura según la hora del día en que se utiliza la energía. "
+},
+{
+"id": 6405,
+"es": "Totalizer"
+},
+{
+"id": 6406,
+"es": "Un totalizador es un término utilizado en facturación para agrupar las medidas de una determinada franja horaria (periodos horarios). Todas las medidas de la misma franja horaria dispondrán de un precio de potencia y energía común"
+},
+{
+"id": 6407,
+"es": "TPL / Carga TPL"
+},
+{
+"id": 6408,
+"es": "HHU /HHU Load"
+},
+{
+"id": 6409,
+"es": "Se utiliza como método de carga de datos en el sistema mediante ficheros"
+},
+{
+"id": 6410,
+"es": "Trazas"
+},
+{
+"id": 6411,
+"es": "Traces"
+},
+{
+"id": 6412,
+"es": "Elementos del sistema que dejan constancia del funcionamiento y operación del mismo, tanto por parte del usuario como de los procesos del sistema"
+},
+{
+"id": 6413,
+"es": "Ubicación de Activos"
+},
+{
+"id": 6414,
+"es": "Warehouse"
+},
+{
+"id": 6415,
+"es": "Almacén de activos (equipos)"
+},
+{
+"id": 6416,
+"es": "UTC/Desplazamiento UTC"
+},
+{
+"id": 6417,
+"es": "UTC/ UTC Offset"
+},
+{
+"id": 6418,
+"es": "(Coordinated Universal Time) Desplazamiento horario respecto al meridiano de Greenwich (en el sistema se mide en segundos)"
+},
+{
+"id": 6419,
+"es": "Valor Energético "
+},
+{
+"id": 6420,
+"es": "Energy value"
+},
+{
+"id": 6421,
+"es": "Saldo disponible en términos energéticos de consumo"
+},
+{
+"id": 6422,
+"es": "Valor instantáneo"
+},
+{
+"id": 6423,
+"es": "Intantaneous Value"
+},
+{
+"id": 6424,
+"es": "Son medidas de instrumentación que miden magnitudes eléctricas instantáneas, es decir, en un determinado momento. "
+},
+{
+"id": 6425,
+"es": "Valor Monetario "
+},
+{
+"id": 6426,
+"es": "Currency value"
+},
+{
+"id": 6427,
+"es": "Saldo disponible en términos económicos"
+},
+{
+"id": 6428,
+"es": "Variable Metereologica"
+},
+{
+"id": 6429,
+"es": "Forecast Variable"
+},
+{
+"id": 6430,
+"es": "Elemento que, para un área determinada, almacena los datos de temperatura"
+},
+{
+"id": 6431,
+"es": "(Validation, Editing, Estimation) Es la abreviación utilizada en el sistema como proceso de Gestión de la medida"
+},
+{
+"id": 6432,
+"es": "Time zone"
+},
+{
+"id": 6433,
+"es": "Zona geográfica asociada a un determinado huso horario. En esta entidad están definidos los días en los que se produce el cambio horario"
+},
+{
+"id": 6434,
+"es": "Zonas desfavorecidas o irregulares"
+},
+{
+"id": 6435,
+"es": "Deprived or irregular areas"
+},
+{
+"id": 6436,
+"es": "Segmento de mercado que representa concentraciones de población con bajo nivel económico, viviendas construidas en zonas donde no existe autorización legal y necesidades básicas de servicios públicos insatisfechas. Existe un alto riesgo de uso ilegal de las redes de la compañía."
+},
+{
+"id": 6437,
+"es": "Objetivo"
+},
+{
+"id": 6438,
+"es": "Esta entrada describe las principales entidades del producto Onesait Metering y las relaciones existentes entre ellas."
+},
+{
+"id": 6439,
+"es": "Modelo Lógico"
+},
+{
+"id": 6440,
+"es": "Principales Entidades"
+},
+{
+"id": 6441,
+"es": "Representa el lugar físico específico en la red de distribución de servicios públicos donde se conecta un equipo de medición, de modo que la energía registrada corresponde a la energía circulada por ese punto."
+},
+{
+"id": 6442,
+"es": "Es la entidad clave del sistema y recopila todos recibidos desde los sistemas Head End (lecturas de contadores, valores instantáneos, eventos). Igualmente, los datos derivados del procesamiento interno de MDM (lecturas estimadas, incidencias) se vincularán a esta entidad.  "
+},
+{
+"id": 6443,
+"es": "Cuando el punto de medición se va a utilizar para la actividad de comercialización, el "
+},
+{
+"id": 6444,
+"es": "CÓDIGO "
+},
+{
+"id": 6445,
+"es": "del punto de medición en MDM debe vincularse al ID de ubicación de servicio del cliente utilizado para el CIS de servicios públicos y el sistema de facturación."
+},
+{
+"id": 6446,
+"es": "Este término puede mencionarse en el presente documento como \""
+},
+{
+"id": 6447,
+"es": "Dispositivo final físico con capacidades metrológicas de la energía que fluye por él y que está involucrado en el procesamiento de recopilación de datos realizado por MDM."
+},
+{
+"id": 6448,
+"es": "En MDM, los equipos se clasifican por tipo donde se configuran \"propiedades\" (características) específicas de cada tipo de equipo que se utilizará para configuraciones posteriores de modelos de equipos, o equipos individuales que caen en esa tipología."
+},
+{
+"id": 6449,
+"es": "Por lo general, los tipos de equipos que están marcados como \"Telemedidos\" en la configuración de Tipos de equipos tienen un enlace de comunicación con un sistema de cabecera."
+},
+{
+"id": 6450,
+"es": "Medidor inteligente"
+},
+{
+"id": 6451,
+"es": "El término \"Instalación de red\" se refiere a cualquier componente físico de la red de distribución de electricidad de la empresa de servicios públicos que está típica y permanentemente vinculado a otro componente físico de mayor jerarquía (bajo un patrón \"padre-hijo\") en la red de distribución de la que recibe la energía."
+},
+{
+"id": 6452,
+"es": "Las instalaciones de red inventariadas en MDM se clasifican por \"Tipo\" según configuraciones comerciales específicas. Por ejemplo, PLANTA DE ENERGÍA, DISTRIBUCIÓN RADIAL, TRANSFORMADOR PT SECUNDARIO y TRANSFORMADOR."
+},
+{
+"id": 6453,
+"es": "Un objeto de instalación de red puede tener un punto de medición específico que sirve en MDM para recopilar las lecturas y los eventos medidos / ocurridos por el medidor instalado en un activo específico."
+},
+{
+"id": 6454,
+"es": "Además, una instalación de red inventariada en MDM puede haber asociado los puntos de medición aguas abajo de dicha instalación para permitir que el sistema conozca los puntos finales que son alimentados por dicha instalación en el momento de ejecutar \"procesos de balance\". "
+},
+{
+"id": 6455,
+"es": "Elemento de red"
+},
+{
+"id": 6456,
+"es": "\" o simplemente \""
+},
+{
+"id": 6457,
+"es": "Un grupo de puntos de medición se utiliza en MDM para agrupar puntos de medición para una variedad de propósitos, que incluyen:"
+},
+{
+"id": 6458,
+"es": "•Enrutar comandos de MDM a HES de modo que los Equipos instalados en los Puntos de Medición incluidos en el Grupo seleccionado sean el destino utilizado por HES para ejecutar la acción requerida."
+},
+{
+"id": 6459,
+"es": "•Identificar los puntos de medición que deben estar involucrados como datos de entrada para el procesamiento de validación y estimación (VEE) de las medidas asociadas con los puntos de medición incluidos en el grupo seleccionado."
+},
+{
+"id": 6460,
+"es": "•Actuar como criterio de búsqueda de varias consultas proporcionadas por MDM para buscar medidas y eventos registrados en el sistema."
+},
+{
+"id": 6461,
+"es": "Los grupos de puntos de medición se definen por el usuario mediante la asignación directa de puntos de medición al grupo o reglas dinámicas basadas en algunas características contenidas en el objeto Punto de medición."
+},
+{
+"id": 6462,
+"es": "Grupo de Equipos"
+},
+{
+"id": 6463,
+"es": "De igual forma que para los puntos de medida, el sistema permite configurar grupos de equipos para su uso en procesos del producto."
+},
+{
+"id": 6464,
+"es": "Perfil de facturación del Punto Medida"
+},
+{
+"id": 6465,
+"es": "Este término se refiere a los datos contenidos en la entidad del punto de medida dentro de la sección \"Características\" relativa al acuerdo entre el Cliente y la Utility como proveedor de servicios. Estos datos contienen información relacionada con las \"condiciones de facturación\" del servicio energético contratado."
+},
+{
+"id": 6466,
+"es": "La información del perfil de facturación se recibe en MDM desde el sistema CIS en el momento en que el servicio contratado pasa a estar activo después de una transacción de mudanza, o después de que se ejecuta un cambio de Tarifa/Tipo de Servicio (Post-Pay/Pre-Pay) en el sistema CIS."
+},
+{
+"id": 6467,
+"es": "Entre otros, esta sección del objeto de punto de medición incluye:"
+},
+{
+"id": 6468,
+"es": "•Número de contrato (Referencia única del servicio contratado en CIS)."
+},
+{
+"id": 6469,
+"es": "•Configuración de TOU."
+},
+{
+"id": 6470,
+"es": "•Tipo de contrato (pospago/prepago)"
+},
+{
+"id": 6471,
+"es": "•Fechas de inicio y finalización de la validez de las condiciones mencionadas anteriormente."
+},
+{
+"id": 6472,
+"es": "Indica la Tarifa contratada en punto de servicio comercializado para el cual un punto de medición con actividad 'Comercialización' está sirviendo en OM."
+},
+{
+"id": 6473,
+"es": "Una Tarifa puede dividirse en uno o más niveles denominados como \"Totalizadores\" que se refieren a \"bloques\" de energía que se facturan a un precio dependiendo del tiempo de uso en el que se consume dicha energía."
+},
+{
+"id": 6474,
+"es": "Por ejemplo:"
+},
+{
+"id": 6475,
+"es": "•Cuando una tarifa utiliza precios a tanto alzado, debe especificarse al menos un nivel (por ejemplo, T0)."
+},
+{
+"id": 6476,
+"es": "•Cuando una tarifa utiliza la fijación de precios por tiempo de uso (para diferenciar el consumo en horas punta, valle y hombro), se deben especificar 4 niveles (por ejemplo, T0 total, T1 pico, T2 fuera de pico, T3 hombro)."
+},
+{
+"id": 6477,
+"es": "El totalizador se refiere a un nivel de consumo específico en el que se acumula un \"bloque\" de energía/potencia en función de su tiempo de uso (TOU) y al que se aplica una tarifa o precio específico durante ese tiempo."
+},
+{
+"id": 6478,
+"es": "Los totalizadores se utilizan en la solución MDM como parte de la configuración de TOU para diferenciar los bloques de consumo/demanda de N TOU entre las diferentes tarifas configuradas en la solución, de tal manera que las lecturas del registro de facturación están vinculadas a su período de totalizador/TOU correspondiente."
+},
+{
+"id": 6479,
+"es": "Cuando las tarifas de la Utility no aplican distintos precios en función del tiempo de uso, se utilizará un único período total 'T0' en la definición de totalizadores de tarifas"
+},
+{
+"id": 6480,
+"es": "Término utilizado para identificar el sistema externo que ha declarado la emisión de datos recopilados por MDM (por ejemplo, telemedido o por HES Fabricant), o el método de estimación/cálculo del que se han derivado los datos en función de los propios procesos VEE de MDM (por ejemplo, INTERPOLACIÓN), o la función interna de MDM utilizada para ingresar los datos en MDM (por ejemplo: ARCHIVOS)."
+},
+{
+"id": 6481,
+"es": "Los valores de origen son configuraciones de datos maestros que se pueden personalizar para las necesidades comerciales de Utility. Los siguientes datos predeterminados se utilizan como configuración de origen predefinida:"
+},
+{
+"id": 6482,
+"es": "•HES (integración con sistema externo HES), Telemedido y Archivos. Tipo de origen: “Cargada”"
+},
+{
+"id": 6483,
+"es": "•Algoritmo de Estimación (toma como valor el método de estimación usado). Tipo de origen: Estimada"
+},
+{
+"id": 6484,
+"es": "•Algoritmo de Cálculo (toma como valor el método de cálculo usado). Tipo de origen: Calculada"
+},
+{
+"id": 6485,
+"es": "Intervalo de medición"
+},
+{
+"id": 6486,
+"es": "Este atributo identifica la frecuencia con la que el medidor captura los datos en intervalos de tiempo regulares de longitud fija."
+},
+{
+"id": 6487,
+"es": "Dependiendo de la duración del intervalo (15, 30, 60 minutos, diario), los perfiles de carga diaria se dividen en \"Períodos\". Por ejemplo:"
+},
+{
+"id": 6488,
+"es": "•Perfiles de carga de 15 minutos, da como resultado 96 períodos de \"medidas\" por día."
+},
+{
+"id": 6489,
+"es": "•Perfiles de carga de 30 minutos, da como resultado 48 períodos de \"medidas\" por día."
+},
+{
+"id": 6490,
+"es": "•Perfiles de carga de 60 minutos, da como resultado 24 períodos de \"medidas\" por día."
+},
+{
+"id": 6491,
+"es": "•Perfiles de carga diarios, da como resultado 1 período de 'medidas' por día."
+},
+{
+"id": 6492,
+"es": "Del mismo modo, los perfiles de facturación que el medidor captura regularmente de forma diaria o mensual, tienen un intervalo de medición \"Diario\" o \"Mensual\"."
+},
+{
+"id": 6493,
+"es": "La \"magnitud\" identifica \"qué\" se midió, el tipo de energía (energía activa, energía reactiva, demanda) o cualquier otra cantidad de ingeniería. Dependiendo de la configuración inicial del sistema, este atributo puede incluir las \"unidades\" en las que se muestra la magnitud en el sistema."
+},
+{
+"id": 6494,
+"es": "Por ejemplo: Voltaje promedio Fase A (V), Corriente máxima Fase A (kVA), Energía activa entregada (kWh), Energía activa recibida (kWh)"
+},
+{
+"id": 6495,
+"es": "El sistema proporciona unas magnitudes maestras que pueden ser ampliadas a necesidad de la Utility"
+},
+{
+"id": 6496,
+"es": "Clase de configuración"
+},
+{
+"id": 6497,
+"es": "Clase de configuración es el objeto del sistema que actúa como 'patrón' que caracteriza cada punto de medición para los siguientes propósitos transaccionales: "
+},
+{
+"id": 6498,
+"es": "•Para someter las validaciones de configuración (métodos de validación de origen) en el momento en que se ingieren los datos. Junto con la configuración de validaciones mencionada, se configura la 'Estrategia' que el sistema ejecutará como salida para cada validación ejecutada."
+},
+{
+"id": 6499,
+"es": "•Para seleccionar el mejor valor de tiempo, de acuerdo con el \"Patrón de origen\" configurado, de los datos de origen existentes del mismo tipo de lectura (datos de intervalo de un perfil de carga o lectura de facturación) y marca de tiempo."
+}
+]

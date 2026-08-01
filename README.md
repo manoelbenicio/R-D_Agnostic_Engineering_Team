@@ -22,6 +22,12 @@ OmniRoute is the **only router owner**. Main Brain owns task admission, workspac
 
 The frontend is the Next.js app under `multica-auth-work/`; there is no separate AgentVerse SPA in this repository.
 
+## Access the current Multica production UI
+
+Canonical URL: **<https://orq1.tail96e2c0.ts.net>**
+
+Normal browser and API access uses Tailscale Serve over HTTPS on port 443. Do not create an SSH tunnel or append the internal `13100`/`18080` ports. Read [`docs/ops/MULTICA_HTTPS_ACCESS.md`](docs/ops/MULTICA_HTTPS_ACCESS.md) before troubleshooting access or using the approved Secrets Manager-backed owner login.
+
 ## Run the self-host product stack
 
 Docker runs the backend, frontend and Postgres. OmniRoute is deployed and operated separately and must be reachable by the host daemon before model work is admitted.

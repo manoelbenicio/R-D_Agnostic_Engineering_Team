@@ -1,0 +1,2118 @@
+[
+{
+"id": 1225,
+"es": "Estado de Ubicación "
+},
+{
+"id": 1226,
+"es": "Este estado, definido por la propiedad “"
+},
+{
+"id": 1227,
+"es": "” indica la situación del equipo en un determinado momento. "
+},
+{
+"id": 1228,
+"es": "Tendremos en cuenta los siguientes valores:"
+},
+{
+"id": 1229,
+"es": "Stock"
+},
+{
+"id": 1230,
+"es": ": El equipo se encuentra en stock, no instalado ni asociado a ningún punto de medida"
+},
+{
+"id": 1231,
+"es": "Instalado"
+},
+{
+"id": 1232,
+"es": ": El equipo se encuentra instalado y asociado a un punto de medida"
+},
+{
+"id": 1233,
+"es": "Retirado"
+},
+{
+"id": 1234,
+"es": ": Equipo retirado / dado de baja"
+},
+{
+"id": 1235,
+"es": "Estado de Operación "
+},
+{
+"id": 1236,
+"es": "Esta propiedad indica el estado del equipo en cuento a su asociación al punto de medida y su situación dentro del ciclo de medición / comercial."
+},
+{
+"id": 1237,
+"es": "Este estado solamente tendrá valor cuando la ubicación del equipo (comentada anteriormente) es “"
+},
+{
+"id": 1238,
+"es": "INSTALADO"
+},
+{
+"id": 1239,
+"es": "Podrá tener los siguientes valores:"
+},
+{
+"id": 1240,
+"es": "Conectado"
+},
+{
+"id": 1241,
+"es": ": Equipo completamente operativo y con conectividad."
+},
+{
+"id": 1242,
+"es": "Conectado sin puesta en servicio"
+},
+{
+"id": 1243,
+"es": ": Equipo instalado en campo, pendiente de su puesta en servicio (tramite comercial)."
+},
+{
+"id": 1244,
+"es": "Descubierto"
+},
+{
+"id": 1245,
+"es": ": Equipo desplegado en campo y descubierto de manera automática (autodescubrimiento PRIME STG-DC)."
+},
+{
+"id": 1246,
+"es": "Precargado"
+},
+{
+"id": 1247,
+"es": ": Equipo precargado en el inventario, pero aun no instalado en campo."
+},
+{
+"id": 1248,
+"es": "Baja"
+},
+{
+"id": 1249,
+"es": ": Equipo fuera de servicio."
+},
+{
+"id": 1250,
+"es": "Debemos tener en cuenta las siguientes consideraciones:"
+},
+{
+"id": 1251,
+"es": "Solo se puede interaccionar con equipos con estado “"
+},
+{
+"id": 1252,
+"es": "”, por tanto, las llamadas / peticiones sobre equipos que no presenten este estado no deben realizarse, informando correctamente de esta situación. "
+},
+{
+"id": 1253,
+"es": "De esta forma no se requieren hacer más comprobaciones."
+},
+{
+"id": 1254,
+"es": "Cabe destacar que cualquier cambio que se realice en el Estado de Operación, deberá tener asociado una "
+},
+{
+"id": 1255,
+"es": "Fecha de Registro"
+},
+{
+"id": 1256,
+"es": ", la cual es obligatoria."
+},
+{
+"id": 1257,
+"es": "Estado de Comunicación "
+},
+{
+"id": 1258,
+"es": "El estado de comunicación es aquel que indica la conectividad con el equipamiento de campo, independientemente de que la petición o tarea procesada tenga o no éxito (puede devolver error o responder de otra forma, pero significaría que hay comunicación)."
+},
+{
+"id": 1259,
+"es": "Para cada uno de los equipos operativos, se considerarán los siguientes estados de comunicación, los cuales se registrarán y gestionarán a partir de una nueva propiedad, “"
+},
+{
+"id": 1260,
+"es": "Estado Comunicación"
+},
+{
+"id": 1261,
+"es": "”, sus posibles valores serán los siguientes (los definidos por el protocolo STG-DC, trasladados al resto de protocolos):"
+},
+{
+"id": 1262,
+"es": "Activo (A)"
+},
+{
+"id": 1263,
+"es": ": Este estado representa que actualmente hay comunicación con el equipo, dado que la última comunicación con el mismo ha funcionado correctamente."
+},
+{
+"id": 1264,
+"es": "Fallo Temporal (TF)"
+},
+{
+"id": 1265,
+"es": ": La última comunicación con el equipo fue errónea."
+},
+{
+"id": 1266,
+"es": "Fallo Permanente (PF)"
+},
+{
+"id": 1267,
+"es": ": Cuando han pasado 24 horas desde la última comunicación."
+},
+{
+"id": 1268,
+"es": "Desconocido (UNK)"
+},
+{
+"id": 1269,
+"es": ": No se ha interaccionado ninguna vez con el equipo, valor por defecto; habitual en nuevos equipos creados recientemente."
+},
+{
+"id": 1270,
+"es": "Nota"
+},
+{
+"id": 1271,
+"es": "En la versión actual de producto, la asignación de estos estados listados anteriormente no se realiza de manera automática. A través de la edición del equipo (mediante la UI o cualquier otra interfaz), es posible modificar el tipo de estado (ubicación, operación o comunicación) "
+},
+{
+"id": 1272,
+"es": "Los Equipos pueden ser cargadas a través de fichero, este proceso se explica detalladamente en el apartado de carga TPL de inventario: "
+},
+{
+"id": 1273,
+"es": "Tipos de equipos"
+},
+{
+"id": 1274,
+"es": "Consulta de Tipos de Equipo"
+},
+{
+"id": 1275,
+"es": "Detalle de Tipo de Equipo"
+},
+{
+"id": 1276,
+"es": "El sistema cuenta con una lista de Tipos de Equipos predefinida (Si bien puede ser ampliada). Esta lista cuenta con la gran mayoría de los Tipos de Equipos que son utilizados. Esta entidad es un atributo principal de los equipos y permite identificarlos y clasificarlos según sus características más generales (medidores eléctricos, contador de agua, contador de gas, concentrador de datos, etc.). Estos tipos de equipos sirven para clasificar los equipos y asignarles un rol en la comunicación de telemedición."
+},
+{
+"id": 1277,
+"es": "Los tipos de equipo se definen a partir de una imagen conceptual, y un conjunto de propiedades específicas, estas propiedades son las siguientes:"
+},
+{
+"id": 1278,
+"es": ": Determina si el Tipo de Equipo puede establecer una relación de padre con otro tipo de Equipos, es decir, que dichos equipos \"hijos\" estarían mandando la información a estos equipos Padre, o por el contrario no puede hacerlo."
+},
+{
+"id": 1279,
+"es": ": Indica si el equipo maneja información que se va a enviar de forma directa o indirecta al entorno o si por el contrario no lo hace."
+},
+{
+"id": 1280,
+"es": ": Indica el Rol que tiene el equipo en la transición de la información desde su medición hasta su envío al sistema."
+},
+{
+"id": 1281,
+"es": "El formulario permite consultar los Tipos de Equipo disponibles."
+},
+{
+"id": 1282,
+"es": "Se muestra un formulario de consulta de Tipos de Equipos con las secciones:"
+},
+{
+"id": 1283,
+"es": "Criterios de filtrado"
+},
+{
+"id": 1284,
+"es": " (por defecto sin valor, y no obligatorios):"
+},
+{
+"id": 1285,
+"es": "Servicio: carga los disponibles en el sistema (Ej.: Electricidad, Agua, Gas, etc.)"
+},
+{
+"id": 1286,
+"es": "Nombre: valor alfanumérico "
+},
+{
+"id": 1287,
+"es": "Listado de Tipos de Equipos"
+},
+{
+"id": 1288,
+"es": "Sección con una tabla para el resultado de la búsqueda que, inicialmente, mostrará el listado de todos los tipos de equipos dados de alta en el sistema, sin aplicar ningún filtro, mostrando las columnas:"
+},
+{
+"id": 1289,
+"es": "Servicio  (Ej.: Electricidad, Agua, Gas, Comunicaciones...) "
+},
+{
+"id": 1290,
+"es": "Equipo padre"
+},
+{
+"id": 1291,
+"es": "Telemedición (check)"
+},
+{
+"id": 1292,
+"es": "Icono: Imagen identificativa del tipo de equipo."
+},
+{
+"id": 1293,
+"es": "Dispone de los botones"
+},
+{
+"id": 1294,
+"es": "Detalle: Al seleccionar un tipo, se habilita y permite acceder a la información detallada del Tipo de Equipo"
+},
+{
+"id": 1295,
+"es": "Exportar: Permite sacar un informe con el listado de tipos de equipo recuperado"
+},
+{
+"id": 1296,
+"es": "Accediendo a la pantalla de detalle del tipo de equipo (doble click o botón “Detalle”). "
+},
+{
+"id": 1297,
+"es": "Se muestra el detalle del Tipo de Equipo, con los atributos:"
+},
+{
+"id": 1298,
+"es": "Check indicativo de Equipo Padre "
+},
+{
+"id": 1299,
+"es": "Check indicativo de si se trata de un tipo para Telemedición"
+},
+{
+"id": 1300,
+"es": ": Parámetros de configuración del tipo de Equipo, con valor por defecto."
+},
+{
+"id": 1301,
+"es": "Estas propiedades son parametrizables a nivel de modelo o directamente de Equipo."
+},
+{
+"id": 1302,
+"es": "Dependiendo del ámbito sobre el que aplican, se  pueden configurar en una entidad u otra"
+},
+{
+"id": 1303,
+"es": "Tipo (tipo de dato que registra: Integer, decimal, string...)"
+},
+{
+"id": 1304,
+"es": "Requerido (Obligatorio: verdadero o falso)"
+},
+{
+"id": 1305,
+"es": "Valor "
+},
+{
+"id": 1306,
+"es": "Unidad"
+},
+{
+"id": 1307,
+"es": "Modelos equipo"
+},
+{
+"id": 1308,
+"es": "Consulta de Modelos de equipo"
+},
+{
+"id": 1309,
+"es": "Detalle del Modelo"
+},
+{
+"id": 1310,
+"es": "Importación de Modelo de Equipo"
+},
+{
+"id": 1311,
+"es": "Los modelos de Equipo muestran todos los modelos de equipos con los que trabaja el sistema (ABB, Schneider…), de tal manera que en este apartado se dan de alta aquellos modelos de Equipo que serán utilizados y podemos obtener de un vistazo las características de cada modelo. Es necesario asignarle un Modelo de Equipo a un Equipo cuando se da de alta en el sistema. Por lo que se necesita conocer el Modelo de Equipo de cada uno de ellos, ya que es necesario para su correcta integración con sistemas externos."
+},
+{
+"id": 1312,
+"es": "Está íntimamente ligado al módulo Equipos, ya que es la característica principal de un “Equipo” y a su vez, todo Modelo de Equipo debe llevar asociado un Fabricante, por lo que este será una condición necesaria para dar de alta un Modelo de Equipo."
+},
+{
+"id": 1313,
+"es": "La ventana de consulta dispondrá de las secciones:"
+},
+{
+"id": 1314,
+"es": "Aparecerán:"
+},
+{
+"id": 1315,
+"es": "Dispone de seis (6) filtros no obligatorios a rellenar (Servicio. "
+},
+{
+"id": 1316,
+"es": "Tipo de equipo, Fabricante y Modelo)"
+},
+{
+"id": 1317,
+"es": "Botones: buscar, crear, detalle, editar, exportar y eliminar. Funcionalidades para gestionar los Modelos de Equipos, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 1318,
+"es": "Lista de Modelos de Equipos"
+},
+{
+"id": 1319,
+"es": "En la tabla puede consultarse el listado de Modelos de Equipos filtrados o no por parámetros."
+},
+{
+"id": 1320,
+"es": "Por defecto, al no haber ningún filtro obligatorio de rellenar antes de realizar una búsqueda, el sistema devuelve una lista con todos los Modelos de Equipos que hay dados de alta en el sistema"
+},
+{
+"id": 1321,
+"es": "Dispone de las acciones:"
+},
+{
+"id": 1322,
+"es": "Filtrando por los filtros mencionados anteriormente se obtiene una lista de Modelos de Equipos que cumplen con esos criterios de entrada."
+},
+{
+"id": 1323,
+"es": "Introduciendo obligatoriamente Modelo y Tipo de Equipo."
+},
+{
+"id": 1324,
+"es": "Introduciendo otros parámetros no obligatorios aumentarán las funcionalidades y riqueza del sistema con este elemento. "
+},
+{
+"id": 1325,
+"es": "Permite visualizar un Modelo de Equipo de la lista en profundidad, mostrando las características mencionadas en el punto anterior. Pantalla mostrada en el punto siguiente: "
+},
+{
+"id": 1326,
+"es": "Detalle Modelo de Equipos."
+},
+{
+"id": 1327,
+"es": "Editar cualquier característica del Modelos de Equipo seleccionado de la lista de Modelos de Equipos."
+},
+{
+"id": 1328,
+"es": "Permite devolver la lista de Modelos de Equipos presente en los idiomas y formatos configurados."
+},
+{
+"id": 1329,
+"es": "La lista de Modelos de Equipos será exportada en formato “"
+},
+{
+"id": 1330,
+"es": "” con todos los datos del Modelo."
+},
+{
+"id": 1331,
+"es": "Eliminar cualquier Modelo dado de alta en el sistema"
+},
+{
+"id": 1332,
+"es": "Los detalles que definen cada Modelo son los siguientes:"
+},
+{
+"id": 1333,
+"es": "[* Obligatorio rellenar]"
+},
+{
+"id": 1334,
+"es": "Tipo*"
+},
+{
+"id": 1335,
+"es": " Medidor Inteligente, Contador, RTU, Puerta de Enlace, Concentrador de datos, registrador de datos y otros."
+},
+{
+"id": 1336,
+"es": "Fabricante* "
+},
+{
+"id": 1337,
+"es": "Fabricante del modelo de dispositivo, es seleccionable de la tabla maestra de Fabricantes."
+},
+{
+"id": 1338,
+"es": "Modelo* "
+},
+{
+"id": 1339,
+"es": "Nombre del Modelo del dispositivo"
+},
+{
+"id": 1340,
+"es": "Número de dígitos enteros* "
+},
+{
+"id": 1341,
+"es": "que registrará el modelo"
+},
+{
+"id": 1342,
+"es": "Número de dígitos decimales*"
+},
+{
+"id": 1343,
+"es": "Multipunto (checkbox)* "
+},
+{
+"id": 1344,
+"es": "indicativo de que el modelo de equipo permite la conectividad con múltiples periféricos (por ejemplo: GWs, DCUs, sensores, dispositivos IoT...)"
+},
+{
+"id": 1345,
+"es": "Prepago (checkbox)*"
+},
+{
+"id": 1346,
+"es": " indicativo de que el modelo de equipo es compatible con la funcionalidad de Prepago"
+},
+{
+"id": 1347,
+"es": "URL: "
+},
+{
+"id": 1348,
+"es": "dirección web para acceder a la ficha técnica del modelo en cuestión, u otra información "
+},
+{
+"id": 1349,
+"es": "que se considere relevante para el mismo"
+},
+{
+"id": 1350,
+"es": "Documentación de Equipos: "
+},
+{
+"id": 1351,
+"es": "información extra"
+},
+{
+"id": 1352,
+"es": "Fichero del equipo: control explorador de archivos para importar el fichero"
+},
+{
+"id": 1353,
+"es": "Imagen del equipo: control explorador de archivos"
+},
+{
+"id": 1354,
+"es": "Fichero (.PDF o .MAPPING)"
+},
+{
+"id": 1355,
+"es": ": Parámetros de configuración del equipo. Dependiendo del tipo de dispositivo, éste dispondrá de unas propiedades identificativas u otras. Los tipos de Equipo presentan para  cada una de las propiedades, un valor por defecto, que puede modificarse a nivel de Modelo"
+},
+{
+"id": 1356,
+"es": "Control de Duplicados: "
+},
+{
+"id": 1357,
+"es": "Cada Modelo de equipo registrado en el sistema debe ser único en"
+},
+{
+"id": 1358,
+"es": " Fabricante, Tipo y Modelo"
+},
+{
+"id": 1359,
+"es": ", no se pueden repetir modelos con estas características."
+},
+{
+"id": 1360,
+"es": "A través de ficheros, se puede cargar la información siguiente en el sistema: "
+},
+{
+"id": 1361,
+"es": "Los Modelos de Equipos"
+},
+{
+"id": 1362,
+"es": "La documentación del Modelo"
+},
+{
+"id": 1363,
+"es": "Las imágenes del Modelo"
+},
+{
+"id": 1364,
+"es": "Fabricante de Equipos"
+},
+{
+"id": 1365,
+"es": "Detalle Fabricantes"
+},
+{
+"id": 1366,
+"es": "En esta pantalla se guarda la entidad \"Fabricante de Equipos\" la cual se relaciona directamente con \"Modelos de Equipos\". Esta Entidad sirve para establecer relaciones y clasificar los diferentes Modelos de Equipos según su fabricante."
+},
+{
+"id": 1367,
+"es": "Filtrando por los filtros se obtiene una lista de Fabricantes que cumplan con esos criterios de entrada."
+},
+{
+"id": 1368,
+"es": " el Nombre."
+},
+{
+"id": 1369,
+"es": "Introduciendo otros parámetros no obligatorios aumentarán las funcionalidades del sistema con este elemento código, Ali code 1…"
+},
+{
+"id": 1370,
+"es": "Permite visualizar un Fabricante de la lista en profundidad, mostrando las características."
+},
+{
+"id": 1371,
+"es": "Editar cualquier característica del Fabricante seleccionándolo en la lista."
+},
+{
+"id": 1372,
+"es": "Permite devolver la lista de Fabricantes presente en los idiomas y formatos configurados."
+},
+{
+"id": 1373,
+"es": "Eliminar cualquier Fabricante dado de alta en el sistema. "
+},
+{
+"id": 1374,
+"es": "Para caracterizar a la entidad se establece"
+},
+{
+"id": 1375,
+"es": "Nombre*"
+},
+{
+"id": 1376,
+"es": ": Valor Alfanumérico. Es el Atributo principal de la entidad y por el cual se establecerán las relaciones futuras."
+},
+{
+"id": 1377,
+"es": ": Valor Alfanumérico. Opcional para caracterizar la entidad si se desea."
+},
+{
+"id": 1378,
+"es": "Ali. Code 1"
+},
+{
+"id": 1379,
+"es": ": Valor Alfanumérico. Código alternativo opcional para caracterizar la entidad si se desea."
+},
+{
+"id": 1380,
+"es": "Ali. Code 2"
+},
+{
+"id": 1381,
+"es": "URL"
+},
+{
+"id": 1382,
+"es": ": Sitio web del fabricante. Opcional para caracterizar la entidad si se desea."
+},
+{
+"id": 1383,
+"es": "Ejemplo Alta de Equipo"
+},
+{
+"id": 1384,
+"es": "En este apartado se detallará el proceso a seguir para dar de alta un equipo, señalando tanto los pasos a seguir como las condiciones que se deben de tener en cuenta."
+},
+{
+"id": 1385,
+"es": "1. En primer lugar será necesario haber dado de alta previamente tanto el Fabricante como el Modelo de equipo que se va a registrar en el sistema. Del mismo modo, se tiene que tener claro cuál es el Tipo de Equipo que se desea instalar y este tiene que estar incluido entre las posibilidades que ofrece el sistema. Además, en el caso de contar con una configuración de comunicación indirecta, es recomendable haber creado previamente el equipo o equipos de comunicaciones con los que se vaya a relacionar. "
+},
+{
+"id": 1386,
+"es": "2. En la vista de Equipos seleccionamos el botón \"+\" para acceder a la vista de creación de Equipos."
+},
+{
+"id": 1387,
+"es": "3. Debemos asignarle un Código y Nombre al equipo. Además de seleccionar el servicio (actualmente solo Electricidad), el Tipo de Equipo y el Modelo de Equipo. "
+},
+{
+"id": 1388,
+"es": "4. También será obligatorio el número de serie del equipo que es el código con el que se identificará su comunicación externa y los tres estados del equipo. El estado de Ubicación deberá de ser el de stock hasta que el equipo sea instalado en campo. el estado de Comunicación generalmente se dará de alta como Desconocido, del mismo modo con el estado de operación, que generalmente se dará de alta como Precargado. Para este último estado, será necesario incluir una fecha asociada a este. Esta fecha irá asignada al estado en el histórico de estados y no se podrá cambiar."
+},
+{
+"id": 1389,
+"es": "5. Si se desea asignarle una configuración de telemedición el botón de Configuración de telmedición debe estar en \"ON\" para poder acceder a la pantalla. De lo contrario, ya podremos dar de alta el equipo pulsando el botón \"Crear\" en la parte inferior derecha de la pantalla."
+},
+{
+"id": 1390,
+"es": "6. Para acceder a la pantalla de Configuración de Telemedición debemos seleccioanr la pestaña que se abrirá al lado de \"General\" con el nombre de \"Configuración Telemedición\"."
+},
+{
+"id": 1391,
+"es": "7. Después se debe seleccionar la Configuración de Telemedición que se necesite, teniendo en cuenta que si el Tipo de Medición fuera Directo, deberemos seleccionar el Tipo de Equipo de Comunicaciones Principal y el propio Equipo de Comunicaciones Principal. "
+},
+{
+"id": 1392,
+"es": "8. Una vez rellenados todos los campos no obligatorios que se deseen se podrá dar de alta el equipo pulsando el botón \"Crear\" en la parte inferior derecha de la pantalla."
+},
+{
+"id": 1393,
+"es": "Grupos de Equipos"
+},
+{
+"id": 1394,
+"es": "Los grupos son un conjunto o asociación de equipos (seleccionados mediante una clasificación) que permite realizar más fácilmente los mismos procesos sobre todos ellos (peticiones de lectura, configuración...). Tanto la ejecución manual como planificada de estos procesos se pueden programar para los grupos de equipos. "
+},
+{
+"id": 1395,
+"es": "La asociación de equipos a los grupos puede ser de dos formas:"
+},
+{
+"id": 1396,
+"es": ": Esta asociación hace honor a su nombre al asociarse o no de forma automática en función de una serie de Reglas de Asociación que se configuran en el Grupo de Equipos. Las "
+},
+{
+"id": 1397,
+"es": " atienden a una Propiedad del Equipo, una Función y un Valor de dicha Propiedad. De este modo se elabora una condición que se debe cumplir para que el Equipo pertenezca al Grupo."
+},
+{
+"id": 1398,
+"es": " Esta asociación se realiza de forma manual en el Grupo de Equipos o en el propio Equipo. Esta asociación es totalmente subjetiva e indefinida, hasta que se deshaga de nuevo, manualmente. Además, esta asociación es la única que se permite mediante carga de ficheros."
+},
+{
+"id": 1399,
+"es": "Los grupos de equipos se identifican mediante su código, y pueden llevar asociada una descripción. En los detalles de cada Grupo se podrán consultar los equipos que engloba, mientras que en los Detalles de Equipo podrá consultarse a qué grupos pertenece un Equipo específico. En la edición se podrán modificar estas asociaciones."
+},
+{
+"id": 1400,
+"es": "El apartado Grupo de Equipos recoge todos los Grupos dados de alta en el sistema, con sus características (reglas de asociación y equipos). "
+},
+{
+"id": 1401,
+"es": "Dispone de dos (2) filtros no obligatorios a rellenar (Código y Equipo Estático)"
+},
+{
+"id": 1402,
+"es": "Las características que aparecen en la tabla son:"
+},
+{
+"id": 1403,
+"es": "Número de equipos"
+},
+{
+"id": 1404,
+"es": "Número de reglas"
+},
+{
+"id": 1405,
+"es": ", en el que se explica el objeto del Grupo de Equipos."
+},
+{
+"id": 1406,
+"es": "Editar cualquier característica del Grupo seleccionado de la lista de Grupos, así como incluir Equipos individualmente o en grupo en base a reglas de asociación que cumplan uno o varios Equipos"
+},
+{
+"id": 1407,
+"es": "Permite devolver la lista de Grupos presente en cualquier idioma (ESP, ING…) y formato (PDF, CSV)"
+},
+{
+"id": 1408,
+"es": "Eliminar cualquier Grupo de Equipos dado de alta en el sistema."
+},
+{
+"id": 1409,
+"es": "*Para poder eliminar un Grupo de Equipos, previamente se deberá eliminar cualquier relación creada entre el mismo y otros elementos."
+},
+{
+"id": 1410,
+"es": "Detalle Grupo de Equipos"
+},
+{
+"id": 1411,
+"es": "“Detalle Grupo de Equipos”"
+},
+{
+"id": 1412,
+"es": "ciales del Grupo, así como las reglas de asociación y Equipos que lleva ligados. La pestaña se divide en 3 partes que visualizan lo siguiente:"
+},
+{
+"id": 1413,
+"es": "Propiedad Equipo"
+},
+{
+"id": 1414,
+"es": ": Para elaborar la regla, se debe seleccionar una la Propiedad del Equipo a la que irá asociada:"
+},
+{
+"id": 1415,
+"es": "Estado Operación"
+},
+{
+"id": 1416,
+"es": "Fabricante"
+},
+{
+"id": 1417,
+"es": "Varios valores"
+},
+{
+"id": 1418,
+"es": "Como podemos observar en la siguiente imagen, las reglas de asociación pueden ser útiles para agrupar equipos en función de algunas de sus características:"
+},
+{
+"id": 1419,
+"es": " (Incluye tanto los asociados estática como dinámicamente)"
+},
+{
+"id": 1420,
+"es": "En este apartado se describen los parámetros y datos del sistema que lo enriquecen, están relacionados con la entidad Puntos y el resto de datos importantes (equipos y grupos de puntos) y tienen una importancia secundaria, ya que dan valor al dato de medida, pero no son esenciales para que el sistema pueda tener un funcionamiento elemental. Las tablas maestras reúnen todos y cada uno de los datos de los parámetros que serán utilizados por la herramienta en cada una de las funcionalidades. En algunos casos será obligatorio disponer de datos maestros, mientras que en otros simplemente actuarán como elementos que generen valor a la medida, agilicen el proceso, avisen a un agente en particular…"
+},
+{
+"id": 1421,
+"es": "Formato Ficheros"
+},
+{
+"id": 1422,
+"es": "Configuración TOU"
+},
+{
+"id": 1423,
+"es": "Días Festivos"
+},
+{
+"id": 1424,
+"es": "Calendarios"
+},
+{
+"id": 1425,
+"es": "Zona Horaria"
+},
+{
+"id": 1426,
+"es": "Clases de Configuración"
+},
+{
+"id": 1427,
+"es": "Tipos Perfiles"
+},
+{
+"id": 1428,
+"es": "Coeficientes Perfil"
+},
+{
+"id": 1429,
+"es": "Configuración Estimaciones Históricas"
+},
+{
+"id": 1430,
+"es": "Tipo de Incidencia"
+},
+{
+"id": 1431,
+"es": "Estrategias"
+},
+{
+"id": 1432,
+"es": "Acciones de Estrategia"
+},
+{
+"id": 1433,
+"es": "Tipos Eventos"
+},
+{
+"id": 1434,
+"es": "Todos y cada uno de los apartados de los Datos Maestros, salvo el apartado "
+},
+{
+"id": 1435,
+"es": "Configuración Estimaciones Histórica"
+},
+{
+"id": 1436,
+"es": ", muestran una misma interfaz, la cual al igual que los apartados de puntos anteriores, se divide de la siguiente manera:"
+},
+{
+"id": 1437,
+"es": "Dispone de distintos filtros no obligatorios a rellenar (cada apartado tendrá unos filtros específicos que vienen resumidos en la tabla de la hoja siguiente). "
+},
+{
+"id": 1438,
+"es": "Mostrado en la imagen de la página siguiente."
+},
+{
+"id": 1439,
+"es": "Botones: buscar, crear, detalle, editar, exportar y eliminar son, entre otros, funcionalidades para gestionar los Datos Maestros, seleccionando previamente o no uno de ellos en la lista que aparece en cada apartado. Cada apartado mostrará los botones y funcionalidades que se permiten utilizar con cada parámetro."
+},
+{
+"id": 1440,
+"es": "Lista de Parámetros:"
+},
+{
+"id": 1441,
+"es": "Dentro de cada apartado se mostrará de forma inicial una lista con todos los parámetros del mismo tipo, así como características importantes de los mismos."
+},
+{
+"id": 1442,
+"es": "La información de los Datos Maestros es consultada desde el sistema de forma recurrente, por lo que para mejorar el rendimiento se guarda en memoria caché, de acceso más rápido. Esto implica que un cambio en esta información no se verá reflejado en el sistema hasta que la memoria se refresque y recupere la información modificada. Este tiempo de refresco es configurable y, por defecto, lo hace cada diez minutos."
+},
+{
+"id": 1443,
+"es": "“Formato Ficheros”"
+},
+{
+"id": 1444,
+"es": " muestra todos los formatos que el sistema acepta para trabajar con ellos, para carga de información en el sistema (cargar puntos de medida, lecturas, medidas…), o extracción de información para terceros. De este modo, en esta vista se pueden dar de alta nuevos Formatos de Ficheros o consultar el formato que tienen aquellos ya existentes."
+},
+{
+"id": 1445,
+"es": "Las características de cada formato aparecen a continuación:"
+},
+{
+"id": 1446,
+"es": "Dirección*: "
+},
+{
+"id": 1447,
+"es": "Entrada o Salida"
+},
+{
+"id": 1448,
+"es": "Patrón*:"
+},
+{
+"id": 1449,
+"es": " extensión del fichero que será aceptada por el sistema (p.e. [\\w\\.\\-]+\\.mst)"
+},
+{
+"id": 1450,
+"es": "Categoría*"
+},
+{
+"id": 1451,
+"es": ": Mediciones, Inventario, Informes..."
+},
+{
+"id": 1452,
+"es": "Fichero de Validación*:"
+},
+{
+"id": 1453,
+"es": " fichero que define los campos (propietario, cliente, fecha…) que van a ser aceptados por el sistema"
+},
+{
+"id": 1454,
+"es": "Fichero de Transformación*:"
+},
+{
+"id": 1455,
+"es": " fichero que traduce el lenguaje del fichero cargado y lo adapta al del sistema"
+},
+{
+"id": 1456,
+"es": "Fichero"
+},
+{
+"id": 1457,
+"es": "Groovy:"
+},
+{
+"id": 1458,
+"es": "este tipo de ficheros implementan una interfaz de producto (com.indracompany.energy.dlms.cosem.request.Request) de igual forma que las implementaciones proporcionadas en la librería "
+},
+{
+"id": 1459,
+"es": "dlms-cosem-generic"
+},
+{
+"id": 1460,
+"es": "El contenido de los siguientes ficheros viene definido al detalle en el apartado de Integración, en "
+},
+{
+"id": 1461,
+"es": "Ficheros de carga. "
+},
+{
+"id": 1462,
+"es": "Mediciones e Inventario"
+},
+{
+"id": 1463,
+"es": "OUM Measures ("
+},
+{
+"id": 1464,
+"es": "Perfil de carga"
+},
+{
+"id": 1465,
+"es": "OUM Billing Profile ("
+},
+{
+"id": 1466,
+"es": "Medida de Cierre "
+},
+{
+"id": 1467,
+"es": "OUM Instantaneous Values ("
+},
+{
+"id": 1468,
+"es": "OUM Readings ("
+},
+{
+"id": 1469,
+"es": "Perfil de carga absoluto (lecturas)"
+},
+{
+"id": 1470,
+"es": "OUM Events ("
+},
+{
+"id": 1471,
+"es": "OUM Metering Points ("
+},
+{
+"id": 1472,
+"es": "importMeteringPoint"
+},
+{
+"id": 1473,
+"es": "OUM Equipment ("
+},
+{
+"id": 1474,
+"es": "importEquipments"
+},
+{
+"id": 1475,
+"es": "OUM Installations ("
+},
+{
+"id": 1476,
+"es": "importInstallations"
+},
+{
+"id": 1477,
+"es": "OUM Communications Equipments ("
+},
+{
+"id": 1478,
+"es": "importCommunicationEquipments"
+},
+{
+"id": 1479,
+"es": "OUM Equipment Metering Points Configuration ("
+},
+{
+"id": 1480,
+"es": "importEquipmentPointConfigurations"
+},
+{
+"id": 1481,
+"es": "OUM Equipment Telemetry ("
+},
+{
+"id": 1482,
+"es": "importEquipmentTelemetry"
+},
+{
+"id": 1483,
+"es": "OUM Metering Point Billing Profile ("
+},
+{
+"id": 1484,
+"es": "importMeteringPointBillingProfile"
+},
+{
+"id": 1485,
+"es": "“Configuración TOU”"
+},
+{
+"id": 1486,
+"es": " recoge las diferente estructuras tarifarias que han sido registradas en el sistema y al mismo tiempo, nos permite registrar otras nuevas. "
+},
+{
+"id": 1487,
+"es": "Está dividido en:"
+},
+{
+"id": 1488,
+"es": "TOU"
+},
+{
+"id": 1489,
+"es": "Configuración Temporadas"
+},
+{
+"id": 1490,
+"es": "Configuración Semanas"
+},
+{
+"id": 1491,
+"es": "Configuración Diaria"
+},
+{
+"id": 1492,
+"es": "Ejemplo de Configuración TOU"
+},
+{
+"id": 1493,
+"es": "Detalle TOU"
+},
+{
+"id": 1494,
+"es": "Edición TOU"
+},
+{
+"id": 1495,
+"es": "El sub-módulo TOU reúne las configuraciones tarifarias o TOU ("
+},
+{
+"id": 1496,
+"es": "Time of Use"
+},
+{
+"id": 1497,
+"es": ") dados de alta en el sistema. "
+},
+{
+"id": 1498,
+"es": " es una entidad que representa las diferentes estructuras en las que se puede organizar el mercado en función de los periodos de consumo, es decir, la forma en la que se pueden clasificar cada uno de esos periodos, pudiendo definir diferentes "
+},
+{
+"id": 1499,
+"es": "Totalizadores "
+},
+{
+"id": 1500,
+"es": "que se podrán asignar a cada uno de los 24 periodos del día"
+},
+{
+"id": 1501,
+"es": "Por ejemplo, el sistema español cuenta con tres "
+},
+{
+"id": 1502,
+"es": "Totalizadores"
+},
+{
+"id": 1503,
+"es": " (Punta, Llano y Valle)  que se distribuyen en diferentes franjas horarias del día.  En el entorno, dichas entidades se caracterizan por las siguientes propiedades:"
+},
+{
+"id": 1504,
+"es": "Fecha de inicio de la Configuración"
+},
+{
+"id": 1505,
+"es": "Fecha de fin de la Configuración"
+},
+{
+"id": 1506,
+"es": "Estas propiedades se muestran en la interfaz del sistema en el apartado "
+},
+{
+"id": 1507,
+"es": ", donde se muestran las características particulares de una tarifa."
+},
+{
+"id": 1508,
+"es": "Botones: buscar, crear, detalle, editar, exportar y eliminar. "
+},
+{
+"id": 1509,
+"es": "Funcionalidades para gestionar los TOU, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 1510,
+"es": "Listado TOU"
+},
+{
+"id": 1511,
+"es": "En la tabla puede consultarse el listado de TOU filtrados o no por parámetros."
+},
+{
+"id": 1512,
+"es": "Por defecto, al no haber ningún filtro obligatorio de rellenar antes de realizar una búsqueda, el sistema devuelve una lista con todos los TOU que hay dados de alta en el sistema."
+},
+{
+"id": 1513,
+"es": "Filtrando por nombre y código del TOU se puede obtener una lista de TOU que cumplan con esos datos de entrada."
+},
+{
+"id": 1514,
+"es": "Introduciendo obligatoriamente el Código, Nombre ,Servicio y Fechas."
+},
+{
+"id": 1515,
+"es": "Introduciendo otros parámetros no obligatorios aumentarán las funcionalidades del sistema con este elemento como una descripción."
+},
+{
+"id": 1516,
+"es": "Permite visualizar un TOU de la lista en profundidad, mostrando las características mencionadas en el punto anterior"
+},
+{
+"id": 1517,
+"es": "Editar cualquier característica del TOU seleccionado de la lista de propietarios"
+},
+{
+"id": 1518,
+"es": "Permite devolver la lista de TOU presente en los idiomas y formatos configurados."
+},
+{
+"id": 1519,
+"es": "Eliminar cualquier TOU dado de alta en el sistema"
+},
+{
+"id": 1520,
+"es": "“Detalle TOU” "
+},
+{
+"id": 1521,
+"es": "Dentro de la vista de detalle TOU podemos observar las diferentes Configuraciones asociadas. De este modo, en esta pantalla se obtiene la vista general del TOU para cada uno de los periodos y totalizadores. Cada una de estas configuraciones se explica con detalle en cada uno de sus apartados."
+},
+{
+"id": 1522,
+"es": "“Editar” "
+},
+{
+"id": 1523,
+"es": "a parte de modificar los atributos del TOU (Código,nombre...)"
+},
+{
+"id": 1524,
+"es": "nos permite dar de alta los diferentes Totalizadores que podremos añadir a la Configuración Diaria posteriormente, para así poder definirla."
+},
+{
+"id": 1525,
+"es": "Este apartado reúne todos las días dadas de alta en el sistema. Los días son entidades temporales que se utilizan para asignar las diferentes configuraciones del "
+},
+{
+"id": 1526,
+"es": "Time of Use (TOU)"
+},
+{
+"id": 1527,
+"es": ". De este modo se le puede dar nombre y ordenar a las diferentes configuraciones para los periodos en los que se encuentre cada uno de los "
+},
+{
+"id": 1528,
+"es": " a lo largo del día, y así, guardarlas de forma sencilla en el sistema. En el producto, la entidad se caracteriza por las siguientes propiedades:"
+},
+{
+"id": 1529,
+"es": "Periodos diarios"
+},
+{
+"id": 1530,
+"es": "Detalle días"
+},
+{
+"id": 1531,
+"es": ", donde se muestran las características particulares de una de las días."
+},
+{
+"id": 1532,
+"es": "Dispone de 2 filtros a rellenar (Código y TOU) "
+},
+{
+"id": 1533,
+"es": "siendo TOU obligatorio"
+},
+{
+"id": 1534,
+"es": "Botones: buscar, crear, detalle, editar, exportar y eliminar. Funcionalidades para gestionar las Configuraciones Diarias, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 1535,
+"es": "Listado de Configuración Diaria"
+},
+{
+"id": 1536,
+"es": "En la tabla puede consultarse el listado de Configuración Diaria de un TOU. Para ello "
+},
+{
+"id": 1537,
+"es": "se debe seleccionar previamente un TOU"
+},
+{
+"id": 1538,
+"es": "Filtrando por nombre y código de la Configuración Diaria se puede obtener una lista de días que cumplan con esos datos de entrada."
+},
+{
+"id": 1539,
+"es": "Introduciendo obligatoriamente el Código, TOU y los periodos."
+},
+{
+"id": 1540,
+"es": "Introduciendo para que se pueda trabajar con el TOU seleccionado."
+},
+{
+"id": 1541,
+"es": "Permite visualizar una día de la lista en profundidad, mostrando las características mencionadas en el punto anterior"
+},
+{
+"id": 1542,
+"es": "Editar cualquier característica de la Configuración Diaria seleccionada en la lista."
+},
+{
+"id": 1543,
+"es": "Permite devolver la lista de Configuraciones Diarias presente en los idiomas y formatos configurados."
+},
+{
+"id": 1544,
+"es": "Eliminar cualquier Configuración Diaria dada de alta en el sistema."
+},
+{
+"id": 1545,
+"es": "Detalle y Edición Configuración Diaria"
+},
+{
+"id": 1546,
+"es": "“Detalle Configuración Días” "
+},
+{
+"id": 1547,
+"es": "Tanto en el alta como en la edición, a cada uno de los periodos es posible asignarle uno de los totalizadores que tenga el TOU asignado:"
+},
+{
+"id": 1548,
+"es": "Este apartado reúne todas las Semanas dadas de alta en el sistema. Las Semanas son entidades temporales que se utilizan para asignar las diferentes configuraciones del "
+},
+{
+"id": 1549,
+"es": ". En este caso, se utilizan para definir posibles configuraciones de Tarifas Diarias a una Semana. De este modo, por ejemplo, podremos definir que en los cinco primeros días de la semana el sistema se comporte de un modo y en los otros dos de otro.  Esta entidad se caracteriza por las siguientes propiedades:"
+},
+{
+"id": 1550,
+"es": "Detalle semanas"
+},
+{
+"id": 1551,
+"es": ", donde se muestran las características particulares de una de las semanas."
+},
+{
+"id": 1552,
+"es": "Botones: buscar, crear, detalle, editar, exportar y eliminar. Funcionalidades para gestionar las Configuraciones Semanal, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 1553,
+"es": "Listado de Configuración Semanas"
+},
+{
+"id": 1554,
+"es": "En la tabla puede consultarse el listado de Configuración Semanas de un TOU. Para ello "
+},
+{
+"id": 1555,
+"es": "Filtrando por nombre y código de la Configuración Semanas se puede obtener una lista de días que cumplan con esos datos de entrada."
+},
+{
+"id": 1556,
+"es": "Introduciendo obligatoriamente el Código, TOU y las Configuraciones Diarias a cada día de la semana."
+},
+{
+"id": 1557,
+"es": "Editar cualquier característica de la Configuración Semanal a seleccionada en la lista."
+},
+{
+"id": 1558,
+"es": "Permite devolver la lista de Configuraciones Semanal presente en los idiomas y formatos configurados."
+},
+{
+"id": 1559,
+"es": "Eliminar cualquier Configuración Semanal dada de alta en el sistema."
+},
+{
+"id": 1560,
+"es": "Detalle Configuración Semanal"
+},
+{
+"id": 1561,
+"es": "“Detalle semanas” "
+},
+{
+"id": 1562,
+"es": "En la ventana de edición y creación de la Configuración Semanal será posible modificar cada uno de los días de la semana para asignarle una Configuración Diaria distinta."
+},
+{
+"id": 1563,
+"es": "Este apartado reúne todas las Configuraciones de Temporadas dadas de alta en el sistema. Las Configuraciones de Temporadas son entidades temporales que se utilizan para asignar las diferentes configuraciones del "
+},
+{
+"id": 1564,
+"es": ". En este caso, se utilizan para definir posibles Configuraciones  Semanales y Diarias a lo largo de periodos de tiempo. De este modo, por ejemplo, podremos definir que en los seis primeros meses del año el sistema tome cierta configuración del "
+},
+{
+"id": 1565,
+"es": " que cambiará en el segundo semestre del año.  En el sistema, esta entidad se caracteriza por las siguientes propiedades:"
+},
+{
+"id": 1566,
+"es": "Semana"
+},
+{
+"id": 1567,
+"es": "Tipo de unidad"
+},
+{
+"id": 1568,
+"es": "Año"
+},
+{
+"id": 1569,
+"es": "Mes"
+},
+{
+"id": 1570,
+"es": "Días"
+},
+{
+"id": 1571,
+"es": "Horas"
+},
+{
+"id": 1572,
+"es": "Minutos"
+},
+{
+"id": 1573,
+"es": "Detalle Temporadas"
+},
+{
+"id": 1574,
+"es": ", donde se muestran las características particulares de una Configuración de Temporadas."
+},
+{
+"id": 1575,
+"es": "Listado de Configuración Temporadas"
+},
+{
+"id": 1576,
+"es": "En la tabla puede consultarse el listado de Configuración Temporadas filtrados o no por parámetros."
+},
+{
+"id": 1577,
+"es": "Por defecto, al no haber ningún filtro obligatorio de rellenar antes de realizar una búsqueda, el sistema devuelve una lista con todos las Configuraciónes de Temporadas que hay dados de alta en el sistema."
+},
+{
+"id": 1578,
+"es": "Filtrando por TOU y código de la Confuguración Temporadas se puede obtener una lista."
+},
+{
+"id": 1579,
+"es": "Introduciendo obligatoriamente el TOU, código, semanas y tipo de unidad."
+},
+{
+"id": 1580,
+"es": "Introduciendo otros parámetros no obligatorios aumentarán las funcionalidades del sistema."
+},
+{
+"id": 1581,
+"es": "Permite visualizar una Configuración Temporadas de la lista en profundidad, mostrando las características mencionadas en el punto anterior"
+},
+{
+"id": 1582,
+"es": "Editar cualquier característica de la Configuración Temporadas seleccionada de la lista de propietarios"
+},
+{
+"id": 1583,
+"es": "Permite devolver la lista de Configuración Temporadas presente en los idiomas y formatos configurados."
+},
+{
+"id": 1584,
+"es": "Eliminar cualquier Configuración Temporadas dada de alta en el sistema"
+},
+{
+"id": 1585,
+"es": "Detalle Configuración Temporadas"
+},
+{
+"id": 1586,
+"es": "“Detalle Configuración Temporada” "
+},
+{
+"id": 1587,
+"es": "y muestra las características de la Configuración Temporadas seleccionada. A través de una fecha o momento concreto definido hasta la unidad \"Minutos\" se puede definir un momento en el que la Configuración TOU empiece a usar una nueva Configuración Semanal. "
+},
+{
+"id": 1588,
+"es": "A continuación se va a detallar el proceso de creación de una Configuración TOU en su totalidad para facilitar su comprensión. Para este caso de ejemplo se tomará como referencia el sistema eléctrico Español el cual cuenta con tres Totalizadores (Punta, valle y llano) que supondremos como constantes para cada uno de los días del año."
+},
+{
+"id": 1589,
+"es": "El primero de los pasos sería dar de alta la Configuración TOU en el sistema. Esto se realiza desde la pestaña TOU dentro del Sub-módulo Configuración TOU. De este modo podremos definir los atributos principales de nuestra Configuración TOU, incluidos los totalizadores que se requieran, en este caso se han dado de alta los tres Totalizadores previamente mencionados. La Configuración TOU lleva unas Fechas asignadas que sirve para determinar el periodo de vigencia."
+},
+{
+"id": 1590,
+"es": "El siguiente paso sería definir la Configuración Diaria, de este modo se configuran las horas a las que pertenece cada uno de los totalizadores a lo largo del día. Para ello debemos irnos a la pantalla de Configuración Diaria. Al dar de alta en esta pantalla deberemos seleccionar el código de una Configuración TOU previamente creada, en este caso el Código ESP. De este modo se nos habilitará la selección de los Totalizadores para cada periodo (T0X) del día que corresponden a las 24 horas del día."
+},
+{
+"id": 1591,
+"es": "Si fuera necesario, también podría definirse una Configuración semanal. Para ello habría que crear más de una Configuración Diaria y después a través de la pantalla de Configuración Semanal dar de alta una Configuración Semanal. De este modo se podrán asignar diferentes Configuraciones Diarias no solo a los días de la semana, sino al comportamiento en los días festivos o especiales."
+},
+{
+"id": 1592,
+"es": "Del mismo modo es posible definir un cambio de Configuración Semanal en una fecha concreta, definiendo así temporadas en las que se utilice cierta configuración que se alterne en otras temporadas. En este caso de ejemplo, se define que el primer día del mes de Junio cambie la Configuración TOU."
+},
+{
+"id": 1593,
+"es": "Por último, hay que tener en cuenta que el objetivo de toda esta Configuración TOU es asignarla a un punto de medida, para ello basta con asignarlo en el apartado de Facturación de la pestaña de características."
+},
+{
+"id": 1594,
+"es": "En el presente apartado se gestionan todos los días festivos que se consideran en el sistema. Esto es útil para la Configuración TOU del sistema  ya que estos Días Festivos tendrán su propia Configuración Diaria. Los Días Festivos también están directamente relacionados con la funcionalidad de Calendarios definiendo así los Días festivos que le corresponden a cada Calendario. "
+},
+{
+"id": 1595,
+"es": "Las características que les definen son:"
+},
+{
+"id": 1596,
+"es": "Fecha"
+},
+{
+"id": 1597,
+"es": " (exacta, no se repite anualmente por lo que habrá que dar de alta los días cada año)"
+},
+{
+"id": 1598,
+"es": "Como se mencionaba, estos días festivos están íntimamente relacionados con el apartado 4.12 Calendarios, ya que serán la base para generar diferentes calendarios para distintas zonas, áreas, etc. El proceso es el siguiente:"
+},
+{
+"id": 1599,
+"es": "Tabla 4: Calendario"
+},
+{
+"id": 1600,
+"es": "Estructura y Relación"
+},
+{
+"id": 1601,
+"es": "Punto de Medida / Detalles"
+},
+{
+"id": 1602,
+"es": "Características del Calendario"
+},
+{
+"id": 1603,
+"es": "Día festivo"
+},
+{
+"id": 1604,
+"es": "Proceso de creación y Conexión"
+},
+{
+"id": 1605,
+"es": "1º Crear "
+},
+{
+"id": 1606,
+"es": "Día/as festivos"
+},
+{
+"id": 1607,
+"es": "4.5 Días festivos"
+},
+{
+"id": 1608,
+"es": "2º Crear Calendario y añadirle Días festivos"
+},
+{
+"id": 1609,
+"es": "4.12 Calendarios"
+},
+{
+"id": 1610,
+"es": "3º Crear/Editar Punto de Medida y asociarle un Calendario"
+},
+{
+"id": 1611,
+"es": "4.2.1 Detalles de Puntos de Medida"
+},
+{
+"id": 1612,
+"es": "Los Calendarios tienen la finalidad de ser asociados a un Punto de Medida, de esta forma, es posible identificar los días festivos que afectarán al mismo. Estos Días Festivos que serán asociados a los Calendarios se deben haber creado previamente en el sistema. De la misma manera, algunos métodos de estimación y previsión necesitan el calendario para poder ejecutarse correctamente."
+},
+{
+"id": 1613,
+"es": "Los calendarios se identifican mediante un código y un nombre y pueden llevar una breve descripción."
+},
+{
+"id": 1614,
+"es": "Como en otras tablas similares, puede consultarse el listado de calendarios disponibles, realizar búsquedas, dar de alta nuevos calendarios, editar o ver los detalles de los calendarios dados de alta en el sistema, exportar el listado de calendarios o eliminar uno de ellos."
+},
+{
+"id": 1615,
+"es": "Información acerca del proceso de creación y relación entre apartados y elementos se encuentra en el módulo  Días Festivos."
+},
+{
+"id": 1616,
+"es": "Es importante tener presente que cualquier día festivo que no esté incluido en el calendario, no será considerado como tal. Por ello, será necesario incluir además de las festividades propias del lugar, todos aquellos días que vayan a ser tratados con las condiciones de un Día Festivo (ej. domingos)"
+},
+{
+"id": 1617,
+"es": "Detalles zona horaria"
+},
+{
+"id": 1618,
+"es": "Proceso de Creación y herramientas de trabajo"
+},
+{
+"id": 1619,
+"es": "Funcionalidad del Sistema e interrelación a posteriori con otros elementos"
+},
+{
+"id": 1620,
+"es": "El módulo Time Zone permite gestionar correctamente las zonas horarias asociadas a los dispositivos, puntos de servicio y datos medidos dentro del sistema, lo cual es crítico en entornos donde la compañía opera en diferentes regiones o países. Evita errores en facturación, análisis de consumo y detección de anomalías, garantiza coherencia en eventos operativos (instalación, retirada, mantenimiento) y facilita la integración con sistemas externos que también manejan múltiples zonas horarias. En resumen, asegura que toda la información temporal en el sistema sea precisa, consistente y contextualizada según la ubicación del equipo y la operación del negocio."
+},
+{
+"id": 1621,
+"es": "Los días de cambio horario identifican el inicio y el fin del periodo DST. El horario o período DST (Daylight Saving Time) es un horario adelantado o atrasado una hora respecto del horario normal en una determinada región, tratando el sistema la magnitud tiempo en segundos."
+},
+{
+"id": 1622,
+"es": "EL DST sólo se utiliza para aquellas magnitudes que no corresponden a períodos y sí a tiempos exactos; lo componen los siguientes elementos:"
+},
+{
+"id": 1623,
+"es": "Registros"
+},
+{
+"id": 1624,
+"es": "Lecturas"
+},
+{
+"id": 1625,
+"es": "La interfaz del presente apartado, de la misma manera que el resto, muestra dos partes: la primera se compone de un filtro con el campo "
+},
+{
+"id": 1626,
+"es": "“nombre” "
+},
+{
+"id": 1627,
+"es": "y las opciones buscar una o varias Zonas Horarias, así como exportarlas en una lista en diferentes formatos. También permite ver el detalle, crear y eliminar una Zona Horaria; la segunda parte muestra la lista filtrada o no de las zonas horarias cargadas en el sistema."
+},
+{
+"id": 1628,
+"es": "Los elementos y características que conforman una Zona Horaria, así como el proceso para crearla, se explican a continuación."
+},
+{
+"id": 1629,
+"es": "La opción "
+},
+{
+"id": 1630,
+"es": "“detalles”"
+},
+{
+"id": 1631,
+"es": " permite ver a fondo las características y días que componen una Zona Horaria determinada. Los elementos son:"
+},
+{
+"id": 1632,
+"es": "Nombre: "
+},
+{
+"id": 1633,
+"es": "(EJ: Europa Central)."
+},
+{
+"id": 1634,
+"es": "Descripción:"
+},
+{
+"id": 1635,
+"es": " (EJ: Zona Horaria de Europa Central)"
+},
+{
+"id": 1636,
+"es": "Desplazamiento UTC [informativo]: "
+},
+{
+"id": 1637,
+"es": "Desplazamiento horario con respecto a UTC 0, será un entero positivo o negativo. (p.e UTC+1, UTC -5; pero indicado en segundos: UTC+1=3600). Este campo trabaja únicamente a nivel informativo."
+},
+{
+"id": 1638,
+"es": "Desplazamiento DST [informativo] :"
+},
+{
+"id": 1639,
+"es": " Desplazamiento horario en los días de cambio horario. Será un entero positivo o negativo y la unidad de magnitud en segundos y respecto al desplazamiento UTC. Este campo trabaja únicamente a nivel informativo (3600, -3600, …)."
+},
+{
+"id": 1640,
+"es": "Días de Cambio Horario"
+},
+{
+"id": 1641,
+"es": "Día"
+},
+{
+"id": 1642,
+"es": ": día en el que se produce el cambio horario"
+},
+{
+"id": 1643,
+"es": "Hora"
+},
+{
+"id": 1644,
+"es": ": Hora en la que se produce el cambio horario"
+},
+{
+"id": 1645,
+"es": "Tipo de Cambio Horario"
+},
+{
+"id": 1646,
+"es": "I  V (cambio No DST -> Yes DST) Día de Cambio I->V: 23 periodos (una hora menos)."
+},
+{
+"id": 1647,
+"es": "V  I (cambio Yes DST -> No DST)  Día de Cambio V->I: 25 periodos (una hora más)."
+},
+{
+"id": 1648,
+"es": "*Para que el sistema funcione correctamente, se especificará el cambio horario para todos los años del periodo de medición."
+},
+{
+"id": 1649,
+"es": "La interfaz se muestra de la siguiente manera en el programa:"
+},
+{
+"id": 1650,
+"es": "Debido a que una Zona Horaria no se crea a la vez en la misma opción "
+},
+{
+"id": 1651,
+"es": "“crear”"
+},
+{
+"id": 1652,
+"es": ", sino que se compone de varios pasos, en el presente punto se explica el proceso, siempre dentro de la ruta "
+},
+{
+"id": 1653,
+"es": "“Inicio / Inventario / Datos Maestros / Zona Horaria”"
+},
+{
+"id": 1654,
+"es": "Tabla 9: Proceso de Creación y herramientas de trabajo"
+},
+{
+"id": 1655,
+"es": "Nº Paso"
+},
+{
+"id": 1656,
+"es": "Proceso Utilizado"
+},
+{
+"id": 1657,
+"es": "Características y Elementos"
+},
+{
+"id": 1658,
+"es": "Definición / Ejemplo"
+},
+{
+"id": 1659,
+"es": "(EJ: "
+},
+{
+"id": 1660,
+"es": "Europa Central"
+},
+{
+"id": 1661,
+"es": "Zona Horaria de Europa Central)"
+},
+{
+"id": 1662,
+"es": "Desplazamiento UTC  [informativo]"
+},
+{
+"id": 1663,
+"es": "(Ej: -18.000) – 5 horas menos que GW"
+},
+{
+"id": 1664,
+"es": "Desplazamiento DST [informativo]"
+},
+{
+"id": 1665,
+"es": "(Ej: +/-3.600) – 1 hora de cambio"
+},
+{
+"id": 1666,
+"es": "La interfaz del sistema presenta la siguiente ventana para la opción “crear” Zona Horaria:"
+},
+{
+"id": 1667,
+"es": "Dentro de la opción "
+},
+{
+"id": 1668,
+"es": "y seleccionando el botón "
+},
+{
+"id": 1669,
+"es": "“Actualizar cambio de horario”, se añaden los días en los que se realiza el cambio de hora, con sus características. Lo normal es que haya dos (2) días de cambio de hora por año."
+},
+{
+"id": 1670,
+"es": "Tabla 10: Proceso Editar"
+},
+{
+"id": 1671,
+"es": "Proceso de creación"
+},
+{
+"id": 1672,
+"es": "Editar Actualizar Cambio Horario"
+},
+{
+"id": 1673,
+"es": "(Ej: 25/03/2018)"
+},
+{
+"id": 1674,
+"es": "(Ej: 02:00)"
+},
+{
+"id": 1675,
+"es": "(Ej: Ià V)"
+},
+{
+"id": 1676,
+"es": "La interfaz del sistema presenta la siguiente ventana para la opción “editar” Zona Horaria:"
+},
+{
+"id": 1677,
+"es": "Cuando se carga una medida de una magnitud que le afecta el cambio horario (evento, valor instantáneo, registro…), se deberá definir si ésta se encuentra en DST o no. Esta selección se realiza en el Módulo "
+},
+{
+"id": 1678,
+"es": " cuando se realiza una carga de un valor. En la funcionalidad "
+},
+{
+"id": 1679,
+"es": "“Carga Manual” "
+},
+{
+"id": 1680,
+"es": "se puede apreciar con el campo correspondiente:"
+},
+{
+"id": 1681,
+"es": "Cada opción del DST significa:"
+},
+{
+"id": 1682,
+"es": "Sí"
+},
+{
+"id": 1683,
+"es": ": la medida se encuentra afectada por el DST, es decir, su horario estará en verano con +3.600 seg (+1 hora) respecto del horario normal de invierno."
+},
+{
+"id": 1684,
+"es": "No"
+},
+{
+"id": 1685,
+"es": ": la medida no se encuentra afectada por el DST, es decir, estará en el horario normal, el de invierno."
+},
+{
+"id": 1686,
+"es": "Ejemplo para los días de cambio horario"
+},
+{
+"id": 1687,
+"es": ": 25/3 I V: Hora 2, 28/10 V I: Hora 2"
+},
+{
+"id": 1688,
+"es": "00:00:00 DST No, 01:00:00 DST No, 03:00:00 DST Yes, 04:00:00 DST Yes, 05:00:00 DST Yes, …"
+},
+{
+"id": 1689,
+"es": "00:00:00 DST Yes, 01:00:00 DST Yes, 02:00:00 DST Yes, 02:00:00 DST No, 03:00:00 DST No, 04:00:00 DST No, 05:00:00 DST No, …"
+},
+{
+"id": 1690,
+"es": "Tabla Clases de Configuración"
+},
+{
+"id": 1691,
+"es": "Detalles Clase de Configuración"
+},
+{
+"id": 1692,
+"es": "Patrón Orígenes"
+},
+{
+"id": 1693,
+"es": "Selección de Medidas BTV"
+},
+{
+"id": 1694,
+"es": "Val. Iniciales"
+},
+{
+"id": 1695,
+"es": "Val. Óptimas"
+},
+{
+"id": 1696,
+"es": "Las clases de configuración permiten definir para cada punto de medida sus características y tratamiento en el "
+},
+{
+"id": 1697,
+"es": "Ciclo de la Medida"
+},
+{
+"id": 1698,
+"es": "Mediante la asociación de una Clase de Configuración a los puntos de medida necesarios, se podrá:"
+},
+{
+"id": 1699,
+"es": "Definir un "
+},
+{
+"id": 1700,
+"es": "Seleccionar las magnitudes que pasarán a óptimos - "
+},
+{
+"id": 1701,
+"es": "Magnitudes BTV"
+},
+{
+"id": 1702,
+"es": "Configurar las "
+},
+{
+"id": 1703,
+"es": "Validaciones de Inicio u Origen"
+},
+{
+"id": 1704,
+"es": " y las magnitudes sobre la que aplicarán"
+},
+{
+"id": 1705,
+"es": "Seleccionar las "
+},
+{
+"id": 1706,
+"es": " a aplicar a las magnitudes elegidas"
+},
+{
+"id": 1707,
+"es": "Configurar "
+},
+{
+"id": 1708,
+"es": " que podrán lanzar la ejecución de acciones de estrategias predefinidas"
+},
+{
+"id": 1709,
+"es": "Es necesario y fundamental para el correcto funcionamiento del sistema, que cada punto de medida tenga asociada una Clase de Configuración, que puede ser compartida por múltiples puntos."
+},
+{
+"id": 1710,
+"es": "La información de configuración de cada punto es necesario consultarla en cada proceso, por lo que para mejorar el rendimiento del sistema se guarda en memoria caché, de acceso más rápido. Esto implica que un cambio de configuración no se verá reflejado en el sistema hasta que la memoria se refresque y recupere la información modificada. Este tiempo de refresco es configurable y, por defecto, lo hace cada diez minutos."
+},
+{
+"id": 1711,
+"es": "Como en otras tablas similares, en esta puede consultarse el listado de clases de configuración disponibles, realizar búsquedas, dar de alta nuevas clases de configuración, editar o ver las clases de configuración dadas de alta en el sistema, exportar el listado de las clases de configuración o eliminar alguna de ellas (siempre que no esté asociada a ningún puntos de medida)."
+},
+{
+"id": 1712,
+"es": "La interfaz de la ruta "
+},
+{
+"id": 1713,
+"es": "Inicio"
+},
+{
+"id": 1714,
+"es": "Clases de Configuración, "
+},
+{
+"id": 1715,
+"es": "muestra la misma estructura que el resto del sistema, donde se puede encontrar una primera parte para realizar filtros a través del campo “Nombre” y utilizar cualquier opción mencionada en el párrafo anterior para una clase nueva o ya existente. La segunda parte es la lista de clases de configuración cargadas en el sistema, filtradas o no*."
+},
+{
+"id": 1716,
+"es": "*Por defecto, el sistema devuelve todas las clases de configuración que existen en el sistema en la lista."
+},
+{
+"id": 1717,
+"es": "De forma general la interfaz muestra tanto el nombre como la descripción de la Clase de Configuración, a la vez que sus componentes principales:"
+},
+{
+"id": 1718,
+"es": "Selector de Magnitudes BTV"
+},
+{
+"id": 1719,
+"es": "Validaciones de Óptimos"
+},
+{
+"id": 1720,
+"es": "Desde cada pestaña se realizará la configuración de las diferentes características, que determinarán la forma de trabajar del Punto de Medida con los datos."
+},
+{
+"id": 1721,
+"es": "El patrón de orígenes, explicado en el módulo "
+},
+{
+"id": 1722,
+"es": "Gestión de Medidas-Orígenes"
+},
+{
+"id": 1723,
+"es": ", crea y gestiona listas de orígenes y sus prioridades."
+},
+{
+"id": 1724,
+"es": "Cada patrón de orígenes determina dos cosas:"
+},
+{
+"id": 1725,
+"es": "Los orígenes de medida que serán aceptados por el Punto de Medida."
+},
+{
+"id": 1726,
+"es": "El tipo de origen de la Medida deberá estar dentro de los incluidos para, entre otras, habilitar la ejecución de métodos de cálculo y estimación."
+},
+{
+"id": 1727,
+"es": "El orden de importancia para seleccionar la mejor medida y subirla a óptimo"
+},
+{
+"id": 1728,
+"es": "Para ello es muy importante el resultado de validación que esté asociado al origen de la medida, ya que se deberán añadir o quitar aquellos orígenes válidos e inválidos para esas medidas que se quiera que aparezcan en óptimo, independientemente del resultado de su validación."
+},
+{
+"id": 1729,
+"es": "Una vez creada una lista de orígenes, ésta podrá ser seleccionada para incluirse en una clase de configuración (presente punto)."
+},
+{
+"id": 1730,
+"es": "La sub-pestaña Patrón Orígenes permite visualizar la lista con todos los orígenes que están incluidos y a la vez, seleccionar otro Patrón de Orígenes con otra lista diferente."
+},
+{
+"id": 1731,
+"es": "Valores dependientes de otros elementos del sistema"
+},
+{
+"id": 1732,
+"es": "Relación Gestión de Medida – Clases de Configuración"
+},
+{
+"id": 1733,
+"es": "Gestión de Medidas - Configuración de los Componentes"
+},
+{
+"id": 1734,
+"es": "Clases de Configuración - Componentes"
+},
+{
+"id": 1735,
+"es": "Inicio / Gestión de Medidas / Orígenes / Patrones"
+},
+{
+"id": 1736,
+"es": "Patrón o Ranking de Orígenes"
+},
+{
+"id": 1737,
+"es": " El proceso de enlace entre ambas partes, llega precedido de unas acciones de creación de patrón:"
+},
+{
+"id": 1738,
+"es": "Gestión de Medidas / Orígenes / Patrones > Creación Plantilla de Orígenes"
+},
+{
+"id": 1739,
+"es": "Inventario / Clases de Configuración  > En ranking de Orígenes, selección de la plantilla de interés"
+},
+{
+"id": 1740,
+"es": "Dentro del ciclo de medidas, existe un proceso automático de selección de la mejor medida o medida óptima, "
+},
+{
+"id": 1741,
+"es": "BTV - Best Time Value"
+},
+{
+"id": 1742,
+"es": ", que permite quedarse con la mejor opción de medida según el patrón de orígenes seleccionado, ver "
+},
+{
+"id": 1743,
+"es": "Desde la Clase de Configuración se permitirá hacer un filtrado o selección de las magnitudes para las que se requiere ejecutar este proceso de selección de mejor medida. Obviando la ejecución de esta proceso para de medidas de magnitudes no relevantes, se optimiza de forma significativa el rendimiento del proceso de Gestión de la Medida."
+},
+{
+"id": 1744,
+"es": "Si no se marca el check \"FILTRO MAGNITUDES BTV\", el sistema interpreta que "
+},
+{
+"id": 1745,
+"es": "todas "
+},
+{
+"id": 1746,
+"es": "las medidas, de cualquier magnitud, serán tratadas en el cálculo BTV."
+},
+{
+"id": 1747,
+"es": "Si, por el contrario, se selecciona el filtro, se permite la selección de las magnitudes tipo curva y las magnitudes tipo cierre que pasarán por el proceso de cálculo de mejor medida, obviando el resto de magnitudes. "
+},
+{
+"id": 1748,
+"es": "Las validaciones son certificaciones por las que pasa una medida respecto a diversos parámetros, cuyo resultado (válido, inválido, descartado) cataloga la medida para que ésta sea después considerada de una manera u otra (íntimamente relacionado con el ranking de orígenes). Pueden ser validaciones que se centran en las medidas de origen o por el contrario en las medidas de óptimo."
+},
+{
+"id": 1749,
+"es": "Las validaciones se explican más a fondo en el módulo "
+},
+{
+"id": 1750,
+"es": "Gestión de Medidas - Validaciones"
+},
+{
+"id": 1751,
+"es": "Las validaciones se encuadran en plantillas de validación a través de la ruta “"
+},
+{
+"id": 1752,
+"es": "Inicio / Gestión de Medidas / Validaciones / Plantillas”"
+},
+{
+"id": 1753,
+"es": ", donde se les puede dar distintos valores de corte, referencia… respecto del que la medida se tendrá que comparar para validarse. Esta Plantilla es el elemento que se añade la "
+}
+]

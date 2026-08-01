@@ -1,0 +1,2066 @@
+[
+{
+"id": 3965,
+"es": "Se buscan las medidas del periodo correspondiente (Horario, Diario o Mensual en función del cálculo seleccionado) para la “Magnitud” seleccionada."
+},
+{
+"id": 3966,
+"es": "Se realizará la desagregación de cada una de las medidas encontradas, generando las correspondientes medidas del Tipo Periodo indicado."
+},
+{
+"id": 3967,
+"es": "Este método calcula medidas del perfil de carga absoluto (Readings) de la magnitud indicada a partir de las medidas incrementales óptimas del periodo seleccionado."
+},
+{
+"id": 3968,
+"es": ": Campo de selección de un tipo de periodo (solo uno). Se podrán seleccionar curvas de periodicidad 15MIN, Horaria o Diaria."
+},
+{
+"id": 3969,
+"es": "Exista el método en el ranking de orígenes de la clase de configuración del punto de medida correspondiente.."
+},
+{
+"id": 3970,
+"es": "Existan todas las medidas óptimas del periodo específico para las fechas seleccionadas."
+},
+{
+"id": 3971,
+"es": "Las fechas seleccionadas varían dependiendo de la fecha a la que corresponda la lectura óptima anterior"
+},
+{
+"id": 3972,
+"es": "Existe Lectura óptima inmediatamente anterior, las fechas seleccionadas son las indicadas para el método"
+},
+{
+"id": 3973,
+"es": "Existe lectura óptima pero no inmediatamente anterior, la fecha desde seleccionada viene indicada por la fecha de la primera lectura óptima localizada"
+},
+{
+"id": 3974,
+"es": "No existe lectura óptima anterior o la fecha de la misma supera los 32d desde la "
+},
+{
+"id": 3975,
+"es": "fecha hasta "
+},
+{
+"id": 3976,
+"es": "seleccionada"
+},
+{
+"id": 3977,
+"es": "Por defecto, se asume un máximo de 32d de histórico en el que el sistema debiera haber recibido al menos una lectura óptima"
+},
+{
+"id": 3978,
+"es": "Si la"
+},
+{
+"id": 3979,
+"es": " fecha de vigencia"
+},
+{
+"id": 3980,
+"es": " del equipo se encuentra en el intervalo de los 32d, la "
+},
+{
+"id": 3981,
+"es": "fecha desde"
+},
+{
+"id": 3982,
+"es": " considerada será la fecha de vigencia"
+},
+{
+"id": 3983,
+"es": "Partiendo de un determinado punto e intervalo de búsqueda, se tendrá en cuenta el tipo de periodo y la Magnitud seleccionada para realizar el cálculo de las lecturas correspondientes:"
+},
+{
+"id": 3984,
+"es": "Inicialmente comprobamos la existencia del método en el ranking de orígenes del punto correspondiente. Si este no existe el proceso finaliza en este paso, si no continuamos por el siguiente punto."
+},
+{
+"id": 3985,
+"es": "Buscaremos todas las medidas óptimas del tipo de periodo seleccionado que pertenecen al intervalo de búsqueda."
+},
+{
+"id": 3986,
+"es": "Si no encuentro ninguna medida finalizamos el proceso sin generar ninguna lectura."
+},
+{
+"id": 3987,
+"es": "Si encuentro medidas continúo por el siguiente paso."
+},
+{
+"id": 3988,
+"es": "Para cada una de las medidas encontradas y en orden ascendente de las mismas (ya que el cálculo de cada lectura va a depender de la anterior):"
+},
+{
+"id": 3989,
+"es": "Busco la lectura óptima anterior correspondiente, que tenga una fecha menor a mi medida y cuya hora se corresponda con el tipo de periodo seleccionado; por ejemplo:"
+},
+{
+"id": 3990,
+"es": "Diaria: “"
+},
+{
+"id": 3991,
+"es": "Horaria: “"
+},
+{
+"id": 3992,
+"es": "XX:00:00”"
+},
+{
+"id": 3993,
+"es": "Cuarto-Horaria: “"
+},
+{
+"id": 3994,
+"es": "XX:YY:00”, "
+},
+{
+"id": 3995,
+"es": "donde "
+},
+{
+"id": 3996,
+"es": "YY "
+},
+{
+"id": 3997,
+"es": "debe ser"
+},
+{
+"id": 3998,
+"es": "Lo ideal sería encontrar la lectura óptima anterior, pero si no existe seguiremos buscando entre las lecturas óptimas anteriores hasta encontrar una del periodo de integración elegido. En caso de encontrar una lectura óptima anterior (distinta a la inmediatamente anterior pero sin superar los 32d de histórico) se deberán calcular todas las lecturas óptimas intermedias a partir de las medidas óptimas que se encuentren como se define a continuación."
+},
+{
+"id": 3999,
+"es": "Si encontramos la lectura anterior calculamos la lectura de la siguiente manera:"
+},
+{
+"id": 4000,
+"es": "Li= Lectura (Reading) del periodo anterior donde (i es el periodo anterior)."
+},
+{
+"id": 4001,
+"es": "Mi: Medida (Measure) diaria del periodo actual."
+},
+{
+"id": 4002,
+"es": "En caso de que la lectura absoluta resultante tenga un número mayor de dígitos enteros a los establecidos por el contador, significa que se ha producido una vuelta de contador (paso por 0), por lo que la fórmula que se debe utilizar en este caso es:"
+},
+{
+"id": 4003,
+"es": "Li = Lectura del periodo anterior."
+},
+{
+"id": 4004,
+"es": "Mi: Medida diaria del periodo actual."
+},
+{
+"id": 4005,
+"es": "M: es la máscara (999…) para corregir la vuelta de contador. [M = 10^N - 1] donde N es el número de dígitos del contador definido en cada   uno de los contadores o equipos. Tenemos que tener en cuenta también los dígitos decimales en caso de tenerlos, siendo en este caso el valor de M = [10^NDig enteros - 1],[10^Dig. decimales - 1]"
+},
+{
+"id": 4006,
+"es": "Si no encontramos ninguna lectura anterior para el periodo de integración elegido dentro de esos 32d de histórico, consideraremos la lectura correspondiente a la primera medida óptima encontrada en ese periodo como la primera, y por tanto con L"
+},
+{
+"id": 4007,
+"es": "=0, por lo que aplicando la misma fórmula nos dará una lectura igual al valor de la medida."
+},
+{
+"id": 4008,
+"es": "En el caso de que la "
+},
+{
+"id": 4009,
+"es": "fecha de vigencia"
+},
+{
+"id": 4010,
+"es": " del equipo se encuentra en el intervalo de los 32d, la primera "
+},
+{
+"id": 4011,
+"es": "medida óptima "
+},
+{
+"id": 4012,
+"es": "considerada será la que coincide con la fecha de vigencia"
+},
+{
+"id": 4013,
+"es": "Calculamos también la fecha y hora correspondiente de cada nueva lectura:"
+},
+{
+"id": 4014,
+"es": "Si la lectura es Diaria, consideramos el día de la medida y la hora 00:00:00."
+},
+{
+"id": 4015,
+"es": "Si la lectura pertenece a una curva con periodicidad inferior a la diaria:"
+},
+{
+"id": 4016,
+"es": "Calculo del día:"
+},
+{
+"id": 4017,
+"es": "Si la lectura pertenece a los últimos periodos de la curva (por ejemplo 23-24 en Horaria o 93-96 en 15MIN) consideraremos como fecha el día siguiente."
+},
+{
+"id": 4018,
+"es": "Si no nos quedamos con el mismo día de la medida."
+},
+{
+"id": 4019,
+"es": "Calculamos la hora correspondiente al periodo, “H:M:00”, en función del tipo de curva."
+},
+{
+"id": 4020,
+"es": "Una vez calculado el valor de las lecturas y la fecha/hora correspondiente la almacenaré teniendo en cuenta las siguientes consideraciones:"
+},
+{
+"id": 4021,
+"es": "La magnitud será la misma que la de la medida."
+},
+{
+"id": 4022,
+"es": "El origen de la lectura será el método de cálculo."
+},
+{
+"id": 4023,
+"es": "Se aplicará el tratamiento correspondiente de la lectura, de igual forma que al resto (Cálculo del desplazamiento horario + Validaciones Iniciales + Calculo BTV)."
+},
+{
+"id": 4024,
+"es": "Existen dos métodos de cálculo de Medidas de Cierre"
+},
+{
+"id": 4025,
+"es": "Medias de Cierre Diarias - "
+},
+{
+"id": 4026,
+"es": "DAILY BILLING FROM LOAD PROFILE CALCULATION"
+},
+{
+"id": 4027,
+"es": "Medidas de Cierre Mensuales - "
+},
+{
+"id": 4028,
+"es": "MONTHLY BILLING FROM LOAD PROFILE CALCULATION"
+},
+{
+"id": 4029,
+"es": "Mediante este método se calcula la Medida de Cierre (Registro de cierre) a partir del Perfil de Carga (Medidas) de cada TOU definido en el Punto de Medida, para el tipo de Cierre Mensual o Diario, dependiendo del método seleccionado:"
+},
+{
+"id": 4030,
+"es": "Cierre Mensual"
+},
+{
+"id": 4031,
+"es": ": Calculará únicamente el último cierre, obteniendo su fecha a partir de la configuración de fecha de fin de periodo o ciclo, definida en punto de medida, para la fecha de ejecución en la ejecucion planificada, o para el mes de fecha fin de la ejecución manual"
+},
+{
+"id": 4032,
+"es": "Cierre Diario"
+},
+{
+"id": 4033,
+"es": ": Calculará todos los cierres diarios entre las fechas de ejecución recibidas en la ejecución manual, o entre la fecha de última ejecución y fecha de ejecución del cálculo en la ejecución planificada"
+},
+{
+"id": 4034,
+"es": "Este método se puede utilizar con todas las magnitudes disponibles, comunes entre Medidas de Cierre y Perfil de Carga."
+},
+{
+"id": 4035,
+"es": "Umbral Mínimo de Medidas: "
+},
+{
+"id": 4036,
+"es": "Porcentaje (entre 0 y 1) que indica para cada bloque horario a calcular, el porcentaje mínimo de medidas que debe haber en el Perfil de Carga para poder realizar dicho cálculo. Es decir, el valor más restrictivo sería 1, que indicaría que es necesario disponer de una curva completa, sin huecos."
+},
+{
+"id": 4037,
+"es": "Exista una Configuración TOU (estructura tarifaria) asociada al punto de medida vigente en la fecha en la que se ejecuta el cálculo."
+},
+{
+"id": 4038,
+"es": "Para el cierre mensual, exista un día de cierre, o fin de ciclo, asociado al Punto de medida (pantalla de configuración del Punto de Medida). Este valor suele corresponder con el día 1 de cada mes."
+},
+{
+"id": 4039,
+"es": "Existan medidas del Perfil de Carga Óptimas del periodo y magnitud específica para las fechas seleccionadas."
+},
+{
+"id": 4040,
+"es": "Exista Medida Óptima de Cierre de tipo cierre o parcial "
+},
+{
+"id": 4041,
+"es": "previo"
+},
+{
+"id": 4042,
+"es": " (correspondiente al cierre del periodo anterior), para cada totalizador."
+},
+{
+"id": 4043,
+"es": "Para el Cierre Mensual, retrocederá buscando el cierre anterior más cercano de periodicidad mensual, hasta dos meses hacia el pasado como máximo"
+},
+{
+"id": 4044,
+"es": "En el caso del Cálculo Diario, debiera buscar el cierre del día anterior, mensual o diario. El proceso deberá calcular los cierres diarios del rango de fechas recibido en la llamada y comenzando por el primer día del rango de fechas seleccionado."
+},
+{
+"id": 4045,
+"es": "Por cada ejecución del método de cálculo, el método calculará las Medidas Cierre a partir de las medidas del Perfil de Carga ("
+},
+{
+"id": 4046,
+"es": "Measures"
+},
+{
+"id": 4047,
+"es": ") para cada punto de la siguiente manera:"
+},
+{
+"id": 4048,
+"es": "Se comprueba que el Punto de Medida tenga una Configuración TOU (estructura tarifaria) asignada."
+},
+{
+"id": 4049,
+"es": "Se comprueba que, entre el día de cierre y la fecha final del periodo actual asociado a la ejecución, no existe un registro de tipo cierre óptimo para la misma magnitud y totalizador."
+},
+{
+"id": 4050,
+"es": "Se comprueba que el número de medidas disponibles del Perfil de Carga para cada magnitud, supere el umbral mínimo establecido (sobre el total de medidas de ese Measurement Interval)."
+},
+{
+"id": 4051,
+"es": "Si se cumplen las condiciones 1 a 4, se calculan las medidas de cierre de cada totalizador de la siguiente manera:"
+},
+{
+"id": 4052,
+"es": "Se crea la medida de cierre, registro, asociada al Punto de Medida, la tarifa y el totalizador correspondientes."
+},
+{
+"id": 4053,
+"es": "Fecha de Lectura"
+},
+{
+"id": 4054,
+"es": "de la Medida de Cierre será:"
+},
+{
+"id": 4055,
+"es": "Cálculo Mensual"
+},
+{
+"id": 4056,
+"es": "Día: el que determine el día de cierre configurado para el Punto de Medida. "
+},
+{
+"id": 4057,
+"es": "Mes: el que corresponda según las fechas de ejecución."
+},
+{
+"id": 4058,
+"es": "Por ejemplo, si el punto de medida tiene configurado como día de cierre el día 1, y se está ejecutando el proceso el 3 de febrero, la fecha de fin, "
+},
+{
+"id": 4059,
+"es": "end_date"
+},
+{
+"id": 4060,
+"es": ", sería 1 de febrero."
+},
+{
+"id": 4061,
+"es": "Cálculo Diario"
+},
+{
+"id": 4062,
+"es": "Día: cada uno de los días que determine el rango de fechas seleccionado en la ejecución."
+},
+{
+"id": 4063,
+"es": "Por ejemplo, en el cálculo del cierre diario en el rango del 1 al 3 de febrero,  para el día 1 de febrero, se registrará como fin, "
+},
+{
+"id": 4064,
+"es": ", 2025-02-02 00:00:000, para el día 2 con "
+},
+{
+"id": 4065,
+"es": " 2025-02-03 00:00:000, y el día 3 con 2025-02-04 00:00:000."
+},
+{
+"id": 4066,
+"es": "Fecha de Lectura Anterior"
+},
+{
+"id": 4067,
+"es": "En el Cálculo Mensual será igual a la fecha de lectura de la Medida de Cierre de tipo Cierre o Parcial óptimo Previo (del mismo intervalo mensual). Por ejemplo, si el cierre previo indica que su fecha de fin es el 1 de febrero, ésta será la de inicio (2025-02-01 00:00.0000)."
+},
+{
+"id": 4068,
+"es": "En el Cálculo Diario será el mismo día de fin, pero a las 00:00:000 (en el cierre diario del 1 de febrero , la fecha desde será 2025-02-01 00:00:000), sin importar la medida previa."
+},
+{
+"id": 4069,
+"es": "En ambos casos, Mensual o Diario, siempre se generará un registro de"
+},
+{
+"id": 4070,
+"es": " Tipo "
+},
+{
+"id": 4071,
+"es": "Cierre"
+},
+{
+"id": 4072,
+"es": ". En el caso de Cálculo Mensual, incluso aunque el cierre se haya calculado a partir de un cierre parcial previo o el periodo que contemple no sea un mes natural."
+},
+{
+"id": 4073,
+"es": "Se calculan los valores de lectura y consumo como se indica a continuación."
+},
+{
+"id": 4074,
+"es": "Consumo"
+},
+{
+"id": 4075,
+"es": ": se suman los valores de todas las medidas del Perfil de Carga, de la misma magnitud y totalizador, comprendidas entre la fecha de inicio y la fecha de lectura de la Medida de Cierre."
+},
+{
+"id": 4076,
+"es": "para un cierre mensual se recuperan las medidas de todo el periodo, desde la fecha desde obtenida del cierre anterior hasta la fecha de fin de cierre"
+},
+{
+"id": 4077,
+"es": "para un cierre diario, se recuperan las medidas del día del cierre que se está calculando"
+},
+{
+"id": 4078,
+"es": ": valor de la "
+},
+{
+"id": 4079,
+"es": "lectura "
+},
+{
+"id": 4080,
+"es": "que se puede obtener:"
+},
+{
+"id": 4081,
+"es": "a partir de un cierre previo, sumando el consumo calculado al valor obtenido del cierre anterior (campo "
+},
+{
+"id": 4082,
+"es": "value"
+},
+{
+"id": 4083,
+"es": ") del mismo intervalo."
+},
+{
+"id": 4084,
+"es": "Cierre Mensual: a partir del cierre óptimo previo obtenido para calcular la fecha de lectura previa"
+},
+{
+"id": 4085,
+"es": "Cierre Diario: a partir del cierre previo (siempre día anterior), bien calculado en el mismo proceso de cálculo para un rango de varios días, o del cierre previo óptimo localizado en el sistema al calcular el primer día del rango. "
+},
+{
+"id": 4086,
+"es": "si no se dispone de cierre previos, a partir del último valor del Perfil de Carga Absoluto (Lecturas o Readings) en cada TOU."
+},
+{
+"id": 4087,
+"es": "- Si no se dispone de cierre previo al que se está calculando ni de perfil de carga absoluto, no se podrá determinar el valor de lectura y, por tanto, generar el cierre."
+},
+{
+"id": 4088,
+"es": "- Por rendimiento, se debe priorizar el cálculo a partir de cierre previo frente a perfil de carga absoluto"
+},
+{
+"id": 4089,
+"es": "Una vez calculado, el valor de las Medidas de Cierre, se almacenan teniendo en cuenta las siguientes consideraciones:"
+},
+{
+"id": 4090,
+"es": "La magnitud será la de Cierres seleccionada como parámetro."
+},
+{
+"id": 4091,
+"es": "El origen del registro será el método de cálculo."
+},
+{
+"id": 4092,
+"es": "Se aplicará el tratamiento correspondiente de la Medida de Cierre del Punto de Medida, de igual forma que al resto (Cálculo de desplazamiento horario + Validaciones Iniciales + Calculo BTV)."
+},
+{
+"id": 4093,
+"es": "Threshold (AGGREGATE MEASURES FROM HOURLY)"
+},
+{
+"id": 4094,
+"es": "Threshold (AGGREGATE MEASURES FROM MIN15)"
+},
+{
+"id": 4095,
+"es": "Threshold (AGGREGATE MEASURES FROM MIN30)"
+},
+{
+"id": 4096,
+"es": "Threshold (BILLING PROFILE CALCULATION)"
+},
+{
+"id": 4097,
+"es": "Threshold (CALCULATED MEASURES)"
+},
+{
+"id": 4098,
+"es": "Threshold (DISAGGREGATED MEASURES FROM DAILY)"
+},
+{
+"id": 4099,
+"es": "Threshold (DISAGGREGATED MEASURES FROM HOURLY)"
+},
+{
+"id": 4100,
+"es": "Threshold (DISAGGREGATED MEASURES FROM MONTHLY)"
+},
+{
+"id": 4101,
+"es": "El cálculo "
+},
+{
+"id": 4102,
+"es": "BTV "
+},
+{
+"id": 4103,
+"es": ") es parte del Ciclo de Medición, es el proceso de cálculo del Mejor Valor o Valor Óptimo de la medida, que se ejecuta, de forma automática, tras finalizar el proceso de validación inicial y calificación de las medidas."
+},
+{
+"id": 4104,
+"es": "Mediciones de Origen y Óptimo (BTV)"
+},
+{
+"id": 4105,
+"es": "Proceso de selección BTV"
+},
+{
+"id": 4106,
+"es": "En el sistema existen dos fases de tratamiento de los datos de medición comentados anteriormente:"
+},
+{
+"id": 4107,
+"es": "Medidas brutas que entran y/o se registran en el sistema, procedentes de los diferentes tipos de orígenes (real, estimado, calculado)"
+},
+{
+"id": 4108,
+"es": "Óptimo o BTV"
+},
+{
+"id": 4109,
+"es": "Medición óptima o BTV ("
+},
+{
+"id": 4110,
+"es": ") es el mejor valor de la medida, en el caso de tener varios orígenes de la misma medida"
+},
+{
+"id": 4111,
+"es": "Estas dos fases de tratamiento sólo son aplicables a los datos de medición principales:"
+},
+{
+"id": 4112,
+"es": "Los datos de medición secundarios, Eventos y Valores Instantáneos, son sólo de origen, no existen valores óptimos, dado el menor tratamiento de los mismos en el sistema y su escasa importancia a nivel comercial. Estos datos forman parte del tratamiento y operaciones de MDM (Validaciones, Fraude, etc…), y no suelen exportarse a terceros sistemas."
+},
+{
+"id": 4113,
+"es": "Proceso mediante el cual se determina la subida a óptimo del mejor valor ("
+},
+{
+"id": 4114,
+"es": ") entre los datos de medición brutos o de origen, calculados o estimados, disponibles en el sistema."
+},
+{
+"id": 4115,
+"es": "Sólo se ejecutará para medidas de "
+},
+{
+"id": 4116,
+"es": "magnitudes configuradas como BTV"
+},
+{
+"id": 4117,
+"es": ", es decir, sólo se obtendrán las medidas óptimas de las magnitudes necesarias, no de cualquier medida. Esta configuración se realiza en la Clase de Configuración del punto de medida."
+},
+{
+"id": 4118,
+"es": "La selección de medida óptima, de magnitudes BTV, se realizará en función del origen de la medida y el ranking de orígenes definido en la Clase de Configuración asociado al punto de medida, de manera que "
+},
+{
+"id": 4119,
+"es": "la medida óptima será aquella cuyo origen y validez tenga mayor ranking en el patrón de origen asociado al punto de medida"
+},
+{
+"id": 4120,
+"es": "En este sentido, hay que tener en cuenta las siguientes consideraciones:"
+},
+{
+"id": 4121,
+"es": "Si la magnitud no se ha seleccionado como \"Magnitud BTV\" en la"
+},
+{
+"id": 4122,
+"es": " Clase de Configuración"
+},
+{
+"id": 4123,
+"es": ", no se ejecutará el proceso y nunca subirá a óptimo"
+},
+{
+"id": 4124,
+"es": "Si la Clase de Configuración de un determinado punto no tiene ranking de origen, ninguna medida pasará al Óptimo o BTV"
+},
+{
+"id": 4125,
+"es": "Si el origen y validez de un dato de medición no está en el ranking asociado a la Clase de Configuración del punto de medida correspondiente, esta medida nunca será de óptimo."
+},
+{
+"id": 4126,
+"es": "Una medida con estado “DESCARTADO” o \"NO VALIDABLE\" nunca será óptima"
+},
+{
+"id": 4127,
+"es": "Tras la entrada y validación inicial de un dato de medición, el proceso de cálculo de óptimo (BTV) se realizará de la siguiente forma:"
+},
+{
+"id": 4128,
+"es": "Se comprueba si la magnitud de la medida está configurada en la Clase de Configuración como \""
+},
+{
+"id": 4129,
+"es": "Magnitud BTV"
+},
+{
+"id": 4130,
+"es": "Si no está no se hace nada, no subirá a óptimo."
+},
+{
+"id": 4131,
+"es": "Si está, continúa por el siguiente paso."
+},
+{
+"id": 4132,
+"es": "Se comprueba si el origen está en el ranking de la clase de configuración del punto:"
+},
+{
+"id": 4133,
+"es": "Si está continúa por el siguiente paso."
+},
+{
+"id": 4134,
+"es": "Se comprueba si hay ya alguna medida en el óptimo:"
+},
+{
+"id": 4135,
+"es": "Si no hay ninguna medida, esta subirá a óptimo."
+},
+{
+"id": 4136,
+"es": "Si hay alguna media continúa por el siguiente paso."
+},
+{
+"id": 4137,
+"es": "Compara el ranking (y validez) de la medida de origen con la que hay en óptimo:"
+},
+{
+"id": 4138,
+"es": "Si el ranking de la medida de origen es mayor, subirá al óptimo reemplazando la que hay."
+},
+{
+"id": 4139,
+"es": "Si es menor, no sustituirá nada, se quedará la actual."
+},
+{
+"id": 4140,
+"es": "Tras subir una medida nueva a óptimo, se eliminarán las posibles validaciones y calificación que haya sido aplicada a la previa, ya que estaban sobre la medida anterior."
+},
+{
+"id": 4141,
+"es": "Con el objetivo de optimizar el funcionamiento del sistema, centrando la ejecución de procesos en las medidas que se consideren importantes para el negocio, se permite la configuración de los procesos de Gestión de Medidas en los siguientes aspectos:"
+},
+{
+"id": 4142,
+"es": "Selección de Validaciones de Inicio, de Óptimo y Perfil Óptimo por Magnitud"
+},
+{
+"id": 4143,
+"es": "Configuración de Validaciones por Magnitud"
+},
+{
+"id": 4144,
+"es": "Estado de validación de las medidas No Validable - NonValidable"
+},
+{
+"id": 4145,
+"es": "Parametrización del estado resultado por defecto en Onesait Metering"
+},
+{
+"id": 4146,
+"es": "Selección de Magnitudes BTV, o medidas de magnitudes que pasarán a Óptimo"
+},
+{
+"id": 4147,
+"es": "La selección de magnitudes a validar se realiza desde el sistema en la "
+},
+{
+"id": 4148,
+"es": " que se asociará a cada punto de medida, en las pestañas de validaciones, "
+},
+{
+"id": 4149,
+"es": "Tras ejecutarse una validación sobre una medida o una curva, se registra el resultado de la misma en el Resultado de Validación."
+},
+{
+"id": 4150,
+"es": "Si la magnitud de la medida no está configurada para ejecutar validaciones, no le aplica ninguna validación, al finalizar el proceso de validaciones se establecerá el estado de la medida no evaluable como "
+},
+{
+"id": 4151,
+"es": " No Validable"
+},
+{
+"id": 4152,
+"es": ". Esto evitará que una medida no evaluada pase a óptimo, e identificar la situación real de la medida y no reevaluarla en sucesivas ejecuciones de procesos de validación."
+},
+{
+"id": 4153,
+"es": "Se trata de un estado final, que indicará que esa medida ya ha sido tratada en un proceso de validaciones. "
+},
+{
+"id": 4154,
+"es": "Este estado, al igual que el estado Descartado en las validaciones de origen, no será elegible para el patrón de orígenes. "
+},
+{
+"id": 4155,
+"es": "Parametrización del estado resultado por defecto en Onesait Metering "
+},
+{
+"id": 4156,
+"es": "No validable: funcionamiento normal"
+},
+{
+"id": 4157,
+"es": "Válida: para implantaciones que lo soliciten "
+},
+{
+"id": 4158,
+"es": "Dado que pueden existir implantaciones en cliente que requieran que las medidas lleguen a Óptimo sin haber pasado por ninguna validación, se permitirá asumir el estado “No Validable” como resultado “Válido”, es decir, las medidas que no hayan pasado por ningún proceso de validación, en lugar de recibir el estado “No Validable” quedarán válidas de la misma forma que si hubieran superado una validación. "
+},
+{
+"id": 4159,
+"es": "Esta configuración se parametrizará por implantación, no es seleccionable desde la aplicación."
+},
+{
+"id": 4160,
+"es": "El cálculo BTV es el proceso mediante el cual se determina la subida a óptimo del mejor valor ("
+},
+{
+"id": 4161,
+"es": "Sólo se ejecutará esta selección y promoción de medidas óptimas para medidas de "
+},
+{
+"id": 4162,
+"es": ", es decir, sólo se obtendrán las medidas óptimas de las magnitudes necesarias, no de cualquier medida. "
+},
+{
+"id": 4163,
+"es": "La selección de Magnitudes BTV se lleva a cabo desde la "
+},
+{
+"id": 4164,
+"es": ", que se asociará a los puntos de medida, en la pestaña "
+},
+{
+"id": 4165,
+"es": "El Monitor de Procesos nos permite rastrear el estado en el que se encuentras los diferentes procesos que se estén ejecutando o que se hayan ejecutado en el sistema, tanto de Validaciones, como de Estimaciones y Cálculos."
+},
+{
+"id": 4166,
+"es": "La pantalla del Monitor de Procesos se divide en dos secciones:"
+},
+{
+"id": 4167,
+"es": "Dispone de ocho (8) filtros no obligatorios a rellenar (Servicio, PID, Nombre del Proceso, Tipo de Proceso, Tipo de Ejecución, Estado, Desde y Hasta)"
+},
+{
+"id": 4168,
+"es": "Botones: buscar, detalle y exportar."
+},
+{
+"id": 4169,
+"es": "Lista de Procesos:"
+},
+{
+"id": 4170,
+"es": "En la tabla aparecerá la lista completa de los procesos registradas en el sistema."
+},
+{
+"id": 4171,
+"es": "Una vez lanzada la búsqueda, el listado se actualizará aplicando el filtro."
+},
+{
+"id": 4172,
+"es": "Filtrando por los filtros mencionados anteriormente se obtiene una lista de Validaciones de Origen que cumplen con esos criterios de entrada."
+},
+{
+"id": 4173,
+"es": "Permite visualizar una de las validaciones de la lista en profundidad, mostrando las características mencionadas en el punto anterior. Pantalla mostrada en el punto siguiente: "
+},
+{
+"id": 4174,
+"es": "Detalle Validaciones de Origen."
+},
+{
+"id": 4175,
+"es": "Permite devolver la lista de Validaciones de Origen presente en los idiomas y formatos configurados "
+},
+{
+"id": 4176,
+"es": "Permite detener el proceso antes de que finalice."
+},
+{
+"id": 4177,
+"es": "En función de la calidad y procesos de tratamiento de la medida, ésta se puede clasificar como:"
+},
+{
+"id": 4178,
+"es": "La medición no ha superado ciertas validaciones, con carácter más leve."
+},
+{
+"id": 4179,
+"es": "La medición no ha superado ciertas validaciones con una severidad alta, consideradas como fundamentales (sólo en validaciones origen)"
+},
+{
+"id": 4180,
+"es": "La medición no se ha sometido a ningún proceso de validación debido a que la magnitud de la misma no se ha seleccionado para ser evaluada ("
+},
+{
+"id": 4181,
+"es": "Además, el sistema diferencia entre tipologías de validación:"
+},
+{
+"id": 4182,
+"es": "Tipos de Mediciones Vistas de Mediciones en Onesait Metering Origen Perfil de Carga Perfil de Carga Absoluto Medidas de Cierre Valores Instantáneos Eventos Magnitudes de Origen Óptimas Perfil de Carga Óptimo Perfil de Carga Absoluto Óptimo Medidas de Cierre Óptimo Magnitudes Óptimas Medidas Óptimas Agregadas Optimización Perfil de Carga - Curva de Medidas Optimización Medidas de Cierre - Curva de cierres o Billing Register Tipos de Mediciones"
+},
+{
+"id": 4183,
+"es": "Vistas de Mediciones en Onesait Metering"
+},
+{
+"id": 4184,
+"es": "Óptimas"
+},
+{
+"id": 4185,
+"es": "Medidas de Cierre Óptimo"
+},
+{
+"id": 4186,
+"es": "Optimización Perfil de Carga - Curva de Medidas"
+},
+{
+"id": 4187,
+"es": "Optimización Medidas de Cierre - Curva de cierres o Billing Register"
+},
+{
+"id": 4188,
+"es": "Tipos de Mediciones"
+},
+{
+"id": 4189,
+"es": "Onesait Metering (OM) dispone de diversas vistas que permiten hacer el seguimiento de los diferentes datos de medición almacenados en el sistema."
+},
+{
+"id": 4190,
+"es": "Los tipos de mediciones que gestiona el sistema son los siguientes:"
+},
+{
+"id": 4191,
+"es": "Medidas de Perfil de Carga ("
+},
+{
+"id": 4192,
+"es": "MEDIDAS - MEASURES"
+},
+{
+"id": 4193,
+"es": "Representación de la variación del consumo de energía a lo largo del tiempo."
+},
+{
+"id": 4194,
+"es": "Muestra las fluctuaciones en la demanda de electricidad en un "
+},
+{
+"id": 4195,
+"es": "período "
+},
+{
+"id": 4196,
+"es": "determinado."
+},
+{
+"id": 4197,
+"es": "Tipo de Valores: "
+},
+{
+"id": 4198,
+"es": "Incrementales"
+},
+{
+"id": 4199,
+"es": "Intervalos de medida:"
+},
+{
+"id": 4200,
+"es": "15 min"
+},
+{
+"id": 4201,
+"es": "30 min"
+},
+{
+"id": 4202,
+"es": "Horario"
+},
+{
+"id": 4203,
+"es": "Medidas de Perfil de Carga Absoluto ("
+},
+{
+"id": 4204,
+"es": "READINGS"
+},
+{
+"id": 4205,
+"es": "Representación del consumo de energía eléctrica en términos de valores absolutos."
+},
+{
+"id": 4206,
+"es": "Muestra la cantidad total de energía consumida desde que se energizó el contador por primera vez (desde los 0kWh)."
+},
+{
+"id": 4207,
+"es": "Tipo de valores: "
+},
+{
+"id": 4208,
+"es": "Absolutos"
+},
+{
+"id": 4209,
+"es": "Intervalos de medida (en caso de existir):"
+},
+{
+"id": 4210,
+"es": "Null"
+},
+{
+"id": 4211,
+"es": "Medidas de Cierre ("
+},
+{
+"id": 4212,
+"es": "BILLING_REGISTERS"
+},
+{
+"id": 4213,
+"es": "Representación energía consumida durante un periodo determinado teniendo en cuenta otros factores del servicio como la estructura tarifaria y las demandas máximas."
+},
+{
+"id": 4214,
+"es": "Este perfil es utilizado para los procesos de facturación de las empresas."
+},
+{
+"id": 4215,
+"es": "Intervalo de recepción de la medida:"
+},
+{
+"id": 4216,
+"es": "Mensual"
+},
+{
+"id": 4217,
+"es": "Tipo de Cierre (Identifica el tipo de Cierre ejecutado)"
+},
+{
+"id": 4218,
+"es": "Parcial (sin intervalo de recepción o intervalo Diario)"
+},
+{
+"id": 4219,
+"es": "Cierre (intervalo de recepción Mensual o Diario)"
+},
+{
+"id": 4220,
+"es": "Valores Instantáneos ("
+},
+{
+"id": 4221,
+"es": "INSTANTANEOUS_VALUES"
+},
+{
+"id": 4222,
+"es": "Recopilación y registro de las magnitudes eléctricas de un sistema o instalación capturadas en tiempo real."
+},
+{
+"id": 4223,
+"es": "Son valores capturados instantáneamente y se utilizan para evaluar el comportamiento del sistema eléctrico en tiempo real."
+},
+{
+"id": 4224,
+"es": "Intervalo de recepción de la medida (en caso de existir):"
+},
+{
+"id": 4225,
+"es": "Eventos ("
+},
+{
+"id": 4226,
+"es": "EVENTS"
+},
+{
+"id": 4227,
+"es": "Recopilación y registros de los eventos o incidencias relacionados con el funcionamiento y el estado de los equipos."
+},
+{
+"id": 4228,
+"es": "Dichos datos se emplean para la monitorización, diagnóstico y resolución de problemas en los equipos eléctricos, así como para la verificación de las mediciones y la identificación de posibles fraudes."
+},
+{
+"id": 4229,
+"es": "A través del tratamiento de los datos de medición, el sistema distingue entre valores de Origen y valores de Óptimo ("
+},
+{
+"id": 4230,
+"es": "), poniendo ambos a disposición del usuario. La explotación y envío de datos de medición a terceros, se realiza siempre sobre los valores de óptimo, por considerarse el mejor valor posible disponible en el sistema."
+},
+{
+"id": 4231,
+"es": "Perfil de carga, con las medidas diarias. "
+},
+{
+"id": 4232,
+"es": "Listado de valores absolutos o Lecturas de contador."
+},
+{
+"id": 4233,
+"es": "Registros de cierre."
+},
+{
+"id": 4234,
+"es": "Lecturas o valores de instrumentación (Potencia, Tensión, Intensidad)"
+},
+{
+"id": 4235,
+"es": "Eventos registrados por los equipos, por ejemplo, del tipo: límite de voltaje, desbordamiento, etc."
+},
+{
+"id": 4236,
+"es": "Perfil de carga segmentado por magnitudes, representado en una curva."
+},
+{
+"id": 4237,
+"es": "Perfil de carga, con las medidas diarias óptimas según se haya configurado el Ranking de Orígenes."
+},
+{
+"id": 4238,
+"es": "Listado de valores absolutos o Lecturas de contador seleccionadas como valores óptimos según se haya configurado el Ranking de Orígenes. "
+},
+{
+"id": 4239,
+"es": "Registros de cierre que hayan superado las validaciones de origen. "
+},
+{
+"id": 4240,
+"es": "Perfil de carga óptimo segmentado por magnitudes, representado en una curva."
+},
+{
+"id": 4241,
+"es": "Perfiles de carga óptimos, agregados por Grupo o Cliente."
+},
+{
+"id": 4242,
+"es": "Optimización Perfil de Carga - Curva de Medidas "
+},
+{
+"id": 4243,
+"es": "Con el objetivo de reducir el tamaño en base de datos al registrar un perfil de carga, que penaliza de forma importante su tratamiento, se ha modificado la entidad que registra la curva."
+},
+{
+"id": 4244,
+"es": "Previo al cambio, cada una de las medidas, de cada fecha-hora, magnitud y periodo, se guarda en un registro diferente de la tabla de medidas. Se ha modificado de manera que un único registro contendrá toda la curva para la misma magnitud, registrando en un único campo un array de las medidas de todos los periodos que incluya dicha curva, asi como en otros los TOU a los que corresponden, origen de medida, resultados de validaciones, calidad, etc."
+},
+{
+"id": 4245,
+"es": "Este evolutivo implica modificaciones en el modelo de datos, por lo que previo a su implantación en Proyectos en producción, será necesaria la migración de los perfiles de carga. "
+},
+{
+"id": 4246,
+"es": "Se deberían identificar los periodos a migrar y aplicarlo en las entidades como se indica: "
+},
+{
+"id": 4247,
+"es": "measure + measure_profile hacia "
+},
+{
+"id": 4248,
+"es": "measure_curve"
+},
+{
+"id": 4249,
+"es": "optimal_measure + optimal_measure_profile hacia "
+},
+{
+"id": 4250,
+"es": "optimal_measure_curve"
+},
+{
+"id": 4251,
+"es": "Diseño funcional en "
+},
+{
+"id": 4252,
+"es": "OMMED_DF_Cambio modelo curva sobre medidas.docx"
+},
+{
+"id": 4253,
+"es": "Optimización Medidas de Cierre - Curva de cierres o Billing Register "
+},
+{
+"id": 4254,
+"es": "Con el objetivo de reducir el tamaño en base de datos al registrar las medidas de cierre, se modificará el diseño de la entidad, registrando la información en modo curva, agrupando la información de cada registro por Magnitud, guardando "
+},
+{
+"id": 4255,
+"es": "arrays"
+},
+{
+"id": 4256,
+"es": " de Totalizadores. "
+},
+{
+"id": 4257,
+"es": "Previo al cambio, cada una de las medidas de cierre, de cada magnitud y cada totalizador, se guardan en un registro diferente de la tabla. "
+},
+{
+"id": 4258,
+"es": "Con el cambio, en un único registro se guardará toda la curva de medidas de cierre, "
+},
+{
+"id": 4259,
+"es": "billing register"
+},
+{
+"id": 4260,
+"es": ", de una Magnitud determinada. Es decir, para una medida de cada magnitud, caracterizada por su fecha y fecha previa, frecuencia (cierre diario o mensual) y tipo (cierre o parcial), los campos Totalizador, valor de lecturas, consumos, calidad, etc., contendrán listas de valores de cada totalizador."
+},
+{
+"id": 4261,
+"es": "Por ejemplo: "
+},
+{
+"id": 4262,
+"es": "Fecha Anterior"
+},
+{
+"id": 4263,
+"es": "Intervalo"
+},
+{
+"id": 4264,
+"es": "Calidad"
+},
+{
+"id": 4265,
+"es": "Energía Activa Entrada "
+},
+{
+"id": 4266,
+"es": "Mensual "
+},
+{
+"id": 4267,
+"es": "Cierre "
+},
+{
+"id": 4268,
+"es": "Llano "
+},
+{
+"id": 4269,
+"es": "Punta "
+},
+{
+"id": 4270,
+"es": "Valle "
+},
+{
+"id": 4271,
+"es": "Este evolutivo implica modificaciones en el modelo de datos, por lo que previo a su implantación será necesaria la migración de las medidas de cierre o "
+},
+{
+"id": 4272,
+"es": "Se deberán identificar los periodos a migrar y aplicarlo en las entidades como se indica: "
+},
+{
+"id": 4273,
+"es": "OMMED_DF_Cambio modelo curva Billing Register.docx"
+},
+{
+"id": 4274,
+"es": "Mediciones de Origen"
+},
+{
+"id": 4275,
+"es": " registradas en Onesait Metering (OM) pueden proceder de:"
+},
+{
+"id": 4276,
+"es": "Fuentes externas (Onesait Customer)"
+},
+{
+"id": 4277,
+"es": "VEE → Generadas mediante procesos de cálculo o estimación."
+},
+{
+"id": 4278,
+"es": "Onesait Metering (OUM) dispone de las siguientes vistas para realizar el seguimiento de las medidas:"
+},
+{
+"id": 4279,
+"es": "Medida de Cierre (Billing Profile)"
+},
+{
+"id": 4280,
+"es": "Esta pantalla muestra un listado "
+},
+{
+"id": 4281,
+"es": "del consumo de energía eléctrica en términos de valores absoluto"
+},
+{
+"id": 4282,
+"es": "s o lecturas de contador ("
+},
+{
+"id": 4283,
+"es": ") registradas en el sistema Onesait Metering (OM) que están asociadas a un punto de medida o grupo de puntos, de una determinada magnitud, tipo de origen, en unas fechas determinadas."
+},
+{
+"id": 4284,
+"es": "La vista principal es:"
+},
+{
+"id": 4285,
+"es": "Las opciones disponibles en la ventana anterior, permiten:"
+},
+{
+"id": 4286,
+"es": "Consulta"
+},
+{
+"id": 4287,
+"es": ": Recuperar el listado de lecturas."
+},
+{
+"id": 4288,
+"es": "Los filtros disponibles iniciar la búsqueda de los datos son:"
+},
+{
+"id": 4289,
+"es": "Punto de medida: Punto de medida al que está asociado el Perfil de Carga Absoluto."
+},
+{
+"id": 4290,
+"es": "Grupo de puntos de medida: Grupos de puntos de medida configurados en el sistema donde se pueda encontrar el/los puntos de medida para los que se hayan registrado Perfiles de Carga Absolutos."
+},
+{
+"id": 4291,
+"es": "Si no  se selecciona un valor en cualquiera de estos campos, el sistema mostrará un mensaje indicando que es necesario añadir un punto de medida o un grupo."
+},
+{
+"id": 4292,
+"es": "Magnitud: Listado de magnitudes de los Perfiles de Carga Absolutos. El filtro permite elegir a la vez tantas magnitudes como el usuario quiera."
+},
+{
+"id": 4293,
+"es": "Origen: Listado de los diferentes orígenes que pueden tener los Perfiles de Carga Absolutos. El filtro permite seleccionar a la vez tantos orígenes como el usuario quiera."
+},
+{
+"id": 4294,
+"es": "Rango de fechas (Desde/Hasta). Campo obligatorio."
+},
+{
+"id": 4295,
+"es": "Una vez se haya procedido a la búsqueda de los datos deseados utilizando los filtros, se recupera la información mostrándose los siguientes atributos para cada registro:"
+},
+{
+"id": 4296,
+"es": "Punto de medida. Haciendo click en el punto de medida se abre una ventana donde se puede visualizar en detalle dicho punto de medida."
+},
+{
+"id": 4297,
+"es": "Resultado de la validación"
+},
+{
+"id": 4298,
+"es": ": Haciendo doble click sobre cualquiera de los registros (o seleccionándolo y presionando el botón DETALLE) se accede al detalle del mismo. Existen varios cuadros de información dentro de la pestaña de "
+},
+{
+"id": 4299,
+"es": "Detalles de Perfil de Carga Absoluto"
+},
+{
+"id": 4300,
+"es": "En primer lugar, aparece una lista con información de los siguientes parámetros: "
+},
+{
+"id": 4301,
+"es": "DST"
+},
+{
+"id": 4302,
+"es": "Fecha ultima actualización: Fecha más actual en la que se ha modificado algún atributo (como que se haya ejecutado sobre el mismo una validación) de la medida."
+},
+{
+"id": 4303,
+"es": "Por debajo se encuentra el cuadro "
+},
+{
+"id": 4304,
+"es": "Validaciones de Origen"
+},
+{
+"id": 4305,
+"es": ". En él aparecen las validaciones de origen que hayan sido aplicadas al registro seleccionado."
+},
+{
+"id": 4306,
+"es": "Enlace"
+},
+{
+"id": 4307,
+"es": " a Evolutivo realizado para Modelar los Resultados de Validación. Enlace válido para todas las pantallas en las que venga esta sección."
+},
+{
+"id": 4308,
+"es": "Por último,se encuentra el cuadro "
+},
+{
+"id": 4309,
+"es": "Histórico de la entidad"
+},
+{
+"id": 4310,
+"es": ". En él aparecen todos los procesos relacionados con la medida, de tal manera que se puede trazar y averiguar los pasos que ha seguido el punto."
+},
+{
+"id": 4311,
+"es": ": Esta opción permite exportar los Perfiles de Carga Absolutos en los idiomas y formatos configurados"
+},
+{
+"id": 4312,
+"es": "En esta pantalla se recuperan los eventos registrados por los equipos, del tipo: límites de voltaje, desbordamiento, manipulación, etc."
+},
+{
+"id": 4313,
+"es": ": Recuperar el listado de eventos del sistema."
+},
+{
+"id": 4314,
+"es": "Los filtros disponibles para iniciar la búsqueda de los datos son:"
+},
+{
+"id": 4315,
+"es": "Punto de medida: Punto de medida para el que se hayan registrado eventos. "
+},
+{
+"id": 4316,
+"es": "Grupo de puntos de medida: Grupos de puntos de medida configurados en el sistema donde se pueda encontrar el/los puntos de medida para los que se hayan registrado eventos."
+},
+{
+"id": 4317,
+"es": "Si no  se selecciona un valor en cualquiera de estos campos, el sistema mostrará un mensaje indicando que es necesario añadir un punto de medida o un grupo."
+},
+{
+"id": 4318,
+"es": "Origen: Listado de los diferentes orígenes que pueden tener los eventos. El filtro permite seleccionar a la vez tantos orígenes como el usuario quiera."
+},
+{
+"id": 4319,
+"es": "Rango de fechas (Desde/Hasta). Campo obligatorio"
+},
+{
+"id": 4320,
+"es": "Tipo: Listado de los eventos que estén previamente configurados en el sistema. El filtro permite seleccionar a la vez tantos tipos de evento como el usuario quiera."
+},
+{
+"id": 4321,
+"es": "Severidad: Listado de las distintas severidades que pueden tener los eventos."
+},
+{
+"id": 4322,
+"es": "           Una vez se haya procedido a la búsqueda de los datos deseados utilizando los filtros, se recupera la información mostrándose los siguientes atributos para cada registro:"
+},
+{
+"id": 4323,
+"es": "Información adicional"
+},
+{
+"id": 4324,
+"es": "Calificación"
+},
+{
+"id": 4325,
+"es": ": Haciendo doble click sobre cualquiera de los registros (o seleccionándolo y presionando el botón DETALLE) se accede al detalle del mismo. Existen varios cuadros de información dentro de la pestaña de "
+},
+{
+"id": 4326,
+"es": "Detalle Eventos"
+},
+{
+"id": 4327,
+"es": "En primer lugar aparece una lista con información de los siguientes parámetros: "
+},
+{
+"id": 4328,
+"es": "Fecha última actualización"
+},
+{
+"id": 4329,
+"es": ". En él aparecen los procesos relacionados con el evento, de tal manera que se puede trazar y averiguar los pasos que ha seguido el punto."
+},
+{
+"id": 4330,
+"es": ": Esta opción permite exportar los eventos en los idiomas y formatos configurados"
+},
+{
+"id": 4331,
+"es": "En esta pantalla se muestra una recopilación y registro de las magnitudes eléctricas de un sistema o instalación capturadas en tiempo real. "
+},
+{
+"id": 4332,
+"es": "Las Magnitudes que registra el sistema como Valores Instantáneos se `pueden consultar "
+},
+{
+"id": 4333,
+"es": "aquí"
+},
+{
+"id": 4334,
+"es": ": Recupera el listado de valores instantáneos,"
+},
+{
+"id": 4335,
+"es": "Punto de medida: Punto de medida para el que se hayan registrado eventos. Si no  se selecciona un valor, el sistema mostrará un mensaje indicando que es necesario añadir un punto de medida."
+},
+{
+"id": 4336,
+"es": "Magnitud: Listado de magnitudes que se registran como valores instantáneos. El filtro permite elegir a la vez tantas magnitudes como el usuario quiera."
+},
+{
+"id": 4337,
+"es": "Origen: Listado de los diferentes orígenes que pueden tener los valores instantáneos. El filtro permite elegir a la vez tantos orígenes como el usuario quiera."
+},
+{
+"id": 4338,
+"es": "Última fecha de actualización"
+},
+{
+"id": 4339,
+"es": "Detalle Valores Instantáneos"
+},
+{
+"id": 4340,
+"es": "Fecha ultima actualización"
+},
+{
+"id": 4341,
+"es": ". En él aparecen los procesos relacionados con el valor instantáneo, de tal manera que se puede trazar y averiguar los pasos que ha seguido el punto."
+},
+{
+"id": 4342,
+"es": ": Esta opción permite exportar los valores instantáneos en los idiomas y formatos configurados"
+},
+{
+"id": 4343,
+"es": "Vista del perfil de carga, con las medidas diarias indicándose los valores para cada período (según el período de integración) del perfil de carga de cada día. "
+},
+{
+"id": 4344,
+"es": ": Recupera las medidas de cada período registradas para cada día."
+},
+{
+"id": 4345,
+"es": "Punto de medida: Punto de medida para el que se hayan registrado las medidas.  Si no  se selecciona un valor, el sistema mostrará un mensaje indicando que es necesario añadir un punto de medida."
+},
+{
+"id": 4346,
+"es": "Magnitud: Listado de magnitudes de las medidas. Por defecto seleccionada Energía Activa Entrante. Campo obligatorio."
+},
+{
+"id": 4347,
+"es": "Origen: Listado de los diferentes orígenes por los que se pueden obtener las medidas. Por defecto Ficheros. Campo obligatorio"
+},
+{
+"id": 4348,
+"es": "Rango de fechas (Desde/Hasta). Por defecto Desde N-1 hasta N, siendo N el día actual de búsqueda. Campos obligatorios."
+},
+{
+"id": 4349,
+"es": "Período de integración. Por defecto Horario. Campo obligatorio"
+},
+{
+"id": 4350,
+"es": "Punto de medida. Haciendo click en el punto de medida se abre una ventana donde se puede visualizar en detalle dicho munto de medida."
+},
+{
+"id": 4351,
+"es": "Períodos, de acuerdo al perfil de carga, con el correspondiente valor."
+},
+{
+"id": 4352,
+"es": ": Haciendo doble click sobre cualquiera de los registros se accede al detalle del mismo. Existen varios cuadros de información dentro de la pestaña de "
+},
+{
+"id": 4353,
+"es": "Detalles de Medidas por Día"
+},
+{
+"id": 4354,
+"es": "Punto de medida."
+},
+{
+"id": 4355,
+"es": "Período de integración"
+},
+{
+"id": 4356,
+"es": "Período"
+},
+{
+"id": 4357,
+"es": ": Esta opción permite exportar las medidas en los idiomas y formatos configurados"
+},
+{
+"id": 4358,
+"es": "Vista del perfil de carga de origen, representando simultáneamente varias magnitudes de un mismo punto de medida en una gráfica, y el listado de medidas a partir del que se construye."
+},
+{
+"id": 4359,
+"es": ": Recupera las medidas de las magnitudes seleccionadas, de cada periodo y día seleccionados"
+},
+{
+"id": 4360,
+"es": "Punto de medida: Punto de medida para el que se hayan registrado las magnitudes. Si no  se selecciona un valor, el sistema mostrará un mensaje indicando que es necesario añadir un punto de medida."
+},
+{
+"id": 4361,
+"es": "Magnitud: Listado de magnitudes de las medidas. El filtro permite elegir a la vez tantas magnitudes como el usuario quiera. Campo obligatorio."
+},
+{
+"id": 4362,
+"es": "Origen: Listado de los diferentes orígenes por los que se pueden obtener las magnitudes. Por defecto Manual. Campo obligatorio."
+},
+{
+"id": 4363,
+"es": "Rango de fechas (Desde/Hasta). Campos obligatorios."
+},
+{
+"id": 4364,
+"es": "Período de Integración. Por defecto 15 minutos. Campo obligatorio."
+},
+{
+"id": 4365,
+"es": "Una vez se haya procedido a la búsqueda de los datos deseados utilizando los filtros, se recupera:"
+},
+{
+"id": 4366,
+"es": "1_Gráfica representando las medidas de cada magnitud, por periodo de cada día"
+},
+{
+"id": 4367,
+"es": "         El número de curvas será igual al número de días que tengan mediciones (para las magnitudes seleccionadas) dentro del rango de fechas seleccionado."
+},
+{
+"id": 4368,
+"es": "2_Listado de"
+},
+{
+"id": 4369,
+"es": "medidas"
+},
+{
+"id": 4370,
+"es": ", mostrando los valores de medida de cada magnitud, para cada periodo y cada día."
+},
+{
+"id": 4371,
+"es": "Detalles de Magnitudes"
+},
+{
+"id": 4372,
+"es": ": Esta opción permite exportar las magnitudes en los idiomas y formatos configurados"
+},
+{
+"id": 4373,
+"es": "Medida de Cierre (Billing Profile)"
+},
+{
+"id": 4374,
+"es": "Las medidas de Cierre se caracterizan por diferentes atributos, entre ellos su "
+},
+{
+"id": 4375,
+"es": ", con los valores posibles "
+},
+{
+"id": 4376,
+"es": ", que representa las medidas tomadas en un periodo de tiempo determinado, y "
+},
+{
+"id": 4377,
+"es": "Parcial"
+},
+{
+"id": 4378,
+"es": ", que se registra al levantar un medidor de manera no planificada, guardando los valores de las direferentes medidas."
+},
+{
+"id": 4379,
+"es": "Según este tipo, la periodicidad puede ser las siguiente: "
+},
+{
+"id": 4380,
+"es": "Tipo: "
+},
+{
+"id": 4381,
+"es": "Periodo de Integración:"
+},
+{
+"id": 4382,
+"es": "Tipo: "
+},
+{
+"id": 4383,
+"es": "Periodo de Integración: "
+},
+{
+"id": 4384,
+"es": "Vista con los valores de cierre o totalizadores."
+},
+{
+"id": 4385,
+"es": ": Recupera el listado de los registros de cierre."
+},
+{
+"id": 4386,
+"es": "Punto de medida: Punto de medida al que está asociado la Medida de Cierre"
+},
+{
+"id": 4387,
+"es": "Grupo de puntos de medida: Grupos de puntos de medida registrados en el sistema donde se pueda encontrar el/los puntos de medida para los que se hayan registrado las Medidas de Cierre."
+},
+{
+"id": 4388,
+"es": "Tipo: Tipo de cierre (Cierre o Parcial)"
+},
+{
+"id": 4389,
+"es": "Magnitud: Listado de magnitudes de las Medidas de Cierre en el sistema."
+},
+{
+"id": 4390,
+"es": "Período de integración: Periodos de integración esperados, es decir, 15 Minutos, 30 Minutos, Horario o Diario. Por defecto Mensual. Campo obligatorio."
+},
+{
+"id": 4391,
+"es": "Totalizador"
+},
+{
+"id": 4392,
+"es": "Contrato"
+},
+{
+"id": 4393,
+"es": "Origen: Listado multiselección que permite recuperar las Medidas de Cierre de diferentes orígenes. El filtro permite elegir a la vez tantos orígenes como el usuario quiera."
+},
+{
+"id": 4394,
+"es": "Punto de Medida y Grupo de puntos son criterios no excluyentes"
+},
+{
+"id": 4395,
+"es": "Todos los criterios son excluyentes, salvo Punto de Medida y Grupo de Puntos de Medida, funcionando de manera que se recuperarán todas las mediciones que cumplan, además del resto de criterios, que estén asociados al Punto de Medida selccionado, o a alguno de los puntos de medida del Grupo de Puntos seleccionado."
+},
+{
+"id": 4396,
+"es": "           Una vez se haya procedido a la búsqueda de los datos deseados utilizando  los filtros, se recupera la información mostrándose los siguientes atributos para cada registro:"
+},
+{
+"id": 4397,
+"es": "Periodo de integración"
+},
+{
+"id": 4398,
+"es": "Fecha de lectura anterior"
+},
+{
+"id": 4399,
+"es": "Fecha de lectura"
+},
+{
+"id": 4400,
+"es": "Valor: Valor abosluto en la fecha en la que se ha registrado el cierre."
+},
+{
+"id": 4401,
+"es": "Consumo: Diferencia de valor con el período anterior."
+},
+{
+"id": 4402,
+"es": "Detalles de Medidas de Cierre"
+},
+{
+"id": 4403,
+"es": "En primer lugar, aparece una lista con información de los siguientes parámetros:"
+},
+{
+"id": 4404,
+"es": "DST anterior"
+},
+{
+"id": 4405,
+"es": "Fecha última actualización: Fecha más actual en la que se ha modificado algún atributo (como que se haya ejecutado sobre el mismo una validación) de la medida."
+},
+{
+"id": 4406,
+"es": ": Esta opción permite exportar los registros en los idiomas y formatos configurados"
+},
+{
+"id": 4407,
+"es": "En el presente sub-módulo de óptimas se da la posibilidad de visualizar y exportar aquellas medidas que han sido validadas y subidas a Óptimo, es decir, para cada punto de medida y momento, el mejor valor según los criterios de orden e importancia que configurados en el Punto de Medida."
+},
+{
+"id": 4408,
+"es": "Nota: "
+},
+{
+"id": 4409,
+"es": "Pendiente la actualización de las capturas, que se llevará a cabo una vez se resuelvan las pertinentes solicitudes de eliminacón de columnas e inclusión de nuevos filtros. (RESULTADO DE VALIDACIÓN)"
+},
+{
+"id": 4410,
+"es": "Esta pantalla muestra un listado del consumo de energía eléctrica en términos de valores absolutos o lecturas de contador ("
+},
+{
+"id": 4411,
+"es": ") registradas en el sistema Onesait Metering (OM) en su versión óptima, es decir, una vez hayan sido validadas en origen y el resultado de las mismas haya sido correcto."
+},
+{
+"id": 4412,
+"es": ": Recuperar el listado de lecturas óptimas."
+},
+{
+"id": 4413,
+"es": "Fecha "
+},
+{
+"id": 4414,
+"es": "Detalles de Perfil de Carga Absoluto Óptimo"
+},
+{
+"id": 4415,
+"es": "En primer lugar, aparece una lista similar a la encontrada en medidas, con información de los siguientes parámetros: "
+},
+{
+"id": 4416,
+"es": "A continuación está el cuadro "
+},
+{
+"id": 4417,
+"es": ", donde se registran las Validaciones de Óptimo que hayan sido ejecutadas sobre el registro."
+},
+{
+"id": 4418,
+"es": "Por debajo se encuentra el cuadro "
+},
+{
+"id": 4419,
+"es": ", similar a los existentes para las mediciones de origen. En él aparecen todos los procesos relacionados con la medida, de tal manera que se puede trazar y averiguar los pasos que ha seguido el punto."
+},
+{
+"id": 4420,
+"es": " Por último, el cuadro Origen, representa la medida en Origen."
+},
+{
+"id": 4421,
+"es": ": Al igual que en el resto de buscadores definidos en la aplicación se cuenta con la opción de exportar los datos en los idiomas y formatos configurados"
+},
+{
+"id": 4422,
+"es": "Este apartado sigue la misma estructura que en Origen. Al haber filtros obligatorios, el sistema no devuelve por defecto ningún dato (gráfica o lista), sino que antes se deberá generar una búsqueda con filtros específicos. El buscador en este caso nos filtra por los campos siguientes:"
+},
+{
+"id": 4423,
+"es": "Punto de medida. Si no  se selecciona un valor, el sistema mostrará un mensaje indicando que es necesario añadir un punto de medida."
+},
+{
+"id": 4424,
+"es": "Magnitud. Sólo deja seleccionar un tipo de magnitud por búsqueda. Campo obligatorio."
+},
+{
+"id": 4425,
+"es": "Periodo de integración. Sólo deja seleccionar un tipo de período de integración por búsqueda. Campo obligatorio. "
+},
+{
+"id": 4426,
+"es": "Rango de fechas en la que se han efectuado las medidas buscadas, definido en el sistema por las etiquetas "
+},
+{
+"id": 4427,
+"es": "Desde "
+},
+{
+"id": 4428,
+"es": ", con formato "
+},
+{
+"id": 4429,
+"es": "“yyyy-mm-dd”. "
+},
+{
+"id": 4430,
+"es": "Campos obligatorios."
+},
+{
+"id": 4431,
+"es": "  Una vez se haya procedido a la búsqueda de los datos deseados utilizando los filtros, se recupera la información mostrándose los siguientes atributos para cada registro:"
+},
+{
+"id": 4432,
+"es": "Curva (resultado de la validación óptima)"
+},
+{
+"id": 4433,
+"es": "Tantos períodos de integración como se haya elegido en la búsqueda"
+},
+{
+"id": 4434,
+"es": "La presente lista permite visualizar los detalles de:"
+},
+{
+"id": 4435,
+"es": "Punto de medida: haciendo click en el punto de medida."
+},
+{
+"id": 4436,
+"es": "Detalles de medida de un período: Para acceder al "
+},
+{
+"id": 4437,
+"es": "Detalle de Perfil de Carga Óptimo"
+},
+{
+"id": 4438,
+"es": " se deberá clicar dos veces sobre la medida que se quiera visualizar."
+},
+{
+"id": 4439,
+"es": "Dentro de cada una de las posibles visualizaciones se explican a continuación las características e información que muestra la pestaña "
+},
+{
+"id": 4440,
+"es": "Detalles de Perfil de Carga Óptimo"
+},
+{
+"id": 4441,
+"es": " muestra los siguientes recuadros:"
+},
+{
+"id": 4442,
+"es": "El primero muestra información general, con las siguientes características:"
+},
+{
+"id": 4443,
+"es": "Fecha última actualización. "
+},
+{
+"id": 4444,
+"es": "Fecha más actual en la que se ha modificado algún atributo (como que se haya ejecutado sobre el mismo una validación) de la medida."
+},
+{
+"id": 4445,
+"es": "El segundo muestra una lista con las validaciones de Óptimo y Perfil Óptimo que se han realizado sobre dicho Perfil, así como los resultados. "
+},
+{
+"id": 4446,
+"es": "Por último, el cuadro Medidas de Origen, representa la medida en Origen."
+},
+{
+"id": 4447,
+"es": "Al igual que en el resto de buscadores definidos en la aplicación se cuenta con la opción de exportar la información en los idiomas y formatos configurados"
+},
+{
+"id": 4448,
+"es": "Este apartado es muy similar al de "
+},
+{
+"id": 4449,
+"es": ", pero mostrando información acerca de las mediciones de tipo magnitudes y la posibilidad de elegir varias magnitudes a la vez. Al haber filtros obligatorios, el sistema no devuelve por defecto ningún dato (gráfica o lista), sino que antes se deberá generar una búsqueda con filtros específicos. El buscador en este caso nos filtra por los campos siguientes:"
+},
+{
+"id": 4450,
+"es": "Magnitud. El sistema permite seleccionar tantas magnitudes como el usuario quiera. Campo obligatorio."
+},
+{
+"id": 4451,
+"es": "Periodo de integración. Campo obligatorio. "
+},
+{
+"id": 4452,
+"es": ", con formato"
+},
+{
+"id": 4453,
+"es": " “yyyy-mm-dd”"
+},
+{
+"id": 4454,
+"es": ". Campos obligatorios."
+},
+{
+"id": 4455,
+"es": "Una vez lanzada una búsqueda, la aplicación devuelve un cuadro en donde  se grafican curvas de magnitudes de un día seleccionado, es decir, solo se muestran los periodos con mediciones correspondientes a un día, dentro del rango seleccionado."
+},
+{
+"id": 4456,
+"es": "Debajo de la gráfica se muestran listados los valores anteriores en forma de lista, mostrándose tantas columnas como magnitudes se hayan seleccionado en el filtro:"
+},
+{
+"id": 4457,
+"es": "Punto de Medida: haciendo click en el punto de medida."
+},
+{
+"id": 4458,
+"es": "Detalles de la magnitud de la medida de un período: Para acceder al "
+},
+{
+"id": 4459,
+"es": "Detalle de Magnitud Óptima"
+},
+{
+"id": 4460,
+"es": " se deberá clicar dos veces sobre la medida que se quiera visualizar."
+},
+{
+"id": 4461,
+"es": "Detalles de Magnitud Óptima."
+},
+{
+"id": 4462,
+"es": "Detalle de la Medida Óptima"
+},
+{
+"id": 4463,
+"es": "El segundo muestra una lista con las validaciones de Óptimo y que se han realizado sobre dicho Perfil, así como los resultados. "
+},
+{
+"id": 4464,
+"es": "Este sub-apartado permite agregar las medidas, por día y periodo, para un grupo de puntos, o para un mismo cliente. Al haber filtros obligatorios, el sistema no devuelve por defecto ningún dato (gráfica o lista), sino que antes se deberá generar una búsqueda con filtros específicos. El buscador en este caso nos filtra por los campos siguientes:"
+},
+{
+"id": 4465,
+"es": "Tipo de área: nos permite elegir sólo una agregación por búsqueda; grupo de puntos o cliente. Campo obligatorio."
+},
+{
+"id": 4466,
+"es": "Grupo de puntos de medida/Cliente (según la selección del parámetro anterior), sólo siendo posible elegir un tipo por búsqueda. Campo obligatorio."
+},
+{
+"id": 4467,
+"es": "Magnitud: una por búsqueda. Por defecto Energía Activa Entrante. Campo obligatorio."
+},
+{
+"id": 4468,
+"es": "Período de integración. Campo obligatorio."
+},
+{
+"id": 4469,
+"es": ", cuyo formato es"
+},
+{
+"id": 4470,
+"es": ". Campos oblihatorios."
+},
+{
+"id": 4471,
+"es": "Una vez generada una búsqueda, debajo del buscador aparecerá un cuadro "
+},
+{
+"id": 4472,
+"es": "Resumen"
+},
+{
+"id": 4473,
+"es": " de los datos buscados, con los valores totales, máximo, mínimo y promedio de la magnitud seleccionada."
+},
+{
+"id": 4474,
+"es": "Por último, se muestra una lista de información con las medidas encontradas dentro del rango de fechas introducido en la búsqueda. Los valores mostrados son los siguientes:"
+},
+{
+"id": 4475,
+"es": "Total"
+},
+{
+"id": 4476,
+"es": "Promedio"
+},
+{
+"id": 4477,
+"es": "Mientras que el cuadro "
+},
+{
+"id": 4478,
+"es": " muestra el total, el máximo, el mínimo y el promedio para el rango de fechas completo, en esta lista estos valores se calculan para cada día y periodo."
+},
+{
+"id": 4479,
+"es": "El sub-apartado dedicado a las medidas de cierre óptimo, el cual es muy similar al encontrado en el apartado de mediciones de origen, se detalla a continuación:"
+},
+{
+"id": 4480,
+"es": "En la parte superior se ubica el buscador, cuyos campos de filtrado son los que siguen:"
+}
+]

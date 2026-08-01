@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiClient, ApiError } from "./client";
+import { ApiContractError } from "./schema";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -111,8 +112,9 @@ describe("ApiClient", () => {
     const client = new ApiClient("https://api.example.test");
 
     await expect(client.login("user@example.com", "secret")).rejects.toMatchObject({
-      message: "Invalid login response",
-      status: 502,
+      name: ApiContractError.name,
+      message: "API response failed schema validation: POST /auth/login",
+      endpoint: "POST /auth/login",
     });
   });
 

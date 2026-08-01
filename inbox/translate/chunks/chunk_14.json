@@ -1,0 +1,4734 @@
+[
+{
+"id": 9456,
+"es": "Una vez finalizada la ejecución de la tarea, el HES transmitirá los resultados de la ejecución mediante servicio "
+},
+{
+"id": 9457,
+"es": " y publicará los datos a través del tópico de eventos en Kafka."
+},
+{
+"id": 9458,
+"es": "Esta interacción entre MDM y HES se describe en la tabla:"
+},
+{
+"id": 9459,
+"es": " Esta transacción solo puede llevarse a cabo en modo asíncrono. En dicho modo, pueden generarse múltiples respuestas dirigidas al sistema MDM, cada una de las cuales indica el éxito o fallo de cada solicitud individual."
+},
+{
+"id": 9460,
+"es": "\"EndDeviceEvents\""
+},
+{
+"id": 9461,
+"es": "\"84e0b35e-f077-403b-a30d-48b1ed0792e1\""
+},
+{
+"id": 9462,
+"es": "\"Request\""
+},
+{
+"id": 9463,
+"es": "\"EndTime\""
+},
+{
+"id": 9464,
+"es": "\"Option\""
+},
+{
+"id": 9465,
+"es": "\"ReadingTypeGroup\""
+},
+{
+"id": 9466,
+"es": "\"METER_STANDARD\""
+},
+{
+"id": 9467,
+"es": "\"METER_CONTROL\""
+},
+{
+"id": 9468,
+"es": "\"METER_MODULE\""
+},
+{
+"id": 9469,
+"es": "\"METER_COMMUNICATION\""
+},
+{
+"id": 9470,
+"es": "\"METER_QUALITY\""
+},
+{
+"id": 9471,
+"es": "\"METER_FAILURE\""
+},
+{
+"id": 9472,
+"es": "\"METER_PAYMENT\""
+},
+{
+"id": 9473,
+"es": "\"METER_RECHARGE\""
+},
+{
+"id": 9474,
+"es": "\"METER_FRAUD\""
+},
+{
+"id": 9475,
+"es": "\"EndDeviceEvent\""
+},
+{
+"id": 9476,
+"es": "\"Assets\""
+},
+{
+"id": 9477,
+"es": "\"Meter\""
+},
+{
+"id": 9478,
+"es": "\"alarmSource\""
+},
+{
+"id": 9479,
+"es": "“get”"
+},
+{
+"id": 9480,
+"es": "“EndDeviceEvents”"
+},
+{
+"id": 9481,
+"es": "For example, “1.0” (version of the CIM specification standard)"
+},
+{
+"id": 9482,
+"es": "\"From\" parameter to "
+},
+{
+"id": 9483,
+"es": "command. In some requests "
+},
+{
+"id": 9484,
+"es": "can be used without the "
+},
+{
+"id": 9485,
+"es": "''To'' parameter to command"
+},
+{
+"id": 9486,
+"es": "Option"
+},
+{
+"id": 9487,
+"es": "   name"
+},
+{
+"id": 9488,
+"es": "''ReadingTypeGroup''"
+},
+{
+"id": 9489,
+"es": "   value"
+},
+{
+"id": 9490,
+"es": "''METER_STANDARD''"
+},
+{
+"id": 9491,
+"es": "''METER_CONTROL''"
+},
+{
+"id": 9492,
+"es": "''METER_MODULE''"
+},
+{
+"id": 9493,
+"es": "''METER_COMMUNICATION''"
+},
+{
+"id": 9494,
+"es": "''METER_QUALITY''"
+},
+{
+"id": 9495,
+"es": "''METER_FAILURE''"
+},
+{
+"id": 9496,
+"es": "''METER_PAYMENT''"
+},
+{
+"id": 9497,
+"es": "''METER_RECHARGE''"
+},
+{
+"id": 9498,
+"es": "''METER_FRAUD''"
+},
+{
+"id": 9499,
+"es": "''DCU_STANDARD''"
+},
+{
+"id": 9500,
+"es": "''DCU_FRAUD''"
+},
+{
+"id": 9501,
+"es": "''DCU_COMMUNICATION''"
+},
+{
+"id": 9502,
+"es": "    EndDeviceEvent"
+},
+{
+"id": 9503,
+"es": "       Assets"
+},
+{
+"id": 9504,
+"es": "           mRID"
+},
+{
+"id": 9505,
+"es": "device identification"
+},
+{
+"id": 9506,
+"es": "             Names"
+},
+{
+"id": 9507,
+"es": "               name"
+},
+{
+"id": 9508,
+"es": "''Meter'' or ''DCU''"
+},
+{
+"id": 9509,
+"es": "               NameType"
+},
+{
+"id": 9510,
+"es": "''alarmSource''"
+},
+{
+"id": 9511,
+"es": "\"Reply_HES_METER_READINGS_09/10\""
+},
+{
+"id": 9512,
+"es": "\"69cd946e-41c2-45a5-a6be-3168414d798f\""
+},
+{
+"id": 9513,
+"es": "“reply”"
+},
+{
+"id": 9514,
+"es": "“GetMeterReadings”"
+},
+{
+"id": 9515,
+"es": "“OK” , “FAIL” or “PARTIAL”"
+},
+{
+"id": 9516,
+"es": "  code"
+},
+{
+"id": 9517,
+"es": "  level"
+},
+{
+"id": 9518,
+"es": "  detail"
+},
+{
+"id": 9519,
+"es": "  object"
+},
+{
+"id": 9520,
+"es": "    mRID"
+},
+{
+"id": 9521,
+"es": "    objectType"
+},
+{
+"id": 9522,
+"es": "''Meter''"
+},
+{
+"id": 9523,
+"es": "\"MP03MAM\""
+},
+{
+"id": 9524,
+"es": "\"events\""
+},
+{
+"id": 9525,
+"es": "\"eventCode\""
+},
+{
+"id": 9526,
+"es": "\"PARAMETER_CHANGE\""
+},
+{
+"id": 9527,
+"es": "\"detail\""
+},
+{
+"id": 9528,
+"es": "\"information\""
+},
+{
+"id": 9529,
+"es": "\"Test information\""
+},
+{
+"id": 9530,
+"es": "\"quality\""
+},
+{
+"id": 9531,
+"es": "\"YES\""
+},
+{
+"id": 9532,
+"es": "\"STARTUP\""
+},
+{
+"id": 9533,
+"es": "\"e97579eb-8d09-4b15-9e2a-9dcd6d235628\""
+},
+{
+"id": 9534,
+"es": "\"1637935f-9ae5-4ebc-824f-42dca15f21cc\""
+},
+{
+"id": 9535,
+"es": "  type"
+},
+{
+"id": 9536,
+"es": "‘’MP_CODE’’"
+},
+{
+"id": 9537,
+"es": "  value"
+},
+{
+"id": 9538,
+"es": "Metering Point Code. For example: 4503828292"
+},
+{
+"id": 9539,
+"es": "  eventCode"
+},
+{
+"id": 9540,
+"es": "Based on Events Codes at Database, table:"
+},
+{
+"id": 9541,
+"es": "  timestamp"
+},
+{
+"id": 9542,
+"es": "Datetime of the event. Ex: \"2025-07-10T14:17:00.090Z\""
+},
+{
+"id": 9543,
+"es": "    name"
+},
+{
+"id": 9544,
+"es": "information"
+},
+{
+"id": 9545,
+"es": "    value"
+},
+{
+"id": 9546,
+"es": "Ex: ‘’Test Information’’"
+},
+{
+"id": 9547,
+"es": "Ex: ‘’0’’"
+},
+{
+"id": 9548,
+"es": "  dst"
+},
+{
+"id": 9549,
+"es": "YES / NO"
+},
+{
+"id": 9550,
+"es": "  id"
+},
+{
+"id": 9551,
+"es": "Unique GUID that identifies a message univocally"
+},
+{
+"id": 9552,
+"es": "  correlationID"
+},
+{
+"id": 9553,
+"es": "Ingest Message ID"
+},
+{
+"id": 9554,
+"es": "  dateTime"
+},
+{
+"id": 9555,
+"es": "Datetime of message creation Ex: \"2025-07-10T14:17:00.090Z\""
+},
+{
+"id": 9556,
+"es": "  payload"
+},
+{
+"id": 9557,
+"es": "‘PROFILE’"
+},
+{
+"id": 9558,
+"es": "‘HES’"
+},
+{
+"id": 9559,
+"es": "  version"
+},
+{
+"id": 9560,
+"es": "Ex:‘1.0’"
+},
+{
+"id": 9561,
+"es": "'MDM'"
+},
+{
+"id": 9562,
+"es": "Ex: '1.0'"
+},
+{
+"id": 9563,
+"es": "Opcional"
+},
+{
+"id": 9564,
+"es": "  reply"
+},
+{
+"id": 9565,
+"es": "  error"
+},
+{
+"id": 9566,
+"es": "La descripción de los campos de los tópicos de respuesta a la ingesta se encuentra "
+},
+{
+"id": 9567,
+"es": "Este comando tiene la funcionalidad de recuperar las lecturas registradas en el medidor en el intervalo de fechas que se indique en la petición."
+},
+{
+"id": 9568,
+"es": "ReadingType (Magnitud)"
+},
+{
+"id": 9569,
+"es": "Réplica "
+},
+{
+"id": 9570,
+"es": "REQ_Meter_Readings.json"
+},
+{
+"id": 9571,
+"es": "REQ_Meter_Readings_with_details.json"
+},
+{
+"id": 9572,
+"es": "REQ_ACK_Meter_Readings.json"
+},
+{
+"id": 9573,
+"es": "REP_Meter_Readings.json"
+},
+{
+"id": 9574,
+"es": "REP_Meter_Readings_with_details.json"
+},
+{
+"id": 9575,
+"es": "REP_ACK_Meter_Readings.json"
+},
+{
+"id": 9576,
+"es": "ING_Meter_Readings.json"
+},
+{
+"id": 9577,
+"es": "ING_Meter_Readings_with_details.json"
+},
+{
+"id": 9578,
+"es": "Categorías "
+},
+{
+"id": 9579,
+"es": " de en las que se agrupan los distintos tipos de mediciones en el sistema. En este caso 'ReadingTypeGroup'= "
+},
+{
+"id": 9580,
+"es": "LP_READINGS"
+},
+{
+"id": 9581,
+"es": "GetMeterReadings / mRID: "
+},
+{
+"id": 9582,
+"es": "Comando localizado en la tabla "
+},
+{
+"id": 9583,
+"es": "Code: METER_READING"
+},
+{
+"id": 9584,
+"es": "Magnitudes localizadas en la tabla "
+},
+{
+"id": 9585,
+"es": "master_magnitude "
+},
+{
+"id": 9586,
+"es": "(Ingest → campo magnitude)"
+},
+{
+"id": 9587,
+"es": "GetMeterReadings "
+},
+{
+"id": 9588,
+"es": "es enviado desde MDM al HES con el fin de solicitar las lecturas del medidor."
+},
+{
+"id": 9589,
+"es": " y publicará los datos a través del tópico de lecturas en Kafka."
+},
+{
+"id": 9590,
+"es": "GetMeterReadings"
+},
+{
+"id": 9591,
+"es": "Esta transacción solo puede realizarse en modo asíncrono. En dicho modo, pueden enviarse múltiples respuestas al MDM, indicando el éxito o fallo de cada solicitud individual."
+},
+{
+"id": 9592,
+"es": "\"GetMeterReadings\""
+},
+{
+"id": 9593,
+"es": "\"8517dd82-b6f9-42c0-b58e-312f89ff11fa\""
+},
+{
+"id": 9594,
+"es": "\"f1398b4a-eedf-4a5c-814b-d559a6542e9e\""
+},
+{
+"id": 9595,
+"es": "\"READINGS\""
+},
+{
+"id": 9596,
+"es": "\"EndDevice\""
+},
+{
+"id": 9597,
+"es": "\"ReadingType\""
+},
+{
+"id": 9598,
+"es": "  Verb"
+},
+{
+"id": 9599,
+"es": "  Noun"
+},
+{
+"id": 9600,
+"es": "  Revision"
+},
+{
+"id": 9601,
+"es": "Por ejemplo “1.0” (Versión del estándar de especificación CIM)"
+},
+{
+"id": 9602,
+"es": "  Timestamp "
+},
+{
+"id": 9603,
+"es": "Fecha de creación de la petición. Formato \"YYYY-MM-DDThh:mm:ss.sssZ"
+},
+{
+"id": 9604,
+"es": "  Source "
+},
+{
+"id": 9605,
+"es": "  Target "
+},
+{
+"id": 9606,
+"es": "  AsyncReplyFlag "
+},
+{
+"id": 9607,
+"es": "  AckRequired"
+},
+{
+"id": 9608,
+"es": "  MessageID "
+},
+{
+"id": 9609,
+"es": "GUID único que identifica un mensaje de manera unívoca."
+},
+{
+"id": 9610,
+"es": "  CorrelationID "
+},
+{
+"id": 9611,
+"es": "Código de 'relación' entre mensajes."
+},
+{
+"id": 9612,
+"es": "     Name"
+},
+{
+"id": 9613,
+"es": "StartTime → Fecha de inicio del período establecido para recuperar los datos."
+},
+{
+"id": 9614,
+"es": "ExpireTime → Fecha de fin del período establecido para recuperar los datos."
+},
+{
+"id": 9615,
+"es": "RetryTimes → Número de intentos de conexión entre el HES y el medidor"
+},
+{
+"id": 9616,
+"es": "RetryInterval (unidad: min) →  Tiempo entre intentos de conxión."
+},
+{
+"id": 9617,
+"es": "Priority → Prioridad del mensaje."
+},
+{
+"id": 9618,
+"es": "     Value"
+},
+{
+"id": 9619,
+"es": "Valor de la propiedad"
+},
+{
+"id": 9620,
+"es": "  StarTime"
+},
+{
+"id": 9621,
+"es": "Fecha de inicio del período establecido para recuperar los datos."
+},
+{
+"id": 9622,
+"es": "  EndTime"
+},
+{
+"id": 9623,
+"es": "Fecha de fin del período establecido para recuperar los datos."
+},
+{
+"id": 9624,
+"es": "  Option"
+},
+{
+"id": 9625,
+"es": "     name"
+},
+{
+"id": 9626,
+"es": "     value"
+},
+{
+"id": 9627,
+"es": "''READINGS'"
+},
+{
+"id": 9628,
+"es": "  GetMeterReadings"
+},
+{
+"id": 9629,
+"es": "     EndDevice"
+},
+{
+"id": 9630,
+"es": "         mRID"
+},
+{
+"id": 9631,
+"es": "Número de Serie del Equipo para el que se ha ejecutado la orden"
+},
+{
+"id": 9632,
+"es": "     ReadingType"
+},
+{
+"id": 9633,
+"es": "        Names"
+},
+{
+"id": 9634,
+"es": "           name"
+},
+{
+"id": 9635,
+"es": "Código CIM de los valores instantáneos"
+},
+{
+"id": 9636,
+"es": "           NameType"
+},
+{
+"id": 9637,
+"es": "             name"
+},
+{
+"id": 9638,
+"es": "''readingType''"
+},
+{
+"id": 9639,
+"es": "“MeterReadings”"
+},
+{
+"id": 9640,
+"es": "Por ejemplo “2.0” (Versión del estándar de especificación CIM)"
+},
+{
+"id": 9641,
+"es": "Fecha de creación de la petición. Formato \"YYYY-MM-DDThh:mm:ss.sssZ\""
+},
+{
+"id": 9642,
+"es": "  Result"
+},
+{
+"id": 9643,
+"es": "  Error"
+},
+{
+"id": 9644,
+"es": "    code"
+},
+{
+"id": 9645,
+"es": "Código numérico del error"
+},
+{
+"id": 9646,
+"es": "    level"
+},
+{
+"id": 9647,
+"es": "    detail"
+},
+{
+"id": 9648,
+"es": "    object"
+},
+{
+"id": 9649,
+"es": "      mRID"
+},
+{
+"id": 9650,
+"es": "      objectType"
+},
+{
+"id": 9651,
+"es": "'Meter'"
+},
+{
+"id": 9652,
+"es": "\"dataSets\""
+},
+{
+"id": 9653,
+"es": "\"measurementType\""
+},
+{
+"id": 9654,
+"es": "\"READING\""
+},
+{
+"id": 9655,
+"es": "\"magnitudes\""
+},
+{
+"id": 9656,
+"es": "\"IMPORT_ACTIVE_ENERGY\""
+},
+{
+"id": 9657,
+"es": "\"data\""
+},
+{
+"id": 9658,
+"es": "\"endTime\""
+},
+{
+"id": 9659,
+"es": "\"values\""
+},
+{
+"id": 9660,
+"es": "\"405537d0-d98a-4660-bd1a-389313bfa3a2\""
+},
+{
+"id": 9661,
+"es": "\"69cd94e-41c2-45a5-a6be-3168414d798f\""
+},
+{
+"id": 9662,
+"es": "\"PROFILE\""
+},
+{
+"id": 9663,
+"es": "Código del Punto de Medida para el que se ejecuta la orden."
+},
+{
+"id": 9664,
+"es": " measurementType"
+},
+{
+"id": 9665,
+"es": "Tipos:"
+},
+{
+"id": 9666,
+"es": "’’READING’’ - > Para indicar magnitudes del Perfil de Carga Absoluto"
+},
+{
+"id": 9667,
+"es": "’’MEASURE’’ - > Para indicar magnitudes del Perfil de Carga (incremental)"
+},
+{
+"id": 9668,
+"es": "  magnitudes"
+},
+{
+"id": 9669,
+"es": "    code"
+},
+{
+"id": 9670,
+"es": "Código interno de la magnitud (en BBDD) (table: master_magnitude)"
+},
+{
+"id": 9671,
+"es": "  interval"
+},
+{
+"id": 9672,
+"es": "(*) Este campo es obligatorio en el caso de magnitud del Perfil de carga incremental."
+},
+{
+"id": 9673,
+"es": "   units"
+},
+{
+"id": 9674,
+"es": "Periodo de integración usado en el Perfil de carga incremental."
+},
+{
+"id": 9675,
+"es": "Ejemplo: \"H\" (horario), \"D\" (Diario), \"MIN15\" (quinceminutal), \"MIN30\" (treintaminutal)"
+},
+{
+"id": 9676,
+"es": "  data"
+},
+{
+"id": 9677,
+"es": "    endTime"
+},
+{
+"id": 9678,
+"es": "Fecha de cada lectura. Formato \"YYYY-MM-DDThh:mm:ss.sssZ\""
+},
+{
+"id": 9679,
+"es": "T00, T01... → Periodos"
+},
+{
+"id": 9680,
+"es": "    quality"
+},
+{
+"id": 9681,
+"es": "Ex: 0"
+},
+{
+"id": 9682,
+"es": "    value"
+},
+{
+"id": 9683,
+"es": "Valor de las lecturas en cada período."
+},
+{
+"id": 9684,
+"es": "Código de 'relación' entre mensajes.Código de 'relación' entre mensajes."
+},
+{
+"id": 9685,
+"es": "Fecha de creación del mensaje.  Formato \"YYYY-MM-DDThh:mm:ss.sssZ\""
+},
+{
+"id": 9686,
+"es": "La descripción de los campos de los tópicos de respuesta a la ingesta se encuentra "
+},
+{
+"id": 9687,
+"es": "Este comando tiene la funcionalidad de recuperar los registros de cierre DIARIOS registrados en el medidor en el intervalo de fechas que se indique en la petición."
+},
+{
+"id": 9688,
+"es": "REQ_Daily_Billing.json"
+},
+{
+"id": 9689,
+"es": "Fichero JSON ejemplo con"
+},
+{
+"id": 9690,
+"es": "comentarios: "
+},
+{
+"id": 9691,
+"es": "REQ_Daily_Billing_with_details.json"
+},
+{
+"id": 9692,
+"es": "REQ_ACK_Daily_Billing.json"
+},
+{
+"id": 9693,
+"es": "REP_Daily_Billing.json"
+},
+{
+"id": 9694,
+"es": "REP_Daily_Billing_with_details.json"
+},
+{
+"id": 9695,
+"es": "REP_ACK_Daily_Billing.json"
+},
+{
+"id": 9696,
+"es": "ING_Daily_Billing.json"
+},
+{
+"id": 9697,
+"es": "ING_Daily_Billing_with_details.json"
+},
+{
+"id": 9698,
+"es": " de en las que se agrupan los distintos tipos de mediciones en el sistema. En este caso 'ReadingTypeGroup'= "
+},
+{
+"id": 9699,
+"es": "METER_BILLING_DAILY"
+},
+{
+"id": 9700,
+"es": "Code: METER_BILLING_DAILY"
+},
+{
+"id": 9701,
+"es": "Magnitudes localizadas en la tabla "
+},
+{
+"id": 9702,
+"es": "\"5948479e-dd39-4b2e-a2ce-bd4384f8db5f\""
+},
+{
+"id": 9703,
+"es": "\"c310a4af-2714-4851-a394-979fd1f5a452\""
+},
+{
+"id": 9704,
+"es": "\"DAILY_BILLING_REGISTERS\""
+},
+{
+"id": 9705,
+"es": "'DAILY_BILLING_REGISTERS''"
+},
+{
+"id": 9706,
+"es": "\"Reply_HES_TestMAM_BILLING_MONTHLY_31/07\""
+},
+{
+"id": 9707,
+"es": "\"e0511bcc-19fb-45ac-b3c4-e8c1d802e0f0\""
+},
+{
+"id": 9708,
+"es": "\"MP02MAM\""
+},
+{
+"id": 9709,
+"es": "\"BILLING_REGISTER\""
+},
+{
+"id": 9710,
+"es": "\"ABSOLUTE_ACTIVE_ENERGY\""
+},
+{
+"id": 9711,
+"es": "\"totalizer\""
+},
+{
+"id": 9712,
+"es": "\"PARTIAL\""
+},
+{
+"id": 9713,
+"es": "\"interval\""
+},
+{
+"id": 9714,
+"es": "\"length\""
+},
+{
+"id": 9715,
+"es": "\"units\""
+},
+{
+"id": 9716,
+"es": "\"startTime\""
+},
+{
+"id": 9717,
+"es": "\"consumptions\""
+},
+{
+"id": 9718,
+"es": "\"418b09ef-1b30-44ff-9ab5-af4d64f9ef8c\""
+},
+{
+"id": 9719,
+"es": "\"1ee87db6-ef17-4308-965a-d1701456ef16\""
+},
+{
+"id": 9720,
+"es": "‘BILLING_REGISTER’’"
+},
+{
+"id": 9721,
+"es": "Código de las Magnitudes de los Registros de Cierre"
+},
+{
+"id": 9722,
+"es": "    totalizer"
+},
+{
+"id": 9723,
+"es": "    type"
+},
+{
+"id": 9724,
+"es": "‘CLOSE' or 'PARTIAL’"
+},
+{
+"id": 9725,
+"es": "    length"
+},
+{
+"id": 9726,
+"es": "    units"
+},
+{
+"id": 9727,
+"es": "    startTime"
+},
+{
+"id": 9728,
+"es": "Ex: 1"
+},
+{
+"id": 9729,
+"es": "    consumptions"
+},
+{
+"id": 9730,
+"es": "Valor del consumo de cada magnitud. Ej: 900.0"
+},
+{
+"id": 9731,
+"es": "    values"
+},
+{
+"id": 9732,
+"es": "Valor de cada magnitud. Ej: 10000.0"
+},
+{
+"id": 9733,
+"es": "Este comando tiene la funcionalidad de recuperar los registros de cierre MENSUALES registrados en el medidor en el intervalo de fechas que se indique en la petición."
+},
+{
+"id": 9734,
+"es": "REQ_Monthly_Billing.json"
+},
+{
+"id": 9735,
+"es": "REQ_Monthly_Billing_with_details.json"
+},
+{
+"id": 9736,
+"es": "REQ_ACK_Monthly_Billing.json"
+},
+{
+"id": 9737,
+"es": "REP_Monthly_Billing.json"
+},
+{
+"id": 9738,
+"es": "REP_Monthly_Billing_with_details.json"
+},
+{
+"id": 9739,
+"es": "REP_ACK_Monthly_Billing.json"
+},
+{
+"id": 9740,
+"es": "INGESTA"
+},
+{
+"id": 9741,
+"es": "ING_Monthly_Billing.json"
+},
+{
+"id": 9742,
+"es": "ING_Monthly_Billing_with_details.json"
+},
+{
+"id": 9743,
+"es": "METER_BILLING_MONTHLY"
+},
+{
+"id": 9744,
+"es": "Code: METER_BILLING_MONTHLY"
+},
+{
+"id": 9745,
+"es": "\"f753ab26-9614-4105-af20-804cf7602a04\""
+},
+{
+"id": 9746,
+"es": "\"fe22c06a-30ea-4742-a87e-607d1055a859\""
+},
+{
+"id": 9747,
+"es": "\"MONTHLY_BILLING_REGISTERS\""
+},
+{
+"id": 9748,
+"es": "''MONTHLY_BILLING_REGISTERS'"
+},
+{
+"id": 9749,
+"es": "\"CLOSE\""
+},
+{
+"id": 9750,
+"es": "\"e0511bcc-197b-45ac-b3c4-e8c1d802e0f0\""
+},
+{
+"id": 9751,
+"es": "Este comando tiene la funcionalidad de recuperar los valores instantáneos registrados en los medidores en el intervalo de fechas que se indique en la petición."
+},
+{
+"id": 9752,
+"es": "ReadingType/name: Código CIM correspondiente a cada Magnitud de los Valores Instantáneos"
+},
+{
+"id": 9753,
+"es": "REQ_Inst_Values.json"
+},
+{
+"id": 9754,
+"es": "EQ_Inst_Values_with_details.json"
+},
+{
+"id": 9755,
+"es": "REQ_ACK_Inst_Values.json"
+},
+{
+"id": 9756,
+"es": "Fichero JSON ejemplo: "
+},
+{
+"id": 9757,
+"es": "REP_Inst_Values.json"
+},
+{
+"id": 9758,
+"es": "REP_Inst_Values_with_details.json"
+},
+{
+"id": 9759,
+"es": "REP_ACK_Inst_Values.json"
+},
+{
+"id": 9760,
+"es": "ING_Inst_Values.json"
+},
+{
+"id": 9761,
+"es": "ING_Inst_Values_with_details.json"
+},
+{
+"id": 9762,
+"es": "Database: Localizado en la tabla "
+},
+{
+"id": 9763,
+"es": "-Code: METER_INSTANTANEOUS_VALUES"
+},
+{
+"id": 9764,
+"es": "MAGNITUDE_INST_VALUE: "
+},
+{
+"id": 9765,
+"es": "Magnitud instantánea. Puede tomar los valores (Reflejadas en Database en la tabla "
+},
+{
+"id": 9766,
+"es": "es enviado desde MDM al HES con el fin de solicitar la lectura de valores instantáneos."
+},
+{
+"id": 9767,
+"es": "\"767151f9-89b2-48b6-bf3b-1ab57588b9e9\""
+},
+{
+"id": 9768,
+"es": "\"e816da48-1b1d-4753-a213-d32ee1bbab58\""
+},
+{
+"id": 9769,
+"es": "\"INSTANTANEOUS_VALUES\""
+},
+{
+"id": 9770,
+"es": "''INSTANTANEOUS_VALUES''"
+},
+{
+"id": 9771,
+"es": "\"41b406a1-9654-44a1-92a6-e53b25f675fe\""
+},
+{
+"id": 9772,
+"es": "\"INSTANTANEOUS_VALUE\""
+},
+{
+"id": 9773,
+"es": "\"TEMPERATURE\""
+},
+{
+"id": 9774,
+"es": "\"CURRENT_PHASE_A\""
+},
+{
+"id": 9775,
+"es": "\"TOTAL_ACTIVE_POWER\""
+},
+{
+"id": 9776,
+"es": "\"FREQUENCY\""
+},
+{
+"id": 9777,
+"es": "\"METER_PHASE\""
+},
+{
+"id": 9778,
+"es": "\"POWER_FACTOR\""
+},
+{
+"id": 9779,
+"es": "\"TOTAL_VOLTAGE\""
+},
+{
+"id": 9780,
+"es": "\"REACTIVE_QUADRANT_III\""
+},
+{
+"id": 9781,
+"es": "\"ACTIVE_IMPORT\""
+},
+{
+"id": 9782,
+"es": "\"4eba7829-1a13-4e48-ae6e-c70e15dbeadd\""
+},
+{
+"id": 9783,
+"es": "\"4a2ec8d2-021e-4116-9894-2988d170955b\""
+},
+{
+"id": 9784,
+"es": "\"FILES\""
+},
+{
+"id": 9785,
+"es": "  element"
+},
+{
+"id": 9786,
+"es": "    type"
+},
+{
+"id": 9787,
+"es": "    value"
+},
+{
+"id": 9788,
+"es": "  dataSets"
+},
+{
+"id": 9789,
+"es": "    MeasurementType"
+},
+{
+"id": 9790,
+"es": "‘’INSTANTANEOUS_VALUE’’"
+},
+{
+"id": 9791,
+"es": "    magnitudes"
+},
+{
+"id": 9792,
+"es": "Códigos de las Magnitudes de los Valores Instantáneos"
+},
+{
+"id": 9793,
+"es": "    data"
+},
+{
+"id": 9794,
+"es": "      endTime"
+},
+{
+"id": 9795,
+"es": "Fecha en la que se ha registrado el Valor Instantáneo. Formato \"YYYY-MM-DDThh:mm:ss.sssZ\""
+},
+{
+"id": 9796,
+"es": "      values"
+},
+{
+"id": 9797,
+"es": "Valor de cada magnitud. Ej: ‘’null’, ‘20348’."
+},
+{
+"id": 9798,
+"es": "      dst"
+},
+{
+"id": 9799,
+"es": "  message"
+},
+{
+"id": 9800,
+"es": "    id"
+},
+{
+"id": 9801,
+"es": "    correlationID"
+},
+{
+"id": 9802,
+"es": "    dateTime"
+},
+{
+"id": 9803,
+"es": "Fecha de creación de la respuesta. Formato \"YYYY-MM-DDThh:mm:ss.sssZ\""
+},
+{
+"id": 9804,
+"es": "    payload"
+},
+{
+"id": 9805,
+"es": "  source"
+},
+{
+"id": 9806,
+"es": "    version"
+},
+{
+"id": 9807,
+"es": "  target "
+},
+{
+"id": 9808,
+"es": "MDM > HES - Configuración del modo de pago mediante token"
+},
+{
+"id": 9809,
+"es": "MDM > HES - Configuración de los precios unitarios de las tarifas"
+},
+{
+"id": 9810,
+"es": "MDM > HES - Configuración del umbral de crédito bajo"
+},
+{
+"id": 9811,
+"es": "MDM > HES - Envío de token de prepago"
+},
+{
+"id": 9812,
+"es": "MDM > HES - Lectura del crédito de emergencia"
+},
+{
+"id": 9813,
+"es": "MDM > HES - Lectura del crédito del equipo"
+},
+{
+"id": 9814,
+"es": "Este comando tiene la funcionalidad de enviar un token de prepago con el que se indica el cambio de modo a un medidor."
+},
+{
+"id": 9815,
+"es": "Comando "
+},
+{
+"id": 9816,
+"es": "Token Transfer"
+},
+{
+"id": 9817,
+"es": ": El comando empleado es el mismo al que se utiliza en el escenario de "
+},
+{
+"id": 9818,
+"es": ". El cambio de modo de pago viene implícito en el token enviado en la solicitud."
+},
+{
+"id": 9819,
+"es": "REQ_Token_Transfer.json"
+},
+{
+"id": 9820,
+"es": "REQ_Token_Transfer_with_details.json"
+},
+{
+"id": 9821,
+"es": "REQ_ACK_Token_Transfer.json"
+},
+{
+"id": 9822,
+"es": "REP_Token_Transfer.json"
+},
+{
+"id": 9823,
+"es": "REP_Token_Transfer_with_details.json"
+},
+{
+"id": 9824,
+"es": "REP_ACK_Token_Transfer.json"
+},
+{
+"id": 9825,
+"es": "EndDeviceControlType: "
+},
+{
+"id": 9826,
+"es": "Código enviado al medidor para informar el token de prepago que indica el cambio de modo."
+},
+{
+"id": 9827,
+"es": "Token: \"3.20.18.13\""
+},
+{
+"id": 9828,
+"es": ": Serial Number del equipo para el que se envía el token de prepago de cambio de modo."
+},
+{
+"id": 9829,
+"es": "name: "
+},
+{
+"id": 9830,
+"es": "Código numérico (normalmente 20 dígitos) del token de prepago de cambio de modo."
+},
+{
+"id": 9831,
+"es": " Comando localizado en la tabla "
+},
+{
+"id": 9832,
+"es": "Code: TOKEN_TRANSFER"
+},
+{
+"id": 9833,
+"es": "El proceso se define en los siguientes pasos:"
+},
+{
+"id": 9834,
+"es": "al HES informando el token de prepago."
+},
+{
+"id": 9835,
+"es": "El medidor envía una respuesta de vuelta al MDM a través del HES, donde se informa del resultado de la operación."
+},
+{
+"id": 9836,
+"es": "\"3f569fe5-b046-4dc8-b265-11904e985139\""
+},
+{
+"id": 9837,
+"es": "\"fec22266-2d7e-4260-99f7-36824e352ccc\""
+},
+{
+"id": 9838,
+"es": "\"token\""
+},
+{
+"id": 9839,
+"es": "Token code (max 20 digits) sent to the meter to change de mode"
+},
+{
+"id": 9840,
+"es": "“token” "
+},
+{
+"id": 9841,
+"es": "\"f27d38ff-48d3-49d8-ab9e-875654193447\""
+},
+{
+"id": 9842,
+"es": "Este comando tiene la funcionalidad de configurar los precios unitarios de las tarifas para un determinado medidor."
+},
+{
+"id": 9843,
+"es": "Tariff Rates"
+},
+{
+"id": 9844,
+"es": "REQ_Set_Tariff_Rates.json"
+},
+{
+"id": 9845,
+"es": "REQ_Set_Tariff_Rates_with_details.json"
+},
+{
+"id": 9846,
+"es": "REQ_ACK_Set_Tariff_Rates.json"
+},
+{
+"id": 9847,
+"es": "REP_Set_Tariff_Rates.json"
+},
+{
+"id": 9848,
+"es": "REP_Set_Tariff_Rates_with_details.json"
+},
+{
+"id": 9849,
+"es": "Fichero JSON ACK ejemplo: "
+},
+{
+"id": 9850,
+"es": "REP_ACK_Set_Tariff_Rates.json"
+},
+{
+"id": 9851,
+"es": "Código enviado al medidor para informar de los precios unitarios de las tarifas."
+},
+{
+"id": 9852,
+"es": "Token: \"3.20.140.28\""
+},
+{
+"id": 9853,
+"es": ": Serial Number del equipo para el que se configuran los precios unitarios de las tarifas."
+},
+{
+"id": 9854,
+"es": "name: "
+},
+{
+"id": 9855,
+"es": "valor asignado a la tarifa correspondiente."
+},
+{
+"id": 9856,
+"es": "Code: TARIFF_RATES"
+},
+{
+"id": 9857,
+"es": "\"a067d81f-4c0c-4cf1-9523-3103aa16ac5d\""
+},
+{
+"id": 9858,
+"es": "\"2b4ee0aa-a124-4f8b-a48a-42614ef10687\""
+},
+{
+"id": 9859,
+"es": "\"ratesCurrencyUnit\""
+},
+{
+"id": 9860,
+"es": "value defined for each tariff rate"
+},
+{
+"id": 9861,
+"es": "      \"PriceR2\""
+},
+{
+"id": 9862,
+"es": "      \"PriceR8\" "
+},
+{
+"id": 9863,
+"es": "\"69209625-fcf2-4a7f-a8fb-a35d57347202\""
+},
+{
+"id": 9864,
+"es": "Este comando tiene la funcionalidad de configurar el umbral de 'disparo' de la alarma de crédito bajo."
+},
+{
+"id": 9865,
+"es": "Low Credit Limit "
+},
+{
+"id": 9866,
+"es": "REQ_Low_Credit_Threshold.json"
+},
+{
+"id": 9867,
+"es": "REQ_Low_Credit_Threshold_with_details.json"
+},
+{
+"id": 9868,
+"es": "REQ_ACK_Low_Credit_Threshold.json"
+},
+{
+"id": 9869,
+"es": "REP_Low_Credit_Threshold.json"
+},
+{
+"id": 9870,
+"es": "REP_Low_Credit_Threshold_with_details.json"
+},
+{
+"id": 9871,
+"es": "REP_ACK_Low_Credit_Threshold.json"
+},
+{
+"id": 9872,
+"es": "Código enviado al medidor para informar del umbral de 'disparo' de la alarma de crédito bajo."
+},
+{
+"id": 9873,
+"es": "Low Credit Limit: \"3.20.50.296\""
+},
+{
+"id": 9874,
+"es": ": Serial Number del equipo para el que se solicita la lectura del saldo."
+},
+{
+"id": 9875,
+"es": "Valor que se quiere establecer como umbral de 'disparo' de la alarma de crédito bajo"
+},
+{
+"id": 9876,
+"es": "Code: LOW_CREDIT_LIMIT"
+},
+{
+"id": 9877,
+"es": "al HES para establecer el umbral de 'disparo' de la alarma de crédito bajo."
+},
+{
+"id": 9878,
+"es": "El medidor establece el valor indicado en la petición como umbral."
+},
+{
+"id": 9879,
+"es": "El medidor envía una respuesta de vuelta al MDM a través del HES, donde se informa del umbral establecido."
+},
+{
+"id": 9880,
+"es": "\"1ec8f551-3f72-46dc-ae66-84e2c0c22d09\""
+},
+{
+"id": 9881,
+"es": "\"1e6737fc-ab33-4146-bdc0-c47631fa4559\""
+},
+{
+"id": 9882,
+"es": "\"lowCreditLimit\""
+},
+{
+"id": 9883,
+"es": "Low Credit Limit value requested for the meter"
+},
+{
+"id": 9884,
+"es": "“lowCreditLimit” "
+},
+{
+"id": 9885,
+"es": "\"lowCreditlimit\""
+},
+{
+"id": 9886,
+"es": "Low Credit Limit value established forthe meter"
+},
+{
+"id": 9887,
+"es": "Este comando tiene la funcionalidad de enviar un token de prepago a un medidor."
+},
+{
+"id": 9888,
+"es": "Código enviado al medidor para informar el token de prepago."
+},
+{
+"id": 9889,
+"es": ": Serial Number del equipo para el que se envía el token de prepago."
+},
+{
+"id": 9890,
+"es": "Código numérico (normalmente 20 dígitos) del token de prepago."
+},
+{
+"id": 9891,
+"es": "\"c4449d85-0001-4522-8065-e3cacb222f52\""
+},
+{
+"id": 9892,
+"es": "\"b23b1782-6f5c-4cfa-80a9-91687edb5792\""
+},
+{
+"id": 9893,
+"es": "Token code (max 20 digits) sent to the meter"
+},
+{
+"id": 9894,
+"es": "\"d867c0dd-3e10-4040-b2e9-4e15288438d0\""
+},
+{
+"id": 9895,
+"es": "Este comando tiene la funcionalidad de recuperar el saldo de emergencia de un contador que esté en configuración de prepago."
+},
+{
+"id": 9896,
+"es": "Balance Credit Read"
+},
+{
+"id": 9897,
+"es": "REQ_Get_Emergency_Credit.json"
+},
+{
+"id": 9898,
+"es": "REQ_Get_Emergency_Credit_with_details.json"
+},
+{
+"id": 9899,
+"es": "REQ_ACK_Get_Emergency_Credit.json"
+},
+{
+"id": 9900,
+"es": "REP_Get_Emergency_Credit.json"
+},
+{
+"id": 9901,
+"es": "REP_Get_Emergency_Credit_with_details.json"
+},
+{
+"id": 9902,
+"es": "REP_ACK_Get_Emergency_Credit.json"
+},
+{
+"id": 9903,
+"es": "Código recibido desde el medidor donde se informa del saldo de emergencia del equipo solicitado."
+},
+{
+"id": 9904,
+"es": "Balance Credit Read: \"3.20.60.19\""
+},
+{
+"id": 9905,
+"es": "Code: EMERGENCY_CREDIT_READ"
+},
+{
+"id": 9906,
+"es": "al HES solicitando el saldo de emergencia del medidor."
+},
+{
+"id": 9907,
+"es": "El medidor envía una respuesta de vuelta al MDM a través del HES donde se informa del saldo de emergencia."
+},
+{
+"id": 9908,
+"es": "\"9a3562c0-f8cc-4477-aef4-e9c5ceb22ff0\""
+},
+{
+"id": 9909,
+"es": "\"380fd4df-a266-4874-92d2-6a0b81d546e1\""
+},
+{
+"id": 9910,
+"es": "Meter Identification "
+},
+{
+"id": 9911,
+"es": "\"dbce871e-40d9-4dc1-8995-5978e805ce8d\""
+},
+{
+"id": 9912,
+"es": "Emergency Credit of the meter"
+},
+{
+"id": 9913,
+"es": "Este comando tiene la funcionalidad de recuperar el saldo restante de un contador que esté en configuración de prepago."
+},
+{
+"id": 9914,
+"es": "REQ_Get_Balance_Credit.json"
+},
+{
+"id": 9915,
+"es": "REQ_Get_Balance_Credit_with_details.json"
+},
+{
+"id": 9916,
+"es": "REQ_ACK_Get_Balance_Credit.json"
+},
+{
+"id": 9917,
+"es": "REP_Get_Balance_Credit.json"
+},
+{
+"id": 9918,
+"es": "REP_Get_Balance_Credit_with_details.json"
+},
+{
+"id": 9919,
+"es": "REP_ACK__Get_Balance_Credit.json"
+},
+{
+"id": 9920,
+"es": "Código recibido desde el medidor donde se informa del saldo restante del equipo solicitado."
+},
+{
+"id": 9921,
+"es": "Balance Credit Read: \"3.21.30.14\""
+},
+{
+"id": 9922,
+"es": "Code: BALANCE_CREDIT_READ"
+},
+{
+"id": 9923,
+"es": "al HES solicitando el saldo actual del medidor."
+},
+{
+"id": 9924,
+"es": "El medidor envía una respuesta de vuelta al MDM a través del HES donde se informa del saldo actual."
+},
+{
+"id": 9925,
+"es": "\"0ba6c9a1-33ea-4ff5-a8af-4b57a0c6841a\""
+},
+{
+"id": 9926,
+"es": "\"e76d39ed-719a-4e7c-94e8-4d36a6da04fa\""
+},
+{
+"id": 9927,
+"es": "Credit Balance of the meter"
+},
+{
+"id": 9928,
+"es": "A continuación se presenta el listado de interfaces ofrecidas a Sistemas Externos (GIS) para la gestión de entidades de interés no cubiertas en otras integraciones"
+},
+{
+"id": 9929,
+"es": "Creación: operación POST sobre la URL /contexto/installation"
+},
+{
+"id": 9930,
+"es": "Lectura: operación GET sobre la URL /contexto/installation/{name}"
+},
+{
+"id": 9931,
+"es": "Modificación: operación PATCH sobre la URL /contexto/installation"
+},
+{
+"id": 9932,
+"es": "Borrado: operación DELETE sobre la URL /contexto/installation"
+},
+{
+"id": 9933,
+"es": "Creación: operación POST sobre la URL /contexto/equipment"
+},
+{
+"id": 9934,
+"es": "Lectura: operación GET sobre la URL /contexto/equipment/{serialNumber}"
+},
+{
+"id": 9935,
+"es": "Modificación: operación PATCH sobre la URL /contexto/equipment"
+},
+{
+"id": 9936,
+"es": "Borrado: operación DELETE sobre la URL /contexto/equipment"
+},
+{
+"id": 9937,
+"es": "Instalaciones (Installations)"
+},
+{
+"id": 9938,
+"es": "Instalaciones: lectura"
+},
+{
+"id": 9939,
+"es": "Instalaciones: creación, modificación y borrado"
+},
+{
+"id": 9940,
+"es": "/installation/{name}"
+},
+{
+"id": 9941,
+"es": "HTTP GET"
+},
+{
+"id": 9942,
+"es": "Permite al cliente consultar a Onesait Metering (OM) los atributos de la "
+},
+{
+"id": 9943,
+"es": " solicitada. "
+},
+{
+"id": 9944,
+"es": "REQUESTS:"
+},
+{
+"id": 9945,
+"es": "Petición de solicitud de datos "
+},
+{
+"id": 9946,
+"es": "de Instalación: No requiere un json, se debe indicar el código de Instalación como parámetro."
+},
+{
+"id": 9947,
+"es": "REQ_GET_installation.txt"
+},
+{
+"id": 9948,
+"es": "RESPONSES:"
+},
+{
+"id": 9949,
+"es": "GET Response OK - Fichero ejemplo de formato respuesta: "
+},
+{
+"id": 9950,
+"es": "RESPONSE_GET_installation_OK_Code_200.json"
+},
+{
+"id": 9951,
+"es": "GET Response FAILED: "
+},
+{
+"id": 9952,
+"es": "Error Code = 404 (Element not found)"
+},
+{
+"id": 9953,
+"es": "Esquema de Petición y Respuesta "
+},
+{
+"id": 9954,
+"es": "Mensaje de Petición "
+},
+{
+"id": 9955,
+"es": "Petición a través del API REST, donde se indica el código de Instalación como parámetro."
+},
+{
+"id": 9956,
+"es": "Required parameter in path (/installation/{name})"
+},
+{
+"id": 9957,
+"es": "curl -X "
+},
+{
+"id": 9958,
+"es": "'GET'"
+},
+{
+"id": 9959,
+"es": "'https://om-qa-onesait.local.com/oum-ws/installation/{name}'"
+},
+{
+"id": 9960,
+"es": "'accept: application/json'"
+},
+{
+"id": 9961,
+"es": "DB Table"
+},
+{
+"id": 9962,
+"es": "string"
+},
+{
+"id": 9963,
+"es": "Identificador único para Instalación"
+},
+{
+"id": 9964,
+"es": "MaxLenght: 50"
+},
+{
+"id": 9965,
+"es": "Format: Alphanumeric"
+},
+{
+"id": 9966,
+"es": "Coincide con el valor en Base de Datos:"
+},
+{
+"id": 9967,
+"es": "Tabla: installation"
+},
+{
+"id": 9968,
+"es": "Columna: name"
+},
+{
+"id": 9969,
+"es": "\"InstalacionTesting_03\""
+},
+{
+"id": 9970,
+"es": "\"WIND-FARM\""
+},
+{
+"id": 9971,
+"es": "\"latitude\""
+},
+{
+"id": 9972,
+"es": "\"longitude\""
+},
+{
+"id": 9973,
+"es": "\"phone\""
+},
+{
+"id": 9974,
+"es": "\"email\""
+},
+{
+"id": 9975,
+"es": "\"measuringPoint\""
+},
+{
+"id": 9976,
+"es": "\"test-tipo-Instalacion-01\""
+},
+{
+"id": 9977,
+"es": "\"parent\""
+},
+{
+"id": 9978,
+"es": "\"TestIns0011\""
+},
+{
+"id": 9979,
+"es": "\"property\""
+},
+{
+"id": 9980,
+"es": "La siguiente tabla muestra el formato del \""
+},
+{
+"id": 9981,
+"es": "response body"
+},
+{
+"id": 9982,
+"es": "\" dado como respuesta de la petición anterior, para el caso con éxito ("
+},
+{
+"id": 9983,
+"es": "HTTP Status Code = 200"
+},
+{
+"id": 9984,
+"es": "Todos los campos indicados son devueltos en la petición GET realizada. Los campos sin valor son indicados con valor "
+},
+{
+"id": 9985,
+"es": "string (50)"
+},
+{
+"id": 9986,
+"es": "Nombre que identifica la entidad."
+},
+{
+"id": 9987,
+"es": "installation"
+},
+{
+"id": 9988,
+"es": "description"
+},
+{
+"id": 9989,
+"es": "string (150)"
+},
+{
+"id": 9990,
+"es": "Descripción de la Instalación."
+},
+{
+"id": 9991,
+"es": "Tipo de instalación"
+},
+{
+"id": 9992,
+"es": ", valores posibles en MDM"
+},
+{
+"id": 9993,
+"es": "latitude"
+},
+{
+"id": 9994,
+"es": "float"
+},
+{
+"id": 9995,
+"es": "Atributo geográfico de la entidad."
+},
+{
+"id": 9996,
+"es": "longitude"
+},
+{
+"id": 9997,
+"es": "phone"
+},
+{
+"id": 9998,
+"es": "string (30)"
+},
+{
+"id": 9999,
+"es": "Número de teléfono asociado."
+},
+{
+"id": 10000,
+"es": "email"
+},
+{
+"id": 10001,
+"es": "Correo electrónico asociado."
+},
+{
+"id": 10002,
+"es": "measuringPoint"
+},
+{
+"id": 10003,
+"es": "Punto de Medida de tipo Instalación asociado a la instalación indicada."
+},
+{
+"id": 10004,
+"es": " Identificador de la instalación que se encuentra aguas arriba en la jerarquía de la red del cliente (en caso de tenerla)."
+},
+{
+"id": 10005,
+"es": "propertyLabel"
+},
+{
+"id": 10006,
+"es": "Parámetros de configuración de la instalación. Dependiendo del tipo de instalación, ésta dispondrá de unas propiedades identificativas u otras. Los tipos de instalación presentan para cada una de las propiedades, un valor por defecto, que puede modificarse a nivel de activo. Se explica con detalle en el apartado de "
+},
+{
+"id": 10007,
+"es": "Tipo de Instalación."
+},
+{
+"id": 10008,
+"es": ": Para esta versión, devuelve siempre NULL"
+},
+{
+"id": 10009,
+"es": "equipment"
+},
+{
+"id": 10010,
+"es": "propertyValue"
+},
+{
+"id": 10011,
+"es": "/installation"
+},
+{
+"id": 10012,
+"es": "HTTP (POST / DELETE / PATCH)"
+},
+{
+"id": 10013,
+"es": "Método síncrono que permite al cliente interactuar con la entidad virtual "
+},
+{
+"id": 10014,
+"es": " en Onesait Metering (OM). El OM puede utilizar las Instalaciones para agrupar Puntos de Medida de manera geolocalizada. "
+},
+{
+"id": 10015,
+"es": "Creación"
+},
+{
+"id": 10016,
+"es": ": Permite detallar información geográfica como latitud y longitud. Permite agrupar varios puntos de medida de una misma región bajo una sola entidad. En la creación, se permitir indicar:"
+},
+{
+"id": 10017,
+"es": "Nombre de la instalación"
+},
+{
+"id": 10018,
+"es": "Coordenadas de dicha instalación"
+},
+{
+"id": 10019,
+"es": "Punto de medida de tipo instalación, asociado a la instalación a crear"
+},
+{
+"id": 10020,
+"es": "Si dispone de una instalación padre"
+},
+{
+"id": 10021,
+"es": "Listado de equipos que queremos asociar a la instalación"
+},
+{
+"id": 10022,
+"es": "Borrado"
+},
+{
+"id": 10023,
+"es": ": Permite eliminar una instalación pero sólo si no dispone de ninguna relación con un Punto de Medida. Para eliminar una Instalación, primero hay que eliminar sus relaciones con el punto de medida de tipo instalación asociado y los puntos de medida hijos, pero esta acción no es ofrecida desde esta interfaz."
+},
+{
+"id": 10024,
+"es": "Modificación"
+},
+{
+"id": 10025,
+"es": ": Se permite modificar algunos parámetros de la instalación indicada. El campos 'name' no es editable una vez creado. Los parámetros editables son:"
+},
+{
+"id": 10026,
+"es": "Cambiar el tipo de instalación definida"
+},
+{
+"id": 10027,
+"es": "Cambiar la instalación padre. Se permite cambiar la instalación padre a otra, pero no ser eliminado de la configuración"
+},
+{
+"id": 10028,
+"es": "Cambiar el punto de medida de tipo instalación asociado. Se permite cambiar el punto de medida tipo instalación, pero no ser eliminado de la configuración"
+},
+{
+"id": 10029,
+"es": "Cambiar y modificar el listado de equipos asociados."
+},
+{
+"id": 10030,
+"es": "Petición de Creación "
+},
+{
+"id": 10031,
+"es": "de instalación:"
+},
+{
+"id": 10032,
+"es": "REQ CREATE_installation.json"
+},
+{
+"id": 10033,
+"es": "Fichero JSON con comentarios: "
+},
+{
+"id": 10034,
+"es": "REQ_CREATE_installation_with_details.json"
+},
+{
+"id": 10035,
+"es": "Petición de Borrado "
+},
+{
+"id": 10036,
+"es": "REQ_DELETE_installation.json"
+},
+{
+"id": 10037,
+"es": "REQ_DELETE_installation_with_details.json"
+},
+{
+"id": 10038,
+"es": "Petición de Modificación "
+},
+{
+"id": 10039,
+"es": "REQ_CHANGE_installation.json"
+},
+{
+"id": 10040,
+"es": "REQ_CHANGE_installation_with_details.json"
+},
+{
+"id": 10041,
+"es": "OK / FAILED - Fichero ejemplo de formato respuesta a una petición: "
+},
+{
+"id": 10042,
+"es": "RESPONSE_installation.json"
+},
+{
+"id": 10043,
+"es": "Ejemplo Alta"
+},
+{
+"id": 10044,
+"es": "\"HTTP\""
+},
+{
+"id": 10045,
+"es": "\"test-001\""
+},
+{
+"id": 10046,
+"es": "\"corr-001\""
+},
+{
+"id": 10047,
+"es": "\"CREATE\""
+},
+{
+"id": 10048,
+"es": "\"swagger\""
+},
+{
+"id": 10049,
+"es": "\"proc-swagger\""
+},
+{
+"id": 10050,
+"es": "\"Swagger Test\""
+},
+{
+"id": 10051,
+"es": "\"producto\""
+},
+{
+"id": 10052,
+"es": "\"proc-producto\""
+},
+{
+"id": 10053,
+"es": "\"InstalacionService\""
+},
+{
+"id": 10054,
+"es": "// Optional"
+},
+{
+"id": 10055,
+"es": "\"InstalacionTesting_04\""
+},
+{
+"id": 10056,
+"es": "// Mandatory"
+},
+{
+"id": 10057,
+"es": "\"fatherName\""
+},
+{
+"id": 10058,
+"es": "\"Central Sur\""
+},
+{
+"id": 10059,
+"es": "\"test-install-01\""
+},
+{
+"id": 10060,
+"es": "\"meters\""
+},
+{
+"id": 10061,
+"es": "Ejemplo Borrado"
+},
+{
+"id": 10062,
+"es": "\"InstalacionTesting_01\""
+},
+{
+"id": 10063,
+"es": "\"DELETE\""
+},
+{
+"id": 10064,
+"es": "Ejemplo Modificación"
+},
+{
+"id": 10065,
+"es": "// Optional (only if it requires modification)"
+},
+{
+"id": 10066,
+"es": "\"InstalacionTEST\""
+},
+{
+"id": 10067,
+"es": "// Optional (only if it requires modification - The father installation cannot be deleted)"
+},
+{
+"id": 10068,
+"es": "// Optional (only if it requires modification - The associated point cannot be deleted)  "
+},
+{
+"id": 10069,
+"es": "// Optional (only if it requires modification - New list of meters associated to the installation)"
+},
+{
+"id": 10070,
+"es": "request body"
+},
+{
+"id": 10071,
+"es": "\" obligatorio en la petición a lanzar."
+},
+{
+"id": 10072,
+"es": "Mandatory (CREATE/DELETE/CHANGE)"
+},
+{
+"id": 10073,
+"es": "object"
+},
+{
+"id": 10074,
+"es": "-name"
+},
+{
+"id": 10075,
+"es": "Nombre de la instalación."
+},
+{
+"id": 10076,
+"es": "-type"
+},
+{
+"id": 10077,
+"es": "Modelo o categoría de instalación"
+},
+{
+"id": 10078,
+"es": " (transformador, planta generadora nuclear, centro de transformación, depósito, etc.). "
+},
+{
+"id": 10079,
+"es": "-latitude"
+},
+{
+"id": 10080,
+"es": "Coordenadas de georreferenciación para las instalaciones."
+},
+{
+"id": 10081,
+"es": "-longitude"
+},
+{
+"id": 10082,
+"es": "-fatherName"
+},
+{
+"id": 10083,
+"es": "-measuringPoint"
+},
+{
+"id": 10084,
+"es": "Punto de medida "
+},
+{
+"id": 10085,
+"es": "de tipo instalación"
+},
+{
+"id": 10086,
+"es": " que se quiere asociar a la instalación. Identificador único para cada Instalación"
+},
+{
+"id": 10087,
+"es": "-meters"
+},
+{
+"id": 10088,
+"es": "Puntos de Medida, que representan y agregan sus consumos e incidencias. Estos puntos crearán la relación entre la Instalación y el Punto de Medida escogido. "
+},
+{
+"id": 10089,
+"es": "installation_measuring_point_association"
+},
+{
+"id": 10090,
+"es": "--serialNumber"
+},
+{
+"id": 10091,
+"es": "Número de serie del equipo asociado al Punto de Medida que se quiere incluir en la Instalación."
+},
+{
+"id": 10092,
+"es": "header"
+},
+{
+"id": 10093,
+"es": "-schema"
+},
+{
+"id": 10094,
+"es": "--protocol"
+},
+{
+"id": 10095,
+"es": "Por defecto: \"HTTP\""
+},
+{
+"id": 10096,
+"es": "--version"
+},
+{
+"id": 10097,
+"es": "Por defecto: \"1.0.0\""
+},
+{
+"id": 10098,
+"es": "-message"
+},
+{
+"id": 10099,
+"es": "--id"
+},
+{
+"id": 10100,
+"es": "Valor único para identificar el mensaje."
+},
+{
+"id": 10101,
+"es": "--correlationId"
+},
+{
+"id": 10102,
+"es": "--dateTime"
+},
+{
+"id": 10103,
+"es": "Fecha del mensaje enviado."
+},
+{
+"id": 10104,
+"es": "--payload"
+},
+{
+"id": 10105,
+"es": "Por defecto: \"REGIONS_INFO\""
+},
+{
+"id": 10106,
+"es": "--operation"
+},
+{
+"id": 10107,
+"es": "Valores: \"CREATE\", \"DELETE\" o \"CHANGE\""
+},
+{
+"id": 10108,
+"es": "CREATE "
+},
+{
+"id": 10109,
+"es": "(para uso con método POST) - Creación de nueva instalación"
+},
+{
+"id": 10110,
+"es": "DELETE "
+},
+{
+"id": 10111,
+"es": "(para uso con método DELETE) - Borrado de instalación"
+},
+{
+"id": 10112,
+"es": " (para uso con método PATCH) - Modificación de instalación"
+},
+{
+"id": 10113,
+"es": "-source"
+},
+{
+"id": 10114,
+"es": "Identificador del origen del mensaje"
+},
+{
+"id": 10115,
+"es": "Versión utilizada"
+},
+{
+"id": 10116,
+"es": "--process"
+},
+{
+"id": 10117,
+"es": "---id"
+},
+{
+"id": 10118,
+"es": "Identificador del proceso"
+},
+{
+"id": 10119,
+"es": "---name"
+},
+{
+"id": 10120,
+"es": "---dateTime"
+},
+{
+"id": 10121,
+"es": "Fecha del mensaje procesado"
+},
+{
+"id": 10122,
+"es": "-target"
+},
+{
+"id": 10123,
+"es": "Identificador del destino del mensaje"
+},
+{
+"id": 10124,
+"es": "-reply"
+},
+{
+"id": 10125,
+"es": "--reply"
+},
+{
+"id": 10126,
+"es": "--error"
+},
+{
+"id": 10127,
+"es": "\"INST_NAME\""
+},
+{
+"id": 10128,
+"es": "\"InstalacionSwagger\""
+},
+{
+"id": 10129,
+"es": "\"Element [Installation with name InstalacionSwagger] already exists\""
+},
+{
+"id": 10130,
+"es": "\" dado como respuesta de la petición anterior. ("
+},
+{
+"id": 10131,
+"es": "-status"
+},
+{
+"id": 10132,
+"es": "Estado de la operación para el elemento indicado en \"element\"."
+},
+{
+"id": 10133,
+"es": "Posibles valores:"
+},
+{
+"id": 10134,
+"es": "-code"
+},
+{
+"id": 10135,
+"es": "Código de error de la operación. Ver esta sección "
+},
+{
+"id": 10136,
+"es": " para consultar los posibles valores"
+},
+{
+"id": 10137,
+"es": "( * )  Es un campo obligatorio SOLO en el caso de una operación con \"status\" Failed. No indicado en peticiones con estado OK"
+},
+{
+"id": 10138,
+"es": "-details"
+},
+{
+"id": 10139,
+"es": "Para indicar detalles del error dado."
+},
+{
+"id": 10140,
+"es": "( ** )  Es un campo opcional, y puede venir en el caso de una operación con \"status\" Failed. No indicado en peticiones con estado OK"
+},
+{
+"id": 10141,
+"es": "-element"
+},
+{
+"id": 10142,
+"es": "--type"
+},
+{
+"id": 10143,
+"es": "Por defecto, valor indicado \"INST_NAME\""
+},
+{
+"id": 10144,
+"es": "--value"
+},
+{
+"id": 10145,
+"es": "Nombre de la instalación, que haya sido creada, modificada o borrada"
+},
+{
+"id": 10146,
+"es": "Identificador del origen del mensaje. Por defecto \"producto\""
+},
+{
+"id": 10147,
+"es": "Identificador del destino del mensaje. "
+},
+{
+"id": 10148,
+"es": "Equipos (Equipments)"
+},
+{
+"id": 10149,
+"es": "Equipos: creación, modificación y borrado"
+},
+{
+"id": 10150,
+"es": "Equipos: lectura"
+},
+{
+"id": 10151,
+"es": "/equipment"
+},
+{
+"id": 10152,
+"es": "Este método síncrono se utiliza para notificar a Onesait Metering (OM) que se ha instalado, modificado o retirado un contador en campo. El OM actualizará su inventario para crear/mantener la información relacionada con el Equipo y su geolocalización."
+},
+{
+"id": 10153,
+"es": "Para esta versión, el campo \"numero de serie\" es el identificador unívoco de los equipos, por que que debe ser único en el sistema para el correcto funcionamiento de estas interfaces."
+},
+{
+"id": 10154,
+"es": "Esto implica que, usando esta interfaz, no puede crearse dos equipos con el mismo número de serie, aún siendo de diferente fabricante."
+},
+{
+"id": 10155,
+"es": ": Permite crear un nuevo equipo, detallando información geográfica como latitud y longitud. El resto de parámetro permitidos se muestra en la tabla de formato de la petición (ver en el siguiente apartado)."
+},
+{
+"id": 10156,
+"es": ": Permite borrar un equipo "
+},
+{
+"id": 10157,
+"es": "pero sólo si no dispone de ninguna relación con un Punto de Medida actualmente o de manera histórica. Es decir, solo se permite eliminar un equipo si éste no ha estado operativo en el sistema. "
+},
+{
+"id": 10158,
+"es": ": Permite modificar los parámetros de un equipo creado. Los campos '"
+},
+{
+"id": 10159,
+"es": "equipmentModel"
+},
+{
+"id": 10160,
+"es": "' no son editables una vez creado el equipo."
+},
+{
+"id": 10161,
+"es": "Petición de Creación "
+},
+{
+"id": 10162,
+"es": "de equipo:"
+},
+{
+"id": 10163,
+"es": "REQ CREATE_equipment.json"
+},
+{
+"id": 10164,
+"es": "Fichero JSON con comentarios: "
+},
+{
+"id": 10165,
+"es": "REQ_CREATE_equipment_with_details.json"
+},
+{
+"id": 10166,
+"es": "Fichero JSON ejemplo con creacion de dos equipos: "
+},
+{
+"id": 10167,
+"es": "REQ_CREATE_equipment_example_2_elements.json"
+},
+{
+"id": 10168,
+"es": "REQ_DELETE_equipment.json"
+},
+{
+"id": 10169,
+"es": "REQ_DELETE_equipment_with_details.json"
+},
+{
+"id": 10170,
+"es": "Petición de Modificación "
+},
+{
+"id": 10171,
+"es": "REQ_CHANGE_equipment.json"
+},
+{
+"id": 10172,
+"es": "REQ_CHANGE_equipment_with_details.json"
+},
+{
+"id": 10173,
+"es": "RESPONSE_equipment.json"
+},
+{
+"id": 10174,
+"es": "Esquema de Petición y Respuesta "
+},
+{
+"id": 10175,
+"es": "\"Equipo-Swagger\""
+},
+{
+"id": 10176,
+"es": "\"JR-TEST-SW\""
+},
+{
+"id": 10177,
+"es": "\"EQ-JR-001\""
+},
+{
+"id": 10178,
+"es": "\"createDate\""
+},
+{
+"id": 10179,
+"es": "\"equipmentModel\""
+},
+{
+"id": 10180,
+"es": "\"PRELOADED\""
+},
+{
+"id": 10181,
+"es": "\"statusRegisterDate\""
+},
+{
+"id": 10182,
+"es": "\"purchasePrice\""
+},
+{
+"id": 10183,
+"es": "// Optional (parametro no visualizado en UI)"
+},
+{
+"id": 10184,
+"es": "\"monthAmortization\""
+},
+{
+"id": 10185,
+"es": "\"parentCode\""
+},
+{
+"id": 10186,
+"es": "\"associationDate\""
+},
+{
+"id": 10187,
+"es": "\"fabricationDate\""
+},
+{
+"id": 10188,
+"es": "\"purchaseDate\""
+},
+{
+"id": 10189,
+"es": "\"properties\""
+},
+{
+"id": 10190,
+"es": "\"NOMINAL-VOLTAGE\""
+},
+{
+"id": 10191,
+"es": "\"REFERENCE-FREQUENCY\""
+},
+{
+"id": 10192,
+"es": "\"equipmentLocationStatus\""
+},
+{
+"id": 10193,
+"es": "\"STOCK\""
+},
+{
+"id": 10194,
+"es": "\"equipmentCommunicationStatus\""
+},
+{
+"id": 10195,
+"es": "\"ACTIVE\""
+},
+{
+"id": 10196,
+"es": "\"MSG-789456123\""
+},
+{
+"id": 10197,
+"es": "\"CORR-2025-07-28-001\""
+},
+{
+"id": 10198,
+"es": "\"SRC-PLANTA-A\""
+},
+{
+"id": 10199,
+"es": "\"PROC-DEL-001\""
+},
+{
+"id": 10200,
+"es": "\"Creación de Equipos\""
+},
+{
+"id": 10201,
+"es": "\"TGT-SERV-IDC\""
+},
+{
+"id": 10202,
+"es": "\"PROC-DEL-RESP\""
+},
+{
+"id": 10203,
+"es": "\"Creación\""
+},
+{
+"id": 10204,
+"es": "\"Borrado de Equipos\""
+},
+{
+"id": 10205,
+"es": "\"Borrado\""
+},
+{
+"id": 10206,
+"es": "// Mandatory (cannot be modified)"
+},
+{
+"id": 10207,
+"es": "// Optional "
+},
+{
+"id": 10208,
+"es": "// Optional  (cannot be modified)"
+},
+{
+"id": 10209,
+"es": "\"Modificacion de Equipos\""
+},
+{
+"id": 10210,
+"es": "\"Modificación\""
+},
+{
+"id": 10211,
+"es": "(CREATE/"
+},
+{
+"id": 10212,
+"es": "DELETE/"
+},
+{
+"id": 10213,
+"es": "CHANGE)"
+},
+{
+"id": 10214,
+"es": "--name"
+},
+{
+"id": 10215,
+"es": "String(50)"
+},
+{
+"id": 10216,
+"es": "Nombre con el que se identifica el equipo."
+},
+{
+"id": 10217,
+"es": "Número de serie del equipo. "
+},
+{
+"id": 10218,
+"es": "NOTA 1"
+},
+{
+"id": 10219,
+"es": ": Para esta versión, este valor debe ser único en la BBDD del sistema."
+},
+{
+"id": 10220,
+"es": "NOTA 2"
+},
+{
+"id": 10221,
+"es": ": Este campo debe ir en la petición de MODIFICACIÓN de equipo, como mandatory"
+},
+{
+"id": 10222,
+"es": "--code"
+},
+{
+"id": 10223,
+"es": "Referencia del equipo."
+},
+{
+"id": 10224,
+"es": ": Este campo debe ir en la petición de MODIFICACIÓN de equipo, como mandatory"
+},
+{
+"id": 10225,
+"es": "--createDate"
+},
+{
+"id": 10226,
+"es": "Fecha de alta del equipo en el sistema (en UTC). "
+},
+{
+"id": 10227,
+"es": "--equipmentModel"
+},
+{
+"id": 10228,
+"es": "Modelo del equipo."
+},
+{
+"id": 10229,
+"es": "Necesario que el modelo exista previamente en el sistema."
+},
+{
+"id": 10230,
+"es": "--latitude"
+},
+{
+"id": 10231,
+"es": "Atributo geográfico del equipo."
+},
+{
+"id": 10232,
+"es": ": Este parámetro es obligatorio en el uso de la creación de un equipo desde esta interfaz. Por el contrario, es opcional en la creación del equipo desde la UI (web)"
+},
+{
+"id": 10233,
+"es": "--longitude"
+},
+{
+"id": 10234,
+"es": "--status"
+},
+{
+"id": 10235,
+"es": "Estado operación del equipo. "
+},
+{
+"id": 10236,
+"es": "Indica el estado del equipo en cuento a su asociación al punto de medida y su situación dentro del ciclo de medición / comercial. "
+},
+{
+"id": 10237,
+"es": "Los valores posibles de los estados, según la definición. Por defecto, se usa \"PRELOADED\""
+},
+{
+"id": 10238,
+"es": "historical_equipment_status"
+},
+{
+"id": 10239,
+"es": "--statusRegisterDate"
+},
+{
+"id": 10240,
+"es": "Fecha de Registro histórico de estados del equipo (en UTC)."
+},
+{
+"id": 10241,
+"es": "--purchasePrice"
+},
+{
+"id": 10242,
+"es": "Precio de compra del equipo."
+},
+{
+"id": 10243,
+"es": "--monthAmortization"
+},
+{
+"id": 10244,
+"es": "Amortización mensual."
+},
+{
+"id": 10245,
+"es": "--parentCode"
+},
+{
+"id": 10246,
+"es": "Código del equipo asociado como Equipo Padre. "
+},
+{
+"id": 10247,
+"es": "equipment_association"
+},
+{
+"id": 10248,
+"es": "--associationDate"
+},
+{
+"id": 10249,
+"es": "Fecha de asociación (en UTC). "
+},
+{
+"id": 10250,
+"es": "--fabricationDate"
+},
+{
+"id": 10251,
+"es": "Fecha de fabricación del equipo (en UTC). "
+},
+{
+"id": 10252,
+"es": ": En la UI (web), sólo se visualiza la fecha sin hora."
+},
+{
+"id": 10253,
+"es": "--purchaseDate"
+},
+{
+"id": 10254,
+"es": "Fecha de compra o adquisición del equipo (en UTC). "
+},
+{
+"id": 10255,
+"es": "--properties"
+},
+{
+"id": 10256,
+"es": "Propiedades técnicas del equipo."
+},
+{
+"id": 10257,
+"es": "Los posibles valores de este array se encuentran en la tabla master_equipment_type en la columna default_parameters"
+},
+{
+"id": 10258,
+"es": "Ejemplos de name:"
+},
+{
+"id": 10259,
+"es": "---value"
+},
+{
+"id": 10260,
+"es": "--equipmentLocationStatus"
+},
+{
+"id": 10261,
+"es": "Estado de ubicación del equipo."
+},
+{
+"id": 10262,
+"es": "Indica la situación del equipo en un determinado momento."
+},
+{
+"id": 10263,
+"es": "--equipmentCommunicationStatus"
+},
+{
+"id": 10264,
+"es": "Estado de comunicación."
+},
+{
+"id": 10265,
+"es": "Indica la conectividad con el equipamiento de campo."
+},
+{
+"id": 10266,
+"es": "CREATE (para uso con método POST) - Creación de nuevo equipo"
+},
+{
+"id": 10267,
+"es": "DELETE (para uso con método DELETE) - Borrado de equipo"
+},
+{
+"id": 10268,
+"es": "CHANGE (para uso con método PATCH) - Modificación de equipo"
+},
+{
+"id": 10269,
+"es": "Reply topic"
+},
+{
+"id": 10270,
+"es": "Error topic"
+},
+{
+"id": 10271,
+"es": "\"Element [Equipment with serial number AGN-TEST-SW-200] already exists\""
+},
+{
+"id": 10272,
+"es": "\"0f2923c9-ebd3-4d30-ac97-a6c6a3c78cbb\""
+},
+{
+"id": 10273,
+"es": " para consultar los posibles valores"
+},
+{
+"id": 10274,
+"es": "Por defecto, valor indicado \"EQ_SN\""
+},
+{
+"id": 10275,
+"es": "Número de serie del equipo, que haya sido creado, modificado o borrado"
+},
+{
+"id": 10276,
+"es": "Identificador del origen del mensaje."
+},
+{
+"id": 10277,
+"es": "/equipment/{serialNumber}"
+},
+{
+"id": 10278,
+"es": "Este método síncrono permite al Cliente consultar a Onesait Metering (OM) sobre un Equipo específico en el inventario. El OM devolverá la información disponible."
+},
+{
+"id": 10279,
+"es": "de equipo: "
+},
+{
+"id": 10280,
+"es": "Petición a través del API REST, donde se indica el código de Equipo como parámetro."
+},
+{
+"id": 10281,
+"es": "REQ_GET_equipment.txt"
+},
+{
+"id": 10282,
+"es": "RESPONSE_GET equipment_OK.json"
+},
+{
+"id": 10283,
+"es": "GET Response FAILED: "
+},
+{
+"id": 10284,
+"es": "Required parameter in path (/equipment/{serialNumber})"
+},
+{
+"id": 10285,
+"es": "'https://om-qa-onesait.local.com/oum-ws/equipment/{serialNumber}'"
+},
+{
+"id": 10286,
+"es": "Identificador único para Equipo"
+},
+{
+"id": 10287,
+"es": "Tabla: equipment"
+},
+{
+"id": 10288,
+"es": "Columna: serial_number"
+},
+{
+"id": 10289,
+"es": "\"EQ-AGN-201\""
+},
+{
+"id": 10290,
+"es": "\"Equipo-Swagger-201\""
+},
+{
+"id": 10291,
+"es": "\"equipmentModelId\""
+},
+{
+"id": 10292,
+"es": "\"equipmentModelCode\""
+},
+{
+"id": 10293,
+"es": "\"ABB DELTA\""
+},
+{
+"id": 10294,
+"es": "\"AGN-TEST-SW-201\""
+},
+{
+"id": 10295,
+"es": "\"endDate\""
+},
+{
+"id": 10296,
+"es": "\"causeEndDate\""
+},
+{
+"id": 10297,
+"es": "\"firmware\""
+},
+{
+"id": 10298,
+"es": "\"firmwareStartDate\""
+},
+{
+"id": 10299,
+"es": "\"firmwareEndDate\""
+},
+{
+"id": 10300,
+"es": "\"propertyLabel\""
+},
+{
+"id": 10301,
+"es": "\"propertyValue\""
+},
+{
+"id": 10302,
+"es": "\"locationStatus\""
+},
+{
+"id": 10303,
+"es": "\"communicationStatus\""
+},
+{
+"id": 10304,
+"es": "\"parameters\""
+},
+{
+"id": 10305,
+"es": "Todos los campos indicados son devueltos en la petición GET realizada. Los campos sin valor son indicados con valor "
+},
+{
+"id": 10306,
+"es": ". (ver ejemplo respuesta "
+},
+{
+"id": 10307,
+"es": "RESPONSE_GET_equipment_OK_Code_200.json"
+},
+{
+"id": 10308,
+"es": "Integer(8)"
+},
+{
+"id": 10309,
+"es": "Identificador interno del equipo."
+},
+{
+"id": 10310,
+"es": "equipmentModelId"
+},
+{
+"id": 10311,
+"es": "integer"
+},
+{
+"id": 10312,
+"es": "Identificador interno del modelo."
+},
+{
+"id": 10313,
+"es": "equipmentModelCode"
+},
+{
+"id": 10314,
+"es": "fabricationDate"
+},
+{
+"id": 10315,
+"es": "Fecha de fabricación del equipo."
+},
+{
+"id": 10316,
+"es": ": La fecha de fabricación lanzada en la creación, es salvada en el campo \"createDate\""
+},
+{
+"id": 10317,
+"es": "Número de serie del equipo. Alfanumérico."
+},
+{
+"id": 10318,
+"es": "purchasePrice"
+},
+{
+"id": 10319,
+"es": "purchaseDate"
+},
+{
+"id": 10320,
+"es": "Fecha de compra del equipo."
+},
+{
+"id": 10321,
+"es": "monthAmortization"
+},
+{
+"id": 10322,
+"es": "endDate"
+},
+{
+"id": 10323,
+"es": "Fecha de baja del equipo en el sistema."
+},
+{
+"id": 10324,
+"es": "causeEndDate"
+},
+{
+"id": 10325,
+"es": "Por defecto: Desconocido"
+},
+{
+"id": 10326,
+"es": "firmware"
+},
+{
+"id": 10327,
+"es": "equipment_model_firmware"
+},
+{
+"id": 10328,
+"es": "firmwareStartDate"
+},
+{
+"id": 10329,
+"es": "firmwareEndDate"
+},
+{
+"id": 10330,
+"es": "Indica el estado del equipo respecto a su asociación al Punto de Medida y su situación dentro del ciclo de medición/comercial. "
+},
+{
+"id": 10331,
+"es": "locationStatus"
+},
+{
+"id": 10332,
+"es": "communicationStatus"
+},
+{
+"id": 10333,
+"es": "statusRegisterDate"
+},
+{
+"id": 10334,
+"es": "Registro histórico de cambio de estado del equipo"
+},
+{
+"id": 10335,
+"es": "createDate"
+},
+{
+"id": 10336,
+"es": "Fecha de alta del equipo en el sistema."
+},
+{
+"id": 10337,
+"es": ": Se devuelve la fecha de fabricación lanzada en la creación."
+},
+{
+"id": 10338,
+"es": "4.1 Archivos Requeridos"
+},
+{
+"id": 10339,
+"es": "4.2 Configuración"
+},
+{
+"id": 10340,
+"es": "4.3 Estructura de Datos de la Licencia"
+},
+{
+"id": 10341,
+"es": "5.1 Validez Criptográfica"
+},
+{
+"id": 10342,
+"es": "5.2 Validez Estructural"
+},
+{
+"id": 10343,
+"es": "5.3 Validez según Tipo de Licencia"
+},
+{
+"id": 10344,
+"es": "6.1 Secuencia de Validación"
+},
+{
+"id": 10345,
+"es": "7.1 Errores que Bloquean el Login"
+},
+{
+"id": 10346,
+"es": "7.2 Mensaje al Usuario"
+},
+{
+"id": 10347,
+"es": "8.1 Características"
+},
+{
+"id": 10348,
+"es": "8.2 Gestión Operativa"
+},
+{
+"id": 10349,
+"es": "8.3 Estrategia ante Errores"
+},
+{
+"id": 10350,
+"es": "9.1 Seguridad"
+},
+{
+"id": 10351,
+"es": "9.2 Rendimiento"
+},
+{
+"id": 10352,
+"es": "9.3 Disponibilidad"
+},
+{
+"id": 10353,
+"es": "El producto OM dispone de un módulo de licencias con modalidades "
+},
+{
+"id": 10354,
+"es": "Development "
+},
+{
+"id": 10355,
+"es": "Production "
+},
+{
+"id": 10356,
+"es": "que añade un mayor nivel de seguridad y capacidad para incorporar validaciones funcionales sobre los elementos licenciados en una instalación. La disponibilidad de una licencia válida pasa a ser "
+},
+{
+"id": 10357,
+"es": "obligatoria para la ejecución"
+},
+{
+"id": 10358,
+"es": " del producto a partir de esta versión. Su objetivo principal es garantizar que solo puedan autenticarse usuarios en instancias con una licencia válida, verificándola durante el proceso de login mediante firma digital RSA con clave pública."
+},
+{
+"id": 10359,
+"es": "A continuación se detallan las características principales:"
+},
+{
+"id": 10360,
+"es": "El proceso de validación de la licencia OM ejecuta el siguiente recorrido:"
+},
+{
+"id": 10361,
+"es": "Punto de control: Flujo de autenticación (login actual)"
+},
+{
+"id": 10362,
+"es": "Validación: Antes de completar la sesión del usuario"
+},
+{
+"id": 10363,
+"es": "Acción ante fallo: Denegar acceso y mostrar mensaje de error controlado"
+},
+{
+"id": 10364,
+"es": "La licencia se compone de un archivo ubicado en un directorio configurable llamado "
+},
+{
+"id": 10365,
+"es": "license.bin"
+},
+{
+"id": 10366,
+"es": ". Se trata de un archivo binario con los datos de la licencia y su firma digital"
+},
+{
+"id": 10367,
+"es": "El directorio de licencias se configura mediante la siguiente propiedad:"
+},
+{
+"id": 10368,
+"es": "inmdm.license.dir=/ruta/al/directorio/licencias"
+},
+{
+"id": 10369,
+"es": "Si no se configura o el directorio no existe, la validación falla."
+},
+{
+"id": 10370,
+"es": "La licencia contiene los siguientes campos:"
+},
+{
+"id": 10371,
+"es": "Campos Obligatorios"
+},
+{
+"id": 10372,
+"es": "marker"
+},
+{
+"id": 10373,
+"es": "Compañía que firma"
+},
+{
+"id": 10374,
+"es": "product"
+},
+{
+"id": 10375,
+"es": "Nombre del producto licenciado"
+},
+{
+"id": 10376,
+"es": "Onesait Utilities Metering"
+},
+{
+"id": 10377,
+"es": "number"
+},
+{
+"id": 10378,
+"es": "Número de serie de la licencia"
+},
+{
+"id": 10379,
+"es": "XXXX-XXXX-XXXX-XXXX"
+},
+{
+"id": 10380,
+"es": "date"
+},
+{
+"id": 10381,
+"es": "Fecha de emisión (formato `yyyy-MM-dd`)"
+},
+{
+"id": 10382,
+"es": "Tipo de licencia (ver sección 5.3)"
+},
+{
+"id": 10383,
+"es": "DEVEOPMENT o PRODUCTION"
+},
+{
+"id": 10384,
+"es": "Valor asociado al tipo de licencia"
+},
+{
+"id": 10385,
+"es": "\"365\" (días) y/o \"1000\" (puntos)"
+},
+{
+"id": 10386,
+"es": "legalText"
+},
+{
+"id": 10387,
+"es": "Texto legal asociado a la licencia"
+},
+{
+"id": 10388,
+"es": "Uso comercial autorizado..."
+},
+{
+"id": 10389,
+"es": "Campos opcionales"
+},
+{
+"id": 10390,
+"es": "company"
+},
+{
+"id": 10391,
+"es": "Información de la empresa licenciada"
+},
+{
+"id": 10392,
+"es": "features"
+},
+{
+"id": 10393,
+"es": "Lista de funcionalidades habilitadas"
+},
+{
+"id": 10394,
+"es": "La licencia debe estar firmada digitalmente con el algoritmo "
+},
+{
+"id": 10395,
+"es": "RSASSA-PSS (SHA-256)"
+},
+{
+"id": 10396,
+"es": "Todos los campos obligatorios deben estar presentes y no vacíos."
+},
+{
+"id": 10397,
+"es": "Campos obligatorios:"
+},
+{
+"id": 10398,
+"es": "Resultado:"
+},
+{
+"id": 10399,
+"es": "Válida: Todos los campos presentes"
+},
+{
+"id": 10400,
+"es": "Inválida: Algún campo falta o está vacío"
+},
+{
+"id": 10401,
+"es": "El sistema soporta dos tipos de licencias: DEVELOPMENT o PRODUCTION."
+},
+{
+"id": 10402,
+"es": "DEVELOPMENT"
+},
+{
+"id": 10403,
+"es": "Descripción: Licencia válida por un número determinado de días desde la fecha de emisión"
+},
+{
+"id": 10404,
+"es": "Validación:"
+},
+{
+"id": 10405,
+"es": "Cálculo: días_transcurridos = hoy - fecha_emisión"
+},
+{
+"id": 10406,
+"es": "Válida: días_transcurridos <= value"
+},
+{
+"id": 10407,
+"es": "Expirada: días_transcurridos > value"
+},
+{
+"id": 10408,
+"es": "Campo "
+},
+{
+"id": 10409,
+"es": "VALUE"
+},
+{
+"id": 10410,
+"es": ": Número de días de validez (ejemplo: \"365\")"
+},
+{
+"id": 10411,
+"es": "PRODUCTION"
+},
+{
+"id": 10412,
+"es": "Descripción: Licencia limitada por número de puntos de medida en el sistema y también por un número determinado de días desde la fecha de emisión"
+},
+{
+"id": 10413,
+"es": "Validación doble:"
+},
+{
+"id": 10414,
+"es": "Total de Puntos de Medida en el sistema"
+},
+{
+"id": 10415,
+"es": "Cálculo: puntos_actuales = count(MeasuringPoint)"
+},
+{
+"id": 10416,
+"es": "Válida: puntos_actuales <= value"
+},
+{
+"id": 10417,
+"es": "Expirada: puntos_actuales > value"
+},
+{
+"id": 10418,
+"es": ": Número máximo de puntos de medida (ejemplo: \"1000\")"
+},
+{
+"id": 10419,
+"es": "Número de días desde la fecha de emisión"
+},
+{
+"id": 10420,
+"es": "Usuario envía credenciales"
+},
+{
+"id": 10421,
+"es": "El sistema arranca flujo de autenticación"
+},
+{
+"id": 10422,
+"es": "Antes de finalizar el login (emitir token JWT para crear sesión)"
+},
+{
+"id": 10423,
+"es": "Se carga la licencia desde la fuente configurada"
+},
+{
+"id": 10424,
+"es": "Se valida firma con clave pública"
+},
+{
+"id": 10425,
+"es": "Se evalúan reglas anteriormente expuestas"
+},
+{
+"id": 10426,
+"es": "Si todo OK: se completa el Login"
+},
+{
+"id": 10427,
+"es": "Sino, se bloquea login"
+},
+{
+"id": 10428,
+"es": "Cualquiera de estas situaciones resulta en \""
+},
+{
+"id": 10429,
+"es": "Acceso denegado"
+},
+{
+"id": 10430,
+"es": "Causa"
+},
+{
+"id": 10431,
+"es": "Log Interno"
+},
+{
+"id": 10432,
+"es": "Archivo "
+},
+{
+"id": 10433,
+"es": " no encontrado"
+},
+{
+"id": 10434,
+"es": "No existe el archivo"
+},
+{
+"id": 10435,
+"es": "ERROR: Archivo de licencia no encontrado"
+},
+{
+"id": 10436,
+"es": "Campos obligatorios faltantes"
+},
+{
+"id": 10437,
+"es": "Licencia incompleta"
+},
+{
+"id": 10438,
+"es": "ERROR: El campo 'X' está vacío o no existe"
+},
+{
+"id": 10439,
+"es": "Error de lectura de archivos"
+},
+{
+"id": 10440,
+"es": "IOException al leer archivos"
+},
+{
+"id": 10441,
+"es": "ERROR: Error al leer el archivo de licencia/clave"
+},
+{
+"id": 10442,
+"es": "Firma inválida"
+},
+{
+"id": 10443,
+"es": "Licencia manipulada o clave incorrecta"
+},
+{
+"id": 10444,
+"es": "ERROR: La verificación de la firma ha fallado"
+},
+{
+"id": 10445,
+"es": "Directorio no configurado"
+},
+{
+"id": 10446,
+"es": "Falta propiedad "
+},
+{
+"id": 10447,
+"es": "inmdm.license.dir"
+},
+{
+"id": 10448,
+"es": "ERROR: No se pudo resolver el directorio de licencias"
+},
+{
+"id": 10449,
+"es": "Clave pública inválida"
+},
+{
+"id": 10450,
+"es": "Formato corrupto o incorrecto"
+},
+{
+"id": 10451,
+"es": "ERROR: No se puede construir la clave pública"
+},
+{
+"id": 10452,
+"es": "Licencia expirada por días"
+},
+{
+"id": 10453,
+"es": "días_transcurridos > value"
+},
+{
+"id": 10454,
+"es": "INFO: Licencia expirada: han pasado X días (límite: Y)"
+},
+{
+"id": 10455,
+"es": "Licencia expirada por puntos"
+},
+{
+"id": 10456,
+"es": "puntos_actuales > value"
+},
+{
+"id": 10457,
+"es": "INFO: Licencia expirada: puntos de medida X superan límite Y"
+},
+{
+"id": 10458,
+"es": "Tipo de licencia desconocido"
+},
+{
+"id": 10459,
+"es": "Valor de "
+},
+{
+"id": 10460,
+"es": " no reconocido"
+},
+{
+"id": 10461,
+"es": "WARN: Tipo de licencia desconocido"
+},
+{
+"id": 10462,
+"es": "A continuación se muestra el texto estándar que aparecerá ante el usuario:"
+},
+{
+"id": 10463,
+"es": "La licencia ha caducado. Por favor, contacte con el equipo de Soporte Producto."
+},
+{
+"id": 10464,
+"es": "Algoritmo"
+},
+{
+"id": 10465,
+"es": "RSA 2048 bits"
+},
+{
+"id": 10466,
+"es": "Incrustada en producto"
+},
+{
+"id": 10467,
+"es": "Distribución de la clave"
+},
+{
+"id": 10468,
+"es": "Registrada en el repositorio de producto"
+},
+{
+"id": 10469,
+"es": "Debe mantenerse su integridad (modificaciones sólo permitidas bajo autorización)"
+},
+{
+"id": 10470,
+"es": "Rotación"
+},
+{
+"id": 10471,
+"es": "Si se rota el par de claves (pública/privada), debe:"
+},
+{
+"id": 10472,
+"es": "Generar nueva licencia firmada con nueva clave privada"
+},
+{
+"id": 10473,
+"es": "Distribuir nuevo `license.bin`"
+},
+{
+"id": 10474,
+"es": "Embeber la nueva clave pública"
+},
+{
+"id": 10475,
+"es": "Fail-closed"
+},
+{
+"id": 10476,
+"es": "Si la clave pública no está disponible, es inválida o hay cualquier error en la verificación, "
+},
+{
+"id": 10477,
+"es": "se deniega el acceso"
+},
+{
+"id": 10478,
+"es": "No existe modo de degradación o período de gracia."
+},
+{
+"id": 10479,
+"es": "Integridad"
+},
+{
+"id": 10480,
+"es": ": La firma digital garantiza que la licencia no ha sido alterada"
+},
+{
+"id": 10481,
+"es": "Autenticidad"
+},
+{
+"id": 10482,
+"es": ": Solo el emisor con la clave privada puede generar licencias válidas"
+},
+{
+"id": 10483,
+"es": "Sin secretos en logs"
+},
+{
+"id": 10484,
+"es": ": No registrar contenido completo de la licencia en logs"
+},
+{
+"id": 10485,
+"es": "La validación es síncrona y ocurre en cada login"
+},
+{
+"id": 10486,
+"es": "No hay cacheo de resultado (se valida en cada petición de login)"
+},
+{
+"id": 10487,
+"es": "Los archivos son locales (no hay dependencias externas)"
+},
+{
+"id": 10488,
+"es": "Si los archivos no están disponibles, el sistema no permite login (fail-closed)"
+},
+{
+"id": 10489,
+"es": "Integraciones históricas HES-OM MDM"
+},
+{
+"id": 10490,
+"es": "Alcance"
+},
+{
+"id": 10491,
+"es": "Está contempladas en el alcance integraciones para cada uno de los 3 sistemas HES que usa Saesa actualmente en su operativa. "
+},
+{
+"id": 10492,
+"es": "UnitySuite"
+},
+{
+"id": 10493,
+"es": "Easymetering"
+},
+{
+"id": 10494,
+"es": "PrimeRead"
+},
+{
+"id": 10495,
+"es": "Todas estas integraciones están contempladas bajo el marco de la estrategia de integraciones."
+},
+{
+"id": 10496,
+"es": "Unity Suite"
+},
+{
+"id": 10497,
+"es": "El sistema UnitySuite se comunica con el exterior mediante peticiones SOAP y mediante mensajería vía Apache ActiveMQ, por lo que el componente unitysuite_ms de la solución OUM MDM hará las funciones de recepción de peticiones, transformación de la información y comunicación con el núcleo de la solución OUM MDM. Partiendo de las operaciones expuestas por la solución OUM MDM se especifican en los siguientes apartados las tareas llevadas a cabo por el componente unitysuite_ms."
+},
+{
+"id": 10498,
+"es": "A continuación se describen las integraciones de MDM con Unity Suite:"
+},
+{
+"id": 10499,
+"es": "Alta nuevo equipo"
+},
+{
+"id": 10500,
+"es": "En la documentación aportada no existe una funcionalidad desde el sistema UnitySuite que permita llevar a cabo esta integración, por lo que el alta de un nuevo equipo se hará mediante autodescubrimiento."
+},
+{
+"id": 10501,
+"es": "El autodescubrimiento es un proceso en varios pasos que se realiza en la integración mediante el cual, cuando se recibe un mensaje de medidas, eventos o alarmas con un identificador de equipos que no esté definido en MDM, se solicita al sistema HES datos del nuevo equipo. Una vez recibidos estos datos se procede a dar de alta el equipo."
+},
+{
+"id": 10502,
+"es": "Mensaje de recepción con un equipo desconocido"
+},
+{
+"id": 10503,
+"es": "El proceso de integración de UNITY SUITE está escuchando en una cola hasta que recibe un mensaje con un <mRID> desconocido en MDM."
+},
+{
+"id": 10504,
+"es": "Cola: SEAL.EVENT"
+},
+{
+"id": 10505,
+"es": "<EventMessage xmlns=\"http://www.iec.ch/TC57/2008/schema/message\" xmlns:ns1=\"http://iec.ch/TC57/2009/MeterReadings#\">"
+},
+{
+"id": 10506,
+"es": "<Header>"
+},
+{
+"id": 10507,
+"es": "<Verb>CREATED</Verb>"
+},
+{
+"id": 10508,
+"es": "<Noun>MeterReadings</Noun>"
+},
+{
+"id": 10509,
+"es": "</Header>"
+},
+{
+"id": 10510,
+"es": "<Payload>"
+},
+{
+"id": 10511,
+"es": "<ns1:MeterReadings>"
+},
+{
+"id": 10512,
+"es": "<ns1:MeterReading>"
+},
+{
+"id": 10513,
+"es": "<ns1:IntervalBlocks>"
+},
+{
+"id": 10514,
+"es": "<ns1:IntervalReadings>"
+},
+{
+"id": 10515,
+"es": "<ns1:timeStamp>2025-12-09T10:00:00Z</ns1:timeStamp>"
+},
+{
+"id": 10516,
+"es": "<ns1:value>12345.0</ns1:value>"
+},
+{
+"id": 10517,
+"es": "</ns1:IntervalReadings>"
+},
+{
+"id": 10518,
+"es": "<ns1:ReadingType ref=\"0.0.0.1.1.1.12.0.0.0.0.0.72.0\"/>"
+},
+{
+"id": 10519,
+"es": "</ns1:IntervalBlocks>"
+},
+{
+"id": 10520,
+"es": "<ns1:MeterAsset>"
+},
+{
+"id": 10521,
+"es": "<ns1:mRID>ECTPRBEQ0200US</ns1:mRID>"
+},
+{
+"id": 10522,
+"es": "</ns1:MeterAsset>"
+},
+{
+"id": 10523,
+"es": "</ns1:MeterReading>"
+},
+{
+"id": 10524,
+"es": "</ns1:MeterReadings>"
+},
+{
+"id": 10525,
+"es": "</Payload>"
+},
+{
+"id": 10526,
+"es": "</EventMessage>"
+},
+{
+"id": 10527,
+"es": "En este caso la integración comprueba que el equipo no existe en MDM y solicita datos del equipo para darlo de alta."
+},
+{
+"id": 10528,
+"es": "NOTA: no se almacena la información del mensaje, ya sean medidas, eventos o alarmas"
+},
+{
+"id": 10529,
+"es": "Mensaje de solicitud de información de un equipo desconocido"
+},
+{
+"id": 10530,
+"es": "El proceso de integración de UNITY SUITE, al detectar un mensaje con equipo desconocido genera un mensaje de solicitud de datos del nuevo equipo"
+},
+{
+"id": 10531,
+"es": "Cola: SEAL.REQUEST"
+},
+{
+"id": 10532,
+"es": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+},
+{
+"id": 10533,
+"es": "<RequestMessage xmlns=\"http://www.iec.ch/TC57/2008/schema/message\" xmlns:ns6=\"http://iec.ch/TC57/2009/EndDeviceEvents#\" xmlns:ns5=\"http://iec.ch/TC57/2009/MeterReadings#\" xmlns:ns2=\"http://iec.ch/TC57/2009/EndDeviceAssets#\" xmlns:ns4=\"http://www.trilliantinc.com/SEAL/1.0/BasicTypes\" xmlns:ns3=\"http://www.trilliantinc.com/SEAL/1.0/emcm\">"
+},
+{
+"id": 10534,
+"es": "    <Header>"
+},
+{
+"id": 10535,
+"es": "        <Verb>GET</Verb>"
+},
+{
+"id": 10536,
+"es": "        <Noun>EndDeviceAssets</Noun>"
+},
+{
+"id": 10537,
+"es": "        <Revision>1.0</Revision>"
+},
+{
+"id": 10538,
+"es": "        <Timestamp>2025-12-10T12:01:00.001029Z</Timestamp>"
+},
+{
+"id": 10539,
+"es": "        <Source>MDM</Source>"
+},
+{
+"id": 10540,
+"es": "        <ReplyAddress>MDM.EQUIPMENT_REPLY</ReplyAddress>"
+},
+{
+"id": 10541,
+"es": "        <CorrelationID>e318d792-3cc2-490c-8185-aab605462bbe</CorrelationID>"
+},
+{
+"id": 10542,
+"es": "    </Header>"
+},
+{
+"id": 10543,
+"es": "    <Payload>"
+},
+{
+"id": 10544,
+"es": "        <ns2:EndDeviceAssets>"
+},
+{
+"id": 10545,
+"es": "            <ns2:EndDeviceAsset>"
+},
+{
+"id": 10546,
+"es": "                <ns2:mRID>ECTPRBEQ0200US</ns2:mRID>"
+},
+{
+"id": 10547,
+"es": "            </ns2:EndDeviceAsset>"
+},
+{
+"id": 10548,
+"es": "        </ns2:EndDeviceAssets>"
+},
+{
+"id": 10549,
+"es": "    </Payload>"
+},
+{
+"id": 10550,
+"es": "</RequestMessage>"
+},
+{
+"id": 10551,
+"es": "Para una correcta identificación del flujo de mensajes, el proceso de integración envía el campo <CorrelationID>, el cual debe ser incluido en cualquier respuesta del mismo flujo."
+},
+{
+"id": 10552,
+"es": "El propio mensaje de solicitud de información indica la cola en la que se espera la respuesta (campo ReplyAddress)."
+},
+{
+"id": 10553,
+"es": "Mensaje de respuesta con los datos de un equipo desconocido"
+},
+{
+"id": 10554,
+"es": "El proceso de integración de UNITY SUITE espera recibir un mensaje con los datos del equipo desconocido detectado."
+},
+{
+"id": 10555,
+"es": "Cola: MDM.EQUIPMENT_REPLY (indicado en el mensaje de solicitud de datos)"
+},
+{
+"id": 10556,
+"es": "<ns9:ResponseMessage xmlns=\"http://iec.ch/TC57/2009/EndDeviceEvents#\" xmlns:ns6=\"http://www.trilliantinc.com/SEAL/1.0/CommunicationProtocol\" xmlns:ns5=\"http://www.trilliantinc.com/SEAL/1.0/ansimeterdriver\" xmlns:ns8=\"http://www.trilliantinc.com/SEAL/1.0/emcm\" xmlns:ns7=\"http://www.trilliantinc.com/SEAL/1.0/BasicTypes\" xmlns:ns9=\"http://www.iec.ch/TC57/2008/schema/message\" xmlns:ns12=\"http://iec.ch/TC57/2009/MeterReadings#\" xmlns:ns11=\"http://www.trilliantinc.com/SEAL/1.0/trpx\" xmlns:ns10=\"http://iec.ch/TC57/2009/GetMeterReadings#\" xmlns:ns2=\"http://www.trilliantinc.com/SEAL/1.0/rpma\" xmlns:ns4=\"http://www.trilliantinc.com/SEAL/1.0/CIMTypes\" xmlns:ns3=\"http://iec.ch/TC57/2009/EndDeviceAssets#\">"
+},
+{
+"id": 10557,
+"es": "<ns9:Header>"
+},
+{
+"id": 10558,
+"es": "<ns9:Verb>REPLY</ns9:Verb>"
+},
+{
+"id": 10559,
+"es": "<ns9:Noun>EndDeviceAssets</ns9:Noun>"
+},
+{
+"id": 10560,
+"es": "<ns9:CorrelationID>e318d792-3cc2-490c-8185-aab605462bbe</ns9:CorrelationID>"
+},
+{
+"id": 10561,
+"es": "</ns9:Header>"
+},
+{
+"id": 10562,
+"es": "<ns9:Reply>"
+},
+{
+"id": 10563,
+"es": "<ns9:ReplyCode>0.0</ns9:ReplyCode>"
+},
+{
+"id": 10564,
+"es": "</ns9:Reply>"
+},
+{
+"id": 10565,
+"es": "<ns9:Payload>"
+},
+{
+"id": 10566,
+"es": "<ns3:EndDeviceAssets>"
+},
+{
+"id": 10567,
+"es": "<ns3:EndDeviceAsset xsi:type=\"ns11:trpx\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+},
+{
+"id": 10568,
+"es": "<ns3:mRID>ECTPRBEQ0200US</ns3:mRID>"
+},
+{
+"id": 10569,
+"es": "<ns3:serialNumber>PRBEQ0200US</ns3:serialNumber>"
+},
+{
+"id": 10570,
+"es": "<ns3:EndDeviceModel>"
+},
+{
+"id": 10571,
+"es": "<ns3:modelNumber>SGM3011</ns3:modelNumber>"
+},
+{
+"id": 10572,
+"es": "</ns3:EndDeviceModel>"
+},
+{
+"id": 10573,
+"es": "<ns2:nodeID>844781</ns2:nodeID>"
+},
+{
+"id": 10574,
+"es": "<ns2:applicationTypeID>238</ns2:applicationTypeID>"
+},
+{
+"id": 10575,
+"es": "<ns11:firmwareVersion>3.4.23</ns11:firmwareVersion>"
+},
+{
+"id": 10576,
+"es": "<ns11:hardwareVersion>aMeter100V3.0</ns11:hardwareVersion>"
+},
+{
+"id": 10577,
+"es": "<ns11:meterFirmwareVersion>aM100-N-A1620122</ns11:meterFirmwareVersion>"
+},
+{
+"id": 10578,
+"es": "<ns11:meterProgramVersion>aM100-N-A1620122</ns11:meterProgramVersion>"
+},
+{
+"id": 10579,
+"es": "<ns11:nodeFirmwareVersion>128.2.1</ns11:nodeFirmwareVersion>"
+},
+{
+"id": 10580,
+"es": "<ns11:reportedSerialNumber>123020007324</ns11:reportedSerialNumber>"
+},
+{
+"id": 10581,
+"es": "<ns11:firmwareBuildStamp>emcm_besra_ameter_rel 3.4.23+0.216a82e develop 2021-11-05 16:14:04 dphillips-RPMAdev</ns11:firmwareBuildStamp>"
+},
+{
+"id": 10582,
+"es": "<ns11:firmwareBoardType>BESRA</ns11:firmwareBoardType>"
+},
+{
+"id": 10583,
+"es": "<ns11:auxiliaryRelay>false</ns11:auxiliaryRelay>"
+},
+{
+"id": 10584,
+"es": "</ns3:EndDeviceAsset>"
+},
+{
+"id": 10585,
+"es": "</ns3:EndDeviceAssets>"
+},
+{
+"id": 10586,
+"es": "</ns9:Payload>"
+},
+{
+"id": 10587,
+"es": "</ns9:ResponseMessage>"
+},
+{
+"id": 10588,
+"es": "Transformación y comunicación"
+},
+{
+"id": 10589,
+"es": "El mensaje original en formato XML se transforma a formato JSON para su envío al endpoint REST expuesto por el núcleo de la solución OUM MDM:"
+},
+{
+"id": 10590,
+"es": "Protocolo: REST"
+},
+{
+"id": 10591,
+"es": "Endpoint: UrlMdm/contexto/equipment"
+},
+{
+"id": 10592,
+"es": "Operación: POST"
+},
+{
+"id": 10593,
+"es": "Recepción de lectura / magnitudes de equipos"
+},
+{
+"id": 10594,
+"es": "Para la recepción de lecturas / magnitudes el proceso de integración, cuando recibe un mensaje de lecturas / magnitudes lo traduce al formato adecuado en MDM y lo inserta en las colas Kafka para que sea procesado de forma estándar."
+},
+{
+"id": 10595,
+"es": "Mensaje de recepción"
+},
+{
+"id": 10596,
+"es": "El proceso de integración de UNITY SUITE está escuchando en una cola hasta que recibe un mensaje de lecturas / magnitudes de un equipo ya dado de alta en MDM"
+},
+{
+"id": 10597,
+"es": "<ns1:value>45454.5</ns1:value>"
+},
+{
+"id": 10598,
+"es": "<ns1:mRID>ECTPRBEQ0001US</ns1:mRID>"
+},
+{
+"id": 10599,
+"es": "En este caso la integración comprueba que el equipo existe en MDM y traduce la información a un mensaje para el MDM."
+},
+{
+"id": 10600,
+"es": "El mensaje original en formato XML se transforma a formato JSON para su envío a la plataforma Kafka para su procesamiento. "
+},
+{
+"id": 10601,
+"es": "Se utilizarán los siguientes tópicos:"
+},
+{
+"id": 10602,
+"es": "Tópico de ingesta: "
+},
+{
+"id": 10603,
+"es": "unity_suite-oum_mdc_ingestion-profile"
+},
+{
+"id": 10604,
+"es": "Tópico de error: "
+},
+{
+"id": 10605,
+"es": "unity_suite-oum_mdc_ingestion-profile_error (para indicar errores de formato del mensaje)"
+},
+{
+"id": 10606,
+"es": "Tópico de respuesta: "
+},
+{
+"id": 10607,
+"es": "unity_suite-oum_mdc_ingestion-profile_reply (para indicar el resultado de la ingesta)"
+},
+{
+"id": 10608,
+"es": "Nota: los nombres de los tópicos son configurables y, por lo tanto, susceptibles de modificación."
+},
+{
+"id": 10609,
+"es": "    \"payload\": ["
+},
+{
+"id": 10610,
+"es": "            \"element\": {"
+},
+{
+"id": 10611,
+"es": "                \"type\": \"MP_CODE\","
+},
+{
+"id": 10612,
+"es": "                \"value\": \"ECTPRBPM0001US\""
+},
+{
+"id": 10613,
+"es": "            \"dataSets\": ["
+},
+{
+"id": 10614,
+"es": "                    \"type\": null,"
+},
+{
+"id": 10615,
+"es": "                    \"measurementType\": \"BILLING_REGISTER\","
+},
+{
+"id": 10616,
+"es": "                    \"magnitudes\": ["
+},
+{
+"id": 10617,
+"es": "                            \"code\": \"BRM_IMPORT_ACTIVE_ENERGY\","
+},
+{
+"id": 10618,
+"es": "                            \"totalizer\": \"T0\","
+},
+{
+"id": 10619,
+"es": "                            \"type\": \"CLOSE\","
+},
+{
+"id": 10620,
+"es": "                            \"cim\": null,"
+},
+{
+"id": 10621,
+"es": "                            \"units\": null,"
+},
+{
+"id": 10622,
+"es": "                            \"contract\": null"
+},
+{
+"id": 10623,
+"es": "                    \"interval\": {"
+},
+{
+"id": 10624,
+"es": "                        \"length\": 1440,"
+},
+{
+"id": 10625,
+"es": "                        \"units\": \"D\""
+},
+{
+"id": 10626,
+"es": "                    \"data\": ["
+},
+{
+"id": 10627,
+"es": "                            \"startTime\": \"2025-12-08T10:00:00.000Z\","
+},
+{
+"id": 10628,
+"es": "                            \"endTime\": \"2025-12-09T10:00:00.000Z\","
+},
+{
+"id": 10629,
+"es": "                            \"quality\": \"0\","
+},
+{
+"id": 10630,
+"es": "                            \"consumptions\": ["
+},
+{
+"id": 10631,
+"es": "                                null"
+},
+{
+"id": 10632,
+"es": "                            \"values\": ["
+},
+{
+"id": 10633,
+"es": "                            \"dst\": null"
+},
+{
+"id": 10634,
+"es": "    \"header\": {"
+},
+{
+"id": 10635,
+"es": "        \"schema\": null,"
+},
+{
+"id": 10636,
+"es": "        \"message\": {"
+},
+{
+"id": 10637,
+"es": "            \"id\": \"b35fc11d-9689-4b49-9604-c6591a67b6e2\","
+},
+{
+"id": 10638,
+"es": "            \"correlationId\": \"33a1b3c2-669f-4ba2-836a-d2daf8807eb4\","
+}
+]

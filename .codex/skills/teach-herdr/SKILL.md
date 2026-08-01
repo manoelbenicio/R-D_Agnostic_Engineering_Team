@@ -75,12 +75,12 @@ Do not improvise keybindings.
 
 ## Offer the operating skill
 
-After setup, offer to install Herdr's operating skill so future agent sessions can control Herdr. Ask before writing global agent configuration. Use the [official upstream `SKILL.md`](https://raw.githubusercontent.com/ogulcancelik/herdr/master/SKILL.md) as the source of truth.
+After setup, offer to install Herdr's operating skill so future agent sessions can control Herdr. Ask before writing global agent configuration. Use the [official upstream `SKILL.md`](https://raw.githubusercontent.com/herdrdev/herdr/master/skills/herdr/SKILL.md) as the source of truth.
 
 For harnesses supported by the open skills CLI, use:
 
 ```bash
-npx skills add ogulcancelik/herdr --skill herdr -g
+npx skills add herdrdev/herdr --skill herdr -g
 ```
 
 For an agent without a skill system, suggest adding the upstream skill contents to its global custom instructions.

@@ -1,0 +1,3850 @@
+[
+{
+"id": 8494,
+"es": "1: Final Meter Readings at the time the meter is removed (meterReadings payload),"
+},
+{
+"id": 8495,
+"es": "The noun identifies the type of information provided into different objects of the payload depending on the selected operationId value."
+},
+{
+"id": 8496,
+"es": "Verb for transaction to execute into each operationId"
+},
+{
+"id": 8497,
+"es": "delete"
+},
+{
+"id": 8498,
+"es": "create"
+},
+{
+"id": 8499,
+"es": "Information about the meter removed."
+},
+{
+"id": 8500,
+"es": "Unique reference on the Distribution Network where the physical Meter was installed at the time of its disassembly."
+},
+{
+"id": 8501,
+"es": "Abbreviation of the AMR/AMI HES system who was operating the remote collection of readings from the removed Meter using an AMI Infrastructure."
+},
+{
+"id": 8502,
+"es": "The date and time with format “YYYY-MM-DDThh:mm:ss” at which the removal transaction was recorded into the source system."
+},
+{
+"id": 8503,
+"es": "The effective date and time with format “YYYY-MM-DDThh:mm:ss” at which the Meter became officially uninstall from the business point of view."
+},
+{
+"id": 8504,
+"es": "It uses to be the official date and time which the meter becomes to be out of service."
+},
+{
+"id": 8505,
+"es": "The final readings of the old (removed) meter. "
+},
+{
+"id": 8506,
+"es": "Internal ID used by the source system to identify the removed Meter."
+},
+{
+"id": 8507,
+"es": "Unique reference on the Distribution Network where the physical Meter was removed."
+},
+{
+"id": 8508,
+"es": "MDM is going to use this field as date in which the association between the Meter and the Metering Point ends."
+},
+{
+"id": 8509,
+"es": "To indicate that something remarkable (such as a power outage or clock adjustment) occurred during the time the reading value was captured."
+},
+{
+"id": 8510,
+"es": "Propiedad"
+},
+{
+"id": 8511,
+"es": "Esquema de Petición y Respuesta"
+},
+{
+"id": 8512,
+"es": "Mensaje de Solicitud"
+},
+{
+"id": 8513,
+"es": "Este método asíncrono se utiliza para solicitar a Onesait Metering (OM) la ejecución de un servicio remoto (endDeviceControlType 3.31.0.23) para desconectar el interruptor del contador solicitado."
+},
+{
+"id": 8514,
+"es": "El OM realizará una solicitud de lectura bajo demanda contra la interfaz de HES correspondiente (emitiendo el comando "
+},
+{
+"id": 8515,
+"es": "METER_DISCONNECT"
+},
+{
+"id": 8516,
+"es": ") al sistema de cabecera que esté operando el equipo para desconectar el relé del contador."
+},
+{
+"id": 8517,
+"es": "proporcionada por el sistema comercial Onesait Customers"
+},
+{
+"id": 8518,
+"es": ", o bien"
+},
+{
+"id": 8519,
+"es": "Al tópico "
+},
+{
+"id": 8520,
+"es": " en el broker Kafka configurado"
+},
+{
+"id": 8521,
+"es": "OM actualizará su inventario cambiando el Estado de Operación del equipo a DESCONECTADO si el comando emitido finaliza OK."
+},
+{
+"id": 8522,
+"es": "NOTA: Es práctica común capturar una «lectura final» coincidente con el evento de desconexión. Esta lectura final del contador coincidente con la desconexión se proporcionará en el mensaje de respuesta cuando la cabecera integrada con OM-MDM devuelva las lecturas, o los ajustes del componente OM-MDC permitan capturar dichas lecturas en el momento de emitir el comando de desconexión al contador."
+},
+{
+"id": 8523,
+"es": "Relay Status"
+},
+{
+"id": 8524,
+"es": "EndDeviceControlType"
+},
+{
+"id": 8525,
+"es": "CIS-MeterDisconnection_Request.json"
+},
+{
+"id": 8526,
+"es": "CIS-MeterDisconnection_Response.json"
+},
+{
+"id": 8527,
+"es": "En el caso en que el sistema CIS sea el propio de Minsait, es decir el sistema Onesait Customers el proceso se llevará a cabo de la siguiente forma:"
+},
+{
+"id": 8528,
+"es": "Sin embargo, en el caso en que el sistema utilizado por el cliente sea uno distinto al sistema Customers, la respuesta pasará a través del Topic de Kafka quedando el esquema de la siguiente forma:"
+},
+{
+"id": 8529,
+"es": "\"readingTypeList\""
+},
+{
+"id": 8530,
+"es": "\"idReading\""
+},
+{
+"id": 8531,
+"es": "\"timeScheduleEnd\""
+},
+{
+"id": 8532,
+"es": "\"timeScheduleStart\""
+},
+{
+"id": 8533,
+"es": "\"readingType\""
+},
+{
+"id": 8534,
+"es": "Flag to indicate If the response message should be synchronous or asynchronous."
+},
+{
+"id": 8535,
+"es": "Given the transaction between OM and HES, or messaging between OM and meter, can take several seconds to be completely executed this method only should be invoked requesting asynchronous reply."
+},
+{
+"id": 8536,
+"es": "“3.31.0.23” Disconnection"
+},
+{
+"id": 8537,
+"es": "readingTypeList"
+},
+{
+"id": 8538,
+"es": "Some processes of the client system that issues the request need for a read to be reported coincidentally with the disconnection event."
+},
+{
+"id": 8539,
+"es": "In such case, this object contains the reading types to be reported by MDM into the response message."
+},
+{
+"id": 8540,
+"es": "CIM code related to the measured magnitude, coincident with the execution of the control command, in which the client system that issues the request is interested on."
+},
+{
+"id": 8541,
+"es": "timeScheduleEnd"
+},
+{
+"id": 8542,
+"es": "Date and time with format “YYYY-MM-DDThh:mm:ss”."
+},
+{
+"id": 8543,
+"es": "Currently not applicable for this control command."
+},
+{
+"id": 8544,
+"es": "timeScheduleStart"
+},
+{
+"id": 8545,
+"es": "\"Long\""
+},
+{
+"id": 8546,
+"es": "\"ratedPower\""
+},
+{
+"id": 8547,
+"es": "\"timeStamp\""
+},
+{
+"id": 8548,
+"es": "\"Double\""
+},
+{
+"id": 8549,
+"es": "\"readingQualityType\""
+},
+{
+"id": 8550,
+"es": "\"utcDiff\""
+},
+{
+"id": 8551,
+"es": "\"Integer\""
+},
+{
+"id": 8552,
+"es": "OK (if there are no errors and all results have been returned)."
+},
+{
+"id": 8553,
+"es": "FAILED (if no result can be returned due to one or more errors, indicated with one or more errorsList elements,"
+},
+{
+"id": 8554,
+"es": "MessageId value of the request message."
+},
+{
+"id": 8555,
+"es": "Enumeration of the expected event resulting from the disconnection using CIM standard:"
+},
+{
+"id": 8556,
+"es": "3.31.0.68 (when result is OK)"
+},
+{
+"id": 8557,
+"es": "3.31.0.84 (when result is KO)"
+},
+{
+"id": 8558,
+"es": "Contracted power on customer service agreement received into the request message."
+},
+{
+"id": 8559,
+"es": "readingsList"
+},
+{
+"id": 8560,
+"es": "This object contains the “final read” coincident with the disconnection event."
+},
+{
+"id": 8561,
+"es": "Internal ID of the reading record in the client system (CIS) that issued the request."
+},
+{
+"id": 8562,
+"es": "CIM code related to the measured magnitude, coincident with the execution of the control command, in which the client system that issues the request message is interested on."
+},
+{
+"id": 8563,
+"es": "utcDiff"
+},
+{
+"id": 8564,
+"es": "Time Difference (+/- hours) between the timeStamp in which the reading is reported and the UTC time."
+},
+{
+"id": 8565,
+"es": "Object containing the error code list replied by the WEB API when result is not OK"
+},
+{
+"id": 8566,
+"es": "Este método asíncrono se utiliza para solicitar a Onesait Metering (OM) la ejecución de un servicio remoto (endDeviceControlType 3.31.0.18) para reconectar el interruptor del contador seleccionado."
+},
+{
+"id": 8567,
+"es": "METER_CONNECT"
+},
+{
+"id": 8568,
+"es": ") al sistema de cabecera que esté operando el equipo para realizar una reconexión del relé."
+},
+{
+"id": 8569,
+"es": "OM actualizará su inventario cambiando el Estado de Operación del equipo a ACTIVO si el comando emitido finaliza OK."
+},
+{
+"id": 8570,
+"es": "NOTA: Es práctica común capturar una «lectura inicial» coincidente con el evento de reconexión. Esta lectura inicial del contador coincidente con la reconexión se proporcionará en el mensaje de respuesta cuando el HES integrado con OM-MDM devuelva las lecturas, o los ajustes del componente OM-MDC permitan capturar dichas lecturas en el momento de emitir el comando de reconexión al contador."
+},
+{
+"id": 8571,
+"es": "Parámetros claves"
+},
+{
+"id": 8572,
+"es": "CIS-MeterReconnection_Request.json"
+},
+{
+"id": 8573,
+"es": "CIS-MeterReconnection_Response.json"
+},
+{
+"id": 8574,
+"es": "Date and time with format “YYYY-MM-DDThh:mm:ss” in which the request message is created by the client system."
+},
+{
+"id": 8575,
+"es": "“3.31.0.18” Reconnection"
+},
+{
+"id": 8576,
+"es": "Some processes of the client system that issues the request call for a read to be reported coincidentally with the reconnection event."
+},
+{
+"id": 8577,
+"es": "Mensaje de Respuesta "
+},
+{
+"id": 8578,
+"es": "Ejemplos"
+},
+{
+"id": 8579,
+"es": "\"intervalBlocks\""
+},
+{
+"id": 8580,
+"es": "3.31.0.42  (when result is OK)"
+},
+{
+"id": 8581,
+"es": "3.31.0.67  (when result is KO)"
+},
+{
+"id": 8582,
+"es": "This object contains the “initial read” coincident with the reconnection event."
+},
+{
+"id": 8583,
+"es": "Time Difference (+/- hours) from UTC to the timeStamp in which the reading is reported."
+},
+{
+"id": 8584,
+"es": "Funcionalidades de Mediciones"
+},
+{
+"id": 8585,
+"es": "CIS > MDM - Solicitud Medidas de Cierre (Billing Registers)"
+},
+{
+"id": 8586,
+"es": "CIS > MDM - Solicitud de Perfiles de Carga (Load Profile)"
+},
+{
+"id": 8587,
+"es": "CIS > MDM - Solicitud de Perfiles de Carga Absolutos (Absolute Load Profile)"
+},
+{
+"id": 8588,
+"es": "CIS > MDM - Envío de lecturas al sistema"
+},
+{
+"id": 8589,
+"es": "Esquema de Petición/Respuesta"
+},
+{
+"id": 8590,
+"es": "ANEXO: Mapeo CIM."
+},
+{
+"id": 8591,
+"es": "/rest/InCMS/getMeterReadings"
+},
+{
+"id": 8592,
+"es": "Esta interfaz se utiliza para solicitar desde un Sistema Comercial a Onesait Metering MDM las Medidas de Cierre de uno o más contadores que estén almacenadas en el sistema MDM con fines de facturación."
+},
+{
+"id": 8593,
+"es": "La solicitud de Medidas de Cierre debe especificar un contador o grupo de contadores, los tipos de lecturas a suministrar (en este caso Medidas de Cierre) y el periodo de interés (la fecha y hora de las lecturas a informar debe estar contenida en un rango específico de fechas de interés para CIS/Sistema de facturación). "
+},
+{
+"id": 8594,
+"es": "La devolución de llamada con el mensaje o mensajes de respuesta asíncrona puede ser publicada:"
+},
+{
+"id": 8595,
+"es": "a.       A la URL HTTP "
+},
+{
+"id": 8596,
+"es": " proporcionada por el sistema comercial Onesait Customers, o"
+},
+{
+"id": 8597,
+"es": "b.       Al tópico "
+},
+{
+"id": 8598,
+"es": " en el broker de Kafka configurado.  "
+},
+{
+"id": 8599,
+"es": "Ficheros "
+},
+{
+"id": 8600,
+"es": "de Ejemplo"
+},
+{
+"id": 8601,
+"es": "CIS-SolicitudMedidasCierre_Request.json"
+},
+{
+"id": 8602,
+"es": "CIS-SolicitudMedidasCierre_Response.json"
+},
+{
+"id": 8603,
+"es": "En el caso en que el sistema CIS sea el propio de Minsait, es decir Onesait Customers, el proceso se llevará a cabo de la siguiente forma:"
+},
+{
+"id": 8604,
+"es": "Sin embargo, en el caso en que el sistema utilizado por el cliente sea uno distinto al sistema Onesait Customers, la respuesta pasará a través del Topic de Kafka quedando el esquema de la siguiente forma:"
+},
+{
+"id": 8605,
+"es": "\"ANHBilling\""
+},
+{
+"id": 8606,
+"es": "\"getMeterReadingList\""
+},
+{
+"id": 8607,
+"es": "\"endDeviceList\""
+},
+{
+"id": 8608,
+"es": "\"MP01MAM\""
+},
+{
+"id": 8609,
+"es": "To collect meter readings for more than 1 single meter, it is suggested to use asynchronous responses."
+},
+{
+"id": 8610,
+"es": "correlationID"
+},
+{
+"id": 8611,
+"es": "getMeterReadingList"
+},
+{
+"id": 8612,
+"es": "Object used to list the meters-usage points, types of readings and period of interest to provisioning from MDM."
+},
+{
+"id": 8613,
+"es": "endDeviceList"
+},
+{
+"id": 8614,
+"es": "Object used to list the meters-usage points of interest."
+},
+{
+"id": 8615,
+"es": "Object used to list the types of readings and period of interest for every meter."
+},
+{
+"id": 8616,
+"es": "CIM code related to the magnitude in which the client system that issues the request is interested on."
+},
+{
+"id": 8617,
+"es": "End time period of interest which readings to provisioning should fall (reading datetime less or equal)."
+},
+{
+"id": 8618,
+"es": "If timeScheduleEnd is not provided, it specifies a period from the timeScheduleStart until \"now\"."
+},
+{
+"id": 8619,
+"es": "Date and time with format “YYYY-MM-DDThh:mm:ss” in which the reading timestamp"
+},
+{
+"id": 8620,
+"es": "Initial time period of interest which readings to provisioning should fall (reading datetime greater or equal)."
+},
+{
+"id": 8621,
+"es": "KO (if no result can be returned due to one or more errors, indicated with one or more errorsList elements,"
+},
+{
+"id": 8622,
+"es": "MessageId value contained into the request message received from the Client system"
+},
+{
+"id": 8623,
+"es": "List of readings existing into MDM for the meters-usage point and period of interest requested by the client system."
+},
+{
+"id": 8624,
+"es": "This object contains the reading value for every Reading Type requested by the Client System that fall into the period of interest."
+},
+{
+"id": 8625,
+"es": "Date and time with format “YYYY-MM-DDThh:mm:ss” in which the reading value was measured. "
+},
+{
+"id": 8626,
+"es": "Reading value"
+},
+{
+"id": 8627,
+"es": "Typically, this value use to be any of the codes defined by IEC 61968-11 standard for element readingQualityType but can be tailored to any other value. "
+},
+{
+"id": 8628,
+"es": "For example, to indicate if the value is ‘Estimated’. "
+},
+{
+"id": 8629,
+"es": "Se debe tener en cuenta que cada entorno contará con sus propios códigos CIM que mapean cada uno de los Tipos de Medidas, magnitudes y periodo. "
+},
+{
+"id": 8630,
+"es": "En este caso, se han mapeado para el entorno QA los siguientes valores para medidas menusales: "
+},
+{
+"id": 8631,
+"es": "Codigo CIM"
+},
+{
+"id": 8632,
+"es": "MAXIMUM_POWER"
+},
+{
+"id": 8633,
+"es": "MAXIMUM_POWER_DATE"
+},
+{
+"id": 8634,
+"es": "Esta interfaz se utiliza para solicitar desde un Sistema Comercial a Onesait Metering MDM los Perfiles de Carga de uno o más contadores que estén almacenados en el sistema MDM."
+},
+{
+"id": 8635,
+"es": "La solicitud de los Perfiles de Carga debe especificar un contador o grupo de contadores y los tipos de lecturas (en este caso Perfiles de Carga) "
+},
+{
+"id": 8636,
+"es": "y el periodo de interés (la fecha y hora de las medidas a informar debe estar contenida en un rango específico de fechas de interés para CIS/Sistema de facturación). "
+},
+{
+"id": 8637,
+"es": "La devolución de llamada con el mensaje o mensajes de respuesta puede ser publicada:"
+},
+{
+"id": 8638,
+"es": "b.       Al tópico "
+},
+{
+"id": 8639,
+"es": " en el broker de Kafka configurado.  "
+},
+{
+"id": 8640,
+"es": "CIS-SolicitudPerfilesDeCarga_Request.json"
+},
+{
+"id": 8641,
+"es": "CIS-SolicitudPerfilesDeCarga_Response.json"
+},
+{
+"id": 8642,
+"es": "En el caso en que el sistema CIS sea el propio de Minsait, Onesait Customers, el proceso se llevará a cabo de la siguiente forma:"
+},
+{
+"id": 8643,
+"es": "\"Prueba IDR\""
+},
+{
+"id": 8644,
+"es": "Given the transaction between OM and HES, or messaging between OM and meter, can take several seconds to be completely executed this method only should be invoked requesting asynchronous reply. "
+},
+{
+"id": 8645,
+"es": "Not applicable in this method."
+},
+{
+"id": 8646,
+"es": "intervalBlocks"
+},
+{
+"id": 8647,
+"es": "Typically, this value use to be any of the codes defined by IEC 61968-11 standard for element readingQualityType but can be tailored to any other value."
+},
+{
+"id": 8648,
+"es": "En este caso, se han mapeado para el entorno QA los siguientes valores para medidas horarias: "
+},
+{
+"id": 8649,
+"es": "Código CIM (inventado)"
+},
+{
+"id": 8650,
+"es": "Esta interfaz se utiliza para solicitar desde un Sistema Comercial a Onesait Metering MDM los Perfiles de Carga Absolutos de uno o más contadores que estén almacenados en el sistema MDM."
+},
+{
+"id": 8651,
+"es": "La solicitud de los Perfiles de Carga Absolutos debe especificar un contador o grupo de contadores y los tipos de lecturas (en este caso Perfiles de Carga Absolutos) y el periodo de interés (la fecha y hora de las medidas a informar debe estar contenida en un rango específico de fechas de interés para CIS/Sistema de facturación). "
+},
+{
+"id": 8652,
+"es": " proporcionada "
+},
+{
+"id": 8653,
+"es": "por el sistema comercial Onesait Customers"
+},
+{
+"id": 8654,
+"es": "b.       Al "
+},
+{
+"id": 8655,
+"es": "tópico "
+},
+{
+"id": 8656,
+"es": " en el broker de Kafka configurado. "
+},
+{
+"id": 8657,
+"es": "CIS-SolicitudPerfilesDeCargaAbsolutos_Request.json"
+},
+{
+"id": 8658,
+"es": "CIS-SolicitudPerfilesDeCargaAbsolutos_Response.json"
+},
+{
+"id": 8659,
+"es": "Se debe tener en cuenta que cada entorno contará con sus propios códigos CIM que mapean cada uno de los Tipos de Medidas, magnitudes y periodo."
+},
+{
+"id": 8660,
+"es": "En este caso, se han mapeado para el entorno QA los siguientes valores para valore sinstantáneos horarios: "
+},
+{
+"id": 8661,
+"es": "Magnitud Lectura (Perfil Carga Absoluto)"
+},
+{
+"id": 8662,
+"es": "/rest/InCMS/meterReadings"
+},
+{
+"id": 8663,
+"es": "Esta interfaz se utiliza para enviar desde un Sistema Comercial a Onesait Metering MDM datos de Medidas de Cierre, Perfiles de Carga o Perfiles de Carga Absoluto para su almacenamiento."
+},
+{
+"id": 8664,
+"es": "El envío de datos al sistema debe especificar un contador o grupo de contadores, los tipos de lecturas (incrementales/absolutas) a suministrar, y el periodo de interés indicado por el sistema comercial (la fecha-hora de las lecturas incrementales/absolutas a reportar debe estar contenida en un rango específico de fechas de interés para CIS/Sistema de Facturación). "
+},
+{
+"id": 8665,
+"es": "Las medidas recibidas desde CIS se almacenan en el sistema como medidas con origen "
+},
+{
+"id": 8666,
+"es": "INCMS"
+},
+{
+"id": 8667,
+"es": ", en la interfaz se refleja como"
+},
+{
+"id": 8668,
+"es": " OUC"
+},
+{
+"id": 8669,
+"es": "La devolución de llamada con el mensaje o mensajes de respuesta asíncrona se puede contabilizar:"
+},
+{
+"id": 8670,
+"es": " proporcionada por el sistema cliente, o"
+},
+{
+"id": 8671,
+"es": " en el broker de Kafka configurado."
+},
+{
+"id": 8672,
+"es": "CIS-EnvíoLecturas_Request.json"
+},
+{
+"id": 8673,
+"es": "CIS-EnvíoLecturas_Response.json"
+},
+{
+"id": 8674,
+"es": "Esquema de Petición/Respuesta "
+},
+{
+"id": 8675,
+"es": "Si la petición se produce de forma síncrona la respuesta seguirá el siguiente esquema"
+},
+{
+"id": 8676,
+"es": "En el caso en que la petición se produzca de forma asíncorna y el sistema CIS sea el propio de Minsait, es decir Onesait Customers el proceso se llevará a cabo de la siguiente forma:"
+},
+{
+"id": 8677,
+"es": "\"MeterReadingList\""
+},
+{
+"id": 8678,
+"es": "TRUE/FALSE"
+},
+{
+"id": 8679,
+"es": "Object containing the list of interval data readings related to the readingType."
+},
+{
+"id": 8680,
+"es": "Typically, this value use to be any of the codes defined by"
+},
+{
+"id": 8681,
+"es": "IEC 61968-11 standard for element readingQualityType but can be tailored to any other value. "
+},
+{
+"id": 8682,
+"es": "Paremeter"
+},
+{
+"id": 8683,
+"es": "OK/KO"
+},
+{
+"id": 8684,
+"es": "Funcionalidades de Prepago"
+},
+{
+"id": 8685,
+"es": "CIS > MDM - Configuración del modo de pago mediante token"
+},
+{
+"id": 8686,
+"es": "Esta interfaz asíncrona se utiliza para solicitar a Onesait Metering (OM) la ejecución de un servicio remoto para enviar un token de prepago que cambie el modo de pago (prepago a postpago o viceversa) de un contador solicitado. (Nota: Esta unterfaz cambia el modo de pago del EQUIPO, pero NO cambia el tipo de contrato configurado en el Punto de Medida asociado con dicho equipo)"
+},
+{
+"id": 8687,
+"es": "El OM realizará una solicitud de envío de token bajo demanda (emitiendo un comando) al sistema de cabecera que esté operando el equipo para cambiar el modo de pago actual del dispositivo solicitado; o bien"
+},
+{
+"id": 8688,
+"es": "El OM emitirá la orden al contador físico a través de la infraestructura AMI cuando el OM actúe como interfaz primaria (MDC) que recopila datos de los dispositivos finales y emite controles a los mismos."
+},
+{
+"id": 8689,
+"es": "Parámetro remoto"
+},
+{
+"id": 8690,
+"es": " (NOTA: Nombre configurado en BBDD. Si no existe este nombre, la llamada no se completa correctamente, ya que la petición busca según el nombre configurado para el parámetro remoto)."
+},
+{
+"id": 8691,
+"es": "OM operando con el sistema MDC:"
+},
+{
+"id": 8692,
+"es": "CIS_MDC_Change_Payment_Mode_Result_OK.json"
+},
+{
+"id": 8693,
+"es": "OM operando con un sistema HES externo: "
+},
+{
+"id": 8694,
+"es": "CIS_HES_Change_Payment_Mode_Result_OK.json"
+},
+{
+"id": 8695,
+"es": "Ejemplo de distintos escenarios de errores:"
+},
+{
+"id": 8696,
+"es": "CIS_Change_Payment_Mode_Result_KO.json"
+},
+{
+"id": 8697,
+"es": "En el caso en que el sistema OM esté operando con el sistema MDC, el proceso se llevará a cabo de la siguiente forma:"
+},
+{
+"id": 8698,
+"es": "Se generará una llamada en el Monitor de Llamadas (Módulo de Telemedición) donde se podrá monitorizar el resultado de la misma."
+},
+{
+"id": 8699,
+"es": "Sin embargo, en el caso en que el sistema utilizado sea un HES externo al propio del Producto OM el esquema del proceso queda descrito de la siguiente forma:"
+},
+{
+"id": 8700,
+"es": "El resultado del comando ejecutado se podrá monitorizar en el Monitor de Comandos (Módulo de Integración)."
+},
+{
+"id": 8701,
+"es": "El mensaje de solicitud recibido desde CIS sigue la siguiente estructura:"
+},
+{
+"id": 8702,
+"es": "\"ChangePaymentModeOK4-PreToPost\""
+},
+{
+"id": 8703,
+"es": "\"3.CHANGE_MODE_TOKEN\""
+},
+{
+"id": 8704,
+"es": "\"MP10MAM\""
+},
+{
+"id": 8705,
+"es": "\"prepaymentTokens\""
+},
+{
+"id": 8706,
+"es": "Date"
+},
+{
+"id": 8707,
+"es": "true or false"
+},
+{
+"id": 8708,
+"es": "Abbreviation of the system who is issuing the request. For example, ‘INCMS’."
+},
+{
+"id": 8709,
+"es": "Serial Number of the meter for which the request has been executed."
+},
+{
+"id": 8710,
+"es": "Serial Numbers"
+},
+{
+"id": 8711,
+"es": "Code of the Metering Point for which the request has been executed."
+},
+{
+"id": 8712,
+"es": "Metering Point Codes"
+},
+{
+"id": 8713,
+"es": "prepaymentTokens"
+},
+{
+"id": 8714,
+"es": "Numerical Code (max 20 digits) of the prepayment token. "
+},
+{
+"id": 8715,
+"es": "Note: Multiple tokens can be introduced within the same request, and they will be transmitted according to the order in which they are set in that request."
+},
+{
+"id": 8716,
+"es": "Array"
+},
+{
+"id": 8717,
+"es": "Ex: 92461111737288191919"
+},
+{
+"id": 8718,
+"es": "Independientemente de si el sistema OM está configurado con su componente MDC o si funciona con un HES externo, la respuesta asíncrona enviada desde OM a ambos sistema está configurada de la siguiente manera:"
+},
+{
+"id": 8719,
+"es": "\"ChangePaymentModeOK2-PostToPre\""
+},
+{
+"id": 8720,
+"es": "\"3.CHANGE_MODE_TOKEN.OK\""
+},
+{
+"id": 8721,
+"es": "Date and time with format “YYYY-MM-DDThh:mm:ss” in which the response message is created."
+},
+{
+"id": 8722,
+"es": "Request messageID"
+},
+{
+"id": 8723,
+"es": "OK/FAILED"
+},
+{
+"id": 8724,
+"es": "\"3.CHANGE_MODE_TOKEN.OK\" or \"3.CHANGE_MODE_TOKEN.KO\""
+},
+{
+"id": 8725,
+"es": "Nota: La estructura de los mensajes tanto de petición como respuesta con HES está descrita "
+},
+{
+"id": 8726,
+"es": "CIS > MDM - Configuración de los precios unitarios de las tarifas"
+},
+{
+"id": 8727,
+"es": "/rest/InCMS/setTatiffRateList"
+},
+{
+"id": 8728,
+"es": "Esta interfaz asíncrona se utiliza para solicitar a Onesait Metering (OM) la ejecución de un servicio remoto (endDeviceControlType 3.20.140.28) para establecer los precios unitarios de las de un determinado contador."
+},
+{
+"id": 8729,
+"es": "El OM realizará una solicitud de configuración bajo demanda (emitiendo un comando) al sistema de cabecera que esté operando el equipo para establecer los precios unitarios de las tarifas del dispositivo requerido; o bien"
+},
+{
+"id": 8730,
+"es": "OM operando con el sistema MDC: "
+},
+{
+"id": 8731,
+"es": "CIS_MDC_Set_Tariff_Rate_Result_OK.json"
+},
+{
+"id": 8732,
+"es": "OM operando con un sistema HES externo:"
+},
+{
+"id": 8733,
+"es": "CIS_HES_Set_Tariff_Rate_Result_OK.json"
+},
+{
+"id": 8734,
+"es": "CIS_Set_Tariff_Rate_Result_KO.json"
+},
+{
+"id": 8735,
+"es": "\"SetTariffRateKO-MPnoPrepago\""
+},
+{
+"id": 8736,
+"es": "\"tariffCode\""
+},
+{
+"id": 8737,
+"es": "\"TASOM001\""
+},
+{
+"id": 8738,
+"es": "\"tariffName\""
+},
+{
+"id": 8739,
+"es": "\"tariffDescription\""
+},
+{
+"id": 8740,
+"es": "\"activateTariffRateTime\""
+},
+{
+"id": 8741,
+"es": "\"tariffRateCurrencyUnit\""
+},
+{
+"id": 8742,
+"es": "\"EUR\""
+},
+{
+"id": 8743,
+"es": "\"baseRatePerUnit\""
+},
+{
+"id": 8744,
+"es": "\"kWh\""
+},
+{
+"id": 8745,
+"es": "\"tariffRateList\""
+},
+{
+"id": 8746,
+"es": "\"tariffRateCode\""
+},
+{
+"id": 8747,
+"es": "\"PriceR1\""
+},
+{
+"id": 8748,
+"es": "\"tariffRateValue\""
+},
+{
+"id": 8749,
+"es": "\"PriceR2\""
+},
+{
+"id": 8750,
+"es": "\"PriceR3\""
+},
+{
+"id": 8751,
+"es": "\"PriceR4\""
+},
+{
+"id": 8752,
+"es": "\"PriceR5\""
+},
+{
+"id": 8753,
+"es": "\"PriceR6\""
+},
+{
+"id": 8754,
+"es": "\"PriceR7\""
+},
+{
+"id": 8755,
+"es": "\"PriceR8\""
+},
+{
+"id": 8756,
+"es": "\"MP11MAM\""
+},
+{
+"id": 8757,
+"es": "tariffCode"
+},
+{
+"id": 8758,
+"es": "Code of the tariff assigned to the MP for which the unit prices are to be configured."
+},
+{
+"id": 8759,
+"es": "tariffName"
+},
+{
+"id": 8760,
+"es": "Name of the tariff assigned to the MP for which the unit prices are to be configured."
+},
+{
+"id": 8761,
+"es": "activateTariffRateTime"
+},
+{
+"id": 8762,
+"es": "Date from which the configured unit prices become effective."
+},
+{
+"id": 8763,
+"es": "tariffRateCurrencyUnit"
+},
+{
+"id": 8764,
+"es": "EUR"
+},
+{
+"id": 8765,
+"es": "baseRatePerUnit"
+},
+{
+"id": 8766,
+"es": "tariffRateList"
+},
+{
+"id": 8767,
+"es": "tariffRateCode"
+},
+{
+"id": 8768,
+"es": "\"PriceR1\", \"PriceR2\" .... \"PriceR8\""
+},
+{
+"id": 8769,
+"es": "tariffRateValue"
+},
+{
+"id": 8770,
+"es": "Value configured for each tariff rate."
+},
+{
+"id": 8771,
+"es": "Ex: 200"
+},
+{
+"id": 8772,
+"es": "\"3.SETTARIFFLIST.OK\""
+},
+{
+"id": 8773,
+"es": "\"3.SETTARIFFLIST.OK\" or \"3.SETTARIFFLIST.KO\""
+},
+{
+"id": 8774,
+"es": "CIS > MDM - Configuración del umbral de crédito bajo"
+},
+{
+"id": 8775,
+"es": "Esta interfaz asíncrona se utiliza para solicitar a Onesait Metering (OM) la ejecución de un servicio remoto (endDeviceControlType 3.20.50.296) para establecer el umbral de crédito bajo de un determinado contador."
+},
+{
+"id": 8776,
+"es": "El OM realizará una solicitud de configuración bajo demanda (emitiendo un comando) al sistema de cabecera que esté operando el equipo para establecer el umbral de crédito bajo del dispositivo requerido; o bien"
+},
+{
+"id": 8777,
+"es": "CIS_MDC_Set_Low_Credit_Threshold_Result_OK.json"
+},
+{
+"id": 8778,
+"es": "CIS_Set_Low_Credit_Threshold_Result_KO.json"
+},
+{
+"id": 8779,
+"es": "\"SetLowLimitThOK-MDC\""
+},
+{
+"id": 8780,
+"es": "\"3.LOW_CREDIT_THRESHOLD\""
+},
+{
+"id": 8781,
+"es": "\"lowCreditThreshold\""
+},
+{
+"id": 8782,
+"es": "lowCreditThreshold"
+},
+{
+"id": 8783,
+"es": "Credit threshold value to be assigned to a specific meter."
+},
+{
+"id": 8784,
+"es": "Ex: 1000"
+},
+{
+"id": 8785,
+"es": "\"3.LOW_CREDIT_THRESHOLD.OK\""
+},
+{
+"id": 8786,
+"es": "\"3.LOW_CREDIT_THRESHOLD.OK\" or \"3.LOW_CREDIT_THRESHOLD.KO\""
+},
+{
+"id": 8787,
+"es": "CIS > MDM - Envío de token de prepago"
+},
+{
+"id": 8788,
+"es": "Esta interfaz asíncrona se utiliza para solicitar a Onesait Metering (OM) la ejecución de un servicio remoto para enviar un token de prepago a un contador solicitado."
+},
+{
+"id": 8789,
+"es": "El OM realizará una solicitud de envío de token bajo demanda (emitiendo un comando) al dispositivo solicitado; o bien"
+},
+{
+"id": 8790,
+"es": "CIS_MDC_Token_Transfer_Result_OK.json"
+},
+{
+"id": 8791,
+"es": "CIS_HES_Token_Transfer_Result_OK.json"
+},
+{
+"id": 8792,
+"es": "CIS_Token_Transfer_Result_KO.json"
+},
+{
+"id": 8793,
+"es": "\"TokenTransferOK-MDC\""
+},
+{
+"id": 8794,
+"es": "\"3.TOKEN\""
+},
+{
+"id": 8795,
+"es": "Ex:[ \"01234567890000010000\",   \"01234567899999999999\",      \"01234567890000030000\" ]"
+},
+{
+"id": 8796,
+"es": "CIS > MDM - Lectura del crédito de emergencia"
+},
+{
+"id": 8797,
+"es": "Esta interfaz asíncrona se utiliza para solicitar a Onesait Metering (OM) la ejecución de un servicio remoto (endDeviceControlType 3.20.60.19) para obtener el crédito de emergencia actual de un contador solicitado."
+},
+{
+"id": 8798,
+"es": "El OM realizará una solicitud de lectura bajo demanda (emitiendo un comando) al sistema de cabecera que esté operando el equipo para consultar el crédito de emergencia actual del dispositivo solicitado; o bien"
+},
+{
+"id": 8799,
+"es": "CIS_MDC_Get_Emergency_Credit_Result_OK.json"
+},
+{
+"id": 8800,
+"es": "CIS_HES_Get_Emergency_Credit_Result_OK.json"
+},
+{
+"id": 8801,
+"es": "CIS_Get_Emergency_Credit_Result_KO.json"
+},
+{
+"id": 8802,
+"es": "En el caso en que el sistema OM esté operando con el sistema MDC, el proceso se llevará a cabo de la siguiente forma"
+},
+{
+"id": 8803,
+"es": "El resultado del comando ejecutado se podrá monitorizar en el Monitor de Comandos (Módulo de Integración)"
+},
+{
+"id": 8804,
+"es": "\"EmergencyCreditOK\""
+},
+{
+"id": 8805,
+"es": "\"3.METEREMERG\""
+},
+{
+"id": 8806,
+"es": "\"EmergencyCreditOK-MDC\""
+},
+{
+"id": 8807,
+"es": "\"3.METEREMERG.OK\""
+},
+{
+"id": 8808,
+"es": "\"emergencyCredit\""
+},
+{
+"id": 8809,
+"es": "\"3.METEREMERG.OK\" or \"3.METEREMERG.KO\""
+},
+{
+"id": 8810,
+"es": "emergencyCredit"
+},
+{
+"id": 8811,
+"es": "Emergency Credit available on the meter at the time the request is made"
+},
+{
+"id": 8812,
+"es": "Ex: 500"
+},
+{
+"id": 8813,
+"es": "CIS > MDM - Lectura del crédito del equipo"
+},
+{
+"id": 8814,
+"es": "Esta interfaz asíncrona se utiliza para solicitar a Onesait Metering (OM) la ejecución de un servicio remoto (endDeviceControlType 3.21.30.14) para obtener el crédito actual de un contador solicitado."
+},
+{
+"id": 8815,
+"es": "El OM realizará una solicitud de lectura bajo demanda (emitiendo un comando) al sistema de cabecera que esté operando el equipo para consultar el crédito actual del dispositivo solicitado; o bien"
+},
+{
+"id": 8816,
+"es": "BalanceCredit "
+},
+{
+"id": 8817,
+"es": "(NOTA: Nombre configurado en BBDD. Si no existe este nombre, la llamada no se completa correctamente, ya que la petición busca según el nombre configurado para el parámetro remoto)."
+},
+{
+"id": 8818,
+"es": "CIS_MDC_Get_Balance_Credit_Result_OK.json"
+},
+{
+"id": 8819,
+"es": "CIS_HES_Get_Balance_Credit_Result_OK.json"
+},
+{
+"id": 8820,
+"es": "Ejemplo de distintos escenarios de errores"
+},
+{
+"id": 8821,
+"es": "CIS_Get_Balance_Credit_Result_KO.json"
+},
+{
+"id": 8822,
+"es": "\"BalanceCreditOK\""
+},
+{
+"id": 8823,
+"es": "\"3.METERBAL\""
+},
+{
+"id": 8824,
+"es": "\"BalanceCreditOK-MDC\""
+},
+{
+"id": 8825,
+"es": "\"3.METERBAL.OK\""
+},
+{
+"id": 8826,
+"es": "\"meterCredit\""
+},
+{
+"id": 8827,
+"es": "\"3.METERBAL.OK\" or \"3.METERBAL.KO\""
+},
+{
+"id": 8828,
+"es": "meterCredit"
+},
+{
+"id": 8829,
+"es": "Balance Credit available on the meter at the time the request is made."
+},
+{
+"id": 8830,
+"es": "Ex: 800"
+},
+{
+"id": 8831,
+"es": "Nota: La estructura de los mensajes tanto de petición como respuesta con HES está descrita "
+},
+{
+"id": 8832,
+"es": "A continuación se presenta el listado de interfaces disponibles en el sistema "
+},
+{
+"id": 8833,
+"es": "Head End System (HES) "
+},
+{
+"id": 8834,
+"es": "categorizadas según la funcionalidad de sus comandos: "
+},
+{
+"id": 8835,
+"es": "OM > HES"
+},
+{
+"id": 8836,
+"es": "Comandos de Inventario"
+},
+{
+"id": 8837,
+"es": "Ping a medidor"
+},
+{
+"id": 8838,
+"es": "Sincronización del medidor"
+},
+{
+"id": 8839,
+"es": "Recuperar estado del medidor"
+},
+{
+"id": 8840,
+"es": "Desconexión / Conexión del medidor"
+},
+{
+"id": 8841,
+"es": "Solicitar Eventos"
+},
+{
+"id": 8842,
+"es": "Solicitar Lecturas (Perfil de Carga Absoluto)"
+},
+{
+"id": 8843,
+"es": "Solicitar Medidas de Cierre Diarias"
+},
+{
+"id": 8844,
+"es": "Solicitar Medidas de Cierre Mensuales"
+},
+{
+"id": 8845,
+"es": "Solicitar Valores Instantáneos"
+},
+{
+"id": 8846,
+"es": "Comandos de Configuración"
+},
+{
+"id": 8847,
+"es": "Limitación de potencia"
+},
+{
+"id": 8848,
+"es": "Net-metering Mode"
+},
+{
+"id": 8849,
+"es": "Comandos de Prepago"
+},
+{
+"id": 8850,
+"es": "El sistema "
+},
+{
+"id": 8851,
+"es": " (OM) puede integrarse con uno o varios Head End System (HES) al mismo tiempo. La comunicación asíncrona de los sistemas se gestiona a través de Kafka Topics como se muestra en el diagrama:"
+},
+{
+"id": 8852,
+"es": "Para el correcto funcionamiento de varios HES al mismo tiempo, cada uno debe configurarse como un 'Source' (Campo incluido en los JSONs tanto de Request como de Reply) independiente en OM."
+},
+{
+"id": 8853,
+"es": "Actualmente el producto permite operar en una de las siguientes configuraciones (a través de la asociación a la comunicación con equipos finales):"
+},
+{
+"id": 8854,
+"es": "Configuración basada en el módulo de Telemedición a través de las peticiones correspondientes a cada protocolo (HES interno)"
+},
+{
+"id": 8855,
+"es": "Integración con HES externo a través de comandos"
+},
+{
+"id": 8856,
+"es": "Ingesta HES > MDM"
+},
+{
+"id": 8857,
+"es": "Esquemas de ingesta (Datos de medición y Eventos)"
+},
+{
+"id": 8858,
+"es": "Descripción de campos"
+},
+{
+"id": 8859,
+"es": "Ingesta de Datos de Medición (Medidas de Cierre, Lecturas y Valores Instantáneos)"
+},
+{
+"id": 8860,
+"es": "Ingesta de Eventos"
+},
+{
+"id": 8861,
+"es": "Kafka Topic: Ingest Reply"
+},
+{
+"id": 8862,
+"es": "Kafka Topic: Ingest Error"
+},
+{
+"id": 8863,
+"es": "Medidas de Cierre (Billing Register)"
+},
+{
+"id": 8864,
+"es": "Perfil de Carga Absoluto (Reading)"
+},
+{
+"id": 8865,
+"es": "Perfil de Carga (Measure)"
+},
+{
+"id": 8866,
+"es": "La integración con HES permite programar el envío de diversas magnitudes desde el propio HES (una vez ha obtenido las medidas y eventos desde los medidores) sin necesidad de comandos. En esta página se describen los mensajes JSON compatibles para cada tipo de magnitud. "
+},
+{
+"id": 8867,
+"es": "Nota: Todos los datos de medición ingestados en el sistema MDM provenientes de un HES, tendrán como origen HES, apareciendo así en la pantalla de mediciones de origen que corresponda."
+},
+{
+"id": 8868,
+"es": "Kafka Topic"
+},
+{
+"id": 8869,
+"es": "oum_mdc_ingestion-profile"
+},
+{
+"id": 8870,
+"es": "oum_mdc_ingestion-profile_reply"
+},
+{
+"id": 8871,
+"es": "oum_mdc_ingestion-profile_error"
+},
+{
+"id": 8872,
+"es": "oum_mdc_ingestion-event"
+},
+{
+"id": 8873,
+"es": "oum_mdc_ingestion-event_reply"
+},
+{
+"id": 8874,
+"es": "oum_mdc_ingestion-event_error"
+},
+{
+"id": 8875,
+"es": "measurementType (tipo de medida)"
+},
+{
+"id": 8876,
+"es": "code (magnitud)"
+},
+{
+"id": 8877,
+"es": "element (Punto de Medida)"
+},
+{
+"id": 8878,
+"es": "Field name"
+},
+{
+"id": 8879,
+"es": "Cardinality"
+},
+{
+"id": 8880,
+"es": "Identificador único para cada mensaje."
+},
+{
+"id": 8881,
+"es": "Etiqueta que identifica varios mensajes de una misma comunicación."
+},
+{
+"id": 8882,
+"es": "DateTime"
+},
+{
+"id": 8883,
+"es": "Fecha del mensaje enviado. Formato \"YYYY-MM-DDThh:mm:ss.sssZ\" Ejemplo"
+},
+{
+"id": 8884,
+"es": "Valor Constante. \"PROFILE\""
+},
+{
+"id": 8885,
+"es": "\"HES\""
+},
+{
+"id": 8886,
+"es": "Versión de la interfaz que utilizó el sistema emisor en el momento de crear el mensaje"
+},
+{
+"id": 8887,
+"es": "reply"
+},
+{
+"id": 8888,
+"es": "Optional"
+},
+{
+"id": 8889,
+"es": "Nombre del tópico de Kafka donde se publica el mensaje de Reply por parte del MDM"
+},
+{
+"id": 8890,
+"es": "error"
+},
+{
+"id": 8891,
+"es": "Nombre del tópico de Kafka donde se publica el mensaje de error a la hora de validar el formato del mensaje de la petición de ingesta"
+},
+{
+"id": 8892,
+"es": "element"
+},
+{
+"id": 8893,
+"es": "\"MP_CODE\""
+},
+{
+"id": 8894,
+"es": "Código de Punto de Medida. Ejemplo: 4503828292"
+},
+{
+"id": 8895,
+"es": "dataSets"
+},
+{
+"id": 8896,
+"es": "measurementType"
+},
+{
+"id": 8897,
+"es": "\"READING\" > Magnitudes del "
+},
+{
+"id": 8898,
+"es": "\"MEASURE\" > Magnitudes del "
+},
+{
+"id": 8899,
+"es": "Perfil de Carga (incremental)"
+},
+{
+"id": 8900,
+"es": "\"BILLING_REGISTER\" > Magnitudes de "
+},
+{
+"id": 8901,
+"es": "\"INSTANTANEOUS_VALUE\" > Magnitudes de "
+},
+{
+"id": 8902,
+"es": "magnitudes"
+},
+{
+"id": 8903,
+"es": "Código interno de la magnitud en la base de datos. "
+},
+{
+"id": 8904,
+"es": "Ejemplo: \"IMPORT_ACTIVE_ENERGY\""
+},
+{
+"id": 8905,
+"es": "totalizer"
+},
+{
+"id": 8906,
+"es": "“Bloque de consumo” al que pertenece el valor BILLING_REGISTER capturado por el medidor. T0, T1, T2, T3"
+},
+{
+"id": 8907,
+"es": "NO *"
+},
+{
+"id": 8908,
+"es": "Usado con BILLING_REGISTER. Opciones: PARTIAL / CLOSE"
+},
+{
+"id": 8909,
+"es": "interval"
+},
+{
+"id": 8910,
+"es": "Requieren de intervalo:"
+},
+{
+"id": 8911,
+"es": "En PERFIL DE CARGA INCREMENTAL"
+},
+{
+"id": 8912,
+"es": "En BILLING_REGISTERS"
+},
+{
+"id": 8913,
+"es": "                               units"
+},
+{
+"id": 8914,
+"es": "Código de intervalo. Posibles valores (MIN01 / MIN05 / MIN10 / MIN15 / MIN30 / H / D / M / BM / TM)"
+},
+{
+"id": 8915,
+"es": "Actualmente definidos para su uso:"
+},
+{
+"id": 8916,
+"es": "En Perfil de Carga Incremental: (MIN15 / MIN30 / H / D)"
+},
+{
+"id": 8917,
+"es": "En Medidas de Cierre: (D - Daily / M - Monthly)"
+},
+{
+"id": 8918,
+"es": "data"
+},
+{
+"id": 8919,
+"es": "startTime"
+},
+{
+"id": 8920,
+"es": "Fecha de inicio del periodo de facturación si measurementType = BILLING_REGISTER. Formato "
+},
+{
+"id": 8921,
+"es": "\"YYYY-MM-DDThh:mm:ss.sssZ\""
+},
+{
+"id": 8922,
+"es": "endTime"
+},
+{
+"id": 8923,
+"es": "Fecha en que la medida fue capturada. Formato "
+},
+{
+"id": 8924,
+"es": "dst"
+},
+{
+"id": 8925,
+"es": "\"NO / YES\""
+},
+{
+"id": 8926,
+"es": "quality"
+},
+{
+"id": 8927,
+"es": "values"
+},
+{
+"id": 8928,
+"es": "Float"
+},
+{
+"id": 8929,
+"es": "Cada periodo tiene un valor por cada magnitud. Decimal obligatorio.  Ejemplo: 6000.0"
+},
+{
+"id": 8930,
+"es": "YES **"
+},
+{
+"id": 8931,
+"es": "consumptions"
+},
+{
+"id": 8932,
+"es": "Refleja el consumo en Medidas de Cierre. Adicional a \"values\". Decimal obligatorio.  Solo para BILLING_REGISTER"
+},
+{
+"id": 8933,
+"es": "(*)Obligatorio en las medidas de tipo BILLING_REGISTER."
+},
+{
+"id": 8934,
+"es": "(**)Para el perfil de Carga Incremental (MEASURES), en el formato JSON, el valor debe expresarse dentro de una lista de listas (ver ejemplo)."
+},
+{
+"id": 8935,
+"es": "Valor Constante. \"EVENT\""
+},
+{
+"id": 8936,
+"es": "events"
+},
+{
+"id": 8937,
+"es": "eventCode"
+},
+{
+"id": 8938,
+"es": "Código del Evento registrado de acuerdo a lo configurado en MDM."
+},
+{
+"id": 8939,
+"es": "Fecha en la que ha ocurrido el evento. Formato "
+},
+{
+"id": 8940,
+"es": "detail"
+},
+{
+"id": 8941,
+"es": "Nombre de la información adicional"
+},
+{
+"id": 8942,
+"es": "NO "
+},
+{
+"id": 8943,
+"es": "Valor de la información adicional"
+},
+{
+"id": 8944,
+"es": "Este mensaje solamente será publicado en el tópico de Kafka "
+},
+{
+"id": 8945,
+"es": "oum_mdc_ingestion-profile_reply/oum_mdc_ingestion-event_reply"
+},
+{
+"id": 8946,
+"es": " en el caso de que en el campo \""
+},
+{
+"id": 8947,
+"es": "Reply\""
+},
+{
+"id": 8948,
+"es": " en el mensaje de ingesta venga informado."
+},
+{
+"id": 8949,
+"es": "Por defecto, el sistema MDM no genera mensaje de respuesta."
+},
+{
+"id": 8950,
+"es": "status"
+},
+{
+"id": 8951,
+"es": "\"MP_CODE\" o \"EQ_SN\""
+},
+{
+"id": 8952,
+"es": "Códido del Punto de Medida o Número de Serie del Equipo"
+},
+{
+"id": 8953,
+"es": "Código numérico para el error cuando status=KO"
+},
+{
+"id": 8954,
+"es": "details"
+},
+{
+"id": 8955,
+"es": "Este mensaje solamente será publicado en el tópico de Kafka oum_mdc_ingestion-profile_error/oum_mdc_ingestion-event_error en el caso de que en el campo \""
+},
+{
+"id": 8956,
+"es": "Por defecto, el sistema MDM no genera mensaje de error de validación."
+},
+{
+"id": 8957,
+"es": "JsonMessage"
+},
+{
+"id": 8958,
+"es": "Mensaje original recibido del HES que fue rechazado debido a los errores mencionados en el elemento “Errors”"
+},
+{
+"id": 8959,
+"es": "Errors"
+},
+{
+"id": 8960,
+"es": "Valor literal que indica la categoría del error detectado."
+},
+{
+"id": 8961,
+"es": "Información para desarrolladores sobre el código de error proporcionado."
+},
+{
+"id": 8962,
+"es": "DataBase:"
+},
+{
+"id": 8963,
+"es": " oum.master_billing_register_magnitude"
+},
+{
+"id": 8964,
+"es": "Nota: las magnitudes Reserva 1 y Reserva 2 son posibles magnitudes futuras."
+},
+{
+"id": 8965,
+"es": "Ejemplo "
+},
+{
+"id": 8966,
+"es": "Medidas de cierre"
+},
+{
+"id": 8967,
+"es": "Valores Instantáneos "
+},
+{
+"id": 8968,
+"es": " oum.master_instantaneous_value_magnitude"
+},
+{
+"id": 8969,
+"es": " oum.master_magnitude"
+},
+{
+"id": 8970,
+"es": "Código CIM "
+},
+{
+"id": 8971,
+"es": "lecturas"
+},
+{
+"id": 8972,
+"es": "DataBase"
+},
+{
+"id": 8973,
+"es": ": oum.master_magnitude"
+},
+{
+"id": 8974,
+"es": "Magnitud Lectura (Perfil Carga absoluto)"
+},
+{
+"id": 8975,
+"es": "Código CIM"
+},
+{
+"id": 8976,
+"es": "Nota: cabe destacar que todos los CIM presentes en esta documentación están mapeados en el sistema. No obstante, son ficticios y se usan simplemente como referencia. El producto final llevará sus propios códigos CIM adaptados."
+},
+{
+"id": 8977,
+"es": "MDM > HES - Limitación de potencia"
+},
+{
+"id": 8978,
+"es": "MDM > HES - Net-metering Mode"
+},
+{
+"id": 8979,
+"es": "MDM > HES - Recuperar estado de energía del medidor"
+},
+{
+"id": 8980,
+"es": "Proceso"
+},
+{
+"id": 8981,
+"es": "Mensaje de petición (Request Message)"
+},
+{
+"id": 8982,
+"es": "Mensaje de respuesta (Response Message)"
+},
+{
+"id": 8983,
+"es": "Estos comandos se utilizan para configurar el valor límite de Potencia Nominal en un medidor. Los casos de uso más comunes incluyen:"
+},
+{
+"id": 8984,
+"es": "Tras un impago"
+},
+{
+"id": 8985,
+"es": "Después de un proceso de reconexión"
+},
+{
+"id": 8986,
+"es": "Debido a un cambio de tarifa"
+},
+{
+"id": 8987,
+"es": ": Esta transacción solo puede realizarse en modo asíncrono. En modo asíncrono, pueden enviarse múltiples respuestas al MDM, indicando el éxito o fallo de cada solicitud."
+},
+{
+"id": 8988,
+"es": "Load Limitation"
+},
+{
+"id": 8989,
+"es": "Load Limitation Read"
+},
+{
+"id": 8990,
+"es": "Load limitation"
+},
+{
+"id": 8991,
+"es": "Ficheros de ejemplo"
+},
+{
+"id": 8992,
+"es": "LOAD LIMITATION REQUEST"
+},
+{
+"id": 8993,
+"es": "Fichero JSON ejemplo: "
+},
+{
+"id": 8994,
+"es": "REQ_Load_Limitation.json"
+},
+{
+"id": 8995,
+"es": "Fichero JSON ejemplo con comentarios:"
+},
+{
+"id": 8996,
+"es": "REQ_Load_Limitation_with_details.json"
+},
+{
+"id": 8997,
+"es": "Fichero JSON ACK ejemplo:"
+},
+{
+"id": 8998,
+"es": "REQ_ACK_Load_Limitation.json"
+},
+{
+"id": 8999,
+"es": "LOAD LIMITATION RESPONSE"
+},
+{
+"id": 9000,
+"es": "REP_Load_Limitation.json"
+},
+{
+"id": 9001,
+"es": "Fichero JSON ejemplo con comentarios: "
+},
+{
+"id": 9002,
+"es": "REP_Load_Limitation_with_details.json"
+},
+{
+"id": 9003,
+"es": "REP_ACK_Load_Limitation.json"
+},
+{
+"id": 9004,
+"es": "LOAD LIMITATION READ REQUEST"
+},
+{
+"id": 9005,
+"es": "REQ_Load_Limitation_Read.json"
+},
+{
+"id": 9006,
+"es": "Fichero JSON ACK ejemplo"
+},
+{
+"id": 9007,
+"es": "REQ_ACK_Load_Limitation_Read.json"
+},
+{
+"id": 9008,
+"es": "LOAD LIMITATION READ RESPONSE"
+},
+{
+"id": 9009,
+"es": "REP_Load_Limitation_Read.json"
+},
+{
+"id": 9010,
+"es": "REP_ACK_Load_Limitation_Read.json"
+},
+{
+"id": 9011,
+"es": ": Propiedad asignada a Smart Meters. Este parámetro (indicado en la parte de propiedades de los medidores) se actualizará de acuerdo al valor indicado en la petición. "
+},
+{
+"id": 9012,
+"es": "Posibles valores: null / float o double"
+},
+{
+"id": 9013,
+"es": "Por defecto: null"
+},
+{
+"id": 9014,
+"es": ": El código enviado al medidor para establecer o recuperar el valor de Load Limitation."
+},
+{
+"id": 9015,
+"es": "Set Load Limit: \"3.15.261.13\""
+},
+{
+"id": 9016,
+"es": "Read Load Limit: \"3.31.91.46\""
+},
+{
+"id": 9017,
+"es": "Base de Datos: Comando localizado en la tabla "
+},
+{
+"id": 9018,
+"es": "master_command"
+},
+{
+"id": 9019,
+"es": "Code: LOAD_LIMITATION"
+},
+{
+"id": 9020,
+"es": "Code: LOAD_LIMITATION_READ"
+},
+{
+"id": 9021,
+"es": "Los siguientes pasos describen el flujo básico del proceso:"
+},
+{
+"id": 9022,
+"es": "MDM envía un mensaje tipo "
+},
+{
+"id": 9023,
+"es": "EndDeviceControl "
+},
+{
+"id": 9024,
+"es": "al HES para leer o establecer el valor límite de Potencia Nominal en el medidor."
+},
+{
+"id": 9025,
+"es": "El medidor lee o establece la nueva Potencia Nominal."
+},
+{
+"id": 9026,
+"es": "El medidor envía una respuesta de vuelta al MDM a través del HES, informando del límite actual."
+},
+{
+"id": 9027,
+"es": "Los detalles del intercambio de mensajes entre el MDM y el HES, incluyendo los mensajes de confirmación ("
+},
+{
+"id": 9028,
+"es": "acknowledgement"
+},
+{
+"id": 9029,
+"es": "), se presenta en la siguiente tabla y diagrama:"
+},
+{
+"id": 9030,
+"es": "Message Type"
+},
+{
+"id": 9031,
+"es": "Main Elements"
+},
+{
+"id": 9032,
+"es": "Sender"
+},
+{
+"id": 9033,
+"es": "Receiver"
+},
+{
+"id": 9034,
+"es": "Request "
+},
+{
+"id": 9035,
+"es": "create /get"
+},
+{
+"id": 9036,
+"es": "EndDeviceControls "
+},
+{
+"id": 9037,
+"es": "Header/ Payload "
+},
+{
+"id": 9038,
+"es": "HES "
+},
+{
+"id": 9039,
+"es": "Acknowledgement "
+},
+{
+"id": 9040,
+"es": "reply "
+},
+{
+"id": 9041,
+"es": "Header/Reply "
+},
+{
+"id": 9042,
+"es": "Response "
+},
+{
+"id": 9043,
+"es": "Ejemplo Load Limitation"
+},
+{
+"id": 9044,
+"es": "\"RequestMessage\""
+},
+{
+"id": 9045,
+"es": "\"Header\""
+},
+{
+"id": 9046,
+"es": "\"Verb\""
+},
+{
+"id": 9047,
+"es": "\"Noun\""
+},
+{
+"id": 9048,
+"es": "\"EndDeviceControls\""
+},
+{
+"id": 9049,
+"es": "\"Revision\""
+},
+{
+"id": 9050,
+"es": "\"Timestamp\""
+},
+{
+"id": 9051,
+"es": "\"Source\""
+},
+{
+"id": 9052,
+"es": "\"Target\""
+},
+{
+"id": 9053,
+"es": "\"AsyncReplyFlag\""
+},
+{
+"id": 9054,
+"es": "\"AckRequired\""
+},
+{
+"id": 9055,
+"es": "\"Property\""
+},
+{
+"id": 9056,
+"es": "\"Name\""
+},
+{
+"id": 9057,
+"es": "\"StartTime\""
+},
+{
+"id": 9058,
+"es": "\"Value\""
+},
+{
+"id": 9059,
+"es": "\"ExpireTime\""
+},
+{
+"id": 9060,
+"es": "\"RetryTimes\""
+},
+{
+"id": 9061,
+"es": "\"RetryInterval\""
+},
+{
+"id": 9062,
+"es": "\"Priority\""
+},
+{
+"id": 9063,
+"es": "\"MessageID\""
+},
+{
+"id": 9064,
+"es": "\"6520153a-f1ea-4579-9873-e61e7fafc689\""
+},
+{
+"id": 9065,
+"es": "\"CorrelationID\""
+},
+{
+"id": 9066,
+"es": "\"cd6f7e61-f7a1-4ca1-b18e-7839a410d4f0\""
+},
+{
+"id": 9067,
+"es": "\"Payload\""
+},
+{
+"id": 9068,
+"es": "\"EndDeviceControl\""
+},
+{
+"id": 9069,
+"es": "\"EndDeviceControlType\""
+},
+{
+"id": 9070,
+"es": "\"EndDevices\""
+},
+{
+"id": 9071,
+"es": "\"Names\""
+},
+{
+"id": 9072,
+"es": "\"NameType\""
+},
+{
+"id": 9073,
+"es": "\"loadLimitation\""
+},
+{
+"id": 9074,
+"es": "Ejemplo Load Limitation Read"
+},
+{
+"id": 9075,
+"es": "\"get\""
+},
+{
+"id": 9076,
+"es": "\"64e7be2b-d5f7-48d1-8c71-f1746bacb4d6\""
+},
+{
+"id": 9077,
+"es": "\"460fee37-e196-4d2c-add5-b710591a38a3\""
+},
+{
+"id": 9078,
+"es": "MaxLength"
+},
+{
+"id": 9079,
+"es": "Verb "
+},
+{
+"id": 9080,
+"es": "String "
+},
+{
+"id": 9081,
+"es": "“create” / \"get\""
+},
+{
+"id": 9082,
+"es": "Noun "
+},
+{
+"id": 9083,
+"es": "“EndDeviceControls” "
+},
+{
+"id": 9084,
+"es": "Revision "
+},
+{
+"id": 9085,
+"es": "For example, “1.0” (version of the CIM specification standard) "
+},
+{
+"id": 9086,
+"es": "Timestamp "
+},
+{
+"id": 9087,
+"es": "DateTime "
+},
+{
+"id": 9088,
+"es": "Datetime of message creation Ex: \"2025-07-10T14:17:00.090Z\""
+},
+{
+"id": 9089,
+"es": "Source "
+},
+{
+"id": 9090,
+"es": "“MDM” "
+},
+{
+"id": 9091,
+"es": "Target "
+},
+{
+"id": 9092,
+"es": "“HES” "
+},
+{
+"id": 9093,
+"es": "AsyncReplyFlag "
+},
+{
+"id": 9094,
+"es": "Boolean "
+},
+{
+"id": 9095,
+"es": "“true” "
+},
+{
+"id": 9096,
+"es": "AckRequired"
+},
+{
+"id": 9097,
+"es": "MessageID "
+},
+{
+"id": 9098,
+"es": "Unique GUID that identifies a message univocally "
+},
+{
+"id": 9099,
+"es": "CorrelationID "
+},
+{
+"id": 9100,
+"es": "Request Message ID "
+},
+{
+"id": 9101,
+"es": "Name "
+},
+{
+"id": 9102,
+"es": "StartTime "
+},
+{
+"id": 9103,
+"es": "ExpireTime "
+},
+{
+"id": 9104,
+"es": "RetryTimes "
+},
+{
+"id": 9105,
+"es": "RetryInterval (unit: min) "
+},
+{
+"id": 9106,
+"es": "Priority "
+},
+{
+"id": 9107,
+"es": "Value "
+},
+{
+"id": 9108,
+"es": "EndDeviceControls"
+},
+{
+"id": 9109,
+"es": "Batch operation"
+},
+{
+"id": 9110,
+"es": "EndDeviceControl"
+},
+{
+"id": 9111,
+"es": "EndDeviceControlType "
+},
+{
+"id": 9112,
+"es": "Object "
+},
+{
+"id": 9113,
+"es": "ref "
+},
+{
+"id": 9114,
+"es": "     EndDevices "
+},
+{
+"id": 9115,
+"es": "mRID "
+},
+{
+"id": 9116,
+"es": "Meter identification "
+},
+{
+"id": 9117,
+"es": "Names "
+},
+{
+"id": 9118,
+"es": "name "
+},
+{
+"id": 9119,
+"es": "max load threshold limitation value"
+},
+{
+"id": 9120,
+"es": "Unit: W "
+},
+{
+"id": 9121,
+"es": "NameType "
+},
+{
+"id": 9122,
+"es": "“loadLimitation” "
+},
+{
+"id": 9123,
+"es": "\"ResponseMessage\""
+},
+{
+"id": 9124,
+"es": "\"a883bc36-3743-4e6f-845a-a0a02232870d\""
+},
+{
+"id": 9125,
+"es": "\"f524e1bf-daaf-4c98-af3b-573d2a08fa24\""
+},
+{
+"id": 9126,
+"es": "\"d258daf5-55fc-42c5-a1d5-d3858b3e7086\""
+},
+{
+"id": 9127,
+"es": "\"5b05704e-8243-4423-ace8-61f4254d2e37\""
+},
+{
+"id": 9128,
+"es": "“reply” "
+},
+{
+"id": 9129,
+"es": "For example, “2.0” (version of the CIM specification standard) "
+},
+{
+"id": 9130,
+"es": "Reply Message "
+},
+{
+"id": 9131,
+"es": "Result "
+},
+{
+"id": 9132,
+"es": "“OK” , “FAIL” "
+},
+{
+"id": 9133,
+"es": "Execution Details "
+},
+{
+"id": 9134,
+"es": "  code "
+},
+{
+"id": 9135,
+"es": "Message Code "
+},
+{
+"id": 9136,
+"es": "  level "
+},
+{
+"id": 9137,
+"es": "“INFORM” or “FATAL” "
+},
+{
+"id": 9138,
+"es": "  detail "
+},
+{
+"id": 9139,
+"es": "Message detail "
+},
+{
+"id": 9140,
+"es": "  object "
+},
+{
+"id": 9141,
+"es": "Task Object "
+},
+{
+"id": 9142,
+"es": "    mRID "
+},
+{
+"id": 9143,
+"es": "ObjectId, meter identification "
+},
+{
+"id": 9144,
+"es": "    objectType "
+},
+{
+"id": 9145,
+"es": "“Meter” "
+},
+{
+"id": 9146,
+"es": "Batch operation "
+},
+{
+"id": 9147,
+"es": "      EndDevices "
+},
+{
+"id": 9148,
+"es": "Float or double"
+},
+{
+"id": 9149,
+"es": "Los comandos para habilitar y deshabilitar el modo Net-metering se utilizan para controlar una configuración preestablecida relacionada con la inversión de corriente. Esta configuración incluye:"
+},
+{
+"id": 9150,
+"es": "Evento de inversión de corriente."
+},
+{
+"id": 9151,
+"es": "Desconexión debido a una inversión de corriente."
+},
+{
+"id": 9152,
+"es": "Activar el modo Net-Metering"
+},
+{
+"id": 9153,
+"es": "Desactivar el modo Net-Metering"
+},
+{
+"id": 9154,
+"es": "Net Metering Mode"
+},
+{
+"id": 9155,
+"es": "REQUEST"
+},
+{
+"id": 9156,
+"es": "Fichero JSON ejemplo ENABLED: "
+},
+{
+"id": 9157,
+"es": "REQ_Net_Metering_ENABLED.json"
+},
+{
+"id": 9158,
+"es": "Fichero JSON ejemplo DISABLED:"
+},
+{
+"id": 9159,
+"es": "REQ_Net_Metering_DISABLED.json"
+},
+{
+"id": 9160,
+"es": "Fichero JSON ejemplo con comentarios; "
+},
+{
+"id": 9161,
+"es": "REQ_Net_Metering_with_details.json"
+},
+{
+"id": 9162,
+"es": "REQ_ACK_Net_Metering.json"
+},
+{
+"id": 9163,
+"es": "RESPONSE"
+},
+{
+"id": 9164,
+"es": "REP_Net_Metering_ENABLED.json"
+},
+{
+"id": 9165,
+"es": "REP_Net_Metering_DISABLED.json"
+},
+{
+"id": 9166,
+"es": "Fichero JSON ejemplo con comentarios: "
+},
+{
+"id": 9167,
+"es": "REP_Net_Metering_with_details.json"
+},
+{
+"id": 9168,
+"es": "REP_ACK_Net_Metering.json"
+},
+{
+"id": 9169,
+"es": "Parámetros clave "
+},
+{
+"id": 9170,
+"es": ": Propiedad relativa a Smart Meters. Este parámetro (indicado en la parte de propiedades de los medidores) se actualizará de acuerdo al valor indicado en la petición. "
+},
+{
+"id": 9171,
+"es": "Posibles valores: 'Enabled' / 'Disabled'"
+},
+{
+"id": 9172,
+"es": "Por defecto: 'Disabled'"
+},
+{
+"id": 9173,
+"es": ": El código enviado al medidor para activar o desactivar el modo Net Metering."
+},
+{
+"id": 9174,
+"es": "Enable: \"3.7.821.829\""
+},
+{
+"id": 9175,
+"es": "Disable: \"3.7.821.803\""
+},
+{
+"id": 9176,
+"es": "Base de Datos: Comando localizado en la tabla "
+},
+{
+"id": 9177,
+"es": "Code: NET_METERING_MODE_ENABLE"
+},
+{
+"id": 9178,
+"es": "Code: NET_METERING_MODE_DISABLE"
+},
+{
+"id": 9179,
+"es": "Los siguientes pasos describen el flujo básico del proceso"
+},
+{
+"id": 9180,
+"es": "al HES para establecer el modo"
+},
+{
+"id": 9181,
+"es": " net-metering en el medidor."
+},
+{
+"id": 9182,
+"es": "El medidor establece el nuevo método. "
+},
+{
+"id": 9183,
+"es": "El medidor envía una respuesta de vuelta al MDM a través del HES, confirmando el éxito o fracaso de la configuración. "
+},
+{
+"id": 9184,
+"es": "Ejemplo Net Metering Enabled"
+},
+{
+"id": 9185,
+"es": "\"0a95cb53-669c-4a8c-8f29-05e4fe38bdce\""
+},
+{
+"id": 9186,
+"es": "\"adbfd692-e6a8-4194-b33e-5c866298dfc0\""
+},
+{
+"id": 9187,
+"es": "Ejemplo Net Metering Disabled"
+},
+{
+"id": 9188,
+"es": "“create” "
+},
+{
+"id": 9189,
+"es": "      EndDevices "
+},
+{
+"id": 9190,
+"es": " String "
+},
+{
+"id": 9191,
+"es": "\"Reply_HES_NetMetEn_1020_010\""
+},
+{
+"id": 9192,
+"es": "\"ddd0cf1c-4047-49e0-8fa5-8c2a925eb211\""
+},
+{
+"id": 9193,
+"es": "\"Enabled\""
+},
+{
+"id": 9194,
+"es": "\"netMetering\""
+},
+{
+"id": 9195,
+"es": "\"Reply_HES_NetMetEna_1020_010\""
+},
+{
+"id": 9196,
+"es": "\"Disabled\""
+},
+{
+"id": 9197,
+"es": "“OK” or “FAIL” "
+},
+{
+"id": 9198,
+"es": "    mRID "
+},
+{
+"id": 9199,
+"es": "    objectType "
+},
+{
+"id": 9200,
+"es": "\"Enabled\" or \"Disabled\""
+},
+{
+"id": 9201,
+"es": "“netMetering” "
+},
+{
+"id": 9202,
+"es": "El comando se utiliza para confirmar si el equipo tiene o no electricidad al momento de la respuesta. Los casos de uso más comunes incluyen:"
+},
+{
+"id": 9203,
+"es": "Tras un apagón, para monitorizar la restitución de energía en campo."
+},
+{
+"id": 9204,
+"es": "Tras un apagón, para identificar qué equipos requieren intervención técnica en campo."
+},
+{
+"id": 9205,
+"es": "Comando"
+},
+{
+"id": 9206,
+"es": "Read Power Status"
+},
+{
+"id": 9207,
+"es": "Ficheros de ejemplo:"
+},
+{
+"id": 9208,
+"es": "Fichero JSON ejemplo:"
+},
+{
+"id": 9209,
+"es": "REQ_Read_Power_Status.json"
+},
+{
+"id": 9210,
+"es": "REQ_Read_Power_Satus_with_details.json"
+},
+{
+"id": 9211,
+"es": "REQ_ACK_Read_Power_Status.json"
+},
+{
+"id": 9212,
+"es": "REP_Read_Power_Status.json"
+},
+{
+"id": 9213,
+"es": "REP_Read_Power_Status_with_details.json"
+},
+{
+"id": 9214,
+"es": "REP_ACK_Read_Power_Status.json"
+},
+{
+"id": 9215,
+"es": ": Propiedad asignada a Smart Meters. Este parámetro (indicado en la parte de propiedades de los medidores) se actualizará de acuerdo al valor indicado en la respuesta a la petición solicitada."
+},
+{
+"id": 9216,
+"es": "Posibles valores: PowerOn / PowerOff"
+},
+{
+"id": 9217,
+"es": "Last Energized"
+},
+{
+"id": 9218,
+"es": ": Propiedad asignada a los Smart Meters. El parámetro (también indicado en la parte de propiedades de los medidores) indicará como valor el Timestamp de la última vez que el parámetro Energized Status recibió un valor PowerOn."
+},
+{
+"id": 9219,
+"es": "Ejemplo:  \"2025-07-10T14:17:00.090Z\""
+},
+{
+"id": 9220,
+"es": "Code: READ_POWER_STATUS"
+},
+{
+"id": 9221,
+"es": "El medidor emvía una respuesta de vuelta al MDM a través del HES, informando del límite actual."
+},
+{
+"id": 9222,
+"es": "\"cccb6dad-acd8-4fd9-b164-a684c1b1d180\""
+},
+{
+"id": 9223,
+"es": "\"ede18a84-1898-4009-81de-8199a1bc7ed0\""
+},
+{
+"id": 9224,
+"es": "RetryInterval (unit: min) "
+},
+{
+"id": 9225,
+"es": "EndDevices "
+},
+{
+"id": 9226,
+"es": " The command will apply to these meters."
+},
+{
+"id": 9227,
+"es": "\"HES_REPLY_ReadPo\""
+},
+{
+"id": 9228,
+"es": "\"faa0fdec-8c80-4f6a-a7c2-aab1b33683b6\""
+},
+{
+"id": 9229,
+"es": "\"PowerOff\""
+},
+{
+"id": 9230,
+"es": "\"powerStatus\""
+},
+{
+"id": 9231,
+"es": "“OK” , “FAIL” "
+},
+{
+"id": 9232,
+"es": "Power On/Power Off"
+},
+{
+"id": 9233,
+"es": "MDM > HES - Desconexión / Conexión del medidor"
+},
+{
+"id": 9234,
+"es": "MDM > HES - Ping a medidor"
+},
+{
+"id": 9235,
+"es": "MDM > HES - Recuperar estado del medidor"
+},
+{
+"id": 9236,
+"es": "MDM > HES - Sincronización del medidor"
+},
+{
+"id": 9237,
+"es": "Estos comandos se utilizan para desconectar o reconectar remotamente el suministro eléctrico de un cliente en una fecha especificada."
+},
+{
+"id": 9238,
+"es": "Pagos no realizados"
+},
+{
+"id": 9239,
+"es": "Mantenimiento programado"
+},
+{
+"id": 9240,
+"es": " El ciclo de transiciones del relé habilitadas en el medidor está configurado por 'modos' operativos definidos según el estándar DLMS. Cada modo determina las operaciones permitidas tanto a nivel manual, local y remoto. "
+},
+{
+"id": 9241,
+"es": "El "
+},
+{
+"id": 9242,
+"es": "Modo_2 y Modo_4 "
+},
+{
+"id": 9243,
+"es": "son las configuración estándar utilizadas que permiten operaciones remotas sobe el relay del equipo"
+},
+{
+"id": 9244,
+"es": "Nota2: "
+},
+{
+"id": 9245,
+"es": "Esta transacción solo es compatible en modo asincrónico. En este modo, se pueden enviar múltiples respuestas al MDM, cada una indicando el éxito o el fracaso de una solicitud individual."
+},
+{
+"id": 9246,
+"es": "Meter Connect"
+},
+{
+"id": 9247,
+"es": "Meter Disconnect"
+},
+{
+"id": 9248,
+"es": "REQUESTS"
+},
+{
+"id": 9249,
+"es": "Fichero JSON ejemplo CONNECT: "
+},
+{
+"id": 9250,
+"es": "REQ_Meter_Connect.json"
+},
+{
+"id": 9251,
+"es": "Fichero JSON ejemplo DISCONNECT:"
+},
+{
+"id": 9252,
+"es": "REQ_Meter_Disconnect.json"
+},
+{
+"id": 9253,
+"es": "Ficheros JSON ejemplo con comentarios:"
+},
+{
+"id": 9254,
+"es": "REQ_Meter_Connect_with_details.json"
+},
+{
+"id": 9255,
+"es": "REQ_Meter_Disconnect_with_details.json"
+},
+{
+"id": 9256,
+"es": "REQ_ACK_Meter_Con/Dis.json"
+},
+{
+"id": 9257,
+"es": "RESPONSES"
+},
+{
+"id": 9258,
+"es": "Fichero JSON ejemplo CONNECT:"
+},
+{
+"id": 9259,
+"es": "REP_Meter_Connect.json"
+},
+{
+"id": 9260,
+"es": "Fichero JSON ejemplo DISCONNECT"
+},
+{
+"id": 9261,
+"es": "REP_Meter_Disconnect.json"
+},
+{
+"id": 9262,
+"es": "REP_Meter_Connect_with_details.json"
+},
+{
+"id": 9263,
+"es": "REP_Meter_Disconnect_with_details.json"
+},
+{
+"id": 9264,
+"es": "REP_ACK_Meter_Con/Dis.json"
+},
+{
+"id": 9265,
+"es": "Relay Status: "
+},
+{
+"id": 9266,
+"es": "Propiedad de los Smart Meters que permite el flujo de electricidad a través del medidor. Este parámetro (indicado en la parte de propiedades de los medidores) se actualizará de acuerdo al valor indicado en la petición. "
+},
+{
+"id": 9267,
+"es": "Posibles valores: 'Conectado' / 'Desconectado'"
+},
+{
+"id": 9268,
+"es": "Por defecto: 'Conectado'"
+},
+{
+"id": 9269,
+"es": "Relacionado con: ESTADO OPERACIÓN PUNTO DE MEDIDA (Inventario)"
+},
+{
+"id": 9270,
+"es": "Valores posibles: 'Activo' / 'Inactivo'"
+},
+{
+"id": 9271,
+"es": "Relacionado con: ESTADO OPERACIÓN EQUIPO (Inventario)"
+},
+{
+"id": 9272,
+"es": "Valores posibles: 'Conectado' / 'Conectado sin puesta en servicio'"
+},
+{
+"id": 9273,
+"es": "Base de Datos"
+},
+{
+"id": 9274,
+"es": ": tabla "
+},
+{
+"id": 9275,
+"es": ", columna "
+},
+{
+"id": 9276,
+"es": "default_parameters"
+},
+{
+"id": 9277,
+"es": "\"name\":\"RELAY-STATUS\""
+},
+{
+"id": 9278,
+"es": "\"options\":[\"CONNECTED\",\"DISCONNECTED\"]"
+},
+{
+"id": 9279,
+"es": ": El código enviado al medidor para ejecutar el comando."
+},
+{
+"id": 9280,
+"es": "Conectado:    \"3.31.91.18\""
+},
+{
+"id": 9281,
+"es": "Desconectado: \"3.31.91.23\""
+},
+{
+"id": 9282,
+"es": "Los valores en los formatos JSON son: \"Names\": [{\"name\": \"Disconnection\" / \"Connection\", \"NameType\": {\"name\": \"relayStatus\"}}]"
+},
+{
+"id": 9283,
+"es": ": Comando localizado en la tabla "
+},
+{
+"id": 9284,
+"es": "master_command:"
+},
+{
+"id": 9285,
+"es": "Code: METER_CONNECT"
+},
+{
+"id": 9286,
+"es": "Code: METER_DISCONNECT"
+},
+{
+"id": 9287,
+"es": "al HES para iniciar el proceso de desconexión o reconexión del medidor"
+},
+{
+"id": 9288,
+"es": "El medidor ejecuta la operación requerida (desconexión o reconexión)."
+},
+{
+"id": 9289,
+"es": "The meter sends a response back to the MDM via the HES, confirming the operation status."
+},
+{
+"id": 9290,
+"es": "Header/Payload"
+},
+{
+"id": 9291,
+"es": "Acknowledgement"
+},
+{
+"id": 9292,
+"es": "Header/Reply"
+},
+{
+"id": 9293,
+"es": "Response"
+},
+{
+"id": 9294,
+"es": "Ejemplo Connect"
+},
+{
+"id": 9295,
+"es": "\"5d877240-c8d4-4cdd-98ae-930c70aa92f1\""
+},
+{
+"id": 9296,
+"es": "\"da9dfc0d-e519-4de3-85a7-2c389f2a8889\""
+},
+{
+"id": 9297,
+"es": "\"EQ0035SN\""
+},
+{
+"id": 9298,
+"es": "Ejemplo Disconnect"
+},
+{
+"id": 9299,
+"es": "\"2c80d907-4290-4706-a4f2-a81aa06d71a3\""
+},
+{
+"id": 9300,
+"es": "\"33a9b99c-20f6-4a71-86bb-057d64db8bdb\""
+},
+{
+"id": 9301,
+"es": "Field Name"
+},
+{
+"id": 9302,
+"es": "Max Length"
+},
+{
+"id": 9303,
+"es": "For example, \"1.0\" (version of the CIM specification standard)"
+},
+{
+"id": 9304,
+"es": "Name"
+},
+{
+"id": 9305,
+"es": "StartTime"
+},
+{
+"id": 9306,
+"es": "RetryInterval (unit: min)"
+},
+{
+"id": 9307,
+"es": "Value"
+},
+{
+"id": 9308,
+"es": "ref: \"3.31.91.23\" = disconnect; \"3.31.91.18\" = connect"
+},
+{
+"id": 9309,
+"es": "EndDevices"
+},
+{
+"id": 9310,
+"es": "mRID"
+},
+{
+"id": 9311,
+"es": "Meter Identification"
+},
+{
+"id": 9312,
+"es": "\"5d877240-c8d4-4cdd-98ae-930c70aa92f3\""
+},
+{
+"id": 9313,
+"es": "\"Connection\""
+},
+{
+"id": 9314,
+"es": "\"relayStatus\""
+},
+{
+"id": 9315,
+"es": "\"2c80d907-4290-4706-a4f2-a81aa06d71a5\""
+},
+{
+"id": 9316,
+"es": "\"Disconnection\""
+},
+{
+"id": 9317,
+"es": "“EndDeviceControls”"
+},
+{
+"id": 9318,
+"es": "For example, “2.0” (version of the CIM specification standard)"
+},
+{
+"id": 9319,
+"es": "“OK”, “FAIL”"
+},
+{
+"id": 9320,
+"es": "Execution Details"
+},
+{
+"id": 9321,
+"es": "   code"
+},
+{
+"id": 9322,
+"es": "Message code"
+},
+{
+"id": 9323,
+"es": "   level"
+},
+{
+"id": 9324,
+"es": "“INFORM” or “FATAL”"
+},
+{
+"id": 9325,
+"es": "   detail"
+},
+{
+"id": 9326,
+"es": "Message detail"
+},
+{
+"id": 9327,
+"es": "     object"
+},
+{
+"id": 9328,
+"es": "Task Object"
+},
+{
+"id": 9329,
+"es": "     mRID"
+},
+{
+"id": 9330,
+"es": "ObjectId, meter identification"
+},
+{
+"id": 9331,
+"es": "       objectType"
+},
+{
+"id": 9332,
+"es": "“Meter”"
+},
+{
+"id": 9333,
+"es": "Names"
+},
+{
+"id": 9334,
+"es": "\"Disconnection\" or \"Connection\""
+},
+{
+"id": 9335,
+"es": "NameType"
+},
+{
+"id": 9336,
+"es": "Este comando se utiliza para verificar la conectividad en tiempo real a nivel del medidor. Se emplea comúnmente en los escenarios:"
+},
+{
+"id": 9337,
+"es": "Validación de los enlaces de comunicación antes de iniciar procedimientos de inventario o configuración."
+},
+{
+"id": 9338,
+"es": "Last Ping"
+},
+{
+"id": 9339,
+"es": "REQ_Meter_Ping_json"
+},
+{
+"id": 9340,
+"es": "REQ_Meter_Ping_with_details.json"
+},
+{
+"id": 9341,
+"es": "REQ_ACK_Meter_Ping.json"
+},
+{
+"id": 9342,
+"es": "REP_Meter_Ping.json"
+},
+{
+"id": 9343,
+"es": "FIchero JSON ejemplo con comentarios: "
+},
+{
+"id": 9344,
+"es": "REP_Meter_Ping_with_details.json"
+},
+{
+"id": 9345,
+"es": "REP_ACK_Meter_Ping.json"
+},
+{
+"id": 9346,
+"es": ": Propiedad de los Smart Meters. "
+},
+{
+"id": 9347,
+"es": "Este parámetro "
+},
+{
+"id": 9348,
+"es": "(indicado en la parte de propiedades de los medidores) "
+},
+{
+"id": 9349,
+"es": "se actualiza con el resultado del comando según el valor del campo:"
+},
+{
+"id": 9350,
+"es": ": Código enviado al medidor para responder al ping."
+},
+{
+"id": 9351,
+"es": "Ping: \"3.31.91.99\""
+},
+{
+"id": 9352,
+"es": "Code: METER_PING"
+},
+{
+"id": 9353,
+"es": "MDM envía un mensaje tipo "
+},
+{
+"id": 9354,
+"es": "EndDeviceControl "
+},
+{
+"id": 9355,
+"es": "al HES para comprobar la conectividad del medidor."
+},
+{
+"id": 9356,
+"es": "El medidor envía una respuesta de vuelta al MDM a través del HES, y el Timestamp queda registrado."
+},
+{
+"id": 9357,
+"es": "get"
+},
+{
+"id": 9358,
+"es": "\"7a30b495-3254-46b8-89bf-121d390e71c2\""
+},
+{
+"id": 9359,
+"es": "\"e17ec808-41d3-463b-b298-40e5628391b5\""
+},
+{
+"id": 9360,
+"es": "Field name "
+},
+{
+"id": 9361,
+"es": "Cardinality "
+},
+{
+"id": 9362,
+"es": "Type "
+},
+{
+"id": 9363,
+"es": "MaxLength "
+},
+{
+"id": 9364,
+"es": "Description "
+},
+{
+"id": 9365,
+"es": "Mandatory "
+},
+{
+"id": 9366,
+"es": "“get” "
+},
+{
+"id": 9367,
+"es": "\"Reply_HES_Ping_1020_010\""
+},
+{
+"id": 9368,
+"es": "\"meterPing\""
+},
+{
+"id": 9369,
+"es": "Datetime of message creation Ex: \"2025-07-10T14:17:00.090Z\" → Value of LAST PING parameter registered on the Equipment"
+},
+{
+"id": 9370,
+"es": "Este comando se utiliza para verificar si el relé está actualmente conectado o desconectado. Los casos de uso comunes incluyen:"
+},
+{
+"id": 9371,
+"es": "Uso conjunto con los comandos de Desconexión / Reconexión durante operaciones comerciales."
+},
+{
+"id": 9372,
+"es": "Modo_2 y Modo_4 "
+},
+{
+"id": 9373,
+"es": "REQ_Read_Relay_Status.json"
+},
+{
+"id": 9374,
+"es": "REQ_Read_Relay_Status_with_details.json"
+},
+{
+"id": 9375,
+"es": "REQ_ACK_Read_Relay_Status.json"
+},
+{
+"id": 9376,
+"es": "REP_Read_Relay_Status.json"
+},
+{
+"id": 9377,
+"es": "FIchero JSON ejemplo con comentarios:"
+},
+{
+"id": 9378,
+"es": "REP_Read_Relay_Status_with_details.json"
+},
+{
+"id": 9379,
+"es": "REP_ACK_Read_Relay_Status.json"
+},
+{
+"id": 9380,
+"es": ": Propiedad de los Smart Meters que permite el flujo de electricidad a través del medidor. "
+},
+{
+"id": 9381,
+"es": "Este parámetro (indicado en la parte de propiedades de los medidores) se actualizará de acuerdo al valor indicado en la respuesta a la solicitud ejecutada."
+},
+{
+"id": 9382,
+"es": "Relacionado con: ESTADO OPERACIÓN MEDIDOR (Inventario)"
+},
+{
+"id": 9383,
+"es": "Valores posibles: 'Active' / 'Inactive'"
+},
+{
+"id": 9384,
+"es": ": Código recibido desde el medidor para actualizar el estado del relé."
+},
+{
+"id": 9385,
+"es": "Get status: \"3.31.91.46\""
+},
+{
+"id": 9386,
+"es": "Code: READ_RELAY_STATUS"
+},
+{
+"id": 9387,
+"es": "The following steps outline the basic workflow:"
+},
+{
+"id": 9388,
+"es": "al HES solicitando el estado actual del medidor."
+},
+{
+"id": 9389,
+"es": "El medidor confirma el estado actual (desconectado or conectado)."
+},
+{
+"id": 9390,
+"es": "El medidor envía una respuesta de vuelta al MDM a través del HES confirmando el estado de la operación."
+},
+{
+"id": 9391,
+"es": "\"379046f2-4589-451c-90bc-a9cad1fac219\""
+},
+{
+"id": 9392,
+"es": "\"6de1ad75-4bbe-4490-b1e6-6454a31b7abc\""
+},
+{
+"id": 9393,
+"es": "\"5e55768f-f000-4558-8f15-9ace0eba1891\""
+},
+{
+"id": 9394,
+"es": "\"52c9d5b4-54fa-478f-a5a0-f727db8f4b58\""
+},
+{
+"id": 9395,
+"es": "“relayStatus” "
+},
+{
+"id": 9396,
+"es": "Este comando se utiliza para establecer la hora en un medidor determinado. El caso de uso más común es:"
+},
+{
+"id": 9397,
+"es": "Cambiar la zona horaria de UTC a hora local o viceversa."
+},
+{
+"id": 9398,
+"es": "Last Synchro"
+},
+{
+"id": 9399,
+"es": "REQ_Meter_Sync.json"
+},
+{
+"id": 9400,
+"es": "REQ_Meter_Sync_with_details.json"
+},
+{
+"id": 9401,
+"es": "REQ_ACK_MeterSync.json"
+},
+{
+"id": 9402,
+"es": "REP_Meter_Sync.json"
+},
+{
+"id": 9403,
+"es": "REP_Meter_Sync_with_details.json"
+},
+{
+"id": 9404,
+"es": "Fichero JSON ACK ejemplo: "
+},
+{
+"id": 9405,
+"es": "REP_ACK_Meter_Sync.json"
+},
+{
+"id": 9406,
+"es": ": Propiedad de los Smart Meters. Hora de la última sincronización entre el medidor y MDM, muestra la hora registrada en el medidor. "
+},
+{
+"id": 9407,
+"es": "Este parámetro "
+},
+{
+"id": 9408,
+"es": ": Código enviado por el medidor para establecer la zona horaria."
+},
+{
+"id": 9409,
+"es": "Meter synchronization: \"3.31.91.199\""
+},
+{
+"id": 9410,
+"es": ": Comando localizado en la tabla "
+},
+{
+"id": 9411,
+"es": "Code: METER_SYNCHRONIZATION"
+},
+{
+"id": 9412,
+"es": "al HES solicitando el cambio de zona horaria del medidor."
+},
+{
+"id": 9413,
+"es": "El medidor confirma el Timestamp actual en sus sistema."
+},
+{
+"id": 9414,
+"es": "El medidor envía una respuesta de vuelta al MDM a través del HES, confirmando su Timestamp actual."
+},
+{
+"id": 9415,
+"es": "\"ceee5fc9-0499-4021-b6ad-fdf4fba628e8\""
+},
+{
+"id": 9416,
+"es": "\"7e47ca72-7067-483a-8d14-5e34311fa244\""
+},
+{
+"id": 9417,
+"es": "\"REPLY_HES_Synchro_1020_010\""
+},
+{
+"id": 9418,
+"es": "\"meterSynchronization\""
+},
+{
+"id": 9419,
+"es": "Meter Timestamp Ex: \"2025-07-10T14:17:00.090Z\" → Valor del parámetro LAST-SYNC del Equipment"
+},
+{
+"id": 9420,
+"es": "MDM > HES - Solicitar Eventos"
+},
+{
+"id": 9421,
+"es": "MDM > HES - Solicitar Lecturas (Perfil de Carga Absoluto)"
+},
+{
+"id": 9422,
+"es": "MDM > HES - Solicitar Medidas de Cierre Diarias"
+},
+{
+"id": 9423,
+"es": "MDM > HES - Solicitar Medidas de Cierre Mensuales"
+},
+{
+"id": 9424,
+"es": "MDM > HES - Solicitar Valores Instantáneos"
+},
+{
+"id": 9425,
+"es": "Mensaje de ingesta (Ingest Message)"
+},
+{
+"id": 9426,
+"es": "Este comando tiene la funcionalidad de recuperar los eventos registrados en los medidores en el intervalo de fechas que se indique en la petición."
+},
+{
+"id": 9427,
+"es": "ReadingTypeGroup (Categorías de Eventos)"
+},
+{
+"id": 9428,
+"es": "EndTime"
+},
+{
+"id": 9429,
+"es": "REQ_Meter_Events.json"
+},
+{
+"id": 9430,
+"es": "REQ_Meter_Events_with_details.json"
+},
+{
+"id": 9431,
+"es": "REQ_ACK_Meter_Events.json"
+},
+{
+"id": 9432,
+"es": "REP_Meter_Events.json"
+},
+{
+"id": 9433,
+"es": "REP_Meter_Events_with_details.json"
+},
+{
+"id": 9434,
+"es": "REP_ACK_Meter_Events.json"
+},
+{
+"id": 9435,
+"es": "INGEST"
+},
+{
+"id": 9436,
+"es": "ING_Meter_Events.json"
+},
+{
+"id": 9437,
+"es": "ING_Meter_Events_with_details.json"
+},
+{
+"id": 9438,
+"es": "Request / Option / "
+},
+{
+"id": 9439,
+"es": "value: "
+},
+{
+"id": 9440,
+"es": "Categorías "
+},
+{
+"id": 9441,
+"es": "('ReadingTypeGroup')"
+},
+{
+"id": 9442,
+"es": " de en las que se agrupan los eventos registrados en la configuración maestra del sistema. "
+},
+{
+"id": 9443,
+"es": "mRID: "
+},
+{
+"id": 9444,
+"es": "Número de serie del medidor para el que se ha ejecutado  el comando. "
+},
+{
+"id": 9445,
+"es": "Base de Datos:"
+},
+{
+"id": 9446,
+"es": "Comando localizado en la tabla "
+},
+{
+"id": 9447,
+"es": "Code: EVENT_READING"
+},
+{
+"id": 9448,
+"es": "Eventos extraídos de la tabla "
+},
+{
+"id": 9449,
+"es": "master_event_data_type "
+},
+{
+"id": 9450,
+"es": "(Ingest → campo eventCode)"
+},
+{
+"id": 9451,
+"es": "Los pasos correspondientes a este proceso son los siguientes:"
+},
+{
+"id": 9452,
+"es": "El mensaje "
+},
+{
+"id": 9453,
+"es": "EndDeviceEvents"
+},
+{
+"id": 9454,
+"es": " es enviado desde MDM al HES con el fin de solicitar la lectura de eventos."
+},
+{
+"id": 9455,
+"es": "La operación se ejecuta por cada medidor y la respuesta correspondiente es enviada desde el HES a MDM."
+}
+]

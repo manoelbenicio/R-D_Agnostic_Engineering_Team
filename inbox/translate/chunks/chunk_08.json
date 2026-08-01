@@ -1,0 +1,2778 @@
+[
+{
+"id": 4481,
+"es": "Totalizador, según lo definido en la estructura tarifaria correspondiente."
+},
+{
+"id": 4482,
+"es": "Período de integración. Por defectio diario. Campo obligatorio."
+},
+{
+"id": 4483,
+"es": "“yyyy-mm-dd hh:mm:ss”"
+},
+{
+"id": 4484,
+"es": "Todos los criterios son excluyentes, salvo Punto de Medida y Grupo de Puntos de Medida, funcionando de manera que se recuperarán todas las mediciones que cumplan, además del resto de criterios, que estén asociados al Punto de Medida selccionado, o a alguno de los puntos de medida del Grupo de Puntos seleccionado"
+},
+{
+"id": 4485,
+"es": "Bajo el buscador se listan los registros según los campos:"
+},
+{
+"id": 4486,
+"es": "Resultado validación"
+},
+{
+"id": 4487,
+"es": "Detalles de Medidas de Cierre Óptimo: Para acceder al "
+},
+{
+"id": 4488,
+"es": "Detalle de Medidas de Cierre Óptimo"
+},
+{
+"id": 4489,
+"es": "Detalles de Medidas de Cierre Óptimo"
+},
+{
+"id": 4490,
+"es": "El Detalle de "
+},
+{
+"id": 4491,
+"es": "Medidas de Cierre Óptim"
+},
+{
+"id": 4492,
+"es": "o muestra los siguientes recuadros:"
+},
+{
+"id": 4493,
+"es": "Valor: Valor absoluto en la fecha en la que se ha registrado el cierre."
+},
+{
+"id": 4494,
+"es": "Tras este recuadro se presentan los cuadros de "
+},
+{
+"id": 4495,
+"es": "Registros de Origen"
+},
+{
+"id": 4496,
+"es": ", similares a tantos otros presentes en los sub-apartados anteriores:"
+},
+{
+"id": 4497,
+"es": "Al igual que en el resto de buscadores definidos en la aplicación se cuenta con la opción de exportar los datos en los idiomas y formatos configurados."
+},
+{
+"id": 4498,
+"es": "El marco de Informes Onesait Metering (OUM) consiste de una serie de módulos integrados en la solución que ofrecen la posibilidad de generar vistas interactivas, realizar informes a partir de los datos almacenados en las bases de datos de OUM (cada plantilla de Informe tiene sus correspondientes parámetros de configuración) y enviarlos a diferentes repositorios de información. Basado en "
+},
+{
+"id": 4499,
+"es": "BIRT"
+},
+{
+"id": 4500,
+"es": ", el módulo de informes del producto OUM incluye los siguientes componentes:"
+},
+{
+"id": 4501,
+"es": "Planificador de Informes"
+},
+{
+"id": 4502,
+"es": "Crear Planificador de Informes"
+},
+{
+"id": 4503,
+"es": "Editar Planificador de Informes"
+},
+{
+"id": 4504,
+"es": "Ejecutar Planificador de Informes"
+},
+{
+"id": 4505,
+"es": "Ejecución Manual de Informes"
+},
+{
+"id": 4506,
+"es": "Monitor de Informes"
+},
+{
+"id": 4507,
+"es": "Exportar Informes Generados"
+},
+{
+"id": 4508,
+"es": "Nota: "
+},
+{
+"id": 4509,
+"es": "La versión de Producto no contempla informes predefinidos, ya que la definición y generación de los informes necesarios para el sistema dependerá del alcance y requerimientos establecidos para cada proyecto."
+},
+{
+"id": 4510,
+"es": "El módulo de configuración incluye la vista Plantilla de Informes. Esta vista presenta un catálogo de Informes configurados de acuerdo a las necesidades de cada proyecto. Es una ventana únicamente de consulta. "
+},
+{
+"id": 4511,
+"es": "El Planificador de Informes del Producto OUM es la herramienta que permite establecer las ejecuciones programadas de los distintos informes configurados para cada proyecto. Esta ejecución se realizará de acuerdo a la frecuencia establecida por el usuario a la hora de configurar el mismo. La pantalla principal es:"
+},
+{
+"id": 4512,
+"es": "Buscar: "
+},
+{
+"id": 4513,
+"es": "El botón buscar permite buscar un planificador en función de los filtros de búsqueda de Nombre y Estado."
+},
+{
+"id": 4514,
+"es": ": El botón crear permite crear un nuevo planificador."
+},
+{
+"id": 4515,
+"es": ": el botón Detalle o el doble clic sobre alguno de los planificadores permite al usuario acceder a la información detallada de cada uno de ellos"
+},
+{
+"id": 4516,
+"es": ": el botón Editar permite editar el planificador seleccionado."
+},
+{
+"id": 4517,
+"es": "Ejecutar"
+},
+{
+"id": 4518,
+"es": ": el botón Ejecutar permite ejecutar un planificador en cualquier momento, independientemente de la planificación configurada para el mismo."
+},
+{
+"id": 4519,
+"es": ": el botón Exportar permite exportar la lista de planificadores de forma similar a como se exportan otras pantallas."
+},
+{
+"id": 4520,
+"es": ": el botón Eliminar permite eliminar el planificador seleccionado. El sistema pedirá confirmación y notificará al usuario de que el planificador se ha eliminado correctamente. La eliminación de un planificador es permanente."
+},
+{
+"id": 4521,
+"es": "Además, esta pantalla dispone de la siguiente información para cada uno de los planificadores configurados:"
+},
+{
+"id": 4522,
+"es": "Fecha última ejecución"
+},
+{
+"id": 4523,
+"es": "Fecha próxima ejecución"
+},
+{
+"id": 4524,
+"es": ": periodicidad con la que se ejecuta el planificador."
+},
+{
+"id": 4525,
+"es": ": habilitado o deshabilitado."
+},
+{
+"id": 4526,
+"es": "Al seleccionar la opción CREAR el sistema desplegará la ventana mostrada en la ilustración:"
+},
+{
+"id": 4527,
+"es": "Se requiere completar la siguiente información:"
+},
+{
+"id": 4528,
+"es": "Nombre (obligatorio): Identificador del Planificador. Se recomienda que permita identificar rápidamente el mismo, evitando caracteres extraños. Extensión máxima: 50 caracteres."
+},
+{
+"id": 4529,
+"es": "Descripción (opcional): Para facilitar la identificación del Planificador. Extensión máxima: 100 caracteres."
+},
+{
+"id": 4530,
+"es": "Repositorio (opcional): Repositorio donde se pueden enviar automáticamente los informes una vez se ejecute el proceso. Es necesario que exista un repositorio previamente configurado (Ver sección Integración)"
+},
+{
+"id": 4531,
+"es": "Estado (obligatorio): Habilitado o deshabilitado. Si el planificador está habilitado, el proceso se ejecutará automáticamente cuando se alcance la fecha establecida según la planificación . Si está deshabilitado, no se ejecutará salvo que el usuario seleccione la opción EJECUTAR."
+},
+{
+"id": 4532,
+"es": "Configuración de correo (opcional): Botón que permite activar la opción de envío por correo del Informe generado. Para ello, es necesario 'encender' el botón, desplegándose así dos nuevos campos para introducir una (o varias, separadas por 'punto y coma') dirección de correo y el asunto del mismo."
+},
+{
+"id": 4533,
+"es": "Planificación (obligatorio): Fechas o frecuencias en las que periódicamente se ejecutarán automáticamente los procesos de generación de Informes. Se despliega la siguiente ventana:"
+},
+{
+"id": 4534,
+"es": "Una vez se ha configurado el Planificador, es necesario añadir el informe que se quiere ejecutar con el proceso. Haciendo doble click en el icono "
+},
+{
+"id": 4535,
+"es": " , el sistema abrirá una nueva ventana, denominada "
+},
+{
+"id": 4536,
+"es": "Plantillas de Planificación de Informes, "
+},
+{
+"id": 4537,
+"es": "donde se debe configurar la plantilla de Informe que se quiere ejecutar."
+},
+{
+"id": 4538,
+"es": ": El botón crear abre la ventana "
+},
+{
+"id": 4539,
+"es": "Crear Plantillas de Planificación de Informes,"
+},
+{
+"id": 4540,
+"es": " en la cual se configura el Informe que se quiere generar. Se pueden añadir tantas plantillas como el usuario quiera. A la hora de ejecutarse el planificador, se generarán tantos informes como plantillas haya configuradas."
+},
+{
+"id": 4541,
+"es": "Planificador: Nombre del Planificador para el que se está configurando la plantilla. El sistema no permite ejercer ninguna acción sobre este campo."
+},
+{
+"id": 4542,
+"es": "Categoría (obligatorio): Listado de las distintas categorías en las que se clasifican las plantillas de Informes configurados."
+},
+{
+"id": 4543,
+"es": "Informe (obligatorio): Listado de las distintas plantillas de Informe configuradas. El sistema despliega en este campo las plantillas de Informes de acuerdo a la categoría seleccionada previamente."
+},
+{
+"id": 4544,
+"es": "Parámetros del Informe: "
+},
+{
+"id": 4545,
+"es": "Según el Informe seleccionado para su ejecución, el sistema mostrará automáticamente los campos necesarios a configurar para completar el proceso."
+},
+{
+"id": 4546,
+"es": "Formato (obligatorio): Listado de formatos en los que se puede generar el informe. Se dará la opción de PDF o CSV."
+},
+{
+"id": 4547,
+"es": "Nombre del archivo: Nombre asignado al documento generado."
+},
+{
+"id": 4548,
+"es": ": el botón Detalle o el doble clic sobre alguna de las plantillas configuradas permite al usuario acceder a la información detallada de cada una de ellos"
+},
+{
+"id": 4549,
+"es": ": el botón Editar permite editar la plantilla configurada."
+},
+{
+"id": 4550,
+"es": ": El botón Eliminar permite eliminar la plantilla seleccionada. El sistema pedirá confirmación y notificará al usuario de que la plantilla se ha eliminado correctamente. La eliminación de una plantilla es permanente."
+},
+{
+"id": 4551,
+"es": "Seleccionando el Planificador que se quiera modificar y pulsando el botón EDITAR, el sistema abrirá la ventana "
+},
+{
+"id": 4552,
+"es": "Editar Planificador de Informes."
+},
+{
+"id": 4553,
+"es": "Los campos disponibles son los mismos que en la ventana de creación. Una vez se haya modificado cualquiera de los campos, es necesario GUARDAR los cambios para que el sistema registre correctamente las modificaciones realizadas. "
+},
+{
+"id": 4554,
+"es": "Al ejecutar un planificador de forma manual se actualizará automáticamente la fecha de última ejecución y, en consecuencia, según la planificación seleccionada, puede verse afectada la fecha de próxima ejecución. Los procesos lanzados de esta manera aparecerán en el monitor de Informes como procesos ejecutados de forma manual."
+},
+{
+"id": 4555,
+"es": "El Producto OUM permite además la ejecución manual de Informes a demanda del usuario en el momento que se precise. La pantalla principal es:"
+},
+{
+"id": 4556,
+"es": "Nombre (obligatorio): Identificador del Proceso. Se recomienda que permita identificar rápidamente el mismo, evitando caracteres extraños. Extensión máxima: 50 caracteres."
+},
+{
+"id": 4557,
+"es": "Al pulsar el botón Ejecutar, se notificará que la ejecución se ha lanzado con éxito y el proceso aparecerá en el monitor de Informes con tipo de ejecución manual."
+},
+{
+"id": 4558,
+"es": "El Monitor de Informes supervisa todos los procesos ejecutados tanto manual como automáticamente en el sistema. El monitor permite rastrear cada proceso, identificando al usuario o sistema responsable de su ejecución, el resultado del proceso, el tiempo transcurrido hasta su finalización y cualquier advertencia generada."
+},
+{
+"id": 4559,
+"es": "El botón buscar permite buscar un proceso ejecutado en función de los filtros de búsqueda de la parte superior de la pantalla:"
+},
+{
+"id": 4560,
+"es": "PID: Identificador asignado automáticamente por el sistema para cada proceso ejecutado"
+},
+{
+"id": 4561,
+"es": "Rango de fechas (Desde/Hasta)"
+},
+{
+"id": 4562,
+"es": "Tipo de ejecución: Manual o automática"
+},
+{
+"id": 4563,
+"es": ": el botón Detalle o el doble clic sobre alguno de los procesos permite al usuario acceder a la información detallada de cada uno de ellos:"
+},
+{
+"id": 4564,
+"es": "Ejecución Tareas Proceso Informe"
+},
+{
+"id": 4565,
+"es": ": Esta sección permite filtrar los informes generados durante un mismo proceso (cuando se ha ejecutado un planificador en el que hay configuradas más de una plantilla de informe) de acuerdo a su estado. Permite además exportar la lista de los mismos y el detalle de cada proceso. Además, muestra la siguiente información sobre el proceso de generación de Informes para cada uno de ellos:"
+},
+{
+"id": 4566,
+"es": "Nombre: Plantilla de Informe que se ha ejecutado en el proceso"
+},
+{
+"id": 4567,
+"es": "Duración (s)"
+},
+{
+"id": 4568,
+"es": "Avisos"
+},
+{
+"id": 4569,
+"es": ": el botón Exportar permite exportar la lista de procesos de forma similar a como se exportan otras pantallas."
+},
+{
+"id": 4570,
+"es": ": el botón cancelar permite detener el proceso antes de que finalice."
+},
+{
+"id": 4571,
+"es": ": el botón Eliminar permite eliminar el proceso seleccionado. El sistema pedirá confirmación y notificará al usuario de que el proceso se ha eliminado correctamente. La eliminación de un proceso es permanente."
+},
+{
+"id": 4572,
+"es": "Además, esta pantalla dispone de la siguiente información para cada uno de los proceso ejecutados:"
+},
+{
+"id": 4573,
+"es": "PID"
+},
+{
+"id": 4574,
+"es": "Usuario: "
+},
+{
+"id": 4575,
+"es": "Usuario que ha ejecutado el proceso."
+},
+{
+"id": 4576,
+"es": "Para exportar el Informe generado, es necesario acceder a la pantalla de Detalles del proceso que haya generado dicho informe. En la parte inferior de la pantalla se informa de la Plantilla de Informe que ha ejecutado el proceso. El sistema muestra los siguientes iconos:"
+},
+{
+"id": 4577,
+"es": ": Permite hacer una vista previa del informe generado."
+},
+{
+"id": 4578,
+"es": ": Permite descargar el Informe en el formato que se haya seleccionado durante el proceso de ejecución."
+},
+{
+"id": 4579,
+"es": "Onesait Metering incluye funcionalidades para el intercambio de información con los diferentes sistemas o entidades con las que interactúa. Puede tratarse de cualquier tipo de información, como datos de medición o el inventario de la red, entre otros."
+},
+{
+"id": 4580,
+"es": "Este intercambio trabaja en ambos sentidos:"
+},
+{
+"id": 4581,
+"es": "Entrada"
+},
+{
+"id": 4582,
+"es": "Carga de "
+},
+{
+"id": 4583,
+"es": "APIRest (WS) "
+},
+{
+"id": 4584,
+"es": "para invocaciones por sistemas externos"
+},
+{
+"id": 4585,
+"es": "Tópico Kafka"
+},
+{
+"id": 4586,
+"es": " para solicitudes o envío de información para consumo por producto en streaming "
+},
+{
+"id": 4587,
+"es": "Salida"
+},
+{
+"id": 4588,
+"es": " para solicitudes o envío de información a terceros en streaming. "
+},
+{
+"id": 4589,
+"es": "Este intercambio se puede llevar a cabo de forma manual o planificada, a través de "
+},
+{
+"id": 4590,
+"es": "repositorios"
+},
+{
+"id": 4591,
+"es": ", así como realizar el seguimiento del intercambio desde un Monitor de Interfaces."
+},
+{
+"id": 4592,
+"es": "Independientemente del medio, la información a intercambiar puede ser de diferente tipo:"
+},
+{
+"id": 4593,
+"es": "Datos de Inventario y Configuración, para la actualización de las entidades correspondientes del sistema (normalmente información de entrada al sistema)."
+},
+{
+"id": 4594,
+"es": "Datos de Medición. Hace referencia a la información de medición recuperada y registrada en el sistema, normalmente se enviará a un sistema de gestión de la información (información de salida)."
+},
+{
+"id": 4595,
+"es": "Peticiones externas procedentes de otros sistemas:"
+},
+{
+"id": 4596,
+"es": "Peticiones de Lectura que tienen como fin la obtención de ciertos datos de medición, configuración o inventario."
+},
+{
+"id": 4597,
+"es": "Operaciones o comandos sobre los equipos de medición (Sincronización, Corte/Reconexión) normalmente ejecutadas por un sistema de gestión de datos de medición, ante la ocurrencia de una determina casuística."
+},
+{
+"id": 4598,
+"es": "Por tanto, esta funcionalidad permite la interacción con sistemas externos, para el intercambio de datos de medición o inventario, y para el envío de operaciones / comandos sobre los medidores de campo."
+},
+{
+"id": 4599,
+"es": "Repositorios"
+},
+{
+"id": 4600,
+"es": "Monitor de Ficheros"
+},
+{
+"id": 4601,
+"es": "Monitor de Interfaces"
+},
+{
+"id": 4602,
+"es": "Comandos"
+},
+{
+"id": 4603,
+"es": "Onesait Metering organiza la información en Repositorios, se accede desde "
+},
+{
+"id": 4604,
+"es": "Integración → Repositorios"
+},
+{
+"id": 4605,
+"es": "Los "
+},
+{
+"id": 4606,
+"es": "Repositorios "
+},
+{
+"id": 4607,
+"es": "consisten en espacios centralizados en un equipo, servidor, etc., donde se almacena, organiza, mantiene y difunde información digital, que puede contener cualquier tipo de dato o software, así como en cualquier formato."
+},
+{
+"id": 4608,
+"es": "Ejemplos de repositorios pueden ser: Entrada o Salida Local, una dirección SFTP, un email…etc."
+},
+{
+"id": 4609,
+"es": "En esta ventana se muestran, para los diferentes repositorios de la aplicación:"
+},
+{
+"id": 4610,
+"es": " Nombre del repositorio"
+},
+{
+"id": 4611,
+"es": "Tipo:"
+},
+{
+"id": 4612,
+"es": " Tipo de repositorio: Local, FTP o SFTP"
+},
+{
+"id": 4613,
+"es": "Local - Directorio local, en el mismo disco de la máquina donde se encuentra desplegada la aplicación"
+},
+{
+"id": 4614,
+"es": "FTP - Directorio remoto, cuya vía de conexión es la especificada en los parámetros: File Transfer Protocol"
+},
+{
+"id": 4615,
+"es": "SFTP - Directorio remoto, cuya vía de conexión es la especificada en los parámetros: Secure File Transfer Protocol con Canal Seguro"
+},
+{
+"id": 4616,
+"es": "Dirección: "
+},
+{
+"id": 4617,
+"es": "Flujo de la información a través del repositorio (Entrada, Salida)"
+},
+{
+"id": 4618,
+"es": ": Habilitado/Deshabilitado. En caso de encontrarse deshabilitado, no podrá utilizarse para el envío o recepción de información."
+},
+{
+"id": 4619,
+"es": "Fecha de Último acceso:"
+},
+{
+"id": 4620,
+"es": " Indica la fecha y hora en la que se utilizó por última vez el repositorio. En caso de estar vacía significa que no se ha utilizado nunca."
+},
+{
+"id": 4621,
+"es": "Ámbitos:"
+},
+{
+"id": 4622,
+"es": " Los repositorios de Onesait Metering se utilizan para almacenar un determinado tipo de información. Así, dependiendo de si la dirección es de Entrada o Salida, los repositorios podrán utilizarse para:"
+},
+{
+"id": 4623,
+"es": "Entrada: Mediciones y/o Inventario"
+},
+{
+"id": 4624,
+"es": "Salida: Informes"
+},
+{
+"id": 4625,
+"es": "El sistema permite el alta y edición de los repositorios, configurando:"
+},
+{
+"id": 4626,
+"es": "Nombre del repositorio"
+},
+{
+"id": 4627,
+"es": "Ámbitos: "
+},
+{
+"id": 4628,
+"es": "Al menos, deberá seleccionarse un ámbito, si bien se pueden seleccionar tantos como se desee."
+},
+{
+"id": 4629,
+"es": ": Habilitado/Deshabilitado"
+},
+{
+"id": 4630,
+"es": " Según el tipo de repositorio, pedirá los parámetros necesarios:"
+},
+{
+"id": 4631,
+"es": "Local "
+},
+{
+"id": 4632,
+"es": "- Directorio local, en el mismo disco de la máquina donde se encuentra desplegada la aplicación"
+},
+{
+"id": 4633,
+"es": "Ruta"
+},
+{
+"id": 4634,
+"es": ": Directorio de acceso, por ejemplo: /output/shared, /import/shared, etc."
+},
+{
+"id": 4635,
+"es": "Origen "
+},
+{
+"id": 4636,
+"es": "(sólo entrada): Manual, Ficheros, Telemetría OUM, OUC, HES (orígenes definidos como configuración maestra del sistema)"
+},
+{
+"id": 4637,
+"es": "Ruta de históricos"
+},
+{
+"id": 4638,
+"es": " (sólo entrada y no obligatorio)"
+},
+{
+"id": 4639,
+"es": "FTP/SFTP "
+},
+{
+"id": 4640,
+"es": "- Directorio remoto, cuya vía de conexión es la especificada en el tipo"
+},
+{
+"id": 4641,
+"es": ": Directorio de acceso, por ejemplo: /home, /home/mdm/files/input..."
+},
+{
+"id": 4642,
+"es": "Host"
+},
+{
+"id": 4643,
+"es": ": dirección IP"
+},
+{
+"id": 4644,
+"es": "Puerto"
+},
+{
+"id": 4645,
+"es": ": puerto de acceso al FTP/SFTP"
+},
+{
+"id": 4646,
+"es": ": Usuario con permisos de acceso"
+},
+{
+"id": 4647,
+"es": "Clave"
+},
+{
+"id": 4648,
+"es": ": contraseña de acceso del usuario con permisos"
+},
+{
+"id": 4649,
+"es": "Mode (sólo FTP)"
+},
+{
+"id": 4650,
+"es": ": Activo/Pasivo"
+},
+{
+"id": 4651,
+"es": "Sólo Entrada"
+},
+{
+"id": 4652,
+"es": "Correo Electrónico"
+},
+{
+"id": 4653,
+"es": "Sólo Salida"
+},
+{
+"id": 4654,
+"es": "Emails Destinatarios:  "
+},
+{
+"id": 4655,
+"es": "Lista de correos electrónicos, separados por “;”"
+},
+{
+"id": 4656,
+"es": "La funcionalidad también permite Eliminar un repositorio, o exporar el listado de repositorios configurados."
+},
+{
+"id": 4657,
+"es": "El producto permite cargar en la base de datos la información de inventario así como datos de medición documentados en los formatos de fichero descritos en esta sección"
+},
+{
+"id": 4658,
+"es": "Los ficheros descritos en este apartado sirven para los dos contextos claramente diferenciados como parte de la implantación y uso del producto:"
+},
+{
+"id": 4659,
+"es": "1) Asociado a escenarios de baja volumetría "
+},
+{
+"id": 4660,
+"es": "Como puestas en producción con número de puntos limitados o carga de información faltante tras la puesta en producción."
+},
+{
+"id": 4661,
+"es": "Carga de ficheros a través del interfaz de usuario, tanto por ejecución manual por usuario como planificada (a partir de depósito en repositorio y ejecución automática). "
+},
+{
+"id": 4662,
+"es": "2) Procesos de migración masivos"
+},
+{
+"id": 4663,
+"es": "Los procesos masivos de migración son llevados a cabo mediante herramientas diferenciadas como parte del proceso de puesta en producción en cliente."
+},
+{
+"id": 4664,
+"es": "Planificador Integración Entrada"
+},
+{
+"id": 4665,
+"es": "Carga TPL de Entrada"
+},
+{
+"id": 4666,
+"es": "Ficheros de carga. Mediciones e Inventario"
+},
+{
+"id": 4667,
+"es": "Listado de Planificadores de Entrada"
+},
+{
+"id": 4668,
+"es": "Acciones disponibles en el formulario"
+},
+{
+"id": 4669,
+"es": "El Planificador de Ficheros de Entrada permite configurar la adquisición automática de información en el sistema Onesait Metering MDM."
+},
+{
+"id": 4670,
+"es": "Una vez alcanzada la fecha planificada, el proceso se ejecutará de forma automática, siguiendo la configuración establecida."
+},
+{
+"id": 4671,
+"es": "La vista "
+},
+{
+"id": 4672,
+"es": "Planificador Interfaces Entrada "
+},
+{
+"id": 4673,
+"es": "permite acceder a los Planificadores de Entrada."
+},
+{
+"id": 4674,
+"es": "Al igual que otros procesos planificados del sistema, estos planificadores se pueden lanzar de forma puntual y manual haciendo click sobre el botón “Ejecutar”. "
+},
+{
+"id": 4675,
+"es": "En esta ventana se muestran, para los diferentes planificadores de entrada de la aplicación:"
+},
+{
+"id": 4676,
+"es": " Nombre del proceso planificado"
+},
+{
+"id": 4677,
+"es": "Repositorio:"
+},
+{
+"id": 4678,
+"es": " Nombre de la carpeta centralizada donde se almacena la información que el proceso recogerá para cargar en el sistema."
+},
+{
+"id": 4679,
+"es": "Fecha de Última ejecución:"
+},
+{
+"id": 4680,
+"es": " Indica la fecha y hora en la que se ejecutó el planificador por última vez. En caso de venir vacía significa que la planificación no se ha ejecutado nunca."
+},
+{
+"id": 4681,
+"es": "Fecha Próxima ejecución:"
+},
+{
+"id": 4682,
+"es": " Indica la siguiente fecha y hora en la que se ejecutará el proceso"
+},
+{
+"id": 4683,
+"es": "Planificación:"
+},
+{
+"id": 4684,
+"es": " Indica la configuración de ejecuciones que sigue el proceso en cuestión. Como ejemplos de planificaciones son: a las 11:00 el día 5 cada 1 meses, a las 23:00 el lunes, etc."
+},
+{
+"id": 4685,
+"es": "Estado:"
+},
+{
+"id": 4686,
+"es": " Indica si el proceso está Activo o Deshabilitado. Cuando un proceso está Activo, una vez alcanzada la fecha de Próxima Ejecución se ejecutará automáticamente. De lo contrario, la planificación permanece en el sistema con su configuración predeterminada, pero no se ejecutará alcanzada la fecha."
+},
+{
+"id": 4687,
+"es": "El proceso se ejecutará:"
+},
+{
+"id": 4688,
+"es": "de manera automática, cuando se alcance la fecha de Próxima Ejecución, cargando toda la información que se haya almacenado desde la Fecha de Última Ejecución."
+},
+{
+"id": 4689,
+"es": "de forma manual al seleccionar la opción Ejecutar"
+},
+{
+"id": 4690,
+"es": " Nombre del repositorio desde el cuál se recogerá la información a cargar en el sistema."
+},
+{
+"id": 4691,
+"es": "Estrategia:"
+},
+{
+"id": 4692,
+"es": " Estrategia de tipo Proceso, que desencadenará un conjunto de acciones al finalizar la ejecución."
+},
+{
+"id": 4693,
+"es": "Para crear una Planificación, haremos click sobre el botón “Crear”, representado por un icono con el símbolo \"+\", y le asignaremos los atributos comentado anteriormente, siendo obligatorios:"
+},
+{
+"id": 4694,
+"es": "Planificación - dispone de un control que muestra un horario de programación seleccionable"
+},
+{
+"id": 4695,
+"es": "Estado (habilitado o no)"
+},
+{
+"id": 4696,
+"es": "Repositorio"
+},
+{
+"id": 4697,
+"es": "Posteriormente haremos click en “Guardar”."
+},
+{
+"id": 4698,
+"es": "Detalle: "
+},
+{
+"id": 4699,
+"es": "Para ver el detalle de una generación automática, simplemente lo seleccionaremos de la lista y haremos doble click sobre el, o click en “Detalle”."
+},
+{
+"id": 4700,
+"es": "Edición: "
+},
+{
+"id": 4701,
+"es": "Para editar una generación automática, la seleccionaremos y haremos click en “Editar”. Se abrirá una ventana en la que veremos todos los datos de la generación de ficheros y que podremos editar."
+},
+{
+"id": 4702,
+"es": "Exportación: "
+},
+{
+"id": 4703,
+"es": "Si queremos exportar una búsqueda de generaciones automáticas, podemos buscar las generaciones acorde a unos criterios, o exportar todas las generaciones, solamente tenemos que hacer click sobre el botón “Exportar” y se descargará un archivo, con el formato seleccionado, en el equipo."
+},
+{
+"id": 4704,
+"es": "Baja: "
+},
+{
+"id": 4705,
+"es": "Para eliminar una generación automática, tendremos que seleccionarla y hacer click en eliminar."
+},
+{
+"id": 4706,
+"es": "Ejecutar: "
+},
+{
+"id": 4707,
+"es": "Adicionalmente, el planificador cuenta con la opción de "
+},
+{
+"id": 4708,
+"es": "“Ejecutar”"
+},
+{
+"id": 4709,
+"es": ", que permite adelantar la ejecución para realizarla en el momento deseado. Posteriormente, se seguirán cumpliendo las planificaciones establecidas."
+},
+{
+"id": 4710,
+"es": "Permite la carga información de diversa naturaleza a partir de ficheros, de forma puntual en el sistema Onesait Metering."
+},
+{
+"id": 4711,
+"es": "La información a cargar son datos de inventario o datos de medición."
+},
+{
+"id": 4712,
+"es": "Para que la información se introduzca de manera eficiente en el sistema, es preciso que el fichero cumpla con las restricciones establecidas en el “Formato de Fichero” correspondiente. De lo contrario, se producirá un error en la carga del mismo."
+},
+{
+"id": 4713,
+"es": "El fichero deberá cumplir con lo siguiente:"
+},
+{
+"id": 4714,
+"es": "Nombre del fichero, según patrón predefinido, p.e [^\\\\/:*?\"<>|\\r\\n]+\\. La extensión máxima del nombre del fichero es 50 caracteres."
+},
+{
+"id": 4715,
+"es": "Extensión del fichero, p.e .rbm"
+},
+{
+"id": 4716,
+"es": "Disposición de los campos dentro del fichero"
+},
+{
+"id": 4717,
+"es": "Obligatoriedad de los campos"
+},
+{
+"id": 4718,
+"es": "Tipo de dato y restricciones de cada uno de los campos"
+},
+{
+"id": 4719,
+"es": "Separador entre campos"
+},
+{
+"id": 4720,
+"es": "En esta ventana se configura:"
+},
+{
+"id": 4721,
+"es": "Origen: "
+},
+{
+"id": 4722,
+"es": "Fuente de procedencia con la que la información se almacenará en el sistema."
+},
+{
+"id": 4723,
+"es": "La aplicación permite elegir entre los orígenes de tipo Cargado (MDC, Ficheros, Manual, CIS, Telemetría OUM, etc."
+},
+{
+"id": 4724,
+"es": "Fichero:"
+},
+{
+"id": 4725,
+"es": " Esta entidad permite la búsqueda local y selección del fichero a introducir en el sistema. Lo ficheros seguirán un formato definido "
+},
+{
+"id": 4726,
+"es": "Formato de Ficheros de Entrada"
+},
+{
+"id": 4727,
+"es": "Ficheros de Inventario"
+},
+{
+"id": 4728,
+"es": "Ficheros de Mediciones"
+},
+{
+"id": 4729,
+"es": "El producto está actualmente preparado para la carga de datos de Inventario o Mediciones mediante ficheros que se ajusten a los siguientes formatos "
+},
+{
+"id": 4730,
+"es": ": tener en cuenta que como parte de la configuración del producto puede fijarse el tamaño máximo permitido para la carga de ficheros a través del Monitor de Ficheros (de forma estandar 1000KB)"
+},
+{
+"id": 4731,
+"es": "mp"
+},
+{
+"id": 4732,
+"es": "eq"
+},
+{
+"id": 4733,
+"es": "Configuración de Comunicaciones"
+},
+{
+"id": 4734,
+"es": "ceq"
+},
+{
+"id": 4735,
+"es": "ins"
+},
+{
+"id": 4736,
+"es": "Asociación Equipo - Punto de Medida"
+},
+{
+"id": 4737,
+"es": "epc"
+},
+{
+"id": 4738,
+"es": "Datos de facturación del Punto de Medida"
+},
+{
+"id": 4739,
+"es": "mpb"
+},
+{
+"id": 4740,
+"es": "Asociación de Configuración de Comunicaciones a Equipos"
+},
+{
+"id": 4741,
+"es": "teq"
+},
+{
+"id": 4742,
+"es": "mbm"
+},
+{
+"id": 4743,
+"es": "Perfil de carga absoluto "
+},
+{
+"id": 4744,
+"es": "rbm"
+},
+{
+"id": 4745,
+"es": "blr"
+},
+{
+"id": 4746,
+"es": "ivl"
+},
+{
+"id": 4747,
+"es": "eve"
+},
+{
+"id": 4748,
+"es": "Se consideran los siguientes formatos de ficheros para la Configuración - Datos de Inventario: "
+},
+{
+"id": 4749,
+"es": "importInstallationsEquipments"
+},
+{
+"id": 4750,
+"es": "Punto de Medida (importMeteringPoint) - mp"
+},
+{
+"id": 4751,
+"es": "Este fichero nos permite dar de alta uno o varios Punto de Medida en el sistema con todo el detalle que contiene el formato. "
+},
+{
+"id": 4752,
+"es": "Nombre del fichero"
+},
+{
+"id": 4753,
+"es": "El patrón para la carga de ficheros de Puntos de Medida será: "
+},
+{
+"id": 4754,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.mp "
+},
+{
+"id": 4755,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.mp”)."
+},
+{
+"id": 4756,
+"es": "Un ejemplo de nombre de fichero es: "
+},
+{
+"id": 4757,
+"es": "Fichero(01).mp"
+},
+{
+"id": 4758,
+"es": "Formato"
+},
+{
+"id": 4759,
+"es": "Campos del fichero (* obligatorios):"
+},
+{
+"id": 4760,
+"es": "CODE*: Código del Punto de Medida."
+},
+{
+"id": 4761,
+"es": "DESCRIPTION: Resumen de las características del punto o información adicional de interés (Max Length: 255)"
+},
+{
+"id": 4762,
+"es": "CREATE_DATE*: Fecha de creación del punto en formato “yyyy-mm-dd”."
+},
+{
+"id": 4763,
+"es": "DELETE_DATE: Fecha de baja del punto, en formato “yyyy-mm-dd”."
+},
+{
+"id": 4764,
+"es": "LATITUDE: Latitud. Con las limitaciones de formato actuales de la aplicación que se detallan a continuación:"
+},
+{
+"id": 4765,
+"es": "Debe estar entre -90 y 90:"
+},
+{
+"id": 4766,
+"es": "Puede tener decimales:"
+},
+{
+"id": 4767,
+"es": "Ejemplo: -45.67 o 89.123."
+},
+{
+"id": 4768,
+"es": "Puede empezar con un signo positivo (+) o negativo (-):"
+},
+{
+"id": 4769,
+"es": "Ejemplo: +45 o -90."
+},
+{
+"id": 4770,
+"es": "Ejemplos válidos:"
+},
+{
+"id": 4771,
+"es": "90 (máximo valor positivo)."
+},
+{
+"id": 4772,
+"es": "-90.0 (máximo valor negativo con decimales)."
+},
+{
+"id": 4773,
+"es": "0 (punto central)."
+},
+{
+"id": 4774,
+"es": "-45.456 (valor negativo con decimales)."
+},
+{
+"id": 4775,
+"es": "+89.99 (valor positivo con decimales)."
+},
+{
+"id": 4776,
+"es": "Ejemplos inválidos:"
+},
+{
+"id": 4777,
+"es": "91 (fuera del rango permitido)."
+},
+{
+"id": 4778,
+"es": "-100 (fuera del rango permitido)."
+},
+{
+"id": 4779,
+"es": "abc (no es un número)."
+},
+{
+"id": 4780,
+"es": "LONGITUDE: Longitud. Con las limitaciones de formato actuales de la aplicación que se detallan a continuación:"
+},
+{
+"id": 4781,
+"es": "Debe estar entre -180 y 180:"
+},
+{
+"id": 4782,
+"es": "Ejemplo: -123.45 o 45.678."
+},
+{
+"id": 4783,
+"es": "180 (máximo valor positivo)."
+},
+{
+"id": 4784,
+"es": "-180.0 (máximo valor negativo con decimales)."
+},
+{
+"id": 4785,
+"es": "-99.456 (valor negativo con decimales)."
+},
+{
+"id": 4786,
+"es": "+45.67 (valor positivo con decimales)."
+},
+{
+"id": 4787,
+"es": "181 (fuera del rango permitido)."
+},
+{
+"id": 4788,
+"es": "-200 (fuera del rango permitido)."
+},
+{
+"id": 4789,
+"es": "NAME_CONFIG_CLASS: Clase de configuración de entre las dadas de alta en sistema (Por ejemplo: Default)."
+},
+{
+"id": 4790,
+"es": "TRADE_TYPE*: Ámbito del punto, puede tomar los valores COMMERCIALISATION, DISTRIBUTION, GENERATION y TRANSMISSION."
+},
+{
+"id": 4791,
+"es": "CODE_ACTIVITY*: Actividad dentro del ámbito. Puede tomar distintos valores en función del TRADE_TYPE (ámbito) que se seleccione:"
+},
+{
+"id": 4792,
+"es": "NUCLEAR"
+},
+{
+"id": 4793,
+"es": "THERMAL"
+},
+{
+"id": 4794,
+"es": "HYDROELECTRIC"
+},
+{
+"id": 4795,
+"es": "WIND"
+},
+{
+"id": 4796,
+"es": "SOLAR"
+},
+{
+"id": 4797,
+"es": "BIOMASS"
+},
+{
+"id": 4798,
+"es": "GEOTHERMAL"
+},
+{
+"id": 4799,
+"es": "COMBINED_CYCLE"
+},
+{
+"id": 4800,
+"es": "SUBSTATION"
+},
+{
+"id": 4801,
+"es": "TRANSFORMATION_CENTER"
+},
+{
+"id": 4802,
+"es": "LINE"
+},
+{
+"id": 4803,
+"es": "LIFTING_STATION"
+},
+{
+"id": 4804,
+"es": "SUBSTATION_TRANSPORT"
+},
+{
+"id": 4805,
+"es": "LINE_TRANSPORT"
+},
+{
+"id": 4806,
+"es": "INDUSTRIAL"
+},
+{
+"id": 4807,
+"es": "RESIDENTIAL"
+},
+{
+"id": 4808,
+"es": "CODE_CALENDAR: Código del calendario de entre los dados de alta en el sistema."
+},
+{
+"id": 4809,
+"es": "NAME_TIME_ZONE*: Zona horaria de entre las dadas de alta en el sistema Ej: CET."
+},
+{
+"id": 4810,
+"es": "CODE_LEADER: Código del responsable de la gestión del punto. Elegido entre los usuarios del sistema Ej: admin."
+},
+{
+"id": 4811,
+"es": "CODE_OWNER: Código del propietario de entre los dados de alta en el sistema."
+},
+{
+"id": 4812,
+"es": "NAME_PROFILING_TYPE: Tipo de perfilado de entre los dados de alta en el sistema que corresponde al punto."
+},
+{
+"id": 4813,
+"es": "CADASTRAL_REFERENCE*: Referencia catastral. Código alfanumérico entre 2 y 10 caracteres (mayúsculas, minúsculas y algunos símbolos, excluyendo %)."
+},
+{
+"id": 4814,
+"es": "ADDRESS: Dirección del punto de medida sin limitaciones de longitud ni formato."
+},
+{
+"id": 4815,
+"es": "ZIP_CODE: Código postal del punto de medida. Sin limitaciones de formato ni longitud."
+},
+{
+"id": 4816,
+"es": "NAME_SOURCE: Indica el nombre de la plantilla de orígenes seleccionada de entre los dados de alta en el sistema: Inicio / Gestión de Medidas / Orígenes / Patrón de Orígen "
+},
+{
+"id": 4817,
+"es": "CODE_ASSOCIATION_TYPE: Código del tipo de asociación. Los valores que puede tomar son los siguientes: INSTALLATION, SUBMETERING, REDUNDANT, BACK_UP, MAIN, ZONE."
+},
+{
+"id": 4818,
+"es": "UTILITY_TYPE*: Utility Type.(Correspondiente a Servicio Ej: ELECTRICITY)"
+},
+{
+"id": 4819,
+"es": "Ejemplo completo:"
+},
+{
+"id": 4820,
+"es": "PMTESTCTPLFIN;Test final de la carga TPL;2025-06-25;2030-01-01;-13.955;33.722;ANH CC;COMMERCIALISATION;RESIDENTIAL;Calendario TERST;CET;admin;ANH;AlumbradoPublico;154613799;C/X;4500;;INSTALLATION;ELECTRICITY"
+},
+{
+"id": 4821,
+"es": "Puedes descargar el fichero "
+},
+{
+"id": 4822,
+"es": "aquí."
+},
+{
+"id": 4823,
+"es": "Equipo (importEquipments) - eq"
+},
+{
+"id": 4824,
+"es": "Este fichero nos permite dar de alta uno o varios Equipos en el sistema con todo el detalle que contiene el formato. "
+},
+{
+"id": 4825,
+"es": "El patrón para la carga de ficheros de equipos será: "
+},
+{
+"id": 4826,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.eq "
+},
+{
+"id": 4827,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.eq”)."
+},
+{
+"id": 4828,
+"es": "Fichero(01).eq"
+},
+{
+"id": 4829,
+"es": "Campos del fichero (* = obligatorios):"
+},
+{
+"id": 4830,
+"es": "CODE*: Código del equipo."
+},
+{
+"id": 4831,
+"es": "NAME*: Nombre para mostrar del equipo."
+},
+{
+"id": 4832,
+"es": "EQUIPMENT_MODEL*: Modelo de equipo dado de alta en el sistema. Se concatena el fabricante y el modelo mediante un || (Ej: MANUFACTURER||MODEL)."
+},
+{
+"id": 4833,
+"es": "FABRICATION_DATE*: Fecha de fabricación, en formato “YYYY-MM-DD”."
+},
+{
+"id": 4834,
+"es": "SERIAL_NUMBER*: Número de serie del equipo.Es una cadena de texto de máximo 255 caracteres. Se detalla el formato:"
+},
+{
+"id": 4835,
+"es": "No debe contener los siguientes caracteres especiales: "
+},
+{
+"id": 4836,
+"es": "Puede contener cualquier otro carácter: "
+},
+{
+"id": 4837,
+"es": "Ejemplo: letras, números, espacios, y otros símbolos que no sean los mencionados."
+},
+{
+"id": 4838,
+"es": "Puede estar vacío"
+},
+{
+"id": 4839,
+"es": "abc123 (solo letras y números)."
+},
+{
+"id": 4840,
+"es": "hello world (incluye espacios)."
+},
+{
+"id": 4841,
+"es": "abc#123 (contiene #)."
+},
+{
+"id": 4842,
+"es": "name&value (contiene &)."
+},
+{
+"id": 4843,
+"es": "value_1 (contiene _)."
+},
+{
+"id": 4844,
+"es": "percent% (contiene %)."
+},
+{
+"id": 4845,
+"es": "star* (contiene *)."
+},
+{
+"id": 4846,
+"es": "PURCHASE_DATE: Fecha de adquisición."
+},
+{
+"id": 4847,
+"es": "END_DATE: Fecha de baja del equipo. Formato fecha \"yyyy-MM-dd\". Debe ser posterior a la fecha de fabricación y a la fecha de adquisición."
+},
+{
+"id": 4848,
+"es": "CAUSE_END_DATE: Motivo de la baja, sólo se rellena si existe fecha de baja. Puede tomar los valores: FAULT, OUT_DATE u OTHERS."
+},
+{
+"id": 4849,
+"es": "STATUS*: Estado de operación del equipo PRELOADED/DISCOVERED/ACTIVE/INACTIVE/CEASED"
+},
+{
+"id": 4850,
+"es": "STATUS_REGISTER_DATE*: Fecha de registro del estado"
+},
+{
+"id": 4851,
+"es": "ESTADO DE UBICACIÓN: STOCK/INSTALLED /REMOVED"
+},
+{
+"id": 4852,
+"es": "ESTADO DE COMUNICACIÓN: ACTIVE/TEMPORAL_FAIL/PERMANENT_FAIL/UNKNOWN"
+},
+{
+"id": 4853,
+"es": "En caso de que el equipo sea del tipo Electric Smart Meter y con protocolo DLMS se podrán añadir las siguientes propiedades:"
+},
+{
+"id": 4854,
+"es": "RELAY-STATUS: Estado actual del relé del equipo (Connected o Disconnected)."
+},
+{
+"id": 4855,
+"es": "LOAD-LIMITATION: Capacidad del equipo para limitar la carga conectada según parámetros definidos. Número decimal."
+},
+{
+"id": 4856,
+"es": "NET-METERING: indica si el Net-Metering Mode está activado o no, es un comportamiento de seguridad cuando se detecta un Current Reverse. (Enabled o Disabled)"
+},
+{
+"id": 4857,
+"es": "LAST-PING: Fecha y hora del último intento exitoso de comunicación con el equipo.En formato “YYYY-MM-DD”."
+},
+{
+"id": 4858,
+"es": "LAST-SYNCH: Fecha y hora de la última sincronización de datos o reloj del equipo.En formato “YYYY-MM-DD”."
+},
+{
+"id": 4859,
+"es": "Ejemplo"
+},
+{
+"id": 4860,
+"es": "EQTESTFINAL;EQTESTFINAL;ABB||DELTA;2019-01-01;5000;2025-05-01;2030-05-01;FAULT;PRELOADED;2025-06-01;STOCK;UNKNOWN;Disconnected;123;Enabled;2025-07-23T00:00:00;2025-07-23T00:01:00"
+},
+{
+"id": 4861,
+"es": "Configuración de Comunicaciones (importCommunicationEquipments) - ceq"
+},
+{
+"id": 4862,
+"es": "Este fichero permite crear una o más Configuraciónes de Comunicaciones, presentes en el módulo de Telemedición dentro de Configuración. O dicho de otro modo, nos permite dar de alta en el sistema equipos de comunicaciones. "
+},
+{
+"id": 4863,
+"es": "El patrón para la carga de ficheros de configuración de comunicaciones será: "
+},
+{
+"id": 4864,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.teq "
+},
+{
+"id": 4865,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.teq”)."
+},
+{
+"id": 4866,
+"es": "Fichero(01).ceq"
+},
+{
+"id": 4867,
+"es": "CODE*: Código del equipo de comunicaciones."
+},
+{
+"id": 4868,
+"es": "DESCRIPTION: Descripción breve del equipo de comunicaciones."
+},
+{
+"id": 4869,
+"es": "COMMUICATIONS_EQUIPMENT_TYPE_CODE*: Código del tipo de equipo de comunicaciones del punto de medida. (TCP/IP)"
+},
+{
+"id": 4870,
+"es": "CEQ002324;NEWTEST;TCP/IP"
+},
+{
+"id": 4871,
+"es": "Puedes descargar el fichero aquí."
+},
+{
+"id": 4872,
+"es": "Instalaciones (importInstallations) - ins"
+},
+{
+"id": 4873,
+"es": "Este fichero nos permite dar de alta una o varias Instalaciones en el sistema con todo el detalle que contiene el formato. Estas Instalaciones se encuentran en el apartado de Modelo de Red dentro del módulo de Inventario. "
+},
+{
+"id": 4874,
+"es": "El patrón para la carga de ficheros de Instalaciones será: "
+},
+{
+"id": 4875,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.ins "
+},
+{
+"id": 4876,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.ins”)."
+},
+{
+"id": 4877,
+"es": "Fichero(01).ins"
+},
+{
+"id": 4878,
+"es": "NAME*: Nombre de la instalación"
+},
+{
+"id": 4879,
+"es": "DESCRIPTION: Descripción de la instalación"
+},
+{
+"id": 4880,
+"es": "INSTALLATION_TYPE*: Tipo de instalación. Puede tomar los valores existentes en la tabla de BBDD INSTALLATION_TYPE. En producto contamos con los siguientes: "
+},
+{
+"id": 4881,
+"es": "TRANSFORMER-SUBSTATION"
+},
+{
+"id": 4882,
+"es": "DISTRIBUTION-SUBSTATION"
+},
+{
+"id": 4883,
+"es": "TRANSFORMER-CENTER"
+},
+{
+"id": 4884,
+"es": "PV-POWER-PLANT"
+},
+{
+"id": 4885,
+"es": "PV-BRANCH"
+},
+{
+"id": 4886,
+"es": "CC-POWER-PLANT"
+},
+{
+"id": 4887,
+"es": "CC-GROUP"
+},
+{
+"id": 4888,
+"es": "CC-TURBINE"
+},
+{
+"id": 4889,
+"es": "ST-POWER-PLANT"
+},
+{
+"id": 4890,
+"es": "HYDRO-POWER-PLANT"
+},
+{
+"id": 4891,
+"es": "HYDRO-TURBINE"
+},
+{
+"id": 4892,
+"es": "WIND-FARM"
+},
+{
+"id": 4893,
+"es": "WIND-TURBINE"
+},
+{
+"id": 4894,
+"es": "BIOMASS-POWER-PLANT"
+},
+{
+"id": 4895,
+"es": "NUCLEAR-POWER-PLANT"
+},
+{
+"id": 4896,
+"es": "LATITUDE*: Latitud. Con las limitaciones de formato actuales de la aplicación. Se detalla el formato:"
+},
+{
+"id": 4897,
+"es": "LONGITUDE*: Longitud. Con las limitaciones de formato actuales de la aplicación. Se detalla el formato:"
+},
+{
+"id": 4898,
+"es": "PHONE: Teléfono. Con las limitaciones de formato actuales de la aplicación. Se detalla el formato:"
+},
+{
+"id": 4899,
+"es": "Opcionalmente puede empezar con un código de país: "
+},
+{
+"id": 4900,
+"es": "El código de país debe estar precedido por un signo + y seguido por dos dígitos."
+},
+{
+"id": 4901,
+"es": "Ejemplo: +34 (España) o +01 (Estados Unidos)."
+},
+{
+"id": 4902,
+"es": "Después del código de país, puede haber un espacio."
+},
+{
+"id": 4903,
+"es": "Debe contener entre 1 y 16 dígitos: "
+},
+{
+"id": 4904,
+"es": "Ejemplo: 123456789 o 9876543210123456."
+},
+{
+"id": 4905,
+"es": "+34 123456789 (con código de país y espacio)."
+},
+{
+"id": 4906,
+"es": "123456789 (sin código de país)."
+},
+{
+"id": 4907,
+"es": "+01 9876543210123456 (máximo de 16 dígitos)."
+},
+{
+"id": 4908,
+"es": "+123 (código de país con más de dos dígitos)."
+},
+{
+"id": 4909,
+"es": "+34-123456789 (no se permiten guiones)."
+},
+{
+"id": 4910,
+"es": "abc123 (contiene letras)."
+},
+{
+"id": 4911,
+"es": "12345678901234567 (más de 16 dígitos)."
+},
+{
+"id": 4912,
+"es": "EMAIL: Correo electrónico. Con las limitaciones de formato actuales de la aplicación. Se detalla el formato:"
+},
+{
+"id": 4913,
+"es": "Debe tener un nombre de usuario válido: "
+},
+{
+"id": 4914,
+"es": "Puede contener letras (A-Z, a-z), números (0-9), guiones (-), guiones bajos (_) y el signo más (+)."
+},
+{
+"id": 4915,
+"es": "Ejemplo: user-name, user_name, user+name."
+},
+{
+"id": 4916,
+"es": "Puede incluir puntos en el nombre de usuario: "
+},
+{
+"id": 4917,
+"es": "Ejemplo: "
+},
+{
+"id": 4918,
+"es": "user.name"
+},
+{
+"id": 4919,
+"es": "Debe tener un símbolo @ seguido de un dominio válido: "
+},
+{
+"id": 4920,
+"es": "El dominio puede contener letras (A-Z, a-z), números (0-9) y guiones (-)."
+},
+{
+"id": 4921,
+"es": "example.com"
+},
+{
+"id": 4922,
+"es": "El dominio puede tener subdominios opcionales: "
+},
+{
+"id": 4923,
+"es": "sub.example.com"
+},
+{
+"id": 4924,
+"es": "Debe terminar con un sufijo de dominio válido:"
+},
+{
+"id": 4925,
+"es": "El sufijo debe tener al menos dos letras."
+},
+{
+"id": 4926,
+"es": "Ejemplo: .com, .org, .net."
+},
+{
+"id": 4927,
+"es": "user@example.com"
+},
+{
+"id": 4928,
+"es": "user.name@example.com"
+},
+{
+"id": 4929,
+"es": "user+name@sub.example.org"
+},
+{
+"id": 4930,
+"es": "user@.com (falta el nombre del dominio)."
+},
+{
+"id": 4931,
+"es": " (falta el nombre de usuario)."
+},
+{
+"id": 4932,
+"es": "user@com (el sufijo del dominio no es válido)."
+},
+{
+"id": 4933,
+"es": "MP: Código del punto de medida de entre los dados de alta en el sistema."
+},
+{
+"id": 4934,
+"es": "PARENT_INSTALLATION: Nombre de instalación padre a la que pertenece o depende de entre las dadas de alta en el sistema."
+},
+{
+"id": 4935,
+"es": "Ejemplo completo"
+},
+{
+"id": 4936,
+"es": "TestIns004;INSTALLATION 002;TRANSFORMER-SUBSTATION;-13.955;33.722;965412354;RMM@MAIL.COM;MPTest01;TestIns001"
+},
+{
+"id": 4937,
+"es": "Asociación Equipo - Punto de Medida (importEquipmentPointConfigurations) - epc"
+},
+{
+"id": 4938,
+"es": "Con este fichero podremos relacionar uno o varios equipos a los puntos de medida que sean necesarios, además podemos adaptar la configuración de Telemedición tal y como se describe en el formato."
+},
+{
+"id": 4939,
+"es": "El patrón para la carga de ficheros de Asocicación Eq.-PM. será: "
+},
+{
+"id": 4940,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.epc "
+},
+{
+"id": 4941,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.epc”)."
+},
+{
+"id": 4942,
+"es": "Fichero(01).epc"
+},
+{
+"id": 4943,
+"es": "EQUIPMENT_CODE*: Código del equipo."
+},
+{
+"id": 4944,
+"es": "MP_CODE*: Código del punto de medida."
+},
+{
+"id": 4945,
+"es": "STATUS_CODE*: Código del estado del equipo."
+},
+{
+"id": 4946,
+"es": "INIT_DATE: Fecha de inicio, en formato “YYYY-MM-DD HH:mm:ss”."
+},
+{
+"id": 4947,
+"es": "END_DATE: Fecha de fin, en formato “YYYY-MM-DD HH:mm:ss”."
+},
+{
+"id": 4948,
+"es": "COMMENTS: Comentarios."
+},
+{
+"id": 4949,
+"es": "DEFAULT_SOURCE: Origen por defecto de las medidas. Siendo posibles los siguientes valores:"
+},
+{
+"id": 4950,
+"es": "MANUAL"
+},
+{
+"id": 4951,
+"es": "FILES"
+},
+{
+"id": 4952,
+"es": "TELEMETRY_OUM"
+},
+{
+"id": 4953,
+"es": "CONSTANTS_VALUES"
+},
+{
+"id": 4954,
+"es": "HISTORICAL_MEASURES"
+},
+{
+"id": 4955,
+"es": "INTERPOLATION"
+},
+{
+"id": 4956,
+"es": "EST_LOAD_PROFILE_BASED_ON_BILLING"
+},
+{
+"id": 4957,
+"es": "PROFILING_THROUGH_STANDARD_PROFILE"
+},
+{
+"id": 4958,
+"es": "ABSOLUTE_READINGS_FROM_LOAD_PROFILES"
+},
+{
+"id": 4959,
+"es": "AGGREGATE_MEASURES_FROM_MIN05"
+},
+{
+"id": 4960,
+"es": "AGGREGATE_MEASURES_FROM_MIN15"
+},
+{
+"id": 4961,
+"es": "AGGREGATE_MEASURES_FROM_MIN15_MEASURES"
+},
+{
+"id": 4962,
+"es": "AGGREGATE_MEASURES_FROM_MIN30"
+},
+{
+"id": 4963,
+"es": "AGGREGATE_MEASURES_FROM_HOURLY"
+},
+{
+"id": 4964,
+"es": "DISAGGREGATED_MEASURES_FROM_DAILY"
+},
+{
+"id": 4965,
+"es": "DISAGGREGATED_MEASURES_FROM_HOURLY"
+},
+{
+"id": 4966,
+"es": "DISAGGREGATED_MEASURES_FROM_MONTHLY"
+},
+{
+"id": 4967,
+"es": "MONTHLY_BILLING_FROM_LOAD_PROFILE_CALCULATION"
+},
+{
+"id": 4968,
+"es": "DAILY_BILLING_FROM_LOAD_PROFILE_CALCULATION"
+},
+{
+"id": 4969,
+"es": "NAME_CONFIG_CLASS: Clase de configuración de entre las dadas de alta en sistema."
+},
+{
+"id": 4970,
+"es": "          TESTFIN;PMTESTCTPLFIN;ACTIVE;2025-07-15 00:00:00;2035-07-15 00:00:00;Test;FILES;ANH CC"
+},
+{
+"id": 4971,
+"es": "Ejemplo completo "
+},
+{
+"id": 4972,
+"es": "Datos de facturación del Punto de Medida (importMeteringPointBillingProfile) - mpb"
+},
+{
+"id": 4973,
+"es": "Permite la carga al Punto de Medida de la información referente a su facturación."
+},
+{
+"id": 4974,
+"es": "El patrón para la carga de ficheros de Facturación PM será: "
+},
+{
+"id": 4975,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.mpb "
+},
+{
+"id": 4976,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.mpb”)."
+},
+{
+"id": 4977,
+"es": "Fichero(01).mpb"
+},
+{
+"id": 4978,
+"es": "TARIFF_STRUCTURE_CODE*:Código de la Configuración TOU."
+},
+{
+"id": 4979,
+"es": "START_DATE*: Fecha de inicio, en formato “YYYY-MM-DD HH:mm:ss”."
+},
+{
+"id": 4980,
+"es": "CONTRACT_TYPE*: Tipo de contrato. Valores \"CONTINUOUS\" o \"PREPAID\"."
+},
+{
+"id": 4981,
+"es": "CUSTOMER_CONTRACT_NUMBER: Número de contrato."
+},
+{
+"id": 4982,
+"es": "CLOSING_DAY: Día de cierre. Cadena de texto de máximo 8 caracteres"
+},
+{
+"id": 4983,
+"es": "PM001TEST;DEFAULT_TARIFF_STRUCTURE;2024-01-01 00:00:00;2025-01-01 00:00:00;CONTINUOUS;00001;BilingCycleTest;10;"
+},
+{
+"id": 4984,
+"es": "Asociación de Configuración de Comunicaciones a Equipos (importEquipmentTelemetry) - teq"
+},
+{
+"id": 4985,
+"es": "Permite la carga de la información de telecomunicación de uno o más equipos, incluido su protoclo y los detalles del mismo."
+},
+{
+"id": 4986,
+"es": "El patrón para la carga de ficheros de Conf. Comunicaciones a Eq. será: "
+},
+{
+"id": 4987,
+"es": "Fichero(01).teq"
+},
+{
+"id": 4988,
+"es": "MEASUREMENT_TYPE_CODE*: Tipo de medida DIRECT o INDIRECT."
+},
+{
+"id": 4989,
+"es": "PROTOCOL*: Protocolo concatenando campos separados por \"||\" --> STANDARD||PROFILE||VERSION  (PRIME STG-DC||ZIV||1 ó DLMS||DLMS||1 )"
+},
+{
+"id": 4990,
+"es": "CAPRIMARY(*): Dirección primaria. Solo se guarda para el tipo DIRECT y en este caso es obligatoria. "
+},
+{
+"id": 4991,
+"es": "CASECUNDARY: Dirección secundaria. Solo se guarda para el tipo DIRECT. Corresponde al Equipo de Comunicación Remota Principal."
+},
+{
+"id": 4992,
+"es": "PROPERTY_LABEL: Nombre de la propiedad que se quiere definir en el caso de contar con protocolo DLMS. Cada una de las parámetros se detalla en la documentación dentro del apartado de Generalidades: "
+},
+{
+"id": 4993,
+"es": ". Dentro del apartado DLMS. La entrada contiene las limitaciones de formato actuales de la aplicación. Cadena de texto de 255 caracteres como máximo. No debe contener los siguientes caracteres especiales: #, &, %, *.La propiedad indicada en PROPERTY_LABEL debe existir como propiedad en el protocolo DLMS."
+},
+{
+"id": 4994,
+"es": "PROPERTY_VALUE: Valor que se le quiere dar a la propiedad definida en la línea. Con las limitaciones de formato actuales de la aplicación.Cadena de texto de 255 caracteres como máximo. No debe contener los siguientes caracteres especiales: #, &, %, *."
+},
+{
+"id": 4995,
+"es": "STATUS*: Estado de comunicación del equipo "
+},
+{
+"id": 4996,
+"es": "ACTIVE/TEMPORAL_FAIL/PERMANENT_FAIL/UNKNOWN"
+},
+{
+"id": 4997,
+"es": "Ejemplos completos"
+},
+{
+"id": 4998,
+"es": "EQ001;INDIRECT;PRIME STG-DC||ZIV||1;;;;;"
+},
+{
+"id": 4999,
+"es": "ACTIVE"
+},
+{
+"id": 5000,
+"es": "EQTESTFIN;DIRECT;DLMS||DLMS||1;COMEQ001;;SERIAL-NUMBER;33444;UNKNOWN"
+},
+{
+"id": 5001,
+"es": "Puedes descargar el fichero "
+},
+{
+"id": 5002,
+"es": "Ficheros para la Carga de Mediciones"
+},
+{
+"id": 5003,
+"es": "Perfil de Carga - OUM Measures (One Per Line) - mbm"
+},
+{
+"id": 5004,
+"es": "Este formato de fichero permite la carga de medidas sin calidad. Cada fichero contendrá una medida por línea."
+},
+{
+"id": 5005,
+"es": "Patrón"
+},
+{
+"id": 5006,
+"es": "El patrón para la carga de ficheros de medidas será: "
+},
+{
+"id": 5007,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.mbm "
+},
+{
+"id": 5008,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.mbm”)."
+},
+{
+"id": 5009,
+"es": "Un Ejemplo de nombre de fichero es: "
+},
+{
+"id": 5010,
+"es": "Medida.Sin.Calidad(01).mbm"
+},
+{
+"id": 5011,
+"es": "Perfil_de_Carga_MPAS02_20250102.mbm"
+},
+{
+"id": 5012,
+"es": "MP;DATE;PERIOD;INTERVAL;MAGNITUDE;VALUE"
+},
+{
+"id": 5013,
+"es": "MP*:"
+},
+{
+"id": 5014,
+"es": " Código del Punto de Medida."
+},
+{
+"id": 5015,
+"es": "DATE*:"
+},
+{
+"id": 5016,
+"es": " Fecha con formato “YYYY-MM-DD”."
+},
+{
+"id": 5017,
+"es": "PERIOD*:"
+},
+{
+"id": 5018,
+"es": " Periodo al que pertenece la medida. Puede tomar los siguientes valores, en función del periodo de integración que se defina: MIN01, entre 01 y 1500; MIN05, entre 01 y 300; MIN10, entre 01 y 150; MIN15, entre 01 y 100; MIN30, entre 01 y 50; H entre, 01 y 25; D, 01; y M, 01."
+},
+{
+"id": 5019,
+"es": "INTERVAL*:"
+},
+{
+"id": 5020,
+"es": " Periodo de integración, puede tomar los valores “MIN01”, “MIN05”, “MIN10”, “MIN15”, “MIN30”, “H”, “D”, “M”."
+},
+{
+"id": 5021,
+"es": "MAGNITUDE*:"
+},
+{
+"id": 5022,
+"es": " Magnitud a la que hace referencia el valor aportado. Puede tomar los valores:"
+},
+{
+"id": 5023,
+"es": "IA (Energía activa entrante)"
+},
+{
+"id": 5024,
+"es": "EA (Energía activa saliente)"
+},
+{
+"id": 5025,
+"es": "Qi (Energía reactiva del cuadrante i=1-4)"
+},
+{
+"id": 5026,
+"es": "TL (Pérdidas técnicas)"
+},
+{
+"id": 5027,
+"es": "RS1 y RS2 (Reserva 1 y Reserva 2)"
+},
+{
+"id": 5028,
+"es": "VALUE*:"
+},
+{
+"id": 5029,
+"es": " Valor de la magnitud antes seleccionada."
+},
+{
+"id": 5030,
+"es": "* Campos obligatorios."
+},
+{
+"id": 5031,
+"es": "Consideraciones previas"
+},
+{
+"id": 5032,
+"es": "El código del MP debe existir"
+},
+{
+"id": 5033,
+"es": "La zona horaria asociada al MP debe estar correctamente configurada"
+},
+{
+"id": 5034,
+"es": "MPCPP008;2014-12-01;01;H;IA;1000.6"
+},
+{
+"id": 5035,
+"es": "Perfil_de_Carga_MP002_01.mbm"
+},
+{
+"id": 5036,
+"es": "Perfil de Carga Absoluto - OUM Absolute Load Profile (One Per Line) - rbm"
+},
+{
+"id": 5037,
+"es": "Perfiles de carga absolutos o Lecturas sin calidad. El fichero contendrá 1 medida de este tipo por cada línea, correspondientes al mismo punto de medida / fecha, pero a magnitudes distintas."
+},
+{
+"id": 5038,
+"es": "El patrón para la carga de ficheros de lecturas será: "
+},
+{
+"id": 5039,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.rbm "
+},
+{
+"id": 5040,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.rbm”)."
+},
+{
+"id": 5041,
+"es": "Lectura.SinCalidad(01).rbm"
+},
+{
+"id": 5042,
+"es": "MP;HOUR_DATE;DST;MAGNITUDE;VALUE"
+},
+{
+"id": 5043,
+"es": "HOUR_DATE*:"
+},
+{
+"id": 5044,
+"es": " Fecha con formato “YYYY-MM-DD HH:MM:SS,SSS”."
+},
+{
+"id": 5045,
+"es": "*: Indica si la fecha está en horario de verano (YES) o de invierno (NO). En caso de no tener cambio horario, siempre será (NO)."
+},
+{
+"id": 5046,
+"es": "MPCPP008;2014-12-01 00:00:00,000;NO;IA;506961.354"
+},
+{
+"id": 5047,
+"es": "Perfil_de_Carga_Absoluto_MP002_01.rbm"
+},
+{
+"id": 5048,
+"es": "Medida de Cierre - OUM Billing Profile (One Per Line) - blr"
+},
+{
+"id": 5049,
+"es": "Este formato de fichero permite la carga de Registros. Cada fichero contendrá un registro por línea."
+},
+{
+"id": 5050,
+"es": "El patrón para la carga de ficheros de registros de cierre será: "
+},
+{
+"id": 5051,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.blr "
+},
+{
+"id": 5052,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.blr”)."
+},
+{
+"id": 5053,
+"es": "Un Ejemplo de nombre de fichero es: "
+},
+{
+"id": 5054,
+"es": "Registro.de.cierre(01).blr"
+},
+{
+"id": 5055,
+"es": "MP;DATE_HOUR_DATE;DST;DATE_HOUR_PREVIOUS_DATE;DST;TOTALIZER;BILLING_MAGNITUDE;VALUE;CONSUMPTION;QUALITY;RT;MEASUREMENT_INTERVAL;MAX;MAX_DATE;EXC;EXC_DATE"
+},
+{
+"id": 5056,
+"es": "MP*: "
+},
+{
+"id": 5057,
+"es": "Código del Punto de Medida."
+},
+{
+"id": 5058,
+"es": "DATE_HOUR_DATE*: "
+},
+{
+"id": 5059,
+"es": "Fecha y hora del registro con formato “YYYY-MM-DD HH:MM:SS,SSS”."
+},
+{
+"id": 5060,
+"es": "DST*:"
+},
+{
+"id": 5061,
+"es": " Indica si la fecha está en horario de verano (YES) o de invierno (NO). En caso de no tener cambio horario, siempre será (NO)."
+},
+{
+"id": 5062,
+"es": "DATE_HOUR_PREVIOUS_DATE:"
+},
+{
+"id": 5063,
+"es": " Fecha y hora del registro anterior con formato “YYYY-MM-DD HH:MM:SS,SSS”."
+},
+{
+"id": 5064,
+"es": "DST:"
+},
+{
+"id": 5065,
+"es": " Indica si la fecha del registro anterior está en horario de verano (YES) o de invierno (NO). En caso de no tener cambio horario, siempre será (NO)."
+},
+{
+"id": 5066,
+"es": "TOTALIZER*: "
+},
+{
+"id": 5067,
+"es": "Totalizador para el punto y la fecha seleccionado."
+},
+{
+"id": 5068,
+"es": "BILLING_MAGNITUDE*: "
+},
+{
+"id": 5069,
+"es": "Magnitud de registros habilitados en el sistema. Puede tomar los valores:"
+},
+{
+"id": 5070,
+"es": "AAE (Energía activa absoluta en kWh)"
+},
+{
+"id": 5071,
+"es": "IAE (Energía activa incremental en kWh)"
+},
+{
+"id": 5072,
+"es": "EP (Exceso de potencia Vah)"
+},
+{
+"id": 5073,
+"es": "MP (Potencia máxima Vah)"
+},
+{
+"id": 5074,
+"es": "MPD (Fecha de máxima potencia Vah)"
+},
+{
+"id": 5075,
+"es": "IAPi (Energía activa importada fase i=1-3 kWh)"
+},
+{
+"id": 5076,
+"es": "EAPi (Energía reactiva importada fase i=1-3 kWh)"
+},
+{
+"id": 5077,
+"es": "Q1Pi (Q1 Energía reactiva fase i=1-3 kVArh)"
+},
+{
+"id": 5078,
+"es": "Q2Pi (Q2 Energía reactiva fase i=1-3 kVArh)"
+},
+{
+"id": 5079,
+"es": "Q3Pi (Q3 Energía reactiva fase i=1-3 kVArh)"
+},
+{
+"id": 5080,
+"es": "Q4Pi (Q4 Energía reactiva fase i=1-3 kVArh)"
+},
+{
+"id": 5081,
+"es": "IA (Energía Activa Entrante kWh)"
+},
+{
+"id": 5082,
+"es": "EA (Energía Activa Saliente kWh)"
+},
+{
+"id": 5083,
+"es": "VALUE*: "
+},
+{
+"id": 5084,
+"es": "Valor acumulado de la magnitud antes seleccionada."
+},
+{
+"id": 5085,
+"es": "CONSUMPTION: "
+},
+{
+"id": 5086,
+"es": "Consumo correspondiente al periodo seleccionado."
+},
+{
+"id": 5087,
+"es": "CALIDAD"
+},
+{
+"id": 5088,
+"es": ": Valor de calidad asignado"
+},
+{
+"id": 5089,
+"es": "RT*: "
+},
+{
+"id": 5090,
+"es": "Tipo de registro. Puede tomar los valores C (cierre) o P (parcial)."
+},
+{
+"id": 5091,
+"es": "PERIODO DE INTEGRACIÓN"
+},
+{
+"id": 5092,
+"es": ": MIN01, MIN05, MIN10, MIN15, MIN30, H, D, M, BM"
+},
+{
+"id": 5093,
+"es": "MAX"
+},
+{
+"id": 5094,
+"es": "MAX_DATE"
+},
+{
+"id": 5095,
+"es": "EXC"
+},
+{
+"id": 5096,
+"es": "EXC_DATE"
+},
+{
+"id": 5097,
+"es": "El totalizador debe pertenecer a la tarifa asociada al punto en las fechas del registro"
+},
+{
+"id": 5098,
+"es": "MP001;2024-12-16 00:00:00,000;NO;2024-12-16 00:00:00,000;NO;T0;IAE;560642;3345;128;C;D;1500;2024-12-16 12:00:00,000;0;2024-12-16 12:30:00,000"
+},
+{
+"id": 5099,
+"es": "Medida_Cierre.blr"
+},
+{
+"id": 5100,
+"es": "Valores Instantáneos - OUM Instantaneous Values (One Per Line) - ivl"
+},
+{
+"id": 5101,
+"es": "Este formato de fichero permite la carga de valores instantáneos. Cada fichero contendrá uno por línea."
+},
+{
+"id": 5102,
+"es": "El patrón para la carga de ficheros de valores instantáneos será: "
+},
+{
+"id": 5103,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.ivl "
+},
+{
+"id": 5104,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.ivl”)."
+},
+{
+"id": 5105,
+"es": "Valores.Instantaneos(02).ivl"
+},
+{
+"id": 5106,
+"es": "MP;DATE_HOUR;DST;MAGNITUDE_INST_VALUE;VALUE"
+},
+{
+"id": 5107,
+"es": "DATE_HOUR*: "
+},
+{
+"id": 5108,
+"es": "DST*: "
+},
+{
+"id": 5109,
+"es": "Indica si la fecha está en horario de verano (YES) o de invierno (NO). En caso de no tener cambio horario, siempre será (NO)."
+},
+{
+"id": 5110,
+"es": "MAGNITUDE_INST_VALUE*: "
+},
+{
+"id": 5111,
+"es": "Magnitud instantánea. Puede tomar los valores"
+},
+{
+"id": 5112,
+"es": "TOTAL_ACTIVE_POWER"
+},
+{
+"id": 5113,
+"es": "TOTAL_VOLTAGE"
+},
+{
+"id": 5114,
+"es": "TOTAL_CURRENT"
+},
+{
+"id": 5115,
+"es": "VOLTAGE_PHASE_A"
+},
+{
+"id": 5116,
+"es": "VOLTAGE_PHASE_B"
+},
+{
+"id": 5117,
+"es": "VOLTAGE_PHASE_C"
+},
+{
+"id": 5118,
+"es": "CURRENT_PHASE_A"
+},
+{
+"id": 5119,
+"es": "CURRENT_PHASE_B"
+},
+{
+"id": 5120,
+"es": "CURRENT_PHASE_C"
+},
+{
+"id": 5121,
+"es": "TOTAL_HARMONIC_DISTORSION_PHASE_A"
+},
+{
+"id": 5122,
+"es": "TOTAL_HARMONIC_DISTORSION_PHASE_B"
+},
+{
+"id": 5123,
+"es": "TOTAL_HARMONIC_DISTORSION_PHASE_C"
+},
+{
+"id": 5124,
+"es": "FREQUENCY"
+},
+{
+"id": 5125,
+"es": "POWER_FACTOR"
+},
+{
+"id": 5126,
+"es": "TEMPERATURE"
+},
+{
+"id": 5127,
+"es": "Valor instantáneo de la magnitud seleccionada."
+},
+{
+"id": 5128,
+"es": "MPCPP008;2016-05-13 13:34:42,000;YES;POTENCIA_ACTIVA_TOTAL;132.23"
+},
+{
+"id": 5129,
+"es": "Valor_Instantaneo_MO002_01.ivl"
+},
+{
+"id": 5130,
+"es": "Eventos - OUM Events - eve"
+},
+{
+"id": 5131,
+"es": "Eventos. El fichero contendrá un evento en cada una de las líneas."
+},
+{
+"id": 5132,
+"es": "El patrón para la carga de ficheros de eventos será: "
+},
+{
+"id": 5133,
+"es": "[^\\\\/:*?\"<>|\\r\\n]+\\.eve "
+},
+{
+"id": 5134,
+"es": "(cualquier cadena alfanumérica que no contenga los símbolos (\\, /, :, *, ?, ”, <, >, new line, carriage return) seguida de la extensión “.eve”)"
+},
+{
+"id": 5135,
+"es": "Evento.calidad (01).eve"
+},
+{
+"id": 5136,
+"es": "MP#DATE_HOUR#DST#EVENT_TYPES#ADDITIONAL_INFORMATION#QUALITY"
+},
+{
+"id": 5137,
+"es": "MP"
+},
+{
+"id": 5138,
+"es": "*: Código del Punto de Medida"
+},
+{
+"id": 5139,
+"es": "DATE_HOUR"
+},
+{
+"id": 5140,
+"es": "*: Fecha y hora del evento, en formato “YYYY-MM-DD hh:mm:ss,SSS” (fecha y hora con milisegundos)"
+},
+{
+"id": 5141,
+"es": "*: Indica si la fecha está en horario de verano (YES) o de invierno (NO). En caso de no tener cambio horario, siempre será (NO)"
+},
+{
+"id": 5142,
+"es": "EVENT_TYPE"
+},
+{
+"id": 5143,
+"es": "*: Código del tipo de evento de los dados de alta en el sistema (tabla maestra “Tipos Eventos”). Por ejemplo:"
+},
+{
+"id": 5144,
+"es": "CHANGE-CONFIGURATION"
+},
+{
+"id": 5145,
+"es": "CONNECTION-FAILURE"
+},
+{
+"id": 5146,
+"es": "INTRUSION"
+},
+{
+"id": 5147,
+"es": "OVERFLOW"
+},
+{
+"id": 5148,
+"es": "ADDITIONAL_INFORMATION"
+},
+{
+"id": 5149,
+"es": ": Información adicional del evento, cualquier valor alfanumérico que se considere oportuno"
+},
+{
+"id": 5150,
+"es": "* Campos obligatorios"
+},
+{
+"id": 5151,
+"es": "MPCPP008#2014-12-01 14:40:24,000#NO#PARAMETERS-CHANGE#There was a parameters change in measurement point counter#0"
+},
+{
+"id": 5152,
+"es": "Evento_MP002_01.eve"
+},
+{
+"id": 5153,
+"es": "Todos los procesos de Generación/Envío de ficheros que se ejecutan en el sistema, bien de forma manual o bien de forma automática mediante planificación, se pueden monitorizar mediante la herramienta correspondiente, el Monitor de Ficheros."
+},
+{
+"id": 5154,
+"es": "Cada una de las ejecuciones comentadas genera un proceso en el monitor, el cual atraviesa una serie de fases o estados hasta que finaliza su ejecución. Dentro de cada proceso de Generación / Envío se genera una tarea por cada uno de los ficheros que se crean."
+},
+{
+"id": 5155,
+"es": "El Monitor nos proporciona una herramienta de Monitorización y Control de los procesos de carga y envío con información sobre su ejecución:"
+},
+{
+"id": 5156,
+"es": "El estado del proceso"
+},
+{
+"id": 5157,
+"es": "El tipo de fichero cargado o generado"
+},
+{
+"id": 5158,
+"es": "El tipo de ejecución: planificada o manual"
+},
+{
+"id": 5159,
+"es": "Los elementos sobre los que se aplica"
+},
+{
+"id": 5160,
+"es": "Usuario/sistema encargado de su ejecución"
+},
+{
+"id": 5161,
+"es": "En esta ventana se muestran, para las diferentes ejecuciones, los atributos:"
+},
+{
+"id": 5162,
+"es": "PID: "
+},
+{
+"id": 5163,
+"es": "Identificador del proceso en BBDD. Se trata de un valor numérico que se va incrementando en una unidad para cada ejecución."
+},
+{
+"id": 5164,
+"es": " Nombre del proceso definido durante la ejecución Manual o Planificada."
+},
+{
+"id": 5165,
+"es": "Tipo de Ejecución:"
+},
+{
+"id": 5166,
+"es": " Manual o Automática"
+},
+{
+"id": 5167,
+"es": "Fecha Inicio – Fin"
+},
+{
+"id": 5168,
+"es": ": Fecha y hora en la que comienza y finaliza el proceso."
+},
+{
+"id": 5169,
+"es": "Duración:"
+},
+{
+"id": 5170,
+"es": " Tiempo en segundos, transcurrido entre la Fecha Inicio y Fin."
+},
+{
+"id": 5171,
+"es": "Dirección:"
+},
+{
+"id": 5172,
+"es": " Dirección del intercambio de información: Entrada o Salida"
+},
+{
+"id": 5173,
+"es": "Usuario:"
+},
+{
+"id": 5174,
+"es": " Usuario encargado de la ejecución. En caso de que sea una ejecución Automática, el usuario encargado será el sistema"
+}
+]

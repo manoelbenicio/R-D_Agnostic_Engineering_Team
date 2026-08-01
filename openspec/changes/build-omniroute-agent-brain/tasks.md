@@ -1,3 +1,25 @@
+> **Nao certifica release.** Os checkboxes deste change referem-se ao escopo do proprio
+> build-omniroute-agent-brain e **nao** certificam a integracao credential-account-home /
+> C1+C2+C3+C4 como pronta para release. Naquela integracao o estado corrente e HOLD / NOT READY:
+> `go build ./...` passa e as suites de pacote revisadas estao verdes. A composicao concreta do
+> Runtime Manager em PostgreSQL esta implementada e validada na fonte compartilhada `spe6`, com
+> idempotencia duravel, locking de parent, UUID esperado fail-closed, `apply_class` persistido e
+> mount sob router/middleware no startup; ela ainda **nao** foi importada e revisada na arvore de
+> release aceita nem verificada no alvo. Todos os gates locais estao aprovados, incluindo banco real
+> em PostgreSQL descartavel, suite completa com e sem `-race` e `go vet ./...`. O HOLD remanescente e
+> a transferencia seletiva serial do owner, a revisao aditiva de `router.go`/`main.go`, a verificacao
+> de bytes e spill de sqlc no alvo, e os gates consolidados de Go, C4 e SPE-7 no alvo. O
+> trabalho sistemico de companions na arvore aceita esta pendente, e a correcao de identidade de
+> credencial e apenas de codigo-fonte. A autoridade de fixture SPE-7 ja e livre de Git, com suite
+> 28/28 aprovada com `git` ausente do `PATH`. Nao houve push, deploy ou restart.
+> Ver `credential-account-home-restoration/tasks.md` Fase 5.
+>
+> **Nomes externos canonicos do Runtime Manager:** `version` como discriminador de documento,
+> `configuration_digest` e `capability_digest` como digests, sempre hex minusculo de 64 caracteres
+> sem prefixo. Nao existem `active_digest` nem `effective_configuration_digest`. O `schema_version`
+> interno do preimage de digest **permanece inalterado**, pois renomea-lo mudaria todo digest ja
+> produzido e invalidaria fixtures pinados.
+
 ## 1. Single-router runtime removal
 
 - [x] 1.1 Delete dedicated alternate-router binaries, sidecars, runtime packages and legacy account-rotation package.
@@ -42,6 +64,11 @@
 
 - [x] 6.1 Consume the owner/operator OmniRoute immutable-revision and selected-route/protocol readiness declaration, and verify only Main Brain's strict fail-closed reaction to ready/not-ready signals; do not inspect, test or validate OmniRoute provider/model mappings, accounts, credentials, sessions or rotation internals.
 - [x] 6.2 Complete metadata-only end-to-end correlation for ingress, queue, daemon, CLI, gateway, terminal persistence and UI delivery.
+  > **Limitacao registrada (2026-08-01):** `agent.Result` nao expoe um `ProcessID` real, portanto o
+  > `proc_id` do span de CLI permanece **fail-closed e nao fabricado**, com o wiring do recorder
+  > preservado. A correlacao e completa em todos os outros elos; o `proc_id` de CLI e ausente por
+  > decisao, nunca inventado. Fecha-lo exige expor o identificador de processo real em
+  > `agent.Result`, o que esta fora do escopo deste change.
 - [ ] 6.3 Validate and approve the 20-task bounded capacity profile; keep the current lower limit until evidence passes.
 - [ ] 6.4 Validate 50- and 100-task profiles only after the lower tier and observability gates pass.
 - [x] 6.5 Perform an owner-approved Kanban → Main Brain → OmniRoute → terminal acceptance run in the controlled environment; do not perform it as part of basic source validation.

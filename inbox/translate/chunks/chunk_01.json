@@ -1,0 +1,2578 @@
+[
+{
+"id": 581,
+"es": "Contiene los métodos aplicables para la estimación de medidas."
+},
+{
+"id": 582,
+"es": "master_estimation_method"
+},
+{
+"id": 583,
+"es": "Listado Validaciones"
+},
+{
+"id": 584,
+"es": "Define las reglas de validación aplicables a los datos de medida."
+},
+{
+"id": 585,
+"es": "master_validation"
+},
+{
+"id": 586,
+"es": "Parámetros de Validación"
+},
+{
+"id": 587,
+"es": "Especifica los parámetros utilizados en las reglas de validación."
+},
+{
+"id": 588,
+"es": "master_validation_parameter"
+},
+{
+"id": 589,
+"es": "Servicio"
+},
+{
+"id": 590,
+"es": "Servicios disponibles: Electricidad"
+},
+{
+"id": 591,
+"es": "master_utility_type"
+},
+{
+"id": 592,
+"es": "Datos de Telemedición"
+},
+{
+"id": 593,
+"es": "Listado Protocolos"
+},
+{
+"id": 594,
+"es": "Incluye los protocolos de comunicación utilizados por los equipos."
+},
+{
+"id": 595,
+"es": "master_protocol"
+},
+{
+"id": 596,
+"es": "Listado Peticiones"
+},
+{
+"id": 597,
+"es": "Contiene las solicitudes de lectura o configuración enviadas a los equipos."
+},
+{
+"id": 598,
+"es": "master_telemetry_request"
+},
+{
+"id": 599,
+"es": "Listado Conf. Comunicaciones"
+},
+{
+"id": 600,
+"es": "Contiene las configuraciones de comunicación con los equipos definidas en el sistema."
+},
+{
+"id": 601,
+"es": "master_communications_equipment_type"
+},
+{
+"id": 602,
+"es": "Listado Parámetros remotos"
+},
+{
+"id": 603,
+"es": "Listado de los parámetros configurables remotamente en los equipos."
+},
+{
+"id": 604,
+"es": "master_telemetry_remote_data"
+},
+{
+"id": 605,
+"es": "Datos de Administración"
+},
+{
+"id": 606,
+"es": "Listado Acciones"
+},
+{
+"id": 607,
+"es": "Contiene las acciones disponibles en el sistema para gestión o automatización."
+},
+{
+"id": 608,
+"es": "master_action"
+},
+{
+"id": 609,
+"es": "Listado Perfiles"
+},
+{
+"id": 610,
+"es": "Contiene los perfiles de usuario o de acceso dentro del sistema."
+},
+{
+"id": 611,
+"es": "profile"
+},
+{
+"id": 612,
+"es": "Listado Parámetros"
+},
+{
+"id": 613,
+"es": "Contiene los parámetros generales de configuración del sistema MDM."
+},
+{
+"id": 614,
+"es": "master_mdm_parameter"
+},
+{
+"id": 615,
+"es": "Datos de Seguimiento"
+},
+{
+"id": 616,
+"es": "Tipos de Incidencia"
+},
+{
+"id": 617,
+"es": "Definición y configuración de los tipos de incidencia que puede gestionar el sistema, en función de su categoría y subcategoría"
+},
+{
+"id": 618,
+"es": "master_incident_type"
+},
+{
+"id": 619,
+"es": "Categorías de las Incidencias"
+},
+{
+"id": 620,
+"es": "Categorías de incidencia en función de su origen: Validación, Evento, Usuario o Desconocido."
+},
+{
+"id": 621,
+"es": "master_incident_category"
+},
+{
+"id": 622,
+"es": "El módulo "
+},
+{
+"id": 623,
+"es": "engloba y define todos los elementos y parámetros que posee el sistema para que éste pueda trabajar. En especial hace hincapié en todos los aspectos del sistema relacionados con los Puntos de medida y Equipos."
+},
+{
+"id": 624,
+"es": "Los puntos son, junto con los equipos, la entidad básica del sistema, origen y referencia desde el que parte cada dato. Los puntos permiten definir la infraestructura de recogida de datos, así como gestionar la información recogida desde los equipos. La entidad puntos aporta flexibilidad al modelo de datos. Y representa la ubicación física de los equipos instalados en campo. "
+},
+{
+"id": 625,
+"es": "En Onesait Metering (en adelante OM), los datos de medida de cualquier tipo y origen se asocian obligatoriamente a un punto."
+},
+{
+"id": 626,
+"es": "En los siguientes apartados se especificará cada una de las partes que componen esta entidad, su integración en el sistema y el resto de parámetros que generan un mayor valor y añaden distintas funcionalidades al sistema."
+},
+{
+"id": 627,
+"es": "El módulo Inventario"
+},
+{
+"id": 628,
+"es": "está compuesto por los siguientes sub-módulos:"
+},
+{
+"id": 629,
+"es": "Gestión de puntos"
+},
+{
+"id": 630,
+"es": "El orden de descripción del módulo se estructura cumpliendo con la misma organización que posee el sistema "
+},
+{
+"id": 631,
+"es": "OM"
+},
+{
+"id": 632,
+"es": "El sub-módulo "
+},
+{
+"id": 633,
+"es": "“Modelo de Red”"
+},
+{
+"id": 634,
+"es": " incluye las Entidades primarias del sistema."
+},
+{
+"id": 635,
+"es": "Detalle Propietarios"
+},
+{
+"id": 636,
+"es": "Este apartado reúne todos los propietarios dados de alta en el sistema. Los propietarios son entidades que representan a la persona o institución propietaria de un Punto de Medida que se les podrán asignar a través de la pantalla. Además el Propietario tendrá asociado un tipo de negocio (Ámbito) para facilitar su clasificación. "
+},
+{
+"id": 637,
+"es": "La entidad Propietario se caracteriza por las siguientes propiedades:"
+},
+{
+"id": 638,
+"es": "Código"
+},
+{
+"id": 639,
+"es": " [obligatorio]"
+},
+{
+"id": 640,
+"es": "Nombre"
+},
+{
+"id": 641,
+"es": "E-mail"
+},
+{
+"id": 642,
+"es": "Servicio:"
+},
+{
+"id": 643,
+"es": " Actualmente solo Electricidad."
+},
+{
+"id": 644,
+"es": "Ámbito"
+},
+{
+"id": 645,
+"es": " [tipo de negocio] [obligatorio] solo se puede asignar uno de entre los siguientes:"
+},
+{
+"id": 646,
+"es": "Generación"
+},
+{
+"id": 647,
+"es": "Distribución"
+},
+{
+"id": 648,
+"es": "Transporte"
+},
+{
+"id": 649,
+"es": "Comercialización"
+},
+{
+"id": 650,
+"es": "Puntos de medida asociados"
+},
+{
+"id": 651,
+"es": ": Establece una relación entre el Propietario y el Punto de Medida seleccionado. Los Puntos de Medida que pueden ser asociados al Propietario vienen acotados por el Ámbito. Es decir, solo los Puntos de Medida que pertenezcan al ámbito del Propietario podrán ser relacionados con él. "
+},
+{
+"id": 652,
+"es": "Dichas propiedades se muestran en la interfaz del sistema en el apartado "
+},
+{
+"id": 653,
+"es": ", donde se muestran las características particulares de un propietario."
+},
+{
+"id": 654,
+"es": "El apartado muestra una estructura con dos (2) partes:"
+},
+{
+"id": 655,
+"es": "Cuadro de Filtros y botones:"
+},
+{
+"id": 656,
+"es": "Dispone de 2 filtros no obligatorios a rellenar (nombre y código)"
+},
+{
+"id": 657,
+"es": "Botones: buscar, crear, detalle, editar, exportar y eliminar. Funcionalidades para gestionar los propietarios, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 658,
+"es": "Lista de Propietarios:"
+},
+{
+"id": 659,
+"es": "En la tabla puede consultarse el listado de propietarios filtrados o no por parámetros."
+},
+{
+"id": 660,
+"es": "Por defecto, al no haber ningún filtro obligatorio de rellenar antes de realizar una búsqueda, el sistema devuelve una lista con todos los propietarios que hay dados de alta en el sistema."
+},
+{
+"id": 661,
+"es": "Las funcionalidades directas que se pueden realizar en el presente apartado son:"
+},
+{
+"id": 662,
+"es": "Buscar"
+},
+{
+"id": 663,
+"es": "Filtrando por nombre y código del propietario se puede obtener una lista de propietarios que cumplan con esos datos de entrada."
+},
+{
+"id": 664,
+"es": "Crear"
+},
+{
+"id": 665,
+"es": "Introduciendo obligatoriamente el Código, nombre y ámbito"
+},
+{
+"id": 666,
+"es": "Introduciendo para que se pueda trabajar con él Punto de Medida"
+},
+{
+"id": 667,
+"es": "Introduciendo otros parámetros no obligatorios aumentarán las funcionalidades del sistema con este elemento como email, teléfono,…"
+},
+{
+"id": 668,
+"es": "Detalle"
+},
+{
+"id": 669,
+"es": "Permite visualizar un propietario de la lista en profundidad, mostrando las características mencionadas en el punto anterior"
+},
+{
+"id": 670,
+"es": "Editar"
+},
+{
+"id": 671,
+"es": "Editar cualquier característica del Propietario seleccionado de la lista de propietarios"
+},
+{
+"id": 672,
+"es": "Exportar"
+},
+{
+"id": 673,
+"es": "Permite devolver la lista de propietarios presente en los idiomas y formatos configurados."
+},
+{
+"id": 674,
+"es": "Eliminar"
+},
+{
+"id": 675,
+"es": "Eliminar cualquier propietario dado de alta en el sistema. Hay que tener en cuenta que mientras exista relación entre un Propietario y un Punto de Medida, los propietarios no podrán ser eliminados del sistema. "
+},
+{
+"id": 676,
+"es": "La ventana que se abre automáticamente tras seleccionar la opción "
+},
+{
+"id": 677,
+"es": "“Detalle” **"
+},
+{
+"id": 678,
+"es": " lleva por nombre "
+},
+{
+"id": 679,
+"es": "“Detalle Propietarios” "
+},
+{
+"id": 680,
+"es": "y muestra las características del propietario seleccionado que aparecen en la imagen adjunta:"
+},
+{
+"id": 681,
+"es": "**Dicha ventana se mostrará de la misma manera para cada una de las funcionalidades crear y editar, mencionadas en el punto anterior, con la excepción de que en ellas si se podrán modificar los campos."
+},
+{
+"id": 682,
+"es": "Editar Clientes"
+},
+{
+"id": 683,
+"es": "Detalle Clientes"
+},
+{
+"id": 684,
+"es": "Este apartado recoge el listado de todos los clientes dados de alta en el sistema. Los clientes son entidades que representan a la persona o institución que disfruta de los servicios proporcionados. A estos Clientes se le pueden asociar los diferentes Puntos de Medida que haya registrados en el sistema, además de asignarles una serie de atributos que faciliten su búsqueda y clasificación. "
+},
+{
+"id": 685,
+"es": "Se caracteriza por las siguientes propiedades:"
+},
+{
+"id": 686,
+"es": "Tipo de cliente"
+},
+{
+"id": 687,
+"es": " [obligatorio] seleccionable entre:"
+},
+{
+"id": 688,
+"es": "Empresa"
+},
+{
+"id": 689,
+"es": "Particular"
+},
+{
+"id": 690,
+"es": "Cliente Especial"
+},
+{
+"id": 691,
+"es": "Tipo de documento"
+},
+{
+"id": 692,
+"es": " seleccionable entre:"
+},
+{
+"id": 693,
+"es": "NIF"
+},
+{
+"id": 694,
+"es": "DNI"
+},
+{
+"id": 695,
+"es": "CIF"
+},
+{
+"id": 696,
+"es": "Pasaporte"
+},
+{
+"id": 697,
+"es": "Documento"
+},
+{
+"id": 698,
+"es": " [obligatorio]: Nº del documento."
+},
+{
+"id": 699,
+"es": "Dirección"
+},
+{
+"id": 700,
+"es": "Teléfono"
+},
+{
+"id": 701,
+"es": " [dinámico] – necesario para trabajar con él en el sistema. Establecerá la relación entre el Cliente y los Puntos de Medida."
+},
+{
+"id": 702,
+"es": "El apartado, al igual que el anterior, muestra una estructura con dos (2) partes:"
+},
+{
+"id": 703,
+"es": "Dispone de cuatro (1) filtros no obligatorios a rellenar (nombre, código, tipo de cliente-multiselección- y Punto de Medida)"
+},
+{
+"id": 704,
+"es": "Botones: buscar, crear, detalle, editar, exportar y eliminar. Funcionalidades para gestionar los Clientes, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 705,
+"es": "Lista de Clientes:"
+},
+{
+"id": 706,
+"es": "En la tabla puede consultarse el listado de clientes filtrados o no por parámetros."
+},
+{
+"id": 707,
+"es": "Por defecto, al no haber ningún filtro obligatorio de rellenar antes de realizar una búsqueda, el sistema devuelve una lista con todos los Clientes que hay dados de alta en el sistema."
+},
+{
+"id": 708,
+"es": "Filtrando por los filtros mencionados anteriormente se obtiene una lista de Clientes que cumplan con esos criterios de entrada."
+},
+{
+"id": 709,
+"es": "Introduciendo obligatoriamente"
+},
+{
+"id": 710,
+"es": " Código, nombre, tipo de cliente, tipo documento y documento."
+},
+{
+"id": 711,
+"es": "Introduciendo para que se pueda trabajar con él Punto de Medida"
+},
+{
+"id": 712,
+"es": "Introduciendo otros parámetros no obligatorios aumentarán las funcionalidades del sistema con este elemento email, teléfono,…"
+},
+{
+"id": 713,
+"es": "Permite visualizar un Cliente de la lista en profundidad, mostrando las características mencionadas en el punto anterior"
+},
+{
+"id": 714,
+"es": "Editar cualquier característica del Cliente seleccionado de la lista de Clientes."
+},
+{
+"id": 715,
+"es": "Permite devolver la lista de Clientes presente en los idiomas y formatos configurados."
+},
+{
+"id": 716,
+"es": "Eliminar cualquier Cliente dado de alta en el sistema. Mientras exista una relación con un Punto de Medida, no podrá ser eliminado."
+},
+{
+"id": 717,
+"es": "“Detalle” ** "
+},
+{
+"id": 718,
+"es": "lleva por nombre "
+},
+{
+"id": 719,
+"es": "“Detalle Clientes” "
+},
+{
+"id": 720,
+"es": "y muestra las características del Cliente seleccionado que aparecen en la imagen adjunta:"
+},
+{
+"id": 721,
+"es": "Detalle instalaciones"
+},
+{
+"id": 722,
+"es": "Al igual que Propietarios y Clientes; Instalaciones es una entidad que permite organizar y clasificar los Puntos de Medida registrados en el sistema, mediante la asignación de atributos e información relevante."
+},
+{
+"id": 723,
+"es": "En el caso de la entidad Instalación, esta destaca por la asignación del \"Tipo de Instalación\" que nos permite identificar mejor los diferentes Puntos de Medida y su localización geográfica. Además, las Instalaciones pueden tener asociada otra entidad Instalación que funcione como Entidad Padre, es decir, que se pueden organizar jerárquicamente."
+},
+{
+"id": 724,
+"es": "Eventualmente, el objetivo de la pantalla es ofrecernos un listado de las diferentes instalaciones que hayamos configurado en el sistema, que a su vez podrán recoger todos los Puntos de Medida."
+},
+{
+"id": 725,
+"es": "Filtrando por los filtros mencionados anteriormente se obtiene una lista de Instalaciones que cumplan con esos criterios de entrada."
+},
+{
+"id": 726,
+"es": " Código, nombre, tipo de instalación."
+},
+{
+"id": 727,
+"es": "Introduciendo relaciones con Puntos de Medida."
+},
+{
+"id": 728,
+"es": "Permite visualizar una Instalación de la lista en profundidad, mostrando las características mencionadas en el punto anterior."
+},
+{
+"id": 729,
+"es": "Editar cualquier característica de la Instalación seleccionado la en la lista."
+},
+{
+"id": 730,
+"es": "Permite devolver la lista de Instalaciones presente en cualquier idioma (ESP o ING) y formato (CSV o PDF)"
+},
+{
+"id": 731,
+"es": "Eliminar cualquier Instalación dada de alta en el sistema. Mientras exista una relación con un Punto de Medida, no podrá ser eliminada."
+},
+{
+"id": 732,
+"es": "La ventana que se abre automáticamente tras seleccionar la opción "
+},
+{
+"id": 733,
+"es": "“Detalle” * "
+},
+{
+"id": 734,
+"es": "“Detalle Instalaciones” "
+},
+{
+"id": 735,
+"es": "En esta ventana se muestran los siguientes campos para las instalaciones que se definan en el sistema:"
+},
+{
+"id": 736,
+"es": ": Nombre de la instalación"
+},
+{
+"id": 737,
+"es": ": Modelo o categoría de instalación (transformador, planta generadora nuclear, centro de transformación, depósito, etc.). "
+},
+{
+"id": 738,
+"es": "Instalación padre"
+},
+{
+"id": 739,
+"es": ": Identificador de la instalación que se encuentra aguas arriba en la jerarquía de la red del cliente (en caso de tenerla)."
+},
+{
+"id": 740,
+"es": ": Puntos de Medida, que representa y agrega sus consumos e incidencias. Estos puntos crearán la relación entre la Instalación y el Punto de Medida escogido. "
+},
+{
+"id": 741,
+"es": "Coordenadas"
+},
+{
+"id": 742,
+"es": ": El sistema permite definir las coordenadas de georreferenciación para las instalaciones. "
+},
+{
+"id": 743,
+"es": "Email y Teléfono"
+},
+{
+"id": 744,
+"es": ": Información de contacto de la instalación."
+},
+{
+"id": 745,
+"es": "Propiedades"
+},
+{
+"id": 746,
+"es": ": Parámetros de configuración de la instalación. Dependiendo del tipo de instalación, ésta dispondrá de unas propiedades identificativas u otras. Los tipos de instalación presentan para cada una de las propiedades, un valor por defecto, que puede modificarse a nivel de activo. Se explica con detalle en el apartado de "
+},
+{
+"id": 747,
+"es": "Punto de Medida de Tipo Instalación"
+},
+{
+"id": 748,
+"es": ": En el alta y la edición de la instalación, es posible asociar un Punto de Medida cuyo tipo de asociación sea \"Instalación\". Esto se usa para realizar balances entre este Punto de Medida y el resto asociados a la instalación a través de la entrada \"Puntos de Medida\". Se debe tener en cuenta que esta relación es única, por lo que un Punto de Medida de Tipo Instalación solo puede tener asignado una Instalación y viceversa. "
+},
+{
+"id": 749,
+"es": "*Dicha ventana se mostrará de la misma manera para cada una de las funcionalidades crear y editar, mencionadas en el punto anterior, con la excepción de que en ellas si se podrán modificar los campos."
+},
+{
+"id": 750,
+"es": "Carga por fichero"
+},
+{
+"id": 751,
+"es": "Las instalaciones pueden ser cargadas a través del fichero .ins, este proceso se explica detalladamente en el apartado de carga TPL de inventario: "
+},
+{
+"id": 752,
+"es": "Carga TPL"
+},
+{
+"id": 753,
+"es": "“Gestión de Puntos”"
+},
+{
+"id": 754,
+"es": " incluye los elementos más importantes del sistema, así como su configuración y posterior gestión con el fin de poder interrelacionarse entre los distintos módulos del sistema. Por orden de importancia y con una pequeña descripción se describen:"
+},
+{
+"id": 755,
+"es": "Grupo de Puntos de Medida"
+},
+{
+"id": 756,
+"es": " : entidades que agrupan puntos de medida que comparten una o varias características (cliente, ámbito, propietario, oficina comercial…). Utilizados para la gestión y trabajo de los puntos debido al alto número de los mismos que existen en el sistema."
+},
+{
+"id": 757,
+"es": " : elemento asociado a un punto físico donde se toman los datos (consumos, valores instantáneos, registros…)."
+},
+{
+"id": 758,
+"es": "Puntos de medida"
+},
+{
+"id": 759,
+"es": "Detalles de Puntos de Medida"
+},
+{
+"id": 760,
+"es": "Datos Fundamentales"
+},
+{
+"id": 761,
+"es": "General"
+},
+{
+"id": 762,
+"es": "Facturación y configuración TOU"
+},
+{
+"id": 763,
+"es": "Grupos"
+},
+{
+"id": 764,
+"es": "Medición"
+},
+{
+"id": 765,
+"es": "Histórico"
+},
+{
+"id": 766,
+"es": "Carga por Fichero"
+},
+{
+"id": 767,
+"es": "Sobre la entidad Punto de Medida se realizan y asocian las medidas (Energía Activa Entrante, Registros, Eventos…). Es el elemento más importante del sistema y que reúne el mayor número de características y propiedades."
+},
+{
+"id": 768,
+"es": "La gestión específica de los puntos se lleva a cabo desde el módulo "
+},
+{
+"id": 769,
+"es": "“Inventario"
+},
+{
+"id": 770,
+"es": "”, sub-módulo "
+},
+{
+"id": 771,
+"es": "“Gestión de Puntos”, "
+},
+{
+"id": 772,
+"es": "apartado “"
+},
+{
+"id": 773,
+"es": "Puntos de Medida”"
+},
+{
+"id": 774,
+"es": "El apartado "
+},
+{
+"id": 775,
+"es": "“Puntos de Medida"
+},
+{
+"id": 776,
+"es": "” recoge todos los puntos dados de alta en el sistema, con sus características y funcionalidades, preparándolos para trabajar en el sistema."
+},
+{
+"id": 777,
+"es": "La interfaz que aparece está dividida en dos partes:"
+},
+{
+"id": 778,
+"es": "Cuadro de Filtros y botones"
+},
+{
+"id": 779,
+"es": "Dispone de dos (2) filtros no obligatorios a rellenar (Código y Grupo – multi-selección)"
+},
+{
+"id": 780,
+"es": "Botones: buscar, crear, detalle, editar, exportar, general KML y eliminar. Funcionalidades para gestionar los Puntos de Medida, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 781,
+"es": "Lista de Puntos de Medida"
+},
+{
+"id": 782,
+"es": "En la tabla puede consultarse el listado de Puntos de Medida filtrados o no por los parámetros mencionados previamente."
+},
+{
+"id": 783,
+"es": "Las características que aparecen en la tabla para cada Punto de Medida son:"
+},
+{
+"id": 784,
+"es": "Descripción del punto"
+},
+{
+"id": 785,
+"es": "Fecha de creación"
+},
+{
+"id": 786,
+"es": "Actividad al que pertenecen"
+},
+{
+"id": 787,
+"es": "Nivel de tensión"
+},
+{
+"id": 788,
+"es": "Por defecto, al no haber ningún filtro obligatorio de rellenar antes de realizar una búsqueda, el sistema devuelve una lista con todos los Puntos de Medida que hay dados de alta en el sistema."
+},
+{
+"id": 789,
+"es": "Filtrando por los filtros mencionados anteriormente se obtiene una lista de Puntos de Medida que cumplen con esos criterios de entrada."
+},
+{
+"id": 790,
+"es": "Introduciendo obligatoriamente -> Código, Ámbito, Actividad y Zona Horaria."
+},
+{
+"id": 791,
+"es": "Introduciendo para que se pueda trabajar con él dentro de la funcionalidad directa Editar à Plantilla de Validación Inicial, Plantilla de Validación Óptima, Patrón de Orígenes, Clase de Configuración (Clase de Configuración y Plantillas son sustitutivas)."
+},
+{
+"id": 792,
+"es": "Introduciendo otros parámetros no obligatorios aumentarán las funcionalidades del sistema con este elemento mediante la funcionalidad Editara Archivos adjuntos, grupos, Clase de cálculo, tipo de perfilado, Dirección, Calendario…."
+},
+{
+"id": 793,
+"es": "Permite visualizar un Punto de Medida de la lista en profundidad, mostrando las características mencionadas en el punto anterior."
+},
+{
+"id": 794,
+"es": "Editar cualquier característica del Punto de Medida seleccionado de la lista de Clientes."
+},
+{
+"id": 795,
+"es": "Permite devolver la lista de Puntos de Medida presente en los idiomas y formatos configurados."
+},
+{
+"id": 796,
+"es": "Generar KML"
+},
+{
+"id": 797,
+"es": "La lista de Puntos de Medida será exportada en formato “"
+},
+{
+"id": 798,
+"es": "kml"
+},
+{
+"id": 799,
+"es": "” con los datos de Código, descripción y coordenadas"
+},
+{
+"id": 800,
+"es": "Eliminar cualquier Punto de Medida dado de alta en el sistema"
+},
+{
+"id": 801,
+"es": "*Solo se podrá eliminar si no ha tenido ninguna asociación previamente (de equipo, mediciones o cualquier otra relación)."
+},
+{
+"id": 802,
+"es": "La entidad Punto de Medida es compleja y sus características se definen en diferentes pestañas de la ventana de detalle. El acceso se produce según se describe en la funcionalidad "
+},
+{
+"id": 803,
+"es": "“Detalle de Puntos de Medida”"
+},
+{
+"id": 804,
+"es": "Dentro de "
+},
+{
+"id": 805,
+"es": "“Detalles Puntos de Medida” "
+},
+{
+"id": 806,
+"es": "se encuentran todas las características del elemento fundamental del sistema: Punto de Medida. El apartado se estructura en un primer recuadro general de Datos Fundamentales donde aparecen las propiedades más generales, seguido de 6 pestañas o sub-pantallas donde se definen o configuran sus características."
+},
+{
+"id": 807,
+"es": "Las pestañas y características que engloban están íntimamente ligadas con el resto de módulos y funcionalidades del sistema, en especial "
+},
+{
+"id": 808,
+"es": "“Gestión de Medidas” "
+},
+{
+"id": 809,
+"es": "“Integración”"
+},
+{
+"id": 810,
+"es": " y el sub-módulo "
+},
+{
+"id": 811,
+"es": "“Datos Maestros”"
+},
+{
+"id": 812,
+"es": "En esta pantalla aparecerán las propiedades más básicas del Punto de Medida. Los campos que aparecen en una primera sección de forma constante en la ventana de "
+},
+{
+"id": 813,
+"es": "“Detalles de Puntos de Medida”"
+},
+{
+"id": 814,
+"es": " son los siguientes:"
+},
+{
+"id": 815,
+"es": "[\"*\" Obligatorio]"
+},
+{
+"id": 816,
+"es": "Código*"
+},
+{
+"id": 817,
+"es": ": El código del punto identifica inequívocamente cada punto. Debe ser único. Se admiten códigos alfanuméricos de hasta 50 caracteres."
+},
+{
+"id": 818,
+"es": "Fecha de creación*"
+},
+{
+"id": 819,
+"es": ": En formato aaaa-mm-dd, es la fecha en la que el punto se ha dado de alta en el sistema. Se establece automáticamente en el momento de la creación del equipo, pero es editable."
+},
+{
+"id": 820,
+"es": "Fecha de baja"
+},
+{
+"id": 821,
+"es": ": En formato aaaa-mm-dd, es la fecha en la que el punto dejará de estar activo."
+},
+{
+"id": 822,
+"es": "Ámbito* y actividad*"
+},
+{
+"id": 823,
+"es": " Se selecciona en qué ámbito de negocio o del sistema eléctrico se integra cada punto y en qué actividad concreta dentro de dicho ámbito."
+},
+{
+"id": 824,
+"es": "Los ámbitos y actividades posibles se encuentran configurados en la base de datos y se detallan en la Tabla 1 de este documento."
+},
+{
+"id": 825,
+"es": "Características comerciales Punto de Medida"
+},
+{
+"id": 826,
+"es": "Actividades"
+},
+{
+"id": 827,
+"es": "Biomasa"
+},
+{
+"id": 828,
+"es": "Ciclo combinado"
+},
+{
+"id": 829,
+"es": "Eólica"
+},
+{
+"id": 830,
+"es": "Geotérmica"
+},
+{
+"id": 831,
+"es": "Hidro-Eléctrica"
+},
+{
+"id": 832,
+"es": "Nuclear"
+},
+{
+"id": 833,
+"es": "Solar"
+},
+{
+"id": 834,
+"es": "Térmica"
+},
+{
+"id": 835,
+"es": "Estación elevadora"
+},
+{
+"id": 836,
+"es": "Línea de Transporte"
+},
+{
+"id": 837,
+"es": "Subestación de Transporte"
+},
+{
+"id": 838,
+"es": " Centro de transformación"
+},
+{
+"id": 839,
+"es": " Línea"
+},
+{
+"id": 840,
+"es": " Subestación"
+},
+{
+"id": 841,
+"es": "Industrial"
+},
+{
+"id": 842,
+"es": " Residencial"
+},
+{
+"id": 843,
+"es": ": Campo de texto en el que se puede añadir un resumen de las características del punto o información adicional que se considere de interés."
+},
+{
+"id": 844,
+"es": " En formato aaaa-mm-dd, es la fecha en la que el punto se ha dado o se va a dar de baja en el sistema. "
+},
+{
+"id": 845,
+"es": "Es editable."
+},
+{
+"id": 846,
+"es": "Servicio*"
+},
+{
+"id": 847,
+"es": ": El tipo de Utility al que pertenece el punto de medida."
+},
+{
+"id": 848,
+"es": "Estado de operación"
+},
+{
+"id": 849,
+"es": ": Los Puntos de Medida llevan asociados un estado de operación. "
+},
+{
+"id": 850,
+"es": "Ese flujo sigue el siguiente esquema:"
+},
+{
+"id": 851,
+"es": "Donde: "
+},
+{
+"id": 852,
+"es": "ACTIVO"
+},
+{
+"id": 853,
+"es": ": El punto de medida está en funcionamiento y se encuentra habilitado para registrar consumos, enviar lecturas y participar en el proceso de facturación. "
+},
+{
+"id": 854,
+"es": "Está vinculado a un contrato vigente y operativo."
+},
+{
+"id": 855,
+"es": "INACTIVO"
+},
+{
+"id": 856,
+"es": ": El punto de medida no está en uso actualmente. Puede deberse a la baja del contrato, desconexión del suministro, mantenimiento, cambio de medidor o cualquier otra razón administrativa o técnica que impida su uso para facturación."
+},
+{
+"id": 857,
+"es": "También es posible que el MP no tenga ningún estado establecido ("
+},
+{
+"id": 858,
+"es": "NULL"
+},
+{
+"id": 859,
+"es": ") debido a:"
+},
+{
+"id": 860,
+"es": "Un error en la carga o sincronización de datos."
+},
+{
+"id": 861,
+"es": "Un punto de medida recién creado que aún no ha sido activado ni clasificado."
+},
+{
+"id": 862,
+"es": "Información incompleta o ausente en el sistema."
+},
+{
+"id": 863,
+"es": "Fechas asociadas"
+},
+{
+"id": 864,
+"es": "Asociados al MP"
+},
+{
+"id": 865,
+"es": "Fecha de Creación/Fecha de Baja​"
+},
+{
+"id": 866,
+"es": "Asociada a Medición –> Equipo"
+},
+{
+"id": 867,
+"es": "Fecha Inicio Vigencia / Fecha Fin Vigencia​"
+},
+{
+"id": 868,
+"es": "Al alcanzar la fecha Fin Vigencia el equipo deja de estar asociado al MP y por tanto la opción de telemedición para este punto deja de estar disponible.​"
+},
+{
+"id": 869,
+"es": "Debe desaparecer del listado de MPs sobre los que lanzar peticiones (gestión de llamadas)​"
+},
+{
+"id": 870,
+"es": "Debajo de estos campos se pueden encontrar las otras 7 sub-pantallas:"
+},
+{
+"id": 871,
+"es": "Medición "
+},
+{
+"id": 872,
+"es": "Históricos"
+},
+{
+"id": 873,
+"es": "En esta pestaña se recogen las principales características comerciales del Punto de Medida, mostradas en los siguientes campos:"
+},
+{
+"id": 874,
+"es": "Cliente"
+},
+{
+"id": 875,
+"es": ": Cliente de entre los dados de alta en el sistema. Creando la relación entre el Cliente y el Punto de Medida si no existía previamente."
+},
+{
+"id": 876,
+"es": "Propietario"
+},
+{
+"id": 877,
+"es": ": Propietario de entre los dados de alta en el sistema. Creando la relación entre el Propietario y el Punto de Medida si no existía previamente"
+},
+{
+"id": 878,
+"es": "Tipo de Asociación"
+},
+{
+"id": 879,
+"es": ": Esta entrada sirve para darle atributo a la relación con otras entidades. De momento se utiliza el tipo de asociación \""
+},
+{
+"id": 880,
+"es": "Instalación"
+},
+{
+"id": 881,
+"es": "\" para asociar un Punto de Medida a una Instalación y poder realizar "
+},
+{
+"id": 882,
+"es": "balances entre el Punto de Medida de Tipo Instalación y el resto de Puntos de Medida asociados"
+},
+{
+"id": 883,
+"es": " a la Instalación."
+},
+{
+"id": 884,
+"es": "NOTA: Tener en cuenta que esta propiedad se añade una vez creado el punto de medida a través de su edición."
+},
+{
+"id": 885,
+"es": "Tipo de perfil"
+},
+{
+"id": 886,
+"es": "Los perfiles se utilizan para perfilar la curva de carga horaria, a partir de registros de cierre, mediante el método de estimación de Perfil Estándar (Load Profiling Through Standard Profile). "
+},
+{
+"id": 887,
+"es": "Referencia catastral"
+},
+{
+"id": 888,
+"es": ": La referencia catastral es el identificador oficial y obligatorio de los bienes inmuebles. Es asignado por el Catastro de manera que todo inmueble debe tener una única referencia catastral que permita situarlo inequívocamente en la cartografía catastral. Código alfanumérico entre 2 y 30 caracteres. Admite tanto mayúsculas, como minúsculas y algunos símbolos (no admite: %)"
+},
+{
+"id": 889,
+"es": "Longitud"
+},
+{
+"id": 890,
+"es": ": Coordenada correspondiente a las lineas que van del norte al sur"
+},
+{
+"id": 891,
+"es": "Latitud"
+},
+{
+"id": 892,
+"es": ": Coordenada correspondiente a las lineas que van de Este a Oeste"
+},
+{
+"id": 893,
+"es": "Zona horaria*"
+},
+{
+"id": 894,
+"es": ": Zona horaria de entre las dadas de alta en el sistema,"
+},
+{
+"id": 895,
+"es": "Calendario"
+},
+{
+"id": 896,
+"es": ": Calendario de entre los dados de alta en el sistema."
+},
+{
+"id": 897,
+"es": ": del punto de medida"
+},
+{
+"id": 898,
+"es": "Localidad"
+},
+{
+"id": 899,
+"es": "Provincia/Estado"
+},
+{
+"id": 900,
+"es": "Código posta"
+},
+{
+"id": 901,
+"es": "Archivos adjuntos: "
+},
+{
+"id": 902,
+"es": "En este apartado/pestaña pueden añadirse ficheros adjuntos en formato .pdf, que contengan información relevante relacionada con el punto de medida."
+},
+{
+"id": 903,
+"es": "A continuación, se muestra la pantalla "
+},
+{
+"id": 904,
+"es": "“Detalles Puntos de Medida”"
+},
+{
+"id": 905,
+"es": " con la pestaña "
+},
+{
+"id": 906,
+"es": "“General”"
+},
+{
+"id": 907,
+"es": ", donde se pueden visualizar todos los campos mencionados:"
+},
+{
+"id": 908,
+"es": "Características "
+},
+{
+"id": 909,
+"es": "Dentro de este apartado se encuentra la siguiente información que podrá ser completada una vez creado el Punto de Medida a través de su edición:"
+},
+{
+"id": 910,
+"es": "Tipo de red"
+},
+{
+"id": 911,
+"es": ": indica la configuración del suministro eléctrico al que está conectado el punto de medida. "
+},
+{
+"id": 912,
+"es": "Puede ser:"
+},
+{
+"id": 913,
+"es": "Monofásica: Red con una sola fase y un neutro. Es común en instalaciones residenciales pequeñas. "
+},
+{
+"id": 914,
+"es": "Suele operar a 230 V. Adecuada para cargas ligeras."
+},
+{
+"id": 915,
+"es": "Trifásica: Red con tres fases y, a veces, un neutro. Utilizada en instalaciones industriales, comerciales o residenciales con alta demanda. "
+},
+{
+"id": 916,
+"es": "Permite una distribución más eficiente de la energía."
+},
+{
+"id": 917,
+"es": "Bifásica: Red con dos fases (sin neutro o con neutro, según el país). Proporciona mayor potencia que la monofásica. Usada en algunas zonas rurales o instalaciones medianas."
+},
+{
+"id": 918,
+"es": "Sin especificar."
+},
+{
+"id": 919,
+"es": "Tensión de línea (kV)"
+},
+{
+"id": 920,
+"es": "Indica el nivel de voltaje en kilovoltios en el punto de conexión. Es clave para determinar el tipo de instalación y los equipos necesarios. Ejemplos: 0.4 kV (baja tensión), 15 kV (media tensión), 132 kV (alta tensión)."
+},
+{
+"id": 921,
+"es": "Actividad Comercial"
+},
+{
+"id": 922,
+"es": ": Clasifica el uso del suministro eléctrico según la actividad del cliente de entre las dadas de alta en el sistema."
+},
+{
+"id": 923,
+"es": "Nivel de tensión*"
+},
+{
+"id": 924,
+"es": ": Identifica el nivel de tensión al que está conectado el punto de medida. "
+},
+{
+"id": 925,
+"es": "Alta (>36kV)"
+},
+{
+"id": 926,
+"es": "Media (1kV - 36kV)"
+},
+{
+"id": 927,
+"es": "Baja (<1kV)"
+},
+{
+"id": 928,
+"es": "Dirección de la energía*"
+},
+{
+"id": 929,
+"es": ": Indica el sentido del flujo de energía en el punto de medida. Es fundamental para determinar si el cliente está consumiendo, generando o haciendo ambas cosas, lo cual afecta la facturación, la gestión de red y el balance energético:"
+},
+{
+"id": 930,
+"es": "Entrada: Consumidor de energía, el punto de medida recibe energía desde la red. Es el caso más común. Ejemplo: un hogar o empresa que utiliza electricidad de la red para iluminación y equipos."
+},
+{
+"id": 931,
+"es": "Entrada-salida: Bidireccional, el punto de medida consume e inyecta energía, dependiendo del momento. Ejemplo: una vivienda con paneles solares: consume de la red por la noche y genera durante el día."
+},
+{
+"id": 932,
+"es": "Salida: Generador de energía, el punto de medida inyecta energía a la red. Ejemplo: una planta solar o eólica que produce electricidad y la vende a la red."
+},
+{
+"id": 933,
+"es": ": Identificador del titular del punto de medida. Asociación de un cliente específico creado en el apartado de Cliente al punto de medida."
+},
+{
+"id": 934,
+"es": "Oficina comercial"
+},
+{
+"id": 935,
+"es": ": Unidad administrativa, de entre las dadas de alta en el sistema, responsable de gestionar el punto de medida, atención al cliente, facturación y soporte técnico. "
+},
+{
+"id": 936,
+"es": "Ayuda a organizar la gestión territorial del servicio."
+},
+{
+"id": 937,
+"es": "Dentro de este apartado "
+},
+{
+"id": 938,
+"es": "y siempre que el Ámbito del Punto de Medida sea COMERCIALIZACIÓN"
+},
+{
+"id": 939,
+"es": ",  es posible asignare una Configuración TOU al punto de medida (Esta acción también es posible realizarla directamente a través de la "
+},
+{
+"id": 940,
+"es": " la primera vez que se carga el Punto de Medida). La Configuración TOU se asignará con una Fecha de Inicio a la que opcionalmente se le podrá determinar una Fecha de Fin. Esta Fecha Fin puede ser modificada si aún no ha vencido. De este modo se pueden asignar diferentes Configuraciones TOU a lo largo del tiempo."
+},
+{
+"id": 941,
+"es": "Si se desea reemplazar la configuración TOU actualmente asociada al punto, es necesario establecer una fecha fin anterior a la fecha actual de la asociación vigente. Una vez la Configuración TOU tiene asignada una fecha fin, esta puede editarse, adelantando, atrasando o eliminándose."
+},
+{
+"id": 942,
+"es": "Las fechas de vigencia de las Configuraciones TOU no pueden solaparse, por lo que la fecha de inicio de una tarifa siempre deberá ser posterior a la fecha de fin de la tarifa anterior asociada al punto y nunca igual. Esta Configuración TOU que se asigna al punto de medida será útil para el correcto funcionamiento de algunos cálculos y estimaciones, se configura en la pantalla con el mismo nombre dentro del sub-módulo \"Datos Maestros\"."
+},
+{
+"id": 943,
+"es": "Además, en este apartado se encuentra la información relativa a la facturación del Punto de Medida, comprende los siguientes apartados:"
+},
+{
+"id": 944,
+"es": "Tipo de Cálculo de Facturación"
+},
+{
+"id": 945,
+"es": ": Indica el método utilizado para calcular el consumo y el importe a facturar."
+},
+{
+"id": 946,
+"es": "Día Cierre*"
+},
+{
+"id": 947,
+"es": "Es el día del mes en que se cierra el periodo de medición para generar la factura. A partir de este día se calcula el consumo del periodo."
+},
+{
+"id": 948,
+"es": " Este campo es requerido por los procesos de cálculo: Cálculo de Cierre Diario y Cálculo de Cierre Mensual."
+},
+{
+"id": 949,
+"es": "Ciclo de Facturación"
+},
+{
+"id": 950,
+"es": ": Define la frecuencia con la que se emite la factura (mensual, bimestral, trimestral, etc.) y puede estar asociado a un grupo de clientes con fechas de cierre similares."
+},
+{
+"id": 951,
+"es": "Tipo Contrato"
+},
+{
+"id": 952,
+"es": ": Clasifica el contrato según el tipo de servicio o tarifa contratada de entre los dados de alta en el sistema."
+},
+{
+"id": 953,
+"es": "Número de Contrato"
+},
+{
+"id": 954,
+"es": ": Es el identificador único del contrato entre el cliente y la empresa distribuidora. "
+},
+{
+"id": 955,
+"es": "Se usa para gestionar y rastrear la relación contractual."
+},
+{
+"id": 956,
+"es": "Secuencia contrato"
+},
+{
+"id": 957,
+"es": ": Representa la versión del contrato, útil cuando un cliente ha tenido varias modificaciones o renovaciones del mismo contrato."
+},
+{
+"id": 958,
+"es": "En la tercera de las 7 pestañas se muestran los grupos a los que pertenece el punto. Desde la funcionalidad "
+},
+{
+"id": 959,
+"es": "“edición”"
+},
+{
+"id": 960,
+"es": ", se puede incluir o excluir el Punto de Medida de un Grupo de Puntos de Medida. En el listado del grupo se incluyen tres tipos de grupos, en función de la forma en que se le asocian Puntos de Medida:"
+},
+{
+"id": 961,
+"es": "Grupos estáticos"
+},
+{
+"id": 962,
+"es": " formados por puntos añadidos desde el listado de puntos"
+},
+{
+"id": 963,
+"es": "Grupos dinámicos"
+},
+{
+"id": 964,
+"es": " formados por puntos seleccionados mediante reglas"
+},
+{
+"id": 965,
+"es": "Grupos mixtos"
+},
+{
+"id": 966,
+"es": " formados por puntos seleccionados mediante reglas y por puntos seleccionados individualmente."
+},
+{
+"id": 967,
+"es": "Desde esta pestaña del Punto de Medida únicamente se podrán asignar a los Grupos Estáticos. La asignación de puntos a todos los tipos de Grupos de Puntos únicamente se puede realizar desde el apartado "
+},
+{
+"id": 968,
+"es": "“Grupos de Puntos de Medida” y no "
+},
+{
+"id": 969,
+"es": "desde la presente pestaña de grupos del punto de medida. Por otro lado, en la pestaña podemos encontrar las siguiente clasificación:"
+},
+{
+"id": 970,
+"es": "Sin Asignar"
+},
+{
+"id": 971,
+"es": " Grupos de puntos de medida sin asignar al Punto de Medida seleccionado: listado de los grupos de puntos dados de alta en el sistema en los que NO está incluido el punto."
+},
+{
+"id": 972,
+"es": "Asignados"
+},
+{
+"id": 973,
+"es": " Grupos de puntos de medida asignados al Punto de Medida seleccionado: listado de los grupos de puntos dados de alta en el sistema en los que SI está incluido el punto."
+},
+{
+"id": 974,
+"es": "En cualquiera de los casos, en la pestaña "
+},
+{
+"id": 975,
+"es": "“Grupos del Punto de Medida”"
+},
+{
+"id": 976,
+"es": " se reflejará a qué grupos pertenece el punto en el momento de la consulta."
+},
+{
+"id": 977,
+"es": "En esta pestaña "
+},
+{
+"id": 978,
+"es": "se establece la "
+},
+{
+"id": 979,
+"es": "Clase de Configuración"
+},
+{
+"id": 980,
+"es": " del "
+},
+{
+"id": 981,
+"es": "Punto de Medida"
+},
+{
+"id": 982,
+"es": ", que contiene el Ranking de orígenes y es "
+},
+{
+"id": 983,
+"es": "fundamental "
+},
+{
+"id": 984,
+"es": "para el correcto funcionamiento de las medidas y la realización de las Validaciones, Estimaciones y Cálculos del sistema"
+},
+{
+"id": 985,
+"es": ". Se puede encontrar más información de Clase de configuración en el apartado de \"Clase de Configuración\" dentro del sub-módulo Datos Maestros."
+},
+{
+"id": 986,
+"es": "Además de la Clase de Configuración también encontramos el apartado de Estimaciones."
+},
+{
+"id": 987,
+"es": "En esta sección se establecen los parámetros de configuración de los métodos de estimación específicos para cada punto."
+},
+{
+"id": 988,
+"es": "Valor Horario por defecto:"
+},
+{
+"id": 989,
+"es": " para el método valores constantes, se establece el valor por defecto para cada magnitud."
+},
+{
+"id": 990,
+"es": "La descripción detallada de los métodos se puede encontrar en el documento correspondiente al sub-módulo "
+},
+{
+"id": 991,
+"es": "“Estimaciones”"
+},
+{
+"id": 992,
+"es": "Muestra el apartado de Equipos asociados al Punto de Medida. Estos equipos son dispositivos físicos de recogida de información y que pueden ser de diferentes Modelos (contadores, registradores, concentradores, etc), los cuales serán cargados previamente en el sistema a través del apartado Modelos Equipo (se recomienda leer). A su vez, sirven para tratar el dato cuando se realizan distintos cálculos (estimaciones, facturación…) ya que es importante conocer cómo interpreta el equipo los datos que obtiene y si le aplica algún factor de multiplicación. La asociación entre el Punto de Medida y el Equipo es fundamental para el correcto funcionamiento de la telemedición, sin esta relación sería imposible cargar datos al sistema de forma telemática. Se pueden encontrar más detalles sobre los equipos en el módulo \""
+},
+{
+"id": 993,
+"es": "El apartado muestra una estructura con tres partes:"
+},
+{
+"id": 994,
+"es": ": En este apartado aparece el detalle del equipo asociado al Punto de Medida"
+},
+{
+"id": 995,
+"es": "Hay que tener en cuenta que una vez el equipo esté activo, la fecha de inicio de vigencia es inalterable, mientras que la fecha de fin de vigencia puede ser modificada e incluso no tener."
+},
+{
+"id": 996,
+"es": "El Punto de Medida solo podrá tener un equipo a la vez asociado, por esta razón no se podrá asociar un nuevo equipo hasta que se supere la Fecha Fin de Vigencia del equipo anterior."
+},
+{
+"id": 997,
+"es": "Del mismo modo, la Fecha de Inicio de Vigencia del nuevo equipo deberá ser al menos un segundo más que la Fecha Fin del equipo anterior."
+},
+{
+"id": 998,
+"es": "Además se encuentran el campo "
+},
+{
+"id": 999,
+"es": "Estado "
+},
+{
+"id": 1000,
+"es": "que identifica el estado actual del equipo asociado."
+},
+{
+"id": 1001,
+"es": "Histórico de Vigencias de Equipos"
+},
+{
+"id": 1002,
+"es": ": El listado muestra el histórico de los equipos que han estado o están asociados al Punto de Medida."
+},
+{
+"id": 1003,
+"es": "Últimas Lecturas"
+},
+{
+"id": 1004,
+"es": ": Detalle del último dato de medición registrado, diferenciado por su tipo: Perfil de Carga, Perfil de Carga Absoluto, Registro de Cierre, etc. Cada dato de medición viene acompañado de su fecha de registro, valor, magnitud, origen y versión"
+},
+{
+"id": 1005,
+"es": "Tabla de registro de modificaciones sobre el punto de medida. Se pueden consultar, para cada fecha de modificación, todas las pestañas de características del punto."
+},
+{
+"id": 1006,
+"es": "Los Puntos de Medida pueden ser cargadas a través de fichero, este proceso se explica detalladamente en el apartado de carga TPL de inventario: "
+},
+{
+"id": 1007,
+"es": "Detalle Grupo de Puntos de Medida"
+},
+{
+"id": 1008,
+"es": "Los grupos son conjuntos de puntos esta clasificación permite realizar más fácilmente los mismos procesos sobre todos ellos (validaciones, estimaciones, cálculos...) y establecer relaciones con la entidad Instalación. Tanto la ejecución manual como planificada de estos procesos se pueden programar para los grupos de puntos. "
+},
+{
+"id": 1009,
+"es": "La asociación de Puntos de Medida a los grupos puede ser de dos formas:"
+},
+{
+"id": 1010,
+"es": "Dinámica"
+},
+{
+"id": 1011,
+"es": ": Esta asociación hace honor a su nombre al asociarse o no de forma automática en función de una serie de Reglas de Asociación que se configuran en el Grupo de Puntos de Medida. Las "
+},
+{
+"id": 1012,
+"es": "Reglas de Asociación"
+},
+{
+"id": 1013,
+"es": " atienden a una Propiedad del Punto de Medida, una Función y un Valor de dicha Propiedad. De este modo se elabora una condición que se debe cumplir para que el Punto de Medida pertenezca al Grupo."
+},
+{
+"id": 1014,
+"es": "Estática"
+},
+{
+"id": 1015,
+"es": " Esta asociación se realiza de forma manual en el Grupo de Puntos o en el propio Punto de medida. Esta asociación es totalmente subjetiva e indefinida, hasta que se deshaga de nuevo, manualmente. Además, esta asociación es la única que se permite mediante carga de ficheros."
+},
+{
+"id": 1016,
+"es": "Los grupos de puntos se identifican mediante su código, y pueden llevar asociada una descripción. En los detalles de cada Grupo se podrán consultar los puntos que engloba, mientras que en los Detalles de Punto de Medida podrá consultarse a qué grupos pertenece un Punto de Medida específico. En la edición se podrán modificar estas asociaciones."
+},
+{
+"id": 1017,
+"es": "El apartado Grupo de Puntos de Medida recoge todos los Grupos de Puntos de Medida dados de alta en el sistema, con sus características (reglas de asociación y Puntos de Medida)."
+},
+{
+"id": 1018,
+"es": "Dispone de dos (2) filtros no obligatorios a rellenar (Código y Punto de Medida)"
+},
+{
+"id": 1019,
+"es": "Botones: buscar, crear, detalle, editar, exportar y eliminar. Funcionalidades para gestionar los Grupos, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 1020,
+"es": "Lista de Grupos:"
+},
+{
+"id": 1021,
+"es": "En la tabla puede consultarse el listado de Grupos filtrados o no por los parámetros mencionados previamente."
+},
+{
+"id": 1022,
+"es": "Nº de Puntos: Número de Puntos de Medida que contiene el Grupo."
+},
+{
+"id": 1023,
+"es": "Nº Reglas: Número de Reglas de asociación que contiene el número."
+},
+{
+"id": 1024,
+"es": "Por defecto, al no haber ningún filtro obligatorio de rellenar antes de realizar una búsqueda, el sistema devuelve una lista con todos los Grupos que hay dados de alta en el sistema."
+},
+{
+"id": 1025,
+"es": "Filtrando por los filtros mencionados anteriormente se obtiene una lista de Grupos que cumplen con esos criterios de entrada."
+},
+{
+"id": 1026,
+"es": "Introduciendo obligatoriamente el "
+},
+{
+"id": 1027,
+"es": "Introduciendo otro parámetro No Obligatorio "
+},
+{
+"id": 1028,
+"es": "“Descripción"
+},
+{
+"id": 1029,
+"es": ", en el que se explica el objeto del Grupo de Medida."
+},
+{
+"id": 1030,
+"es": "Introduciendo para que se pueda trabajar con él dentro de la funcionalidad directa Editar"
+},
+{
+"id": 1031,
+"es": "Añadir Puntos de Medida"
+},
+{
+"id": 1032,
+"es": " individualmente o en grupo a través de reglas de asociación."
+},
+{
+"id": 1033,
+"es": "Permite visualizar un Grupo de la lista en profundidad, mostrando las características mencionadas en el punto anterior. "
+},
+{
+"id": 1034,
+"es": "Pantalla mostrada en el punto siguiente."
+},
+{
+"id": 1035,
+"es": "Editar cualquier característica del Grupo seleccionado de la lista de Grupos, así como incluir Puntos de Medida individualmente o en grupo en base a reglas de asociación que cumplan uno o varios Puntos de Medida (por ejemplo, propietario de punto…)"
+},
+{
+"id": 1036,
+"es": "Permite devolver la lista de Grupos presente en cualquier idioma (ESP, ING…) y formato (HTML, EXCEL, WORD…)"
+},
+{
+"id": 1037,
+"es": "Eliminar cualquier Grupo de Puntos de Medida dado de alta en el sistema."
+},
+{
+"id": 1038,
+"es": "*Para poder eliminar un Grupo de Puntos de Medida, previamente se deberá eliminar cualquier relación creada entre el mismo y otros elementos."
+},
+{
+"id": 1039,
+"es": "El acceso se produce según se describe en la funcionalidad "
+},
+{
+"id": 1040,
+"es": "“Detalle”"
+},
+{
+"id": 1041,
+"es": "La pestaña "
+},
+{
+"id": 1042,
+"es": "“Detalle Grupo de Puntos de Medida”"
+},
+{
+"id": 1043,
+"es": " muestra las cara"
+},
+{
+"id": 1044,
+"es": "cterísticas ini"
+},
+{
+"id": 1045,
+"es": "ciales del Grupo, así como las reglas de asociación y Puntos de Medida que lleva ligados. La pestaña se divide en 3 partes que visualizan lo siguiente:"
+},
+{
+"id": 1046,
+"es": "Código y descripción"
+},
+{
+"id": 1047,
+"es": "Reglas de asociación"
+},
+{
+"id": 1048,
+"es": "Propiedad Punto de Medida"
+},
+{
+"id": 1049,
+"es": ": En primer lugar, para elaborar la regla, se debe seleccionar una la Propiedad del Punto de Medida a la que irá asociada:"
+},
+{
+"id": 1050,
+"es": "Clase de Cliente"
+},
+{
+"id": 1051,
+"es": "Código Alternativo"
+},
+{
+"id": 1052,
+"es": "Código cliente"
+},
+{
+"id": 1053,
+"es": "Código de actividad"
+},
+{
+"id": 1054,
+"es": "Código Tarifa"
+},
+{
+"id": 1055,
+"es": "Configuración de Telemetría"
+},
+{
+"id": 1056,
+"es": "Elemento de Red"
+},
+{
+"id": 1057,
+"es": "Elemento de Red Padre"
+},
+{
+"id": 1058,
+"es": "Estado"
+},
+{
+"id": 1059,
+"es": "Fecha de Baja"
+},
+{
+"id": 1060,
+"es": "Fecha de Creación"
+},
+{
+"id": 1061,
+"es": "Modelos de Equipos"
+},
+{
+"id": 1062,
+"es": "Nivel del Área de Control"
+},
+{
+"id": 1063,
+"es": "Oficinas Comerciales"
+},
+{
+"id": 1064,
+"es": "Potencia contratada"
+},
+{
+"id": 1065,
+"es": "Responsable"
+},
+{
+"id": 1066,
+"es": "Tensión de línea"
+},
+{
+"id": 1067,
+"es": "Tipo de Contrato"
+},
+{
+"id": 1068,
+"es": "Tipo de Red"
+},
+{
+"id": 1069,
+"es": "Tipo perfil"
+},
+{
+"id": 1070,
+"es": "Tipos de Equipos"
+},
+{
+"id": 1071,
+"es": "Zona"
+},
+{
+"id": 1072,
+"es": "Función"
+},
+{
+"id": 1073,
+"es": ": Después una función de entre las siguientes:"
+},
+{
+"id": 1074,
+"es": "Igual a"
+},
+{
+"id": 1075,
+"es": "Diferente de"
+},
+{
+"id": 1076,
+"es": "Contiene"
+},
+{
+"id": 1077,
+"es": "No contiene"
+},
+{
+"id": 1078,
+"es": "Nulo"
+},
+{
+"id": 1079,
+"es": "No nulo"
+},
+{
+"id": 1080,
+"es": "Valor"
+},
+{
+"id": 1081,
+"es": ": Por último un valor alfanumérico o seleccionable entre las opciones que se encuentren en el sistema."
+},
+{
+"id": 1082,
+"es": "Como podemos observar en la siguiente imagen, las reglas de asociación pueden ser útiles para agrupar puntos de medida en función de algunas de sus características:"
+},
+{
+"id": 1083,
+"es": " (Incluye tanto los asociados estática como dinámicamente)"
+},
+{
+"id": 1084,
+"es": "“Gestión de Equipos”"
+},
+{
+"id": 1085,
+"es": " incluye los equipos físicos destinados a la recogida y envío de medidas al sistema."
+},
+{
+"id": 1086,
+"es": "Modelos de equipo"
+},
+{
+"id": 1087,
+"es": "Tipos de equipo."
+},
+{
+"id": 1088,
+"es": "Grupos de equipos."
+},
+{
+"id": 1089,
+"es": "Módulo de Equipos"
+},
+{
+"id": 1090,
+"es": "Atributos Básicos de los equipos"
+},
+{
+"id": 1091,
+"es": "Detalle funcionalidad de los Equipos"
+},
+{
+"id": 1092,
+"es": "Histórico de estados"
+},
+{
+"id": 1093,
+"es": "Asociación del Equipo al Equipo Padre"
+},
+{
+"id": 1094,
+"es": "Histórico Asignaciones del Equipo"
+},
+{
+"id": 1095,
+"es": "Configuración de Telemedición"
+},
+{
+"id": 1096,
+"es": "Identificación y gestión de estados"
+},
+{
+"id": 1097,
+"es": "Estado de Ubicación"
+},
+{
+"id": 1098,
+"es": "Estado de Operación"
+},
+{
+"id": 1099,
+"es": "Estado de Comunicación"
+},
+{
+"id": 1100,
+"es": "El presente apartado muestra uno de los elementos fundamentales del sistema. Los equipos son dispositivos físicos de recogida de información que se asignan a los Puntos de Medida para que el sistema reciba y clasifique dicha información a través de la telemedición, sin el equipo no se puede realizar. Además, los equipos pueden ser de diferentes Modelos que se recogen en la pestaña de Modelos de Equipo y se deben de haber cargado previamente en el sistema. En la ventana "
+},
+{
+"id": 1101,
+"es": "“Equipos”"
+},
+{
+"id": 1102,
+"es": " se dan de alta los equipos, se visualizan y se trabaja con ellos."
+},
+{
+"id": 1103,
+"es": "El apartado, muestra una estructura con dos (2) partes:"
+},
+{
+"id": 1104,
+"es": "Dispone de seis (6) filtros no obligatorios a rellenar (Servicio. Tipo de equipo, Modelo Equipo, Código, Estado y Nº Serie)"
+},
+{
+"id": 1105,
+"es": "Botones: buscar, crear, detalle, editar, exportar y eliminar. Funcionalidades para gestionar los Equipos, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 1106,
+"es": "Lista de Equipos"
+},
+{
+"id": 1107,
+"es": "En la tabla puede consultarse el listado de Equipos filtrados o no por parámetros."
+},
+{
+"id": 1108,
+"es": "Por defecto, al no haber ningún filtro obligatorio de rellenar antes de realizar una búsqueda, el sistema devuelve una lista con todos los Equipos que hay dados de alta en el sistema."
+},
+{
+"id": 1109,
+"es": "Filtrando por los filtros mencionados anteriormente se obtiene una lista de Equipos que cumplen con esos criterios de entrada."
+},
+{
+"id": 1110,
+"es": "Introduciendo obligatoriamente Código, Nº Dígitos enteros, Nº Dígitos decimales, Modelo Equipo, Nº de Serie, Fecha Creación y Propiedades."
+},
+{
+"id": 1111,
+"es": "Introduciendo otros parámetros no obligatorios aumentarán las funcionalidades y riqueza del sistema con este elemento como la Fecha de Baja, Intensidad­­­­­"
+},
+{
+"id": 1112,
+"es": ", Potencia"
+},
+{
+"id": 1113,
+"es": ", Ubicación, Almacén,…"
+},
+{
+"id": 1114,
+"es": "Permite visualizar un Equipo de la lista en profundidad, mostrando las características mencionadas en el punto anterior. "
+},
+{
+"id": 1115,
+"es": "Pantalla mostrada en el punto siguiente: "
+},
+{
+"id": 1116,
+"es": "Detalle Equipos."
+},
+{
+"id": 1117,
+"es": "Editar cualquier característica del Equipo seleccionado de la lista de Equipos."
+},
+{
+"id": 1118,
+"es": "General KML"
+},
+{
+"id": 1119,
+"es": "La lista de Equipos será exportada en formato “"
+},
+{
+"id": 1120,
+"es": "” con los datos del Equipo."
+},
+{
+"id": 1121,
+"es": "Eliminar cualquier Equipo dado de alta en el sistema"
+},
+{
+"id": 1122,
+"es": "*Solo podrá ser eliminado un equipo, cuando históricamente no haya sido instalado en algún Punto de Medida."
+},
+{
+"id": 1123,
+"es": "Los Equipos cuentan con una serie de atributos básicos que son los siguientes:"
+},
+{
+"id": 1124,
+"es": " [obligatorio]: "
+},
+{
+"id": 1125,
+"es": "Referencia del equipo"
+},
+{
+"id": 1126,
+"es": "Nombre con el que se identifica el equipo"
+},
+{
+"id": 1127,
+"es": "Fecha de fabricación"
+},
+{
+"id": 1128,
+"es": " [obligatorio]: cada equipo debe contar con una fecha de fabricación."
+},
+{
+"id": 1129,
+"es": "De entre los dados de alta en el sistema."
+},
+{
+"id": 1130,
+"es": "De entre los configurados previamente en el sistema"
+},
+{
+"id": 1131,
+"es": "Modelo de equipo"
+},
+{
+"id": 1132,
+"es": " [obligatorio] "
+},
+{
+"id": 1133,
+"es": "( Modelos Equipo) "
+},
+{
+"id": 1134,
+"es": "necesario haber sido dado de alta en el sistema previamente."
+},
+{
+"id": 1135,
+"es": "Nº Serie"
+},
+{
+"id": 1136,
+"es": " Número de serie del equipo."
+},
+{
+"id": 1137,
+"es": ": indica la situación del equipo en un determinado momento. "
+},
+{
+"id": 1138,
+"es": "Se explica con detalle más abajo."
+},
+{
+"id": 1139,
+"es": "indica la conectividad con el equipamiento de campo."
+},
+{
+"id": 1140,
+"es": "Una vez se haya dado de alta el Equipo, se podrá acceder al detalle del mismo, en él no solo se visualizan las pestañas de atributos Básica, General y de Telemedición, sino que aparecerán dos pestañas más, la de Órdenes y Errores, y la de Históricos. Estas dos pestañas tienen la funcionalidad de almacenar las interacciones del equipo con el entorno y las iteraciones de los usuarios con el equipo. La ventana que se abre automáticamente tras seleccionar la opción "
+},
+{
+"id": 1141,
+"es": "y lleva por nombre "
+},
+{
+"id": 1142,
+"es": "“Detalle Equipos”"
+},
+{
+"id": 1143,
+"es": " muestra las características del Equipo seleccionado que aparecen en la imagen adjunta:"
+},
+{
+"id": 1144,
+"es": "A parte de estos atributos, los equipos cuentan con otros atributos generales, que ayudan a definir aún más el equipo:"
+},
+{
+"id": 1145,
+"es": " [obligatorio]: "
+},
+{
+"id": 1146,
+"es": "indica el estado del equipo en cuento a su asociación al punto de medida y su situación dentro del ciclo de medición / comercial. "
+},
+{
+"id": 1147,
+"es": "Fecha de Adquisición"
+},
+{
+"id": 1148,
+"es": ": Esta fecha de baja no tiene un flujo asignado, por lo que es una fecha puramente informativa."
+},
+{
+"id": 1149,
+"es": ": Para establecer el equipo en el Mapa."
+},
+{
+"id": 1150,
+"es": "Equipo Padre"
+},
+{
+"id": 1151,
+"es": ": Al equipo es posible asociarle un equipo padre siempre que no sea Legacy. Esta opción es necesaria en algunos equipos para su correcto funcionamiento."
+},
+{
+"id": 1152,
+"es": "Motivo de baja"
+},
+{
+"id": 1153,
+"es": "Avería, obsoleto u Otros"
+},
+{
+"id": 1154,
+"es": "Fichero "
+},
+{
+"id": 1155,
+"es": "(PDF. o .MAPPING)"
+},
+{
+"id": 1156,
+"es": ": Propiedades técnicas del equipo. Se indican con detalle a continuación, en el apartado de Propiedades."
+},
+{
+"id": 1157,
+"es": "Fecha de comunicación"
+},
+{
+"id": 1158,
+"es": ": Esta fecha aparece cuando el equipo tiene Telemedición activa y con el protocolo STG. Al asignarle un Equipo Padre se registrará la fecha en este campo. "
+},
+{
+"id": 1159,
+"es": "Dentro de este apartado podemos encontrar un histórico que recoge todos los cambios de estado de operación del equipo que se hayan llevado a cabo."
+},
+{
+"id": 1160,
+"es": "Dentro de la vista General, esta contiene un listado de los equipos que son o han sido asociados como Equipos Padre al Equipo."
+},
+{
+"id": 1161,
+"es": "La vista general contiene un histórico a modo de consulta que nos permite ver las relaciones que ha tenido el equipo, concretamente con los Puntos de Medida. "
+},
+{
+"id": 1162,
+"es": "En este apartado aparecerá la información técnica del equipo que haya sido definida:"
+},
+{
+"id": 1163,
+"es": "NOMINAL-VOLTAGE"
+},
+{
+"id": 1164,
+"es": ": Tensión estándar a la que opera el equipo."
+},
+{
+"id": 1165,
+"es": "REFERENCE-FREQUENCY"
+},
+{
+"id": 1166,
+"es": ": Frecuencia base utilizada para el funcionamiento y calibración del equipo."
+},
+{
+"id": 1167,
+"es": "REFERENCE-CURRENT"
+},
+{
+"id": 1168,
+"es": ": Corriente de referencia para la medición precisa de parámetros eléctricos."
+},
+{
+"id": 1169,
+"es": "ACTIVE-CONSTANT"
+},
+{
+"id": 1170,
+"es": ": Factor de conversión para calcular energía activa (kWh) a partir de impulsos."
+},
+{
+"id": 1171,
+"es": "REACTIVE-CONSTANT"
+},
+{
+"id": 1172,
+"es": ": Factor de conversión para calcular energía reactiva (kvarh) a partir de impulsos."
+},
+{
+"id": 1173,
+"es": "LIFE-BARRETY"
+},
+{
+"id": 1174,
+"es": ": Duración estimada de la batería del equipo en condiciones normales de uso."
+},
+{
+"id": 1175,
+"es": "COMMUNICATION-TYPE"
+},
+{
+"id": 1176,
+"es": ": Tecnología de comunicación utilizada (ej. "
+},
+{
+"id": 1177,
+"es": "RS-485, PLC, RF, etc.)."
+},
+{
+"id": 1178,
+"es": "MAIN-PROFILE-TYPE"
+},
+{
+"id": 1179,
+"es": ": Tipo de perfil de datos principal que registra el equipo (ej. carga, energía, eventos)."
+},
+{
+"id": 1180,
+"es": "En el caso de tratarse de un "
+},
+{
+"id": 1181,
+"es": "Electric Smart Meter, "
+},
+{
+"id": 1182,
+"es": "el equipo además podrá contar con las siguientes propiedades,"
+},
+{
+"id": 1183,
+"es": "que servirán para su conexión con el sistema "
+},
+{
+"id": 1184,
+"es": "HES:"
+},
+{
+"id": 1185,
+"es": "RELAY-STATUS"
+},
+{
+"id": 1186,
+"es": ": Estado actual del relé del equipo (activado/desactivado)."
+},
+{
+"id": 1187,
+"es": "LOAD-LIMITATION"
+},
+{
+"id": 1188,
+"es": ": Capacidad del equipo para limitar la carga conectada según parámetros definidos."
+},
+{
+"id": 1189,
+"es": "NET-METERING"
+},
+{
+"id": 1190,
+"es": ": indica si el Net-Metering Mode está activado o no, es un comportamiento de seguridad cuando se detecta un Current Reverse."
+},
+{
+"id": 1191,
+"es": "LAST-PING"
+},
+{
+"id": 1192,
+"es": ": Fecha y hora del último intento exitoso de comunicación con el equipo."
+},
+{
+"id": 1193,
+"es": "LAST-SYNCH"
+},
+{
+"id": 1194,
+"es": ": Fecha y hora de la última sincronización de datos o reloj del equipo."
+},
+{
+"id": 1195,
+"es": "El equipo también puede contar con una configuración de telemedición. "
+},
+{
+"id": 1196,
+"es": "La configuración se determina mediante los siguientes puntos:"
+},
+{
+"id": 1197,
+"es": "Tipo de medición"
+},
+{
+"id": 1198,
+"es": ": Directa o Indirecta, lo que determina si la información que maneja se manda directamente al sistema o se realiza a través de otro equipo."
+},
+{
+"id": 1199,
+"es": ": Protocolo que utiliza para la comunicación (PRIME STG o DLMS). En el caso en que el protocolo sea DLMS, será específica del mismo y para este equipo sobrescribirá la información por defecto del protocolo DLMS, es decir, se toma como prioritaria la información presente en este apartado del Equipo. De este modo, se podrán definir los siguientes parámetros del protocolo:"
+},
+{
+"id": 1200,
+"es": "AUTHENTICATION"
+},
+{
+"id": 1201,
+"es": "USE-SERIAL-NUMBER-ADDRESSING"
+},
+{
+"id": 1202,
+"es": "USE-LOGICAL-NAME-REFERENCING"
+},
+{
+"id": 1203,
+"es": "INVOCATION-COUNTER"
+},
+{
+"id": 1204,
+"es": "SYSTEM-TITLE"
+},
+{
+"id": 1205,
+"es": "BLOCK-CIPHER-KEY"
+},
+{
+"id": 1206,
+"es": "CLIENT-ADDRESS"
+},
+{
+"id": 1207,
+"es": "PASSWORD"
+},
+{
+"id": 1208,
+"es": "SERIAL-NUMBER"
+},
+{
+"id": 1209,
+"es": "INVOCATION-COUNTER-LN"
+},
+{
+"id": 1210,
+"es": "SECURITY"
+},
+{
+"id": 1211,
+"es": "SECURITY-SUITE"
+},
+{
+"id": 1212,
+"es": "AUTHENTICATION-KEY"
+},
+{
+"id": 1213,
+"es": "INTERFACE-TYPE"
+},
+{
+"id": 1214,
+"es": "SERVER-ADDRESS"
+},
+{
+"id": 1215,
+"es": "Cada uno de los parámetros se detalla en la documentación dentro del apartado de Generalidades: "
+},
+{
+"id": 1216,
+"es": "Dentro del apartado DLMS."
+},
+{
+"id": 1217,
+"es": "En el caso en que la comunicación sea Directa, se necesitan definir los siguientes parámetros:"
+},
+{
+"id": 1218,
+"es": "Tipo de Equipo de Com. Remoto Principal"
+},
+{
+"id": 1219,
+"es": ": Para determinar el tipo de equipo de comunicaciones que se va a asociar."
+},
+{
+"id": 1220,
+"es": "Equipo de Com. Remoto Principal"
+},
+{
+"id": 1221,
+"es": ": Para seleccionar el equipo de comunicaciones al que va a estar asociado y a través del cuál se va a comunicar."
+},
+{
+"id": 1222,
+"es": "En este apartado se refleja el histórico de cualquiera de las modificaciones que haya tenido el equipo para su consulta."
+},
+{
+"id": 1223,
+"es": "Identificación y gestión de estados "
+},
+{
+"id": 1224,
+"es": "Mediante esta funcionalidad, se da cobertura a los requerimientos de los de producto para tener una gestión de equipos coherente y flexible, en cuanto a su ubicación y estado."
+}
+]

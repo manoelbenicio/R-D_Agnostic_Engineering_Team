@@ -1,0 +1,2534 @@
+[
+{
+"id": 5175,
+"es": ". El estado se va actualizando en tiempo real hasta su finalización. En caso de que el proceso esté formado por varias tareas, el estado del mismo será el más restrictivo de las anteriores."
+},
+{
+"id": 5176,
+"es": "Error/Total (Avisos):"
+},
+{
+"id": 5177,
+"es": " Número de alertas generadas por el sistema durante la ejecución del proceso."
+},
+{
+"id": 5178,
+"es": "Estados del Proceso"
+},
+{
+"id": 5179,
+"es": "Dado que el monitor se actualiza en tiempo real, cada proceso sigue un workflow de estados:"
+},
+{
+"id": 5180,
+"es": " El proceso aún no ha comenzado. Se encuentra encolado."
+},
+{
+"id": 5181,
+"es": "En Construcción"
+},
+{
+"id": 5182,
+"es": ": Estado en el que se encuentra el proceso durante la construcción de las tareas que lo componen."
+},
+{
+"id": 5183,
+"es": "En Proceso"
+},
+{
+"id": 5184,
+"es": ": El proceso se encuentra en ejecución."
+},
+{
+"id": 5185,
+"es": "Finalizado: "
+},
+{
+"id": 5186,
+"es": "El proceso ha finalizado y todas sus tareas han concluido con éxito."
+},
+{
+"id": 5187,
+"es": "Finalizado con Error"
+},
+{
+"id": 5188,
+"es": ". El proceso ha finalizado, pero al menos una de sus tareas ha terminado con errores."
+},
+{
+"id": 5189,
+"es": "Detalle Monitor de Ficheros"
+},
+{
+"id": 5190,
+"es": "Si accedemos al detalle de cada proceso podemos ver las "
+},
+{
+"id": 5191,
+"es": "tareas "
+},
+{
+"id": 5192,
+"es": "correspondientes (una por cada fichero a generar) y la información correspondiente sobre el estado y la ejecución de las mismas."
+},
+{
+"id": 5193,
+"es": "Si procede la generación de archivos, el monitor de ficheros muestra los archivos que se han generado desde el sistema, de manera manual o automática, a lo largo del tiempo."
+},
+{
+"id": 5194,
+"es": "Dentro de la pantalla de detalle podemos acceder al contenido del fichero generado, descargándolo en un fichero de texto plano, o visualizándolo haciendo click sobre el botón de visualización."
+},
+{
+"id": 5195,
+"es": "Esta funcionalidad monitoriza todos los procesos ejecutados tanto de forma manual como automática de las interfaces de E/S con terceros, en el sistema Onesait Metering."
+},
+{
+"id": 5196,
+"es": "Al igual que el monitor de ficheros, permite trazar cada proceso, identificando el usuario/sistema encargado de su ejecución, el resultado del mismo, el tiempo transcurrido hasta su finalización, y los posibles avisos generados."
+},
+{
+"id": 5197,
+"es": "Permite el seguimiento de procesos, identificando:"
+},
+{
+"id": 5198,
+"es": "los sistemas de origen y destino"
+},
+{
+"id": 5199,
+"es": "de Tipo de Operación: Lectura, Escritura o Ejecución"
+},
+{
+"id": 5200,
+"es": "el usuario/sistema encargado de su ejecución"
+},
+{
+"id": 5201,
+"es": "nombre del proceso"
+},
+{
+"id": 5202,
+"es": "datos enviados o recibidos"
+},
+{
+"id": 5203,
+"es": "el tiempo transcurrido hasta su finalización"
+},
+{
+"id": 5204,
+"es": "los posibles avisos generados"
+},
+{
+"id": 5205,
+"es": "el resultado, que sigue un workflow de estados"
+},
+{
+"id": 5206,
+"es": "Segun el tipo de operación y sistemas impactados, el listado nos ofrece las transacciones:"
+},
+{
+"id": 5207,
+"es": "Se permite consultar el "
+},
+{
+"id": 5208,
+"es": "Detalle "
+},
+{
+"id": 5209,
+"es": "de cada proceso, con información específica del proceso que nos deja ver los datos enviados o recibidos"
+},
+{
+"id": 5210,
+"es": "Comandos "
+},
+{
+"id": 5211,
+"es": "son las órdenes que se envían desde "
+},
+{
+"id": 5212,
+"es": " a los "
+},
+{
+"id": 5213,
+"es": "Smart Meters"
+},
+{
+"id": 5214,
+"es": " telecontrolados mediante un HES, con el fin de ejecutar una acción específica. Estas órdenes pueden ser recibidas desde el sistema Comercial (CIS) o bien ser generadas desde el propio OM."
+},
+{
+"id": 5215,
+"es": "En el apartado "
+},
+{
+"id": 5216,
+"es": " se encuentra la información necesaria sobre la integración del sistema OUM con sistemas HES y CIS."
+},
+{
+"id": 5217,
+"es": "Comandos (Integración HES)"
+},
+{
+"id": 5218,
+"es": "Ejecución Manual (Integración HES)"
+},
+{
+"id": 5219,
+"es": "Planificador"
+},
+{
+"id": 5220,
+"es": "Monitor de Comandos"
+},
+{
+"id": 5221,
+"es": "Proceso de Ejecución de Comandos"
+},
+{
+"id": 5222,
+"es": "Esta vista presenta un catálogo de los comandos configurados de acuerdo a las necesidades de cada proyecto. Es una ventana únicamente de consulta, donde se permite exportar el listado completo de comandos y acceder al detalle de cada uno de ellos. El listado completo de cada comando y su definición y estructura en detalle se describen en el siguiente enlace: "
+},
+{
+"id": 5223,
+"es": "El Producto OUM permite la ejecución manual de Comandos a demanda del usuario en el momento que se precise. La pantalla principal es:"
+},
+{
+"id": 5224,
+"es": "Para realizar la ejecución manual, se requiere completar la siguiente información:"
+},
+{
+"id": 5225,
+"es": "Comandos: Desplegable donde se muestra un listado de los disitntos comandos configurados. Una vez seleccionado el comando, se deberá 'añadir' pulsando en el botón"
+},
+{
+"id": 5226,
+"es": "Parámetros del Comando"
+},
+{
+"id": 5227,
+"es": ": Según el comando seleccionado para su ejecución, el sistema mostrará automáticamente los campos necesarios a configurar para completar el proceso."
+},
+{
+"id": 5228,
+"es": "Punto de medida: Listado de todos los puntos de medida configurados en el sistema. El comando se ejecutará para el Punto de medida seleccionado."
+},
+{
+"id": 5229,
+"es": "Grupo de puntos de medida: Listado de todos los grupos de puntos de medida configurados en el sistema. El comando se ejecutará para todos los puntos de medida que estén incluidos en el grupo seleccionado."
+},
+{
+"id": 5230,
+"es": "Una vez completados todos los campos y al pulsar el botón Ejecutar, se notificará que la ejecución se ha lanzado con éxito y el proceso aparecerá en el monitor de Informes con tipo de ejecución manual."
+},
+{
+"id": 5231,
+"es": "El Planificador de Comandos del Producto OUM es la herramienta que permite establecer las ejecuciones programadas de los distintos comandos configurados en cada proyecto. Esta ejecución se realizará de acuerdo a la frecuencia establecida por el usuario a la hora de configurar el mismo. La pantalla principal es:"
+},
+{
+"id": 5232,
+"es": ": Grupo seleccionado para el que se va a ejecutar el/los comandos seleccionados en el planificador."
+},
+{
+"id": 5233,
+"es": ": Punto de medida para el que se va a ejecutar el/los comandos seleccionados en el planificador."
+},
+{
+"id": 5234,
+"es": "Crear Planificador de Comandos"
+},
+{
+"id": 5235,
+"es": "Punto de medida: Listado "
+},
+{
+"id": 5236,
+"es": "donde se muestran todos los puntos de medida configurados en el sistema. Una vez seleccionado el punto de medida, se deberá 'añadir' pulsando en el botón"
+},
+{
+"id": 5237,
+"es": "Grupo de puntos de medida: Todos los grupos de puntos de medida aparecen en la columna de la izquierda. Para ejecutar el planificador sobre un punto de medida, se deberá seleccionar el grupo deseado y pulsar el botón "
+},
+{
+"id": 5238,
+"es": ". De esta manera el grupo aparecerá en la columna de la derecha. Se pueden seleccionar tantos grupos de puntos de medida como haya registrados. Se pueden añadir todos directamente pulsando el botón "
+},
+{
+"id": 5239,
+"es": ". De la misma manera, para eliminar grupos de puntos de medida, se utilizarán los botones contrarios a los anteriores."
+},
+{
+"id": 5240,
+"es": "Comandos: Desplegable donde se muestra un listado de los disitntos comandos configurados. Una vez seleccionado el comando, se deberá 'añadir' pulsando en el botón"
+},
+{
+"id": 5241,
+"es": "Una vez completada toda la información, pulsar el botón GUARDAR para terminar la transacción."
+},
+{
+"id": 5242,
+"es": "Editar Planificador de Comandos"
+},
+{
+"id": 5243,
+"es": "Seleccionando el Planificador que se quiera modificar y pulsando el botón EDITAR, el sistema abrirá la ventana "
+},
+{
+"id": 5244,
+"es": "Editar Planificador de Comandos."
+},
+{
+"id": 5245,
+"es": "Ejecutar Planificador de Comandos"
+},
+{
+"id": 5246,
+"es": "Al ejecutar un planificador de forma manual se actualizará automáticamente la fecha de última ejecución y, en consecuencia, según la planificación seleccionada, puede verse afectada la fecha de próxima ejecución. Los procesos lanzados de esta manera aparecerán en el monitor de comandos como procesos ejecutados de forma manual."
+},
+{
+"id": 5247,
+"es": "El Monitor de Comandos supervisa todos los procesos ejecutados tanto manual como automáticamente en el sistema. El monitor permite rastrear cada proceso, identificando al usuario o sistema responsable de su ejecución, el resultado del proceso, el tiempo transcurrido hasta su finalización y cualquier advertencia generada."
+},
+{
+"id": 5248,
+"es": "Tipo de ejecución: Manual o Automática"
+},
+{
+"id": 5249,
+"es": "Ejecución Tareas Comandos"
+},
+{
+"id": 5250,
+"es": ": En esta sección se muestra el estado de cada uno de los comandos ejecutados durante un mismo proceso (cuando se ha lanzado una ejecución manual de varios comandos o cuando se haya ejecutado un planificador en el que hay configuradas más de un comando). Permite además exportar la lista de los mismos y el detalle de cada proceso. Además, muestra la siguiente información sobre el proceso de generación de Informes para cada uno de ellos:"
+},
+{
+"id": 5251,
+"es": "Punto de medida: Para el que se ha ejecutado el comando"
+},
+{
+"id": 5252,
+"es": "Método: Comando ejecutado"
+},
+{
+"id": 5253,
+"es": "Fecha inicio"
+},
+{
+"id": 5254,
+"es": "Fecha fin"
+},
+{
+"id": 5255,
+"es": "Además, haciendo doble click en cualquiera de los comandos que aparecen en esta sección, el sistema despliega la pantalla "
+},
+{
+"id": 5256,
+"es": "Detalle Ejecución Tarea Comando, "
+},
+{
+"id": 5257,
+"es": "donde se pueden ver las trazas de ejecución del proceso."
+},
+{
+"id": 5258,
+"es": "Se describe a continuación la secuencia de procesos seguida para la ejecución de comandos en su integración con HES"
+},
+{
+"id": 5259,
+"es": "MDM "
+},
+{
+"id": 5260,
+"es": "Inicio del proceso (manual o automático):"
+},
+{
+"id": 5261,
+"es": "- El comando puede ser iniciado por un usuario desde la interfaz OM o por un sistema externo."
+},
+{
+"id": 5262,
+"es": "Manualmente: el usuario ejecuta un comando de forma directa desde la interfaz de OM."
+},
+{
+"id": 5263,
+"es": "Automáticamente: se recibe una petición de un sistema externo que desencadena la ejecución del comando."
+},
+{
+"id": 5264,
+"es": "ExecutorCommandJob:"
+},
+{
+"id": 5265,
+"es": "- Recupera tareas de comandos en estado READY.- Cambia su estado a BUILDING.- Publica los IDs de las tareas en un tópico Kafka."
+},
+{
+"id": 5266,
+"es": "ProcessCommandTask:"
+},
+{
+"id": 5267,
+"es": "- Consume los IDs publicados.- Valida que el ID sea correcto.- Cambia el estado de la tarea a RUNNING.- Ejecuta el comando y lo finaliza con un estado (TERMINATED, ERROR, etc.)."
+},
+{
+"id": 5268,
+"es": "HesService"
+},
+{
+"id": 5269,
+"es": "- Verifica la existencia del punto de medida y del comando.- Busca el equipo sobre el que se ejecutará el comando.- Genera el comando con los parámetros adecuados.- Inicializa la interfaz de salida.- Envía el comando a través de Kafka."
+},
+{
+"id": 5270,
+"es": "Kafka (Mensajería en Streaming)"
+},
+{
+"id": 5271,
+"es": "Tópico de envío de comando:"
+},
+{
+"id": 5272,
+"es": "- [hes_prefix-]oum_mdc_command-request- Kafka transmite el comando al sistema HES."
+},
+{
+"id": 5273,
+"es": "Tópico de recepción de ACK:"
+},
+{
+"id": 5274,
+"es": "- [hes_prefix-]oum_mdc_command-ack- Kafka recibe el acuse de recibo del HES."
+},
+{
+"id": 5275,
+"es": "Tópico de recepción de Reply:"
+},
+{
+"id": 5276,
+"es": "- [hes_prefix-]oum_mdc_command-reply- Kafka recibe la respuesta con el resultado de la ejecución del comando."
+},
+{
+"id": 5277,
+"es": "Procesamiento de respuestas"
+},
+{
+"id": 5278,
+"es": "Procesamiento de ACK:"
+},
+{
+"id": 5279,
+"es": "- Cambia el estado del comando a ACCEPTED o ERROR.- Finaliza las interfaces de entrada y salida."
+},
+{
+"id": 5280,
+"es": "Procesamiento de Reply:"
+},
+{
+"id": 5281,
+"es": "- Valida la respuesta recibida.- Actualiza el estado del comando (TERMINATED, WARNING, ERROR).- Actualiza el inventario y el monitor de procesos.- Genera un ACK para el sistema HES."
+},
+{
+"id": 5282,
+"es": "Envío final de ACK a HES"
+},
+{
+"id": 5283,
+"es": "Envío final de ACK a HES:"
+},
+{
+"id": 5284,
+"es": "- Se realiza a través del tópico Kafka [hes_prefix-]oum_mdc_command-ack."
+},
+{
+"id": 5285,
+"es": "En este módulo se incluyen todas aquellas funcionalidades relacionadas con la administración general del sistema."
+},
+{
+"id": 5286,
+"es": "Sólo los usuarios avanzados o administradores deberán tener acceso, pues una adecuada configuración es fundamental para el correcto funcionamiento y control del mismo. La correcta configuración y operación sobre este módulo es clave para el funcionamiento global del sistema, afectando al resto de módulos de forma directa o indirecta."
+},
+{
+"id": 5287,
+"es": "En los siguientes apartados comentaremos todos los aspectos relacionados con este módulo, basándonos en la división funcional que se hace dentro del mismo."
+},
+{
+"id": 5288,
+"es": "El sistema dota de capacidad para la asignación/reparto de tareas entre las diferentes máquinas en las que se despliega la solución."
+},
+{
+"id": 5289,
+"es": "Permite optimizar el rendimiento al realizar un seguimiento de posibles bloqueos en los procesos o tablas de base de datos, sobrecarga de nodos y recursos asignados a las tareas."
+},
+{
+"id": 5290,
+"es": "Bloqueos"
+},
+{
+"id": 5291,
+"es": "Permite detectar bloqueos que se producen en las diferentes tablas de Base de Datos para el acceso y ejecución concurrente de las tareas del sistema."
+},
+{
+"id": 5292,
+"es": "Muestra el estado de los diferentes nodos o máquinas sobre los que se ejecuta el servidor de aplicaciones de Onesait Metering, y el uso de memoria."
+},
+{
+"id": 5293,
+"es": "Lista las distintas tareas que se ejecutan sobre el sistema Onesait Metering, y permite asignar los recursos para que entren en funcionamiento."
+},
+{
+"id": 5294,
+"es": "En esta funcionalidad ("
+},
+{
+"id": 5295,
+"es": "Administración->Cluster->Bloqueos"
+},
+{
+"id": 5296,
+"es": "), se pueden ver los bloqueos que se producen en las diferentes tablas de BBDD para el acceso y ejecución concurrente de las diferentes tareas del sistema. En este sentido los bloqueos se realizan para evitar que dos nodos diferentes puedan ejecutar la misma tarea, lo cual provocaría una redundancia en la ejecución de la misma, careciendo de sentido y pudiendo producir situaciones inconsistentes."
+},
+{
+"id": 5297,
+"es": "Esta información es meramente informativa, no es editable."
+},
+{
+"id": 5298,
+"es": "Como podemos ver en esta pantalla, se muestran los bloqueos que realizan las diferentes tareas de la aplicación, con las siguientes propiedades:"
+},
+{
+"id": 5299,
+"es": "Tiempo Máximo "
+},
+{
+"id": 5300,
+"es": "de cualquier boqueo de esa tarea (milisegundos)."
+},
+{
+"id": 5301,
+"es": "Contador: "
+},
+{
+"id": 5302,
+"es": "Número total de bloqueos."
+},
+{
+"id": 5303,
+"es": "Total: "
+},
+{
+"id": 5304,
+"es": "Tiempo total de bloqueo (milisegundos)."
+},
+{
+"id": 5305,
+"es": "Promedio: "
+},
+{
+"id": 5306,
+"es": "Tiempo promedio que dura el bloqueo (milisegundos)."
+},
+{
+"id": 5307,
+"es": "Tiempo Mínimo "
+},
+{
+"id": 5308,
+"es": "de cualquier bloqueo de esa tarea (milisegundos)."
+},
+{
+"id": 5309,
+"es": "Mediante estos datos el usuario puede comprobar el tiempo de bloqueo de cada proceso o tarea; tiempos de bloqueo elevados pueden provocar que la ejecución de todas las tareas sea más lenta."
+},
+{
+"id": 5310,
+"es": "En este apartado de consulta ("
+},
+{
+"id": 5311,
+"es": "Administración ->Cluster->Estado"
+},
+{
+"id": 5312,
+"es": ") podemos visualizar las diferentes máquinas o nodos sobre los que corre la aplicación (servidor de aplicaciones) con sus características, junto al estado de las mismas:"
+},
+{
+"id": 5313,
+"es": "En esta pantalla podemos ver datos de especial interés sobre cada uno de estos nodos:"
+},
+{
+"id": 5314,
+"es": "Estado de la máquina o nodo ("
+},
+{
+"id": 5315,
+"es": "Activo/Inactivo"
+},
+{
+"id": 5316,
+"es": "Dirección IP y nombre de Host."
+},
+{
+"id": 5317,
+"es": "Fecha, Arranque"
+},
+{
+"id": 5318,
+"es": ": Fecha de último arranque del servidor de aplicaciones."
+},
+{
+"id": 5319,
+"es": "Última Actualización"
+},
+{
+"id": 5320,
+"es": ": Fecha de último acceso al nodo (cuando la aplicación haga un refresco, por ejemplo, la fecha de actualización se actualizará)."
+},
+{
+"id": 5321,
+"es": "Estadísticas de Memoria RAM: Memoria Total, Memoria Usada, Memoria Libre, Memoria Parcial."
+},
+{
+"id": 5322,
+"es": "Estos datos tienen especial interés, sobre todo para validar información como:"
+},
+{
+"id": 5323,
+"es": "Si hay algún nodo caído, lo cual puede provocar que todas sus tareas se reubiquen en otras máquinas o incluso que algunas no se realicen."
+},
+{
+"id": 5324,
+"es": "El estado de la memoria de las máquinas. Si hay mucha memoria en uso, la máquina estará sobrecargada y la operación será más lenta. Además, puede provocar un desbordamiento y caída del nodo."
+},
+{
+"id": 5325,
+"es": "Esta lista de nodos junto a su estado, puede ser exportada en los idiomas y formatos configurados."
+},
+{
+"id": 5326,
+"es": "Esta funcionalidad ("
+},
+{
+"id": 5327,
+"es": "Administración->Cluster->Tareas)"
+},
+{
+"id": 5328,
+"es": " lista las distintas tareas que se ejecutan sobre el sistema Onesait Metering, y permite asignar los recursos o nodos del clúster."
+},
+{
+"id": 5329,
+"es": "En esta pantalla se muestra la siguiente información de cara tarea:"
+},
+{
+"id": 5330,
+"es": "Nombre "
+},
+{
+"id": 5331,
+"es": "de la tarea"
+},
+{
+"id": 5332,
+"es": "Nodos"
+},
+{
+"id": 5333,
+"es": ": nodos en los que se ejecuta"
+},
+{
+"id": 5334,
+"es": "Nodos Mínimos"
+},
+{
+"id": 5335,
+"es": ": número de nodos necesarios para su ejecución de la tarea"
+},
+{
+"id": 5336,
+"es": ": fecha y hora de la última ejecución"
+},
+{
+"id": 5337,
+"es": "Nodo del clúster"
+},
+{
+"id": 5338,
+"es": ": Nombre del nodo del clúster donde se ejecuta el servicio"
+},
+{
+"id": 5339,
+"es": "El sistema permite la exportación de este listado de tareas con su información en los idiomas y formatos configurados."
+},
+{
+"id": 5340,
+"es": "La edición de una tarea, permite modificar la información:"
+},
+{
+"id": 5341,
+"es": ": siendo un valor obligatorio"
+},
+{
+"id": 5342,
+"es": ": valor obligatorio"
+},
+{
+"id": 5343,
+"es": ": Seleccionable de un listado donde se muestran los nodos disponibles."
+},
+{
+"id": 5344,
+"es": "Onesait Metering gestiona toda la información relativa al control de acceso a la aplicación por parte de los diferentes usuarios de la misma."
+},
+{
+"id": 5345,
+"es": "El administrador podrá crear y configurar los diferentes perfiles y usuarios que acceden a la aplicación, asignando los permisos correspondientes en función de su rol y características."
+},
+{
+"id": 5346,
+"es": "A cada usuario se le asignará un "
+},
+{
+"id": 5347,
+"es": " que determinará las "
+},
+{
+"id": 5348,
+"es": " que podrá realizar en el sistema, y los elementos con los que se le permitirá operar en función de dichas acciones."
+},
+{
+"id": 5349,
+"es": "La creación de usuarios está basada en tres niveles de personalización, qué permiten limitar y clasificar los usuarios en función de las funcionalidades y el nivel de interacción (ejecución, lectura, escritura)."
+},
+{
+"id": 5350,
+"es": "Para la correcta creación de los usuarios será imprescindible tener en cuenta tres entidades:"
+},
+{
+"id": 5351,
+"es": "Perfiles"
+},
+{
+"id": 5352,
+"es": "Usuarios"
+},
+{
+"id": 5353,
+"es": "Onesait Metering es capaz de integrarse con el elemento autenticador del cliente (LDAP, Directorio Activo, etc.). "
+},
+{
+"id": 5354,
+"es": "En este sentido podremos distinguir los siguientes tipos de seguridad que limitan el acceso a distintas herramientas o elementos:"
+},
+{
+"id": 5355,
+"es": "Seguridad Horizontal"
+},
+{
+"id": 5356,
+"es": ": Este tipo de seguridad se refiere al acceso a las diferentes funcionalidades o pantallas de la aplicación."
+},
+{
+"id": 5357,
+"es": "Seguridad Vertical"
+},
+{
+"id": 5358,
+"es": ": Se refiere al acceso a los elementos de la aplicación, tomando como elemento principal el Punto de Medida."
+},
+{
+"id": 5359,
+"es": "La configuración de Seguridad, teniendo en cuenta lo mencionado anteriormente, sigue el tradicional modelo de Roles y Usuarios."
+},
+{
+"id": 5360,
+"es": "Los pasos para obtener un usuario bien configurado son:"
+},
+{
+"id": 5361,
+"es": "Creación de perfil (seguridad horizontal)"
+},
+{
+"id": 5362,
+"es": "Creación de usuario (acceso individual y personalizado)"
+},
+{
+"id": 5363,
+"es": "Asignación a nivel de puntos de medida (seguridad vertical)"
+},
+{
+"id": 5364,
+"es": "Listado de funcionalidades o pantallas que componen el sistema OM."
+},
+{
+"id": 5365,
+"es": "Se caracterizan por su Nombre, Descripción y ruta en el sistema."
+},
+{
+"id": 5366,
+"es": "Ejemplos de acciones:"
+},
+{
+"id": 5367,
+"es": "menuItem"
+},
+{
+"id": 5368,
+"es": "Process Administration"
+},
+{
+"id": 5369,
+"es": "Cluster Locks"
+},
+{
+"id": 5370,
+"es": "Administración/Cluster/Bloqueos"
+},
+{
+"id": 5371,
+"es": "Cluster Status"
+},
+{
+"id": 5372,
+"es": "Administración/Cluster/Estado"
+},
+{
+"id": 5373,
+"es": "Cluster Tasks"
+},
+{
+"id": 5374,
+"es": "Administración/Cluster/Tareas"
+},
+{
+"id": 5375,
+"es": "El sistema permite consultar las Acciones disponibles, exportar el listado y acceder a su detalle. Sin embargo, no se pueden crear, eliminar o modificar ya que dependen de las funcionalidades existentes en el sistema."
+},
+{
+"id": 5376,
+"es": "Agrupación de acciones que determinan el tipo de interacción - ejecución, lectura o escritura - por cada acción asociada."
+},
+{
+"id": 5377,
+"es": "Determina las acciones que el usuario puede realizar sobre el sistema, por lo que se compone de Código, Nombre, Descripción del perfil y el listado de acciones con su nivel de interacción asociado (ejecución, lectura, escritura)."
+},
+{
+"id": 5378,
+"es": "Por defecto, Onesait Metering dispone de un perfil Administrador con acceso a todas las funcionalidades (acciones), en modo Ejecución."
+},
+{
+"id": 5379,
+"es": "Desde producto se proporcionan preconfigurados los siguientes perfiles estándares:"
+},
+{
+"id": 5380,
+"es": "Perfil"
+},
+{
+"id": 5381,
+"es": "Administrador"
+},
+{
+"id": 5382,
+"es": "Administrador de sistema, acceso total"
+},
+{
+"id": 5383,
+"es": "Operador elementos de medida"
+},
+{
+"id": 5384,
+"es": "Observador"
+},
+{
+"id": 5385,
+"es": "Perfil observador del sistema"
+},
+{
+"id": 5386,
+"es": "El sistema permite consultar los Perfiles disponibles, exportar el listado y acceder a su detalle. También crear, eliminar o modificar perfiles existentes siempre que el usuario tenga los privilegios necesarios."
+},
+{
+"id": 5387,
+"es": "Entidad que permite configurar los diferentes usuarios que tendrán acceso al sistema Onesait Metering, al que se le asignarán los perfiles necesarios."
+},
+{
+"id": 5388,
+"es": "Los usuarios se definirán por los siguientes campos: "
+},
+{
+"id": 5389,
+"es": "Atributos: Código, Nombre, Email, Teléfono, Idioma, Fecha de Alta, Fecha de Baja,"
+},
+{
+"id": 5390,
+"es": "Estado de bloqueo"
+},
+{
+"id": 5391,
+"es": "El usuario puede bloquearse de dos formas:"
+},
+{
+"id": 5392,
+"es": "Manualmente a través de un usuario superior que contenga los permisos requeridos (admin)"
+},
+{
+"id": 5393,
+"es": "Automáticamente si se realizan 3 intentos de inicio de sesión (logging) fallidos de forma continuada"
+},
+{
+"id": 5394,
+"es": "Perfil al que pertenece"
+},
+{
+"id": 5395,
+"es": "Puntos de medida asignados (seguridad vertical), que le permitirán acceder a diferentes elementos del sistema"
+},
+{
+"id": 5396,
+"es": "El sistema permite consultar los Usuarios existentes, exportar el listado y acceder a su detalle. Asimismo, permite crear nuevos usuarios, eliminarlos o modificar sus características siempre que el usuario tenga los privilegios necesarios. Cabe destacar que tal y como se muestra en la captura, "
+},
+{
+"id": 5397,
+"es": "al crear un nuevo usuario esté estará bloqueado"
+},
+{
+"id": 5398,
+"es": ". Es tarea del administrador desbloquear los usuarios que considere oportunos en un paso posterior a su creación. Para ello deberá desmarcar la casilla."
+},
+{
+"id": 5399,
+"es": "Acceso"
+},
+{
+"id": 5400,
+"es": "La aplicación cuenta con los siguientes mecanismos de seguridad asociados al acceso a la misma a través de la página principal de logging:"
+},
+{
+"id": 5401,
+"es": "Implementación de Token JWT"
+},
+{
+"id": 5402,
+"es": "Prevención de accesos de fuerza bruta"
+},
+{
+"id": 5403,
+"es": "Mecanismo utilizado para autenticar y autorizar a los usuarios en la aplicación web de manera segura."
+},
+{
+"id": 5404,
+"es": "Se trata de un token basado en JSON que se firma digitalmente para garantizar integridad."
+},
+{
+"id": 5405,
+"es": "Implementado en el sistema como segunda capa que contiene el rol del usuario de forma complementaria a la cookie de sesión."
+},
+{
+"id": 5406,
+"es": "Prevención de accesos por fuerza bruta"
+},
+{
+"id": 5407,
+"es": "Implementación de mecanismos que impidan ataques de múltiples intentos para adivinar credenciales (usuario/contraseña) en un sistema."
+},
+{
+"id": 5408,
+"es": "Las estrategias implementadas en el sistema son:"
+},
+{
+"id": 5409,
+"es": "Captcha"
+},
+{
+"id": 5410,
+"es": "Mecanismo diseñado para distinguir entre usuarios humanos y bots automatizados en aplicaciones web"
+},
+{
+"id": 5411,
+"es": "Tipo \"texto distorsionado\", inserción de caracteres mostrados en una imagen"
+},
+{
+"id": 5412,
+"es": "Aplica tras 3 intentos fallidos de logging seguidos"
+},
+{
+"id": 5413,
+"es": "IMPORTANTE tener en cuenta que 3 intentos fallidos continuados de logging con el mismo usuario bloquean dicho usuario"
+},
+{
+"id": 5414,
+"es": "Rate Limiting"
+},
+{
+"id": 5415,
+"es": "Técnica para controlar la cantidad de solicitudes que un cliente puede realizar en un periodo de tiempo, evitando sobrecarga del servidor y ataques como DoS o abuso de APIs. Permite definir límites de peticiones por cliente (IP)"
+},
+{
+"id": 5416,
+"es": "Configuración de "
+},
+{
+"id": 5417,
+"es": "limit_req_zone"
+},
+{
+"id": 5418,
+"es": " en Nginx que define una zona de memoria para almacenar el estado de las solicitudes por segundo que hace un cliente"
+},
+{
+"id": 5419,
+"es": "Administración de Parámeros"
+},
+{
+"id": 5420,
+"es": "Inventario de Parámetros Maestros"
+},
+{
+"id": 5421,
+"es": "En esta pantalla se recoge la vista de parámetros que tienen asociados un valor por defecto en el código de la base de datos. De este modo, podemos acceder al listado para comprobar dicho valor sin necesidad de entrar en la base de datos y exportarlos si fuera necesario."
+},
+{
+"id": 5422,
+"es": "Además, tanto en el listado como en el detalle se muestra el Tipo de Dato, que nos ayuda a entender el carácter del código."
+},
+{
+"id": 5423,
+"es": "La siguiente tabla muestra el inventario de parámetros del producto, así como un ejemplo de configuración tipo para un entorno no productivo:"
+},
+{
+"id": 5424,
+"es": "id"
+},
+{
+"id": 5425,
+"es": "VERSIONING-ENABLED"
+},
+{
+"id": 5426,
+"es": "Activa o desactiva el control de versiones en los objetos o configuraciones del sistema."
+},
+{
+"id": 5427,
+"es": "TRACING-HISTORIC-ENABLED"
+},
+{
+"id": 5428,
+"es": "Habilita la trazabilidad de acciones o eventos dentro del sistema para fines de auditoría o análisis."
+},
+{
+"id": 5429,
+"es": "TRACING-USER-ENABLED"
+},
+{
+"id": 5430,
+"es": "TIME-ZONE"
+},
+{
+"id": 5431,
+"es": "Establece la zona horaria utilizada por el sistema para la gestión de fechas y horas."
+},
+{
+"id": 5432,
+"es": "Europe/Madrid"
+},
+{
+"id": 5433,
+"es": "DECIMAL-FORMAT"
+},
+{
+"id": 5434,
+"es": "Define el formato de presentación de los números decimales en la interfaz del sistema."
+},
+{
+"id": 5435,
+"es": "UNIT-CURRENCY"
+},
+{
+"id": 5436,
+"es": "Especifica el símbolo o unidad monetaria utilizada en los procesos de facturación o visualización de valores."
+},
+{
+"id": 5437,
+"es": "EXECUTOR-MAX-THREAD-CALCULATION"
+},
+{
+"id": 5438,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas de CÁLCULOS, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5439,
+"es": "EXECUTOR-MAX-THREAD-ESTIMATION"
+},
+{
+"id": 5440,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas de ESTIMACIONES, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5441,
+"es": "EXECUTOR-MAX-THREAD-VALIDATION"
+},
+{
+"id": 5442,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas de VALIDACIONES de ÓPTIMO, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5443,
+"es": "EXECUTOR-MAX-THREAD-SOURCE-VALIDATION"
+},
+{
+"id": 5444,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas de VALIDACIONES de ORIGEN, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5445,
+"es": "EXECUTOR-MAX-THREAD-FORECAST"
+},
+{
+"id": 5446,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas específicas del sistema, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5447,
+"es": "EXECUTOR-MAX-THREAD-FRAUD"
+},
+{
+"id": 5448,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas de FRAUDE, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5449,
+"es": "EXECUTOR-MAX-THREAD-REPORT"
+},
+{
+"id": 5450,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas de REPORTS, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5451,
+"es": "EXECUTOR-MAX-THREAD-BTV-UPLOAD"
+},
+{
+"id": 5452,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas de subida a BTV, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5453,
+"es": "EXECUTOR-MAX-THREAD-BILLING"
+},
+{
+"id": 5454,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas de BILLING, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5455,
+"es": "EXECUTOR-MAX-SUB-THREAD-VALIDATION"
+},
+{
+"id": 5456,
+"es": "Establece el número máximo de subprocesos que pueden ejecutarse dentro de una tarea principal de VALIDACIONES de ÓPTIMO, permitiendo una ejecución más granular."
+},
+{
+"id": 5457,
+"es": "EXECUTOR-MAX-SUB-THREAD-SOURCE-VALIDATION"
+},
+{
+"id": 5458,
+"es": "Establece el número máximo de subprocesos que pueden ejecutarse dentro de una tarea principal de VALIDACIONES de ORIGEN, permitiendo una ejecución más granular."
+},
+{
+"id": 5459,
+"es": "EXECUTOR-MAX-SUB-THREAD-ESTIMATION"
+},
+{
+"id": 5460,
+"es": "Establece el número máximo de subprocesos que pueden ejecutarse dentro de una tarea principal de ESTIMACIONES, permitiendo una ejecución más granular."
+},
+{
+"id": 5461,
+"es": "EXECUTOR-MAX-RECORDS-TASK-SOURCE-VALIDATION"
+},
+{
+"id": 5462,
+"es": "Limita la cantidad de registros que pueden ser procesados por tarea de VALIDACIONES de ORIGEN, controlando el uso de recursos y evitando sobrecargas."
+},
+{
+"id": 5463,
+"es": "EXECUTOR-MAX-MPOINTS-TASK-SOURCE-VALIDATION"
+},
+{
+"id": 5464,
+"es": "Controla el número máximo de puntos de medida que pueden ser procesados en una tarea de VALIDACIONES de ORIGEN, asegurando eficiencia en la validación de datos."
+},
+{
+"id": 5465,
+"es": "EXECUTOR-MAX-THREAD-MDC-SUPERVISOR"
+},
+{
+"id": 5466,
+"es": "EXECUTOR-MAX-THREAD-EVENT"
+},
+{
+"id": 5467,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas específicas de EVENTOS, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5468,
+"es": "EXECUTOR-MAX-THREAD-COMMAND"
+},
+{
+"id": 5469,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas específicas de COMANDOS, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5470,
+"es": "EXECUTOR-MAX-THREAD-TELEMETRY"
+},
+{
+"id": 5471,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas específicas de TELEMETRY, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5472,
+"es": "EXECUTOR-MAX-THREAD-INCMS"
+},
+{
+"id": 5473,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas específicas de CIS, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5474,
+"es": "EXECUTOR-MAX-THREAD-BALANCE"
+},
+{
+"id": 5475,
+"es": "Define el número máximo de hilos concurrentes permitidos para ejecutar tareas específicas de BALANCES, optimizando el rendimiento y la paralelización."
+},
+{
+"id": 5476,
+"es": "VALIDATION-OPTIMAL-MEASURES-MAX-RESULT"
+},
+{
+"id": 5477,
+"es": "Establece el número máximo de medidas óptimas que se pueden obtener como resultado de un proceso de validación de óptimos."
+},
+{
+"id": 5478,
+"es": "DEFAULT-DIRECTORY-REPORT"
+},
+{
+"id": 5479,
+"es": "Especifica la ubicación predeterminada en el sistema de archivos donde se almacenan los informes generados."
+},
+{
+"id": 5480,
+"es": "/data/oum/report/"
+},
+{
+"id": 5481,
+"es": "DEFAULT-DIRECTORY-BILLING"
+},
+{
+"id": 5482,
+"es": "Define el directorio por defecto donde se guardan los archivos relacionados con la facturación."
+},
+{
+"id": 5483,
+"es": "/data/oum/invoice/"
+},
+{
+"id": 5484,
+"es": "SCHEDULER-JOB-LAST-MEASURE"
+},
+{
+"id": 5485,
+"es": "Planificación de la ejecución del job que actualiza el último registro de measures"
+},
+{
+"id": 5486,
+"es": "USER-INCIDENT-JOB-LAST-MEASURE"
+},
+{
+"id": 5487,
+"es": "Parámetro de configuración utilizado para ajustar el comportamiento interno del sistema según las necesidades operativas."
+},
+{
+"id": 5488,
+"es": "BILLING-INTERVAL"
+},
+{
+"id": 5489,
+"es": "Determina la periodicidad con la que se generan los procesos de facturación."
+},
+{
+"id": 5490,
+"es": "MENSUAL"
+},
+{
+"id": 5491,
+"es": "DASHBOARDS-PERIOD"
+},
+{
+"id": 5492,
+"es": "Indica el período de tiempo que se utiliza como referencia para mostrar información en los dashboards."
+},
+{
+"id": 5493,
+"es": "NUM-DAYS-MANAGEMENT-PERFORMANCE-STATISTICS"
+},
+{
+"id": 5494,
+"es": "Establece la cantidad de días o meses que se consideran para mostrar o procesar información histórica en distintas funcionalidades del sistema."
+},
+{
+"id": 5495,
+"es": "NUM-DAYS-MANAGEMENT-HOURLY-MEASURES"
+},
+{
+"id": 5496,
+"es": "NUM-MONTH-DASHBOARD-BILLING-EVOLUTION"
+},
+{
+"id": 5497,
+"es": "NUM-LAST-INCIDENTS"
+},
+{
+"id": 5498,
+"es": "NUM-DAYS-DASHBOARD-REPORTS"
+},
+{
+"id": 5499,
+"es": "NUM-DAYS-DASHBOARD-INDEX-VALIDATION"
+},
+{
+"id": 5500,
+"es": "NUM-DAYS-DASHBOARD-MEASURE-H"
+},
+{
+"id": 5501,
+"es": "NUM-DAYS-DASHBOARD-MEASURE-QH"
+},
+{
+"id": 5502,
+"es": "NUM-DAYS-DASHBOARD-MEASURE-SOURCE"
+},
+{
+"id": 5503,
+"es": "NUM-DAYS-DASHBOARD-INDEX-ENERGY"
+},
+{
+"id": 5504,
+"es": "NUM-DAYS-DASHBOARD-INTERFACES"
+},
+{
+"id": 5505,
+"es": "NUM-DAYS-DASHBOARD-REVENUE-PROTECTION"
+},
+{
+"id": 5506,
+"es": "NETWORK-MODEL-DEFAULT-LATITUDE"
+},
+{
+"id": 5507,
+"es": "Proporciona valores predeterminados para la visualización geográfica del modelo de red, como latitud, longitud y nivel de zoom."
+},
+{
+"id": 5508,
+"es": "NETWORK-MODEL-DEFAULT-LONGITUDE"
+},
+{
+"id": 5509,
+"es": "NETWORK-MODEL-DEFAULT-ZOOM"
+},
+{
+"id": 5510,
+"es": "Define un valor límite que se utiliza como referencia para activar alertas o aplicar reglas específicas en el sistema."
+},
+{
+"id": 5511,
+"es": "USER-LIST"
+},
+{
+"id": 5512,
+"es": "Contiene una lista de usuarios autorizados para acceder o recibir notificaciones del sistema."
+},
+{
+"id": 5513,
+"es": "admin@indra.es"
+},
+{
+"id": 5514,
+"es": "admin@minsait.es"
+},
+{
+"id": 5515,
+"es": "COEFFICIENT-VALID-PERIOD"
+},
+{
+"id": 5516,
+"es": "Indica el período de validez de los coeficientes utilizados en los cálculos del sistema."
+},
+{
+"id": 5517,
+"es": "NUM-DAYS-VERIF"
+},
+{
+"id": 5518,
+"es": "Establece la cantidad de días  que se consideran para mostrar o procesar información histórica en distintas funcionalidades del sistema."
+},
+{
+"id": 5519,
+"es": "FORECAST-SERVICE-URL"
+},
+{
+"id": 5520,
+"es": "http://10.29.91.4:5100/getForecast"
+},
+{
+"id": 5521,
+"es": "QUALITY-INDICATOR"
+},
+{
+"id": 5522,
+"es": "Activa o desactiva el uso de indicadores de calidad en los procesos de análisis y validación de datos."
+},
+{
+"id": 5523,
+"es": "YES"
+},
+{
+"id": 5524,
+"es": "GRAPHICS-FILE-PATH"
+},
+{
+"id": 5525,
+"es": "Define la ruta del sistema de archivos donde se almacenan los gráficos generados por el sistema."
+},
+{
+"id": 5526,
+"es": "/data/oum/tomcat/webapps/Graphics"
+},
+{
+"id": 5527,
+"es": "GRAPHICS-SERVER-PATH"
+},
+{
+"id": 5528,
+"es": "Especifica la ruta relativa utilizada por el servidor para acceder a los recursos gráficos."
+},
+{
+"id": 5529,
+"es": "../Graphics"
+},
+{
+"id": 5530,
+"es": "GRAPHICS-SERVICE-URL"
+},
+{
+"id": 5531,
+"es": "Proporciona la dirección del servicio encargado de generar representaciones gráficas de los datos."
+},
+{
+"id": 5532,
+"es": "http://localhost:5300/generateGraphic"
+},
+{
+"id": 5533,
+"es": "INSTALL-TYPE"
+},
+{
+"id": 5534,
+"es": "Determina el tipo de instalación del sistema, lo cual puede influir en la configuración y comportamiento de la plataforma."
+},
+{
+"id": 5535,
+"es": "OUC-TIME-ZONE"
+},
+{
+"id": 5536,
+"es": "Establece la zona horaria utilizada por el sistema CIS para la gestión de fechas y horas."
+},
+{
+"id": 5537,
+"es": "INCMS-SAVE-READINGS-SERVICE-URL"
+},
+{
+"id": 5538,
+"es": "https://localhost/incms-ss-server/services/MDM/saveReadings"
+},
+{
+"id": 5539,
+"es": "INCMS-NEW-IRREGULARITY-SERVICE-URL"
+},
+{
+"id": 5540,
+"es": "https://localhost/oucw-ss-server/services/workOrder/resolveMDM"
+},
+{
+"id": 5541,
+"es": "INCMS-WORK-ORDER-RESOLVE-SERVICE-URL"
+},
+{
+"id": 5542,
+"es": "MDM-WS-URL"
+},
+{
+"id": 5543,
+"es": "https://localhost/oum-hes-connector/services?wsdl"
+},
+{
+"id": 5544,
+"es": "NMAP-URL"
+},
+{
+"id": 5545,
+"es": "https://localhost/oum-nmap"
+},
+{
+"id": 5546,
+"es": "NMAP-API-PATH"
+},
+{
+"id": 5547,
+"es": "/nmm/api"
+},
+{
+"id": 5548,
+"es": "NMAP-SCRIPTS-PATH"
+},
+{
+"id": 5549,
+"es": "/nmm/resources/scripts/"
+},
+{
+"id": 5550,
+"es": "NMAP-REFRESH-MS"
+},
+{
+"id": 5551,
+"es": "NMAP-OFFLINE"
+},
+{
+"id": 5552,
+"es": "NMAP-CUSTOM-TILES-SERVER-URL"
+},
+{
+"id": 5553,
+"es": "http://localhost:9090"
+},
+{
+"id": 5554,
+"es": "NMAP-KML-EPSILON"
+},
+{
+"id": 5555,
+"es": "NMAP-KML-NUM-DECIMALS"
+},
+{
+"id": 5556,
+"es": "PASSWORD-PATTERN"
+},
+{
+"id": 5557,
+"es": "Define el patrón de caracteres permitido para las contraseñas de usuario, reforzando la seguridad del sistema."
+},
+{
+"id": 5558,
+"es": "^[a-zA-Z0-9]+$"
+},
+{
+"id": 5559,
+"es": "RETRIES-USER-BLOCK"
+},
+{
+"id": 5560,
+"es": "Establece el número máximo de intentos fallidos de autenticación antes de bloquear una cuenta de usuario."
+},
+{
+"id": 5561,
+"es": "CONFIRMATION-OUTAGE-TIMEOUT-DEFAULT"
+},
+{
+"id": 5562,
+"es": "Define el tiempo máximo de espera para confirmar, generar o descartar eventos relacionados con interrupciones del servicio."
+},
+{
+"id": 5563,
+"es": "GENERATION-INCIDENT-OUTAGE-TIMEOUT-DEFAULT"
+},
+{
+"id": 5564,
+"es": "DISCARD-OUTAGE-TIMEOUT-DEFAULT"
+},
+{
+"id": 5565,
+"es": "RESTORE-OUTAGE-TIMEOUT-DEFAULT"
+},
+{
+"id": 5566,
+"es": "NOTIFICATION-OUTAGE-TIMEOUT-DEFAULT"
+},
+{
+"id": 5567,
+"es": "Establece el tiempo de espera antes de enviar notificaciones relacionadas con eventos de interrupción del servicio."
+},
+{
+"id": 5568,
+"es": "INVOICE-TYPE"
+},
+{
+"id": 5569,
+"es": "MONTHLY"
+},
+{
+"id": 5570,
+"es": "UPDATE-BALANCES-DAY-OF-MONTH"
+},
+{
+"id": 5571,
+"es": "Indica el día del mes en el que se actualizan los saldos o balances del sistema."
+},
+{
+"id": 5572,
+"es": "SMTP-HOST"
+},
+{
+"id": 5573,
+"es": "Configura los parámetros necesarios para el envío de correos electrónicos desde el sistema, incluyendo servidor, puerto y credenciales."
+},
+{
+"id": 5574,
+"es": "smtp-mail.outlook.com"
+},
+{
+"id": 5575,
+"es": "SMTP-PORT"
+},
+{
+"id": 5576,
+"es": "SMTP-USER"
+},
+{
+"id": 5577,
+"es": "oum_minsait@outlook.com"
+},
+{
+"id": 5578,
+"es": "SMTP-PASS"
+},
+{
+"id": 5579,
+"es": "yQLv39dnPYtSG8QcxexTeQ=="
+},
+{
+"id": 5580,
+"es": "SMTP-PROP"
+},
+{
+"id": 5581,
+"es": "Contiene propiedades adicionales para la configuración del servicio de correo electrónico, como autenticación y formato."
+},
+{
+"id": 5582,
+"es": "from=oum_minsait@"
+},
+{
+"id": 5583,
+"es": "outlook.com"
+},
+{
+"id": 5584,
+"es": "&contentType=text/html&mail.smtp.auth="
+},
+{
+"id": 5585,
+"es": "true&mail.smtp.starttls.enable=true"
+},
+{
+"id": 5586,
+"es": "KMS-SERVICE-URL"
+},
+{
+"id": 5587,
+"es": "Proporciona la configuración necesaria para conectarse al sistema de gestión de claves, incluyendo URL, identificador y credenciales."
+},
+{
+"id": 5588,
+"es": "https://kms.com"
+},
+{
+"id": 5589,
+"es": "KMS-CLIENT-ID"
+},
+{
+"id": 5590,
+"es": "onesait-metering-mdc"
+},
+{
+"id": 5591,
+"es": "KMS-CLIENT-SECRET"
+},
+{
+"id": 5592,
+"es": "d84c8289-264e-465d-a755-042d6e0ad5e5"
+},
+{
+"id": 5593,
+"es": "HELP-URL"
+},
+{
+"id": 5594,
+"es": "Especifica la ubicación del manual de usuario o documentación de ayuda accesible desde la interfaz del sistema."
+},
+{
+"id": 5595,
+"es": "https://localhost/oum/resources/files/help-manual/OUM-User-Manual.html"
+},
+{
+"id": 5596,
+"es": "EXPORT-FORMATS"
+},
+{
+"id": 5597,
+"es": "Define los formatos disponibles para exportar datos desde el sistema, como PDF o CSV."
+},
+{
+"id": 5598,
+"es": "PDF CSV"
+},
+{
+"id": 5599,
+"es": "Parámetro de configuración utilizado para la ejecución de procesos de estimación que define la profundida de días sobre las que realizar la estimación"
+},
+{
+"id": 5600,
+"es": "DEFAULT-INPUT-FILE-DIRECTORY"
+},
+{
+"id": 5601,
+"es": "/mdm/files/input"
+},
+{
+"id": 5602,
+"es": "LIMIT-DATE-FILTER"
+},
+{
+"id": 5603,
+"es": "Establece el límite temporal para aplicar filtros de fecha en la visualización o procesamiento de datos."
+},
+{
+"id": 5604,
+"es": "TELEMETRY-TASKS-BUILDING-TIMEOUT"
+},
+{
+"id": 5605,
+"es": "Define los tiempos máximos permitidos para la construcción o ejecución de tareas relacionadas con telemetría."
+},
+{
+"id": 5606,
+"es": "TELEMETRY-TASKS-RUNNING-TIMEOUT"
+},
+{
+"id": 5607,
+"es": "DAYS-PREVIOUS-BILLING"
+},
+{
+"id": 5608,
+"es": "Indica la cantidad de días previos que se consideran para procesos de facturación o lectura de datos."
+},
+{
+"id": 5609,
+"es": "DAYS-PREVIOUS-READING"
+},
+{
+"id": 5610,
+"es": "SCHEDULER-JOB-LAST-EVENT"
+},
+{
+"id": 5611,
+"es": "Planificación de la ejecución del job que actualiza el último registro de eventos"
+},
+{
+"id": 5612,
+"es": "El módulo de Seguimiento incluye las funcionalidades que permiten centralizar el control de procesos y tener una visión global de la evolución de los mismos, para detectar desviaciones o sucesos lo antes posible."
+},
+{
+"id": 5613,
+"es": "Facilita herramientas a los operadores para el seguimiento de sus responsabilidades. Por ejemplo, con gestión de incidencias o de alarmas."
+},
+{
+"id": 5614,
+"es": "Gestión de Incidencias / Alarmas"
+},
+{
+"id": 5615,
+"es": "Tipos de Incidencias"
+},
+{
+"id": 5616,
+"es": "Características de la Incidencia"
+},
+{
+"id": 5617,
+"es": "Generación de Incidencias"
+},
+{
+"id": 5618,
+"es": "Actualización de Estados de Incidencia"
+},
+{
+"id": 5619,
+"es": "Acciones sobre incidencias"
+},
+{
+"id": 5620,
+"es": "Funcionalidades de la Aplicación"
+},
+{
+"id": 5621,
+"es": "Características principales:"
+},
+{
+"id": 5622,
+"es": "Automático "
+},
+{
+"id": 5623,
+"es": "Operador desde la aplicación"
+},
+{
+"id": 5624,
+"es": "En función del "
+},
+{
+"id": 5625,
+"es": "origen "
+},
+{
+"id": 5626,
+"es": "de la incidencia - "
+},
+{
+"id": 5627,
+"es": "Evento "
+},
+{
+"id": 5628,
+"es": "- y la "
+},
+{
+"id": 5629,
+"es": "subcategoría "
+},
+{
+"id": 5630,
+"es": "- tipo de evento - se clasifica en un "
+},
+{
+"id": 5631,
+"es": "predefinido, cuya configuración determina su flujo de estados, severidad, actuación necesaria para su resolución (Campo u Operador), tiempo de vida y resto de atributos."
+},
+{
+"id": 5632,
+"es": "Las incidencias están asociadas al punto de medida-equipo en el que se generan, y se asignan automáticamente al "
+},
+{
+"id": 5633,
+"es": "responsable del punto de medida"
+},
+{
+"id": 5634,
+"es": " o, en su defecto, a un usuario genérico, del grupo de administradores, que puede reasignarlas al responsable necesario."
+},
+{
+"id": 5635,
+"es": "Según la configuración del tipo de incidencia, de campo u operador, el workflow de estados es diferente."
+},
+{
+"id": 5636,
+"es": "Los cambios pueden ser "
+},
+{
+"id": 5637,
+"es": "manuales "
+},
+{
+"id": 5638,
+"es": "automáticos"
+},
+{
+"id": 5639,
+"es": ", y siempre se registra un histórico con la información del cambio."
+},
+{
+"id": 5640,
+"es": "Resolución"
+},
+{
+"id": 5641,
+"es": "Puede realizarla el operador responsable o un administrador desde la aplicación"
+},
+{
+"id": 5642,
+"es": "Por recepción de un evento que da constancia de que se ha solucionado la causa que generó la incidencia (incidencia de origen Evento)"
+},
+{
+"id": 5643,
+"es": "Superación de validaciones en todas las mediciones del punto de medida (incidencia origen Validación)"
+},
+{
+"id": 5644,
+"es": "Recepción de una notificación de otro sistema (WFM) indicando que se ha resuelto una incidencia previamente informada (incidencia de actuación en campo)"
+},
+{
+"id": 5645,
+"es": "Al alcanzar el tiempo máximo de vida de la incidencia."
+},
+{
+"id": 5646,
+"es": "cierre "
+},
+{
+"id": 5647,
+"es": "Lo realiza el Operador responsable o un administrador."
+},
+{
+"id": 5648,
+"es": "Se considera "
+},
+{
+"id": 5649,
+"es": "Incidencia "
+},
+{
+"id": 5650,
+"es": "a cualquier situación detectada en OM MDM que supone la necesidad de atención especial por parte del operador del sistema. "
+},
+{
+"id": 5651,
+"es": "Según el "
+},
+{
+"id": 5652,
+"es": "origen "
+},
+{
+"id": 5653,
+"es": "de ésta - ejecución de validaciones, recepción de eventos o alta manual - se clasifica como un "
+},
+{
+"id": 5654,
+"es": ", que se configura en el sistema para determinar su severidad, la actuación necesaria para su resolución, si puede bloquear la creación de nuevas incidencias, su tiempo de vida máximo, etc."
+},
+{
+"id": 5655,
+"es": "Los tipos de incidencia cuentan con las siguientes propiedades: "
+},
+{
+"id": 5656,
+"es": "Tipo Incidencia"
+},
+{
+"id": 5657,
+"es": "Código Tipo Incidencia"
+},
+{
+"id": 5658,
+"es": "Proceso origen que provoca la incidencia "
+},
+{
+"id": 5659,
+"es": "En el caso de incidencias de origen Evento, identifica el Tipo de Evento"
+},
+{
+"id": 5660,
+"es": "El indicador de elemento informa de si la incidencia está relacionada con el Punto de Medida o el Equipo, aunque las incidencias se crean siempre asociadas a un punto de medida, e indirectamente al equipo instalado en las mismas."
+},
+{
+"id": 5661,
+"es": "Tipo de actuación requerida"
+},
+{
+"id": 5662,
+"es": "Determinada por el origen de la incidencia"
+},
+{
+"id": 5663,
+"es": "Vida máxima"
+},
+{
+"id": 5664,
+"es": "Tiempo máximo de resolución desde la creación de la incidencia, una vez superado se resuelven automáticamente. El valor \"-1\" anula la caducidad."
+},
+{
+"id": 5665,
+"es": "Crítica"
+},
+{
+"id": 5666,
+"es": "Moderada"
+},
+{
+"id": 5667,
+"es": "Marcador para incidencias de campo, activo impide la creación de nuevas incidencias de Actuación en Campo para el mismo punto de medida, incluso en días posteriores."
+},
+{
+"id": 5668,
+"es": "Atributos de la incidencia"
+},
+{
+"id": 5669,
+"es": "Categoría u Origen"
+},
+{
+"id": 5670,
+"es": "Actuación Requerida"
+},
+{
+"id": 5671,
+"es": "Actuación Operador"
+},
+{
+"id": 5672,
+"es": "Actuación en Campo"
+},
+{
+"id": 5673,
+"es": "Incidencias Permanentes o Bloqueantes"
+},
+{
+"id": 5674,
+"es": "Cada incidencia generada en el sistema, se clasifica dentro de un Tipo de Incidencia, y su comportamiento y características vienen marcados por el tipo al que pertenecen."
+},
+{
+"id": 5675,
+"es": "Elemento sobre el que recae la incidencia"
+},
+{
+"id": 5676,
+"es": "Equipo instalado en el punto de medida, en el momento de la fecha del suceso que provoca la incidencia"
+},
+{
+"id": 5677,
+"es": "Fecha Suceso"
+},
+{
+"id": 5678,
+"es": "Fecha en la que se produce la incidencia:"
+},
+{
+"id": 5679,
+"es": "ejecución de validación no superada sobre una medida,"
+},
+{
+"id": 5680,
+"es": "recepción de evento que genera incidencia, o"
+},
+{
+"id": 5681,
+"es": "fecha de alta manual"
+},
+{
+"id": 5682,
+"es": "Usuario responsable del punto de medida sobre el que recae la incidencia"
+},
+{
+"id": 5683,
+"es": "Estado de la incidencia: Nueva, En Proceso, Suspendida, Resuelta, Cancelada, Cerrada.  "
+},
+{
+"id": 5684,
+"es": "Gravedad de la incidencia. "
+},
+{
+"id": 5685,
+"es": "En las incidencias de origen Validación puede variar, ya que registra el valor de severidad más alta localizada entre las validaciones no superadas."
+},
+{
+"id": 5686,
+"es": "En las de origen Evento o Usuario registra, por defecto, el valor el configurado para el tipo, pero se permite su modificación por parte del operador."
+},
+{
+"id": 5687,
+"es": "Ocurrencias"
+},
+{
+"id": 5688,
+"es": "En incidencias de origen "
+},
+{
+"id": 5689,
+"es": ": informa de las repeticiones de eventos recibidos del mismo Tipo de Evento que genera la incidencia"
+},
+{
+"id": 5690,
+"es": "Observaciones"
+},
+{
+"id": 5691,
+"es": "Comentarios que puede incluir el operador."
+},
+{
+"id": 5692,
+"es": "Evento Origen "
+},
+{
+"id": 5693,
+"es": "Para incidencias de Categoría Evento, identificador del evento que origina la incidencia"
+},
+{
+"id": 5694,
+"es": "Evento Corrector"
+},
+{
+"id": 5695,
+"es": "Para incidencias de Categoría Evento, , donde existe un tipo de evento contrario al que la origina y permite resolverla, contiene el identificador del evento recibido que resuelve la incidencia"
+},
+{
+"id": 5696,
+"es": "Usuario creador"
+},
+{
+"id": 5697,
+"es": "Campo de auditoría que registra el usuario que crea la incidencia, puede tratarse del proceso automático o un operador "
+},
+{
+"id": 5698,
+"es": "Fecha Creación"
+},
+{
+"id": 5699,
+"es": "Fecha de alta de la incidencia en el sistema."
+},
+{
+"id": 5700,
+"es": "Fecha Actualización"
+},
+{
+"id": 5701,
+"es": "Registra la fecha de cualquier cambio en la incidencia (observaciones, asignación a operador, cambio de estado, publicación)."
+},
+{
+"id": 5702,
+"es": "La categoría viene determinada por el proceso que genera la incidencia. Actualmente, se consideran tres orígenes:"
+},
+{
+"id": 5703,
+"es": "Automática al ejecutarse los procesos de validación de medidas, origen o de óptimo, y no superarse alguna."
+},
+{
+"id": 5704,
+"es": "Requiere que se se hayan seleccionado validaciones a superar"
+},
+{
+"id": 5705,
+"es": "Automática al recibir un determinado evento, de un tipo definido como Tipo de Incidencia."
+},
+{
+"id": 5706,
+"es": "Es necesario configurar la Estrategia de generación de incidencia sobre los tipos de evento"
+},
+{
+"id": 5707,
+"es": "No. Se pueden crear nuevos tipos de incidencia por cada tipo de evento"
+},
+{
+"id": 5708,
+"es": "Manual por un operador desde la interfaz web."
+},
+{
+"id": 5709,
+"es": "No aplica"
+},
+{
+"id": 5710,
+"es": "La Categoría y Subcategoría determinan el Tipo de Incidencia, y no son modificables por configuración."
+},
+{
+"id": 5711,
+"es": "Las incidencias generadas en el sistema se clasifican en dos tipos:"
+},
+{
+"id": 5712,
+"es": "Incidencias de "
+},
+{
+"id": 5713,
+"es": ", aquellas cuya resolución sólo requiere de actuaciones locales por parte del operador."
+},
+{
+"id": 5714,
+"es": ", aquellas cuya resolución requiere de actuaciones en sitio por parte de terceros. Estas incidencias se publican en Kafka, y pueden ser consultadas por otros sistemas de manera que se permita su resolución en campo."
+},
+{
+"id": 5715,
+"es": "Esta característica se configura en el tipo de incidencia, en el atributo "
+},
+{
+"id": 5716,
+"es": "Incidencias que no requieren una actuación en campo para su resolución."
+},
+{
+"id": 5717,
+"es": "No se publican en Kafka en el momento de su creación, pero se permite que sean publicadas de manera puntual por el operador si lo considera necesario."
+},
+{
+"id": 5718,
+"es": "Flujo de Estados"
+},
+{
+"id": 5719,
+"es": "Cada incidencia puede estar en alguno de los siguientes estados:"
+},
+{
+"id": 5720,
+"es": "Nueva: Al ser creada, se asigna al responsable del punto de medida o, en su defecto, al usuario responsable de gestión de incidencias"
+},
+{
+"id": 5721,
+"es": "En Proceso: En proceso de resolución"
+},
+{
+"id": 5722,
+"es": "Suspendida Suspendida, pendiente de resolución"
+},
+{
+"id": 5723,
+"es": "Resuelta: Resuelta, pendiente de cierre"
+},
+{
+"id": 5724,
+"es": "Cerrada: Cerrada"
+},
+{
+"id": 5725,
+"es": "Cancelada: Cancelada por el operador"
+},
+{
+"id": 5726,
+"es": "Se trata de incidencias que requieren de una actuación en campo para su resolución."
+},
+{
+"id": 5727,
+"es": "Por ello, para ponerlas en conocimiento de terceros, WFM, se publican en Kafka tras su creación, o ante cualquier modificación desde OM."
+},
+{
+"id": 5728,
+"es": "Flujo de Estados "
+},
+{
+"id": 5729,
+"es": "Cada incidencia con esta actuación, puede estar un uno de los siguientes estados:"
+},
+{
+"id": 5730,
+"es": "Nueva: Creada, es asignada al responsable del punto de medida o, en su defecto, al usuario responsable de gestión de incidencias. En su creación se publica directamente en Kafka."
+},
+{
+"id": 5731,
+"es": "Cancelada: Cancelada, por el operador o por recepción de ese estado desde el API."
+},
+{
+"id": 5732,
+"es": "Algunas incidencias inhabilitan por completo el PM y el Equipo asociado, de manera que la ocurrencia de nuevas situaciones en éstos, no genera nuevas incidencias de campo en el sistema, incluso si se dan en días posteriores."
+},
+{
+"id": 5733,
+"es": "Los tipos de incidencia que bloquean el punto de medida son los configurados con el atributo “"
+},
+{
+"id": 5734,
+"es": "Bloquea PM"
+},
+{
+"id": 5735,
+"es": "” activo, valor sólo posible cuando el tipo de actuación es Campo."
+},
+{
+"id": 5736,
+"es": "El punto permanecerá bloqueado, hasta la resolución de la incidencia que lo bloquea."
+},
+{
+"id": 5737,
+"es": "Este atributo, que forma parte de la configuración y cuyos únicos valores son \""
+},
+{
+"id": 5738,
+"es": "\", alude a la naturaleza de la incidencia, para identificar si está relacionado con un elemento u otro."
+},
+{
+"id": 5739,
+"es": "Permite filtrar las incidencias relacionadas con uno u otro."
+},
+{
+"id": 5740,
+"es": "Mediante este parámetro se permite la resolución automática de las incidencias del tipo, una vez transcurridos los días definidos desde su creación."
+},
+{
+"id": 5741,
+"es": "Se fija un valor para configurar Tipos de Incidencia sin caducidad, \"-1\", de tal forma que las incidencias con Vida Máxima = -1 nunca se resolverán de forma automática."
+},
+{
+"id": 5742,
+"es": "Incidencia de Validación"
+},
+{
+"id": 5743,
+"es": "Restricciones"
+},
+{
+"id": 5744,
+"es": "Incidencia de Evento"
+},
+{
+"id": 5745,
+"es": "Incidencia de Usuario"
+},
+{
+"id": 5746,
+"es": "Se abre como consecuencia del proceso de validación de medidas, al no superarse alguna validación."
+},
+{
+"id": 5747,
+"es": "Sólo se genera "
+},
+{
+"id": 5748,
+"es": "una incidencia "
+},
+{
+"id": 5749,
+"es": "por "
+},
+{
+"id": 5750,
+"es": "punto de medida y día"
+},
+{
+"id": 5751,
+"es": ", representativa de todas las validaciones no superadas. Éstas se pueden consultar accediendo al detalle de la incidencia."
+},
+{
+"id": 5752,
+"es": "Si el tipo de incidencia estuviera configurado como "
+},
+{
+"id": 5753,
+"es": " y el punto de medida bloqueado por incidencia previa con “Bloqueo PM” activo, no se genera nueva incidencia."
+},
+{
+"id": 5754,
+"es": "Por defecto queda asignada la severidad de la validación no superada más grave. Si se vuelven a ejecutar validaciones sobre el punto de medida en el día, se actualiza a la severidad más grave entre las nuevas validaciones no superadas y la actual."
+},
+{
+"id": 5755,
+"es": "Adicionalmente, se ejecuta un proceso planificado que actualiza este valor si se hubieran re-evaluado las validaciones, rebajando la severidad a la validación más grave que permaneciera sin resolverse, o incluso resolviendo la incidencia si se superasen todas las validaciones asignadas en la clase de configuración."
+},
+{
+"id": 5756,
+"es": "El sistema también permite modificarla de forma manual por el usuario."
+},
+{
+"id": 5757,
+"es": "Una incidencia requiere de actuación en campo o de operador, según se configure el tipo de incidencia, en este caso del tipo Validación."
+},
+{
+"id": 5758,
+"es": "Si estuviera configurada como actuación en campo, implicaría la publicación directa mediante la interfaz, publicación en Kafka, tras el alta de la incidencia. No obstante, se puede publicar manualmente si se considera que se debe resolver en campo a pesar de la configuración."
+},
+{
+"id": 5759,
+"es": "Se crea con la llegada de un evento, de un tipo de evento asociado a una "
+},
+{
+"id": 5760,
+"es": ", cuya "
+},
+{
+"id": 5761,
+"es": "Acción de Estrategia"
+},
+{
+"id": 5762,
+"es": " contiene las tareas de alta de incidencia del tipo que determina el tipo de evento."
+},
+{
+"id": 5763,
+"es": "Inicialmente, se habrá configurado desde la "
+},
+{
+"id": 5764,
+"es": " del punto de medida, la "
+},
+{
+"id": 5765,
+"es": "a ejecutar en los tipos de evento que se desea generen o resuelvan incidencia. Esta estrategia incluye "
+},
+{
+"id": 5766,
+"es": ", donde una acción, "
+},
+{
+"id": 5767,
+"es": ", genera una incidencia del tipo determinado por el origen evento y el tipo de evento recibido. Si no existiera un tipo de incidencia definido para el tipo de evento, no se generará incidencia. "
+},
+{
+"id": 5768,
+"es": "una incidencia del tipo"
+},
+{
+"id": 5769,
+"es": ", determinada por el "
+},
+{
+"id": 5770,
+"es": "tipo de evento"
+},
+{
+"id": 5771,
+"es": ", por "
+},
+{
+"id": 5772,
+"es": ", contabilizando las repeticiones de recepción del mismo tipo de evento sobre la incidencia. "
+},
+{
+"id": 5773,
+"es": "Si no existiera un tipo de incidencia del tipo de evento recibido, no se gererá incidencia."
+},
+{
+"id": 5774,
+"es": ", y el punto de medida estuviera bloqueado por incidencia previa con “Bloqueo PM” activo, no se genera nueva incidencia."
+},
+{
+"id": 5775,
+"es": "La severidad asignada corresponde con la configurada en el tipo de incidencia. No obstante, puede ser modificada de forma manual por el usuario."
+},
+{
+"id": 5776,
+"es": "Una incidencia requiere de actuación en campo o de operador, según se configure el tipo de Incidencia."
+},
+{
+"id": 5777,
+"es": "Si estuviera configurada como actuación en campo, implica la publicación directa mediante la interfaz, publicación en Kafka, tras el alta de la incidencia. No obstante, se puede publicar manualmente si se considera que se debe resolver en campo a pesar de la configuración."
+},
+{
+"id": 5778,
+"es": "Se generan a partir del alta manual por parte de un Operador y tomará la configuración de su tipo."
+},
+{
+"id": 5779,
+"es": ", por "
+},
+{
+"id": 5780,
+"es": "Resolución por recepción de Evento Corrector"
+},
+{
+"id": 5781,
+"es": "Resolución por Tiempo de Vida Máximo"
+},
+{
+"id": 5782,
+"es": "Resolución Manual por el Operador"
+},
+{
+"id": 5783,
+"es": "Actualización de estado notificado desde WFM"
+},
+{
+"id": 5784,
+"es": "Estructura del mensaje API Actualización Estado"
+},
+{
+"id": 5785,
+"es": "Respuesta API Actualización Estado"
+},
+{
+"id": 5786,
+"es": "Existen eventos que informan sobre el restablecimiento del funcionamiento, o directamente del funcionamiento correcto, que se configuran como \"antídotos\" o eventos correctores de otros generadores de incidencia. Ver "
+},
+{
+"id": 5787,
+"es": "Tipos de Eventos"
+},
+{
+"id": 5788,
+"es": "Se define una "
+},
+{
+"id": 5789,
+"es": "Acción de Estrategia, "
+},
+{
+"id": 5790,
+"es": "incluída en una "
+},
+{
+"id": 5791,
+"es": ", que debe asociarse al evento corrector en la Clase de Configuración, que: "
+},
+{
+"id": 5792,
+"es": "Busca la existencia de"
+},
+{
+"id": 5793,
+"es": "incidencias abiertas para el Tipo Evento que se resolvería en el PM "
+},
+{
+"id": 5794,
+"es": "hacia el pasado"
+},
+{
+"id": 5795,
+"es": ", hasta un número de días definido como parámetro en el sistema-"
+},
+{
+"id": 5796,
+"es": "INCIDENT_NUM_DAYS_EVENT_CORRECT"
+},
+{
+"id": 5797,
+"es": ". Se consideran "
+},
+{
+"id": 5798,
+"es": "abiertas "
+},
+{
+"id": 5799,
+"es": "las incidencias que se encuentren en los estados:"
+},
+{
+"id": 5800,
+"es": "Nueva"
+},
+{
+"id": 5801,
+"es": "Suspendida"
+},
+{
+"id": 5802,
+"es": "se resuelven las incidencias localizadas, anteriores al evento corrector, "
+},
+{
+"id": 5803,
+"es": "se registra el evento que las ha resuelto y"
+},
+{
+"id": 5804,
+"es": "se guarda en el histórico de cada incidencia el motivo, fecha, usuario (proceso), etc., del cambio."
+},
+{
+"id": 5805,
+"es": "Si la incidencia resuelta está configurada como de actuación en Campo, el cambio de estado se publica en Kafka."
+},
+{
+"id": 5806,
+"es": "Mediante el parámetro "
+},
+{
+"id": 5807,
+"es": " definido para cada tipo de incidencia, se permite la resolución automática de las incidencias una vez transcurrido el número de días establecido desde su creación ("
+}
+]

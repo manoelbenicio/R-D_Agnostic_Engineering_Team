@@ -8,7 +8,7 @@
 | # | Fato | Evidencia |
 |---|---|---|
 | F1 | Os isolamentos estao no **ORQ2** | `/home/ec2-user/.agent-cred-homes`, `drwx------`, 22 slots, host `ip-172-31-30-9` |
-| F2 | Isolamento **existe e funciona** | `registry.json` 13183 B com `next_slot: 153`; `registry.lock`; backup `pre-orphan-cleanup.20260722T023208Z`; scripts em `~/.local/lib/agent-credential-isolation/scripts` |
+| F2 | Scripts de isolamento fisico **existem e operam**; composicao de producao em Go **ausente** | `registry.json` 13183 B com `next_slot: 153`; `registry.lock`; backup `pre-orphan-cleanup.20260722T023208Z`; scripts em `~/.local/lib/agent-credential-isolation/scripts` |
 | F3 | Slot tem **raizes por provider**, nao e um HOME | `slot-140` contem `cline cline-sandbox codex home xdg-config xdg-data` |
 | F4 | 22/22 slots tem agy; **so 5 tem kiro** | slots 139, 140, 142, 143, 149. `slot-145` nao tem kiro |
 | F5 | Tabelas de conta do Multica estao **vazias** | Postgres ORQ1: `accounts=0 approved_accounts=0 assignments=0 agent=14` |
@@ -38,10 +38,19 @@ o artefato nativo antes de chamar `execenv`; erro de validacao bloqueia a task.
 
 ## 3. Lacuna real: modelo de identidade
 
-O registry de isolamento indexa slot por `terminal_id`; a task do Multica traz `AgentID` e
-provider. A ponte T2 cruza apenas slots fisicamente existentes e elegiveis, escolhe por
-rendezvous-hash de `AgentID + provider` e persiste o slot pseudonimo escolhido. Nenhuma
-identidade, email ou valor de credencial entra no arquivo de atribuicao ou nos logs.
+O registry legado indexava slot por `terminal_id` efemero e persistia um UUID de fallback quando a
+consulta falhava, incrementando `next_slot` para cada identidade nao vista e produzindo crescimento
+ilimitado de pastas historicas.
+
+O contrato corrigido usa identidade explicita e estavel: `AGENT_CRED_ISOLATION_AGENT_ID`, UUID
+canonico nao-zero, mais `AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT`, SHA-256 em 64 hex
+minusculos. Identidade ausente ou invalida falha antes de qualquer alocacao. Herdr, pane, TTY, PID,
+processo e UUID aleatorio deixam de ser fontes de identidade.
+
+A camada de metadados emite `home_ref` UUID canonico deterministico e `name_ref` canonico
+`name_<43>` separado, e nao cria diretorio fisico. **NAO VERIFICADO:** que a derivacao do
+`home_ref` usa exatamente esses dois insumos. Sem essa igualdade, pastas e entradas de catalogo nao
+correlacionam e a cardinalidade nao e verificavel.
 
 ## 4. Bloqueio de topologia
 
@@ -66,20 +75,37 @@ qualquer preparacao. Reuse nao converte erro em fallback global.
 
 ## 7. Estrategia de atribuicao
 
-`rendezvous-hash` de `AgentID + provider`, com persistencia atomica `0600` do slot escolhido.
-Round-robin foi rejeitado: quebra afinidade e atribuicao. Se um slot persistido deixa de ser
-elegivel, a task falha; remapeamento exige acao operacional explicita.
+Selecao deterministica a partir de
+`AGENT_CRED_ISOLATION_AGENT_ID + AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT`, com persistencia
+atomica `0600`. Round-robin foi rejeitado: quebra afinidade e atribuicao. Se um slot persistido
+deixa de ser elegivel, a task falha; remapeamento exige acao operacional explicita.
+
+A reconciliacao fisica e por binding, nunca por idade: exatamente uma pasta por binding ativo, zero
+pastas historicas, auditoria privilegiada de todos os processos via `/proc` exigida em producao,
+falha fechada sem remocao quando indisponivel, homes referenciados por processo vivo preservados, e
+adocao no lugar do unico slot legado ativo sem mover ou sobrescrever.
+
+A camada de metadados e independente: tombstones persistem para nao-reuso, prazos de retencao sao
+evidencia apenas e nunca apagam tombstone, e o catalogo nao cria nem remove pasta fisica.
 
 ## 8. Decisoes travadas
 
 1. T2 no ORQ2; nao ha mount nem copia global para o ORQ1.
 2. Isolamento nao sera reimplementado; sera integrado.
 3. agy/antigravity, codex e kiro obrigatorios; demais providers fora.
-4. Atribuicao por rendezvous-hash, nao round-robin.
+4. Atribuicao deterministica por identidade estavel
+   `AGENT_CRED_ISOLATION_AGENT_ID + AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT`, nao
+   round-robin e nao identidade efemera.
 5. Ausencia, symlink, raiz errada ou artefato nativo ausente bloqueia a task.
 6. Discovery AGY usa somente homes validados da allowlist e tenta o proximo elegivel em falha.
 7. O task-home AGY recebe somente `antigravity-oauth-token` como arquivo fisico `0600`;
    artefatos irmaos do provider nunca sao copiados.
+8. Retencao de pasta e por binding, nao por idade.
+9. Prazo de retencao de metadados e evidencia apenas e nunca apaga tombstone.
+10. A camada de catalogo nao cria, copia nem remove pasta fisica.
+11. Nomes externos canonicos do Runtime Manager: `version`, `configuration_digest` e
+    `capability_digest`, hex minusculo de 64 caracteres sem prefixo. O `schema_version` interno do
+    preimage de digest permanece inalterado, pois renomea-lo mudaria todo digest ja produzido.
 
 ## 9. Reasoning por formato de catalogo
 
@@ -114,3 +140,16 @@ nao atribuivel.
 - Migration 128 e o stack ORQ-21 precisam entrar juntos; integrar ORQ-12 sozinho deixaria a
   semantica de recusa das linhas legadas incompleta.
 - Binario do daemon roda de `/tmp/multica-auth-fixed`, volatil.
+- O alocador instalado no ORQ2 nao foi alterado. A correcao e apenas de codigo-fonte, portanto o
+  defeito de identidade permanece vivo em producao ate um rebuild e restart nao autorizados.
+- Componentes revisados passam isoladamente; um gate verde de pacote nao evidencia caminho
+  alcancavel na arvore aceita. A composicao concreta em PostgreSQL esta implementada e validada na
+  fonte compartilhada `spe6`, com idempotencia duravel, locking de parent, UUID esperado
+  fail-closed, `apply_class` persistido e mount sob router/middleware; o risco remanescente e a
+  importacao seletiva com revisao na arvore aceita e a verificacao contra banco real.
+- A arvore raiz destacada do ORQ2 nao e alvo de release; a fonte de integracao e
+  `worktrees/spe6-runtime-schema`, com importacao final seletiva.
+- O gate de banco foi executado e aprovado em PostgreSQL descartavel e limpo, com auto-limpeza e sem
+  estado persistente, incluindo suite completa com e sem `-race` e `go vet ./...`. O risco
+  remanescente nao e mais o banco, e sim a transferencia seletiva para a arvore aceita e os gates
+  consolidados no alvo.

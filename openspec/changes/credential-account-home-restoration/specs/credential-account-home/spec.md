@@ -49,17 +49,35 @@ O daemon MUST aplicar as mesmas garantias de isolamento aos caminhos Prepare e R
 - **WHEN** o patch e aplicado
 - **THEN** MUST cobrir o caminho Prepare e o caminho Reuse, que duplicam as mesmas condicoes
 
-### Requirement: REQ-05 Atribuicao estavel
+### Requirement: REQ-05 Identidade estavel e atribuicao deterministica
 
-O daemon MUST manter afinidade deterministica e persistida entre agente, provider e slot.
+A alocacao MUST usar identidade explicita e estavel composta por UUID canonico nao-zero do
+agente mais fingerprint SHA-256 da subscription do provider em 64 caracteres hex minusculos.
+Os portadores canonicos sao `AGENT_CRED_ISOLATION_AGENT_ID` e
+`AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT`. Ausencia ou invalidade de qualquer componente
+MUST falhar antes de qualquer alocacao de raiz.
 
 #### Scenario: Repetir tasks do mesmo agente
 
-- **WHEN** um agente executa tasks repetidas
-- **THEN** a selecao de slot MUST usar rendezvous-hash de `AgentID+provider` e MUST persistir a
-  escolha
+- **WHEN** um agente executa tasks repetidas sob a mesma subscription
+- **THEN** a selecao MUST ser deterministica a partir de
+  `AGENT_CRED_ISOLATION_AGENT_ID + AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT`
+- **AND** MUST persistir a escolha
 - **AND** MUST NOT usar round-robin
-- **AND** um slot persistido inelegivel MUST falhar em vez de remapear silenciosamente
+
+#### Scenario: Identidade ausente ou invalida
+
+- **WHEN** o UUID do agente e zero ou ausente, ou o fingerprint nao e exatamente 64 hex
+  minusculos
+- **THEN** a alocacao MUST falhar fechada antes de criar ou reservar qualquer raiz
+- **AND** MUST NOT derivar identidade de Herdr, pane, TTY, PID, processo ou UUID aleatorio
+- **AND** MUST NOT incrementar contador de slot
+
+#### Scenario: Slot persistido inelegivel
+
+- **WHEN** um slot persistido deixa de ser elegivel
+- **THEN** a task MUST falhar em vez de remapear silenciosamente
+- **AND** o remapeamento MUST exigir acao operacional explicita
 
 ### Requirement: REQ-06 Runtimes obrigatorios
 
@@ -158,3 +176,53 @@ copiar somente esse snapshot para `task_usage`. O daemon MUST NOT enviar `accoun
 - **WHEN** nenhuma conta aprovada foi congelada
 - **THEN** `task_usage.account_id` MUST permanecer NULL
 - **AND** relatorios MUST expor o bucket NULL em vez de omiti-lo dos totais
+
+### Requirement: REQ-11 Cardinalidade fisica das raizes de credencial
+
+O numero de diretorios fisicos de credencial MUST ser exatamente igual ao numero de bindings
+ativos estaveis. Retencao por idade MUST NOT ser usada como politica.
+
+#### Scenario: Reconciliacao do conjunto ativo
+
+- **WHEN** a reconciliacao executa
+- **THEN** MUST existir exatamente um diretorio fisico por binding ativo estavel
+- **AND** diretorios historicos MUST ser zero
+- **AND** a reconciliacao de producao MUST exigir auditoria de todos os processos via `/proc`
+  com privilegio de root, falhando fechada e sem remover nada quando indisponivel
+- **AND** homes referenciados por processo vivo MUST ser preservados
+- **AND** a idade do diretorio MUST NOT ser criterio de remocao
+
+#### Scenario: Slot legado unico preexistente
+
+- **WHEN** um slot legado ativo unico e encontrado durante a adocao
+- **THEN** ele MUST ser adotado no lugar, sem mover, sobrescrever ou recriar
+- **AND** seu conteudo de credencial MUST NOT ser lido, copiado ou impresso
+
+### Requirement: REQ-12 Tombstone de metadados e nao-reuso
+
+A camada de metadados MUST preservar tombstones para garantir nao-reuso, independentemente da
+reconciliacao fisica.
+
+#### Scenario: Referencia liberada ou revalidacao falha
+
+- **WHEN** a ultima referencia cai para zero ou uma revalidacao falha
+- **THEN** um tombstone completo MUST ser persistido imediatamente, com rollback e retry em
+  falha de persistencia
+- **AND** o nao-reuso MUST sobreviver a restart, restaurado por geracao duravel com fence de
+  admissao no startup
+
+#### Scenario: Prazo de retencao expira
+
+- **WHEN** um prazo de retencao de metadados expira
+- **THEN** o prazo MUST ser tratado como evidencia apenas
+- **AND** o tombstone MUST NOT ser apagado por expiracao de prazo
+- **AND** a camada de catalogo MUST NOT executar copia, remocao ou historico de pasta fisica
+
+#### Scenario: Correlacao entre metadados e pasta fisica
+
+- **WHEN** um `home_ref` UUID canonico e emitido
+- **THEN** ele MUST ser derivado deterministicamente de
+  `AGENT_CRED_ISOLATION_AGENT_ID + AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT`, exatamente
+  os mesmos insumos usados pelo alocador fisico
+- **AND** `name_ref` MUST ser um valor canonico `name_<43>` distinto do `home_ref`
+- **AND** a camada de catalogo MUST NOT criar diretorio fisico

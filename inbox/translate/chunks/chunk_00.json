@@ -1,0 +1,2326 @@
+[
+{
+"id": 0,
+"es": "@Calviño Tavares, Enrique"
+},
+{
+"id": 1,
+"es": " aplica???"
+},
+{
+"id": 2,
+"es": "Onesait Metering - Base de Conocimiento"
+},
+{
+"id": 3,
+"es": "Exported on 2026-07-28 13:21:29"
+},
+{
+"id": 4,
+"es": "Table of Contents"
+},
+{
+"id": 5,
+"es": "Alcance Funcional"
+},
+{
+"id": 6,
+"es": "1. Introducción"
+},
+{
+"id": 7,
+"es": "2. Funcionalidad y características"
+},
+{
+"id": 8,
+"es": "3. Bloques Principales"
+},
+{
+"id": 9,
+"es": "4. Área de Trabajo"
+},
+{
+"id": 10,
+"es": "5. Inventario"
+},
+{
+"id": 11,
+"es": "6. Ciclo de vida de la medida"
+},
+{
+"id": 12,
+"es": "7. Telemedición"
+},
+{
+"id": 13,
+"es": "8. Gestión de Medidas"
+},
+{
+"id": 14,
+"es": "9. Mediciones"
+},
+{
+"id": 15,
+"es": "10. Informes"
+},
+{
+"id": 16,
+"es": "11. Integración"
+},
+{
+"id": 17,
+"es": "12. Administración"
+},
+{
+"id": 18,
+"es": "13. Seguimiento"
+},
+{
+"id": 19,
+"es": "Descripción Funcional"
+},
+{
+"id": 20,
+"es": "Introducción a Onesait Metering"
+},
+{
+"id": 21,
+"es": "Configuración Inicial"
+},
+{
+"id": 22,
+"es": "Inventario"
+},
+{
+"id": 23,
+"es": "Telemedición"
+},
+{
+"id": 24,
+"es": "Gestión de Medidas"
+},
+{
+"id": 25,
+"es": "Mediciones"
+},
+{
+"id": 26,
+"es": "Informes"
+},
+{
+"id": 27,
+"es": "Integración"
+},
+{
+"id": 28,
+"es": "Administración"
+},
+{
+"id": 29,
+"es": "Seguimiento"
+},
+{
+"id": 30,
+"es": "Generalidades"
+},
+{
+"id": 31,
+"es": "Glosario de Términos"
+},
+{
+"id": 32,
+"es": "Modelo Entidades"
+},
+{
+"id": 33,
+"es": "Protocolos integrados"
+},
+{
+"id": 34,
+"es": "Medidores integrados y sus protocolos"
+},
+{
+"id": 35,
+"es": "Solución Hot/Cold"
+},
+{
+"id": 36,
+"es": "Magnitudes"
+},
+{
+"id": 37,
+"es": "Marco de Integración"
+},
+{
+"id": 38,
+"es": "Estrategia de Integración"
+},
+{
+"id": 39,
+"es": "Dominios Principales"
+},
+{
+"id": 40,
+"es": "Paquetización por sistema"
+},
+{
+"id": 41,
+"es": "Licencias Onesait Metering"
+},
+{
+"id": 42,
+"es": "1. Objetivo"
+},
+{
+"id": 43,
+"es": "2. Alcance"
+},
+{
+"id": 44,
+"es": "4.Formato y Ubicación de la Licencia"
+},
+{
+"id": 45,
+"es": "5. Reglas de Validación"
+},
+{
+"id": 46,
+"es": "6. Integración en el Flujo de Login"
+},
+{
+"id": 47,
+"es": "7. Comportamiento ante Fallos"
+},
+{
+"id": 48,
+"es": "8. Gestión de la Clave Pública"
+},
+{
+"id": 49,
+"es": "9. Requisitos No Funcionales"
+},
+{
+"id": 50,
+"es": "Características"
+},
+{
+"id": 51,
+"es": "Onesait Metering "
+},
+{
+"id": 52,
+"es": "es una solución "
+},
+{
+"id": 53,
+"es": "robusta, consistente y completa "
+},
+{
+"id": 54,
+"es": "que incluye un conjunto común de características y funciones como "
+},
+{
+"id": 55,
+"es": "VEE, persistencia y escalabilidad de datos, interfaz con sistema de facturación, presencia de clientes y soporte de análisis de consumo, "
+},
+{
+"id": 56,
+"es": "entre otros."
+},
+{
+"id": 57,
+"es": "Contenido"
+},
+{
+"id": 58,
+"es": "Unable to load page tree. It seems that you do not have permission to view the root page."
+},
+{
+"id": 59,
+"es": "Expand all"
+},
+{
+"id": 60,
+"es": "Collapse all"
+},
+{
+"id": 61,
+"es": "Onesait Metering"
+},
+{
+"id": 62,
+"es": "Novedades"
+},
+{
+"id": 63,
+"es": "Onesait Metering - Pack Documental"
+},
+{
+"id": 64,
+"es": "1. Introducción"
+},
+{
+"id": 65,
+"es": "Onesait Metering, es una solución de Minsait (Indra Sistemas S.A.) para la lectura, adquisición y gestión de los datos de medición en el ámbito de las Smart Grids, siendo el resultado de la experiencia en Gestión de Datos de Medición en diferentes empresas de Utilities desde 1998 hasta la actualidad."
+},
+{
+"id": 66,
+"es": "El objetivo principal de Onesait Metering es poner a disposición de terceros sistemas (por ejemplo, el sistema comercial) los datos recibidos por adquisición de los propios equipos de campo haciendo uso de la infraestructura de comunicaciones suministrada por el negocio o de otras fuentes (como sistemas de Telemedición, SCADAs) que han sido tratados y certificados previamente dentro del propio sistema."
+},
+{
+"id": 67,
+"es": "Onesait Metering es un producto avanzado que centraliza la lectura, adquisición, procesamiento, almacenamiento y certificación de medidas, y otros datos de interés para Utilities."
+},
+{
+"id": 68,
+"es": "Proporciona una gran variedad de mecanismos, a través de los cuales el usuario obtiene el perfil de carga completo y certificado, junto con otros datos de los medidores para poder aprovechar al máximo todo el potencial de estos."
+},
+{
+"id": 69,
+"es": "Trabaja con un ciclo de medidas que abarca desde la lectura y adquisición de los datos de los equipos de campo o los sistemas de captura de datos, hasta la generación de informes personalizados para exportarlos a otros sistemas."
+},
+{
+"id": 70,
+"es": "Dispone de todos los mecanismos requeridos para garantizar la validez y calidad de las medidas (Validación), así como para asegurar la integridad de las medidas y el relleno de huecos (Estimación y Edición). Permite trabajar con diferentes periodos de integración (cuarto horario, horario, diario, mensual)."
+},
+{
+"id": 71,
+"es": "Entre sus características básicas, destacan:"
+},
+{
+"id": 72,
+"es": "Automatización"
+},
+{
+"id": 73,
+"es": "Onesait Metering proporciona una ejecución automática de procesos con flujo de trabajo común, como puede ser el proceso VEE (Validación, Estimación y Edición) o el intercambio de datos con sistemas externos. Permite configurar los parámetros de las tareas y planificarlas, reduciendo así la necesidad de intervención del usuario."
+},
+{
+"id": 74,
+"es": "Seguridad"
+},
+{
+"id": 75,
+"es": "La interfaz de Onesait Metering es una aplicación web accesible desde cualquier navegador, y el acceso de cada usuario puede ser configurado a través de la funcionalidad de seguridad, estableciendo los permisos correspondientes tanto a nivel de funciones (acceso a las diferentes herramientas o funcionalidades de este), mediante perfiles, como a nivel de elementos."
+},
+{
+"id": 76,
+"es": "Trazabilidad"
+},
+{
+"id": 77,
+"es": "Onesait Metering refleja y monitoriza todas las modificaciones y operaciones hechas por los usuarios, permitiendo así tener una total trazabilidad de la información y las acciones, para fines de auditoría."
+},
+{
+"id": 78,
+"es": "Escalabilidad"
+},
+{
+"id": 79,
+"es": "Onesait Metering es capaz de adaptarse según volumetría, permite la ampliación del sistema fácilmente."
+},
+{
+"id": 80,
+"es": "Onesait Metering, OM, proporciona capacidades en las distintas fases del tratamiento de medidas:"
+},
+{
+"id": 81,
+"es": "Captura de Datos"
+},
+{
+"id": 82,
+"es": " — ofrece un único canal de comunicación con los medidores, agnóstico a cualquier fabricante, gestionando y monitorizando las comunicaciones. Permite la configuración y gestión de equipamiento local y remoto además de equipos en campo. "
+},
+{
+"id": 83,
+"es": "Gestión de Mediciones"
+},
+{
+"id": 84,
+"es": " — centraliza el procesamiento, almacenamiento, completitud y certificación de las medidas, además del uso de otros datos de interés para Utilities (activos, clientes...). "
+},
+{
+"id": 85,
+"es": "Onesait Metering es una aplicación web accesible desde cualquier navegador, sin la necesidad de instalar ningún software adicional. El acceso de cada usuario puede ser configurado a través de la funcionalidad de seguridad, estableciendo los permisos correspondientes tanto a nivel de funciones (acceso a las diferentes herramientas o funcionalidades de este) como a nivel de elementos (por ejemplo, puntos de medida o grupos).  "
+},
+{
+"id": 86,
+"es": "El usuario accederá al sistema con su usuario y clave, el sistema comprobará la validez y mostrará el área de trabajo correspondiente a su perfil, con la funcionalidad y elementos asignados en la configuración de seguridad de este."
+},
+{
+"id": 87,
+"es": "El área de trabajo de la aplicación dispone de los siguientes componentes que posibilitan un entorno intuitivo:"
+},
+{
+"id": 88,
+"es": "Menú Vertical"
+},
+{
+"id": 89,
+"es": "Situado en la parte izquierda de la ventana, permite el acceso a los módulos principales de la aplicación y sus funcionalidades."
+},
+{
+"id": 90,
+"es": "Accesos directos barra superior del usuario"
+},
+{
+"id": 91,
+"es": "Situados en la parte superior derecha de la interfaz, permiten acceder de forma ágil a elementos, como las opciones de seguridad del usuario:"
+},
+{
+"id": 92,
+"es": "Widgets de búsqueda"
+},
+{
+"id": 93,
+"es": "Localización rápida de los elementos principales del sistema, Puntos de Medida y Grupos de Puntos, a través de su identificador."
+},
+{
+"id": 94,
+"es": "Ruta de navegación"
+},
+{
+"id": 95,
+"es": "Permite conocer en todo momento en qué pantalla estamos trabajando y de cuál depende."
+},
+{
+"id": 96,
+"es": "El sistema dispone de un módulo de Inventario dedicado a la gestión de las entidades necesarias para el funcionamiento normal del sistema, que también centraliza la configuración de los datos de medición y sus funcionalidades complementarias."
+},
+{
+"id": 97,
+"es": "El inventario de Onesait Metering trabaja con dos bloques principales:"
+},
+{
+"id": 98,
+"es": "Datos relacionados con la infraestructura de la red energética"
+},
+{
+"id": 99,
+"es": " (puntos de medida, equipos, instalaciones), los cuales pueden sufrir cambios debidos al aumento o reducción del equipamiento instalado en campo, o a posibles modificaciones en su configuración."
+},
+{
+"id": 100,
+"es": "Datos Maestros"
+},
+{
+"id": 101,
+"es": ", los cuales dan soporte a las entidades anteriores y procesos internos del sistema. Esta información debe ser configurada por un usuario administrador y en condiciones normales, no debe sufrir grandes modificaciones."
+},
+{
+"id": 102,
+"es": "Para cada uno de estos elementos se podrán definir y utilizar sus propiedades de manera dinámica."
+},
+{
+"id": 103,
+"es": "Modelo de Red"
+},
+{
+"id": 104,
+"es": "Representa el modelo de negocio del cliente ("
+},
+{
+"id": 105,
+"es": "Propietarios"
+},
+{
+"id": 106,
+"es": " de los puntos de medida y "
+},
+{
+"id": 107,
+"es": "Clientes"
+},
+{
+"id": 108,
+"es": " a los que se presta servicio), y los "
+},
+{
+"id": 109,
+"es": "elementos"
+},
+{
+"id": 110,
+"es": " que forman parte "
+},
+{
+"id": 111,
+"es": "de la red"
+},
+{
+"id": 112,
+"es": " energética del mismo ("
+},
+{
+"id": 113,
+"es": "Instalaciones"
+},
+{
+"id": 114,
+"es": " como centros de transformación, centrales de generación)."
+},
+{
+"id": 115,
+"es": "Los Elementos de Red, de tipo Instalación, están representados por un Punto de Medida en el sistema, que agregará sus consumos, incidencias o cualquier tipo de evento. Pueden tener asociados uno o varios equipos de cualquier categoría excepto medición, organizarse de forma jerárquica asociándolos a equipos padre, y la posibilidad de añadir uno o varios puntos de medida."
+},
+{
+"id": 116,
+"es": "Gestión de Puntos"
+},
+{
+"id": 117,
+"es": "En este módulo se definen y configuran los diferentes Puntos de Medida que forman parte de la red del cliente."
+},
+{
+"id": 118,
+"es": "El Punto de Medida es la entidad principal del sistema, con la que se relacionan el resto de los elementos de negocio que forman parte del inventario (Equipos de Medición, Instalaciones, Propietarios, Clientes)."
+},
+{
+"id": 119,
+"es": "Puntos de Medida"
+},
+{
+"id": 120,
+"es": "El Punto de Medida es la entidad lógica que representa la ubicación física o lugar concreto de la red donde se conectan los equipos de medida, y sobre la que se realizan y asocian las medidas. Es el elemento más importante del sistema y que reúne el mayor número de características y propiedades, que determinan su identificación, comportamiento o situación."
+},
+{
+"id": 121,
+"es": "Dependiendo del ámbito y actividad, el Punto de Medida puede disponer de diferentes atributos. "
+},
+{
+"id": 122,
+"es": "Entre los principales se encuentran:"
+},
+{
+"id": 123,
+"es": "Ámbito ("
+},
+{
+"id": 124,
+"es": "Comercialización, Distribución, Generación, Transporte)"
+},
+{
+"id": 125,
+"es": "Actividad"
+},
+{
+"id": 126,
+"es": " (Térmica, Eólica…)"
+},
+{
+"id": 127,
+"es": "Coordenadas "
+},
+{
+"id": 128,
+"es": "o dirección del punto"
+},
+{
+"id": 129,
+"es": "Equipo/s asociado/s"
+},
+{
+"id": 130,
+"es": " y su vigencia"
+},
+{
+"id": 131,
+"es": "Magnitud"
+},
+{
+"id": 132,
+"es": " de medida (si se trata de un punto de medida con un equipo de medición asociado)"
+},
+{
+"id": 133,
+"es": "Grupo de puntos"
+},
+{
+"id": 134,
+"es": " de medida al que pueda pertenecer"
+},
+{
+"id": 135,
+"es": "Configuración"
+},
+{
+"id": 136,
+"es": "VEE"
+},
+{
+"id": 137,
+"es": " (Procesos de Validación, Edición y Estimación)."
+},
+{
+"id": 138,
+"es": "Grupos de puntos de medida"
+},
+{
+"id": 139,
+"es": "Los Puntos de Medida pueden ser agrupados en lo que llamaremos Grupos de Puntos, cuyo objetivo es poder utilizar de forma masiva un conjunto de puntos para realizar ciertas operaciones como, por ejemplo, asignar permisos de acceso por grupo o aplicar algún proceso de negocio a todos los puntos del grupo de forma simultánea, como el rellenado de huecos."
+},
+{
+"id": 140,
+"es": "Los Grupos se pueden formar siguiendo cualquier criterio que el usuario estime oportuno, aunque normalmente se suele corresponder con algún criterio o lógica de negocio que defina un tratamiento y relación común."
+},
+{
+"id": 141,
+"es": "La asignación de Puntos a Grupos se puede hacer:"
+},
+{
+"id": 142,
+"es": "Estáticamente: "
+},
+{
+"id": 143,
+"es": "Se realiza mediante la asignación punto a punto"
+},
+{
+"id": 144,
+"es": "Dinámicamente: "
+},
+{
+"id": 145,
+"es": "Se realiza a partir de la configuración de determinadas reglas de negocio como: un determinado cliente, ámbito o nivel de tensión, entre otros. Todos aquellos Puntos de Medida que cumplan con todas y cada una de las reglas de negocio definidas en el grupo, pasarán a pertenecer al mismo automáticamente."
+},
+{
+"id": 146,
+"es": "Gestión de Equipos"
+},
+{
+"id": 147,
+"es": "Onesait Metering tiene la capacidad de gestionar la información relativa a la configuración de los Equipos físicos instalados en campo."
+},
+{
+"id": 148,
+"es": "Llamamos Inventario de Activos al conjunto de equipos instalados a lo largo de la red. Cada uno de estos equipos, de diferentes características, tendrá un determinado fin, principalmente el de medición de parámetros y magnitudes."
+},
+{
+"id": 149,
+"es": "Equipos"
+},
+{
+"id": 150,
+"es": "Normalmente, los equipos se asocian con los Puntos de Medida del sistema, ya que éstos representan, entre otros, los lugares de la red donde se toman las mediciones."
+},
+{
+"id": 151,
+"es": "Para cada equipo se define un conjunto de atributos propios de configuración y auditoría, dependiendo de su tipo, marca y modelo. Y, en función de los anteriores, el activo dispondrá de unas propiedades de identificación y configuración, u otras."
+},
+{
+"id": 152,
+"es": "Las características más comunes de un equipo incluyen algunos atributos coincidentes con el punto de medida al que se asociarán, y otras propias del equipo físico. "
+},
+{
+"id": 153,
+"es": "Entre otros atributos, los equipos se caracterizan por:"
+},
+{
+"id": 154,
+"es": "Tipo de Equipo"
+},
+{
+"id": 155,
+"es": " (según Categoría como equipo de medidas, de comunicaciones u otras)"
+},
+{
+"id": 156,
+"es": "Modelo"
+},
+{
+"id": 157,
+"es": "Protocolo"
+},
+{
+"id": 158,
+"es": " de comunicaciones soportado para la Telemedida."
+},
+{
+"id": 159,
+"es": "Onesait Metering tiene la capacidad de conocer la situación de cada equipo-punto de medida mediante el seguimiento de diferentes "
+},
+{
+"id": 160,
+"es": "estados del equipo"
+},
+{
+"id": 161,
+"es": "estado de "
+},
+{
+"id": 162,
+"es": "Ubicación"
+},
+{
+"id": 163,
+"es": " (determina si está instalado, en almacén, u otros.)"
+},
+{
+"id": 164,
+"es": "Operación"
+},
+{
+"id": 165,
+"es": " (determina su situación respecto al ciclo de medida, si está activo tomando mediciones o no)"
+},
+{
+"id": 166,
+"es": "Comunicación"
+},
+{
+"id": 167,
+"es": " (indica la conectividad con el equipamiento de campo)."
+},
+{
+"id": 168,
+"es": "Grupos de equipos"
+},
+{
+"id": 169,
+"es": "Los Equipos pueden ser agrupados en lo que llamaremos Grupos de Equipos, cuyo objetivo es poder utilizar de forma masiva todo el conjunto de equipos para realizar ciertas operaciones como, por ejemplo, ejecutar peticiones manuales o planificadas a todos los equipos del grupo de forma simultánea, como el rellenado de huecos."
+},
+{
+"id": 170,
+"es": "Los Grupos se pueden formar siguiendo cualquier criterio que el usuario estime oportuno, aunque normalmente se suele corresponder con algún criterio o lógica del sistema AMI que defina un tratamiento y relación común."
+},
+{
+"id": 171,
+"es": "La asignación de Equipos a Grupos se puede hacer:"
+},
+{
+"id": 172,
+"es": "Se realiza mediante la asignación equipo a equipo"
+},
+{
+"id": 173,
+"es": "Se realiza a partir de la configuración de determinadas reglas de negocio como: un protocolo determinado, un área determinada, equipos de una tipología específica... Todos aquellos Equipos que cumplan con todas y cada una de las reglas de negocio definidas en el grupo, pasarán a pertenecer al mismo automáticamente."
+},
+{
+"id": 174,
+"es": "Tipos de Equipo"
+},
+{
+"id": 175,
+"es": "El sistema permite definir tantos tipos de equipos o activos como sean necesarios para representar la red del cliente."
+},
+{
+"id": 176,
+"es": "Dependiendo de la Categoría (Medición, Intermedio, Complementario y Comunicaciones), el sistema dispondrá de unos tipos u otros (contador inteligente, concentrador de datos)."
+},
+{
+"id": 177,
+"es": "El tipo de equipo más utilizado en el sistema es el Contador Inteligente, el cual recoge los datos de medición en campo, y los almacena en su Punto de Medida asociado."
+},
+{
+"id": 178,
+"es": "El sistema Onesait Metering tiene la capacidad de dar soporte a procesos internos y a las entidades que lo conforman mediante la gestión de Datos Maestros."
+},
+{
+"id": 179,
+"es": "Entre otros, dispone de entidades de datos maestros con distintos fines:"
+},
+{
+"id": 180,
+"es": "ratamiento de la medida"
+},
+{
+"id": 181,
+"es": ": como la"
+},
+{
+"id": 182,
+"es": "Estructura Tarifaria (necesaria para llevar a cabo la facturación de los puntos de suministro de tipo Comercialización), Configuración TOU o Perfil Horario (reparto por tarifa día y hora para los diferentes Totalizadores), Zona horaria,"
+},
+{
+"id": 183,
+"es": "Funcionamiento del Sistema"
+},
+{
+"id": 184,
+"es": ": Formatos Fichero, Estrategias (acciones que se desencadenarán de forma automática tras la finalización de un determinado proceso),"
+},
+{
+"id": 185,
+"es": ": como Fabricantes, Ubicación de Activos, Tipo de Instalación."
+},
+{
+"id": 186,
+"es": "El concepto Ciclo de Medición hace referencia a las diferentes fases y estados por los que pasan los datos de medición durante su tratamiento. Establece una serie de procesos que permiten adaptar múltiples entradas de datos a un único conjunto de datos certificado y completo."
+},
+{
+"id": 187,
+"es": "El Ciclo de Medición Principal del sistema, se puede dividir en tres fases diferenciadas:"
+},
+{
+"id": 188,
+"es": "Entrada de datos de Medición desde los diferentes orígenes que alimentan al sistema."
+},
+{
+"id": 189,
+"es": "Tratamiento de estos datos de Medición donde se validan y certifican los mismos, entre otras tareas."
+},
+{
+"id": 190,
+"es": "Envío a terceros de los datos de medición tratados en el sistema en el formato y contenido requerido."
+},
+{
+"id": 191,
+"es": "A continuación, se detallarán las funcionalidades que implementa el sistema Onesait Metering en cada fase."
+},
+{
+"id": 192,
+"es": "7. Telemedición "
+},
+{
+"id": 193,
+"es": "Módulo principal de los procesos "
+},
+{
+"id": 194,
+"es": "MDC ("
+},
+{
+"id": 195,
+"es": "Meter Data Capture"
+},
+{
+"id": 196,
+"es": "Meter Data Collector)"
+},
+{
+"id": 197,
+"es": ", en el que se definen y configuran las distintas peticiones y llamadas sobre los equipos de campo (equipos finales o DCU) que dotan al sistema de capacidades de colecta."
+},
+{
+"id": 198,
+"es": "Este módulo de Telemedición se focaliza en la primera fase, en la entrada de datos al sistema, es decir, la medición de los activos en campo."
+},
+{
+"id": 199,
+"es": "Configurable Multiprotocolo "
+},
+{
+"id": 200,
+"es": "Onesait Metering es una solución multiprotocolo, que proporciona de forma estándar soporte a los protocolos:"
+},
+{
+"id": 201,
+"es": "STG-DC 3.4"
+},
+{
+"id": 202,
+"es": "DLMS"
+},
+{
+"id": 203,
+"es": "Adicionalmente, su arquitectura proporciona el soporte necesario para incorporar nuevos protocolos, garantizando así una apertura multiprotocolo. "
+},
+{
+"id": 204,
+"es": "El sistema trabaja con tres tipos de "
+},
+{
+"id": 205,
+"es": "Peticiones"
+},
+{
+"id": 206,
+"es": "Peticiones de lectura o recuperación de medidas, como recuperación de Perfil de Carga, Perfil de Carga Absoluto o Medidas de Cierre."
+},
+{
+"id": 207,
+"es": "Comandos u operaciones de escritura, que alteran la configuración de equipos de medida"
+},
+{
+"id": 208,
+"es": "Recepción de notificaciones de datos espontáneas (push) desde los equipos en campo"
+},
+{
+"id": 209,
+"es": "Recuperación de Huecos"
+},
+{
+"id": 210,
+"es": "Onesait Metering tiene la capacidad de localizar las medidas no recuperadas, parciales de un periodo o totales, para las medidas de perfil de carga o cierre de facturación."
+},
+{
+"id": 211,
+"es": "Para ello dispone, como parte del catálogo de peticiones, de varios adaptadores enfocados en la recuperación de huecos/GAPs de los diferentes tipos de medidas recibidas."
+},
+{
+"id": 212,
+"es": "Estas peticiones proporcionan un gran potencial en gestión de la medida permitiendo recuperar las medidas faltantes."
+},
+{
+"id": 213,
+"es": "Gestión de Llamadas"
+},
+{
+"id": 214,
+"es": "Onesait Metering permite definir y configurar peticiones de lectura y escritura ejecutadas sobre los equipos de campo, tanto de manera manual como de manera planificada, así como hacer un seguimiento de éstas desde el Monitor de Llamadas."
+},
+{
+"id": 215,
+"es": "Ejecución Manual"
+},
+{
+"id": 216,
+"es": "Se trata de llamadas o peticiones que se ejecutan puntualmente, accediendo directamente a un equipo, punto de medida o grupo de puntos de medida, y seleccionando la petición deseada (curva de consumos, lecturas, hora del equipo) y completando los parámetros de esta."
+},
+{
+"id": 217,
+"es": "Esta funcionalidad es complementaria a las llamadas planificadas, gracias a la cual se pueden obtener respuestas de los equipos de campo ante alguna anomalía, corte de comunicaciones o cualquier otra situación."
+},
+{
+"id": 218,
+"es": "Esta ejecución no queda guardada en el sistema, sólo se almacenan los resultados de la petición."
+},
+{
+"id": 219,
+"es": "Ejecución Planificada"
+},
+{
+"id": 220,
+"es": "Permite la ejecución masiva de peticiones de manera planificada."
+},
+{
+"id": 221,
+"es": "Una vez alcanzada la fecha planificada, el proceso se ejecutará de forma automática, siguiendo la configuración establecida. Los planificadores permiten también, llevar a cabo ejecuciones puntuales. Estos procesos se realizan igualmente con los parámetros predefinidos y se monitorizan de forma similar."
+},
+{
+"id": 222,
+"es": "Monitor de Llamadas "
+},
+{
+"id": 223,
+"es": "Permite monitorizar las diferentes solicitudes que se realizan a los medidores de campo, tanto para llamada manual como planificada."
+},
+{
+"id": 224,
+"es": "Dicha monitorización se lleva a cabo en una vista con diferentes niveles de detalle y para facilitar el seguimiento se identifican los estados por los que pasa el proceso: Espera, Finalizado, Ejecución, Finalizado, Finalizada con Error, Cancelada."
+},
+{
+"id": 225,
+"es": "Datos remotos"
+},
+{
+"id": 226,
+"es": "Onesait Metering permite almacenar y visualizar en el sistema las propiedades de configuración de los equipos remotos (Medidores, DCUs) obtenidos mediante peticiones a los mismos (Fecha/Hora, Configuración de equipo…)."
+},
+{
+"id": 227,
+"es": "Configuración Remota"
+},
+{
+"id": 228,
+"es": "Permite dar valor real a los Parámetros Remotos, asociándolos al equipo correspondiente."
+},
+{
+"id": 229,
+"es": "De esta manera se almacenan asociados a cada equipo todos aquellos parámetros remotos del mismo."
+},
+{
+"id": 230,
+"es": "Eventos de Comunicación"
+},
+{
+"id": 231,
+"es": "Permite almacenar los eventos de comunicación relacionados con los equipos de medición de tipo “"
+},
+{
+"id": 232,
+"es": "Parent"
+},
+{
+"id": 233,
+"es": "”, tales como DCU o "
+},
+{
+"id": 234,
+"es": "DataLogger"
+},
+{
+"id": 235,
+"es": "En este módulo se definen y configuran los diferentes elementos que forman parte del Ciclo de Medición de Onesait Metering."
+},
+{
+"id": 236,
+"es": "Componente principal de los procesos "
+},
+{
+"id": 237,
+"es": "MDM"
+},
+{
+"id": 238,
+"es": ", el módulo de Gestión de Medidas se focaliza en la segunda fase, en la que se realizan diferentes operaciones sobre los datos de medición, como la Certificación, Cálculo y Estimación de mediciones, con el fin de obtener la mejor medida posible para la explotación de esta por otros procesos de negocio, propios del sistema o ajenos al mismo."
+},
+{
+"id": 239,
+"es": "Esta funcionalidad se conoce de forma general como procesos "
+},
+{
+"id": 240,
+"es": "VEE: Validación, Edición y Estimación."
+},
+{
+"id": 241,
+"es": "El ciclo o tratamiento aplicado a los datos de medición no es único para todos los puntos o circunstancias, aunque la mayoría sigue los siguientes pasos o fases de tratamiento:"
+},
+{
+"id": 242,
+"es": "Inicialmente los datos entran en el sistema y son registrados como datos de medición brutos o de "
+},
+{
+"id": 243,
+"es": "origen"
+},
+{
+"id": 244,
+"es": "Como parte del proceso de registro, se aplican automáticamente una serie de "
+},
+{
+"id": 245,
+"es": "Validaciones Iniciales"
+},
+{
+"id": 246,
+"es": ", con el fin de validarlos y calificarlos en función de tres estados, de mejor a peor calificación: "
+},
+{
+"id": 247,
+"es": "Válido"
+},
+{
+"id": 248,
+"es": "Inválido "
+},
+{
+"id": 249,
+"es": "Descartado"
+},
+{
+"id": 250,
+"es": "Se ha incluido un nuevo estado de "
+},
+{
+"id": 251,
+"es": "No Validable"
+},
+{
+"id": 252,
+"es": " para aquellos casos en los que el usuario no requiera someter a ningún tipo de validación ciertas magnitudes permitiendo centrar el procesamiento en lo realmente necesario"
+},
+{
+"id": 253,
+"es": "A continuación, se aplica, también de forma automática, el proceso de "
+},
+{
+"id": 254,
+"es": "Cálculo del Óptimo"
+},
+{
+"id": 255,
+"es": "Mejor Valor (BTV)"
+},
+{
+"id": 256,
+"es": ", cuyo fin es determinar cuáles son los mejores datos de medición, entre el conjunto de medidas de origen, teniendo en cuenta un determinado ranking de preferencia y la validez de estos."
+},
+{
+"id": 257,
+"es": "Una vez ejecutados los procesos anteriores, el usuario puede ejecutar bajo demanda o bien de forma planificada otros procesos estándares de este módulo:"
+},
+{
+"id": 258,
+"es": "Estimaciones"
+},
+{
+"id": 259,
+"es": ": Procesos para completar los datos de medición que falten en el sistema, mediante la aplicación de diferentes algoritmos."
+},
+{
+"id": 260,
+"es": "Cálculos"
+},
+{
+"id": 261,
+"es": " avanzados para obtener ciertas medidas a partir de la información almacenada en el sistema, como por ejemplo medidas agregadas o desagregadas a partir de otros datos almacenados en el sistema."
+},
+{
+"id": 262,
+"es": "Validaciones de Óptimo"
+},
+{
+"id": 263,
+"es": "; aplicación de un nuevo conjunto de validaciones sobre las medidas óptimas, las cuales asignarán una determinada calificación a estas medidas."
+},
+{
+"id": 264,
+"es": "Orígenes"
+},
+{
+"id": 265,
+"es": "Onesait Metering es un sistema "
+},
+{
+"id": 266,
+"es": "Multi-Origen"
+},
+{
+"id": 267,
+"es": ", capaz de registrar y gestionar datos de medición de diferentes procedencias u orígenes:"
+},
+{
+"id": 268,
+"es": "Manual"
+},
+{
+"id": 269,
+"es": "Ficheros"
+},
+{
+"id": 270,
+"es": "MDC"
+},
+{
+"id": 271,
+"es": "Con el fin de obtener el “Mejor Valor posible” para cada uno de los datos que componen la curva diaria, cada Punto de Medida dispone de un ranking o priorización de orígenes."
+},
+{
+"id": 272,
+"es": "El ranking de orígenes se puede definir como un conjunto de orígenes ordenados de mayor a menor prioridad, junto con una validez asociada a cada uno de ellos, la cual viene determinada por la calificación asignada en el proceso de Validación Inicial."
+},
+{
+"id": 273,
+"es": "El sistema busca entre todas las medidas iniciales disponibles para un intervalo temporal, qué origen de datos tiene mayor prioridad en el ranking y, teniendo en cuenta el proceso de validación, certifica la medida como “"
+},
+{
+"id": 274,
+"es": "Best Time Value"
+},
+{
+"id": 275,
+"es": "BTV"
+},
+{
+"id": 276,
+"es": "), considerándola como el valor óptimo, que se utilizará tanto para la explotación interna de la información, como para el intercambio con terceros sistemas."
+},
+{
+"id": 277,
+"es": "Validaciones"
+},
+{
+"id": 278,
+"es": "Una validación es una regla de negocio que certifica la validez de un dato de medición de acuerdo con un criterio preconfigurado por el usuario."
+},
+{
+"id": 279,
+"es": "El sistema dispone de diversos algoritmos de validación que aplican sobre los siguientes tipos de medida:"
+},
+{
+"id": 280,
+"es": "Perfil de Carga"
+},
+{
+"id": 281,
+"es": "Perfil de Carga Absoluto"
+},
+{
+"id": 282,
+"es": "Medida de Cierre."
+},
+{
+"id": 283,
+"es": "Onesait Metering permite que cada punto de medida tenga asignadas unas validaciones de origen y otras de óptimo, con el fin de garantizar la validez de la curva que se enviará a terceros sistemas para su explotación. El sistema ofrece al usuario la posibilidad de configurar nuevas plantillas de validación, permitiendo asociarlas a uno, varios o todos los puntos de medida."
+},
+{
+"id": 284,
+"es": "La finalidad de las "
+},
+{
+"id": 285,
+"es": "Validaciones Iniciales o de Origen"
+},
+{
+"id": 286,
+"es": " es realizar comprobaciones sobre la medida individual con el fin principal de descartarla ante determinadas anomalías de mayor criticidad, como, por ejemplo:"
+},
+{
+"id": 287,
+"es": "validación de negativos"
+},
+{
+"id": 288,
+"es": "de valores futuros o intervalos del pasado"
+},
+{
+"id": 289,
+"es": "de punto inactivo"
+},
+{
+"id": 290,
+"es": "de correspondencia entre la configuración tarifaria del punto y la medida de cierre."
+},
+{
+"id": 291,
+"es": "Las "
+},
+{
+"id": 292,
+"es": "Validaciones BTV "
+},
+{
+"id": 293,
+"es": "que incorpora el sistema se aplican a medidas que han superado las anteriores validaciones y son del tipo:"
+},
+{
+"id": 294,
+"es": "lectura incremental"
+},
+{
+"id": 295,
+"es": " (valores de lectura superiores al anterior si no hay cambio de medidor)"
+},
+{
+"id": 296,
+"es": "huecos o gaps"
+},
+{
+"id": 297,
+"es": " (comprueba el % de huecos de una determinada curva, aplica a perfil de carga)"
+},
+{
+"id": 298,
+"es": "comparación de cierres por periodo con perfil de carga"
+},
+{
+"id": 299,
+"es": "comprobación de solapamiento de cierres"
+},
+{
+"id": 300,
+"es": "comparación de curva óptima con la curva de origen"
+},
+{
+"id": 301,
+"es": "control de valores límite"
+},
+{
+"id": 302,
+"es": "control de valores cero"
+},
+{
+"id": 303,
+"es": "control del número de medidas no reales"
+},
+{
+"id": 304,
+"es": " (calculadas o estimadas)"
+},
+{
+"id": 305,
+"es": "comprobación de las curvas en días de cambio horario"
+},
+{
+"id": 306,
+"es": "Onesait Metering permite "
+},
+{
+"id": 307,
+"es": "Calcular"
+},
+{
+"id": 308,
+"es": " datos de medición en función de otros ya existentes (de otras curvas, periodos o tipos de dato). El usuario puede definir la forma de ejecutar estos cálculos y los puntos o grupos afectados."
+},
+{
+"id": 309,
+"es": "Se proporcionan los siguientes métodos de cálculo estándares:"
+},
+{
+"id": 310,
+"es": "Agregación de medidas "
+},
+{
+"id": 311,
+"es": "(Cálculo de perfiles de mayor intervalo a partir de la agregación de otros perfiles de carga de menor intervalo)"
+},
+{
+"id": 312,
+"es": "Desagregación de medidas "
+},
+{
+"id": 313,
+"es": "(Cálculo de perfiles de menor intervalo a partir de la desagregación de otros perfiles de carga de mayor intervalo)"
+},
+{
+"id": 314,
+"es": "Cálculo de Registros de Cierre"
+},
+{
+"id": 315,
+"es": " (Cálculo de medidas de cierre a partir de la configuración tarifaria de los puntos correspondientes y los perfiles de carga recibidos)"
+},
+{
+"id": 316,
+"es": "Lecturas Absolutas a partir de Medidas"
+},
+{
+"id": 317,
+"es": " (Cálculo de lecturas absolutas en función de las medidas incrementales correspondientes)"
+},
+{
+"id": 318,
+"es": "Estas medidas calculadas se insertarán como medidas de origen y, como cualquier otra medida, pasarán de forma automática por el proceso de validación y subida a óptimo pertinente. De esta forma, se asegura la integridad y validez de los datos calculados. "
+},
+{
+"id": 319,
+"es": "Como en otras funcionalidades, el sistema también tiene la posibilidad de trabajar con el "
+},
+{
+"id": 320,
+"es": "Planificador de Cálculos"
+},
+{
+"id": 321,
+"es": ", que permite la"
+},
+{
+"id": 322,
+"es": "programación, ejecución desatendida y seguimiento de la ejecución automática de cálculos, o mediante "
+},
+{
+"id": 323,
+"es": "Ejecución Manual, configurando y lanzando cálculos de manera puntual"
+},
+{
+"id": 324,
+"es": "Los procesos de estimación asociados a cada punto de medida son los encargados de completar los huecos en los perfiles de carga óptimos (periodos de medida sin datos utilizables de ningún origen) asegurando la completitud de la curva de la medida con la mejor de las medidas posibles."
+},
+{
+"id": 325,
+"es": "Dichas medidas estimadas se almacenan como medidas de origen y, como cualquier otra medida, pasarán por el proceso de validación y subida a óptimo pertinente. De esta forma, se asegura la integridad y validez de los datos estimados."
+},
+{
+"id": 326,
+"es": "Entre los métodos de Estimación de que dispone el sistema están los algoritmos de:"
+},
+{
+"id": 327,
+"es": "Interpolación "
+},
+{
+"id": 328,
+"es": "(interpolación lineal para rellenar huecos)"
+},
+{
+"id": 329,
+"es": "Valores Constantes"
+},
+{
+"id": 330,
+"es": " (asignación de un valor constante a un hueco)"
+},
+{
+"id": 331,
+"es": "Generación de curva de carga en base a perfiles estándar"
+},
+{
+"id": 332,
+"es": " (para equipos / puntos sin ninguna medida de curva)"
+},
+{
+"id": 333,
+"es": "Estimación Histórica"
+},
+{
+"id": 334,
+"es": " (haciendo uso de la tabla de búsqueda predefinida)"
+},
+{
+"id": 335,
+"es": "Ajuste de medida en función cierre mensual o diario "
+},
+{
+"id": 336,
+"es": "(estimación del valor de huecos en la curva de carga a partir de medida de cierre mensual o diario). "
+},
+{
+"id": 337,
+"es": "El proceso de estimación es también Automatizable con el "
+},
+{
+"id": 338,
+"es": "Planificador de Estimaciones"
+},
+{
+"id": 339,
+"es": ", y, asimismo, tiene la posibilidad de "
+},
+{
+"id": 340,
+"es": "Ejecución manual "
+},
+{
+"id": 341,
+"es": "de estimaciones."
+},
+{
+"id": 342,
+"es": "Cálculo BTV"
+},
+{
+"id": 343,
+"es": "Los procesos de validación, ranking de medidas y estimación de huecos conducen a la determinación de la Medida Óptima (o BTV, Best Time Value) que se utilizará en los procesos de facturación y otros procesos de negocio.  "
+},
+{
+"id": 344,
+"es": "El proceso de cálculo del Mejor Valor o Valor Óptimo se ejecuta de forma automática, tras finalizar el proceso de validación inicial y calificación de las medidas. Este proceso aplica a los diferentes datos de medición del Perfil de Carga, Perfil de Carga Absoluto y Medidas de Cierre."
+},
+{
+"id": 345,
+"es": "Los valores suben a óptimo de manera automática a partir del ranking de orígenes."
+},
+{
+"id": 346,
+"es": "Monitor de Procesos"
+},
+{
+"id": 347,
+"es": "Onesait Metering dispone de un panel de seguimiento de todos los procesos de Gestión de la Medida que se hayan ejecutado o planificado, a partir del cual se puede revisar y filtrar por:"
+},
+{
+"id": 348,
+"es": "Tipo de Proceso: validación, estimación, cálculo o BTV"
+},
+{
+"id": 349,
+"es": "Tipo de ejecución: manual o planificada"
+},
+{
+"id": 350,
+"es": "Estado: preparado, en proceso, error, anulado, finalizado."
+},
+{
+"id": 351,
+"es": "Onesait Metering proporciona funcionalidades para visualizar los diferentes datos de medición almacenados en el sistema."
+},
+{
+"id": 352,
+"es": "La solución dispone de consultas específicas por situación de tratamiento (origen u óptima) y tipo de entidad:"
+},
+{
+"id": 353,
+"es": "Origen"
+},
+{
+"id": 354,
+"es": "Medida de Cierre"
+},
+{
+"id": 355,
+"es": "Valores Instantáneos"
+},
+{
+"id": 356,
+"es": "Eventos"
+},
+{
+"id": 357,
+"es": "Magnitudes de Origen"
+},
+{
+"id": 358,
+"es": "Óptima"
+},
+{
+"id": 359,
+"es": "Perfil de Carga Óptimo"
+},
+{
+"id": 360,
+"es": "Perfil de Carga Absoluto Óptimo"
+},
+{
+"id": 361,
+"es": "Medida de Cierre Óptima"
+},
+{
+"id": 362,
+"es": "Magnitudes Óptimas"
+},
+{
+"id": 363,
+"es": "Medidas Óptimas Agregadas"
+},
+{
+"id": 364,
+"es": " Cabe señalar que la explotación y envío de datos de medición a terceros, se realiza siempre sobre los valores de óptimo, por considerarse el mejor valor posible disponible en el sistema."
+},
+{
+"id": 365,
+"es": "Onesait Metering incluye un módulo para la ejecución de Informes que actualmente permite la ejecución de informes basados en BIRT ("
+},
+{
+"id": 366,
+"es": "Business Intelligent Reporting Tools"
+},
+{
+"id": 367,
+"es": ") contra el repositorio de datos del producto u otras fuentes externas."
+},
+{
+"id": 368,
+"es": "El sistema dispone de diversas funcionalidades: "
+},
+{
+"id": 369,
+"es": "Incorporación de nuevos informes al catálogo. "
+},
+{
+"id": 370,
+"es": "Ejecución de informes de manera Online o Planificada "
+},
+{
+"id": 371,
+"es": "Seguimiento de la ejecución de los informes"
+},
+{
+"id": 372,
+"es": "Descarga de los informes a fichero."
+},
+{
+"id": 373,
+"es": "Onesait Metering incluye funcionalidades para el intercambio de información con los diferentes sistemas o entidades con las que interactúa."
+},
+{
+"id": 374,
+"es": "Onesait Metering permite la "
+},
+{
+"id": 375,
+"es": "Carga manual de ficheros"
+},
+{
+"id": 376,
+"es": ", cuyo objetivo será introducir información de diversa naturaleza: Entidades de inventario o Datos de medición. Para ello se proporcionan unos formatos estándares que permiten al usuario la carga de información bajo determinados criterios de uso, así como monitorizar su ejecución."
+},
+{
+"id": 377,
+"es": "Onesait Metering proporciona un catálogo consolidado de interfaces para integración con sistemas externos:"
+},
+{
+"id": 378,
+"es": "CIS"
+},
+{
+"id": 379,
+"es": "WebServices APIs Rest para la ejecución de procesos comerciales (Instalación Meter, Desconexión, Solicitud Lecturas de Cierre...)"
+},
+{
+"id": 380,
+"es": "Onesait Metering dispone de integraciones avanzadas con Onesait Customers (parte de la suite Onesait Utilities). La integración con sistemas comerciales externos incluye el intercambio Streaming de peticiones/respuestas a través de Kafka. "
+},
+{
+"id": 381,
+"es": "HES"
+},
+{
+"id": 382,
+"es": "Integración con Head End Systems a través de comandos (Meter Connect, Meter Ping, Event Reading...) mediante intercambio en Streaming de peticiones/respuestas a través de Kafka."
+},
+{
+"id": 383,
+"es": "GIS"
+},
+{
+"id": 384,
+"es": "WebServices APIs Rest para el mantenimiento de activos (Instalaciones y Equipos)"
+},
+{
+"id": 385,
+"es": "Ticketing/WFM"
+},
+{
+"id": 386,
+"es": "Integración con sistemas externos de ticketing o workforces para la publicación de incidencias en Streaming a través de Kafka."
+},
+{
+"id": 387,
+"es": "WebService API Rest para la actualización de incidencia"
+},
+{
+"id": 388,
+"es": "Monitorización de Interfaces"
+},
+{
+"id": 389,
+"es": "Esta funcionalidad monitoriza la ejecución de los WebServices de integración desde sistemas externos de forma similar al monitor de ficheros, permitiendo trazar cada ejecución, identificando el usuario/sistema invocante, resultado, tiempo transcurrido hasta su finalización, y los posibles avisos generados."
+},
+{
+"id": 390,
+"es": "Se actualiza en tiempo real, y cada proceso sigue un workflow de estados."
+},
+{
+"id": 391,
+"es": "Permite el seguimiento de procesos de Operaciones de Lectura, Escritura o Ejecución, identificando los sistemas de origen y destino, nombre del Proceso y datos enviados o recibidos."
+},
+{
+"id": 392,
+"es": "Onesait Metering permite parametrizar las capacidades avanzadas del sistema, como asignación de permisos de acceso a la aplicación, o gestión de los recursos en las máquinas donde se despliega la aplicación."
+},
+{
+"id": 393,
+"es": "Onesait Metering incluye un módulo de seguridad que permite al administrador la definición de usuarios, perfiles y la asignación de estos a cada usuario para asignar los permisos adecuados de acuerdo con su rol."
+},
+{
+"id": 394,
+"es": "De esta forma, a cada usuario se le asignará un "
+},
+{
+"id": 395,
+"es": "perfil"
+},
+{
+"id": 396,
+"es": " que determinará las "
+},
+{
+"id": 397,
+"es": "acciones"
+},
+{
+"id": 398,
+"es": " que podrá realizar en el sistema, y los elementos con los que se le permitirá operar en función de dichas acciones."
+},
+{
+"id": 399,
+"es": "Este módulo de seguridad se integra en entornos productivos con sistemas de autenticación externos mediante protocolos estándares (SAML/LDAP)."
+},
+{
+"id": 400,
+"es": "Clúster"
+},
+{
+"id": 401,
+"es": "El sistema dota de la capacidad para la asignación/reparto de tareas entre las diferentes máquinas en las que se despliega la solución, así como una monitorización básica del estado de estas."
+},
+{
+"id": 402,
+"es": "Estas capacidades se complementan con las proporcionadas por soluciones de Monitorización (ej. Zabbix) especializadas que permiten la administración y observabilidad completa de la solución."
+},
+{
+"id": 403,
+"es": "Parámetros"
+},
+{
+"id": 404,
+"es": "El sistema ofrece un listado de parámetros de configuración requeridos para el correcto funcionamiento de los servicios y funciones habilitadas."
+},
+{
+"id": 405,
+"es": "El módulo de Seguimiento incluye las funcionalidades que permiten centralizar el control de procesos y tener una visión global de la evolución de estos, para detectar desviaciones o sucesos lo antes posible facilitando herramientas a los operadores para el seguimiento de estos."
+},
+{
+"id": 406,
+"es": "Gestión de Incidencias"
+},
+{
+"id": 407,
+"es": "El módulo de Gestión de Incidencias permite la administración eficiente de incidencias generadas o reportadas por el sistema, asegurando su registro, seguimiento, resolución y cierre."
+},
+{
+"id": 408,
+"es": "Las funciones principales incluyen:"
+},
+{
+"id": 409,
+"es": "Registro de incidencias"
+},
+{
+"id": 410,
+"es": "Generación automática a partir de sucesos:"
+},
+{
+"id": 411,
+"es": "Validaciones de medida no superadas"
+},
+{
+"id": 412,
+"es": "Recepción de eventos en Equipos de Medida"
+},
+{
+"id": 413,
+"es": "Manual, por parte de un Operador."
+},
+{
+"id": 414,
+"es": "Clasificación y priorización"
+},
+{
+"id": 415,
+"es": "En función del origen de la incidencia - "
+},
+{
+"id": 416,
+"es": "Validación"
+},
+{
+"id": 417,
+"es": "Evento"
+},
+{
+"id": 418,
+"es": "Usuario"
+},
+{
+"id": 419,
+"es": " - y la subcategoría - tipo de evento - se clasificará en un "
+},
+{
+"id": 420,
+"es": "tipo de incidencia"
+},
+{
+"id": 421,
+"es": " predefinido, cuya configuración determinará su flujo de estados, severidad, actuación necesaria para su resolución (Campo u Operador), tiempo de vida y resto de atributos."
+},
+{
+"id": 422,
+"es": "Publicación de incidencia a sistemas externos (WFM/Ticketing)"
+},
+{
+"id": 423,
+"es": "Asignación"
+},
+{
+"id": 424,
+"es": "Las incidencias estarán asociadas al punto de medida en el que se generan, y se asignarán automáticamente al responsable del punto de medida o, en su defecto, a un usuario del grupo de administradores (parametrizable) que podrá reasignarlas al responsable necesario."
+},
+{
+"id": 425,
+"es": "Cambio de estados"
+},
+{
+"id": 426,
+"es": "Según la configuración del tipo de incidencia, de campo u operador, el workflow de estados será diferente."
+},
+{
+"id": 427,
+"es": "Los cambios pueden ser manuales o automáticos, y siempre se registrará un histórico con la información del cambio"
+},
+{
+"id": 428,
+"es": "Resolución y cierre"
+},
+{
+"id": 429,
+"es": "La "
+},
+{
+"id": 430,
+"es": "resolución"
+},
+{
+"id": 431,
+"es": " puede realizarla el operador responsable, o el sistema automáticamente a partir de distintas acciones"
+},
+{
+"id": 432,
+"es": "recepción de un evento que da constancia de que se ha solucionado la causa que generó la incidencia (incidencia de origen Evento), "
+},
+{
+"id": 433,
+"es": "superación de validaciones en todas las mediciones del punto de medid (incidencia origen Validación), "
+},
+{
+"id": 434,
+"es": "actualización mediante API Rest desde sistema externo (WFM/Ticketing) indicando que se ha resuelto una incidencia previamente informada (incidencia de actuación en campo), o "
+},
+{
+"id": 435,
+"es": "alcanzar el tiempo máximo de vida de la incidencia."
+},
+{
+"id": 436,
+"es": "El "
+},
+{
+"id": 437,
+"es": "cierre"
+},
+{
+"id": 438,
+"es": " lo realizará el Operador responsable o un administrador."
+},
+{
+"id": 439,
+"es": "Módulo"
+},
+{
+"id": 440,
+"es": "Documentación"
+},
+{
+"id": 441,
+"es": "Pendiente"
+},
+{
+"id": 442,
+"es": "Revisada"
+},
+{
+"id": 443,
+"es": "Completada"
+},
+{
+"id": 444,
+"es": "Closed"
+},
+{
+"id": 445,
+"es": "Testing"
+},
+{
+"id": 446,
+"es": "En ejecución"
+},
+{
+"id": 447,
+"es": "Completado"
+},
+{
+"id": 448,
+"es": "Aprobación Final"
+},
+{
+"id": 449,
+"es": "Alcance Funcional Producto "
+},
+{
+"id": 450,
+"es": "NA"
+},
+{
+"id": 451,
+"es": "Principales Mejoras "
+},
+{
+"id": 452,
+"es": "Introducción"
+},
+{
+"id": 453,
+"es": "Al igual que otras tecnologías de la red électrica avanzadas, la Infraestructura Avanzada de Medición, (Advanced Metering Infrastructure - AMI) está evolucionando rápidamente y llevando a las Utilities a responder a nuevos retos, a la vez que a considerar unas implicaciones y oportunidades más amplias centradas en los beneficios para el cliente y los nuevos requisitos asociados a los datos."
+},
+{
+"id": 454,
+"es": "Hace ya algunos años, las empresas de servicios públicos en las diferentes regiones y países comenzaron a instalar contadores inteligentes que tenían una funcionalidad mejorada sobre sus homólogos analógicos. Los contadores inteligentes permitían comunicaciones bidireccionales entre la compañía eléctrica y el contador y entre el contador y los dispositivos situados en el interior de la vivienda. Ya no servían como mera caja registradora (Meter to cash), sino que también funcionaban como un sensor de red que proporcionaba datos operativos (eventos críticos y alarmas) a un nivel granular. Proporcionan a la compañía una mayor visibilidad de las características de funcionamiento en el borde de la red. Esos datos tienen valor para toda la de la empresa, así como para los clientes y terceros. Gracias a los datos generados a través de la AMI, los clientes pueden gestionar un mejor uso de la energía y tener un mayor control sobre sus elecciones energéticas."
+},
+{
+"id": 455,
+"es": "La próxima generación de contadores inteligentes, o AMI 2.0, está empezando a ser desplegada e instalada por las empresas de servicios públicos. Estos nuevos contadores tienen aún más capacidades que se suman a su papel de permitir un cambio fundamental. La generación inicial de contadores inteligentes hizo que el contador pasara de ser una caja registradora a un sensor de red. En la AMI 2.0 el contador inteligente pasa de ser un sensor de red a un nodo de control descentralizado y potencialmente autónomo que puede establecer una red de millones de puntos de cálculo en el borde de la red del cliente con el sistema de distribución. Estas innovaciones ofrecen nuevos flujos de valor potencial tanto para para la empresa de servicios públicos como para terceros, pero también les plantean nuevos retos tecnológicos, de innovación y transformación."
+},
+{
+"id": 456,
+"es": "Onesait Metering (OM)"
+},
+{
+"id": 457,
+"es": " es una solución multi-commodity que permite capturar, almacenar, procesar, certificar y exportar los datos de medida (electricidad, agua o gas) a la Utility desde diferentes fuentes u orígenes de información gestionando todas las transacciones entre la empresa y los puntos finales de medida."
+},
+{
+"id": 458,
+"es": "Sirve como repositorio de la información inventario común que unifica los datos de campo para los sistemas corporativos de la Utility."
+},
+{
+"id": 459,
+"es": "La solución gestiona la ejecución y trazabilidad de comandos y operaciones remotas entre los sistemas empresariales y los puntos de medida."
+},
+{
+"id": 460,
+"es": "La solución gestiona y mantiene las relaciones entre los datos de consumo, los diferentes equipos e instalaciones y los servicios."
+},
+{
+"id": 461,
+"es": "¿Cómo funciona?"
+},
+{
+"id": 462,
+"es": "Con una filosofía de diseño basada en la captura y adquisición de datos de diferentes orígenes y para ser compartidos por múltiples aplicaciones, la funcionalidad de la solución OM incluye capacidades de flexibilidad, escalabilidad y alto rendimiento en la captura, adquisición, procesamiento, preparación y almacenamiento de datos de los contadores inteligentes y otros dispositivos."
+},
+{
+"id": 463,
+"es": "Captura de datos"
+},
+{
+"id": 464,
+"es": "El éxito en la recopilación de datos requiere la adquisición e interacción con múltiples tipos de dispositivos de diferentes proveedores, que utilizan diferentes redes de comunicación y diferentes protocolos. OM es una solución de múltiples dispositivos, canales, protocolos e intervalos que permite la adquisición de datos de forma manual o programa a través de las diferentes tecnologías de comunicación."
+},
+{
+"id": 465,
+"es": "Procesamiento de datos"
+},
+{
+"id": 466,
+"es": "Los servicios de la aplicación OM proporcionan capacidades flexibles para procesar y preparar los datos recogidos de los sistemas AMI realizando la certificación, integración y cálculo del mejor valor "
+},
+{
+"id": 467,
+"es": "(Best Value Time – BVT)"
+},
+{
+"id": 468,
+"es": " de medida para garantizar que los datos estén listos para su uso."
+},
+{
+"id": 469,
+"es": "Estos servicios incluyen funciones de gestión de versiones de datos que garantizan que cualquier actualización o cambio en los datos se pueda auditar y trazar. Una vez que la información es almacenada en el repositorio de datos de OM, está inmediatamente disponible para cualquier aplicación mediante servicios web y APIs basados en estándares."
+},
+{
+"id": 470,
+"es": "Sincronización de datos"
+},
+{
+"id": 471,
+"es": "Mantener un modelo de datos de referencia actualizado que relacione los datos de consumo de la energía de los contadores con el consumidor, tarifa, datos del suministrador y otras referencias es esencial. OM facilita la sincronización de datos estructurales que se utilizan para mantener el modelo de datos de la solución en constante sintonía con los sistemas maestro de inventario en la compañía."
+},
+{
+"id": 472,
+"es": "Almacenamiento y entrega de datos"
+},
+{
+"id": 473,
+"es": "A medida que se introducen nuevos datos en el repositorio de la solución, los servicios de OM proporcionan un marco de trabajo de capacidades que reaccionan a los nuevos eventos de datos, generan y procesan excepciones, inician flujos de trabajo y preparan los datos para su integración con sistemas externos, como por ejemplo el sistema de Facturación, portal web de clientes, ...."
+},
+{
+"id": 474,
+"es": " Datos de Configuración"
+},
+{
+"id": 475,
+"es": "1       Introducción"
+},
+{
+"id": 476,
+"es": "A continuación, se indican los principales "
+},
+{
+"id": 477,
+"es": "datos maestros"
+},
+{
+"id": 478,
+"es": "datos de configuración "
+},
+{
+"id": 479,
+"es": "necesarios para el despliegue de la versión inicial del sistema Onesait Metering (OM). Estos datos son necesarios para el funcionamiento habitual del sistema y para montar el escenario inicial y los casos de uso descritos dentro de la descripción funcional. Se encuentran contenidos en las tablas de la BDs cuya extracción se adjunta al final de este módulo."
+},
+{
+"id": 480,
+"es": "Es importante tener en cuenta que:"
+},
+{
+"id": 481,
+"es": "Este apartado será considerado y tomado como referencia por parte del equipo técnico para el despliegue / creación inicial del entorno de producto o cualquier proyecto, en base al cual se irán construyendo el resto de capacidades / adaptaciones."
+},
+{
+"id": 482,
+"es": "Los datos aquí incluidos son los que se presentan como parte del alcance de producto y pueden verse afectados/modificados dependiendo de las necesidades de cada proyecto."
+},
+{
+"id": 483,
+"es": "2       Datos de Configuración"
+},
+{
+"id": 484,
+"es": "La siguiente tabla contiene, categorizados según su tipología, los listados de datos requeridos como parte de la configuración inicial del sistema, incluyendo una breve descripción y la tabla de la BDs a la que corresponde cada uno."
+},
+{
+"id": 485,
+"es": "Se adjunta fichero que contiene la exportación tablas maestras ("
+},
+{
+"id": 486,
+"es": "master_"
+},
+{
+"id": 487,
+"es": ") y tablas ejemplo configuración, en formato excel."
+},
+{
+"id": 488,
+"es": "20260209_OM_ConfigInicial_BDs.zip"
+},
+{
+"id": 489,
+"es": "Tipo de Dato"
+},
+{
+"id": 490,
+"es": "Categoría"
+},
+{
+"id": 491,
+"es": "Listado"
+},
+{
+"id": 492,
+"es": "Descripción"
+},
+{
+"id": 493,
+"es": "Tabla de la BD"
+},
+{
+"id": 494,
+"es": "⁠Datos de Medición"
+},
+{
+"id": 495,
+"es": "Listado Magnitudes del Perfil de Carga Absoluto"
+},
+{
+"id": 496,
+"es": "Contiene las magnitudes físicas utilizadas en los perfiles de carga y registros."
+},
+{
+"id": 497,
+"es": "master_magnitude"
+},
+{
+"id": 498,
+"es": "Listado Magnitudes del Perfil de Carga "
+},
+{
+"id": 499,
+"es": "Listado Magnitudes de Medidas de Cierre"
+},
+{
+"id": 500,
+"es": "Contiene las magnitudes asociadas a los registros de cierre de facturación."
+},
+{
+"id": 501,
+"es": "master_billing_register_magnitude"
+},
+{
+"id": 502,
+"es": "Listado Magnitudes de Valores Instantáneos"
+},
+{
+"id": 503,
+"es": "Contiene las magnitudes que se capturan en tiempo real desde los equipos de medida."
+},
+{
+"id": 504,
+"es": "master_instantaneous_value_magnitude"
+},
+{
+"id": 505,
+"es": "Periodos"
+},
+{
+"id": 506,
+"es": "Listado Tipos de Curva o Perfil (Periodos)"
+},
+{
+"id": 507,
+"es": "Contiene los tipos de intervalos de medición para curvas o perfiles."
+},
+{
+"id": 508,
+"es": "master_measurment_interval"
+},
+{
+"id": 509,
+"es": "Datos de ⁠Inventario"
+},
+{
+"id": 510,
+"es": "Ámbitos de Actividad de los Propietarios"
+},
+{
+"id": 511,
+"es": "Contiene los ámbitos de actuación o responsabilidad de los propietarios."
+},
+{
+"id": 512,
+"es": "master_activity"
+},
+{
+"id": 513,
+"es": "Tipo de Instalación"
+},
+{
+"id": 514,
+"es": "Contiene la clasificación de las instalaciones según su naturaleza o uso."
+},
+{
+"id": 515,
+"es": "master_installation_type"
+},
+{
+"id": 516,
+"es": "Actividades Comerciales del punto de medida "
+},
+{
+"id": 517,
+"es": "Contiene las relaciones de los puntos de medida con sus actividades comerciales"
+},
+{
+"id": 518,
+"es": "activity_code"
+},
+{
+"id": 519,
+"es": "Listado Tipos de Equipos"
+},
+{
+"id": 520,
+"es": "Contiene la clasificación de los equipos según su funcionalidad o tecnología."
+},
+{
+"id": 521,
+"es": "master_equipment_type"
+},
+{
+"id": 522,
+"es": "Listado Modelos de equipo"
+},
+{
+"id": 523,
+"es": "Contiene los modelos específicos de equipos disponibles."
+},
+{
+"id": 524,
+"es": "equipment_model"
+},
+{
+"id": 525,
+"es": "Listado Fabricantes de equipo"
+},
+{
+"id": 526,
+"es": "Contiene los fabricantes de los equipos registrados."
+},
+{
+"id": 527,
+"es": "equipment_manufacturer"
+},
+{
+"id": 528,
+"es": "Listado Formatos Ficheros"
+},
+{
+"id": 529,
+"es": "Listado de los formatos de archivo utilizados para el intercambio de datos."
+},
+{
+"id": 530,
+"es": "file_format"
+},
+{
+"id": 531,
+"es": "Listado Config TOU"
+},
+{
+"id": 532,
+"es": "Contiene el listado de configuraciones tarifarias (TOU) definidas en el sistema."
+},
+{
+"id": 533,
+"es": "tariff_structure"
+},
+{
+"id": 534,
+"es": "Config TOU - Conf. Diaria"
+},
+{
+"id": 535,
+"es": "Define la estructura diaria de cada TOU."
+},
+{
+"id": 536,
+"es": "tariff_structure_day"
+},
+{
+"id": 537,
+"es": "Config TOU - Conf. Semanal"
+},
+{
+"id": 538,
+"es": "Define la configuración semanal de cada TOU."
+},
+{
+"id": 539,
+"es": "tariff_structure_week"
+},
+{
+"id": 540,
+"es": "Config TOU - Conf. Temporadas"
+},
+{
+"id": 541,
+"es": "Define la configuración de temporadas del año de cada TOU."
+},
+{
+"id": 542,
+"es": "tariff_structure_season"
+},
+{
+"id": 543,
+"es": "Listado Días Festivos"
+},
+{
+"id": 544,
+"es": "Especifica los días no laborables que afectan la aplicación de tarifas."
+},
+{
+"id": 545,
+"es": "special_day"
+},
+{
+"id": 546,
+"es": "Listado Tipo Eventos"
+},
+{
+"id": 547,
+"es": "Clasifica los tipos de eventos registrados por los equipos."
+},
+{
+"id": 548,
+"es": "master_event_data_type"
+},
+{
+"id": 549,
+"es": "Listado de Eventos Correctores"
+},
+{
+"id": 550,
+"es": "Relaciona tipos de eventos que resuelven incidencias con otros que las generan"
+},
+{
+"id": 551,
+"es": "event_correct_type"
+},
+{
+"id": 552,
+"es": "Listado Calendarios"
+},
+{
+"id": 553,
+"es": "Listado de calendarios utilizados en el sistema."
+},
+{
+"id": 554,
+"es": "calendar"
+},
+{
+"id": 555,
+"es": "Listado Zona Horaria"
+},
+{
+"id": 556,
+"es": "Contiene las zonas horarias utilizadas en el sistema."
+},
+{
+"id": 557,
+"es": "master_time_zone"
+},
+{
+"id": 558,
+"es": "Listado Clase Configuración"
+},
+{
+"id": 559,
+"es": "Listado de las clases de configuración aplicables a los puntos de medida del sistema."
+},
+{
+"id": 560,
+"es": "class_config"
+},
+{
+"id": 561,
+"es": "Listado Tipos Perfiles"
+},
+{
+"id": 562,
+"es": "Define los tipos de perfiles de consumo o generación utilizados."
+},
+{
+"id": 563,
+"es": "profiling_type"
+},
+{
+"id": 564,
+"es": "Listado Coeficiente Perfil"
+},
+{
+"id": 565,
+"es": "Contiene los coeficientes aplicables a perfiles para la estimaciones de perfil estándar."
+},
+{
+"id": 566,
+"es": "profile_coefficient"
+},
+{
+"id": 567,
+"es": "Listado Configuración de Estimación Histórica"
+},
+{
+"id": 568,
+"es": "Define los parámetros para realizar estimaciones basadas en históricos."
+},
+{
+"id": 569,
+"es": "search_history"
+},
+{
+"id": 570,
+"es": "Datos de Gestión de Medidas"
+},
+{
+"id": 571,
+"es": "Listado de Orígenes"
+},
+{
+"id": 572,
+"es": "Contiene las fuentes de datos utilizadas en el sistema."
+},
+{
+"id": 573,
+"es": "master_source"
+},
+{
+"id": 574,
+"es": "Patrón de Orígenes"
+},
+{
+"id": 575,
+"es": "Ranking de orígenes para obtener la medida óptima"
+},
+{
+"id": 576,
+"es": "source_pattern"
+},
+{
+"id": 577,
+"es": "Listado Métodos de Cálculo"
+},
+{
+"id": 578,
+"es": "Contiene los métodos utilizados para el cálculo de medidas."
+},
+{
+"id": 579,
+"es": "master_calculation_method"
+},
+{
+"id": 580,
+"es": "Listado Métodos de Estimaciones"
+}
+]

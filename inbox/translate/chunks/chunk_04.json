@@ -1,0 +1,2254 @@
+[
+{
+"id": 2514,
+"es": " -Listado de procesos - Una por Smart Meter o Meter incluidos dentro de la dirección de comunicaciones seleccionada en el nivel anterior (para topología 1-n)"
+},
+{
+"id": 2515,
+"es": "Nivel 4: Detalle Proceso"
+},
+{
+"id": 2516,
+"es": " - Listado de Tareas - Una por cada petición realizada sobre el Meter seleccionado en el nivel anterior"
+},
+{
+"id": 2517,
+"es": " - Info de la petición y Logs generados durante la ejecución de la misma"
+},
+{
+"id": 2518,
+"es": "Esta pantalla, muestra el primer nivel, correspondiente a las diferentes ejecuciones de llamadas configuradas tanto en la ejecución manual como planificada."
+},
+{
+"id": 2519,
+"es": "Esta pantalla, muestra el primer nivel, correspondiente a las diferentes ejecuciones de llamadas configuradas tanto en la ejecución manual como planificada. La pantalla presenta la siguiente información:"
+},
+{
+"id": 2520,
+"es": "Tabla de llamadas:"
+},
+{
+"id": 2521,
+"es": " tabla que recoge el histórico de llamadas del sistema. El detalle de las llamadas se muestra de la siguiente forma: "
+},
+{
+"id": 2522,
+"es": ": Nombre identificativo del proceso ejecutado o Grupo de Llamadas"
+},
+{
+"id": 2523,
+"es": "Estado de la llamada:"
+},
+{
+"id": 2524,
+"es": "En construcción"
+},
+{
+"id": 2525,
+"es": ": Generación de la llamada en el sistema."
+},
+{
+"id": 2526,
+"es": "Pendiente:"
+},
+{
+"id": 2527,
+"es": " a la espera de ser ejecutada."
+},
+{
+"id": 2528,
+"es": "En Ejecución: "
+},
+{
+"id": 2529,
+"es": "Llamada en curso."
+},
+{
+"id": 2530,
+"es": "Cancelada:"
+},
+{
+"id": 2531,
+"es": " Cancelada por el usuario."
+},
+{
+"id": 2532,
+"es": "Finalizada OK:"
+},
+{
+"id": 2533,
+"es": " La llamada finaliza sin errores."
+},
+{
+"id": 2534,
+"es": "Finalizada con errores:"
+},
+{
+"id": 2535,
+"es": " La llamada ha finalizado y se ha podido llevar a cabo, pero se han detectado errores."
+},
+{
+"id": 2536,
+"es": "Error:"
+},
+{
+"id": 2537,
+"es": " Un error ha impedido la finalización de la llamada."
+},
+{
+"id": 2538,
+"es": "Tipo de ejecución"
+},
+{
+"id": 2539,
+"es": ": La ejecución de la llamada se lanzó manualmente desde el sistema."
+},
+{
+"id": 2540,
+"es": "Automática:"
+},
+{
+"id": 2541,
+"es": " La ejecución de la llamada es producto de una planificación en el sistema."
+},
+{
+"id": 2542,
+"es": "Fecha Desde - Fecha Hasta: "
+},
+{
+"id": 2543,
+"es": "Rango de fechas de la ejecución de la llamada."
+},
+{
+"id": 2544,
+"es": "Prioridad"
+},
+{
+"id": 2545,
+"es": "Normal: "
+},
+{
+"id": 2546,
+"es": "Establece una prioridad de tipo normal."
+},
+{
+"id": 2547,
+"es": "Alta: "
+},
+{
+"id": 2548,
+"es": "Establece una prioridad de tipo alta."
+},
+{
+"id": 2549,
+"es": "Llamadas: "
+},
+{
+"id": 2550,
+"es": "Nº de llamadas ok / Nº total de llamadas. Cada llamada hace referencia a una única dirección de comunicaciones. El grupo de llamadas permite agrupar dicha ejecución."
+},
+{
+"id": 2551,
+"es": "Equipos: "
+},
+{
+"id": 2552,
+"es": "Nº de equipos ok / nº de equipos totales interrogados durante la llamada."
+},
+{
+"id": 2553,
+"es": "Tareas: "
+},
+{
+"id": 2554,
+"es": "N.º Tareas ok / nº total de tareas. Cada tarea se corresponde con una petición a un medidor final."
+},
+{
+"id": 2555,
+"es": "Duración: "
+},
+{
+"id": 2556,
+"es": "Duración de la misma."
+},
+{
+"id": 2557,
+"es": "Cuadro de búsqueda: "
+},
+{
+"id": 2558,
+"es": "Permite filtrar las llamadas por la siguiente información:"
+},
+{
+"id": 2559,
+"es": ": Nombre identificativo del proceso ejecutado."
+},
+{
+"id": 2560,
+"es": "Por punto de medida específico."
+},
+{
+"id": 2561,
+"es": "Por equipo específico."
+},
+{
+"id": 2562,
+"es": "Fecha Desde y Fecha Hasta: "
+},
+{
+"id": 2563,
+"es": "Rango de fechas de la ejecución."
+},
+{
+"id": 2564,
+"es": "Botones de acción:"
+},
+{
+"id": 2565,
+"es": ": Ejecuta la búsqueda acorde a los filtros aplicados."
+},
+{
+"id": 2566,
+"es": "Detalle: "
+},
+{
+"id": 2567,
+"es": "se activa tras hacer doble clic sobre una llamada. Muestra la ventana de Detalle de Monitor de Llamadas."
+},
+{
+"id": 2568,
+"es": "Cancelar: "
+},
+{
+"id": 2569,
+"es": "se activa tras hacer clic sobre una llamada: Permite cancelar un grupo de llamadas que aún no se ha lanzado, es decir, está en estado \"Preparado\". De esta manera el Grupo de llamadas finalizará, sin ejecutar las llamadas y se marcará con la etiqueta “Cancelada” en el monitor de llamadas. Si el grupo de llamada está en ejecución, no podrá ser cancelada."
+},
+{
+"id": 2570,
+"es": "Reprogramar"
+},
+{
+"id": 2571,
+"es": ": se activa tras hacer clic sobre una llamada: Vuelve a ejecutar un grupo de llamadas finalizado que no haya recuperado todos los datos necesarios y solo lanzará llamadas para las peticiones finalizadas con errores. Es un comando de reprogramación manual, de manera que el grupo de llamadas pasará directamente a su ejecución, pero también respetando su configuración de reprogramación automática en el futuro. Para reprogramar un grupo de llamadas, solo hay que seleccionar el grupo que deseemos, y hacer click en el botón reprogramar."
+},
+{
+"id": 2572,
+"es": ": Exporta los grupos de llamadas mostrados en pantalla en formato disponible en el sistema."
+},
+{
+"id": 2573,
+"es": "Esta pantalla muestra el siguiente nivel de detalle de cada uno de los grupos de llamada seleccionados anteriormente. Estará formado por las llamadas que componen el grupo de llamadas, cada una de ellas haciendo referencia a una dirección de comunicaciones. La dirección de comunicaciones puede corresponderse con una DCU (para topologías 1-n) o un medidor final (para topologías 1-1). Se generará una Tarea por cada llamada."
+},
+{
+"id": 2574,
+"es": "Campos principale"
+},
+{
+"id": 2575,
+"es": "Estado."
+},
+{
+"id": 2576,
+"es": "Equipos OK/Equipos totales: equipos finales interrogados dentro de la dirección de comunicaciones."
+},
+{
+"id": 2577,
+"es": "Dirección de comunicaciones: dirección alfanumérica a la que se envió la comunicación ("
+},
+{
+"id": 2578,
+"es": "puerto, IP, URL o descripción del equipo de comunicación)"
+},
+{
+"id": 2579,
+"es": "Fechas desde-hasta"
+},
+{
+"id": 2580,
+"es": "Duración del proceso"
+},
+{
+"id": 2581,
+"es": "Filtros de búsqueda Llamadas"
+},
+{
+"id": 2582,
+"es": "Dirección de comunicación: P"
+},
+{
+"id": 2583,
+"es": "ermite buscar por puerto, IP, URL o por la descripción del equipo de comunicación."
+},
+{
+"id": 2584,
+"es": "Criterio de Filtrado: Permite realizar búsqueda:"
+},
+{
+"id": 2585,
+"es": "Esta pantalla muestra el siguiente nivel de detalle de cada uno de los elementos seleccionados anteriormente, mostrando para cada dirección de comunicaciones, los equipos finales interrogados."
+},
+{
+"id": 2586,
+"es": "En caso de que la dirección de comunicaciones pertenezca a una DCU, aparecerán todos los Smart Meters aguas abajo (1-n). En caso de que la dirección de comunicaciones pertenezca a un Smart Meter, aparecerá este equipo final (para topologías 1-1 donde el HES se comunica directamente con el Smart Meter)."
+},
+{
+"id": 2587,
+"es": "Detalle llamada:"
+},
+{
+"id": 2588,
+"es": "Campos principales:"
+},
+{
+"id": 2589,
+"es": "Estado del proceso"
+},
+{
+"id": 2590,
+"es": "Tareas: Conjunto de peticiones ejecutadas sobre el activo instalado en campo"
+},
+{
+"id": 2591,
+"es": "Equipo: Código del equipo interrogado"
+},
+{
+"id": 2592,
+"es": "Punto de Medida asociado al Equipo, el cual almacenará los datos de medición"
+},
+{
+"id": 2593,
+"es": "Filtros de búsqueda Detalle Llamadas"
+},
+{
+"id": 2594,
+"es": "Trazas:"
+},
+{
+"id": 2595,
+"es": "Filtros de búsqueda Trazas"
+},
+{
+"id": 2596,
+"es": "Nivel de traza:"
+},
+{
+"id": 2597,
+"es": "Info."
+},
+{
+"id": 2598,
+"es": "Debug."
+},
+{
+"id": 2599,
+"es": "Error"
+},
+{
+"id": 2600,
+"es": "Warn"
+},
+{
+"id": 2601,
+"es": "En este punto, relacionado con la ejecución de llamadas, el producto presenta una funcionalidad de "
+},
+{
+"id": 2602,
+"es": "tiempos de guarda"
+},
+{
+"id": 2603,
+"es": " para finalizar las llamadas generadas que no sean atendidas correctamente o no finalicen el proceso en un tiempo definido. Para esta utilidad, se definen dos \"timeout\" en el sistema (parámetros del sistema, en menú "
+},
+{
+"id": 2604,
+"es": "Timeout para llamada en estado \"En ejecución\":"
+},
+{
+"id": 2605,
+"es": "Parámetro definido en el sistema como \"TELEMETRY-TASKS-RUNNING-TIMEOUT\""
+},
+{
+"id": 2606,
+"es": "Dicho timeout es configurable y puede ser definido por proyecto. "
+},
+{
+"id": 2607,
+"es": "El valor por defecto es de "
+},
+{
+"id": 2608,
+"es": "30 minutos"
+},
+{
+"id": 2609,
+"es": "Aplicará desde el momento en el que a la llamada aparece en el Monitor de Llamadas (Start Date)"
+},
+{
+"id": 2610,
+"es": "Si se supera este timeout, la llamada pasa al estado \"Finalizado con Error\""
+},
+{
+"id": 2611,
+"es": "Timeout para llamada en estado \"Preparado\":"
+},
+{
+"id": 2612,
+"es": "Parámetro definido en el sistema como \"TELEMETRY-TASKS-BUILDING-TIMEOUT\""
+},
+{
+"id": 2613,
+"es": "24 horas"
+},
+{
+"id": 2614,
+"es": "Esta pantalla muestra el siguiente nivel de detalle de cada uno de los equipos seleccionados anteriormente, mostrando para cada uno, las peticiones ejecutadas."
+},
+{
+"id": 2615,
+"es": "Detalle Proceso:"
+},
+{
+"id": 2616,
+"es": "Esta pantalla muestra el siguiente nivel de detalle de cada una de las peticiones seleccionadas anteriormente, mostrando para cada una, las trazas que ha generado el proceso. Las trazas están clasificadas en distintos niveles: Info, Debug, Error o Warn."
+},
+{
+"id": 2617,
+"es": "Detalle Tarea:"
+},
+{
+"id": 2618,
+"es": "Nombre: nombre de la tarea."
+},
+{
+"id": 2619,
+"es": "Equipo: Sobre el que se ejecuta la tarea."
+},
+{
+"id": 2620,
+"es": "Punto Medida: Asociado al equipo."
+},
+{
+"id": 2621,
+"es": "Parámetros: Asociados a la petición que se corresponde con la tarea ejecutada."
+},
+{
+"id": 2622,
+"es": "Nivel"
+},
+{
+"id": 2623,
+"es": "Mensaje"
+},
+{
+"id": 2624,
+"es": "Filtros de búsqueda Trazas: "
+},
+{
+"id": 2625,
+"es": "Nivel de traza."
+},
+{
+"id": 2626,
+"es": "Error."
+},
+{
+"id": 2627,
+"es": "Warn."
+},
+{
+"id": 2628,
+"es": "El módulo de Datos Remotos contiene toda la información asociada a los parámetros y eventos de comunicación recibidos de los equipos de campo a través de las peticiones ejecutadas. Está formado por:"
+},
+{
+"id": 2629,
+"es": "Mediante esta entidad se dará valor real a los parámetros anteriormente mencionados (Parámetros Remotos) y se asociarán al equipo correspondiente."
+},
+{
+"id": 2630,
+"es": "Estará formada por los siguientes atributos:"
+},
+{
+"id": 2631,
+"es": "Equipo asociado"
+},
+{
+"id": 2632,
+"es": "Nombre Parámetro"
+},
+{
+"id": 2633,
+"es": "Fecha Registro"
+},
+{
+"id": 2634,
+"es": "De esta manera almacenaremos para cada equipo todos aquellos parámetros que no sean datos de medición, con referencia al equipo concreto."
+},
+{
+"id": 2635,
+"es": "La vista de detalle permite visualizar cada parámetro con mayor detalle:"
+},
+{
+"id": 2636,
+"es": "Esta entidad se utiliza para almacenar los eventos de comunicación relacionados con los equipos de medición de tipo “"
+},
+{
+"id": 2637,
+"es": "”, tales como DCU o DataLogger."
+},
+{
+"id": 2638,
+"es": "En esta ventana se muestran, para los distintos tipos de eventos de comunicación de la aplicación:"
+},
+{
+"id": 2639,
+"es": "Código del equipo"
+},
+{
+"id": 2640,
+"es": "Información (es la descripción)."
+},
+{
+"id": 2641,
+"es": "Fecha del evento."
+},
+{
+"id": 2642,
+"es": "La vista de detalle permite visualizar cada parámetro con mayor detalle."
+},
+{
+"id": 2643,
+"es": "La vista 360 de Telemedición permite acceder a toda la información relacionada con los Equipos telemedidos instalados en campo. Se accede a la misma a través del módulo de Telemedición."
+},
+{
+"id": 2644,
+"es": "La vista general 360 dispone de una primera sección ("
+},
+{
+"id": 2645,
+"es": "parte superior"
+},
+{
+"id": 2646,
+"es": ") donde se presentan los principales datos de identificación y estado del equipo seleccionado, tales como:"
+},
+{
+"id": 2647,
+"es": "Código del Equipo"
+},
+{
+"id": 2648,
+"es": "Modelo de Equipo"
+},
+{
+"id": 2649,
+"es": "Protocolo utilizado en la telemedición"
+},
+{
+"id": 2650,
+"es": "Estado del equipo"
+},
+{
+"id": 2651,
+"es": "Tipo de Medición"
+},
+{
+"id": 2652,
+"es": ": Directa o Indirecta, dependiendo de si dispone de su propia dirección de comunicaciones o no"
+},
+{
+"id": 2653,
+"es": "Telemetría (Habilitado/Deshabilitado)"
+},
+{
+"id": 2654,
+"es": ": Depende de si el equipo tiene la opción de telemetría activada."
+},
+{
+"id": 2655,
+"es": ": Para mas detalles sobre la información de identificación mostrada del equipo, pulsar sobre el valor del parámetro indicado. "
+},
+{
+"id": 2656,
+"es": "Así mismo, la vista 360 cuenta en la "
+},
+{
+"id": 2657,
+"es": "parte central"
+},
+{
+"id": 2658,
+"es": " con una gráfica para visualizar las medidas almacenados en el sistema, para ese equipo:"
+},
+{
+"id": 2659,
+"es": "Gráfico de medición diaria:"
+},
+{
+"id": 2660,
+"es": "Muestra el total de medidas disponibles de cada tipo (perfil de carga, perfil de carga absoluto, cierre, instantáneos, eventos) y según la fecha de la medida (lectura) por parte del equipo, y disponibles en la sección \"Mediciones - Origen\", con origen \""
+},
+{
+"id": 2661,
+"es": "Telemedido"
+},
+{
+"id": 2662,
+"es": "\" y asociadas al Punto de Medida del equipo en cuestión. Además, la gráfica presenta una herramienta de filtrado entre fechas. Por defecto, se muestran los últimos"
+},
+{
+"id": 2663,
+"es": " 7 días."
+},
+{
+"id": 2664,
+"es": "Por otro lado, la vista 360 cuenta con unos cuadros resumen de información (en la "
+},
+{
+"id": 2665,
+"es": "parte derecha"
+},
+{
+"id": 2666,
+"es": "), que recogen para el equipo seleccionado datos relacionados con:"
+},
+{
+"id": 2667,
+"es": "Comunicaciones"
+},
+{
+"id": 2668,
+"es": ": Las fechas de última petición y respuesta sobre el equipo"
+},
+{
+"id": 2669,
+"es": ": La fecha de última actualización en el sistema y fecha de última medida (captura) de esta tipología "
+},
+{
+"id": 2670,
+"es": ": La fecha de última actualización en el sistema y fecha de última medida (captura) de esta tipología"
+},
+{
+"id": 2671,
+"es": "Medidas de Cierre"
+},
+{
+"id": 2672,
+"es": ": La fecha de última actualización en el sistema y fecha de última medida (captura) de esta tipología y ultimo tipo de cierre"
+},
+{
+"id": 2673,
+"es": "Valores instantáneos"
+},
+{
+"id": 2674,
+"es": ": La fecha de última actualización en el sistema y fecha de última medida (captura) de esta tipología"
+},
+{
+"id": 2675,
+"es": ": La fecha de última actualización en el sistema y fecha de última medida (captura) de esta tipología y último tipo de evento "
+},
+{
+"id": 2676,
+"es": "Desde cada cuadro resumen se puede acceder al detalle de la información contenida en el mismo, y donde se visualizará la tabla con los "
+},
+{
+"id": 2677,
+"es": "datos de los últimos 7 días"
+},
+{
+"id": 2678,
+"es": ". Como se aprecia en la siguiente imagen, se ve el ejemplo de los detalles del "
+},
+{
+"id": 2679,
+"es": "Por último, en la "
+},
+{
+"id": 2680,
+"es": "parte inferior"
+},
+{
+"id": 2681,
+"es": " de la vista 360 (bajo las gráficas) existen dos secciones resumen:"
+},
+{
+"id": 2682,
+"es": "Configuración de datos remotos"
+},
+{
+"id": 2683,
+"es": ": muestra el listado los datos de Configuración remotos asociados al equipo incluyendo la siguiente información:"
+},
+{
+"id": 2684,
+"es": "Parámetro"
+},
+{
+"id": 2685,
+"es": "Fecha de registro"
+},
+{
+"id": 2686,
+"es": "Ejecuciones planificadas"
+},
+{
+"id": 2687,
+"es": ": muestra las ejecuciones planificadas donde participa el equipo."
+},
+{
+"id": 2688,
+"es": "Configuración Gestión de Medidas"
+},
+{
+"id": 2689,
+"es": "Monitor de procesos"
+},
+{
+"id": 2690,
+"es": "Anexo: Estado de las medidas"
+},
+{
+"id": 2691,
+"es": "El principal objetivo del módulo Gestión de Medidas del sistema Onesait Metering es cubrir el ciclo de medición de los diferentes Puntos de Medida. "
+},
+{
+"id": 2692,
+"es": "De manera general, el ciclo principal de tratamiento de datos de medición se resume en las siguientes fases:"
+},
+{
+"id": 2693,
+"es": "Recepción de datos"
+},
+{
+"id": 2694,
+"es": ": Recogida y consolidación de datos de medición de diferentes fuentes u orígenes (HES, Ficheros, etc…) "
+},
+{
+"id": 2695,
+"es": "Tratamiento, Validación y Certificación"
+},
+{
+"id": 2696,
+"es": ": Una vez recibidos y almacenados los datos de medición en el sistema, estos serán validados y tratados en función de las características y necesidades del cliente mediante reglas y algoritmos VEE (Validation, Editing and Estimation)."
+},
+{
+"id": 2697,
+"es": "Publicación de datos"
+},
+{
+"id": 2698,
+"es": ": Los datos de medida y consumo validados y certificados (determinantes de facturación) serán enviados a aquellas terceras entidades o sistemas dentro y fuera de la compañia (sistemas de facturación, usuarios, clientes, sistemas de liquidaciones, etc…) en el formato y periodicidad requeridos."
+},
+{
+"id": 2699,
+"es": "La Gestión de Medidas es también denominada con las siglas "
+},
+{
+"id": 2700,
+"es": "Una vez registrados, se aplican automáticamente una serie de "
+},
+{
+"id": 2701,
+"es": ", con el fin de validarlos y calificarlos en función de tres estados, de mejor a peor calificación: Válido, Inválido o Descartado."
+},
+{
+"id": 2702,
+"es": "Mejor Valor"
+},
+{
+"id": 2703,
+"es": ", cuyo fin es determinar cuáles son los mejores datos de medición, entre el conjunto de medidas de origen, teniendo en cuenta un determinado ranking de preferencia y la validez de los mismos."
+},
+{
+"id": 2704,
+"es": "El resto de procesos se deberán ejecutar bajo demanda del usuario sobre las medidas óptimas, planificando su ejecución o bien ejecutándolo manualmente. Estos procesos son los siguientes:"
+},
+{
+"id": 2705,
+"es": " avanzados para obtener ciertas medidas a partir de la información almacenada en el sistema, como por ejemplo medidas agregadas o desagregadas a partir de otros datos almacenados en el sistema cálculo de cierres a partir del  perfil de carga, cálculo de lecturas a partir de consumos."
+},
+{
+"id": 2706,
+"es": ": aplicación de un nuevo conjunto de validaciones sobre las medidas óptimas, las cuales asignarán una determinada calificación a estas medidas, como Válidas o Inválidas."
+},
+{
+"id": 2707,
+"es": "Orígenes del Sistema"
+},
+{
+"id": 2708,
+"es": "Podemos definir un origen como una procedencia o fuente de información, es decir, de donde obtenemos los diferentes datos de medición del sistema."
+},
+{
+"id": 2709,
+"es": "multiorigen"
+},
+{
+"id": 2710,
+"es": ", ya que es capaz de almacenar y gestionar datos de medición de diferentes orígenes. En este sentido, un mismo dato puede provenir de diferentes fuentes de información."
+},
+{
+"id": 2711,
+"es": "Estos orígenes se pueden clasificar atendiendo a la siguiente tipología:"
+},
+{
+"id": 2712,
+"es": "REAL o"
+},
+{
+"id": 2713,
+"es": "CARGADO"
+},
+{
+"id": 2714,
+"es": "Son orígenes procedentes de una fuente externa al sistema, como por ejemplo un sistema comercial o un sistema MDC."
+},
+{
+"id": 2715,
+"es": "Por ejemplo: Telemetría, Fichero, OUC o HES."
+},
+{
+"id": 2716,
+"es": "CALCULADO"
+},
+{
+"id": 2717,
+"es": "Los orígenes de este tipo son los diferentes métodos de cálculo del sistema."
+},
+{
+"id": 2718,
+"es": "Por ejemplo, una medida generada por el método de cálculo de medidas agregadas horarias, o una medida de cierre a partir de un perfil de carga."
+},
+{
+"id": 2719,
+"es": "ESTIMADO"
+},
+{
+"id": 2720,
+"es": "Se refiere a los diferentes métodos de estimación del sistema, por ejemplo, el origen de una medida generada por el método de estimación de Interpolación, estimación a partir de valores históricos o ajuste de huecos de un perfil de carga a partir de una medida de cierre."
+},
+{
+"id": 2721,
+"es": "Cada dato de medición del sistema tiene siempre asociado un determinado origen o procedencia."
+},
+{
+"id": 2722,
+"es": "Por tanto, en el sistema existen un conjunto de orígenes de cada tipo:"
+},
+{
+"id": 2723,
+"es": "El conjunto de orígenes reales o cargados dependerá del negocio particular donde se implante el sistema."
+},
+{
+"id": 2724,
+"es": "En cuanto al resto de orígenes no reales ("
+},
+{
+"id": 2725,
+"es": "Calculados y Estimados"
+},
+{
+"id": 2726,
+"es": "), dependerá de los diferentes métodos o algoritmos de cada tipo dados de alta en el sistema, a cada uno de ellos le corresponderá el origen correspondiente."
+},
+{
+"id": 2727,
+"es": "Tipo Origen"
+},
+{
+"id": 2728,
+"es": "ORIGEN"
+},
+{
+"id": 2729,
+"es": "Real"
+},
+{
+"id": 2730,
+"es": "Load measurement data files"
+},
+{
+"id": 2731,
+"es": "Telemetría"
+},
+{
+"id": 2732,
+"es": "OUM data entry"
+},
+{
+"id": 2733,
+"es": "OUC"
+},
+{
+"id": 2734,
+"es": "OUC data entry"
+},
+{
+"id": 2735,
+"es": "HES data entry"
+},
+{
+"id": 2736,
+"es": "Estimado"
+},
+{
+"id": 2737,
+"es": "Ajuste de medida en función cierre mensual o diario."
+},
+{
+"id": 2738,
+"es": "Load profile based on billing"
+},
+{
+"id": 2739,
+"es": "Medidas Históricas"
+},
+{
+"id": 2740,
+"es": "Historical Measures"
+},
+{
+"id": 2741,
+"es": "Interpolación"
+},
+{
+"id": 2742,
+"es": "Interpolation"
+},
+{
+"id": 2743,
+"es": "Perfilado a través del perfil estándar"
+},
+{
+"id": 2744,
+"es": "Profiling Through Standard Profile"
+},
+{
+"id": 2745,
+"es": "Estimación por Valores Constantes"
+},
+{
+"id": 2746,
+"es": "Constants Values"
+},
+{
+"id": 2747,
+"es": "Calculado"
+},
+{
+"id": 2748,
+"es": "Cálculo de registros de cierre mensuales"
+},
+{
+"id": 2749,
+"es": "Monthly Billing from Load Profile Calculation"
+},
+{
+"id": 2750,
+"es": "Cálculo de registros de cierre diarios"
+},
+{
+"id": 2751,
+"es": "Daily Billing from Load Profile Calculation"
+},
+{
+"id": 2752,
+"es": "Perfiles de carga absolutos a partir de medidas incrementales"
+},
+{
+"id": 2753,
+"es": "Absolute readings from Load Profiles"
+},
+{
+"id": 2754,
+"es": "Medidas Desagregadas a partir de Horarias"
+},
+{
+"id": 2755,
+"es": "Disaggregated Measures From Hourly"
+},
+{
+"id": 2756,
+"es": "Medidas Desagregadas a partir de Diarias"
+},
+{
+"id": 2757,
+"es": "Disaggregated Measures From Daily"
+},
+{
+"id": 2758,
+"es": "Medidas Desagregadas a partir de Mensuales"
+},
+{
+"id": 2759,
+"es": "Disaggregated Measures From Monthly"
+},
+{
+"id": 2760,
+"es": "Medidas Agregadas a partir de 15Min"
+},
+{
+"id": 2761,
+"es": "Aggregate Measures From 15 minutes"
+},
+{
+"id": 2762,
+"es": "Medidas Agregadas a partir de 30Min"
+},
+{
+"id": 2763,
+"es": "Aggregate Measures From 30 minutes"
+},
+{
+"id": 2764,
+"es": "Medidas Agregadas a partir de Horarias"
+},
+{
+"id": 2765,
+"es": "Aggregate Measures From 60 minutes"
+},
+{
+"id": 2766,
+"es": "Dentro de la aplicación podemos consultar los diferentes orígenes en la pantalla "
+},
+{
+"id": 2767,
+"es": "Gestión de la Medida->Orígenes->Orígenes"
+},
+{
+"id": 2768,
+"es": "Podemos definir un "
+},
+{
+"id": 2769,
+"es": " como un conjunto de orígenes ordenados por prioridad. Cada uno de estos orígenes y prioridad, tendrá asociado un determinado estado o calificación de medida ("
+},
+{
+"id": 2770,
+"es": "VÁLIDO o INVÁLIDO"
+},
+{
+"id": 2771,
+"es": "Un origen podrá ser incluido en un determinado patrón con una calificación Válida y otra Inválida, es decir, como mucho dos veces."
+},
+{
+"id": 2772,
+"es": "Este patrón de orígenes, determinará de entre un conjunto de medidas de diferentes orígenes, cuál será la seleccionada como mejor medida o medida óptima nediante el "
+},
+{
+"id": 2773,
+"es": "proceso de BTV"
+},
+{
+"id": 2774,
+"es": "Los diferentes patrones o rankings de origen del sistema los podremos consultar, editar, crear o eliminar en la pantalla "
+},
+{
+"id": 2775,
+"es": "Gestión de la Medida->Orígenes->Patrones"
+},
+{
+"id": 2776,
+"es": "Accediendo al detalle de cada patrón, podemos ver la configuración de orígenes de cada uno, junto con su ranking:"
+},
+{
+"id": 2777,
+"es": "_Una "
+},
+{
+"id": 2778,
+"es": "validación "
+},
+{
+"id": 2779,
+"es": "es una regla de negocio que certifica la validez de un dato de medición de acuerdo a un criterio pre-configurado por el usuario."
+},
+{
+"id": 2780,
+"es": "Perfil de Carga,"
+},
+{
+"id": 2781,
+"es": "Perfil de Carga Absoluto y"
+},
+{
+"id": 2782,
+"es": "A través de estos algoritmos, podremos determinar si una medida o curva es apta, en función del método y parámetros específicos seleccionados, como se explica a continuación. "
+},
+{
+"id": 2783,
+"es": "Resultado de Validación"
+},
+{
+"id": 2784,
+"es": "El resultado de la evaluación de las validaciones sobre las medidas, puede ser:"
+},
+{
+"id": 2785,
+"es": "Válida"
+},
+{
+"id": 2786,
+"es": "La medición ha superado con éxito todas las validaciones a las que ha sido sometida."
+},
+{
+"id": 2787,
+"es": "Inválida"
+},
+{
+"id": 2788,
+"es": "La medición no ha superado ciertas validaciones, con carácter más leve. "
+},
+{
+"id": 2789,
+"es": "Una medición con este estado, podría considerarse dentro de un ranking de orígenes."
+},
+{
+"id": 2790,
+"es": "Descartada"
+},
+{
+"id": 2791,
+"es": "La medición no ha superado ciertas validaciones con una severidad alta, consideradas como fundamentales. Sólo aplicable en validaciones origen. Una medida descartada, nunca podrá ser considerada en el ranking o patrón de origen."
+},
+{
+"id": 2792,
+"es": "La medición no se ha sometido a ningún proceso de validación debido a que la magnitud de la misma no se ha seleccionado para ser evaluada."
+},
+{
+"id": 2793,
+"es": "Tipo de Validación"
+},
+{
+"id": 2794,
+"es": "Actualmente, el sistema diferencia entre dos tipologías principales de validación:"
+},
+{
+"id": 2795,
+"es": "se aplican sobre las medidas en el momento en el que entran en el sistema. Forman parte del ciclo de tratamiento inicial de las medidas. El resultado de la validación puede ser Válido si se supera, Inválido o Descartada si no se supera en función de la gravedad definida."
+},
+{
+"id": 2796,
+"es": "se aplican sobre las medidas óptimas bajo indicación expresa del usuario, mediante una ejecución manual o planificada. Se distinguen a su vez dos tipos de validaciones de óptimo."
+},
+{
+"id": 2797,
+"es": "Validaciones de óptimo"
+},
+{
+"id": 2798,
+"es": ": Se aplican sobre las medidas óptimas de forma individual. El resultado se refleja en cada pantalla de mediciones Óptimas para cada medida sobre la columna de \""
+},
+{
+"id": 2799,
+"es": "Resultado de la Validación"
+},
+{
+"id": 2800,
+"es": "\" con la etiqueta de Válido o Inválido."
+},
+{
+"id": 2801,
+"es": "Validaciones de perfil óptimo"
+},
+{
+"id": 2802,
+"es": " se aplican sobre la curva óptima diaria completa, y no sobre cada una de las medidas de la misma. Dichas validaciones se reflejan en la pantalla de mediciones Óptimas \"P"
+},
+{
+"id": 2803,
+"es": "erfil de Carga Óptimo"
+},
+{
+"id": 2804,
+"es": "\", en la columna \"Curva\" con el valor de V (VÁLIDA) o I (INVÁLIDA)."
+},
+{
+"id": 2805,
+"es": "Tipos de Validaciones"
+},
+{
+"id": 2806,
+"es": "Aplicación"
+},
+{
+"id": 2807,
+"es": "Ejecución"
+},
+{
+"id": 2808,
+"es": "Resultado "
+},
+{
+"id": 2809,
+"es": "Todas las medidas"
+},
+{
+"id": 2810,
+"es": "Validaciones de Medida Óptima"
+},
+{
+"id": 2811,
+"es": "Medidas Óptimas Individuales"
+},
+{
+"id": 2812,
+"es": "Planificada"
+},
+{
+"id": 2813,
+"es": "Validaciones de Perfil Óptimo"
+},
+{
+"id": 2814,
+"es": "MÉTODOS DE VALIDACIÓN "
+},
+{
+"id": 2815,
+"es": "Validaciones de origen o iniciales"
+},
+{
+"id": 2816,
+"es": "Negative values"
+},
+{
+"id": 2817,
+"es": "Future or past intervals"
+},
+{
+"id": 2818,
+"es": "Inactive point"
+},
+{
+"id": 2819,
+"es": "Billing configuration"
+},
+{
+"id": 2820,
+"es": "Validaciones del valor de medida óptimo (BTV)"
+},
+{
+"id": 2821,
+"es": "Incremental BTV Validation"
+},
+{
+"id": 2822,
+"es": "Time Of Use (cierre vs curva)"
+},
+{
+"id": 2823,
+"es": "Overlap Optimal"
+},
+{
+"id": 2824,
+"es": "Source Comparison"
+},
+{
+"id": 2825,
+"es": "Validaciones de perfil óptimo (BTV)"
+},
+{
+"id": 2826,
+"es": "Limits"
+},
+{
+"id": 2827,
+"es": "Zero Values"
+},
+{
+"id": 2828,
+"es": "Real Source"
+},
+{
+"id": 2829,
+"es": "Gaps"
+},
+{
+"id": 2830,
+"es": "Time Change Check"
+},
+{
+"id": 2831,
+"es": "Módulo Validaciones"
+},
+{
+"id": 2832,
+"es": "Plantillas de Validación"
+},
+{
+"id": 2833,
+"es": "Planificador de Validaciones"
+},
+{
+"id": 2834,
+"es": "Ejecución Manual de Validaciones"
+},
+{
+"id": 2835,
+"es": "Configuración de Validaciones"
+},
+{
+"id": 2836,
+"es": "Selección de Magnitudes a Validar"
+},
+{
+"id": 2837,
+"es": "Resultado de Validación No Validable - NonValidable"
+},
+{
+"id": 2838,
+"es": "Parametrización del resultado de validación por defecto, en medidas configuradas para no ser evaluadas: No Validable o Válida"
+},
+{
+"id": 2839,
+"es": "Traza de Validación según resultado"
+},
+{
+"id": 2840,
+"es": "Características generales"
+},
+{
+"id": 2841,
+"es": "Acciones y estrategias asociadas a las validaciones"
+},
+{
+"id": 2842,
+"es": "Datos y variables de Validaciones"
+},
+{
+"id": 2843,
+"es": "Configuración del sistema"
+},
+{
+"id": 2844,
+"es": "Monitorización y Visualización"
+},
+{
+"id": 2845,
+"es": "Visualización"
+},
+{
+"id": 2846,
+"es": "Validaciones de Origen o Iniciales"
+},
+{
+"id": 2847,
+"es": "Validaciones del Valor Óptimo (BTV)"
+},
+{
+"id": 2848,
+"es": "Validaciones de Perfil Óptimo (BTV)"
+},
+{
+"id": 2849,
+"es": "Anexos"
+},
+{
+"id": 2850,
+"es": "Parámetros por defecto"
+},
+{
+"id": 2851,
+"es": "Centraliza la configuración y uso de validaciones del módulo de Gestión de la Medida."
+},
+{
+"id": 2852,
+"es": "Podemos destacar las siguientes características generales comunes a todos los Métodos de Validación:"
+},
+{
+"id": 2853,
+"es": "Todos los Métodos de Validación operan con perfiles de carga, perfiles de carga absolutos o medidas de cierre."
+},
+{
+"id": 2854,
+"es": "estado de fallo"
+},
+{
+"id": 2855,
+"es": " de los distintos Métodos de Validación es modificable por el usuario en la "
+},
+{
+"id": 2856,
+"es": "Definición del Método de Validación"
+},
+{
+"id": 2857,
+"es": "; de esta manera, el usuario podrá seleccionar si quiere descartar las medidas o simplemente marcarlas como inválidas en caso de no superar la validación específica."
+},
+{
+"id": 2858,
+"es": "nivel de severidad"
+},
+{
+"id": 2859,
+"es": " de la incidencia generada en caso de fallo también es modificable por el usuario en la "
+},
+{
+"id": 2860,
+"es": ", pudiendo seleccionar entre las siguientes tipologías: menor, moderada, alta o crítica."
+},
+{
+"id": 2861,
+"es": "Los Métodos de Validación de óptimo operan sobre las medidas que han sido seleccionadas como óptimas, independientemente del resultado de la validación de éstas, ya que si están en el óptimo son las mejores medidas disponibles."
+},
+{
+"id": 2862,
+"es": "Por defecto, si una medida, lectura o cierre no cumple los criterios para ser evaluada por un determinado método (o no se asocia su magnitud en la configuración), será considerada "
+},
+{
+"id": 2863,
+"es": "No Validable. "
+},
+{
+"id": 2864,
+"es": "No obstante, el sistema se puede configurar, por implantación, para considerar por defecto como válidas las medidas no evaluadas."
+},
+{
+"id": 2865,
+"es": "Detalle en "
+},
+{
+"id": 2866,
+"es": "Resultado de Validación de una medida no evaluada"
+},
+{
+"id": 2867,
+"es": "Las validaciones se asignan siempre en la"
+},
+{
+"id": 2868,
+"es": " asociada al punto de medida, a través de"
+},
+{
+"id": 2869,
+"es": " o de manera individual."
+},
+{
+"id": 2870,
+"es": "La Clase de Configuración, se crea a partir de Datos Maestros en la Tabla Maestra “"
+},
+{
+"id": 2871,
+"es": "”, y se asocian al Punto de Medida en la pantalla de características del mismo. Estas clases permiten al usuario crear diferentes configuraciones (ranking de orígenes, magnitudes BTV, validaciones iniciales y validaciones de óptimo) para el tratamiento de los Puntos de Medida en función de la tipología y características de los mismos."
+},
+{
+"id": 2872,
+"es": "Cuando el Punto de Medida tiene asignada una clase de configuración con sus correspondientes validaciones, se ejecutan todas las validaciones de la clase de configuración, en función de las magnitudes configuradas en cada una. "
+},
+{
+"id": 2873,
+"es": "La configuración de los parámetros específicos y la estrategia de las validaciones se hereda de la definición maestra de los "
+},
+{
+"id": 2874,
+"es": ", pero puede adaptarse y configurarse de forma específica en cada Clase de Configuración."
+},
+{
+"id": 2875,
+"es": "En caso de que ninguno de los Métodos de Validación esté configurado para ejecutarse en la magnitud de la medida, ésta se calificará como "
+},
+{
+"id": 2876,
+"es": " por defecto (salvo en implantaciones donde se determine que el valor por defecto sea VÁLIDA, detalle en "
+},
+{
+"id": 2877,
+"es": "Si no se supera algún método de Validación, la medida se da por "
+},
+{
+"id": 2878,
+"es": "Inválida "
+},
+{
+"id": 2879,
+"es": "Descartada."
+},
+{
+"id": 2880,
+"es": "Cuando no hay validaciones no superadas en una medición, si alguna se ha superado, la medida será VÁLIDA, aunque algún método resulte No Validable. "
+},
+{
+"id": 2881,
+"es": "Generalmente, las medidas sólo se validan una vez, y cuando ya tienen asignado un resultado de validación, no se volverán a evaluar, salvo que se fuerce una re-evaluación en la ejecución manual."
+},
+{
+"id": 2882,
+"es": "El seguimiento de los procesos de Validación de óptimo se puede realizar desde el "
+},
+{
+"id": 2883,
+"es": " del módulo gestión de la medida. Los procesos de Validación se encontrarán fácilmente aplicando el filtro por “Tipo de Proceso”: Validación"
+},
+{
+"id": 2884,
+"es": "Los Métodos de Validación disponibles en el sistema, se definen con una configuración por defecto, referente a los parámetros propios de la validación, y a las magnitudes sobre las que aplican."
+},
+{
+"id": 2885,
+"es": "Esta parametrización se hereda en las Clases de Configuración al ser seleccionados en la misma, pero se pueden adaptar a la configuración necesaria para los puntos de medida que utilicen dicha clase."
+},
+{
+"id": 2886,
+"es": "La pantalla "
+},
+{
+"id": 2887,
+"es": " permite al usuario consultar y gestionar los Métodos de Validación disponibles en el sistema, con opciones para:"
+},
+{
+"id": 2888,
+"es": "Consultar el listado de métodos disponibles y su descripción."
+},
+{
+"id": 2889,
+"es": "Buscar métodos: mediante el campo de búsqueda Nombre y/o el campo de Aplicación (origen, óptimo, perfil óptimo) y el botón buscar"
+},
+{
+"id": 2890,
+"es": "Acceder a los detalles de un método de Validación, mediante el botón detalle o haciendo doble clic sobre cada método."
+},
+{
+"id": 2891,
+"es": "Modificar los parámetros del método desde la opción editar"
+},
+{
+"id": 2892,
+"es": "El detalle de cada método muestra los siguientes atributos:"
+},
+{
+"id": 2893,
+"es": "Servicio: Electricidad"
+},
+{
+"id": 2894,
+"es": "Aplicación: Origen, Óptimo y Perfil Óptimo, según aplique sobre la medida bruta, sobre la óptima o sobre la curva óptima."
+},
+{
+"id": 2895,
+"es": "Fecha de última modificación. Esta característica no aparecerá en la ventana de edición. Se asignará por defecto al guardar cambios en un método y se mostrará en la pantalla de detalle."
+},
+{
+"id": 2896,
+"es": "Estado fallo: estado que se asignará a las medidas que no superen la Validación (Inválido o Descartada)"
+},
+{
+"id": 2897,
+"es": "Severidad de incidencia: menor, moderada, alta o crítica"
+},
+{
+"id": 2898,
+"es": "Estrategia por defecto: En caso de que el método no tenga asociada la acción "
+},
+{
+"id": 2899,
+"es": "Qualify Measure "
+},
+{
+"id": 2900,
+"es": "en su estrategia, éste método mostrará el resultado de Validación oportuno si bien no servirá para calificar la medida"
+},
+{
+"id": 2901,
+"es": "Parámetros de la Validación, que habrá o no dependiendo de la Validación."
+},
+{
+"id": 2902,
+"es": "Selección de magnitudes a las que se aplicaría la Validación"
+},
+{
+"id": 2903,
+"es": "Listado de magnitudes de perfil de carga y perfil de carga absoluto sobre las que aplicarán las validaciones de origen, óptimo y perfil óptimo. "
+},
+{
+"id": 2904,
+"es": "Listado de magnitudes de medidas de cierre sobre las que aplicarán las validaciones. "
+},
+{
+"id": 2905,
+"es": "Mediante el botón Editar, se permite modificar el valor de los parámetros específicos, el estado de fallo, la severidad de la incidencia generada,  la estrategia por defecto de cada método de Validación, y las magnitudes sobre las que aplicar la Validación."
+},
+{
+"id": 2906,
+"es": "Estos parámetros son sólo editables, no se podrán crear o eliminar nuevos parámetros ni editar su nombre, si bien se trata de valores obligatorios."
+},
+{
+"id": 2907,
+"es": "Exportar el listado de métodos a formato CSV o PDF en el idioma que se desee, seleccionando las opciones en una ventana emergente:"
+},
+{
+"id": 2908,
+"es": "La información de configuración de las validaciones se consulta se forma reiterada en la ingesta de medidas, por lo que para mejorar el rendimiento del sistema se guarda en memoria caché, de acceso más rápido. Esto implica que un cambio de configuración no se verá reflejado en el sistema hasta que la memoria se refresque y recupere la información modificada. Este tiempo de refresco es configurable y, por defecto, lo hace cada diez minutos."
+},
+{
+"id": 2909,
+"es": "Las plantillas establecen conjuntos de validaciones de una misma aplicación (origen u óptimo), de cara a facilitar la asociación de las mismas sobre las"
+},
+{
+"id": 2910,
+"es": " Clases de Configuración"
+},
+{
+"id": 2911,
+"es": " a asignar a los puntos de medida."
+},
+{
+"id": 2912,
+"es": ", muestra una lista de todas las plantillas de Validación dadas de alta en el sistema, y permite:"
+},
+{
+"id": 2913,
+"es": "Buscar plantillas: el botón buscar permite buscar una plantilla de Validación en función de los filtros de búsqueda de Nombre y Aplicación."
+},
+{
+"id": 2914,
+"es": "Crear nuevas plantillas: el botón Crear permite crear una nueva Plantilla de Validación introduciendo los siguientes atributos:"
+},
+{
+"id": 2915,
+"es": "Nombre (obligatorio)"
+},
+{
+"id": 2916,
+"es": "Aplicación (obligatorio)"
+},
+{
+"id": 2917,
+"es": "Validaciones (obligatorio): podrán añadirse y eliminarse tantas validaciones como se deseen siempre que sean de la aplicación (origen u óptimo) seleccionada para la plantilla"
+},
+{
+"id": 2918,
+"es": "Acceder al detalle: el botón Detalle o el doble clic sobre alguna de las plantillas permite al usuario acceder a la información detallada de cada uno de ellos (Ilustración 4)."
+},
+{
+"id": 2919,
+"es": "Editar una plantilla: el botón Editar permite editar la plantilla seleccionada, según lo indicado en el punto anterior."
+},
+{
+"id": 2920,
+"es": "Exportar las plantillas de Validación: el botón Exportar permite exportar la lista de plantillas de forma similar a como se exportan otras pantallas (por ejemplo, la pantalla de Métodos de Validación, descrita anteriormente)."
+},
+{
+"id": 2921,
+"es": "Eliminar una plantilla: el botón Eliminar permite eliminar la plantilla seleccionada. El sistema pedirá confirmación y notificará al usuario de que la plantilla se ha eliminado correctamente. La eliminación de una plantilla es permanente."
+},
+{
+"id": 2922,
+"es": "Permitirá ejecutar de forma programada la validaciones de óptimo seleccionadas en la clase de configuración de cada punto de medida."
+},
+{
+"id": 2923,
+"es": ", muestra una lista de todos los planificadores de "
+},
+{
+"id": 2924,
+"es": " dados de alta en el sistema, ya sea habilitados o deshabilitados. Dichos planificadores establecen las ejecuciones programadas de los Métodos de Validación de óptimo, que se lanzarán con una frecuencia establecida sobre los puntos y grupos de puntos indicados."
+},
+{
+"id": 2925,
+"es": "Desde esta pantalla se puede:"
+},
+{
+"id": 2926,
+"es": "Buscar planificadores: el botón buscar permite buscar un planificador en función de los filtros de búsqueda de Nombre y Estado."
+},
+{
+"id": 2927,
+"es": "Crear nuevos planificadores: el botón Crear permite crear un nuevo planificador "
+},
+{
+"id": 2928,
+"es": "Acceder al detalle: el botón Detalle o el doble clic sobre alguno de los planificadores permite al usuario acceder a la información detallada de cada uno de ellos."
+},
+{
+"id": 2929,
+"es": "Editar un planificador: permite modificar el planificador seleccionado "
+},
+{
+"id": 2930,
+"es": "Ejecutar un planificador: el botón Ejecutar permite ejecutar un planificador en cualquier momento, independientemente de su configuración. Actualizará su fecha de última ejecución y podría afectar a la fecha planificada de siguiente ejecución (si es por tiempo transcurrido desde la última ejecución)."
+},
+{
+"id": 2931,
+"es": "Exportar los planificadores: el botón Exportar permite exportar la lista de planificadores a formato csv o pdf."
+},
+{
+"id": 2932,
+"es": "Eliminar un planificador: el botón Eliminar permite eliminar el planificador seleccionado. El sistema pedirá confirmación y notificará al usuario de que el planificador se ha eliminado correctamente. La eliminación de un planificador es permanente."
+},
+{
+"id": 2933,
+"es": "Los  planificadores de validaciones se caracterizan por los siguientes atributos:"
+},
+{
+"id": 2934,
+"es": "Nombre:"
+},
+{
+"id": 2935,
+"es": " a asignar libremente por el usuario. Se recomienda que permita identificar rápidamente el planificador y evitar caracteres extraños. Extensión máxima: 50 caracteres."
+},
+{
+"id": 2936,
+"es": "Descripción "
+},
+{
+"id": 2937,
+"es": "(opcional): para facilitar la identificación del planificador. Extensión máxima: 100 caracteres."
+},
+{
+"id": 2938,
+"es": "Selección de puntos de medidas "
+},
+{
+"id": 2939,
+"es": "sobre los que se ejecutan las validaciones, al menos una de las opciones:"
+},
+{
+"id": 2940,
+"es": "Grupos de Puntos de Medida"
+},
+{
+"id": 2941,
+"es": "Tipo de Medida"
+},
+{
+"id": 2942,
+"es": ": Permite seleccionar los tipos de medida sobre los que se pretende ejecutar las validaciones "
+},
+{
+"id": 2943,
+"es": ": fechas o frecuencias en las que periódicamente se ejecutarán automáticamente los Métodos de Validación asignados a los puntos de medida y/o grupos de puntos seleccionados"
+},
+{
+"id": 2944,
+"es": ": habilitado o deshabilitado. Si el planificador está habilitado el método se ejecutará automáticamente en las fechas correspondientes según la planificación seleccionada. Si está deshabilitado, no se ejecutará salvo que el usuario seleccione la opción “ejecutar”."
+},
+{
+"id": 2945,
+"es": "Número de días Desde"
+},
+{
+"id": 2946,
+"es": "número de días anteriores respecto a la fecha de ejecución de la planificación para los que se quieren empezar a validar medidas, seleccionando las medidas cuya "
+},
+{
+"id": 2947,
+"es": "fecha de registro del contador"
+},
+{
+"id": 2948,
+"es": " (no fecha de actualización en el sistema) es igual o posterior a estos días."
+},
+{
+"id": 2949,
+"es": "Umbral de Seguridad"
+},
+{
+"id": 2950,
+"es": ": fecha hasta o número de días hacia atrás que hay que restar a la fecha de ejecución para obtener la fecha tope de Validación, seleccionando las medidas cuya fecha "
+},
+{
+"id": 2951,
+"es": " (no fecha de actualización en el sistema) es igual o anterior a estos días. Un valor 1 implica que la Validación cogerá hasta el día de ayer, 0 incluirá el día actual."
+},
+{
+"id": 2952,
+"es": "Estrategia "
+},
+{
+"id": 2953,
+"es": "(no obligatorio): conjunto de acciones que se realizan en el sistema una vez ejecutado el proceso."
+},
+{
+"id": 2954,
+"es": "Última ejecución"
+},
+{
+"id": 2955,
+"es": ": informa de la fecha de última ejecución registrada"
+},
+{
+"id": 2956,
+"es": "Próxima ejecución"
+},
+{
+"id": 2957,
+"es": ": cálculo de la fecha de la próxima ejecución"
+},
+{
+"id": 2958,
+"es": "Crear planificador de Validación"
+},
+{
+"id": 2959,
+"es": "Al seleccionar la opción “Crear”, se piden los datos para crear una nueva planificación:"
+},
+{
+"id": 2960,
+"es": "Descripción (opcional)"
+},
+{
+"id": 2961,
+"es": "Grupo de puntos de medida "
+},
+{
+"id": 2962,
+"es": "Selector de Tipos de Medida"
+},
+{
+"id": 2963,
+"es": "Nº Días Desde"
+},
+{
+"id": 2964,
+"es": "Estrategia"
+},
+{
+"id": 2965,
+"es": "Los campos obligatorios están marcados con un asterisco (*). Si no se cumplimentan debidamente, la casilla correspondiente se marcará en rojo, aparecerá un aspa roja y al pasar el ratón sobre el campo en rojo aparecerá el mensaje de error."
+},
+{
+"id": 2966,
+"es": "Como se ha mencionado anteriormente, en este módulo no es necesario seleccionar los Métodos de Validación ya que estos se asignan directamente sobre los Puntos de Medida a través de su Clase de Configuración."
+},
+{
+"id": 2967,
+"es": "Editar planificador de Validaciones"
+},
+{
+"id": 2968,
+"es": "Se accede a la pantalla de edición de un planificador de Validación seleccionando planificación (para que se resalte en azul) y pulsando el botón "
+},
+{
+"id": 2969,
+"es": ". Los campos disponibles son los mismos que en la ventana de creación, con la diferencia de que no aparece la fecha de última ejecución, puesto que esta se establece de forma automática en función de en qué momento se ejecutase por última vez el planificador seleccionado."
+},
+{
+"id": 2970,
+"es": "Ejecución manual de una planificación"
+},
+{
+"id": 2971,
+"es": "Mediante el botón Ejecutar, se puede lanzar manualmente una planificación en cualquier momento, independientemente de cuándo esté prevista la próxima ejecución. El sistema pedirá confirmación de que desea ejecutarse el planificador seleccionado y notificará si la planificación se ha realizado con éxito."
+},
+{
+"id": 2972,
+"es": "Al ejecutar un planificador de forma manual se actualizará automáticamente la fecha de última ejecución y, en consecuencia, según la planificación seleccionada, puede verse afectada la fecha de próxima ejecución."
+},
+{
+"id": 2973,
+"es": "Los procesos lanzados de esta manera aparecerán en el monitor de procesos como procesos ejecutados de forma automática. Dentro del proceso, se generará una tarea por cada punto de medida y método."
+},
+{
+"id": 2974,
+"es": "La pantalla "
+},
+{
+"id": 2975,
+"es": "Ejecución Manual de Validaciones "
+},
+{
+"id": 2976,
+"es": "da acceso a la funcionalidad que permite lanzar la ejecución del proceso de validaciones de Óptimo en ese momento, permitiendo seleccionar un punto o un grupo de puntos de medida, en un intervalo de fechas (desde-hasta) determinado (fechas de registro de contador de las medidas), o el tipo de medida sobre el que ejecutarlas: Perfil de Carga, Perfil de Carga Absoluto o Medida de Cierre."
+},
+{
+"id": 2977,
+"es": "Desde esta pantalla se rellena los siguientes campos para ejecutar un proceso de Validación de óptimo:"
+},
+{
+"id": 2978,
+"es": ": a asignar libremente por el usuario. Se recomienda que permita identificar rápidamente el proceso y evitar caracteres extraños. Extensión máxima: 50 caracteres."
+},
+{
+"id": 2979,
+"es": ": se desplegará una ventana con un selector de puntos, desde el que se podrá seleccionar cualquier punto de medida de entre los dados de alta en el sistema. Podrá seleccionarse sólo un punto, sólo un grupo, o un punto y un grupo de puntos."
+},
+{
+"id": 2980,
+"es": ": se desplegará una ventana similar a la de puntos de medida, desde la que se podrá seleccionar cualquier grupo de puntos de entre los dados de alta en el sistema. Podrá seleccionarse sólo un punto, sólo un grupo, o un punto y un grupo de puntos."
+},
+{
+"id": 2981,
+"es": "Desde y Hasta"
+},
+{
+"id": 2982,
+"es": ": El intervalo de fechas se seleccionará desde un calendario y tendrá en cuenta la hora: aaaa-mm-dd hh:mm:ss, asumiendo que horas, minutos y segundos: "
+},
+{
+"id": 2983,
+"es": "en la fecha desde corresponde a 00:00:00, y"
+},
+{
+"id": 2984,
+"es": "en la hasta a 23:59:59"
+},
+{
+"id": 2985,
+"es": "La búsqueda de medias a validar se hará respecto a la fecha de registro del contador, no la fecha de actualización de la medida en el sistema."
+},
+{
+"id": 2986,
+"es": ": conjunto de acciones que se realizan en el sistema una vez ejecutado el proceso. No es un valor obligatorio."
+},
+{
+"id": 2987,
+"es": "Si no se cumplimentan debidamente los valores obligatorios, la casilla correspondiente se marcará en rojo, aparecerá un aspa roja y al pasar el ratón sobre el campo en rojo aparecerá el mensaje de error."
+},
+{
+"id": 2988,
+"es": "Al pulsar el botón Ejecutar, se notificará que la ejecución se ha lanzado con éxito y el proceso aparecerá en el monitor de procesos, "
+},
+{
+"id": 2989,
+"es": "Monitor de Procesos,"
+},
+{
+"id": 2990,
+"es": " con tipo de ejecución manual. Dentro del proceso, se generará una tarea por cada punto de medida y se ejecutarán las validaciones de óptimo asignadas al punto/puntos seleccionados."
+},
+{
+"id": 2991,
+"es": "Configuración de Validaciones "
+},
+{
+"id": 2992,
+"es": "Las validaciones se asignan desde la "
+},
+{
+"id": 2993,
+"es": "Clase de Configuración "
+},
+{
+"id": 2994,
+"es": "asociada al Punto de Medida, en las pestañas de "
+},
+{
+"id": 2995,
+"es": "validaciones iniciales"
+},
+{
+"id": 2996,
+"es": "validaciones de óptimo"
+},
+{
+"id": 2997,
+"es": ", a través de "
+},
+{
+"id": 2998,
+"es": " o agregando validaciones individualmente."
+},
+{
+"id": 2999,
+"es": "Se considera la aplicación de los procedimientos de validación sólo para ciertas magnitudes seleccionadas, en lugar de para todas, ya que sobrecarga el sistema con procesos sobre información no utilizada. "
+},
+{
+"id": 3000,
+"es": "La configuración será común para perfil de carga, perfil de carga absoluto y medidas de cierre. "
+},
+{
+"id": 3001,
+"es": "En la ejecución de validaciones de Origen, Óptimo o Perfil Óptimo, los procesos comprobarán la configuración de las validaciones para aplicarlas únicamente a las medidas de magnitudes configuradas para cada validación específica."
+},
+{
+"id": 3002,
+"es": "Se puede consultar el diseño funcional en "
+},
+{
+"id": 3003,
+"es": "OUMEVO-2356_ADF_validaciones - Parametrización por Magnitud.docx"
+},
+{
+"id": 3004,
+"es": "Ciclo de pruebas en "
+},
+{
+"id": 3005,
+"es": "OUMEVO-C47 GME - Validaciones configuradas por Magnitud"
+},
+{
+"id": 3006,
+"es": "Tras ejecutarse una validación sobre una medida o una curva, se registra el resultado de la misma."
+},
+{
+"id": 3007,
+"es": "Si la magnitud de la medida no está configurada para ejecutar validaciones, al finalizar el proceso de validaciones se establecerá el estado de la medida no evaluable como "
+},
+{
+"id": 3008,
+"es": "NonValidable"
+},
+{
+"id": 3009,
+"es": ". Esto evitará que una medida no evaluada pase a óptimo, identificar la situación real de la medida y no reevaluarla en sucesivas ejecuciones de procesos de validación. Se trata de un estado final, que indicará que esa medida ya ha sido tratada en un proceso de validaciones. "
+},
+{
+"id": 3010,
+"es": "Este estado, al igual que el estado Descartado en las validaciones de origen, no será elegible para el patrón de orígenes."
+},
+{
+"id": 3011,
+"es": "Según el tipo de validación: "
+},
+{
+"id": 3012,
+"es": "Si sobre una medida origen no se ha configurado la ejecución de "
+},
+{
+"id": 3013,
+"es": "ninguna "
+},
+{
+"id": 3014,
+"es": "Validación Origen, el resultado asignado será \"No Validable\", y la medida nuncá podrá ser seleccionada como medida óptima."
+},
+{
+"id": 3015,
+"es": "Si sobre una medida óptima, no aplica "
+},
+{
+"id": 3016,
+"es": "ninguna"
+},
+{
+"id": 3017,
+"es": " Validación de Óptimo, tras pasar por el proceso de validaciones, el resultado asignado será \"No Validable\""
+},
+{
+"id": 3018,
+"es": "Parametrización del resultado de validación por defecto, en medidas configuradas para no ser evaluadas: No Validable o Válida"
+},
+{
+"id": 3019,
+"es": "Se permite configurar el sistema para que las medidas que no han sido evaluadas debido a su configuración queden en estado: "
+},
+{
+"id": 3020,
+"es": ": funcionamiento normal"
+},
+{
+"id": 3021,
+"es": ": para sistemas que lo soliciten "
+},
+{
+"id": 3022,
+"es": "Dado que pueden existir implantaciones en cliente que requieran que las medidas lleguen a Óptimo sin haber pasado por ninguna validación, se permitirá asumir el estado “No Validable” como resultado “Válido”, es decir, las medidas que no hayan pasado por ningún proceso de validación, en lugar de recibir el estado “No Validable” quedarán \"Válidas\" de la misma forma que si hubieran superado una validación. "
+},
+{
+"id": 3023,
+"es": "Este estado estará supeditado a posteriores ejecuciones de validaciones, que asignarán el resultado que corresponda."
+},
+{
+"id": 3024,
+"es": "El sistema permite configurar las trazas de ejecución de validaciones que se quieren guardar en base de datos y mostrar en las diferentes vistas de la aplicación, en función de su resultado:"
+},
+{
+"id": 3025,
+"es": " Inválidas, Descartadas, Válidas y/o No Validables."
+},
+{
+"id": 3026,
+"es": "Aplicará a los procesos de ejecución de Validaciones de Origen, Validaciones de Óptimo y Validaciones de Perfil de Óptimo."
+},
+{
+"id": 3027,
+"es": "El objetivo de reducir las trazas, es minimizar el espacio ocupado por las medidas en base de datos, optimizando así el rendimiento del proceso del ciclo de medida."
+},
+{
+"id": 3028,
+"es": "Registrar las trazas de una validación implica conocer la validación que se ha ejecutado y su resultado. No registrarlas permitirá ver el estado final de la medida, sin poder conocer el detalle de cada validación ejecutada y su resultado."
+},
+{
+"id": 3029,
+"es": "Los escenarios más comunes según las trazas a registrar serían: "
+},
+{
+"id": 3030,
+"es": "Sólo trazas de validaciones no superadas (Inválida y Descartada) - "
+},
+{
+"id": 3031,
+"es": "Ahorro óptimo sin pérdida de información relevante"
+},
+{
+"id": 3032,
+"es": "Todas las trazas (Válido, Inválido, Descartada y No Validable) - "
+},
+{
+"id": 3033,
+"es": "Máxima información"
+},
+{
+"id": 3034,
+"es": "Diseño funcional en "
+},
+{
+"id": 3035,
+"es": "OUMEVO-2399-ADF_Modelar Resultados validación.docx"
+},
+{
+"id": 3036,
+"es": "OUMEVO-C48 GME - Modelado Resultados validación"
+},
+{
+"id": 3037,
+"es": "Las validaciones, como todos los procesos de gestión de medidas, tienen la opción de asociar una estrategia en las planificaciones y ejecuciones de los distintos métodos, de esta forma, en cada ejecución manual o planificación, cuando finalice cada proceso se ejecutan las acciones establecidas en la estrategia asociada a cada proceso. A su vez, cada método de validación tiene una estrategia asociada que permitirá al usuario asignar unas acciones más específicas a este tipo de procesos."
+},
+{
+"id": 3038,
+"es": "Una Acción hace referencia a una tarea u operación que se realiza en el sistema, como por ejemplo un envío de mail o una solicitud de recuperación de medidas de campo. Las acciones disponibles tras los procesos de validación se recogen en la tabla maestra “Acciones” (Inicio / Inventario / Datos Maestros / Acciones) como acciones de categoría PROCESS, si bien las acciones específicas de los propios Métodos de Validación se encuentran en la misma tabla con la categoría VALIDATION:"
+},
+{
+"id": 3039,
+"es": "SEND_MAIL_ TO_USER_LIST"
+},
+{
+"id": 3040,
+"es": "Send Mail to User List"
+},
+{
+"id": 3041,
+"es": "Envía un correo electrónico con el resultado del proceso a una lista de usuarios que ha sido previamente configurado en el módulo de administración con la información sobre la finalización del proceso (Resumen)"
+},
+{
+"id": 3042,
+"es": "PROCESS"
+},
+{
+"id": 3043,
+"es": "SEND_VALIDATION_ERROR_MAIL_TO_ OWNER"
+},
+{
+"id": 3044,
+"es": "Send Validatio Error Mail To Owner"
+},
+{
+"id": 3045,
+"es": "Envía un correo electrónico de error de validación al propietario del punto de medida"
+},
+{
+"id": 3046,
+"es": "VALIDATION"
+},
+{
+"id": 3047,
+"es": "SEND_VALIDATION_ERROR_ MAIL_TO_ CUSTOMER"
+},
+{
+"id": 3048,
+"es": "Send Validatio Error Mail To Customer"
+},
+{
+"id": 3049,
+"es": "Envía un correo electrónico de error de validación al cliente del punto de medida"
+},
+{
+"id": 3050,
+"es": "SEND_VALIDATION_ERROR_MAIL_TO_ LEADER"
+},
+{
+"id": 3051,
+"es": "Send Validatio Error Mail To Leader"
+},
+{
+"id": 3052,
+"es": "Envía un correo electrónico de error de validación al usuario responsable del punto de medida"
+},
+{
+"id": 3053,
+"es": "RATE_ MEASURE"
+},
+{
+"id": 3054,
+"es": "Qualify Measure"
+},
+{
+"id": 3055,
+"es": "Califica la medida"
+},
+{
+"id": 3056,
+"es": "VALIDATION_ INCIDENT"
+},
+{
+"id": 3057,
+"es": "Validatio Incident"
+},
+{
+"id": 3058,
+"es": "Genera incidencia de tipo validación"
+},
+{
+"id": 3059,
+"es": "En este caso, cabe señalar la importancia que presenta la acción “Calificar Medida” ya que mediante esta acción se calificará el dato de medición en función del resultado de la validación asociada, en caso de no pasar la validación; de este modo se puede afirmar que dicha acción interviene de forma decisiva en el ciclo o tratamiento de los datos de medición."
+},
+{
+"id": 3060,
+"es": "Si una validación no tiene asociada una estrategia con esta acción, el resultado de la misma no se utilizará para calificar la medida. Esto será así cuando se desean realizar otro tipo de acciones sobre los datos de medición que no impliquen necesariamente calificar la medida."
+},
+{
+"id": 3061,
+"es": "Por otro lado, una estrategia es un conjunto de acciones que se realizan en el sistema, normalmente ante la ocurrencia de una determinada circunstancia. Las estrategias quedan definidas en la tabla maestra “Estrategias” (Inicio / Inventario / Datos Maestros / Estrategias), desde dónde desde pueden ver las estrategias disponibles en el sistema, así como consultar sus detalles, editarlos, eliminarlos o crear estrategias nuevas. Las estrategias se asignan para cada proceso en la ejecución tanto manual como automática del mismo."
+},
+{
+"id": 3062,
+"es": "Como hemos comentado anteriormente el sistema utiliza los siguientes datos para realizar la validación de las medidas."
+},
+{
+"id": 3063,
+"es": "Medidas"
+},
+{
+"id": 3064,
+"es": "Tanto las validaciones de origen como de óptimo sólo se aplican a los datos de medición principales, es decir:"
+},
+{
+"id": 3065,
+"es": "Medidas del perfil de carga o curvas."
+},
+{
+"id": 3066,
+"es": "Lecturas o medidas del perfil de carga absoluto."
+},
+{
+"id": 3067,
+"es": "Medidas de cierre o medida de facturación."
+},
+{
+"id": 3068,
+"es": "Si bien, en función del algoritmo concreto se aplicarán las validaciones sobre un tipo de dato de medición u otro, como se explica en el detalle de cada método en "
+},
+{
+"id": 3069,
+"es": "Los datos de medición secundarios (Eventos y Valores Instantáneos) son sólo de origen, es decir, no existen valores óptimos de los mismos."
+},
+{
+"id": 3070,
+"es": "Otras variables"
+},
+{
+"id": 3071,
+"es": "Cada método de validación presenta sus propios parámetros específicos, los cuales se definirán para cada caso en "
+},
+{
+"id": 3072,
+"es": "Por otro lado, existen parámetros del sistema que afectan directamente sobre los Métodos de Validación, estos parámetros se configuran en la pestaña "
+},
+{
+"id": 3073,
+"es": "Parámetros."
+},
+{
+"id": 3074,
+"es": "Es muy importante "
+},
+{
+"id": 3075,
+"es": "la correcta configuración de estos parámetros, los cuales deben ser modificados sólo por usuarios que conozcan el impacto de los mismos en los diferentes algoritmos de cálculo."
+},
+{
+"id": 3076,
+"es": "Para que se ejecuten correctamente los Métodos de Validación será necesario tener debidamente configurado el sistema. Para ello, las tareas correspondientes deberán tener asignado un nodo activo y los parámetros del sistema correspondientes deberán estar correctamente configurados."
+}
+]

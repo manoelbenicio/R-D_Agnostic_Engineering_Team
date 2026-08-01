@@ -1,0 +1,1570 @@
+[
+{
+"id": 3573,
+"es": "A su vez, el estado de los nodos asignados puede consultarse en Inicio/Administración/Cluster/Estado."
+},
+{
+"id": 3574,
+"es": "En el caso de los parámetros del sistema, estos se pueden consultar y configurar en la pantalla Inicio / Administración / Parámetros, utilizando los botones detalle y editar. En el caso de los métodos de estimación los parámetros que afectan a la correcta ejecución de los mismos son los siguientes:"
+},
+{
+"id": 3575,
+"es": "EXECUTOR-MAX-THREAD-ESTIMATION: Indica el nº máximo de tareas paralelas de estimaciones que puede ejecutar el sistema. Valor por defecto: 2"
+},
+{
+"id": 3576,
+"es": "ESTIMATION-DEEP: profundidad de estimación explicada en la sección anterior. Valor por defecto: 32"
+},
+{
+"id": 3577,
+"es": "SECURITY-THRESHOLD: umbral de seguridad explicado en la sección anterior. Valor por defecto: 0"
+},
+{
+"id": 3578,
+"es": "Configuración del Punto de Medida "
+},
+{
+"id": 3579,
+"es": "Para que una estimación pueda ejecutarse correctamente, es necesario configurar adecuadamente el Punto de Medida sobre el que se van a realizar la estimación de las medidas. Para ello, es necesario cerciorarse de los siguientes aspectos:"
+},
+{
+"id": 3580,
+"es": "El punto de medida debe tener un equipo asociado que tenga el estado activo y que se encuentre en periodo de vigencia."
+},
+{
+"id": 3581,
+"es": "El punto de medida debe tener asociada una Clase de Configuración con un Patrón de Origen que contemple la estimación que se desea ejecutar."
+},
+{
+"id": 3582,
+"es": "Monitorización y Visualización "
+},
+{
+"id": 3583,
+"es": "Los procesos ejecutados de forma manual (tanto desde la pantalla de ejecución manual como desde la pantalla de planificadores) y los procesos automáticos se muestran en el monitor de procesos de gestión de la medida. Pueden identificarse rápidamente utilizando el filtro de búsqueda “Tipo de proceso” igual a Estimación."
+},
+{
+"id": 3584,
+"es": "Detalle del Proceso"
+},
+{
+"id": 3585,
+"es": "En el detalle de cada proceso se muestra un resumen general y breve de la ejecución del proceso; por tanto, se trata de información a nivel de proceso, formado por los siguientes campos para los procesos de Estimación:"
+},
+{
+"id": 3586,
+"es": "PID "
+},
+{
+"id": 3587,
+"es": "(código del proceso): permite distinguir inequívocamente un proceso de otro, aunque tengan el mismo nombre."
+},
+{
+"id": 3588,
+"es": ": muestra quién ha ejecutado el proceso."
+},
+{
+"id": 3589,
+"es": "Nombre del proceso"
+},
+{
+"id": 3590,
+"es": ": indica el nombre asignado por el usuario al proceso."
+},
+{
+"id": 3591,
+"es": "Tipo de proceso"
+},
+{
+"id": 3592,
+"es": ": identifica el tipo de proceso que se ha ejecutado; en este caso será siempre “Estimación”"
+},
+{
+"id": 3593,
+"es": ": identifica si la ejecución ha sido Manual o Automática."
+},
+{
+"id": 3594,
+"es": "Fecha de inicio"
+},
+{
+"id": 3595,
+"es": ": indica en qué momento (Fecha y hora) se ha iniciado el proceso."
+},
+{
+"id": 3596,
+"es": "Fecha de fin"
+},
+{
+"id": 3597,
+"es": ": indica en qué momento (Fecha y hora) ha finalizado el proceso."
+},
+{
+"id": 3598,
+"es": "Duración"
+},
+{
+"id": 3599,
+"es": ": indica los segundos que ha tardado el proceso en ejecutarse en su totalidad."
+},
+{
+"id": 3600,
+"es": ": indica la estrategia que se le ha asociado al proceso."
+},
+{
+"id": 3601,
+"es": ": indica los Puntos o grupo de Puntos de Medida afectados por el proceso."
+},
+{
+"id": 3602,
+"es": "Resumen del proceso"
+},
+{
+"id": 3603,
+"es": ": proporciona la siguiente información sobre el proceso "
+},
+{
+"id": 3604,
+"es": "Se ha ejecutado el proceso de estimación para un total de <num_puntos> puntos. Se han encontrado un total de <num_huecos> huecos y se han estimado un total de <num_medidas> medidas. Se han producido <num_error> errores y <num_warning> avisos durante el proceso”."
+},
+{
+"id": 3605,
+"es": ": muestra la situación en la que se encuentra el proceso en tiempo real; existen los siguientes tipos de Estado para los procesos de Estimación"
+},
+{
+"id": 3606,
+"es": "Ended/"
+},
+{
+"id": 3607,
+"es": "Desglose de tareas"
+},
+{
+"id": 3608,
+"es": ": permite identificar las distintas tareas que se han generado para cada método y Punto de Medida. Dichas tareas llevan a otra pantalla donde se muestra información más amplia y detallada sobre la ejecución de cada una de ellas; está formado por los siguientes campos (Ilustración 11):"
+},
+{
+"id": 3609,
+"es": "Método: indica el método de estimación que se ha ejecutado en dicha tarea."
+},
+{
+"id": 3610,
+"es": "Fecha Inicio: indica en qué momento (Fecha y hora) se ha iniciado la tarea."
+},
+{
+"id": 3611,
+"es": "Fecha Fin: indica en qué momento (Fecha y hora) ha finalizado la tarea."
+},
+{
+"id": 3612,
+"es": "Trazas de la ejecución de las tareas: indican posibles errores o anomalías y se clasifican en función del nivel de gravedad de la información queindican:"
+},
+{
+"id": 3613,
+"es": "INFO: Logs de Información sobre la ejecución del proceso, usadas para mostrar resultados o estadísticas propias de la ejecución natural del mismo. Por ejemplo: “Huecos Encontrados: <num_huecos_encontrados>”, “Número de medidas Generadas: <num_medidas_generadas>”."
+},
+{
+"id": 3614,
+"es": "WARNING: Logs de Advertencia, indican alguna circunstancia relacionada con la lógica de ejecución que impiden realizar la tarea. Por ejemplo: “No se ha encontrado el método de estimación en el ranking de orígenes”, “"
+},
+{
+"id": 3615,
+"es": "No se ha encontrado una Estructura Tarifaria Vigente"
+},
+{
+"id": 3616,
+"es": "Las medidas generadas como resultado de los procesos de estimación, se registran en el sistema como medidas de origen, con origen el método de estimación desde el que se han generado. Pasarán por tanto por todo el proceso de tratamiento de la medida correspondiente (validaciones iniciales y selección de medida óptima)."
+},
+{
+"id": 3617,
+"es": "Al registrarse en el sistema, las medidas de origen estimado no se ven afectadas por la constante de lectura del punto, la relación de transformación del equipo de medida ni otros factores de multiplicación aplicados en la entrada de medidas a través del módulo de \""
+},
+{
+"id": 3618,
+"es": "Según el ranking de orígenes asignado al punto de medida, las medidas estimadas podrían ser medidas óptimas."
+},
+{
+"id": 3619,
+"es": "Por tanto, estas medidas se pueden visualizar mediante las pantallas correspondientes del módulo de “"
+},
+{
+"id": 3620,
+"es": "” tanto en la sección de Origen como en la de Óptimo."
+},
+{
+"id": 3621,
+"es": "Este método estima el valor en los huecos de la curva óptima de un punto de medida mediante una interpolación lineal."
+},
+{
+"id": 3622,
+"es": "Fuente"
+},
+{
+"id": 3623,
+"es": "Tipo de Medidas Estimadas"
+},
+{
+"id": 3624,
+"es": "Nº Huecos Consecutivos(MAX_CONSECUTIVE_GAPS): "
+},
+{
+"id": 3625,
+"es": "Número entero que indica el número máximo de huecos consecutivos permitidos para realizar la estimación (fijar 3 por defecto)."
+},
+{
+"id": 3626,
+"es": "Tipo Periodo"
+},
+{
+"id": 3627,
+"es": ": Sólo se podrán seleccionar curvas con periodicidad inferior o igual a la H (15MIN, 30MIN, H)."
+},
+{
+"id": 3628,
+"es": "Se podrá seleccionar cualquier magnitud disponible en el sistema (AE, AS, etc.)."
+},
+{
+"id": 3629,
+"es": "Exista el método en el ranking de orígenes de la clase de configuración del punto de medida correspondiente."
+},
+{
+"id": 3630,
+"es": "Existan medidas óptimas del periodo específico para las fechas seleccionadas."
+},
+{
+"id": 3631,
+"es": "Exista un equipo en estado ACTIVO asociado al Punto de Medida (en la pestaña de configuración del punto de medida se puede seleccionar un equipo de entre los dados de alta a través del apartado Equipos de Gestión de Puntos)."
+},
+{
+"id": 3632,
+"es": "A partir del método seleccionado, el Tipo Periodo y Magnitud seleccionados para la ejecución del método, el método estima por periodos, es decir cada curva se estimará teniendo en cuenta la serie de periodos correspondientes, de igual forma que se hace para los 24 periodos horarios, de la siguiente manera:"
+},
+{
+"id": 3633,
+"es": "Inicialmente, se comprobará la existencia del método dentro del ranking de origen del punto concreto, de lo contrario no se hace nada, informando mediante el logs correspondiente."
+},
+{
+"id": 3634,
+"es": "Para el punto de medida, se recorre la curva de medidas óptimas del intervalo indicado, desde la fecha desde (“Desde” en la ejecución manual o parámetro \"ESTIMATION_DEEP” en la ejecución desde planificador) hasta la fecha hasta (“Hasta” en la ejecución manual o parámetro \"SECURITY_THRESHOLD\" en la ejecución desde planificador)"
+},
+{
+"id": 3635,
+"es": "Para cada hueco (periodo en el que no hay registrada ninguna medida):"
+},
+{
+"id": 3636,
+"es": "Se comprueba que entre la medida inmediatamente anterior y la medida inmediatamente siguiente (independientemente del día al que correspondan dichas medidas) no haya más de MAX_CONSECUTIVE_GAPS huecos consecutivos."
+},
+{
+"id": 3637,
+"es": "Si el número de huecos consecutivos es mayor que el establecido como admisible mediante el parámetro "
+},
+{
+"id": 3638,
+"es": "MAX_CONSECUTIVE_GAPS"
+},
+{
+"id": 3639,
+"es": ", no se generan medidas"
+},
+{
+"id": 3640,
+"es": "Si el número de huecos consecutivos es menor o igual que el establecido como admisible mediante el parámetro "
+},
+{
+"id": 3641,
+"es": ", se continúa con el siguiente paso."
+},
+{
+"id": 3642,
+"es": "Se estima la medida correspondiente al hueco mediante la siguiente fórmula:"
+},
+{
+"id": 3643,
+"es": "Fórmula:"
+},
+{
+"id": 3644,
+"es": "Donde:"
+},
+{
+"id": 3645,
+"es": "P(t) es la posición interpolada en el tiempo t."
+},
+{
+"id": 3646,
+"es": "P1​ y P2 son las posiciones de las muestras consecutivas (óptimas anterior y posterior al hueco)"
+},
+{
+"id": 3647,
+"es": "t1​ y t2​ son los tiempos de las muestras consecutivas."
+},
+{
+"id": 3648,
+"es": "A modo de ejemplo, si tenemos:"
+},
+{
+"id": 3649,
+"es": "Pos"
+},
+{
+"id": 3650,
+"es": "perdida"
+},
+{
+"id": 3651,
+"es": " Las posiciones correspondientes a t(20) y t(30) serían de las que hay que calcular:"
+},
+{
+"id": 3652,
+"es": "Pos(20)=10+((20−10)/((40−10​))×((80−10))"
+},
+{
+"id": 3653,
+"es": "Pos(20)=33.33"
+},
+{
+"id": 3654,
+"es": "Pos(30)=10+((30−10)/(40−10)​)×((80−10))"
+},
+{
+"id": 3655,
+"es": "Pos(30)=56.67"
+},
+{
+"id": 3656,
+"es": "Se registran en el sistema todas las medidas calculadas, de la siguiente manera:"
+},
+{
+"id": 3657,
+"es": "El origen de la medida será el correspondiente al método especifico"
+},
+{
+"id": 3658,
+"es": "Se guardará con el intervalo y magnitud correspondiente."
+},
+{
+"id": 3659,
+"es": "Se insertará como medida de origen y seguirá el ciclo de medición correspondiente."
+},
+{
+"id": 3660,
+"es": "Este método de estimación calcula las medidas mediante la búsqueda de medidas equivalentes en medidas históricas del mismo punto seleccionando los días similares al de la medida con un hueco."
+},
+{
+"id": 3661,
+"es": "El orden de búsqueda de estas medidas dentro de los históricos vendrá dado por una tabla predefinida, común para todos los puntos dados de alta en el sistema."
+},
+{
+"id": 3662,
+"es": "Medidas de Perfil de Carga (Históricas)"
+},
+{
+"id": 3663,
+"es": "Nº Huecos Consecutivos (MAX_CONSECUTIVE_GAPS): "
+},
+{
+"id": 3664,
+"es": "Número entero que indica el número máximo de huecos consecutivos permitidos para realizar la estimación. Valor por defecto: 5"
+},
+{
+"id": 3665,
+"es": "Nº de medidas históricas (NUM_MEASURES_FOUND): "
+},
+{
+"id": 3666,
+"es": "Número (entero) de medidas históricas que debemos encontrar para calcular el valor de la medida del hueco, a partir de la tabla de históricos. Valor por defecto: 5. No será válido un valor menor a 3 medidas, ya que el proceso descartará al menos dos, la máxima y la mínima."
+},
+{
+"id": 3667,
+"es": ": Campo de selección de un tipo de curva (sólo uno). Se podrán seleccionar curvas con periodicidad inferior o igual a la H."
+},
+{
+"id": 3668,
+"es": "Exista una asociación del punto de medida con un calendario con sus días festivos correspondientes (en la pestaña de características del punto de medida se puede seleccionar un calendario de entre los dados de alta a través de la tabla maestra Calendarios; los días festivos también se dan de alta en la Tabla Maestra correspondiente)."
+},
+{
+"id": 3669,
+"es": "Exista la "
+},
+{
+"id": 3670,
+"es": "Tabla de búsqueda de históricos"
+},
+{
+"id": 3671,
+"es": "Inventario/Datos Maestros/Conf. Est. Hist."
+},
+{
+"id": 3672,
+"es": " que indica en qué meses y orden deben buscarse las medidas históricas para llevar a cabo la estimación de los huecos, en función del mes en el que se encuentre dicho hueco."
+},
+{
+"id": 3673,
+"es": "Tabla de Configuración de Estimación Histórica"
+},
+{
+"id": 3674,
+"es": "La primera columna indica el número de mes de la medida que se quiere estimar y el resto de columnas indican los meses y años en los que se buscarán las medidas históricas que se usarán como referencia para la estimación, donde: “c” es el año en curso; “s” hace referencia al año siguiente y “a” es el año anterior."
+},
+{
+"id": 3675,
+"es": "Esta tabla queda definida en la tabla maestra “Conf. Est. Hist.”, desde donde se puede consultar, editar y exportar. Se podrán indicar hasta 6 meses de medidas de referencia. De cada mes de referencia, se tomarán tantas medidas como se encuentren y se pasará al siguiente mes hasta que se consigan encontrar las NUM_MEASURES_FOUND necesarias, o hasta que no queden meses de referencia en los que buscar."
+},
+{
+"id": 3676,
+"es": "Proceso: "
+},
+{
+"id": 3677,
+"es": "A partir del método seleccionado, el Tipo Periodo y Magnitud seleccionados para la ejecución del método, el método estimará las medidas de los huecos de la curva correspondiente para cada punto de la siguiente manera:"
+},
+{
+"id": 3678,
+"es": "1. Inicialmente, se comprobará la existencia del método dentro del ranking de origen del punto concreto, de lo contrario no se hace nada, informando mediante el log correspondiente."
+},
+{
+"id": 3679,
+"es": "2. Para el punto de medida, se recorre la curva de medidas óptimas del intervalo indicado, desde la fecha desde hasta la fecha hasta, en búsqueda de los huecos correspondientes."
+},
+{
+"id": 3680,
+"es": "3. Para cada hueco (periodo en el que no hay registrada ninguna medida):"
+},
+{
+"id": 3681,
+"es": "Se comprueba que entre la medida inmediatamente anterior y la medida inmediatamente siguiente (independientemente del día al que correspondan dichas medidas) no haya más de "
+},
+{
+"id": 3682,
+"es": "MAX_CONSECUTIVE_GAPS "
+},
+{
+"id": 3683,
+"es": "huecos consecutivos."
+},
+{
+"id": 3684,
+"es": "4. Se recorren las medidas históricas disponibles en el sistema, en el orden establecido en la tabla de referencias hasta encontrar NUM_MEASURES_FOUND medidas equivalentes ("
+},
+{
+"id": 3685,
+"es": "Importante"
+},
+{
+"id": 3686,
+"es": "mismo"
+},
+{
+"id": 3687,
+"es": "día de la semana/festividad"
+},
+{
+"id": 3688,
+"es": "periodo "
+},
+{
+"id": 3689,
+"es": "que los correspondientes al hueco a estimar)."
+},
+{
+"id": 3690,
+"es": "Se seleccionará el primer mes que aparezca en la tabla, y se buscarán todos los días de la semana "
+},
+{
+"id": 3691,
+"es": "que coincidan con el día de la medida del hueco"
+},
+{
+"id": 3692,
+"es": " (por ejemplo, todos los lunes). Se tendrán en cuenta los días festivos, si la medida a estimar corresponde a un día festivo, se seleccionarán los NUM_MEASURES_FOUND primeros días festivos que encontremos, independientemente del día de la semana correspondiente a este. Todos los domingos se consideran festivos. Además del domingo, el resto de festivos hay que incluirlos en el calendario del punto de medida."
+},
+{
+"id": 3693,
+"es": "La búsqueda dentro de cada mes se realizará en primer lugar en la misma semana de la medida a estimar (por ejemplo, primera semana del mes si el hueco también se encuentra en esta), y después en las semanas posteriores y anteriores, siempre que sea posible (es decir, primero buscará en las semanas posteriores del mismo mes, y después en las anteriores del mismo mes)."
+},
+{
+"id": 3694,
+"es": "Se seguirán seleccionando días hasta que se complete un total de NUM_MEASURES_FOUND medidas, buscando por orden en los meses que se definen en la tabla (teniendo en cuenta que el valor mínimo para NUM_MEASURES_FOUND es tres)."
+},
+{
+"id": 3695,
+"es": "5. Una vez se han encontrado las NUM_MEASURES_FOUND medidas, se descartan los valores máximo y mínimo, se realiza la media aritmética con el resto de valores y se asociará a la medida del hueco. Si no se dispone de NUM_MEASURES_FOUND medidas no se realiza ningún cálculo ni asignación de medidas."
+},
+{
+"id": 3696,
+"es": "6. Se registran en el sistema todas las medidas calculadas, de la siguiente manera:"
+},
+{
+"id": 3697,
+"es": "Este método consiste en rellenar el hueco a estimar con un valor constante que ya ha sido definido por el usuario, en el punto de medida. Este método sólo estima medidas de Energía Activa Entrante."
+},
+{
+"id": 3698,
+"es": "Para ello, cada punto de medida tendrá asociado un determinado valor horario por defecto, que será utilizado para completar los huecos de las diferentes curvas horarias o del periodo seleccionado. Este valor será el mismo para cualquier hora y día, en caso de que la curva que se desea estimar sea otra inferior a la horaria, el sistema toma el valor constante de manera proporcional, es decir, divide su valor en función del número de periodos inferiores correspondientes a cada hora. Este valor también puede ser introducido en la ejecución manual (Separando los decimales con un \".\"), en cuyo caso, será priorizado al agregado por defecto al punto de medida."
+},
+{
+"id": 3699,
+"es": "Medidas de Perfil de Carga IA"
+},
+{
+"id": 3700,
+"es": ": Sólo se podrán seleccionar curvas con periodicidad inferior o igual a la H."
+},
+{
+"id": 3701,
+"es": "Existan medidas de energía activa entrante óptimas del periodo específico para las fechas seleccionadas."
+},
+{
+"id": 3702,
+"es": "Exista un equipo en estado ACTIVO asociado al Punto de Medida (en la pestaña de configuración del punto de medida se puede seleccionar un equipo de entre los dados de alta a través del apartado Equipos de Gestión de Puntos."
+},
+{
+"id": 3703,
+"es": "Exista un Valor constante asociado al Punto de Medida, dicho valor se establece en el apartado “Estimaciones” de la ventana de creación de punto de medida o en el apartado “Estimaciones” de la pestaña de configuración de la ventana de edición del punto de medida. Puede consultarse en la vista de detalle del punto, en la misma pestaña."
+},
+{
+"id": 3704,
+"es": "A partir del método y el Tipo Periodo seleccionados para la ejecución del método, el método estimará las medidas de los huecos de la curva correspondiente para cada punto de la siguiente manera:"
+},
+{
+"id": 3705,
+"es": "Para el punto de medida, se recorre la curva de medidas óptimas del intervalo indicado, desde la fecha desde hasta la fecha hasta, en búsqueda de los huecos correspondientes."
+},
+{
+"id": 3706,
+"es": "Para cada hueco (periodo en el que no hay registrada ninguna medida) se comprueba si existe un valor por defecto definido para él en la configuración VEE del punto de medida, priorizando el valor introducido como parámetro en la ejecución manual/planificada."
+},
+{
+"id": 3707,
+"es": "Si existe, se rellena el hueco con ese valor."
+},
+{
+"id": 3708,
+"es": "En caso contrario, no se estima el valor del hueco."
+},
+{
+"id": 3709,
+"es": "Ajuste de medida en función cierre mensual o diario (Load profile based on billing) "
+},
+{
+"id": 3710,
+"es": "Este método estima el valor de huecos en la curva de carga a partir de un registro o medida de cierre mensual o diario. "
+},
+{
+"id": 3711,
+"es": "Para ello, se basará en los totalizadores de los bloques horarios (por ejemplo: Punta, Valle y Llano) recibidos en la medida de Cierre, y los comparará con el sumatorio de las medidas para el periodo de dicho cierre, obteniendo la diferencia entre ellos y repartiéndola equitativamente entre los diferentes huecos que contenga."
+},
+{
+"id": 3712,
+"es": "De este modo, se partirá de un registro de cierre, "
+},
+{
+"id": 3713,
+"es": "Mensual "
+},
+{
+"id": 3714,
+"es": "Diario"
+},
+{
+"id": 3715,
+"es": ", para estimar los huecos de la curva a completar (de intervalo horario, treinta-minutal o cuarto-horario)."
+},
+{
+"id": 3716,
+"es": ": Magnitudes de Medidas de Perfil de Carga"
+},
+{
+"id": 3717,
+"es": "Dichas magnitudes están presentes tanto en el listado de magnitudes de Medidas de cierre como en el listado de magnitudes Medidas de Perfil de Carga para poder llevar a cabo la comparativa (ver cuadro al final de perámetros)."
+},
+{
+"id": 3718,
+"es": "ESTIMATION_TYPE"
+},
+{
+"id": 3719,
+"es": ". Siempre serán cierres Totales, no parciales."
+},
+{
+"id": 3720,
+"es": "MEASUREMENT_INTERVAL"
+},
+{
+"id": 3721,
+"es": ": Sólo se podrán seleccionar curvas con periodicidad: H, 30MIN o 15MIN."
+},
+{
+"id": 3722,
+"es": ": Umbral Mínimo de Medidas (Threshold). Porcentaje (entre 0 y 1) que indica para cada bloque horario a calcular, el porcentaje mínimo de medidas que debe haber en el Perfil de Carga para poder realizar la estimación."
+},
+{
+"id": 3723,
+"es": "Magnitudes "
+},
+{
+"id": 3724,
+"es": "MEDIDAS "
+},
+{
+"id": 3725,
+"es": "Exista una media de cierre óptima de tipo cierre en la fechas seleccionadas"
+},
+{
+"id": 3726,
+"es": "El algoritmo funcionará de la siguiente manera para un determinado punto de medida, magnitud e intervalo de búsqueda:"
+},
+{
+"id": 3727,
+"es": "Inicialmente, se comprueba que el método de estimación esté dentro del ranking de orígenes del punto de medida. En caso contrario no se hace nada."
+},
+{
+"id": 3728,
+"es": "Posteriormente se buscan los registros de cierre óptimos correspondientes al intervalo seleccionado (mensual o diario):"
+},
+{
+"id": 3729,
+"es": "Si no hay ninguno, no se realiza ninguna estimación, finaliza el proceso."
+},
+{
+"id": 3730,
+"es": "Los siguientes pasos, se realizarán para uno de los periodos del perfil de carga del punto de medida (normalmente sólo existirá uno, por ejemplo horario)"
+},
+{
+"id": 3731,
+"es": "A partir de la medida de cierre localizada, se recuperará la curva correspondiente, es decir, las medidas entre las fechas que representa el cierre, fechas desde y hasta. Si el cierre no dispone de la fecha desde, finaliza el proceso."
+},
+{
+"id": 3732,
+"es": "Se recuperará el número de huecos de la curva."
+},
+{
+"id": 3733,
+"es": "Si el número de huecos supera el umbral, parámetro Threshold, no se realiza ninguna estimación y finaliza el proceso."
+},
+{
+"id": 3734,
+"es": "En caso contrario, se calculará la diferencia entre el valor Consumo de la medida de Cierre y el sumatorio de las medidas de la curva de carga, contenidas en el mes/día de dicho cierre, para el mismo totalizador según Configuración TOU del punto de medida (por ejemplo: totalizador punta, llano o valle, con la suma de medidas de dichos periodos)."
+},
+{
+"id": 3735,
+"es": "La diferencia entre ambas será la "
+},
+{
+"id": 3736,
+"es": "cantidad a repartir entre los diferentes huecos"
+},
+{
+"id": 3737,
+"es": "Se insertará como medida de origen y seguirá el ciclo de medición correspondiente"
+},
+{
+"id": 3738,
+"es": "El método genera un "
+},
+{
+"id": 3739,
+"es": "Perfil de Carga Horario "
+},
+{
+"id": 3740,
+"es": "utilizando los coeficientes del Tipo Perfil que tenga asociado el MP y teniendo en cuenta el consumo total de todo el periodo de facturación."
+},
+{
+"id": 3741,
+"es": "De esta manera, se podrán estimar medidas de cualquier curva, estimando previamente la hora correspondiente y realizando un reparto lineal en caso de estimar una curva inferior, como veremos más adelante."
+},
+{
+"id": 3742,
+"es": "magnitud del Perfil de Carga que se pretende calcular"
+},
+{
+"id": 3743,
+"es": "magnitud de las Medidas de Cierre correspondiente"
+},
+{
+"id": 3744,
+"es": "Existan el número total de periodos correspondientes al MEASUREMENT_INTERVAL seleccionado para las fechas seleccionadas."
+},
+{
+"id": 3745,
+"es": "Exista los registros óptimos de tipo cierre inicial y final correspondientes a las fechas seleccionadas."
+},
+{
+"id": 3746,
+"es": "Ejecución manual"
+},
+{
+"id": 3747,
+"es": "Inicial: corresponde a la fecha desde a las 00:00"
+},
+{
+"id": 3748,
+"es": "Final: corresponde a la fecha hasta + 1 día a las 00:00"
+},
+{
+"id": 3749,
+"es": "Ejecución planificada"
+},
+{
+"id": 3750,
+"es": "Inicial: corresponde a la fecha de la última ejecución a las 00:00"
+},
+{
+"id": 3751,
+"es": "Final: corresponde a la fecha de la próxima ejecución programada a las 00:00"
+},
+{
+"id": 3752,
+"es": "Exista un Tipo perfil asociado al Punto de Medida (en la pestaña de configuración del punto de medida se puede seleccionar una "
+},
+{
+"id": 3753,
+"es": "Tipo de Perfil "
+},
+{
+"id": 3754,
+"es": "de entre los dados de alta a través de la Tabla Maestra Tipo Perfil)."
+},
+{
+"id": 3755,
+"es": "Existan unos coeficientes perfil asociados al Tipo Perfil asignado al Punto de Medida para las fechas seleccionadas (en la Tabla Maestra Coeficientes Perfil pueden darse de alta los coeficientes y asociarlos a un determinado Tipo Perfil)."
+},
+{
+"id": 3756,
+"es": "Inicialmente se comprueba que el método de estimación esté dentro del ranking de orígenes del punto de medida. En caso contrario no se hace nada."
+},
+{
+"id": 3757,
+"es": "Posteriormente se buscan los registros de cierre óptimos inicial y final correspondientes al periodo seleccionado según el tipo de ejecución:"
+},
+{
+"id": 3758,
+"es": "Fecha registro de cierre óptimo inicial: corresponde a la fecha desde a las 00:00"
+},
+{
+"id": 3759,
+"es": "Fecha registro de cierre óptimo final: corresponde a la fecha hasta + 1 día a las 00:00"
+},
+{
+"id": 3760,
+"es": "Fecha registro de cierre óptimo inicial: corresponde a la fecha de la última ejecución a las 00:00"
+},
+{
+"id": 3761,
+"es": "Fecha registro de cierre óptimo final: corresponde a la fecha de la próxima ejecución programada a las 00:00"
+},
+{
+"id": 3762,
+"es": "Ambos registros de cierre a utilizar deberán ser del mismo tipo, ya sea de tipo Diario o de tipo Cierre Mensual"
+},
+{
+"id": 3763,
+"es": "Si no existen ambos finaliza el proceso."
+},
+{
+"id": 3764,
+"es": "Si se encuentran se calcula la diferencia del campo VALOR entre el final y el inicial para obtener el consumo total del periodo seleccionado."
+},
+{
+"id": 3765,
+"es": "Se buscan las horas contenidas entre la fecha de inicio y fin."
+},
+{
+"id": 3766,
+"es": "Se obtienen los coeficientes correspondientes a dichas horas en función del tipo de perfil asociado al punto de medida."
+},
+{
+"id": 3767,
+"es": "Se estima la medida correspondiente a cada periodo multiplicando la medida de cierre por el coeficiente correspondiente a esa hora y dividiendo entre la suma de todos los coeficientes obtenidos para ese periodo de cierre."
+},
+{
+"id": 3768,
+"es": "De esta manera obtenemos todas las medidas del período correspondiente al bloque del registro de cierre, realizando un reparto proporcional del mismo en función de los coeficientes."
+},
+{
+"id": 3769,
+"es": "MAX_CONSECUTIVE_GAPS (INTERPOLATION)"
+},
+{
+"id": 3770,
+"es": "MAX_CONSECUTIVE_GAPS (BASIC TREATMENT)"
+},
+{
+"id": 3771,
+"es": "MAX_CONSECUTIVE_GAPS (HISTORICAL MEASURES)"
+},
+{
+"id": 3772,
+"es": "NUM_MEASURES_FOUND (HISTORICAL MEASURES)"
+},
+{
+"id": 3773,
+"es": "MAX_CONSECUTIVE_GAPS (MEASURE ASSOCIATION)"
+},
+{
+"id": 3774,
+"es": "MAX_CONSECUTIVE_GAPS (PROFILE – ABSOLUTE LOAD PROFILE FITTING)"
+},
+{
+"id": 3775,
+"es": "PROFILE_FITTING_THRESHOLD (PROFILE – ABSOLUTE LOAD PROFILE FITTING)"
+},
+{
+"id": 3776,
+"es": "MAX_CONSECUTIVE_GAPS (PREVIOUS PERIOD ABSOLUTE LOAD PROFILE)"
+},
+{
+"id": 3777,
+"es": "MAX_CONSECUTIVE_GAPS (PREVIOUS YEAR ABSOLUTE LOAD PROFILE)"
+},
+{
+"id": 3778,
+"es": "MAX_CONSECUTIVE_GAPS (ZERO CONSUMPTION ABSOLUTE LOAD PROFILE)"
+},
+{
+"id": 3779,
+"es": "Los métodos de cálculo son algoritmos que obtienen datos de medición a partir de otros ya existentes (de otras curvas, periodos o tipos de dato). "
+},
+{
+"id": 3780,
+"es": "El usuario puede definir la forma de ejecutar estos cálculos y los puntos o grupos afectados. "
+},
+{
+"id": 3781,
+"es": "Estas medidas calculadas se insertarán como medidas de origen y, como cualquier otra medida, pasarán por el proceso de validación y subida a óptimo pertinente. De esta forma, se asegura la integridad y validez de los datos calculados."
+},
+{
+"id": 3782,
+"es": "Actualmente, los métodos de cálculo implementados en Onesait Metering son:"
+},
+{
+"id": 3783,
+"es": "Cálculo de medidas mediante "
+},
+{
+"id": 3784,
+"es": "Agregado"
+},
+{
+"id": 3785,
+"es": "Desagregado"
+},
+{
+"id": 3786,
+"es": " de medidas"
+},
+{
+"id": 3787,
+"es": "Cálculo de perfiles de carga a partir de la agregación o desagregación de otros perfiles de carga de diferente intervalo"
+},
+{
+"id": 3788,
+"es": "Cálculo de "
+},
+{
+"id": 3789,
+"es": "Cálculo de lecturas absolutas en función de las medidas incrementales correspondientes"
+},
+{
+"id": 3790,
+"es": "Cálculo de medidas de cierre a partir de la configuración tarifaria de los puntos correspondientes y los perfiles de carga recibidos"
+},
+{
+"id": 3791,
+"es": "Cómo otros métodos, los cálculos pueden ejecutarse de forma manual, desde "
+},
+{
+"id": 3792,
+"es": "Ejecución Manual de Cálculos"
+},
+{
+"id": 3793,
+"es": ", o automática, en el "
+},
+{
+"id": 3794,
+"es": "En los siguientes apartados se especificará cada una de las partes que componen esta funcionalidad y su integración en el sistema, así como los detalles de cada uno de los métodos, con sus datos y variables."
+},
+{
+"id": 3795,
+"es": "Módulo de Cálculos"
+},
+{
+"id": 3796,
+"es": "Métodos de Cálculo"
+},
+{
+"id": 3797,
+"es": "Planificador de cálculos"
+},
+{
+"id": 3798,
+"es": "Ejecución manual de cálculos"
+},
+{
+"id": 3799,
+"es": "Datos y variables de cálculos"
+},
+{
+"id": 3800,
+"es": "Métodos de cálculo"
+},
+{
+"id": 3801,
+"es": "Agregación de medidas"
+},
+{
+"id": 3802,
+"es": "Desagregación de medidas"
+},
+{
+"id": 3803,
+"es": "Lecturas absolutas a partir de medidas incrementales"
+},
+{
+"id": 3804,
+"es": "Los métodos se pueden visualizar y ejecutar desde la pantalla correspondiente del módulo de Gestión de la Medida."
+},
+{
+"id": 3805,
+"es": "Podemos destacar las siguientes características generales comunes a todos los métodos de cálculos:"
+},
+{
+"id": 3806,
+"es": "Todos los métodos de cálculo operan con "
+},
+{
+"id": 3807,
+"es": "medidas, lecturas o cierres óptimos"
+},
+{
+"id": 3808,
+"es": ". Si estas no existen no se generará ninguna medida."
+},
+{
+"id": 3809,
+"es": "Los métodos calculan las medidas en función de las medidas "
+},
+{
+"id": 3810,
+"es": "óptimas"
+},
+{
+"id": 3811,
+"es": ", independientemente de la validación de éstas, ya que si están en el óptimo son las mejores medidas disponibles."
+},
+{
+"id": 3812,
+"es": "Las medidas generadas por los métodos de cálculo se registran en el sistema como medidas de "
+},
+{
+"id": 3813,
+"es": "origen Calculado"
+},
+{
+"id": 3814,
+"es": ", pasando por todo ciclo de tratamiento de la medida, como el resto de medidas. A cada método le corresponde un origen diferente."
+},
+{
+"id": 3815,
+"es": "Los métodos de cálculo, a diferencia de los de estimación (rellenan huecos), calculan siempre todas las medidas del periodo seleccionado."
+},
+{
+"id": 3816,
+"es": "El equipo deberá estar en estado ACTIVO o MODO TEST para las fechas en las que se desea ejecutar el cálculo. En caso de estado INACTIVO no se realizará el cálculo"
+},
+{
+"id": 3817,
+"es": "Para que se calculen las medidas de un determinado punto por los métodos de cálculo, cada uno de estos métodos debe figurar en el ranking de origen de la "
+},
+{
+"id": 3818,
+"es": "El seguimiento de los procesos de cálculo se puede realizar desde el "
+},
+{
+"id": 3819,
+"es": " del módulo gestión de la medida."
+},
+{
+"id": 3820,
+"es": "Los procesos de cálculo se encontrarán fácilmente aplicando el filtro por “Tipo de Proceso”: Cálculo"
+},
+{
+"id": 3821,
+"es": "Representan los algoritmos de cálculo disponibles en el sistema."
+},
+{
+"id": 3822,
+"es": "Al incluir un método de cálculo en una Clase de Configuración, se añadirá con la parametrización definida por defecto, pero será modificable en ésta para adaptar el cálculo al comportamiento esperado para los puntos de medida asociados."
+},
+{
+"id": 3823,
+"es": " permite al usuario consultar los métodos de cálculo disponibles en el sistema, así como el detalle de sus características y parámetros. "
+},
+{
+"id": 3824,
+"es": "Acceder a los detalles de un método de cálculo, mediante el botón detalle o haciendo doble clic sobre cada método. El detalle de cada método muestra los campos nombre, descripción y los parámetros específicos de cada método."
+},
+{
+"id": 3825,
+"es": "Editar el valor de los parámetros específicos de cada método de cálculo, mediante el botón Editar, como se muestra en la siguiente Ilustración. Estos parámetros son sólo editables, no se podrán crear o eliminar nuevos parámetros ni editar su nombre. Si bien se trata de valores obligatorios."
+},
+{
+"id": 3826,
+"es": "Exportar el listado de métodos de cálculo en los idiomas y formatos configurados."
+},
+{
+"id": 3827,
+"es": "Permite la programación y seguimiento de la ejecución automática de cálculos en el sistema Onesait Metering. Una vez alcanzada la fecha planificada, el proceso se ejecutará de forma automática, siguiendo la configuración establecida. Los planificadores permiten también, llevar a cabo ejecuciones puntuales, haciendo click sobre el botón “Ejecutar”. Estos procesos se realizan igualmente con los parámetros predefinidos y se monitorizan de forma similar."
+},
+{
+"id": 3828,
+"es": "Rango de fechas de lectura sobre las que se ejecutarán los cálculos"
+},
+{
+"id": 3829,
+"es": "Los procesos de cálculo se aplicarán sobre los puntos de medida o grupos de puntos de medida seleccionados, para las fechas de registro del contador (no fechas de actualización en el sistema) entre la última ejecución registrada, que es modificable por el usuario, y la fecha de ejecución."
+},
+{
+"id": 3830,
+"es": " muestra una lista de todos los planificadores de cálculos dados de alta en el sistema, ya sea habilitados o deshabilitados. Dichos planificadores establecen las ejecuciones programadas de los métodos de cálculo, que se lanzarán con una frecuencia establecida sobre los puntos y grupos de puntos indicados."
+},
+{
+"id": 3831,
+"es": "Editar un planificador: el botón Editar permite editar el planificador seleccionado "
+},
+{
+"id": 3832,
+"es": "Exportar los planificadores: el botón Exportar permite exportar la lista de planificadores de forma similar a como se exportan otras pantallas, en formatos PDF y CSV."
+},
+{
+"id": 3833,
+"es": "Los  planificadores de Cálculo se caracterizan por los siguientes atributos:"
+},
+{
+"id": 3834,
+"es": " a asignar libremente por el usuario. Se recomienda que permita identificar rápidamente el planificador y evitar caracteres extraños. Extensión máxima: 50 caracteres."
+},
+{
+"id": 3835,
+"es": "Descripción "
+},
+{
+"id": 3836,
+"es": "Métodos de Cálculo y su parametrización"
+},
+{
+"id": 3837,
+"es": "Cálculo de Cierre Mensual a partir del perfil de carga"
+},
+{
+"id": 3838,
+"es": "Cálculo de Cierre Diario a partir del perfil de carga "
+},
+{
+"id": 3839,
+"es": "Obtención del Perfil de Carga Absoluto a partir del perfil de carga"
+},
+{
+"id": 3840,
+"es": "Obtención de Perfil de Carga por Agregación"
+},
+{
+"id": 3841,
+"es": "Agregación desde Quince-Minutal: 30MIN, H, D "
+},
+{
+"id": 3842,
+"es": "Agregación desde Treinta-Minutal: H, D "
+},
+{
+"id": 3843,
+"es": "Agregación desde Horaria: D "
+},
+{
+"id": 3844,
+"es": "Obtención de Perfil de Carga por Desagregación"
+},
+{
+"id": 3845,
+"es": "Desagregación desde Horarias: 30MIN, 15MIN"
+},
+{
+"id": 3846,
+"es": " Desagregación desde Diarias: H, 30MIN, 15MIN"
+},
+{
+"id": 3847,
+"es": "Estrategia "
+},
+{
+"id": 3848,
+"es": ": informa de la fecha de última ejecución registrada, pero a diferencia de otros procesos es editable, permitiendo así al usuario definir las medidas a calcular."
+},
+{
+"id": 3849,
+"es": "Detalle Planificador de Cálculo"
+},
+{
+"id": 3850,
+"es": "Planificación: periodicidad con la que se ejecuta el planificador"
+},
+{
+"id": 3851,
+"es": "Última ejecución: fecha de última ejecución"
+},
+{
+"id": 3852,
+"es": "Próxima ejecución: fecha de la próxima ejecución, coincidente con la fecha en la que vence la planificación."
+},
+{
+"id": 3853,
+"es": "Estado: habilitado o deshabilitado"
+},
+{
+"id": 3854,
+"es": "Crear planificador de cálculos"
+},
+{
+"id": 3855,
+"es": "Al seleccionar la opción “Crear” se abre una nueva ventana en la que se piden los datos para crear una nueva planificación:"
+},
+{
+"id": 3856,
+"es": "Grupo de puntos de medida: sobre los que se ejecutará el cálculo. La columna de la derecha son los grupos disponibles, la de la izquierda los grupos de puntos sobre los que aplica los métodos de cálculo seleccionados."
+},
+{
+"id": 3857,
+"es": "Punto de Medida: selector de Puntos de Medida sobre los que aplica los métodos de cálculo seleccionados."
+},
+{
+"id": 3858,
+"es": "Planificación: fechas o frecuencias en las que periódicamente se ejecutarán automáticamente los métodos de cálculo seleccionados sobre el grupo de puntos seleccionado. Se configura de forma sencilla desde un selector como el de la Ilustración 7."
+},
+{
+"id": 3859,
+"es": "Última ejecución (opcional): fecha y hora que determina la fecha desde la que se ejecuta el cálculo por última vez."
+},
+{
+"id": 3860,
+"es": "Métodos de Cálculo: métodos de cálculo que se desea aplicar con cierta periodicidad sobre el grupo de puntos o punto seleccionado. La columna de la izquierda recoge los métodos disponibles y la de la izquierda los parámetros específicos de cada método (en función del método seleccionado en la izquierda se mostrarán unos parámetros u otros, en todos los casos se trata de valores obligatorios)."
+},
+{
+"id": 3861,
+"es": "Editar planificador de cálculos"
+},
+{
+"id": 3862,
+"es": "Se accede a la pantalla de edición de un planificador de cálculos seleccionando la planificación (para que se resalte en azul) y pulsando el botón Editar."
+},
+{
+"id": 3863,
+"es": "Los campos disponibles son los mismos que en la ventana de creación, con la diferencia de que se muestra la fecha de última ejecución, que es editable para permitir forzar el cálculo desde la fecha deseada."
+},
+{
+"id": 3864,
+"es": "Al ejecutar un planificador de forma manual se actualizará automáticamente la fecha de última ejecución y, en consecuencia, según la planificación seleccionada, puede verse afectada la fecha de próxima ejecución. Los procesos lanzados de esta manera aparecerán en el monitor de procesos como procesos ejecutados de forma manual. Dentro del proceso, se generará una tarea por cada punto de medida y método."
+},
+{
+"id": 3865,
+"es": "Ejecución Manual de Cálculos "
+},
+{
+"id": 3866,
+"es": "da acceso a la ejecución manual de uno o varios métodos de cálculo sobre un punto o un grupo de puntos de medida en un intervalo de fechas (desde-hasta) determinado, como se muestra en la siguiente Ilustración."
+},
+{
+"id": 3867,
+"es": "Desde esta pantalla se rellena los siguientes campos para ejecutar un proceso de métodos de cálculo:"
+},
+{
+"id": 3868,
+"es": "Métodos de Cálculo: "
+},
+{
+"id": 3869,
+"es": "métodos de cálculo que se se desean ejecutar, se puede ejecutar uno, varios o varias veces el mismo método de cálculo (con parámetros distintos) sobre el punto y/o grupo. La columna de la izquierda recoge los métodos disponibles y la de la izquierda los parámetros específicos de cada método (en función del método seleccionado en la izquierda se mostrarán unos parámetros u otros, en todos los casos se trata de valores obligatorios). Siempre que estén incluidos en el ranking de orígenes del punto, para el punto seleccionado y/o cada punto perteneciente al grupo de puntos seleccionado, se ejecutarán todos los métodos de cálculo indicados, según los algoritmos que se detallan más adelante."
+},
+{
+"id": 3870,
+"es": "Los cálculos, como todos los procesos de gestión de medidas, tienen la opción de asociar una estrategia en las planificaciones y ejecuciones de los distintos métodos, de esta forma, en cada ejecución manual o planificación, cuando finalice cada proceso se ejecutan las acciones establecidas en la estrategia asociada a cada proceso."
+},
+{
+"id": 3871,
+"es": "Una Acción hace referencia a una tarea u operación que se realiza en el sistema, como por ejemplo un envío de email o una solicitud de recuperación de medidas de campo. Las acciones disponibles tras los procesos de cálculo se recogen en la tabla maestra “Acciones” (Inicio / Inventario / Datos Maestros / Acciones) como acciones de categoría PROCESS:"
+},
+{
+"id": 3872,
+"es": "Como hemos comentado anteriormente el sistema utiliza los siguientes datos para realizar los cálculos de las medidas."
+},
+{
+"id": 3873,
+"es": "Los diferentes algoritmos de cálculos utilizan las medidas, lecturas y medidas de cierre óptimas almacenados en el sistema y pertenecientes a los mismos puntos sobre los que realizan el cálculo."
+},
+{
+"id": 3874,
+"es": "Como ya sabemos, las medidas óptimas pueden ser de diferente naturaleza, entre ellas estimada; cuanto más reales sean estas medidas mejores resultados devolverán los algoritmos de previsión."
+},
+{
+"id": 3875,
+"es": "De forma genérica se puede afirmar que los distintos métodos de cálculo se pueden aplicar sobre todo tipo de magnitudes y periodos de integración, independientemente de las particularidades de cada uno de ellos."
+},
+{
+"id": 3876,
+"es": "A su vez, existen otros parámetros como el umbral mínimo de medidas necesarias para realizar un cálculo, que afectan sólo a ciertos métodos de cálculo. De este modo, se puede afirmar que cada método de cálculo presenta unos parámetros característicos."
+},
+{
+"id": 3877,
+"es": "la correcta configuración de estos parámetros, los cuales deben ser modificados solo por usuarios que conozcan el impacto de los mismos en los diferentes algoritmos de cálculo."
+},
+{
+"id": 3878,
+"es": "Para poder ejecutar correctamente los métodos de cálculo será necesario tener debidamente configurado el sistema. Para ello, las tareas correspondientes deberán tener asignado un nodo activo y los parámetros del sistema correspondientes deberán estar correctamente configurados."
+},
+{
+"id": 3879,
+"es": ", utilizando los botones detalle y editar. En el caso de los métodos de cálculo las tareas que afectan a la correcta ejecución de los mismos son las siguientes:"
+},
+{
+"id": 3880,
+"es": "En el caso de los parámetros del sistema, estos se pueden consultar y configurar en la pantalla Inicio / Administración / Parámetros, utilizando los botones detalle y editar. En el caso de los métodos de cálculo los parámetros que afectan a la correcta ejecución de los mismos son los siguientes:"
+},
+{
+"id": 3881,
+"es": "EXECUTOR-MAX-THREAD-CALCULATION: Indica el nº máximo de tareas paralelas de cálculos que puede ejecutar el sistema. Valor por defecto: 2."
+},
+{
+"id": 3882,
+"es": "Los procesos ejecutados de forma manual (tanto desde la pantalla de ejecución manual como desde la pantalla de planificadores) y los procesos automáticos se muestran en el monitor de procesos de gestión de la medida. Pueden identificarse rápidamente utilizando el filtro de búsqueda “Tipo de proceso” igual a Cálculo."
+},
+{
+"id": 3883,
+"es": "En el detalle de cada proceso se muestra un resumen general y breve de la ejecución del proceso; por tanto, se trata de información a nivel de proceso, formado por los siguientes campos para los procesos de Cálculo:"
+},
+{
+"id": 3884,
+"es": "Tipo de proceso: identifica el tipo de proceso que se ha ejecutado; en este caso será siempre “Cálculo”"
+},
+{
+"id": 3885,
+"es": "Resumen del proceso: proporciona la siguiente información sobre el proceso “Se ha ejecutado el proceso de cálculo para un total de <num_puntos> puntos. Se han calculado un total de <num_medidas> medidas. Se han producido <num_error> errores y <num_warning> avisos durante el proceso”"
+},
+{
+"id": 3886,
+"es": "Estado: muestra la situación en la que se encuentra el proceso en tiempo real; existen los siguientes tipos de Estado para los procesos de Cálculo"
+},
+{
+"id": 3887,
+"es": "Desglose de tareas: permite identificar las distintas tareas que se han generado para cada método y Punto de Medida. Dichas tareas llevan a otra pantalla donde se muestra información más amplia y detallada sobre la ejecución de cada una de ellas; está formado por los siguientes campos (Ilustración 11):"
+},
+{
+"id": 3888,
+"es": "INFO: Logs de Información sobre la ejecución del proceso, usadas para mostrar resultados o estadísticas propias de la ejecución natural del mismo. Por ejemplo: “Medidas calculadas: <"
+},
+{
+"id": 3889,
+"es": "num_medidas_calculadas"
+},
+{
+"id": 3890,
+"es": "> “, “Total de medidas posibles: <"
+},
+{
+"id": 3891,
+"es": "num_medidas_totales"
+},
+{
+"id": 3892,
+"es": "WARNING: Logs de Advertencia, indican alguna circunstancia relacionada con la lógica de ejecución que impiden realizar la tarea. Por ejemplo: “No se ha encontrado el método de cálculo en el ranking de orígenes”, “No se han encontrado las medidas correspondientes para realizar el cálculo”."
+},
+{
+"id": 3893,
+"es": "Los métodos de cálculo generarán medidas siempre que el origen correspondiente esté incluido en el ranking de orígenes de la clase de configuración del punto de medida sobre el que se aplica el método. Dichas medidas se calcularán a partir de las mediciones óptimas independientemente del origen o resultado de validación de éstas, ya que si están en óptimo es porque son las mejores medidas disponibles."
+},
+{
+"id": 3894,
+"es": "Las medidas generadas como resultado de los procesos de cálculo, se registran en el sistema como medidas de origen, con origen el propio método de cálculo desde el que se han generado. Pasarán por tanto por todo el proceso de tratamiento de la medida correspondiente (validaciones iniciales y selección de medida óptima)."
+},
+{
+"id": 3895,
+"es": "Al registrarse en el sistema, las medidas de origen calculado no se ven afectadas por la constante de lectura del punto, la relación de transformación del equipo de medida ni otros factores de multiplicación aplicados en la entrada de medidas a través del módulo de \""
+},
+{
+"id": 3896,
+"es": "Según el ranking de orígenes asignado, las medidas calculadas podrían ser medidas óptimas."
+},
+{
+"id": 3897,
+"es": "Medidas y Curva"
+},
+{
+"id": 3898,
+"es": ") tanto en la sección de Origen como en la de Óptimo (sólo en caso de que estas medidas hayan subido a óptimo por el ranking de orígenes especifico del Punto de Medida)."
+},
+{
+"id": 3899,
+"es": "Los métodos de agregación de medidas calculan las medidas de un intervalo más largo sumando las medidas de los intervalos que lo componen."
+},
+{
+"id": 3900,
+"es": "Los métodos de agregación de medida dados de alta en el sistema son:"
+},
+{
+"id": 3901,
+"es": "Cálculo de medidas agregadas a partir de medidas quince-minutales"
+},
+{
+"id": 3902,
+"es": "Cálculo de medidas agregadas a partir de medidas treinta-minutales"
+},
+{
+"id": 3903,
+"es": "Cálculo de medidas agregadas a partir de medidas horarias"
+},
+{
+"id": 3904,
+"es": "Tipo de Medidas Calculadas"
+},
+{
+"id": 3905,
+"es": "Medidas de Perfil de Carga (H, 30MIN, 15MIN)"
+},
+{
+"id": 3906,
+"es": "Medidas de Perfil de Carga (D, H, 30MIN)"
+},
+{
+"id": 3907,
+"es": "THRESHOLD: "
+},
+{
+"id": 3908,
+"es": "Umbral Mínimo de Medidas. Porcentaje (entre 0 y 1) que indica para las medidas a agregar, el porcentaje mínimo de medidas que debe haber para realizar dicha agregación (1 requeriría curva completa)."
+},
+{
+"id": 3909,
+"es": ": Sólo se podrán seleccionar curvas con periodicidad superior a la establecida por el método (superior a 15MIN, 30MIN o Horario, en cada caso)"
+},
+{
+"id": 3910,
+"es": "Se podrá seleccionar cualquier magnitud de medida disponible en el sistema (AE, AS, etc.)."
+},
+{
+"id": 3911,
+"es": "A partir del método seleccionado, el Tipo Periodo y Magnitud seleccionados para la ejecución del método, el método calculará las medidas agregadas de la curva correspondiente para cada punto de la siguiente manera:"
+},
+{
+"id": 3912,
+"es": "Inicialmente, se comprobará la existencia del método dentro del ranking de origen de la calse de configuración del punto concreto, de lo contrario no se hace nada, informando mediante el logs correspondiente."
+},
+{
+"id": 3913,
+"es": "El tipo de periodo seleccionado será siempre superior al establecido en el método (15MIN, 30MIN o Horario), ya que la parametrización impide lo contrario."
+},
+{
+"id": 3914,
+"es": "El cálculo de cada una de las medidas correspondientes se realizará de la siguiente manera:"
+},
+{
+"id": 3915,
+"es": "Se buscan las medidas del periodo correspondiente (15MIN, 30MIN u Horarias en función del cálculo seleccionado) para la “"
+},
+{
+"id": 3916,
+"es": "” seleccionada."
+},
+{
+"id": 3917,
+"es": "Se comprueba que el número de medidas sea superior al porcentaje de las mismas indicado como parámetro del método."
+},
+{
+"id": 3918,
+"es": "Si hay suficientes medidas se agregan generando las correspondientes medidas del Tipo Periodo indicado y se continúa por el siguiente paso."
+},
+{
+"id": 3919,
+"es": "Si no hay medidas suficientes finaliza el método, indicando el logs correspondiente a esta situación."
+},
+{
+"id": 3920,
+"es": "Fechas de medidas a calcular, según tipo de ejecución, Manual o Planificada"
+},
+{
+"id": 3921,
+"es": "Parámetros de ejecución a considerar"
+},
+{
+"id": 3922,
+"es": "Desde"
+},
+{
+"id": 3923,
+"es": "Indica la fecha a partir de la cual se buscarán las fechas de registro de las medidas requeridas para el proceso"
+},
+{
+"id": 3924,
+"es": "Corresponderán a la fecha desde seleccionada a las 00:00"
+},
+{
+"id": 3925,
+"es": "Hasta"
+},
+{
+"id": 3926,
+"es": "Indica la fecha hasta la cual se buscarán las fechas de registro de las medidas requeridas para el proceso"
+},
+{
+"id": 3927,
+"es": "Corresponderán a la fecha hasta seleccionada hasta las 00:00"
+},
+{
+"id": 3928,
+"es": "Ejemplo 1 (1-Día)"
+},
+{
+"id": 3929,
+"es": "Ejecución manual lanzada a las 16/05/2025 12:00"
+},
+{
+"id": 3930,
+"es": "Fecha desde: 15/05/2025 (00:00)"
+},
+{
+"id": 3931,
+"es": "Fecha hasta: 15/05/2025 (16/05/2025 00:00)"
+},
+{
+"id": 3932,
+"es": "Intervalo considerado para la búsqueda de las fechas de registro de las medidas requeridas: 15/05/2025 00:00 - 16/05/2025 00:00 (Periodo de 1 a 24 en Medidas de Perfil de Carga / Registro de Cierre Diario correspondiente a los días 15 y 16/05)"
+},
+{
+"id": 3933,
+"es": "Ejemplo 2 (Varios días)"
+},
+{
+"id": 3934,
+"es": "Fecha desde: 01/05/2025 (00:00)"
+},
+{
+"id": 3935,
+"es": "Intervalo considerado para la búsqueda de las fechas de registro de las medidas requeridas: 01/05/2025 00:00 - 16/05/2025 00:00 (Periodo de 1 a 24 en Medidas de Perfil de Carga)"
+},
+{
+"id": 3936,
+"es": "Parámetros de planificación a considerar"
+},
+{
+"id": 3937,
+"es": "Última Ejecución"
+},
+{
+"id": 3938,
+"es": "La fecha Indica la fecha desde a partir de la cual se buscarán las fechas de registro de las medidas requeridas para el proceso"
+},
+{
+"id": 3939,
+"es": "El date-time indicará el lanzamiento de la próxima ejecución"
+},
+{
+"id": 3940,
+"es": "La fecha de la ejecución Indica la fecha hasta la cual se buscarán las fechas de registro de las medidas requeridas para el proceso"
+},
+{
+"id": 3941,
+"es": "Corresponderán a la fecha de ejecución seleccionada hasta las 00:00"
+},
+{
+"id": 3942,
+"es": "Ejemplo 1 (DIARIO)"
+},
+{
+"id": 3943,
+"es": "Planificación configurada: DIARIA - Cada día a las 5:00"
+},
+{
+"id": 3944,
+"es": "Próxima ejecución: 16/05/2025 5:00"
+},
+{
+"id": 3945,
+"es": "Última ejecución: 15/05/2025 5:00"
+},
+{
+"id": 3946,
+"es": "Intervalo considerado para la búsqueda de las fechas de registro de las medidas requeridas: 15/05/2025 00:00 - 16/05/2025 00:00 (Periodo de 1 a 24 en Medidas de Perfil de Carga)"
+},
+{
+"id": 3947,
+"es": "Ejemplo 2 (MENSUAL)"
+},
+{
+"id": 3948,
+"es": "Planificación configurada: MENSUAL - Día 1 de cada mes a las 5:00"
+},
+{
+"id": 3949,
+"es": "Próxima ejecución: 01/05/2025 5:00"
+},
+{
+"id": 3950,
+"es": "Última ejecución: 01/04/2025 5:00"
+},
+{
+"id": 3951,
+"es": "Intervalo considerado para la búsqueda de las fechas de registro de las medidas requeridas: 01/04/2025 00:00 - 01/05/2025 00:00 (Mes completo)"
+},
+{
+"id": 3952,
+"es": "Los métodos de cálculo mediante desagregación de medidas calculan las medidas de un intervalo más corto dividiendo las medidas del intervalo más largo en el que están contenidos."
+},
+{
+"id": 3953,
+"es": "Existen los siguientes métodos de desagregación de medidas:"
+},
+{
+"id": 3954,
+"es": "Cálculo de medidas desagregadas desde treinta-minutales"
+},
+{
+"id": 3955,
+"es": "Cálculo de medidas desagregadas desde horarias"
+},
+{
+"id": 3956,
+"es": "Cálculo de medidas desagregadas desde diarias"
+},
+{
+"id": 3957,
+"es": "Estos métodos tienen en cuenta que los meses tienen distinto número de días, los años bisiestos y el cambio horario estacional, que afecta al número de periodos de dos días al año."
+},
+{
+"id": 3958,
+"es": "Medidas de Perfil de Carga (D, H, 30MIN) "
+},
+{
+"id": 3959,
+"es": "Umbral Mínimo de Medidas"
+},
+{
+"id": 3960,
+"es": ": Porcentaje (entre 0 y 1) que indica para las medidas a desagregar, el porcentaje mínimo de medidas que debe haber para realizar dicha desagregación (1 indicaría que es necesaria la curva completa)."
+},
+{
+"id": 3961,
+"es": ": Sólo se podrán seleccionar curvas con periodicidad inferior a la establecida por el método (inferior a Horario, Diario o Mensual en cada caso)."
+},
+{
+"id": 3962,
+"es": "A partir del método seleccionado, el Tipo Periodo y Magnitud seleccionados para la ejecución del método, el método calculará las medidas desagregadas de la curva correspondiente para cada punto de la siguiente manera:"
+},
+{
+"id": 3963,
+"es": "Inicialmente, se comprobará la existencia del método dentro del ranking de origen de la clase de configuración del punto concreto, de lo contrario no se hace nada, informando mediante el logs correspondiente."
+},
+{
+"id": 3964,
+"es": "El Tipo de periodo seleccionado será inferior al establecido en el método (Horario, Diario o Mensual), ya que la parametrización impide lo contrario."
+}
+]

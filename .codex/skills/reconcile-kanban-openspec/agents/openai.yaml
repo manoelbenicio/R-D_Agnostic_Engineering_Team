@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reconcile Kanban and OpenSpec"
+  short_description: "Evidence-led board and OpenSpec reconciliation"
+  default_prompt: "Use $reconcile-kanban-openspec to reconcile this issue without duplicating completed work."

@@ -1,0 +1,3174 @@
+[
+{
+"id": 10639,
+"es": "            \"protocol\": null,"
+},
+{
+"id": 10640,
+"es": "            \"dateTime\": \"2025-12-10T10:19:00.460Z\","
+},
+{
+"id": 10641,
+"es": "            \"payload\": \"PROFILE\","
+},
+{
+"id": 10642,
+"es": "            \"operation\": null"
+},
+{
+"id": 10643,
+"es": "        \"source\": {"
+},
+{
+"id": 10644,
+"es": "            \"id\": \"UNITY_SUITE\","
+},
+{
+"id": 10645,
+"es": "            \"version\": \"1.0\","
+},
+{
+"id": 10646,
+"es": "            \"process\": null"
+},
+{
+"id": 10647,
+"es": "        \"target\": {"
+},
+{
+"id": 10648,
+"es": "            \"id\": \"MDM\","
+},
+{
+"id": 10649,
+"es": "        \"reply\": null"
+},
+{
+"id": 10650,
+"es": "Recepción de eventos y alarmas de equipos"
+},
+{
+"id": 10651,
+"es": "Para la recepción de eventos y alarmas el proceso de integración, cuando recibe un mensaje de eventos o alarmas lo traduce al formato adecuado en MDM y lo inserta en las colas Kafka para que sea procesado de forma estándar."
+},
+{
+"id": 10652,
+"es": "El proceso de integración de UNITY SUITE está escuchando en una cola hasta que recibe un mensaje de eventos o alarmas de un equipo ya dado de alta en MDM"
+},
+{
+"id": 10653,
+"es": "<EventMessage xmlns=\"http://www.iec.ch/TC57/2008/schema/message\" xmlns:ns1=\"http://iec.ch/TC57/2009/EndDeviceEvents#\">"
+},
+{
+"id": 10654,
+"es": "<Noun>EndDeviceEvents</Noun>"
+},
+{
+"id": 10655,
+"es": "<ns1:EndDeviceEvents>"
+},
+{
+"id": 10656,
+"es": "<ns1:EndDeviceEvent>"
+},
+{
+"id": 10657,
+"es": "<ns1:category>1.23.14.157</ns1:category>"
+},
+{
+"id": 10658,
+"es": "<ns1:createdDateTime>2025-12-09T13:00:00Z</ns1:createdDateTime>"
+},
+{
+"id": 10659,
+"es": "<ns1:description>Fallo en las comunicaciones</ns1:description>"
+},
+{
+"id": 10660,
+"es": "<ns1:Assets>"
+},
+{
+"id": 10661,
+"es": "</ns1:Assets>"
+},
+{
+"id": 10662,
+"es": "</ns1:EndDeviceEvent>"
+},
+{
+"id": 10663,
+"es": "</ns1:EndDeviceEvents>"
+},
+{
+"id": 10664,
+"es": "unity_suite-oum_mdc_ingestion-event"
+},
+{
+"id": 10665,
+"es": "unity_suite-oum_mdc_ingestion-event_error (para indicar errores de formato del mensaje)"
+},
+{
+"id": 10666,
+"es": "unity_suite-oum_mdc_ingestion-event_reply (para indicar el resultado de la ingesta)"
+},
+{
+"id": 10667,
+"es": "            \"events\": ["
+},
+{
+"id": 10668,
+"es": "                    \"eventCimCode\": null,"
+},
+{
+"id": 10669,
+"es": "                    \"eventCode\": \"1.23.14.157\","
+},
+{
+"id": 10670,
+"es": "                    \"timestamp\": \"2025-12-09T13:00:00.000Z\","
+},
+{
+"id": 10671,
+"es": "                    \"detail\": ["
+},
+{
+"id": 10672,
+"es": "                            \"name\": \"information\","
+},
+{
+"id": 10673,
+"es": "                            \"value\": \"Fallo en las comunicaciones\""
+},
+{
+"id": 10674,
+"es": "                            \"name\": \"quality\","
+},
+{
+"id": 10675,
+"es": "                            \"value\": \"0\""
+},
+{
+"id": 10676,
+"es": "                    \"dst\": \"NO\""
+},
+{
+"id": 10677,
+"es": "            \"id\": \"8bac3847-59a0-4c3d-8c96-5b96b32054e0\","
+},
+{
+"id": 10678,
+"es": "            \"correlationId\": \"2ea049ba-31c5-4f13-933b-b3321404a906\","
+},
+{
+"id": 10679,
+"es": "\"protocol\": null,"
+},
+{
+"id": 10680,
+"es": "            \"dateTime\": \"2025-12-10T10:35:11.016Z\","
+},
+{
+"id": 10681,
+"es": "\"payload\": \"EVENT\","
+},
+{
+"id": 10682,
+"es": "Ejecutar lecturas de medidores a pedido y gestión de respuestas asociadas"
+},
+{
+"id": 10683,
+"es": "La solicitud de lecturas a medidores en MDM se realiza con la misma estructura que los comandos remotos."
+},
+{
+"id": 10684,
+"es": "Dicha solicitud se explica en el punto "
+},
+{
+"id": 10685,
+"es": "Ejecutar comando remoto para petición de medidas"
+},
+{
+"id": 10686,
+"es": ", explicado más abajo en este documento"
+},
+{
+"id": 10687,
+"es": "Ejecutar comandos remotos y gestión de respuestas asociadas"
+},
+{
+"id": 10688,
+"es": "Para el tratamiento de solicitudes y respuestas a comandos remotos, el proceso de integración lee las solicitudes que provienen de MDM respondiendo de forma autónoma un ACK en el tópico correspondiente, traduce el mensaje al formato HES y espera el mensaje de respuesta para traducirla y enviárselo a MDM."
+},
+{
+"id": 10689,
+"es": "Ejecutar comandos remotos de Conexión/Desconexión"
+},
+{
+"id": 10690,
+"es": "Mensaje de solicitud de comando remoto"
+},
+{
+"id": 10691,
+"es": "El proceso de integración leerá del tópico de la plataforma Kafka el comando a enviar al sistema HES. "
+},
+{
+"id": 10692,
+"es": "Tópico de envío de peticiones (comandos)"
+},
+{
+"id": 10693,
+"es": "unity_suite-oum_mdc_command-request "
+},
+{
+"id": 10694,
+"es": "Tópico de recepción de acuses de recibo (ack): "
+},
+{
+"id": 10695,
+"es": "unity_suite-oum_mdc_command-request-ack"
+},
+{
+"id": 10696,
+"es": "Nota: los nombres de los tópicos son configurables y, por lo tanto, susceptibles de modificación en la implementación final"
+},
+{
+"id": 10697,
+"es": "Ejemplo del mensaje de solicitud en Kafka"
+},
+{
+"id": 10698,
+"es": "    \"RequestMessage\": {"
+},
+{
+"id": 10699,
+"es": "        \"Header\": {"
+},
+{
+"id": 10700,
+"es": "            \"Verb\": \"create\","
+},
+{
+"id": 10701,
+"es": "            \"Noun\": \"EndDeviceControls\","
+},
+{
+"id": 10702,
+"es": "            \"Revision\": \"1.0\","
+},
+{
+"id": 10703,
+"es": "            \"Timestamp\": \"2025-12-11T14:59:30.073Z\","
+},
+{
+"id": 10704,
+"es": "            \"Source\": \"MDM\","
+},
+{
+"id": 10705,
+"es": "            \"Target\": \"UNITY_SUITE\","
+},
+{
+"id": 10706,
+"es": "            \"AsyncReplyFlag\": true,"
+},
+{
+"id": 10707,
+"es": "            \"AckRequired\": true,"
+},
+{
+"id": 10708,
+"es": "            \"Property\": ["
+},
+{
+"id": 10709,
+"es": "                    \"Name\": \"StartTime\","
+},
+{
+"id": 10710,
+"es": "                    \"Value\": \"2025-12-11T14:59:30.073Z\""
+},
+{
+"id": 10711,
+"es": "                    \"Name\": \"ExpireTime\","
+},
+{
+"id": 10712,
+"es": "                    \"Value\": \"2025-12-11T20:59:30.073Z\""
+},
+{
+"id": 10713,
+"es": "                    \"Name\": \"RetryTimes\","
+},
+{
+"id": 10714,
+"es": "                    \"Value\": \"5\""
+},
+{
+"id": 10715,
+"es": "                    \"Name\": \"RetryInterval\","
+},
+{
+"id": 10716,
+"es": "                    \"Value\": \"30\""
+},
+{
+"id": 10717,
+"es": "                    \"Name\": \"Priority\","
+},
+{
+"id": 10718,
+"es": "                    \"Value\": \"1\""
+},
+{
+"id": 10719,
+"es": "            \"MessageID\": \"d28bcbce-6787-44fe-a5a3-02e904f257f8\","
+},
+{
+"id": 10720,
+"es": "\"CorrelationID\": \"e8cb914b-e5f4-4db1-be17-77b22563e5db\""
+},
+{
+"id": 10721,
+"es": "        \"Payload\": {"
+},
+{
+"id": 10722,
+"es": "            \"EndDeviceControls\": {"
+},
+{
+"id": 10723,
+"es": "                \"EndDeviceControl\": {"
+},
+{
+"id": 10724,
+"es": "                    \"EndDeviceControlType\": \"30.01.01.01\", "
+},
+{
+"id": 10725,
+"es": "// Conexión \"30.01.01.01\" "
+},
+{
+"id": 10726,
+"es": "// Desconexión \"30.01.01.02\" "
+},
+{
+"id": 10727,
+"es": "                    \"EndDevices\": ["
+},
+{
+"id": 10728,
+"es": "                            \"mRID\": \"PRBEQ0002US\""
+},
+{
+"id": 10729,
+"es": "Transformación y comunicación del mensaje de solicitud de comando remoto"
+},
+{
+"id": 10730,
+"es": "El proceso de integración realizará la traducción del mensaje para que sea entendido por el HES destino y lo inserta en la cola."
+},
+{
+"id": 10731,
+"es": "En este mensaje se especificará el valor replyAddress para indicar la URL que el sistema HES deberá usar para enviar la respuesta. "
+},
+{
+"id": 10732,
+"es": "La URL por defecto será:"
+},
+{
+"id": 10733,
+"es": "<p:ReplyAddress>MDM.COMMAND_REPLY_EMCM</p:ReplyAddress>"
+},
+{
+"id": 10734,
+"es": "Nota: los nombres de las URL son configurables y, por lo tanto, susceptibles de modificación en la implementación final."
+},
+{
+"id": 10735,
+"es": "La traducción será diferente en función del formato que espere recibir el equipo destino dentro del HES. El formato de traducción se decide en función del modelo del equipo destino."
+},
+{
+"id": 10736,
+"es": "Existen dos formatos: EMCM y TRPX"
+},
+{
+"id": 10737,
+"es": "Ejemplo formato EMCM"
+},
+{
+"id": 10738,
+"es": "<RequestMessage xmlns=\"http://www.iec.ch/TC57/2008/schema/message\" xmlns:ns6=\"http://iec.ch/TC57/2009/EndDeviceEvents#\" xmlns:ns5=\"http://iec.ch/TC57/2009/MeterReadings#\" xmlns:ns2=\"http://iec.ch/TC57/2009/EndDeviceAssets#\" xmlns:ns4=\"http://www.trilliantinc.com/SEAL/1.0/emcm\" xmlns:ns3=\"http://www.trilliantinc.com/SEAL/1.0/rpma\">"
+},
+{
+"id": 10739,
+"es": "        <Verb>CHANGE</Verb>"
+},
+{
+"id": 10740,
+"es": "        <Noun>RCDSwitchState</Noun>"
+},
+{
+"id": 10741,
+"es": "        <Timestamp>2025-12-11T12:43:30.011243Z</Timestamp>"
+},
+{
+"id": 10742,
+"es": "        <ReplyAddress>MDM.COMMAND_REPLY_EMCM</ReplyAddress>"
+},
+{
+"id": 10743,
+"es": "        <CorrelationID>973d3a70-7d31-4442-a017-b25508b79a44</CorrelationID>"
+},
+{
+"id": 10744,
+"es": "        <ns4:RCDSwitchState>"
+},
+{
+"id": 10745,
+"es": "            <ns4:EndDeviceAsset>"
+},
+{
+"id": 10746,
+"es": "                <ns2:mRID>ECTPRBEQ0002US</ns2:mRID>"
+},
+{
+"id": 10747,
+"es": "            </ns4:EndDeviceAsset>"
+},
+{
+"id": 10748,
+"es": "            <ns4:state>DISCONNECT</ns4:state> "
+},
+{
+"id": 10749,
+"es": "<!-- CONNECT"
+},
+{
+"id": 10750,
+"es": "<!-- DISCONNECT -->"
+},
+{
+"id": 10751,
+"es": "            <ns4:disableOverride>false</ns4:disableOverride>"
+},
+{
+"id": 10752,
+"es": "        </ns4:RCDSwitchState>"
+},
+{
+"id": 10753,
+"es": "Ejemplo formato TRPX"
+},
+{
+"id": 10754,
+"es": "<RequestMessage xmlns=\"http://www.iec.ch/TC57/2008/schema/message\" xmlns:ns6=\"http://iec.ch/TC57/2009/EndDeviceEvents#\" xmlns:ns5=\"http://iec.ch/TC57/2009/MeterReadings#\" xmlns:ns2=\"http://iec.ch/TC57/2009/EndDeviceAssets#\" xmlns:ns4=\"http://www.trilliantinc.com/SEAL/1.0/trpx\" xmlns:ns3=\"http://www.trilliantinc.com/SEAL/1.0/rpma\">"
+},
+{
+"id": 10755,
+"es": "        <Timestamp>2025-12-11T14:35:20.360288Z</Timestamp>"
+},
+{
+"id": 10756,
+"es": "        <ReplyAddress>MDM.COMMAND_REPLY_TRPX</ReplyAddress>"
+},
+{
+"id": 10757,
+"es": "<CorrelationID>fcc757c0-b912-4a98-8a93-7de80376d7d3</CorrelationID>"
+},
+{
+"id": 10758,
+"es": "                <ns2:mRID>ECTPRBEQ0001US</ns2:mRID>"
+},
+{
+"id": 10759,
+"es": "            <ns4:state>CONNECT</ns4:state>> "
+},
+{
+"id": 10760,
+"es": "<!-- CONNECT -->"
+},
+{
+"id": 10761,
+"es": "Mensaje de respuesta de comando remoto"
+},
+{
+"id": 10762,
+"es": "El proceso de integración espera la respuesta del comando en la cola indicada en el mensaje de solicitud para proceder a su traducción al formato estándar MDM."
+},
+{
+"id": 10763,
+"es": "Cola: MDM.COMMAND_REPLY_TRPX"
+},
+{
+"id": 10764,
+"es": "<ResponseMessage xmlns=\"http://www.iec.ch/TC57/2008/schema/message\" xmlns:ns1=\"http://iec.ch/TC57/2009/EndDeviceAssets#\" xmlns:ns2=\"http://www.trilliantinc.com/SEAL/1.0/emcm\">"
+},
+{
+"id": 10765,
+"es": "        <Verb>REPLY</Verb>"
+},
+{
+"id": 10766,
+"es": "        <Noun>RCDSwitchStateResponse</Noun>"
+},
+{
+"id": 10767,
+"es": "<CorrelationID>e8cb914b-e5f4-4db1-be17-77b22563e5db</CorrelationID>"
+},
+{
+"id": 10768,
+"es": "    <Reply>"
+},
+{
+"id": 10769,
+"es": "        <ReplyCode>0.0</ReplyCode>"
+},
+{
+"id": 10770,
+"es": "    </Reply>"
+},
+{
+"id": 10771,
+"es": "        <ns2:RCDSwitchStateResponse>"
+},
+{
+"id": 10772,
+"es": "            <ns2:EndDeviceAsset xsi:type=\"ns2:emcm\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+},
+{
+"id": 10773,
+"es": "                <ns1:mRID>ECTPRBEQ0002US</ns1:mRID>"
+},
+{
+"id": 10774,
+"es": "            <ns2:rdSwitchPresent>true</ns2:rdSwitchPresent>"
+},
+{
+"id": 10775,
+"es": "            <ns2:status>Connect</ns2:status> "
+},
+{
+"id": 10776,
+"es": "<!-- Connect -->"
+},
+{
+"id": 10777,
+"es": "<!-- Disconnect -->"
+},
+{
+"id": 10778,
+"es": "            <ns2:controlStatus>Connect</ns2:controlStatus> "
+},
+{
+"id": 10779,
+"es": "        </ns2:RCDSwitchStateResponse>"
+},
+{
+"id": 10780,
+"es": "</ResponseMessage>"
+},
+{
+"id": 10781,
+"es": "<ResponseMessage xmlns=\"http://www.iec.ch/TC57/2008/schema/message\" xmlns:ns1=\"http://iec.ch/TC57/2009/EndDeviceAssets#\" xmlns:ns2=\"http://www.trilliantinc.com/SEAL/1.0/trpx\">"
+},
+{
+"id": 10782,
+"es": "            <ns2:EndDeviceAsset xsi:type=\"ns2:trpx\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+},
+{
+"id": 10783,
+"es": "                <ns1:mRID>ECTPRBEQ0001US</ns1:mRID>"
+},
+{
+"id": 10784,
+"es": "            <ns2:status>Connect</ns2:status>> "
+},
+{
+"id": 10785,
+"es": "            <ns2:controlStatus>Connect</ns2:controlStatus>> "
+},
+{
+"id": 10786,
+"es": "Transformación y comunicación del mensaje de respuesta de comando remoto"
+},
+{
+"id": 10787,
+"es": "El proceso de integración, tras la lectura del mensaje de respuesta, lo traducirá al formato estándar MDM y lo enviará al tópico de respuesta de comandos"
+},
+{
+"id": 10788,
+"es": "unity_suite-oum-hes_command-reply "
+},
+{
+"id": 10789,
+"es": "unity_suite-oum-hes_command-reply-ack"
+},
+{
+"id": 10790,
+"es": "Aunque MDM responde con un ACK de la respuesta no es necesario su procesado en este flujo de trabajo."
+},
+{
+"id": 10791,
+"es": "Ejemplo del mensaje de respuesta en Kafka"
+},
+{
+"id": 10792,
+"es": "    \"ResponseMessage\": {"
+},
+{
+"id": 10793,
+"es": "            \"Verb\": \"reply\","
+},
+{
+"id": 10794,
+"es": "            \"Revision\": null,"
+},
+{
+"id": 10795,
+"es": "            \"Timestamp\": null,"
+},
+{
+"id": 10796,
+"es": "            \"Target\": null,"
+},
+{
+"id": 10797,
+"es": "            \"AsyncReplyFlag\": null,"
+},
+{
+"id": 10798,
+"es": "            \"ReplyAddress\": null,"
+},
+{
+"id": 10799,
+"es": "            \"AckRequired\": null,"
+},
+{
+"id": 10800,
+"es": "            \"Property\": [],"
+},
+{
+"id": 10801,
+"es": "            \"MessageID\": \"7432b792-43d6-4a73-8765-40663d8427f6\","
+},
+{
+"id": 10802,
+"es": "        \"Reply\": {"
+},
+{
+"id": 10803,
+"es": "            \"Result\": \"OK\","
+},
+{
+"id": 10804,
+"es": "            \"Error\": ["
+},
+{
+"id": 10805,
+"es": "                    \"code\": \"0.0\","
+},
+{
+"id": 10806,
+"es": "                    \"level\": \"INFORM\","
+},
+{
+"id": 10807,
+"es": "                    \"details\": null,"
+},
+{
+"id": 10808,
+"es": "                    \"reason\": \"INFORM\""
+},
+{
+"id": 10809,
+"es": "            \"object\": null"
+},
+{
+"id": 10810,
+"es": "            \"UsagePointConfig\": null,"
+},
+{
+"id": 10811,
+"es": "            \"EndDeviceEvents\": null,"
+},
+{
+"id": 10812,
+"es": "            \"GetMeterReadings\": null,"
+},
+{
+"id": 10813,
+"es": "                    \"EndDeviceControlType\": null,"
+},
+{
+"id": 10814,
+"es": "                            \"mRID\": \"PRBEQ0002US\","
+},
+{
+"id": 10815,
+"es": "                            \"Names\": ["
+},
+{
+"id": 10816,
+"es": "                                    \"name\": \"Connection\", "
+},
+{
+"id": 10817,
+"es": "// \"Connection\","
+},
+{
+"id": 10818,
+"es": "// \"Disconnection\","
+},
+{
+"id": 10819,
+"es": "                                    \"NameType\": {"
+},
+{
+"id": 10820,
+"es": "                                        \"name\": \"relayStatus\""
+},
+{
+"id": 10821,
+"es": "                    \"Reason\": null"
+},
+{
+"id": 10822,
+"es": "            \"TariffRate\": null,"
+},
+{
+"id": 10823,
+"es": "            \"LoadDemandSides\": null,"
+},
+{
+"id": 10824,
+"es": "            \"OperationSet\": null"
+},
+{
+"id": 10825,
+"es": "Ejecutar comando remoto para petición de estado (PING)"
+},
+{
+"id": 10826,
+"es": "            \"Verb\": \"get\","
+},
+{
+"id": 10827,
+"es": "            \"Timestamp\": \"2025-12-11T15:23:20.050Z\","
+},
+{
+"id": 10828,
+"es": "                    \"Value\": \"2025-12-11T15:23:20.050Z\""
+},
+{
+"id": 10829,
+"es": "                    \"Value\": \"2025-12-11T21:23:20.050Z\""
+},
+{
+"id": 10830,
+"es": "            \"MessageID\": \"7b7f0b6f-ca42-453c-97a1-c537c3f27032\","
+},
+{
+"id": 10831,
+"es": "            \"CorrelationID\": \"c1b25007-bc73-4fbd-ae96-dff575fe78cd\""
+},
+{
+"id": 10832,
+"es": "                    \"EndDeviceControlType\": \"30.01.01.06\","
+},
+{
+"id": 10833,
+"es": "El proceso de integración realizará la traducción del mensaje para que sea entendido por el HES destino y lo adhiere a la cola."
+},
+{
+"id": 10834,
+"es": "        <Timestamp>2025-12-11T15:23:20.352394Z</Timestamp>"
+},
+{
+"id": 10835,
+"es": "        <CorrelationID>c1b25007-bc73-4fbd-ae96-dff575fe78cd</CorrelationID>"
+},
+{
+"id": 10836,
+"es": "        <Timestamp>2025-12-12T09:48:30.454151Z</Timestamp>"
+},
+{
+"id": 10837,
+"es": "<CorrelationID>30315470-64a8-470e-8c7c-424c1baa5e8d</CorrelationID>"
+},
+{
+"id": 10838,
+"es": "El proceso de integración espera la respuesta del comando en la cola indicada en el mensaje de solicitud para proceder a su traducción al formato estándar MDM"
+},
+{
+"id": 10839,
+"es": "            <ns2:status>Disconnect</ns2:status>> "
+},
+{
+"id": 10840,
+"es": "            <ns2:controlStatus>Disconnect</ns2:controlStatus>"
+},
+{
+"id": 10841,
+"es": "            <ns2:status>Disconnect</ns2:status>>> "
+},
+{
+"id": 10842,
+"es": "El proceso de integración, tras la lectura del mensaje de respuesta, lo traducirá al formato estándar MDM y lo enviará al tópico de respuesta de comandos."
+},
+{
+"id": 10843,
+"es": "En este caso la respuesta lleva dos resultados, la fecha del PING y el estado del relé."
+},
+{
+"id": 10844,
+"es": "Nota: los nombres de los tópicos son configurables y, por lo tanto, susceptibles de modificación en la implementación final."
+},
+{
+"id": 10845,
+"es": "            \"Timestamp\": \"2025-12-11T15:26:56.462Z\","
+},
+{
+"id": 10846,
+"es": "            \"Source\": \"UNITY_SUITE\","
+},
+{
+"id": 10847,
+"es": "            \"Target\": \"MDM\","
+},
+{
+"id": 10848,
+"es": "            \"MessageID\": \"825a6c62-0570-4993-ac1b-8c65a7c6dc27\","
+},
+{
+"id": 10849,
+"es": "                                    \"name\": \"2025-12-11T15:26:56\", "
+},
+{
+"id": 10850,
+"es": "// Fecha PING"
+},
+{
+"id": 10851,
+"es": "                                        \"name\": \"meterPing\""
+},
+{
+"id": 10852,
+"es": "                                    \"name\": \"Disconnection\","
+},
+{
+"id": 10853,
+"es": "                                        \"name\": \"relayStatus\"\", "
+},
+{
+"id": 10854,
+"es": "            \"Noun\": \"GetMeterReadings\","
+},
+{
+"id": 10855,
+"es": "            \"Timestamp\": \"2025-12-12T15:17:50.089Z\","
+},
+{
+"id": 10856,
+"es": "                    \"Value\": \"2025-12-12T15:17:50.090Z\""
+},
+{
+"id": 10857,
+"es": "                    \"Value\": \"2025-12-12T21:17:50.090Z\""
+},
+{
+"id": 10858,
+"es": "\"Value\": \"1\""
+},
+{
+"id": 10859,
+"es": "            \"MessageID\": \"a4cbb7ee-4c2c-4a2b-b989-99e75d0a1a7d\","
+},
+{
+"id": 10860,
+"es": "\"CorrelationID\": \"a0450835-b036-415a-837a-029d869eb531\""
+},
+{
+"id": 10861,
+"es": "        \"Request\": {"
+},
+{
+"id": 10862,
+"es": "            \"StartTime\": \"2025-12-10T00:00:00.000Z\","
+},
+{
+"id": 10863,
+"es": "            \"EndTime\": \"2025-12-12T00:00:00.000Z\","
+},
+{
+"id": 10864,
+"es": "            \"Option\": ["
+},
+{
+"id": 10865,
+"es": "                    \"name\": \"ReadingTypeGroup\","
+},
+{
+"id": 10866,
+"es": "                    \"value\": \"DAILY_BILLING_REGISTERS\""
+},
+{
+"id": 10867,
+"es": "            \"GetMeterReadings\": {"
+},
+{
+"id": 10868,
+"es": "                \"EndDevice\": ["
+},
+{
+"id": 10869,
+"es": "                        \"mRID\": \"PRBEQ0002US\""
+},
+{
+"id": 10870,
+"es": "                \"ReadingType\": ["
+},
+{
+"id": 10871,
+"es": "                        \"Names\": ["
+},
+{
+"id": 10872,
+"es": "                                \"name\": \"01.02.04.03\","
+},
+{
+"id": 10873,
+"es": "                                \"NameType\": {"
+},
+{
+"id": 10874,
+"es": "                                    \"name\": \"readingType\""
+},
+{
+"id": 10875,
+"es": "                                \"name\": \"01.02.02.03\","
+},
+{
+"id": 10876,
+"es": "                                \"name\": \"01.02.03.03\","
+},
+{
+"id": 10877,
+"es": "                                \"name\": \"01.02.01.03\","
+},
+{
+"id": 10878,
+"es": "<p:ReplyAddress>MDM.METER_READING_REPLY</p:ReplyAddress>"
+},
+{
+"id": 10879,
+"es": "        <Noun>MeterReadings</Noun>"
+},
+{
+"id": 10880,
+"es": "        <Timestamp>2025-12-12T15:17:50.372140Z</Timestamp>"
+},
+{
+"id": 10881,
+"es": "        <ReplyAddress>MDM.METER_READING_REPLY</ReplyAddress>"
+},
+{
+"id": 10882,
+"es": "        <CorrelationID>a0450835-b036-415a-837a-029d869eb531</CorrelationID>"
+},
+{
+"id": 10883,
+"es": "        <ns5:MeterReadings>"
+},
+{
+"id": 10884,
+"es": "            <ns4:reading>true</ns4:reading>"
+},
+{
+"id": 10885,
+"es": "            <ns4:profile>false</ns4:profile>"
+},
+{
+"id": 10886,
+"es": "            <ns4:powerQuality>false</ns4:powerQuality>"
+},
+{
+"id": 10887,
+"es": "            <ns4:dateRange>"
+},
+{
+"id": 10888,
+"es": "                <ns4:start>2025-12-10T00:00:00Z</ns4:start>"
+},
+{
+"id": 10889,
+"es": "                <ns4:end>2025-12-12T00:00:00Z</ns4:end>"
+},
+{
+"id": 10890,
+"es": "            </ns4:dateRange>"
+},
+{
+"id": 10891,
+"es": "        </ns5:MeterReadings>"
+},
+{
+"id": 10892,
+"es": "        <Timestamp>2025-12-12T15:37:39.998469Z</Timestamp>"
+},
+{
+"id": 10893,
+"es": "<CorrelationID>9a83b6e9-9a70-486e-944f-c0d4e940a7a5</CorrelationID>"
+},
+{
+"id": 10894,
+"es": "            <ns4:currentRead>false</ns4:currentRead>"
+},
+{
+"id": 10895,
+"es": "Cola: MDM. MDM.METER_READING_REPLY"
+},
+{
+"id": 10896,
+"es": "<ResponseMessage xmlns=\"http://www.iec.ch/TC57/2008/schema/message\" xmlns:ns1=\"http://iec.ch/TC57/2009/MeterReadings#\">"
+},
+{
+"id": 10897,
+"es": "        <ns1:MeterReadings>"
+},
+{
+"id": 10898,
+"es": "            <ns1:MeterReading>"
+},
+{
+"id": 10899,
+"es": "                <ns1:MeterAsset>"
+},
+{
+"id": 10900,
+"es": "                    <ns1:mRID>ECTPRBEQ0002US</ns1:mRID>"
+},
+{
+"id": 10901,
+"es": "                </ns1:MeterAsset>"
+},
+{
+"id": 10902,
+"es": "                <ns1:Readings>"
+},
+{
+"id": 10903,
+"es": "                    <ns1:timeStamp>2025-12-11T08:00:00Z</ns1:timeStamp>"
+},
+{
+"id": 10904,
+"es": "                    <ns1:value>2233.5</ns1:value>"
+},
+{
+"id": 10905,
+"es": "                    <ns1:ReadingType ref=\"0.0.0.1.1.1.12.0.0.0.0.0.0.0.0.0.72.0\"/>"
+},
+{
+"id": 10906,
+"es": "                    <ns1:ReadingQualities>"
+},
+{
+"id": 10907,
+"es": "                        <ns1:quality>1.0.0</ns1:quality>"
+},
+{
+"id": 10908,
+"es": "                    </ns1:ReadingQualities>"
+},
+{
+"id": 10909,
+"es": "                </ns1:Readings>"
+},
+{
+"id": 10910,
+"es": "            </ns1:MeterReading>"
+},
+{
+"id": 10911,
+"es": "        </ns1:MeterReadings>"
+},
+{
+"id": 10912,
+"es": "                    <ns1:mRID>ECTPRBEQ0001US</ns1:mRID>"
+},
+{
+"id": 10913,
+"es": "                    <ns1:timeStamp>2025-12-11T05:00:00Z</ns1:timeStamp>"
+},
+{
+"id": 10914,
+"es": "                    <ns1:value>39.0</ns1:value>"
+},
+{
+"id": 10915,
+"es": "                    <ns1:ReadingType ref=\"0.26.0.1.1.1.12.0.0.0.0.0.0.0.224.0.72.0\"/>"
+},
+{
+"id": 10916,
+"es": "En este caso la respuesta lleva dos mensajes: "
+},
+{
+"id": 10917,
+"es": "El OK al comando y "
+},
+{
+"id": 10918,
+"es": "La ingesta de la medida"
+},
+{
+"id": 10919,
+"es": "Tópico de ingesta de medida"
+},
+{
+"id": 10920,
+"es": "unity_suite-oum_mdc_ingestion-profile "
+},
+{
+"id": 10921,
+"es": "Ejemplo del mensaje de respuesta OK al comando en Kafka"
+},
+{
+"id": 10922,
+"es": "            \"Noun\": \"MeterReadings\","
+},
+{
+"id": 10923,
+"es": "\"MessageID\": \"eff70e02-9097-4159-b14b-57e5b7d85ef6\","
+},
+{
+"id": 10924,
+"es": "            \"CorrelationID\": \"a0450835-b036-415a-837a-029d869eb531\""
+},
+{
+"id": 10925,
+"es": "Ejemplo del mensaje de respuesta con las medidas en Kafka"
+},
+{
+"id": 10926,
+"es": "                            \"type\": \"CLOSE\""
+},
+{
+"id": 10927,
+"es": "                            \"startTime\": \"2025-12-10T00:00:00.000Z\","
+},
+{
+"id": 10928,
+"es": "                            \"endTime\": \"2025-12-11T00:00:00.000Z\","
+},
+{
+"id": 10929,
+"es": "\"message\": {"
+},
+{
+"id": 10930,
+"es": "            \"id\": \"70827c5d-49e0-45e6-9b96-9723ac8492cd\","
+},
+{
+"id": 10931,
+"es": "            \"correlationId\": \"3b79b19f-db6a-4e97-aefa-3ada040bfe11\","
+},
+{
+"id": 10932,
+"es": "\"dateTime\": \"2025-12-12T15:47:40.376Z\","
+},
+{
+"id": 10933,
+"es": "            \"payload\": \"PROFILE\""
+},
+{
+"id": 10934,
+"es": "            \"version\": \"1.0\""
+},
+{
+"id": 10935,
+"es": "Easy Metering"
+},
+{
+"id": 10936,
+"es": "El sistema EasyMetering se comunica con el exterior mediante el intercambio de ficheros a través de un sistema de ficheros (FS), por lo que el componente easymetering_ms de la solución OUM MDM hará las funciones de recepción de ficheros, transformación de la información y comunicación con el núcleo de la solución OUM MDM."
+},
+{
+"id": 10937,
+"es": "Como norma general, una vez finalizado el procesamiento de un fichero se renombrará y se moverá a la carpeta destinada a la historificación o backup de ficheros. "
+},
+{
+"id": 10938,
+"es": "Se proponen los siguientes valores:"
+},
+{
+"id": 10939,
+"es": "Prefijo de procesamiento: exec"
+},
+{
+"id": 10940,
+"es": "Directorio de historificación: Procesados"
+},
+{
+"id": 10941,
+"es": "Nota: estos valores son configurables y, por lo tanto, susceptibles de modificación."
+},
+{
+"id": 10942,
+"es": "Del mismo modo, al finalizar el procesamiento de un fichero, el sistema HES añade una última línea con el resultado de la operación, de la siguiente forma:"
+},
+{
+"id": 10943,
+"es": "status#details"
+},
+{
+"id": 10944,
+"es": "Status: OK o NOK"
+},
+{
+"id": 10945,
+"es": "Details: detalle de la operación"
+},
+{
+"id": 10946,
+"es": "A continuación, se detallan las operaciones expuestas por la solución OUM MDM y las tareas llevadas a cabo por el componente easymetering_ms."
+},
+{
+"id": 10947,
+"es": "No es posible llevar a cabo esta integración de forma automatizada porque el sistema HES no proporciona información sobre los medidores en tiempo de ejecución."
+},
+{
+"id": 10948,
+"es": "Recepción"
+},
+{
+"id": 10949,
+"es": "Para llevar a cabo esta acción el microservicio específico para la comunicación con el sistema HES tendrá programada la lectura de ficheros específicos de un sistema FS a intervalos regulares, estableciéndose para ello una configuración fija predeterminada."
+},
+{
+"id": 10950,
+"es": "Definición del formato de fichero de registros (Energy Readings):"
+},
+{
+"id": 10951,
+"es": "El nombre del archivo se compone de la siguiente forma: (serialmedidor_ENER_fecha_hora.txt)."
+},
+{
+"id": 10952,
+"es": "El contenido del fichero es texto plano, multilínea, con los siguientes campos:"
+},
+{
+"id": 10953,
+"es": "Fecha Hora"
+},
+{
+"id": 10954,
+"es": "Magnitud1|Valor1"
+},
+{
+"id": 10955,
+"es": "Magnitud2|Valor2"
+},
+{
+"id": 10956,
+"es": "Definición del formato de fichero de medidas (Load Profile):"
+},
+{
+"id": 10957,
+"es": "El nombre del archivo se compone de la siguiente forma: (serialmedidor_SETx_fecha_hora.txt):"
+},
+{
+"id": 10958,
+"es": "Donde x indica un conjunto diferente de magnitudes."
+},
+{
+"id": 10959,
+"es": "El fichero es un CSV al uso, con una cabecera y una línea por cada conjunto de valores."
+},
+{
+"id": 10960,
+"es": "La cabecera tiene el siguiente formato:"
+},
+{
+"id": 10961,
+"es": "DATE;TIME;Magnitud1;Status1;Magnitud2;Status2;…"
+},
+{
+"id": 10962,
+"es": "Ejemplos de ficheros"
+},
+{
+"id": 10963,
+"es": "Tipo: Energy Readings"
+},
+{
+"id": 10964,
+"es": "Nombre: 10009587_ENER_01062025_110132.txt"
+},
+{
+"id": 10965,
+"es": "Mapeo (OM MDM = EASYMETERING):"
+},
+{
+"id": 10966,
+"es": "IMPORT_ACTIVE_ENERGY = Delivered Bulk Energy kWh "
+},
+{
+"id": 10967,
+"es": "EXPORT_ACTIVE_ENERGY = Received Bulk Energy kWh"
+},
+{
+"id": 10968,
+"es": "IMPORT_REACTIVE_ENERGY = Delivered Bulk Reactive Energy kVArh "
+},
+{
+"id": 10969,
+"es": "EXPORT_REACTIVE_ENERGY = Received Bulk Reactive Energy kVArh "
+},
+{
+"id": 10970,
+"es": "Contenido:"
+},
+{
+"id": 10971,
+"es": "Delivered Bulk Energy kWh|28382.3887"
+},
+{
+"id": 10972,
+"es": "Received Bulk Energy kWh|0"
+},
+{
+"id": 10973,
+"es": "kWh (Q1+Q4)+(Q2+Q3) F + H (read)|28382.3887"
+},
+{
+"id": 10974,
+"es": "kWh (Q1+Q4)-(Q2+Q3) F + H (read)|28382.3887"
+},
+{
+"id": 10975,
+"es": "Phasor Apparent kVAh, F + H (read)|30141.1973"
+},
+{
+"id": 10976,
+"es": "No definida|0"
+},
+{
+"id": 10977,
+"es": "Tipo: Load Profile"
+},
+{
+"id": 10978,
+"es": "Nombre: 10009587_SET1_01062025_020139.txt"
+},
+{
+"id": 10979,
+"es": "EXPORT_ACTIVE_ENERGY = kWh Total Del Only Fund + Harmonics – Sum"
+},
+{
+"id": 10980,
+"es": "IMPORT_ACTIVE_ENERGY = kWh Total Rcvd Only Fund + Harmonics – Sum"
+},
+{
+"id": 10981,
+"es": "IMPORT_REACTIVE_ENERGY = kvarh Total Lag Only Fund + Harmonics – Sum"
+},
+{
+"id": 10982,
+"es": "EXPORT_REACTIVE_ENERGY = kvarh Total Lead Only Fund + Harmonics – Sum"
+},
+{
+"id": 10983,
+"es": "DATE;TIME;kWh Q1 F + H (LP);Status1;kWh Q3 F + H (LP);Status2;Phasor Apparent kVAh, F + H (LP);Status3;Voltage Average Line A to Neutral Fund + Harmonics;Status4;Ave. VB F + H;Status5;Ave. VC F + H;Status6"
+},
+{
+"id": 10984,
+"es": "El mensaje original en formato texto se transforma a formato JSON para su envío a la plataforma Kafka para su procesamiento. "
+},
+{
+"id": 10985,
+"es": "easy_metering-oum_mdc_ingestion-profile"
+},
+{
+"id": 10986,
+"es": "easy_metering-oum_mdc_ingestion-profile_error (para indicar errores de formato del mensaje)"
+},
+{
+"id": 10987,
+"es": "easy_metering-oum_mdc_ingestion-profile_reply (para indicar el resultado de la ingesta)"
+},
+{
+"id": 10988,
+"es": "No se generará respuesta de confirmación (ACK) porque el sistema emisor de la información no espera dicha comunicación."
+},
+{
+"id": 10989,
+"es": "Ejemplo de fichero transformado:"
+},
+{
+"id": 10990,
+"es": "  \"header\": {"
+},
+{
+"id": 10991,
+"es": "    \"message\": {"
+},
+{
+"id": 10992,
+"es": "      \"id\": \"87f0433b-e509-4360-9f25-5b45a49b7105\","
+},
+{
+"id": 10993,
+"es": "      \"correlationId\": \"6e3eeb4d-e500-4323-878c-57516e41e664\","
+},
+{
+"id": 10994,
+"es": "\"dateTime\": \"2025-12-19T16:01:30.071Z\","
+},
+{
+"id": 10995,
+"es": "      \"payload\": \"PROFILE\""
+},
+{
+"id": 10996,
+"es": "    \"source\": {"
+},
+{
+"id": 10997,
+"es": "      \"id\": \"EASY_METERING\","
+},
+{
+"id": 10998,
+"es": "      \"version\": \"1.0\""
+},
+{
+"id": 10999,
+"es": "    \"target\": {"
+},
+{
+"id": 11000,
+"es": "      \"id\": \"MDM\","
+},
+{
+"id": 11001,
+"es": "  \"payload\": ["
+},
+{
+"id": 11002,
+"es": "      \"element\": {"
+},
+{
+"id": 11003,
+"es": "        \"type\": \"MP_CODE\","
+},
+{
+"id": 11004,
+"es": "        \"value\": \"ECTPRBPM0001EM\""
+},
+{
+"id": 11005,
+"es": "      \"dataSets\": ["
+},
+{
+"id": 11006,
+"es": "          \"measurementType\": \"MEASURE\","
+},
+{
+"id": 11007,
+"es": "          \"magnitudes\": ["
+},
+{
+"id": 11008,
+"es": "              \"code\": \"IMPORT_ACTIVE_ENERGY\""
+},
+{
+"id": 11009,
+"es": "              \"code\": \"EXPORT_REACTIVE_ENERGY\""
+},
+{
+"id": 11010,
+"es": "              \"code\": \"EXPORT_ACTIVE_ENERGY\""
+},
+{
+"id": 11011,
+"es": "              \"code\": \"IMPORT_REACTIVE_ENERGY\""
+},
+{
+"id": 11012,
+"es": "          \"interval\": {"
+},
+{
+"id": 11013,
+"es": "            \"length\": 15,"
+},
+{
+"id": 11014,
+"es": "            \"units\": \"MIN15\""
+},
+{
+"id": 11015,
+"es": "          \"data\": ["
+},
+{
+"id": 11016,
+"es": "              \"endTime\": \"2025-12-18T00:00:00.000Z\","
+},
+{
+"id": 11017,
+"es": "              \"values\": ["
+},
+{
+"id": 11018,
+"es": "Definición del formato del fichero:"
+},
+{
+"id": 11019,
+"es": "El nombre del archivo que representan las lecturas de eventos se compone de la siguiente forma: (serialmedidor_ELOG_fecha_hora)."
+},
+{
+"id": 11020,
+"es": "[línea en blanco]"
+},
+{
+"id": 11021,
+"es": "Evento1|CodigoEvento1"
+},
+{
+"id": 11022,
+"es": "Evento2|CodigoEvento2"
+},
+{
+"id": 11023,
+"es": "Ejemplo de fichero"
+},
+{
+"id": 11024,
+"es": "Nombre: 10009587_ELOG_01092025_093303.txt"
+},
+{
+"id": 11025,
+"es": "Sequencia Evento | 82"
+},
+{
+"id": 11026,
+"es": "Código evento | 48"
+},
+{
+"id": 11027,
+"es": "Evento | Meter cover removal"
+},
+{
+"id": 11028,
+"es": "Standar/Manufacture | M"
+},
+{
+"id": 11029,
+"es": "User Id | 001"
+},
+{
+"id": 11030,
+"es": "easy_metering-oum_mdc_ingestion-event"
+},
+{
+"id": 11031,
+"es": "easy_metering-oum_mdc_ingestion-event_error (para indicar errores de formato del mensaje)"
+},
+{
+"id": 11032,
+"es": "easy_metering-oum_mdc_ingestion-event_reply (para indicar el resultado de la ingesta)"
+},
+{
+"id": 11033,
+"es": "      \"events\": ["
+},
+{
+"id": 11034,
+"es": "          \"eventCode\": \"2.26.1.216\","
+},
+{
+"id": 11035,
+"es": "          \"timestamp\": \"2025-12-01T00:10:00.000Z\","
+},
+{
+"id": 11036,
+"es": "          \"detail\": ["
+},
+{
+"id": 11037,
+"es": "              \"name\": \"information\","
+},
+{
+"id": 11038,
+"es": "              \"value\": \"Power Restore\""
+},
+{
+"id": 11039,
+"es": "              \"name\": \"quality\","
+},
+{
+"id": 11040,
+"es": "              \"value\": \"0\""
+},
+{
+"id": 11041,
+"es": "          \"dst\": \"NO\""
+},
+{
+"id": 11042,
+"es": "      \"id\": \"c6adf9e7-3d07-4ebc-a384-ceb81d1e14cb\","
+},
+{
+"id": 11043,
+"es": "      \"correlationId\": \"7617a9ba-d467-4208-b745-6a7de6b1b943\","
+},
+{
+"id": 11044,
+"es": "\"dateTime\": \"2025-12-19T16:08:06.367Z\","
+},
+{
+"id": 11045,
+"es": "      \"payload\": \"EVENT\""
+},
+{
+"id": 11046,
+"es": "El microservicio leerá del tópico de la plataforma Kafka el comando a enviar al sistema HES. "
+},
+{
+"id": 11047,
+"es": "easy_metering-oum_mdc_command-request "
+},
+{
+"id": 11048,
+"es": "easy_metering-oum_mdc_command-request-ack"
+},
+{
+"id": 11049,
+"es": "Se transformará el mensaje JSON original de la petición al mensaje en formato CSV."
+},
+{
+"id": 11050,
+"es": "El nombre del archivo se compone de la siguiente forma: (serialmedidor_OPERACIÓN_fecha_hora_correlationId.ezm), donde:"
+},
+{
+"id": 11051,
+"es": "OPERACIÓN: [MEASURES]"
+},
+{
+"id": 11052,
+"es": "El archivo debe contener los siguiente"
+},
+{
+"id": 11053,
+"es": "Formato (serialmedidor;fechaejecucion;comando;usuario)"
+},
+{
+"id": 11054,
+"es": "Serial del medidor"
+},
+{
+"id": 11055,
+"es": "Fecha en la que se ejecuta"
+},
+{
+"id": 11056,
+"es": "Comando: [Medidas]"
+},
+{
+"id": 11057,
+"es": "Usuario (Nombre de usuario responsable del requerimiento)"
+},
+{
+"id": 11058,
+"es": "Separación de las columnas provisional “;”"
+},
+{
+"id": 11059,
+"es": "Procesado el comando el archivo cambiara de nombre con el inicio “exec” quedando de la siguiente manera (exec_serialmedidor_OPERACIÓN_fecha_hora_ correlationId.ezm), en una carpeta backup."
+},
+{
+"id": 11060,
+"es": "La respuesta del comando será añadida en la segunda fila."
+},
+{
+"id": 11061,
+"es": "Una vez subido el fichero al sistema FS el microservicio simulará el ACK hacia el sistema emisor (command-request-ack) siendo enviado a la plataforma Kafka."
+},
+{
+"id": 11062,
+"es": "Del mismo modo se simulará la respuesta hacia el sistema emisor (command-reply) y se enviará por la plataforma Kafka para su procesamiento."
+},
+{
+"id": 11063,
+"es": "El resultado de esta operación es la generación de un fichero de medidas que será procesado por el mecanismo descrito en el apartado "
+},
+{
+"id": 11064,
+"es": "Recepción de lectura"
+},
+{
+"id": 11065,
+"es": "OPERACIÓN: [CORT|RECO|RESET]"
+},
+{
+"id": 11066,
+"es": "El Archivo debe contener los siguiente"
+},
+{
+"id": 11067,
+"es": "Comando: [Corte|Reconexión|Reset]"
+},
+{
+"id": 11068,
+"es": "Procesado el comando el archivo cambiara de nombre con el inicio “exec” quedando de la siguiente manera (exec_serialmedidor_OPERACIÓN_fecha_hora_correlationId.ezm), en una carpeta backup."
+},
+{
+"id": 11069,
+"es": "Además, existirá una programación configurada para la recuperación de las respuestas generadas por el sistema HES, a partir de la cual, se generará la respuesta hacia el sistema emisor (command-reply) y se enviará por la plataforma Kafka para su procesamiento."
+},
+{
+"id": 11070,
+"es": "Ejemplo de secuencia para el comando reconexión"
+},
+{
+"id": 11071,
+"es": "  \"RequestMessage\": {"
+},
+{
+"id": 11072,
+"es": "    \"Header\": {"
+},
+{
+"id": 11073,
+"es": "      \"Verb\": \"create\","
+},
+{
+"id": 11074,
+"es": "      \"Noun\": \"EndDeviceControls\","
+},
+{
+"id": 11075,
+"es": "      \"Revision\": \"1.0\","
+},
+{
+"id": 11076,
+"es": "      \"Timestamp\": \"2025-12-19T17:13:50.055Z\","
+},
+{
+"id": 11077,
+"es": "      \"Source\": \"MDM\","
+},
+{
+"id": 11078,
+"es": "      \"Target\": \"EASY_METERING\","
+},
+{
+"id": 11079,
+"es": "      \"AsyncReplyFlag\": true,"
+},
+{
+"id": 11080,
+"es": "      \"AckRequired\": true,"
+},
+{
+"id": 11081,
+"es": "      \"Property\": ["
+},
+{
+"id": 11082,
+"es": "          \"Name\": \"StartTime\","
+},
+{
+"id": 11083,
+"es": "          \"Value\": \"2025-12-19T17:13:50.056Z\""
+},
+{
+"id": 11084,
+"es": "          \"Name\": \"ExpireTime\","
+},
+{
+"id": 11085,
+"es": "          \"Value\": \"2025-12-19T23:13:50.056Z\""
+},
+{
+"id": 11086,
+"es": "          \"Name\": \"RetryTimes\","
+},
+{
+"id": 11087,
+"es": "          \"Value\": \"5\""
+},
+{
+"id": 11088,
+"es": "          \"Name\": \"RetryInterval\","
+},
+{
+"id": 11089,
+"es": "          \"Value\": \"30\""
+},
+{
+"id": 11090,
+"es": "          \"Name\": \"Priority\","
+},
+{
+"id": 11091,
+"es": "          \"Value\": \"1\""
+},
+{
+"id": 11092,
+"es": "      \"MessageID\": \"76901efc-1451-4ec6-ac55-98113d2221b2\","
+},
+{
+"id": 11093,
+"es": "\"CorrelationID\": \"243dc380-b18f-4770-a59d-49159eda0a1a\""
+},
+{
+"id": 11094,
+"es": "    \"Payload\": {"
+},
+{
+"id": 11095,
+"es": "      \"EndDeviceControls\": {"
+},
+{
+"id": 11096,
+"es": "        \"EndDeviceControl\": {"
+},
+{
+"id": 11097,
+"es": "          \"EndDeviceControlType\": \"30.01.01.01\","
+},
+{
+"id": 11098,
+"es": "          \"EndDevices\": ["
+},
+{
+"id": 11099,
+"es": "              \"mRID\": \"PRBEQ0001EM\""
+},
+{
+"id": 11100,
+"es": "Solicitud de reconexión desde OUM"
+},
+{
+"id": 11101,
+"es": "Solicitud del comando hacia el HES"
+},
+{
+"id": 11102,
+"es": "Nombre: PRBEQ0001EM_RECO_20251912_1713_8cc98a47-3d4a-4926-9b5d-d730d644e286.ezm"
+},
+{
+"id": 11103,
+"es": "PRBEQ0001EM;2025-19-12T17:13:50;Reconexión;user"
+},
+{
+"id": 11104,
+"es": "Respuesta del HES"
+},
+{
+"id": 11105,
+"es": "Nombre: exec_PRBEQ0001EM_RECO_20251912_1713_8cc98a47-3d4a-4926-9b5d-d730d644e286.ezm"
+},
+{
+"id": 11106,
+"es": "Respuesta hacia OUM"
+},
+{
+"id": 11107,
+"es": "  \"ResponseMessage\": {"
+},
+{
+"id": 11108,
+"es": "      \"Verb\": \"reply\","
+},
+{
+"id": 11109,
+"es": "      \"Source\": \"EASY_METERING\","
+},
+{
+"id": 11110,
+"es": "      \"Target\": \"MDM\","
+},
+{
+"id": 11111,
+"es": "      \"MessageID\": \"4170f666-f7c2-46cc-96b7-00ed026ac596\","
+},
+{
+"id": 11112,
+"es": "    \"Reply\": {"
+},
+{
+"id": 11113,
+"es": "      \"Result\": \"OK\","
+},
+{
+"id": 11114,
+"es": "      \"Error\": ["
+},
+{
+"id": 11115,
+"es": "          \"code\": \"0.0\","
+},
+{
+"id": 11116,
+"es": "          \"level\": \"INFORM\","
+},
+{
+"id": 11117,
+"es": "          \"reason\": \"INFORM\""
+},
+{
+"id": 11118,
+"es": "Prime Read"
+},
+{
+"id": 11119,
+"es": "integración con este sistema HES se llevará a cabo mediante consultas programadas a la base de datos utilizada por este sistema, cuyas características son:"
+},
+{
+"id": 11120,
+"es": "Motor de base de datos: SQL Server"
+},
+{
+"id": 11121,
+"es": "Esquema principal: dbo"
+},
+{
+"id": 11122,
+"es": "Base de datos: PRIME"
+},
+{
+"id": 11123,
+"es": "Cantidad total de tablas: 462"
+},
+{
+"id": 11124,
+"es": "El alta de nuevos equipos se llevará a cabo mediante una consulta sobre la vista correspondiente:"
+},
+{
+"id": 11125,
+"es": "SELECT "
+},
+{
+"id": 11126,
+"es": "    di.NOINS, "
+},
+{
+"id": 11127,
+"es": "    di.DESCRIPTION, "
+},
+{
+"id": 11128,
+"es": "    di.SERIALNO, "
+},
+{
+"id": 11129,
+"es": "    di.INSTALLATION_DATE, "
+},
+{
+"id": 11130,
+"es": "    di.IDCLIENT, "
+},
+{
+"id": 11131,
+"es": "    di.DEVICE_MODEL, "
+},
+{
+"id": 11132,
+"es": "    di.IS_BACKUP, "
+},
+{
+"id": 11133,
+"es": "    di.GPS_LAT,"
+},
+{
+"id": 11134,
+"es": "    di.GPS_LONG, "
+},
+{
+"id": 11135,
+"es": "    s.IDSOCKET,"
+},
+{
+"id": 11136,
+"es": "    s.INSERTED_DATETIME"
+},
+{
+"id": 11137,
+"es": "FROM VGetDeviceInfo di"
+},
+{
+"id": 11138,
+"es": "LEFT JOIN SOCKETS s on di.IDSOCKET = s.IDSOCKET "
+},
+{
+"id": 11139,
+"es": "WHERE status = 'Active' "
+},
+{
+"id": 11140,
+"es": "AND s.INSERTED_DATETIME >= ? AND s.INSERTED_DATETIME <= ?"
+},
+{
+"id": 11141,
+"es": "Consulta tipo:"
+},
+{
+"id": 11142,
+"es": "Esta consulta se llevará a cabo diariamente de forma programada, para poder así tener el inventario de la solución OM MDM nivelado con el gestionado por el sistema HES."
+},
+{
+"id": 11143,
+"es": "Ejecución: todos los días a las 2:00 de la mañana."
+},
+{
+"id": 11144,
+"es": "Con esta programación sólo se recuperarán los equipos cuya fecha de instalación se corresponda con el día anterior."
+},
+{
+"id": 11145,
+"es": "Existe un proceso alternativo de autodescubrimiento de equipos, al recibir medidas (MEASURE) de un equipo previamente inexistente en OM MDM, dicho equipo se dará de alta en OM MDM con la misma información y campos que en el proceso mencionado en el punto anterior “Alta nuevo equipo”."
+},
+{
+"id": 11146,
+"es": "La información extraída de la base de datos se transformará a formato JSON para su envío al endpoint REST expuesto por el núcleo de la solución OM MDM."
+},
+{
+"id": 11147,
+"es": "La respuesta ACK recibida desde la solución OM MDM será obviada porque no tiene relevancia en este proceso de alta."
+},
+{
+"id": 11148,
+"es": "Para llevar a cabo esta acción el microservicio hará una consulta sobre la vista correspondiente para recuperar los datos:"
+},
+{
+"id": 11149,
+"es": "Consulta tipo para medidas (ReadMass):"
+},
+{
+"id": 11150,
+"es": "    r.IDCLIENT, "
+},
+{
+"id": 11151,
+"es": "    r.NOINS, "
+},
+{
+"id": 11152,
+"es": "    r.NOINTERVALS, "
+},
+{
+"id": 11153,
+"es": "    r.READVAL, "
+},
+{
+"id": 11154,
+"es": "    r.DATEX, "
+},
+{
+"id": 11155,
+"es": "    r.DST_FLAG, "
+},
+{
+"id": 11156,
+"es": "    r.ID_TIME / r.NOINTERVALS as PERIOD, "
+},
+{
+"id": 11157,
+"es": "    r.IDVAR "
+},
+{
+"id": 11158,
+"es": "FROM READMASS r "
+},
+{
+"id": 11159,
+"es": "WHERE r.DATEX = ? and r.NOINTERVALS = 15 and r.IDVAR in (códigos_magnitudes_reconocidas) "
+},
+{
+"id": 11160,
+"es": "ORDER BY r.NOINS, r.DATETIME"
+},
+{
+"id": 11161,
+"es": "Ejecución: todos los días a las 3:00 de la mañana."
+},
+{
+"id": 11162,
+"es": "Con esta programación sólo se recuperarán las medidas del día anterior."
+},
+{
+"id": 11163,
+"es": "Las magnitudes reconocidas son:"
+},
+{
+"id": 11164,
+"es": "ENERGIA_ACTIVA_INYECTADA = Export Active Energy"
+},
+{
+"id": 11165,
+"es": "Actaris: WhR"
+},
+{
+"id": 11166,
+"es": "Landis: kWhR "
+},
+{
+"id": 11167,
+"es": "ION: KWh rec int "
+},
+{
+"id": 11168,
+"es": "ION: kWh exp int"
+},
+{
+"id": 11169,
+"es": "ENERGIA_ACTIVA_CONSUMIDA = Import Active Energy"
+},
+{
+"id": 11170,
+"es": "Actaris: WhD "
+},
+{
+"id": 11171,
+"es": "Landis: kWhD "
+},
+{
+"id": 11172,
+"es": "ION: KWh del int"
+},
+{
+"id": 11173,
+"es": "ION:   kWh imp int"
+},
+{
+"id": 11174,
+"es": "ENERGIA_REACTIVA_INYECTADA = Export Rective Energy"
+},
+{
+"id": 11175,
+"es": "Actaris: VarhR "
+},
+{
+"id": 11176,
+"es": "Landis: kVarhR "
+},
+{
+"id": 11177,
+"es": "ION: KVARh rec int "
+},
+{
+"id": 11178,
+"es": "ION: KVARh exp int"
+},
+{
+"id": 11179,
+"es": "ENERGIA_REACTIVA_CONSUMIDA = Import Rective Energy"
+},
+{
+"id": 11180,
+"es": "Actaris: VarhD "
+},
+{
+"id": 11181,
+"es": "Landis: kVarhD "
+},
+{
+"id": 11182,
+"es": "ION: KVARh del int "
+},
+{
+"id": 11183,
+"es": "ION: KVARh imp int "
+},
+{
+"id": 11184,
+"es": "Ejemplo de consulta a la BBDD"
+},
+{
+"id": 11185,
+"es": "La información extraída de la base de datos se transformará a formato JSON para su envío a la plataforma Kafka para su procesamiento. "
+},
+{
+"id": 11186,
+"es": "prime_read-oum_mdc_ingestion-profile"
+},
+{
+"id": 11187,
+"es": "prime_read-oum_mdc_ingestion-profile_error (para indicar errores de formato del mensaje)"
+},
+{
+"id": 11188,
+"es": "prime_read-oum_mdc_ingestion-profile_reply (para indicar el resultado de la ingesta)"
+},
+{
+"id": 11189,
+"es": "Ejemplo del mensaje en Kafka"
+},
+{
+"id": 11190,
+"es": "      \"id\": \"d0838588-e6a1-42aa-a51a-ce6004c16d5b\","
+},
+{
+"id": 11191,
+"es": "      \"correlationId\": \"fcf20832-c124-4b27-861f-70c6207caa2a\","
+},
+{
+"id": 11192,
+"es": "      \"dateTime\": \"2025-12-16T12:19:53.679Z\","
+},
+{
+"id": 11193,
+"es": "      \"id\": \"PRIME_READ\","
+},
+{
+"id": 11194,
+"es": "        \"value\": \"ECTPRBPM1000PR\""
+},
+{
+"id": 11195,
+"es": "              \"endTime\": \"2025-12-14T00:00:00.000Z\","
+},
+{
+"id": 11196,
+"es": "                  null, null, null, null, null,"
+},
+{
+"id": 11197,
+"es": "                  null, 34500.0"
+},
+{
+"id": 11198,
+"es": "                  null,"
+},
+{
+"id": 11199,
+"es": "Este sistema HES no permite el envío de eventos y alarmas."
+},
+{
+"id": 11200,
+"es": "Este sistema HES no permite el envío de peticiones."
+},
+{
+"id": 11201,
+"es": "Este sistema HES no permite el envío de comandos."
+},
+{
+"id": 11202,
+"es": "Dashboards vProducto"
+},
+{
+"id": 11203,
+"es": "Dashboard Calidad de medidas – ÓPTIMAS (VEE)"
+},
+{
+"id": 11204,
+"es": "Objetivo funcional"
+},
+{
+"id": 11205,
+"es": "El dashboard Calidad de Medidas Óptimas tiene como objetivo proporcionar una visión consolidada del estado de calidad de las medidas óptimas almacenadas en el MDM tras la ejecución de los procesos de Validación, Estimación y Edición (VEE) aplicados sobre dichas medidas."
+},
+{
+"id": 11206,
+"es": "La funcionalidad permitirá visualizar, para cada día del intervalo temporal seleccionado y segmentado por tipo de perfil, el número absoluto y el porcentaje de Puntos de Medida (PM) clasificados según el resultado obtenido tras la ejecución de las Validaciones de Óptimo."
+},
+{
+"id": 11207,
+"es": "El dashboard deberá facilitar la identificación y análisis de las siguientes situaciones operativas:"
+},
+{
+"id": 11208,
+"es": "PM Validadas: Puntos de Medida cuyas medidas o curvas óptimas han superado satisfactoriamente las validaciones de óptimo aplicables."
+},
+{
+"id": 11209,
+"es": "PM No Validables: Puntos de Medida cuyas medidas óptimas han sido clasificadas como no validables debido a la configuración funcional de las magnitudes o a restricciones definidas en la Clase de Configuración. Un mismo PM podrá contener simultáneamente medidas válidas y medidas no validables."
+},
+{
+"id": 11210,
+"es": "PM Con Error: Puntos de Medida que contienen medidas óptimas inválidas como consecuencia del incumplimiento de alguna de las reglas de validación de negocio aplicables."
+},
+{
+"id": 11211,
+"es": "PM Sin Ejecución de Validaciones: Puntos de Medida para los cuales no se ha ejecutado ningún proceso de validación de óptimo durante el intervalo analizado."
+},
+{
+"id": 11212,
+"es": "A diferencia del dashboard Calidad de Medidas ORIGEN, cuyo objetivo es supervisar la correcta recepción e ingesta de medidas, este dashboard se centra en la evaluación de la calidad final del dato óptimo utilizado por los procesos operativos y regulatorios de la organización."
+},
+{
+"id": 11213,
+"es": "La información presentada deberá servir de soporte para los siguientes procesos de negocio:"
+},
+{
+"id": 11214,
+"es": "Balance energético."
+},
+{
+"id": 11215,
+"es": "Facturación."
+},
+{
+"id": 11216,
+"es": "Liquidaciones."
+},
+{
+"id": 11217,
+"es": "Reporting regulatorio."
+},
+{
+"id": 11218,
+"es": "Analítica avanzada y explotación de datos."
+},
+{
+"id": 11219,
+"es": "El ámbito de análisis incluirá todos los Puntos de Medida inventariados en el sistema que dispongan de medidas óptimas asociadas al periodo seleccionado."
+},
+{
+"id": 11220,
+"es": "Diseño Funcional de la Interfaz"
+},
+{
+"id": 11221,
+"es": "La interfaz funcional del dashboard deberá mantener los mismos principios de navegación, usabilidad y representación visual definidos para el dashboard Calidad de Medidas ORIGEN, con el objetivo de garantizar una experiencia homogénea para los usuarios de operación."
+},
+{
+"id": 11222,
+"es": "La solución estará compuesta por los siguientes elementos:"
+},
+{
+"id": 11223,
+"es": "Panel de filtros de consulta."
+},
+{
+"id": 11224,
+"es": "Panel gráfico de evolución diaria."
+},
+{
+"id": 11225,
+"es": "Panel gráfico consolidado del periodo."
+},
+{
+"id": 11226,
+"es": "Tabla de resultados detallados."
+},
+{
+"id": 11227,
+"es": "Acciones operativas disponibles sobre los resultados obtenidos."
+},
+{
+"id": 11228,
+"es": "Navegación al detalle de mediciones."
+},
+{
+"id": 11229,
+"es": "Ventanas emergentes de confirmación para la ejecución de acciones."
+},
+{
+"id": 11230,
+"es": "Ilustración "
+},
+{
+"id": 11231,
+"es": ".- Vista Dashboard Calidad de Medidas ÓPTIMAS – Pestaña Medidas."
+},
+{
+"id": 11232,
+"es": "Especificación Funcional"
+},
+{
+"id": 11233,
+"es": "Parámetros de Consulta y Criterios de Filtrado"
+},
+{
+"id": 11234,
+"es": ".- Vista de Criterios de Filtrado."
+},
+{
+"id": 11235,
+"es": "El dashboard deberá permitir la configuración de los siguientes filtros de consulta."
+},
+{
+"id": 11236,
+"es": "Intervalo de fechas."
+},
+{
+"id": 11237,
+"es": "Parámetro obligatorio."
+},
+{
+"id": 11238,
+"es": "Valor por defecto: últimos siete días."
+},
+{
+"id": 11239,
+"es": "El usuario podrá seleccionar libremente cualquier intervalo comprendido entre uno y siete días."
+},
+{
+"id": 11240,
+"es": "Puntos de Medida aplicables"
+},
+{
+"id": 11241,
+"es": "Valor por defecto: totalidad del inventario."
+},
+{
+"id": 11242,
+"es": "Opciones disponibles:"
+},
+{
+"id": 11243,
+"es": "Todo el inventario."
+},
+{
+"id": 11244,
+"es": "Grupos de Puntos de Medida previamente definidos."
+},
+{
+"id": 11245,
+"es": "PM agrupados por tarifa."
+},
+{
+"id": 11246,
+"es": "PM asociados a equipos telemedidos."
+},
+{
+"id": 11247,
+"es": "Otros grupos parametrizados en el sistema."
+},
+{
+"id": 11248,
+"es": "Valor por defecto: todos los tipos de perfil."
+},
+{
+"id": 11249,
+"es": "Valores permitidos:"
+},
+{
+"id": 11250,
+"es": "Perfil de carga."
+},
+{
+"id": 11251,
+"es": "Perfil de carga absoluta."
+},
+{
+"id": 11252,
+"es": "Medidas de cierre."
+},
+{
+"id": 11253,
+"es": "Tipo de origen"
+},
+{
+"id": 11254,
+"es": "Valor por defecto: todos los orígenes."
+},
+{
+"id": 11255,
+"es": "Se permitirá la selección múltiple entre los siguientes tipos de origen:"
+},
+{
+"id": 11256,
+"es": "Orígenes de captura"
+},
+{
+"id": 11257,
+"es": "Telemetría OUM."
+},
+{
+"id": 11258,
+"es": "HES."
+},
+{
+"id": 11259,
+"es": "Ficheros."
+},
+{
+"id": 11260,
+"es": "Orígenes estimados"
+},
+{
+"id": 11261,
+"es": "Orígenes calculados"
+},
+{
+"id": 11262,
+"es": "Tipo de validación"
+},
+{
+"id": 11263,
+"es": "Parámetro opcional."
+},
+{
+"id": 11264,
+"es": "Si no se especifica ningún valor se considerarán todas las validaciones aplicables."
+},
+{
+"id": 11265,
+"es": "Validaciones aplicables a medidas de cierre"
+},
+{
+"id": 11266,
+"es": "Incremental BTV."
+},
+{
+"id": 11267,
+"es": "Optimal Overlap."
+},
+{
+"id": 11268,
+"es": "Source Comparison."
+},
+{
+"id": 11269,
+"es": "Time of Use."
+},
+{
+"id": 11270,
+"es": "Validaciones aplicables a perfiles de carga"
+},
+{
+"id": 11271,
+"es": "Time Change"
+},
+{
+"id": 11272,
+"es": " Check."
+},
+{
+"id": 11273,
+"es": "Zero Value."
+},
+{
+"id": 11274,
+"es": "Real Source."
+},
+{
+"id": 11275,
+"es": "Load Profile Limits."
+},
+{
+"id": 11276,
+"es": "Gaps."
+},
+{
+"id": 11277,
+"es": "Tipo de periodo"
+},
+{
+"id": 11278,
+"es": "Si no se especifica ningún valor se considerarán todos los periodos disponibles."
+},
+{
+"id": 11279,
+"es": "Mensual."
+},
+{
+"id": 11280,
+"es": "Diario."
+},
+{
+"id": 11281,
+"es": "Horario."
+},
+{
+"id": 11282,
+"es": "30 minutos."
+},
+{
+"id": 11283,
+"es": "15 minutos."
+},
+{
+"id": 11284,
+"es": "Las preferencias de configuración seleccionadas deberán persistirse a nivel de usuario y recuperarse automáticamente en futuras sesiones."
+},
+{
+"id": 11285,
+"es": "Reglas de Clasificación de Resultados"
+},
+{
+"id": 11286,
+"es": "Los Puntos de Medida deberán clasificarse en función del resultado final obtenido tras la ejecución de las Validaciones de Óptimo."
+},
+{
+"id": 11287,
+"es": "PM Validadas. Puntos de Medida cuyas medidas o curvas óptimas han superado correctamente todas las validaciones aplicables."
+},
+{
+"id": 11288,
+"es": "PM No Validables. Puntos de Medida cuyas medidas óptimas han sido clasificadas como no validables debido a restricciones funcionales o de configuración."
+},
+{
+"id": 11289,
+"es": "PM Con Error. Puntos de Medida que contienen una o más medidas óptimas inválidas como resultado del incumplimiento de reglas de validación de negocio."
+},
+{
+"id": 11290,
+"es": "La existencia de al menos una medida inválida será suficiente para clasificar el PM dentro de esta categoría."
+},
+{
+"id": 11291,
+"es": "PM Sin Ejecución de Validaciones. Puntos de Medida para los que no existe ninguna ejecución de validaciones de óptimo en el intervalo temporal consultado. Esta situación se producirá cuando el PM no haya sido incluido en ningún proceso de validación durante el periodo analizado."
+},
+{
+"id": 11292,
+"es": "Comportamiento Funcional de la Visualización"
+},
+{
+"id": 11293,
+"es": "La información deberá mostrarse mediante dos paneles gráficos complementarios."
+},
+{
+"id": 11294,
+"es": "Panel de Evolución Diaria"
+},
+{
+"id": 11295,
+"es": "Mostrará el resultado de las validaciones para cada uno de los días comprendidos dentro del intervalo seleccionado."
+},
+{
+"id": 11296,
+"es": "La representación se realizará mediante gráficos de barras segmentados por tipo de perfil."
+},
+{
+"id": 11297,
+"es": "Cada barra reflejará el resultado final de las Validaciones de Óptimo para una combinación específica de fecha y perfil."
+},
+{
+"id": 11298,
+"es": ".- Vista de Panel Evolución Diaria."
+},
+{
+"id": 11299,
+"es": "Panel Consolidado del Periodo"
+},
+{
+"id": 11300,
+"es": "Mostrará el resultado agregado de las validaciones para el conjunto del intervalo analizado."
+},
+{
+"id": 11301,
+"es": "Cuando la consulta corresponda a un único día, los resultados mostrados en el panel diario y en el panel consolidado serán equivalentes."
+},
+{
+"id": 11302,
+"es": ".- Vista de Panel Agregado."
+},
+{
+"id": 11303,
+"es": "Comportamiento dinámico"
+},
+{
+"id": 11304,
+"es": "Las categorías visualizadas deberán responder dinámicamente a la selección realizada por el usuario en la leyenda."
+},
+{
+"id": 11305,
+"es": "Al posicionar el cursor sobre cualquier segmento gráfico, el sistema deberá mostrar:"
+},
+{
+"id": 11306,
+"es": "Número total de PM incluidos en la categoría."
+},
+{
+"id": 11307,
+"es": "Porcentaje respecto al total de PM considerados en la consulta."
+},
+{
+"id": 11308,
+"es": "La actualización de los gráficos deberá realizarse automáticamente tras cualquier modificación de los filtros."
+},
+{
+"id": 11309,
+"es": "Consulta Detallada de Puntos de Medida"
+},
+{
+"id": 11310,
+"es": "El dashboard deberá proporcionar una tabla de resultados que permita consultar el detalle de los Puntos de Medida obtenidos tras la ejecución de la consulta."
+},
+{
+"id": 11311,
+"es": ".- Vista Tabular de Detalle de Puntos de Medida."
+},
+{
+"id": 11312,
+"es": "La tabla deberá permitir:"
+},
+{
+"id": 11313,
+"es": "Ordenación de columnas."
+},
+{
+"id": 11314,
+"es": "Filtrado por columnas."
+},
+{
+"id": 11315,
+"es": "Selección individual de registros."
+},
+{
+"id": 11316,
+"es": "Selección múltiple de registros."
+},
+{
+"id": 11317,
+"es": "Selección masiva mediante casilla de cabecera."
+},
+{
+"id": 11318,
+"es": "Exportación de resultados."
+},
+{
+"id": 11319,
+"es": "Acciones Operativas Disponibles"
+},
+{
+"id": 11320,
+"es": "Las acciones disponibles deberán habilitarse dinámicamente en función del resultado de la consulta, de la selección realizada por el usuario y de las reglas funcionales definidas para cada operación."
+},
+{
+"id": 11321,
+"es": "Exportación de Resultados"
+},
+{
+"id": 11322,
+"es": "La funcionalidad permitirá exportar el listado de Puntos de Medida resultante de la consulta. La exportación podrá realizarse sobre:"
+},
+{
+"id": 11323,
+"es": "Todos los registros obtenidos."
+},
+{
+"id": 11324,
+"es": "Un subconjunto de registros seleccionados por el usuario."
+},
+{
+"id": 11325,
+"es": "La información exportada deberá respetar íntegramente los filtros activos de la consulta."
+},
+{
+"id": 11326,
+"es": ".- Vista Funcionalidad Acción Exportar."
+},
+{
+"id": 11327,
+"es": "Creación de Ejecuciones de Validación"
+},
+{
+"id": 11328,
+"es": "A diferencia del dashboard de Calidad de Medidas ORIGEN, este dashboard no permitirá la creación directa de órdenes de telemetría."
+},
+{
+"id": 11329,
+"es": "Dado que las medidas ya se encuentran almacenadas en el sistema y han superado el proceso de ingesta, las incidencias detectadas pueden estar originadas por reglas de negocio, configuraciones funcionales o inconsistencias en los datos utilizados por las validaciones."
+},
+{
+"id": 11330,
+"es": "En consecuencia, la acción operativa asociada a este dashboard consistirá en la ejecución controlada de procesos de revalidación sobre las medidas existentes."
+},
+{
+"id": 11331,
+"es": "La funcionalidad estará orientada a:"
+},
+{
+"id": 11332,
+"es": "Reprocesar medidas tras modificaciones en las reglas de validación."
+},
+{
+"id": 11333,
+"es": "Reprocesar medidas tras cambios en la Clase de Configuración."
+},
+{
+"id": 11334,
+"es": "Aplicar modificaciones contractuales o regulatorias."
+},
+{
+"id": 11335,
+"es": "Aplicar correcciones de datos maestros."
+},
+{
+"id": 11336,
+"es": "Verificar si una incidencia persiste tras una modificación funcional."
+},
+{
+"id": 11337,
+"es": "Revalidar conjuntos específicos de PM dentro del intervalo consultado."
+},
+{
+"id": 11338,
+"es": "Alcance de ejecución"
+},
+{
+"id": 11339,
+"es": "La ejecución podrá realizarse sobre:"
+},
+{
+"id": 11340,
+"es": "Todos los PM resultantes de la consulta."
+},
+{
+"id": 11341,
+"es": "Un subconjunto de PM seleccionados por el usuario."
+},
+{
+"id": 11342,
+"es": "En ningún caso será posible incluir PM que no formen parte del conjunto resultante de la consulta activa."
+},
+{
+"id": 11343,
+"es": "Comportamiento funcional"
+},
+{
+"id": 11344,
+"es": "El sistema deberá lanzar una nueva ejecución de Validaciones de Óptimo utilizando los mismos parámetros definidos en la consulta origen."
+},
+{
+"id": 11345,
+"es": "Si el filtro Tipo de Validación no ha sido informado, se ejecutarán todas las validaciones aplicables al tipo de perfil seleccionado."
+},
+{
+"id": 11346,
+"es": "El sistema deberá:"
+},
+{
+"id": 11347,
+"es": "Habilitar únicamente validaciones compatibles con el perfil seleccionado."
+},
+{
+"id": 11348,
+"es": "Impedir la ejecución cruzada de validaciones de cierre sobre perfiles de carga."
+},
+{
+"id": 11349,
+"es": "Impedir la ejecución de validaciones de perfil sobre medidas de cierre."
+},
+{
+"id": 11350,
+"es": "Mantener el intervalo temporal original de la consulta."
+},
+{
+"id": 11351,
+"es": "Impedir ampliaciones o modificaciones manuales del alcance."
+},
+{
+"id": 11352,
+"es": "La ejecución generada deberá registrarse con la siguiente nomenclatura:"
+},
+{
+"id": 11353,
+"es": "YYYY-MM-DD HH:MM:SS + VEE + NombrePetición"
+},
+{
+"id": 11354,
+"es": "Creación de Incidencias Operativas"
+},
+{
+"id": 11355,
+"es": "La funcionalidad permitirá generar incidencias asociadas a los PM seleccionados desde el dashboard."
+},
+{
+"id": 11356,
+"es": "Su utilización estará orientada a:"
+},
+{
+"id": 11357,
+"es": "Investigación de incidencias detectadas en las Validaciones de Óptimo."
+},
+{
+"id": 11358,
+"es": "Revisión de configuraciones funcionales."
+},
+{
+"id": 11359,
+"es": "Revisión de reglas BTV."
+},
+{
+"id": 11360,
+"es": "Validación de parametrizaciones de Clases de Configuración."
+},
+{
+"id": 11361,
+"es": "Escalado a equipos técnicos o funcionales."
+},
+{
+"id": 11362,
+"es": "Gestión de incidencias recurrentes."
+},
+{
+"id": 11363,
+"es": "La incidencia generada deberá:"
+},
+{
+"id": 11364,
+"es": "Mantener trazabilidad con la consulta origen."
+},
+{
+"id": 11365,
+"es": "Permitir definir prioridad."
+},
+{
+"id": 11366,
+"es": "Permitir asignar responsable."
+},
+{
+"id": 11367,
+"es": "Permitir registrar observaciones."
+},
+{
+"id": 11368,
+"es": "Permitir anexar el listado de PM exportado desde la consulta."
+},
+{
+"id": 11369,
+"es": "Asimismo, la incidencia deberá permanecer asociada a los PM afectados hasta su resolución."
+},
+{
+"id": 11370,
+"es": "Navegación al Detalle de Medidas Óptimas"
+},
+{
+"id": 11371,
+"es": "La funcionalidad permitirá acceder al detalle de las medidas del PM seleccionado preservando el contexto completo de análisis."
+},
+{
+"id": 11372,
+"es": "La navegación deberá precargar automáticamente:"
+},
+{
+"id": 11373,
+"es": "Punto de Medida seleccionado."
+},
+{
+"id": 11374,
+"es": "Tipo de origen."
+},
+{
+"id": 11375,
+"es": "Intervalo temporal consultado."
+},
+{
+"id": 11376,
+"es": "Tipo de perfil."
+},
+{
+"id": 11377,
+"es": "Categoría de resultado seleccionada."
+},
+{
+"id": 11378,
+"es": "Conjunto de validaciones filtradas, cuando aplique."
+},
+{
+"id": 11379,
+"es": "La navegación deberá mantener la coherencia funcional entre el dashboard y la consulta detallada de medidas, preservando todos los filtros aplicados y permitiendo la apertura de una nueva pestaña de trabajo para facilitar el análisis operativo."
+},
+{
+"id": 11380,
+"es": "Dashboard Calidad de medidas - ESTIMADAS-CALCULADAS"
+},
+{
+"id": 11381,
+"es": "Mostrar el número y el porcentaje de Puntos de Medida (PM), por día y por tipo de perfil (dentro del intervalo seleccionado), clasificados según el estado de disponibilidad de medidas estimadas o calculadas cuando existen huecos o inconsistencias "
+},
+{
+"id": 11382,
+"es": "en las medidas optimas"
+},
+{
+"id": 11383,
+"es": ". El propósito de este dashboard es proporcionar una visión operativa sobre:"
+},
+{
+"id": 11384,
+"es": "El grado de completitud de las medidas disponibles en el sistema."
+},
+{
+"id": 11385,
+"es": "El nivel de dependencia de procesos de estimación o cálculo para completar los datos."
+},
+{
+"id": 11386,
+"es": "La identificación de Puntos de Medida con huecos de información que requieren tratamiento."
+},
+{
+"id": 11387,
+"es": "Este dashboard permite analizar la calidad del dato desde el punto de vista de su integridad temporal, identificando:"
+},
+{
+"id": 11388,
+"es": "Puntos de Medida con datos completos sin necesidad de estimaciones."
+},
+{
+"id": 11389,
+"es": "Puntos cuya información se ha completado mediante estimaciones o cálculos."
+},
+{
+"id": 11390,
+"es": "Puntos que todavía presentan huecos de medida donde pueden ejecutarse procesos de estimación o cálculo para reconstruir los datos faltantes."
+},
+{
+"id": 11391,
+"es": "A diferencia de los dashboards anteriores:"
+},
+{
+"id": 11392,
+"es": "Calidad de medidas ORIGEN"
+},
+{
+"id": 11393,
+"es": " analiza la recepción e ingesta de datos."
+},
+{
+"id": 11394,
+"es": "Calidad de medidas ÓPTIMAS (VEE)"
+},
+{
+"id": 11395,
+"es": " analiza la calidad final tras validaciones."
+},
+{
+"id": 11396,
+"es": "El presente dashboard se centra en la completitud del dato, permitiendo ejecutar mecanismos de reconstrucción mediante estimaciones o cálculos."
+},
+{
+"id": 11397,
+"es": "Se considera el universo completo de Puntos de Medida inventariados en el sistema dentro del intervalo seleccionado."
+},
+{
+"id": 11398,
+"es": "Vista gráfica (esquemática provisional)"
+},
+{
+"id": 11399,
+"es": "El formato gráfico será equivalente al definido en los apartados 4.1 y 4.2, manteniendo coherencia visual y de navegación."
+},
+{
+"id": 11400,
+"es": ".- Vista general del dashboard de “Calidad de medidas ESTIMADAS-CALCULADAS”"
+},
+{
+"id": 11401,
+"es": ".- Vista detalle con lista de puntos de medida que cumplen las condiciones cliqueadas “PMs con algún hueco”"
+},
+{
+"id": 11402,
+"es": ".- Vista detalle con lista de puntos de medida que cumplen las condiciones cliqueadas “PMs sin huecos y con alguna Estimación / Cálculo”"
+},
+{
+"id": 11403,
+"es": "Detalles"
+},
+{
+"id": 11404,
+"es": "Parámetros de entrada (filtros)"
+},
+{
+"id": 11405,
+"es": "Datos de entrada y parámetros configurables por el usuario"
+},
+{
+"id": 11406,
+"es": " (filtros de entrada):"
+},
+{
+"id": 11407,
+"es": "Intervalo de fechas (obligatorio)"
+},
+{
+"id": 11408,
+"es": "Valor por defecto:"
+},
+{
+"id": 11409,
+"es": " últimos 7 días."
+},
+{
+"id": 11410,
+"es": "Opciones configurables"
+},
+{
+"id": 11411,
+"es": "Selección de intervalos desde 1 día hasta un máximo de 7 días."
+},
+{
+"id": 11412,
+"es": "Puntos de Medida aplicables (obligatorio)"
+},
+{
+"id": 11413,
+"es": " todo el inventario."
+},
+{
+"id": 11414,
+"es": "Todo el inventario"
+},
+{
+"id": 11415,
+"es": "Selección de grupos de Puntos de Medida previamente definidos en el sistema, por ejemplo:"
+},
+{
+"id": 11416,
+"es": "PM por tipo de tarifa configurada;"
+},
+{
+"id": 11417,
+"es": "PM con equipos telemedidos;"
+},
+{
+"id": 11418,
+"es": "Otros grupos parametrizados."
+},
+{
+"id": 11419,
+"es": "Tipo de perfil (obligatorio)"
+},
+{
+"id": 11420,
+"es": " todos los tipos de perfil."
+},
+{
+"id": 11421,
+"es": "Tipo de PERIODO"
+},
+{
+"id": 11422,
+"es": "(obligatorio)"
+},
+{
+"id": 11423,
+"es": " todos los periodos."
+},
+{
+"id": 11424,
+"es": "Opciones configurables (selección múltiple). "
+},
+{
+"id": 11425,
+"es": "30 min."
+},
+{
+"id": 11426,
+"es": "15 min."
+},
+{
+"id": 11427,
+"es": "Tipo de ESTIMACIÓN / CÁLCULO"
+},
+{
+"id": 11428,
+"es": "(opcional)"
+},
+{
+"id": 11429,
+"es": " En caso de no ser usado (como opcional), todas las Estimaciones y Cálculos."
+},
+{
+"id": 11430,
+"es": "Table of Contents – "
+},
+{
+"id": 11431,
+"es": "Onesait Metering - Base de Conocimiento – Onesait Metering - Base de Conocimiento"
+}
+]

@@ -1,0 +1,3042 @@
+[
+{
+"id": 1754,
+"es": "“Clase de Configuración”"
+},
+{
+"id": 1755,
+"es": ", para que ésta sea asociada después al Punto de Medida."
+},
+{
+"id": 1756,
+"es": "Validaciones Iniciales (Val. Iniciales) o de Origen"
+},
+{
+"id": 1757,
+"es": " son el conjunto de validaciones que, bien de forma individual o tras reunirse en una Plantilla de Validación, se añaden a la "
+},
+{
+"id": 1758,
+"es": ", y certifican automáticamente cualquier medida de origen cuando ésta se carga en el sistema."
+},
+{
+"id": 1759,
+"es": "Dentro de Validaciones Iniciales, cada validación posee dos campos a seleccionar/rellenar que aparecen en la sub-pestaña y se explican a continuación:"
+},
+{
+"id": 1760,
+"es": "Parámetros de la validación:"
+},
+{
+"id": 1761,
+"es": " sobre las que aplicar la validación: sólo se ejecutarán las validaciones sobre las magnitudes seleccionadas"
+},
+{
+"id": 1762,
+"es": "Parámetros propios"
+},
+{
+"id": 1763,
+"es": " de la validación, para aquellas validaciones que lo necesiten, el elemento de referencia con el que se comparará cada medida para ver si ésta resulta válida, inválida o descartada."
+},
+{
+"id": 1764,
+"es": "Al seleccionar una validación o una plantilla de validaciones, éstas se añaden a la clase de configuración con los valores por defecto parametrizados en cada Método de Validación, gestionado en la ventana "
+},
+{
+"id": 1765,
+"es": "Métodos de Validación. "
+},
+{
+"id": 1766,
+"es": "Estos valores se podrán modificar en la clase de configuración y serán los que se apliquen en los procesos de gestión de medida sobre el punto de medida."
+},
+{
+"id": 1767,
+"es": "Es importante tener en cuenta que las validaciones iniciales están relacionadas con el ranking de orígenes, ya que determinan el resultado de la validación y en caso de que éste no esté considerado dentro del patrón, la medida no podrá tenerse en cuenta para subir a óptimo."
+},
+{
+"id": 1768,
+"es": "Inicio / Gestión de Medidas / Validaciones / Plantillas"
+},
+{
+"id": 1769,
+"es": " El proceso de enlace entre ambas partes, llega precedido de unas acciones de creación de plantillas:"
+},
+{
+"id": 1770,
+"es": "Gestión de Medidas / Validaciones / Plantillas > Creación Plantilla de Validaciones de Origen"
+},
+{
+"id": 1771,
+"es": "Inventario / Clases de Configuración  > En Val. Iniciales, selección de la plantilla de interés."
+},
+{
+"id": 1772,
+"es": "Existen también las validaciones enfocadas a medidas de Óptimo (tanto a la medida como a la curva de medidas). Estas validaciones de óptimo poseen las mismas características que las que afectan a las medidas de origen, salvo que aplican únicamente a medidas o curvas óptimas y su ejecución es planificada o manual, no automática. Las validaciones se explican más a fondo en el módulo "
+},
+{
+"id": 1773,
+"es": "Las plantillas de validación de Óptimo se configuran de la misma manera que las Validaciones Iniciales, en la ventana "
+},
+{
+"id": 1774,
+"es": "Métodos de Validación"
+},
+{
+"id": 1775,
+"es": "En el alta o modificación de la "
+},
+{
+"id": 1776,
+"es": ", en Val. Óptimas se permite añadir Plantillas de Validaciones de Óptimo, o validaciones de óptimo de forma individual. Y, al igual que las validaciones iniciales, se añaden a la clase de configuración con los valores por defecto parametrizados en cada Método de Validación, permitiendo modificar los valores para adaptar el tratamiento deseado."
+},
+{
+"id": 1777,
+"es": "Cada validación posee dos características que vienen configuradas previamente en la ruta "
+},
+{
+"id": 1778,
+"es": "“Inicio / Gestión de Medidas / Validaciones / Plantillas”"
+},
+{
+"id": 1779,
+"es": " y que podrán ser modificadas en este apartado:"
+},
+{
+"id": 1780,
+"es": " de la validación, para aquellas validaciones que lo necesiten, el elemento de referencia con el que se comparará cada medida para ver si ésta resulta válida o inválida."
+},
+{
+"id": 1781,
+"es": "Parámetros de estrategia: "
+},
+{
+"id": 1782,
+"es": "en caso de que una validación no sea válida, se le puede asociar una estrategia para hacer frente a ese resultado negativo. La definición y una mayor explicación puede encontrarse en el sub-modulo de Estrategias."
+},
+{
+"id": 1783,
+"es": "Validaciones Óptimas"
+},
+{
+"id": 1784,
+"es": "Gestión de Medidas / Validaciones / Plantillas > Creación Plantilla de Validaciones Óptimas"
+},
+{
+"id": 1785,
+"es": "Inventario / Clases de Configuración > En Val. Óptimas, selección de la plantilla de interés."
+},
+{
+"id": 1786,
+"es": "Los eventos son datos recopilados y transmitidos por los equipos de campo que describen acciones, cambios o condiciones detectadas por estos dispositivos en tiempo real o diferido. Como, por ejemplo: fallo de conexión, pérdida de potencia, desbordamiento, fin de saldo en un equipo de prepago, etc. Sirven para "
+},
+{
+"id": 1787,
+"es": "monitorear, diagnosticar y controlar la red"
+},
+{
+"id": 1788,
+"es": " y permiten una gestión más eficiente. Se ingestan en el sistema como parte de la información recibida de los equipos."
+},
+{
+"id": 1789,
+"es": "Para permitir la automatización de acciones con la recepción de estos eventos, la clase de configuración permite configurar"
+},
+{
+"id": 1790,
+"es": " Tipos de Eventos"
+},
+{
+"id": 1791,
+"es": ", relacionándolos con una "
+},
+{
+"id": 1792,
+"es": "Estrategia de Acciones"
+},
+{
+"id": 1793,
+"es": ", previamente definida."
+},
+{
+"id": 1794,
+"es": "Actualmente, se han definido "
+},
+{
+"id": 1795,
+"es": "Estrategias "
+},
+{
+"id": 1796,
+"es": "relacionadas con la "
+},
+{
+"id": 1797,
+"es": "Gestión de Incidencias:"
+},
+{
+"id": 1798,
+"es": "Event Incident"
+},
+{
+"id": 1799,
+"es": "Al asociar esta estrategia a un Tipo de Evento, cuando el punto de medida recibe un evento del tipo, se ejecutan las acciones que permitirán crear una incidencia de origen Evento. Esta incidencia permitirá al operador hacer un seguimiento."
+},
+{
+"id": 1800,
+"es": "Event Incident Resolution"
+},
+{
+"id": 1801,
+"es": "Al asociar esta estrategia a un Tipo de Evento, que en este caso será indicativo de que el motivo que generaba una incidencia ha finalizado o se ha resuelto, se ejecutan las acciones que permitirán resolver una incidencia que se hubiera generado por el evento opuesto (relacionados en la gestión de"
+},
+{
+"id": 1802,
+"es": "Antes de abordar este punto es conveniente leer el punto Coeficientes Perfil que hace referencia a una unidad inferior al "
+},
+{
+"id": 1803,
+"es": "“Tipo Perfil”"
+},
+{
+"id": 1804,
+"es": " y sobre la que depende el mismo."
+},
+{
+"id": 1805,
+"es": "Una vez conocido el significado del "
+},
+{
+"id": 1806,
+"es": "“Coeficiente Perfil”"
+},
+{
+"id": 1807,
+"es": " y sabiendo que sólo existe uno por cada período y fecha (es decir, al año podrá haber hasta 24 p x 365 d = 8760 coeficientes Perfil) por cada "
+},
+{
+"id": 1808,
+"es": ", en este apartado se introduce el último concepto"
+},
+{
+"id": 1809,
+"es": "Se entiende por "
+},
+{
+"id": 1810,
+"es": " al elemento que congrega e interrelaciona todos los "
+},
+{
+"id": 1811,
+"es": "“Coeficientes Perfil”"
+},
+{
+"id": 1812,
+"es": ", dibujando una curva o perfilado de coeficientes Perfil"
+},
+{
+"id": 1813,
+"es": "que afecta a un Punto de Medida. Este perfil se utilizará en procesos de cálculo, estimaciones o previsiones (más información en el Módulo "
+},
+{
+"id": 1814,
+"es": "“Gestión de Medidas”)"
+},
+{
+"id": 1815,
+"es": ". Este método sigue el mismo proceso que el utilizado para la "
+},
+{
+"id": 1816,
+"es": "“Estructura tarifaria”"
+},
+{
+"id": 1817,
+"es": " es a su vez, una propiedad esencial de un "
+},
+{
+"id": 1818,
+"es": "“Punto de Medida”"
+},
+{
+"id": 1819,
+"es": ", y asociándolo al mismo dentro de la pantalla 4.2.1 Detalles de Puntos de Medida con la opción "
+},
+{
+"id": 1820,
+"es": "“crear/editar”"
+},
+{
+"id": 1821,
+"es": ", se consigue conectar los "
+},
+{
+"id": 1822,
+"es": " con el "
+},
+{
+"id": 1823,
+"es": ". Se busca siempre perfilar una curva que se asocie a un tipo de consumo/generación de energía para un cierto Punto de Medida, Cliente, etc. "
+},
+{
+"id": 1824,
+"es": "Los tipos de perfiles se caracterizan por su nombre y descripción, y llevan asociados los coeficientes de perfilado correspondientes que se utilizarán en procesos de cálculo, estimaciones o previsiones."
+},
+{
+"id": 1825,
+"es": "Dicho elemento existe para agilizar la conexión entre Puntos de Medida y Coeficientes Perfil, pensando en grandes volúmenes de datos, que varios Puntos de Medida comparten los mismos Coeficientes Perfil…"
+},
+{
+"id": 1826,
+"es": "Elementos que se relacionan y Proceso de conexión:"
+},
+{
+"id": 1827,
+"es": "Tabla 7: Relación Tipos Perfiles"
+},
+{
+"id": 1828,
+"es": "Coeficiente de perfil"
+},
+{
+"id": 1829,
+"es": "Tipo Perfil"
+},
+{
+"id": 1830,
+"es": "4.15 Tipos Perfiles"
+},
+{
+"id": 1831,
+"es": "2º Crear Coeficientes de Perfil (fecha, periodo y coeficiente) y asociarlos a un Tipo Perfil*"
+},
+{
+"id": 1832,
+"es": "4.20 Coeficientes Perfil"
+},
+{
+"id": 1833,
+"es": "3º Crear/Editar Punto de Medida y asociar a un Tipo Perfil*"
+},
+{
+"id": 1834,
+"es": "*Las acciones 2ª y 3ª se puede hacer en orden inverso, pero luego habría que completar el punto 2, por lo que es conveniente realizar los pasos como se indica. Dependiendo de la organización, cantidad de magnitudes y datos que se tenga, se recomienda hacerlo de una manera u otra."
+},
+{
+"id": 1835,
+"es": "La interfaz del presente apartado muestra, al igual que el resto, una primera parte de filtro con el campo "
+},
+{
+"id": 1836,
+"es": "“Nombre”"
+},
+{
+"id": 1837,
+"es": " y una serie de botones para buscar, crear, detalles, editar, exportar o eliminar. La segunda es una lista con todos los Tipo de Perfil incluidos en el sistema (columna nombre y descripción)."
+},
+{
+"id": 1838,
+"es": "Un coeficiente Perfil define para cada "
+},
+{
+"id": 1839,
+"es": ", día y período (Fraga horaria del día, por ejemplo: El periodo 1 (p1) sería la primera hora del día), un factor que se tendrá en cuenta a la hora perfilar una curva de demanda dentro de un rango de fechas seleccionado."
+},
+{
+"id": 1840,
+"es": "La unidad superior con la que se relaciona directamente es el "
+},
+{
+"id": 1841,
+"es": ", explicado en el punto Tipos Perfiles. El "
+},
+{
+"id": 1842,
+"es": "ipo"
+},
+{
+"id": 1843,
+"es": " Perfil”"
+},
+{
+"id": 1844,
+"es": " engloba tantos "
+},
+{
+"id": 1845,
+"es": " como períodos disponga el día correspondiente (entre 23 y 25 períodos). (más información en el Módulo "
+},
+{
+"id": 1846,
+"es": " Tabla 11: Relación Coeficientes Perfil"
+},
+{
+"id": 1847,
+"es": "Coeficiente Perfil"
+},
+{
+"id": 1848,
+"es": "4.21 Coeficientes Perfil"
+},
+{
+"id": 1849,
+"es": "La interfaz del presente apartado muestra, al igual que el resto, una primera parte de filtro con los campos "
+},
+{
+"id": 1850,
+"es": "“Fecha Desde”"
+},
+{
+"id": 1851,
+"es": "“Fecha Hasta”"
+},
+{
+"id": 1852,
+"es": ", y una serie de botones para buscar, crear, detalles, editar, exportar, cargar a través de fichero o eliminar. La segunda es una lista con todos los Coeficientes Perfil incluidos en el sistema con sus características correspondientes. Las columnas definen todos los componentes que conforman un "
+},
+{
+"id": 1853,
+"es": ", estos son:"
+},
+{
+"id": 1854,
+"es": "Tipo Perfil: "
+},
+{
+"id": 1855,
+"es": " del que depende el "
+},
+{
+"id": 1856,
+"es": "“coeficiente perfil”"
+},
+{
+"id": 1857,
+"es": "Antes de crear un coeficiente perfil es necesario haber creado un Tipo Perfil (ver cuadro de proceso más arriba)"
+},
+{
+"id": 1858,
+"es": "Magnitud: "
+},
+{
+"id": 1859,
+"es": "Magnitud sobre la que se aplicará el "
+},
+{
+"id": 1860,
+"es": "“Coeficiente perfil”"
+},
+{
+"id": 1861,
+"es": " a la hora de realizar las operaciones matemáticas"
+},
+{
+"id": 1862,
+"es": "Fecha: "
+},
+{
+"id": 1863,
+"es": "año, mes y hora sobre la que afectará el "
+},
+{
+"id": 1864,
+"es": "Período: "
+},
+{
+"id": 1865,
+"es": "período sobre el que afectará el "
+},
+{
+"id": 1866,
+"es": "Coeficiente: "
+},
+{
+"id": 1867,
+"es": "valor del coeficiente"
+},
+{
+"id": 1868,
+"es": "Crear coeficiente de perfil:"
+},
+{
+"id": 1869,
+"es": "Los tipos de Instalación clasifican la entidad Instalaciones en función de sus características. El Tipo de instalación es obligatorio al dar de alta dicha entidad, y es su atributo más importante. El sistema permite definir tantos tipos de instalación como sean necesarios para representar la red energética del cliente. Dependiendo del negocio del mismo, el sistema dispondrá de unos tipos u otros (transformador, planta generadora nuclear, centro de transformación, depósito, etc.)."
+},
+{
+"id": 1870,
+"es": "Los tipos de instalación se definen a partir de una imagen y un conjunto de propiedades específicas. Por defecto el sistema cuenta con unos Tipos de Instalaciones predefinidos, pero estos pueden ser ampliados en cada uno de los proyectos."
+},
+{
+"id": 1871,
+"es": "En esta ventana se muestran, para los diferentes tipos de instalación de la aplicación:"
+},
+{
+"id": 1872,
+"es": ": Nombre del tipo de Instalación"
+},
+{
+"id": 1873,
+"es": ": Descripción del tipo de instalación"
+},
+{
+"id": 1874,
+"es": "Tipo de servicio"
+},
+{
+"id": 1875,
+"es": ": Utility sobre la que está definida la instalación: Agua, electricidad o Gas"
+},
+{
+"id": 1876,
+"es": "Icono"
+},
+{
+"id": 1877,
+"es": ": Imagen identificativa del tipo de instalación, que permite su representación en el mapa de red."
+},
+{
+"id": 1878,
+"es": "Accediendo a la pantalla de detalle del tipo de instalación (doble click o botón “Detalle”), se puede consultar, además de la información anterior: "
+},
+{
+"id": 1879,
+"es": ": Parámetros de configuración del tipo de instalación. Los tipos de instalación  presentan para cada una de las propiedades, un valor por defecto, si bien a nivel de instalación es posible modificarlo."
+},
+{
+"id": 1880,
+"es": "Esta sección ("
+},
+{
+"id": 1881,
+"es": "Conf. Est. Hist."
+},
+{
+"id": 1882,
+"es": ") sirve de base para realizar un tipo de Estimaciones, en concreto la de "
+},
+{
+"id": 1883,
+"es": "“Medidas Históricas”"
+},
+{
+"id": 1884,
+"es": ". Esta estimación se explica en el Módulo "
+},
+{
+"id": 1885,
+"es": "“Gestión de Medidas”"
+},
+{
+"id": 1886,
+"es": "Al aplicar este método es conveniente la diferenciación de días festivos y no festivos si la curva de carga es notablemente diferente unos días de otros. Si no hay diferencias significativas entre la curva de unos días y otros en función de la festividad, no es necesario tener un calendario para el correcto funcionamiento de la estimación. Este método se utiliza sobre aquellos puntos cuyo consumo siga el mismo patrón todos los días similares, como por ejemplo edificios de oficinas. "
+},
+{
+"id": 1887,
+"es": "La Tabla de búsqueda de históricos indicará en qué meses y en qué orden deben buscarse las medidas históricas mediante las que se estimará el valor de las medidas del hueco, en función de en qué mes se encuentre el hueco."
+},
+{
+"id": 1888,
+"es": "En la imagen se muestra la tabla donde:"
+},
+{
+"id": 1889,
+"es": "La primera columna indica el número de mes de la medida que se quiere estimar."
+},
+{
+"id": 1890,
+"es": "El resto de columnas indican los meses y años en los que se buscarán las medidas históricas que se usarán como referencia para la estimación, donde:"
+},
+{
+"id": 1891,
+"es": "c: Año en curso"
+},
+{
+"id": 1892,
+"es": "s: Año siguiente"
+},
+{
+"id": 1893,
+"es": "a: Año anterior"
+},
+{
+"id": 1894,
+"es": "Este método de estimación completa los huecos que todavía quedan en la curva y para cada una de las medidas que los forman busca medidas equivalentes entre medidas históricas del mismo punto."
+},
+{
+"id": 1895,
+"es": " El orden de búsqueda de estas medidas dentro de los históricos vendrá dado por una tabla predefinida en este punto y mostrada anteriormente, común para todos los puntos dados de alta en el sistema."
+},
+{
+"id": 1896,
+"es": "Detalle y Gestión de Tipo de Incidencia"
+},
+{
+"id": 1897,
+"es": "Alta"
+},
+{
+"id": 1898,
+"es": "Tipos de Incidencia Creados Inicialmente"
+},
+{
+"id": 1899,
+"es": "En esta pantalla se dan de alta y visualizan los Tipos de Incidencias. Como en el resto, al acceder se muestra el listado de todos los Tipos de Incidencia ya dados de alta en el sistema, pudiendo filtrar por Categoría, Subcategoría, Actuación y/o Severidad. Además, es en esta pantalla donde es posible realizar las siguientes acciones: "
+},
+{
+"id": 1900,
+"es": "Búsqueda"
+},
+{
+"id": 1901,
+"es": ": lanza la consulta para filtrar."
+},
+{
+"id": 1902,
+"es": ": define nuevo Tipo de Incidencia."
+},
+{
+"id": 1903,
+"es": ": permite consultar el detalle."
+},
+{
+"id": 1904,
+"es": ": permite modificar la configuración."
+},
+{
+"id": 1905,
+"es": ": exporta a los formatos definidos la lista de tipos de incidencia"
+},
+{
+"id": 1906,
+"es": ": elimina el tipo de incidencia si se cumplen las condiciones."
+},
+{
+"id": 1907,
+"es": "Nota:"
+},
+{
+"id": 1908,
+"es": " Las opciones de alta, modificación y borrado sólo se habilitan para usuarios con perfil de Administración"
+},
+{
+"id": 1909,
+"es": "Los Tipos de Incidencias vienen determinados principalmente por una Categoría y una Subcategoría. El resto de atributos por las que se pueden caracterizar se listan junto a su descripción en la siguiente tabla: "
+},
+{
+"id": 1910,
+"es": "Campo"
+},
+{
+"id": 1911,
+"es": "Valores"
+},
+{
+"id": 1912,
+"es": "Proceso origen que provoca la incidencia"
+},
+{
+"id": 1913,
+"es": "“Validación”"
+},
+{
+"id": 1914,
+"es": "“Evento”"
+},
+{
+"id": 1915,
+"es": "“Usuario”"
+},
+{
+"id": 1916,
+"es": "Subcategoría"
+},
+{
+"id": 1917,
+"es": "Subproceso"
+},
+{
+"id": 1918,
+"es": "“Validación”/Nula"
+},
+{
+"id": 1919,
+"es": "Tipo de Evento"
+},
+{
+"id": 1920,
+"es": "“Usuario”/Nula"
+},
+{
+"id": 1921,
+"es": "Actuación"
+},
+{
+"id": 1922,
+"es": "Determina el workflow, acciones y publicación"
+},
+{
+"id": 1923,
+"es": "Operador"
+},
+{
+"id": 1924,
+"es": "Elemento"
+},
+{
+"id": 1925,
+"es": "Campo informativo"
+},
+{
+"id": 1926,
+"es": "Equipo"
+},
+{
+"id": 1927,
+"es": "Apertura"
+},
+{
+"id": 1928,
+"es": "Clasificación"
+},
+{
+"id": 1929,
+"es": "Automática"
+},
+{
+"id": 1930,
+"es": "Vida Máxima"
+},
+{
+"id": 1931,
+"es": "Tiempo máximo de resolución"
+},
+{
+"id": 1932,
+"es": "“-1” o N días"
+},
+{
+"id": 1933,
+"es": "Severidad"
+},
+{
+"id": 1934,
+"es": "Gravedad de la incidencia"
+},
+{
+"id": 1935,
+"es": "Crítica, "
+},
+{
+"id": 1936,
+"es": "Alta, "
+},
+{
+"id": 1937,
+"es": "Moderada, "
+},
+{
+"id": 1938,
+"es": "Menor"
+},
+{
+"id": 1939,
+"es": "Bloqueo PM"
+},
+{
+"id": 1940,
+"es": "Activo bloquea el PM para el alta de nuevas incidencias de Actuación en Campo para el mismo PM, incluso en días posteriores. Nunca activo en incidencia operador."
+},
+{
+"id": 1941,
+"es": "La categoría “"
+},
+{
+"id": 1942,
+"es": "” y categoría “"
+},
+{
+"id": 1943,
+"es": "” están predefinidas y sólo se permite la definición de nuevos Tipos de Incidencia de categoría Evento para Tipos de Evento no existentes en otros Tipos de Incidencia ya definidos. Es decir, "
+},
+{
+"id": 1944,
+"es": "los Tipos de Eventos sólo podrán relacionarse con un único Tipo de Incidencia"
+},
+{
+"id": 1945,
+"es": "Al seleccionar la opción de Alta, se muestra una pantalla con los valores que definen el Tipo de Incidencia:"
+},
+{
+"id": 1946,
+"es": "Categoría:"
+},
+{
+"id": 1947,
+"es": "”, no modificable"
+},
+{
+"id": 1948,
+"es": "Subcategoría:"
+},
+{
+"id": 1949,
+"es": " Listado de tipos de Evento, no se permitirá el alta si ya existe otro tipo de incidencia con la misma subcategoría"
+},
+{
+"id": 1950,
+"es": "Actuación:"
+},
+{
+"id": 1951,
+"es": " Campo u Operador"
+},
+{
+"id": 1952,
+"es": "Elemento: "
+},
+{
+"id": 1953,
+"es": "Vida Máxima:"
+},
+{
+"id": 1954,
+"es": "Severidad:"
+},
+{
+"id": 1955,
+"es": "Crítica, Alta, Moderada o Menor"
+},
+{
+"id": 1956,
+"es": "Bloqueo PM:"
+},
+{
+"id": 1957,
+"es": " Check, con valor "
+},
+{
+"id": 1958,
+"es": "falso"
+},
+{
+"id": 1959,
+"es": " por defecto, y sólo habilitado si el valor de Actuación es "
+},
+{
+"id": 1960,
+"es": ". Cuando la actuación es "
+},
+{
+"id": 1961,
+"es": ", el valor de este flag será "
+},
+{
+"id": 1962,
+"es": " automáticamente."
+},
+{
+"id": 1963,
+"es": "Las acciones disponibles son:"
+},
+{
+"id": 1964,
+"es": "Guardar"
+},
+{
+"id": 1965,
+"es": "Cancelar"
+},
+{
+"id": 1966,
+"es": "Al seleccionar uno de los Tipos de Incidencias y entrar en el detalle, se mostrará una pantalla con los valores del Tipo de Incidencia seleccionado, sin la posibilidad de modificarlos:"
+},
+{
+"id": 1967,
+"es": ": Campo u Operador"
+},
+{
+"id": 1968,
+"es": ": Check"
+},
+{
+"id": 1969,
+"es": "Las únicas acciones disponibles serán:"
+},
+{
+"id": 1970,
+"es": "Cerrar: Para volver al listado."
+},
+{
+"id": 1971,
+"es": "Editar: Para ir a la pantalla de edición"
+},
+{
+"id": 1972,
+"es": "Al entrar en la pantalla de edición, ya sea desde la vista de detalle o desde el listado de Tipos de Incidencias se muestra una pantalla con los valores que permiten configurar el Tipo de Incidencia existente, no pudiendo modificar todos ellos:"
+},
+{
+"id": 1973,
+"es": "Campos no modificables:"
+},
+{
+"id": 1974,
+"es": "Modificables:"
+},
+{
+"id": 1975,
+"es": ": Misma lógica que en el alta."
+},
+{
+"id": 1976,
+"es": "Las acciones disponibles serán:"
+},
+{
+"id": 1977,
+"es": "Al seleccionar un tipo de incidencia y la opción Eliminar, el sistema muestra una ventana emergente solicitando la confirmación."
+},
+{
+"id": 1978,
+"es": "Una vez confirmada la acción por el usuario, el sistema comprobará las siguientes condiciones para permitir el borrado:"
+},
+{
+"id": 1979,
+"es": "No se permite eliminar los tipos de Incidencia “Validación” ni “Usuario”."
+},
+{
+"id": 1980,
+"es": "No se permite eliminar tipos de incidencias, cuando existen incidencias del tipo"
+},
+{
+"id": 1981,
+"es": "Solo si se cumplen, se realizará el borrado."
+},
+{
+"id": 1982,
+"es": "El sistema cuenta con los tipos de incidencia "
+},
+{
+"id": 1983,
+"es": "Usuario "
+},
+{
+"id": 1984,
+"es": "precargados, ya que no pueden ser creados de forma manual por sus características especiales."
+},
+{
+"id": 1985,
+"es": "Sin embargo, la configuración sí puede ser modificada."
+},
+{
+"id": 1986,
+"es": "También, se define un tipo de incidencia “"
+},
+{
+"id": 1987,
+"es": "Desconocido"
+},
+{
+"id": 1988,
+"es": "” que facilita la migración de las incidencias existentes en los proyectos. Se debe tener en cuenta que nunca se generarán incidencias de este tipo desde la aplicación."
+},
+{
+"id": 1989,
+"es": "Bloqueo"
+},
+{
+"id": 1990,
+"es": "PM"
+},
+{
+"id": 1991,
+"es": "  o Nulo"
+},
+{
+"id": 1992,
+"es": "Media"
+},
+{
+"id": 1993,
+"es": "NO"
+},
+{
+"id": 1994,
+"es": "“Usuario” o "
+},
+{
+"id": 1995,
+"es": " Baja"
+},
+{
+"id": 1996,
+"es": "“Desconocido”"
+},
+{
+"id": 1997,
+"es": "La estrategia es la definición de "
+},
+{
+"id": 1998,
+"es": "un plan o conjunto de acciones, que se lanzan como reacción a un suceso, tipo de evento recibido o ejecución de algún proceso (cálculo, estimación, etc...)."
+},
+{
+"id": 1999,
+"es": "Desde Datos Maestros las estrategias pueden ser creadas y editadas directamente por el usuario."
+},
+{
+"id": 2000,
+"es": "La pantalla muestra todas y cada una de las estrategias cargadas en el sistema, dando la opción de filtrar a través de un campo, crear, ver detalles, editar, exportar y/o eliminar."
+},
+{
+"id": 2001,
+"es": "Pueden tener asociadas tantas acciones como el usuario quiera, añadiéndose o quitándose desde la opción "
+},
+{
+"id": 2002,
+"es": "“crear” / “editar”"
+},
+{
+"id": 2003,
+"es": "Las estrategias pueden asociarse desde diversas funcionalidades del sistema."
+},
+{
+"id": 2004,
+"es": "Estrategias por recepción de Eventos"
+},
+{
+"id": 2005,
+"es": "Las estrategias disparadas por la recepción de tipos de eventos, se configuran desde las Clases de Configuración que se asociarán a los puntos de medida."
+},
+{
+"id": 2006,
+"es": "Entre otras, en el sistema se definen estrategias que invocan Acciones para la "
+},
+{
+"id": 2007,
+"es": "generación o resolución de Incidencias"
+},
+{
+"id": 2008,
+"es": "Event Default"
+},
+{
+"id": 2009,
+"es": " engloba las acciones relacionadas con la Gestión de Incidencias:"
+},
+{
+"id": 2010,
+"es": "Acción"
+},
+{
+"id": 2011,
+"es": "Estrategia Evento generado por Medidores o DCU"
+},
+{
+"id": 2012,
+"es": "Alta de Incidencia de Evento"
+},
+{
+"id": 2013,
+"es": "EVENT INCIDENT"
+},
+{
+"id": 2014,
+"es": "Estrategia Evento de Resolución"
+},
+{
+"id": 2015,
+"es": "Resuelve una incidencia generada por un evento antagonista"
+},
+{
+"id": 2016,
+"es": "INCIDENT RESOLUTION"
+},
+{
+"id": 2017,
+"es": "Cada proyecto debe configurar sus propias estrategias necesarias para desencadenar las acciones pertinentes para la creación de Incidencias, y publicación de éstas cuando corresponda."
+},
+{
+"id": 2018,
+"es": "(Continuar cuando se implante en producto)"
+},
+{
+"id": 2019,
+"es": "Acciones"
+},
+{
+"id": 2020,
+"es": "Acciones de Estrategia en el sistema"
+},
+{
+"id": 2021,
+"es": "Acciones "
+},
+{
+"id": 2022,
+"es": "Las Acciones de Estrategia definen el conjunto de actuaciones cargadas en el sistema que se ejecutarán como consecuencia de algún evento o proceso ejecutado. Está íntimamente relacionado con el módulo Estrategias, ya que en las Estrategias se define el plan con las Acciones a incluir."
+},
+{
+"id": 2023,
+"es": "La interfaz permite hacer un filtrado para buscar la acción que más se asocie a lo que estamos buscando. De la misma manera, permite ver los detalles de cada acción, siendo los mismos que aparecen en la lista de acciones:"
+},
+{
+"id": 2024,
+"es": "Nombre de Clase"
+},
+{
+"id": 2025,
+"es": "Para ligar el proceso a un punto de medida y después, en caso de darse la situación, ejecutar una estrategia con sus acciones, es necesario:"
+},
+{
+"id": 2026,
+"es": "Carga de la acción en el sistema - una acción debe implementarse"
+},
+{
+"id": 2027,
+"es": "Creación de una estrategia - puede ser creada por un usuario con los permisos necesarios"
+},
+{
+"id": 2028,
+"es": "Asociar una Estrategia"
+},
+{
+"id": 2029,
+"es": "Desde la Clase de Configuración, seleccionando Estrategias en los Eventos, y asociando la clase al Punto de Medida"
+},
+{
+"id": 2030,
+"es": "En la ejecución manual o planificada de procesos (Estimación, Cálculo), seleccionando Estrategia y Punto de Medida o Grupo de Puntos"
+},
+{
+"id": 2031,
+"es": "A partir de aquí, cuando se reciba el evento configurado o ejecute el proceso, la estrategia pondrá en marcha las acciones correspondientes."
+},
+{
+"id": 2032,
+"es": "(Completar tras el despliegue)"
+},
+{
+"id": 2033,
+"es": "En la siguiente tabla se detallan las Acciones de Estrategia a seguir en función del carácter del evento, es decir, si es un evento que genera un incidente, o que lo resuelve:"
+},
+{
+"id": 2034,
+"es": "Genera una incidencia de categoría Evento:"
+},
+{
+"id": 2035,
+"es": "Si el PM de medida estuviera bloqueado por incidencia previa con “Bloqueo PM” activo, no genera nueva incidencia, pero incrementa contador de ocurrencias de la incidencia bloqueadora si coincide el tipo de evento "
+},
+{
+"id": 2036,
+"es": "Si no existe ya una incidencia para el mismo Tipo Evento + PM + Día → da de alta nueva incidencia"
+},
+{
+"id": 2037,
+"es": "Si el tipo de incidencia está configurada como Actuación en Campo, se publica mediante la interfaz"
+},
+{
+"id": 2038,
+"es": "Si ya existiera esa incidencia, incrementa el valor del número de Ocurrencias de la incidencia"
+},
+{
+"id": 2039,
+"es": "Resuelve una incidencia generada por un evento contrario corrector:"
+},
+{
+"id": 2040,
+"es": "Comprueba si el Tipo Evento está configurado como evento antídoto o corrector de otro (contra evento)"
+},
+{
+"id": 2041,
+"es": "Busca la existencia de incidencias abiertas para el Tipo Evento que resolvería en el PM, hacia el pasado (hasta un número de días definido como parámetro en el sistema)"
+},
+{
+"id": 2042,
+"es": "Si existen incidencias origen:"
+},
+{
+"id": 2043,
+"es": "cambia el estado a Resuelto,"
+},
+{
+"id": 2044,
+"es": "guarda el evento que resuelve y"
+},
+{
+"id": 2045,
+"es": "registra en el histórico el cambio de estado, los motivos, fecha y usuario del cambio."
+},
+{
+"id": 2046,
+"es": "“Tipos de Eventos” "
+},
+{
+"id": 2047,
+"es": "muestra una interfaz donde poder realizar búsquedas de entre todos los eventos que están cargados en el sistema, por código y por categoría. A su vez, permite exportarlos en una tabla con diferentes formatos e idiomas. "
+},
+{
+"id": 2048,
+"es": "Los tipos de “Eventos” se crean en el sistema como parte de la configuración inicial, dado que son propios de los tipos de equipos integrados en el mismo."
+},
+{
+"id": 2049,
+"es": "Los eventos son datos recopilados y transmitidos por los equipos de campo que describen acciones, cambios o condiciones detectadas por estos dispositivos en tiempo real o diferido. Como, por ejemplo: fallo de conexión, pérdida de potencia, desbordamiento, etc. Sirven para "
+},
+{
+"id": 2050,
+"es": " y permiten una gestión más eficiente. Se ingestan en el sistema como parte de la información recibida de los equipos."
+},
+{
+"id": 2051,
+"es": "Los Eventos añaden información al sistema permitiendo la generación de reportes o comparativas de tipos de eventos para realizar distintos análisis y consideraciones a futuro. De este modo, en los eventos se puede personalizar la siguiente información:"
+},
+{
+"id": 2052,
+"es": "Servicio: Para categorizar los eventos según su Servicio."
+},
+{
+"id": 2053,
+"es": "Severidad: Para configurar una escala de criticidad (Crítica, alta, moderada o menor)."
+},
+{
+"id": 2054,
+"es": "Además, la entidad Tipo de Evento permite relacionar los Tipos de Evento que originan incidencias, con los tipos de eventos que las resuelven. Donde, para un tipo de evento generador de incidencia, se pueden relacionar uno o más tipos de eventos que los resolverían."
+},
+{
+"id": 2055,
+"es": "En la pantalla de mantenimiento de Tipos de Evento, se encuentra la posibilidad de asignar los Tipos de Eventos a sus Tipos de Eventos Correctores, también llamados contra-eventos:"
+},
+{
+"id": 2056,
+"es": "En la operativa del sistema, al recibir un evento incluido en la lista de Tipos de Evento correctores, se buscan incidencias abiertas que se puedan resolver con su llegada. Las incidencias a resolver deben cumplir "
+},
+{
+"id": 2057,
+"es": "que sean del tipo cuya subcategoría, tipo de evento, resuelve el evento recibido, y "
+},
+{
+"id": 2058,
+"es": "que se hayan abierto como máximo "
+},
+{
+"id": 2059,
+"es": "INCIDENT_NUM_DAYS_EVENT_CORRECT "
+},
+{
+"id": 2060,
+"es": "días - parámetro del sistema - antes de su llegada."
+},
+{
+"id": 2061,
+"es": "(Completar tras e despliegue)"
+},
+{
+"id": 2062,
+"es": "El producto proporciona el siguiente inventario de Eventos utilizados habitualmente por las Utilities como referencia. En él se encuentran distintos Tipos de Eventos asociados a su Tipo de Evento Corrector: "
+},
+{
+"id": 2063,
+"es": "CÓDIGO TIPO EVENTO"
+},
+{
+"id": 2064,
+"es": "CATEGORÍA"
+},
+{
+"id": 2065,
+"es": "NOMBRE"
+},
+{
+"id": 2066,
+"es": "CÓDIGO TIPO EVENTO CORRECTOR"
+},
+{
+"id": 2067,
+"es": "STARTUP"
+},
+{
+"id": 2068,
+"es": "METER"
+},
+{
+"id": 2069,
+"es": "Startup"
+},
+{
+"id": 2070,
+"es": "POWER_FAILURE"
+},
+{
+"id": 2071,
+"es": "Power failure"
+},
+{
+"id": 2072,
+"es": "DAYLIGHT_SAVING_TIME_CHANGE"
+},
+{
+"id": 2073,
+"es": "Daylight saving time change"
+},
+{
+"id": 2074,
+"es": "NOT_SYNCHRONIZED"
+},
+{
+"id": 2075,
+"es": "Not synchronized"
+},
+{
+"id": 2076,
+"es": "PARAMETERS_CHANGE"
+},
+{
+"id": 2077,
+"es": "Parameters change"
+},
+{
+"id": 2078,
+"es": "LONG_POWER_FAILURE_START"
+},
+{
+"id": 2079,
+"es": "Long power failure start"
+},
+{
+"id": 2080,
+"es": "LONG_POWER_FAILURE_END"
+},
+{
+"id": 2081,
+"es": "Long power failure end"
+},
+{
+"id": 2082,
+"es": "BATTERY_VOLTAGE_LOW"
+},
+{
+"id": 2083,
+"es": "Battery voltage low"
+},
+{
+"id": 2084,
+"es": "SHORT_POWER_FAILURE_START"
+},
+{
+"id": 2085,
+"es": "Short power failure start"
+},
+{
+"id": 2086,
+"es": "SHORT_POWER_FAILURE_END"
+},
+{
+"id": 2087,
+"es": "Short power failure end"
+},
+{
+"id": 2088,
+"es": "WATCHDOG_RESET"
+},
+{
+"id": 2089,
+"es": "Watchdog reset"
+},
+{
+"id": 2090,
+"es": "METROLOGY_ERROR"
+},
+{
+"id": 2091,
+"es": "Metrology error"
+},
+{
+"id": 2092,
+"es": "NVM_ERROR"
+},
+{
+"id": 2093,
+"es": "NVM error"
+},
+{
+"id": 2094,
+"es": "CLOCK_INVALID"
+},
+{
+"id": 2095,
+"es": "Clock invalid"
+},
+{
+"id": 2096,
+"es": "KEY_CHANGED"
+},
+{
+"id": 2097,
+"es": "Key changed"
+},
+{
+"id": 2098,
+"es": "L1_CURRENT_REVERSE_START"
+},
+{
+"id": 2099,
+"es": "L1 current reverse start"
+},
+{
+"id": 2100,
+"es": "L1_CURRENT_REVERSE_END"
+},
+{
+"id": 2101,
+"es": "L1 current reverse end"
+},
+{
+"id": 2102,
+"es": "L2_CURRENT_REVERSE_START"
+},
+{
+"id": 2103,
+"es": "L2 current reverse start"
+},
+{
+"id": 2104,
+"es": "L2_CURRENT_REVERSE_END"
+},
+{
+"id": 2105,
+"es": "L2 current reverse end"
+},
+{
+"id": 2106,
+"es": "L3_CURRENT_REVERSE_START"
+},
+{
+"id": 2107,
+"es": "L3 current reverse start"
+},
+{
+"id": 2108,
+"es": "L3_CURRENT_REVERSE_END"
+},
+{
+"id": 2109,
+"es": "L3 current reverse end"
+},
+{
+"id": 2110,
+"es": "CURRENT_BYPASS_START"
+},
+{
+"id": 2111,
+"es": "Current bypass start"
+},
+{
+"id": 2112,
+"es": "CURRENT_BYPASS_END"
+},
+{
+"id": 2113,
+"es": "Current bypass end"
+},
+{
+"id": 2114,
+"es": "CURRENT_UNBALANCE_START"
+},
+{
+"id": 2115,
+"es": "Current unbalance start"
+},
+{
+"id": 2116,
+"es": "CURRENT_UNBALANCE_END"
+},
+{
+"id": 2117,
+"es": "Current unbalance end"
+},
+{
+"id": 2118,
+"es": "NEUTRAL_LINE_CUT_START"
+},
+{
+"id": 2119,
+"es": "Neutral line cut start"
+},
+{
+"id": 2120,
+"es": "NEUTRAL_LINE_CUT_END"
+},
+{
+"id": 2121,
+"es": "Neutral line cut end"
+},
+{
+"id": 2122,
+"es": "METER_COVER_REMOVED"
+},
+{
+"id": 2123,
+"es": "Meter cover removed"
+},
+{
+"id": 2124,
+"es": "METER_COVER_CLOSED"
+},
+{
+"id": 2125,
+"es": "Meter cover closed"
+},
+{
+"id": 2126,
+"es": "TERMINAL_COVER_REMOVED"
+},
+{
+"id": 2127,
+"es": "Terminal cover removed"
+},
+{
+"id": 2128,
+"es": "TERMINAL_COVER_CLOSED"
+},
+{
+"id": 2129,
+"es": "Terminal cover closed"
+},
+{
+"id": 2130,
+"es": "MAGNETIC_DISTURB_START"
+},
+{
+"id": 2131,
+"es": "Magnetic disturb start"
+},
+{
+"id": 2132,
+"es": "MAGNETIC_DISTURB_END"
+},
+{
+"id": 2133,
+"es": "Magnetic disturb end"
+},
+{
+"id": 2134,
+"es": "REVERSE_SEQUENCE_START"
+},
+{
+"id": 2135,
+"es": "Reverse sequence start"
+},
+{
+"id": 2136,
+"es": "REVERSE_SEQUENCE_END"
+},
+{
+"id": 2137,
+"es": "Reverse sequence end"
+},
+{
+"id": 2138,
+"es": "DC_INJECTION_START"
+},
+{
+"id": 2139,
+"es": "DC injection start"
+},
+{
+"id": 2140,
+"es": "DC_INJECTION_END"
+},
+{
+"id": 2141,
+"es": "DC injection end"
+},
+{
+"id": 2142,
+"es": "ESD_START"
+},
+{
+"id": 2143,
+"es": "ESD start"
+},
+{
+"id": 2144,
+"es": "ESD_END"
+},
+{
+"id": 2145,
+"es": "ESD end"
+},
+{
+"id": 2146,
+"es": "DISCONNECT_NO_CREDIT"
+},
+{
+"id": 2147,
+"es": "Disconnect(No credit)"
+},
+{
+"id": 2148,
+"es": "DISCONNECT_OVER_POWER"
+},
+{
+"id": 2149,
+"es": "Disconnect(Over-power)"
+},
+{
+"id": 2150,
+"es": "DISCONNECT_METER_COVER_REMOVED"
+},
+{
+"id": 2151,
+"es": "Disconnect(Meter cover removed)"
+},
+{
+"id": 2152,
+"es": "DISCONNECT_TERMINAL_COVER_REMOVED"
+},
+{
+"id": 2153,
+"es": "Disconnect(Terminal cover removed)"
+},
+{
+"id": 2154,
+"es": "ICP_OVER_POWER_START"
+},
+{
+"id": 2155,
+"es": "ICP over-power start"
+},
+{
+"id": 2156,
+"es": "ICP_OVER_POWER_END"
+},
+{
+"id": 2157,
+"es": "ICP over-power end"
+},
+{
+"id": 2158,
+"es": "DISCONNECT_REMOTE"
+},
+{
+"id": 2159,
+"es": "Disconnect(Remote)"
+},
+{
+"id": 2160,
+"es": "DISCONNECT_VOLTAGE_SAG"
+},
+{
+"id": 2161,
+"es": "Disconnect(Voltage sag)"
+},
+{
+"id": 2162,
+"es": "DISCONNECT_VOLTAGE_SWELL"
+},
+{
+"id": 2163,
+"es": "Disconnect(Voltage swell)"
+},
+{
+"id": 2164,
+"es": "CONNECT"
+},
+{
+"id": 2165,
+"es": "Connect"
+},
+{
+"id": 2166,
+"es": "APP1_UPGRADE_SUCCESSFULLY_RECORD"
+},
+{
+"id": 2167,
+"es": "App1 upgrade successfully record"
+},
+{
+"id": 2168,
+"es": "APP2_UPGRADE_SUCCESSFULLY_RECORD"
+},
+{
+"id": 2169,
+"es": "App2 upgrade successfully record"
+},
+{
+"id": 2170,
+"es": "PLC_UPGRADE_SUCCESSFULLY_RECORD"
+},
+{
+"id": 2171,
+"es": "PLC upgrade successfully record"
+},
+{
+"id": 2172,
+"es": "P2P_UPGRADE_SUCCESSFULLY_RECORD"
+},
+{
+"id": 2173,
+"es": "P2P upgrade successfully record"
+},
+{
+"id": 2174,
+"es": "L1_VOLTAGE_SAG_START"
+},
+{
+"id": 2175,
+"es": "L1 voltage sag start"
+},
+{
+"id": 2176,
+"es": "L1_VOLTAGE_SAG_END"
+},
+{
+"id": 2177,
+"es": "L1 voltage sag end"
+},
+{
+"id": 2178,
+"es": "L2_VOLTAGE_SAG_START"
+},
+{
+"id": 2179,
+"es": "L2 voltage sag start"
+},
+{
+"id": 2180,
+"es": "L2_VOLTAGE_SAG_END"
+},
+{
+"id": 2181,
+"es": "L2 voltage sag end"
+},
+{
+"id": 2182,
+"es": "L3_VOLTAGE_SAG_START"
+},
+{
+"id": 2183,
+"es": "L3 voltage sag start"
+},
+{
+"id": 2184,
+"es": "L3_VOLTAGE_SAG_END"
+},
+{
+"id": 2185,
+"es": "L3 voltage sag end"
+},
+{
+"id": 2186,
+"es": "L1_VOLTAGE_SWELL_START"
+},
+{
+"id": 2187,
+"es": "L1 voltage swell start"
+},
+{
+"id": 2188,
+"es": "L1_VOLTAGE_SWELL_END"
+},
+{
+"id": 2189,
+"es": "L1 voltage swell end"
+},
+{
+"id": 2190,
+"es": "L2_VOLTAGE_SWELL_START"
+},
+{
+"id": 2191,
+"es": "L2 voltage swell start"
+},
+{
+"id": 2192,
+"es": "L2_VOLTAGE_SWELL_END"
+},
+{
+"id": 2193,
+"es": "L2 voltage swell end"
+},
+{
+"id": 2194,
+"es": "L3_VOLTAGE_SWELL_START"
+},
+{
+"id": 2195,
+"es": "L3 voltage swell start"
+},
+{
+"id": 2196,
+"es": "L3_VOLTAGE_SWELL_END"
+},
+{
+"id": 2197,
+"es": "L3 voltage swell end"
+},
+{
+"id": 2198,
+"es": "L1_MISS_VOLTAGE_EXIST_CURRENT_START"
+},
+{
+"id": 2199,
+"es": "L1 miss voltage(exist current) start"
+},
+{
+"id": 2200,
+"es": "L1_MISS_VOLTAGE_EXIST_CURRENT_END"
+},
+{
+"id": 2201,
+"es": "L1 miss voltage(exist current) end"
+},
+{
+"id": 2202,
+"es": "L2_MISS_VOLTAGE_EXIST_CURRENT_START"
+},
+{
+"id": 2203,
+"es": "L2 miss voltage(exist current) start"
+},
+{
+"id": 2204,
+"es": "L2_MISS_VOLTAGE_EXIST_CURRENT_END"
+},
+{
+"id": 2205,
+"es": "L2 miss voltage(exist current) end"
+},
+{
+"id": 2206,
+"es": "L3_MISS_VOLTAGE_EXIST_CURRENT_START"
+},
+{
+"id": 2207,
+"es": "L3 miss voltage(exist current) start"
+},
+{
+"id": 2208,
+"es": "L3_MISS_VOLTAGE_EXIST_CURRENT_END"
+},
+{
+"id": 2209,
+"es": "L3 miss voltage(exist current) end"
+},
+{
+"id": 2210,
+"es": "AUTO_SCROLL_LIST_CHANGED"
+},
+{
+"id": 2211,
+"es": "Auto scroll list changed"
+},
+{
+"id": 2212,
+"es": "MANUAL_LIST_CHANGED"
+},
+{
+"id": 2213,
+"es": "Manual list changed"
+},
+{
+"id": 2214,
+"es": "AUTO_SCROLL_TIME_CHANGED"
+},
+{
+"id": 2215,
+"es": "Auto scroll time changed"
+},
+{
+"id": 2216,
+"es": "MANUAL_TIME_CHANGED"
+},
+{
+"id": 2217,
+"es": "Manual time changed"
+},
+{
+"id": 2218,
+"es": "ICP_THRESHOLD_CHANGED"
+},
+{
+"id": 2219,
+"es": "ICP threshold changed"
+},
+{
+"id": 2220,
+"es": "DEMAND_PERIOD_CHANGED"
+},
+{
+"id": 2221,
+"es": "Demand period changed"
+},
+{
+"id": 2222,
+"es": "LOADPROFILE_PERIOD_CHANGED"
+},
+{
+"id": 2223,
+"es": "Loadprofile period changed"
+},
+{
+"id": 2224,
+"es": "PASSIVE_CONTRACT_PARAMETERS_CHANGED"
+},
+{
+"id": 2225,
+"es": "Passive contract parameters changed"
+},
+{
+"id": 2226,
+"es": "CLOCK_ADJUST_GREATER_60S"
+},
+{
+"id": 2227,
+"es": "Clock adjust(>60S)"
+},
+{
+"id": 2228,
+"es": "FAIL_TO_CONNECT_METER_WITH_WRONG_KEY"
+},
+{
+"id": 2229,
+"es": "Fail to connect meter with wrong key"
+},
+{
+"id": 2230,
+"es": "L1_VOLTAGE_CUT_START"
+},
+{
+"id": 2231,
+"es": "L1 voltage cut start"
+},
+{
+"id": 2232,
+"es": "L1_VOLTAGE_CUT_END"
+},
+{
+"id": 2233,
+"es": "L1 voltage cut end"
+},
+{
+"id": 2234,
+"es": "L2_VOLTAGE_CUT_START"
+},
+{
+"id": 2235,
+"es": "L2 voltage cut start"
+},
+{
+"id": 2236,
+"es": "L2_VOLTAGE_CUT_END"
+},
+{
+"id": 2237,
+"es": "L2 voltage cut end"
+},
+{
+"id": 2238,
+"es": "L3_VOLTAGE_CUT_START"
+},
+{
+"id": 2239,
+"es": "L3 voltage cut start"
+},
+{
+"id": 2240,
+"es": "L3_VOLTAGE_CUT_END"
+},
+{
+"id": 2241,
+"es": "L3 voltage cut end"
+},
+{
+"id": 2242,
+"es": "LOW_TOKEN_CREDIT"
+},
+{
+"id": 2243,
+"es": "Low Token Credit"
+},
+{
+"id": 2244,
+"es": "START_TO_USE_EMERGENCY_CREDIT"
+},
+{
+"id": 2245,
+"es": "Start to use Emergency credit"
+},
+{
+"id": 2246,
+"es": "TOKEN_CREDIT_USED_UP"
+},
+{
+"id": 2247,
+"es": "Token Credit used up"
+},
+{
+"id": 2248,
+"es": "EMERGENCY_CREDIT_USED_UP"
+},
+{
+"id": 2249,
+"es": "Emergency Credit used up"
+},
+{
+"id": 2250,
+"es": "RECHARGE"
+},
+{
+"id": 2251,
+"es": "Recharge"
+},
+{
+"id": 2252,
+"es": "DCU_POWER_OFF"
+},
+{
+"id": 2253,
+"es": "DCU"
+},
+{
+"id": 2254,
+"es": "DCU Power off"
+},
+{
+"id": 2255,
+"es": "DCU_POWER_ON"
+},
+{
+"id": 2256,
+"es": "DCU Power on"
+},
+{
+"id": 2257,
+"es": "DCU_REBOOT"
+},
+{
+"id": 2258,
+"es": "DCU Reboot"
+},
+{
+"id": 2259,
+"es": "DCU_GPRS_ETH_MODULE_COMMUNICATE_FAILURE"
+},
+{
+"id": 2260,
+"es": "DCU GPRS/ETH module Communicate failure"
+},
+{
+"id": 2261,
+"es": "DCU_PLC_MODULE_COMMUNICATE_FAILURE"
+},
+{
+"id": 2262,
+"es": "DCU PLC module communicate failure"
+},
+{
+"id": 2263,
+"es": "DCU_RF_MODULE_COMMUNICATE_FAILURE"
+},
+{
+"id": 2264,
+"es": "DCU RF module communicate failure"
+},
+{
+"id": 2265,
+"es": "DCU_LACK_OF_STORAGE_LESS_THAN_20_PERCENT"
+},
+{
+"id": 2266,
+"es": "DCU Lack of storage (Less than 20%)"
+},
+{
+"id": 2267,
+"es": "DCU_PARAMETERS_CONFIGURED"
+},
+{
+"id": 2268,
+"es": "DCU Parameters configured"
+},
+{
+"id": 2269,
+"es": "DCU_GPRS_MODULE_HIGH_VOLTAGE_OCCURRENCE"
+},
+{
+"id": 2270,
+"es": "DCU GPRS module high voltage occurrence"
+},
+{
+"id": 2271,
+"es": "DCU_GPRS_MODULE_LOW_VOLTAGE_OCCURRENCE"
+},
+{
+"id": 2272,
+"es": "DCU GPRS module low voltage occurrence"
+},
+{
+"id": 2273,
+"es": "HIGH_TEMPERATURE_OCCURRENCE_IN_DCU_GPRS_MODULE"
+},
+{
+"id": 2274,
+"es": "High temperature occurrence in DCU GPRS module"
+},
+{
+"id": 2275,
+"es": "DCU_REGISTERED_METER"
+},
+{
+"id": 2276,
+"es": "DCU Registered Meter"
+},
+{
+"id": 2277,
+"es": "BROADCAST_UPGRADE_END"
+},
+{
+"id": 2278,
+"es": "Broadcast upgrade end"
+},
+{
+"id": 2279,
+"es": "BROADCAST_UPGRADE_START"
+},
+{
+"id": 2280,
+"es": "Broadcast upgrade start"
+},
+{
+"id": 2281,
+"es": "DCU_ONLINE"
+},
+{
+"id": 2282,
+"es": "DCU Online"
+},
+{
+"id": 2283,
+"es": "DCU_OFFLINE"
+},
+{
+"id": 2284,
+"es": "DCU Offline"
+},
+{
+"id": 2285,
+"es": "DCU_OFFLINE_TIME_OUT"
+},
+{
+"id": 2286,
+"es": "DCU Offline (time out)"
+},
+{
+"id": 2287,
+"es": "INVALID_CLOCK"
+},
+{
+"id": 2288,
+"es": "Invalid clock"
+},
+{
+"id": 2289,
+"es": "DCU_MAIN_COVER_OPENED"
+},
+{
+"id": 2290,
+"es": "DCU Main cover opened"
+},
+{
+"id": 2291,
+"es": "DCU_MAIN_COVER_CLOSED"
+},
+{
+"id": 2292,
+"es": "DCU Main cover closed"
+},
+{
+"id": 2293,
+"es": "DCU_TERMINAL_COVER_OPENED"
+},
+{
+"id": 2294,
+"es": "DCU Terminal cover opened"
+},
+{
+"id": 2295,
+"es": "DCU_TERMINAL_COVER_CLOSED"
+},
+{
+"id": 2296,
+"es": "DCU Terminal cover closed"
+},
+{
+"id": 2297,
+"es": "DCU_DISMANTLE_REMOVAL"
+},
+{
+"id": 2298,
+"es": "DCU dismantle/removal"
+},
+{
+"id": 2299,
+"es": "DCU_FIRMWARE_UPGRADE_SUCCESS"
+},
+{
+"id": 2300,
+"es": "DCU Firmware upgrade success"
+},
+{
+"id": 2301,
+"es": "DCU_FIRMWARE_UPGRADE_FAILURE"
+},
+{
+"id": 2302,
+"es": "DCU Firmware upgrade failure"
+},
+{
+"id": 2303,
+"es": "DCU_PLC_MODULE_UPGRADE_SUCCESS"
+},
+{
+"id": 2304,
+"es": "DCU PLC module upgrade success"
+},
+{
+"id": 2305,
+"es": "DCU_RF_MODULE_UPGARDE_SUCCESS"
+},
+{
+"id": 2306,
+"es": "DCU RF module upgarde success"
+},
+{
+"id": 2307,
+"es": "ERROR_COMMUNICATION_KEY"
+},
+{
+"id": 2308,
+"es": "Error communication key"
+},
+{
+"id": 2309,
+"es": "COMMUNICATION_BY_PORT_1_OCCURRENCE"
+},
+{
+"id": 2310,
+"es": "Communication by port 1 occurrence"
+},
+{
+"id": 2311,
+"es": "COMMUNICATION_BY_PORT_2_OCCURRENCE"
+},
+{
+"id": 2312,
+"es": "Communication by port 2 occurrence"
+},
+{
+"id": 2313,
+"es": "IMPORT_POWER_CONTRACT"
+},
+{
+"id": 2314,
+"es": "Import Power Contract"
+},
+{
+"id": 2315,
+"es": "STARTUPS_AND_POWER_FAILURES"
+},
+{
+"id": 2316,
+"es": "Standar - Startups and power failures"
+},
+{
+"id": 2317,
+"es": "Monitor de Llamadas"
+},
+{
+"id": 2318,
+"es": "Datos Remotos"
+},
+{
+"id": 2319,
+"es": "Vista 360º Telemedición"
+},
+{
+"id": 2320,
+"es": "El componente MDC (Meter Data Collector) de Onesait Metering tiene las capacidades de un sistema de lectura y adquisición de datos de medición de los diferentes dispositivos instalados en campo (contadores, concentradores, gateways, sensores, etc…). Además, permite gestionar automáticamente la configuración de los dispositivos conectados en la red de baja tensión. Incluye la ejecución de comandos y procesamiento de transacciones masivas de forma puntual o periódica dando soporte a las operaciones de configuración, mantenimiento, procesos de instalación, aprovisionamiento y puesta marcha de nuevos dispositivos."
+},
+{
+"id": 2321,
+"es": "El sistema hace uso de la infraestructura de comunicaciones desplegada por la compañía para la comunicación con los equipos y pone a disposición de los sistemas de gestión y certificación de la medida incluidos en Onesait Metering, los datos de medición recopilados para su gestión y envío a terceros sistemas, completando de esta forma el ciclo de lectura."
+},
+{
+"id": 2322,
+"es": "Las principales características del componente MDC integrado en la solución Onesait Metering, disponibles a través del módulo de Telemedición, son:"
+},
+{
+"id": 2323,
+"es": "Multiprotocolo"
+},
+{
+"id": 2324,
+"es": "Multifabricante"
+},
+{
+"id": 2325,
+"es": "Compatibilidad con diferentes tecnologías físicas de comunicación"
+},
+{
+"id": 2326,
+"es": "Sincrónico, asincrónico y bidireccional"
+},
+{
+"id": 2327,
+"es": "Uso de canales primarios y redundantes"
+},
+{
+"id": 2328,
+"es": "Operación remota"
+},
+{
+"id": 2329,
+"es": "Automatización completamente configurable"
+},
+{
+"id": 2330,
+"es": "Integración con sistemas de captura de datos de terceros"
+},
+{
+"id": 2331,
+"es": "Protocolos"
+},
+{
+"id": 2332,
+"es": "Configuración comunicaciones"
+},
+{
+"id": 2333,
+"es": "Parámetros Remotos"
+},
+{
+"id": 2334,
+"es": "Este apartado se encuentran todos los protocolos asociados al sistema. Estos protocolos son el medio a través del cual el sistema se comunica con los diferentes equipos de forma directa."
+},
+{
+"id": 2335,
+"es": "Los protocolos actualmente integrados en el sistema son:"
+},
+{
+"id": 2336,
+"es": "PRIME STG-DC"
+},
+{
+"id": 2337,
+"es": "(Para más detalle consultar el apartado "
+},
+{
+"id": 2338,
+"es": "La sección Protocolos se caracteriza por las siguientes propiedades:"
+},
+{
+"id": 2339,
+"es": "Standard (Nombre)"
+},
+{
+"id": 2340,
+"es": "Perfil (Tipo de perfil del protocolo utilizado el cual define el conjunto de mensajes y estructuras a intercambiar entre los equipos y el sistema de gestión de datos)"
+},
+{
+"id": 2341,
+"es": "Versión"
+},
+{
+"id": 2342,
+"es": "Detalle Protocolos"
+},
+{
+"id": 2343,
+"es": ", donde se muestran las características particulares de un protocolo."
+},
+{
+"id": 2344,
+"es": "Dispone de 3 filtros no obligatorios a rellenar (Standard, perfil y versión)"
+},
+{
+"id": 2345,
+"es": "Botones: buscar, detalle y exportar. Funcionalidades para gestionar los protocolos, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 2346,
+"es": "Lista de Protocolos:"
+},
+{
+"id": 2347,
+"es": "En la tabla puede consultar787pxse el listado de protocolos filtrados o no por parámetros."
+},
+{
+"id": 2348,
+"es": "Filtrando por standard, perfil y versión del protocolo se puede obtener una lista de protocolo que cumplan con esos datos de entrada."
+},
+{
+"id": 2349,
+"es": "Permite visualizar un protocolo de la lista en profundidad, mostrando las características mencionadas en el punto anterior."
+},
+{
+"id": 2350,
+"es": "Permite devolver la lista de Validaciones de Origen presente en los idiomas y formatos configurados."
+},
+{
+"id": 2351,
+"es": "“Detalle” "
+},
+{
+"id": 2352,
+"es": "“Detalle Protocolos” "
+},
+{
+"id": 2353,
+"es": "Muestra las características y propiedades técnicas del protocolo seleccionado definidas en el sistema para poder establecer una comunicación correcta con los equipos en campo."
+},
+{
+"id": 2354,
+"es": "Detalle Peticiones"
+},
+{
+"id": 2355,
+"es": "Este apartado se encuentran todas las peticiones asociadas al sistema . Se caracteriza por las siguientes propiedades:"
+},
+{
+"id": 2356,
+"es": "Es el código interno utilizado por el sistema para ejecutar la petición"
+},
+{
+"id": 2357,
+"es": "Nombre asociado a la petición. Dicho nombre puede variar dependiendo del cliente."
+},
+{
+"id": 2358,
+"es": "Tipo de petición"
+},
+{
+"id": 2359,
+"es": "Existen "
+},
+{
+"id": 2360,
+"es": "tres "
+},
+{
+"id": 2361,
+"es": "tipos de peticiones"
+},
+{
+"id": 2362,
+"es": "Lectura"
+},
+{
+"id": 2363,
+"es": ": peticiones que permiten obtener información del equipo"
+},
+{
+"id": 2364,
+"es": "Escritura"
+},
+{
+"id": 2365,
+"es": ": peticiones que conllevan un cambio en la configuración o parametrización del equipo"
+},
+{
+"id": 2366,
+"es": "Push"
+},
+{
+"id": 2367,
+"es": ": Recepción de notificaciones de datos espontáneas (push) desde los equipos en campo"
+},
+{
+"id": 2368,
+"es": "Tipo de equipo"
+},
+{
+"id": 2369,
+"es": "Tipo de equipo con el que se va a establecer la comunicación para enviar la petición según la topología de red"
+},
+{
+"id": 2370,
+"es": "Padre: equipo que en la topología de red es padre de otros equipos"
+},
+{
+"id": 2371,
+"es": "Directo: equipo final de la topología de red bajo el cual no pueden existir más equipos"
+},
+{
+"id": 2372,
+"es": "NOTAS"
+},
+{
+"id": 2373,
+"es": "Existe un campo adicional a las peticiones, que es para indicar si la petición debe ser considerada por defecto, como prioridad ALTA ante su ejecución cuando es invocada desde un sistema tercero (por ejemplo desde CIS)."
+},
+{
+"id": 2374,
+"es": "Este valor no se muestra en la UI de OUM."
+},
+{
+"id": 2375,
+"es": "Para modificación de este valor es necesario acceder a la base de datos."
+},
+{
+"id": 2376,
+"es": "Dichas propiedades se muestran en la interfaz del sistema en el apartado "
+},
+{
+"id": 2377,
+"es": ", donde se muestran las características particulares de las peticiones."
+},
+{
+"id": 2378,
+"es": "Dispone de 4 filtros no obligatorios a rellenar (Código, nombre, tipo de petición y tipo de equipo)"
+},
+{
+"id": 2379,
+"es": "Lista de Peticiones:"
+},
+{
+"id": 2380,
+"es": "El catálogo de peticiones existentes por protocolo, con el detalle de cada una puede consultarse en los siguientes apartados:"
+},
+{
+"id": 2381,
+"es": "Peticiones DLMS"
+},
+{
+"id": 2382,
+"es": "Peticiones STG-DC"
+},
+{
+"id": 2383,
+"es": "Las peticiones de las categorías"
+},
+{
+"id": 2384,
+"es": "Medidas de Perfil de Carga"
+},
+{
+"id": 2385,
+"es": "Medidas de Perfil de Carga Absoluto"
+},
+{
+"id": 2386,
+"es": "Medidas de Cierre Diario"
+},
+{
+"id": 2387,
+"es": "Medidas de Cierre Mensual"
+},
+{
+"id": 2388,
+"es": "Contienen varios adaptadores que permiten facilitar la recuperación de las medidas de cada tipo según los requerimientos de fechas o disponibilidad de las mismas en el sistema. Son los siguientes:"
+},
+{
+"id": 2389,
+"es": "FromLast"
+},
+{
+"id": 2390,
+"es": ": Permite la recuperación de las medidas o eventos desde el último registro recuperado en la BD"
+},
+{
+"id": 2391,
+"es": "BetweenDates"
+},
+{
+"id": 2392,
+"es": ": Permite la recuperación de las medidas o evntos entre dos fechas configurables"
+},
+{
+"id": 2393,
+"es": "START DATE"
+},
+{
+"id": 2394,
+"es": "END DATE"
+},
+{
+"id": 2395,
+"es": "GAPS"
+},
+{
+"id": 2396,
+"es": ": Permite la recuperación de Huecos (GAPs) de medidas o eventos de un periodo definido según dos parámetros"
+},
+{
+"id": 2397,
+"es": "DAYS"
+},
+{
+"id": 2398,
+"es": ": profundidad de días con respecto al momento de la ejecución de la petición (calcula el START DATE)"
+},
+{
+"id": 2399,
+"es": "OFFSET"
+},
+{
+"id": 2400,
+"es": ": días con respecto al momento de la ejecución hasta los que completar la búsqueda (calcula el END DATE)"
+},
+{
+"id": 2401,
+"es": "Para las peticiones de Medidas de Cierre (Billing) este parámetro no aplica, ya que el END DATE en este caso equivale a la fecha de ejecución de la petición."
+},
+{
+"id": 2402,
+"es": "GAPS_BetweenDates"
+},
+{
+"id": 2403,
+"es": ": Permite la recuperación de Huecos (GAPs) de medidas o eventos entre dos fechas configurables"
+},
+{
+"id": 2404,
+"es": "Filtrando por código, nombre, tipo de petición y tipo de equipo del protocolo se puede obtener una lista de protocolo que cumplan con esos datos de entrada."
+},
+{
+"id": 2405,
+"es": "Permite devolver el listado completo de peticiones con las propiedades mostradas en pantalla"
+},
+{
+"id": 2406,
+"es": "“Detalle Peticiones” "
+},
+{
+"id": 2407,
+"es": "Los equipos gestionados en el sistema con la capacidad de telemedición habilitada requieren disponer de un equipo de comunicación que permita establecer dicha comunicación entre el equipo final y el sistema. Dicha configuración de los equipos de comunicación se realiza en este módulo y es utilizada como parte de la configuración del equipo en el apartado de telemedición (Para más detalle consultar el apartado "
+},
+{
+"id": 2408,
+"es": "El módulo de Configuración Comunicaciones se caracteriza por las siguientes propiedades:"
+},
+{
+"id": 2409,
+"es": "Tipo de equipos Com.Remotos"
+},
+{
+"id": 2410,
+"es": "Actualmente el tipo de comunicación existente es TCP/IP"
+},
+{
+"id": 2411,
+"es": "Detalle Configuración de Comunicaciones"
+},
+{
+"id": 2412,
+"es": "Dispone de 2 filtros no obligatorios a rellenar (Código, tipo de equipos com.remotos)"
+},
+{
+"id": 2413,
+"es": "Botones: buscar, crear detalle, editar y eliminar. Funcionalidades para gestionar los equipos de comunicaciones, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 2414,
+"es": "Lista de Configuraciones de de Comunicaciones: "
+},
+{
+"id": 2415,
+"es": "En la tabla puede consultarse el listado de equipos de comunicaciones filtrados o no por parámetros."
+},
+{
+"id": 2416,
+"es": "Se incluye también la información correspondiente a las propiedades del equipo de comunicación configurado"
+},
+{
+"id": 2417,
+"es": "“Detalle Configuración de Comunicaciones” "
+},
+{
+"id": 2418,
+"es": "Detalle Configuración de Comunicaciones Simuladores"
+},
+{
+"id": 2419,
+"es": "A continuación se muestra también la configuración de comunicaciones definida por defecto para los dos simuladores considerados para pruebas internas en producto:"
+},
+{
+"id": 2420,
+"es": "Simulador STG-DC"
+},
+{
+"id": 2421,
+"es": "Simulador DLMS"
+},
+{
+"id": 2422,
+"es": "Los Equipos de Comunicaciones pueden ser cargados a través de fichero, este proceso se explica detalladamente en el apartado de carga TPL de inventario: "
+},
+{
+"id": 2423,
+"es": "Los parámetros remotos son el conjunto de parámetros de los equipos de medición definidos en el sistema sobre los que se deposita la información de estos recopilada a través de las diferentes peticiones. Los parámetros pueden estar asociados a uno o varios protocolos."
+},
+{
+"id": 2424,
+"es": "NOTA"
+},
+{
+"id": 2425,
+"es": "Actualmente, sólo se muestra el último valor recibido de cada parámetro remoto para cada equipo."
+},
+{
+"id": 2426,
+"es": "El módulo de Parámetros remotos se caracteriza por las siguientes propiedades:"
+},
+{
+"id": 2427,
+"es": "Tipo"
+},
+{
+"id": 2428,
+"es": "Detalle Parámetros Remotos"
+},
+{
+"id": 2429,
+"es": "Botones: buscar, detalle y exportar. Funcionalidades para gestionar los parámetros remotos, seleccionando previamente uno de ellos en la lista que aparece a continuación."
+},
+{
+"id": 2430,
+"es": "Lista de Parámetros Remotos:"
+},
+{
+"id": 2431,
+"es": "En la tabla puede consultarse el listado de parámetros remotos filtrados o no por parámetros."
+},
+{
+"id": 2432,
+"es": "La siguiente tabla muestra el listado actual de los parámetros remotos definidos en el sistema: "
+},
+{
+"id": 2433,
+"es": "master_telemetry_remote_data_january_2026.csv"
+},
+{
+"id": 2434,
+"es": "Además, la relación entre los parámetros remotos recibidos y las peticiones a las que están relacionados se detalla en el apartado "
+},
+{
+"id": 2435,
+"es": "“Detalle Parámetros Remotos” "
+},
+{
+"id": 2436,
+"es": "Esta entidad se utiliza para configurar la ejecución manual de peticiones sobre los equipos seleccionados."
+},
+{
+"id": 2437,
+"es": "En esta entidad, al igual que en el resto de Ejecuciones Manuales, se configura:"
+},
+{
+"id": 2438,
+"es": ": Identificador del proceso a ejecutar. Se utilizará para hacerle seguimiento en el Monitor correspondiente"
+},
+{
+"id": 2439,
+"es": "Tipo de Equipo: "
+},
+{
+"id": 2440,
+"es": "Indica sobre qué tipo de equipo se realizan las peticiones:"
+},
+{
+"id": 2441,
+"es": "Directo"
+},
+{
+"id": 2442,
+"es": ": Equipo final"
+},
+{
+"id": 2443,
+"es": "Padre"
+},
+{
+"id": 2444,
+"es": ": DCU, concentrador "
+},
+{
+"id": 2445,
+"es": "Prioridad: "
+},
+{
+"id": 2446,
+"es": "Campo para indicar la prioridad de la llamada a ejecutar. Útil para identificar y priorizar ciertas llamadas. Posibles valores:"
+},
+{
+"id": 2447,
+"es": "Normal"
+},
+{
+"id": 2448,
+"es": ": Es el valor por defecto."
+},
+{
+"id": 2449,
+"es": ": Identifica a las llamadas a ser procesadas de manera prioritaria."
+},
+{
+"id": 2450,
+"es": "NOTA: Las peticiones generadas se van a consumir por dos tópicos de Kafka diferenciados por la prioridad. Por tanto, es de buena práctica sólo marcar como prioritarias las que realmente requieran de esa identificación, ya que si la mayoría de las llamadas son prioritarias, dejar de tener utilidad real esta funcionalidad. "
+},
+{
+"id": 2451,
+"es": "Reintentos"
+},
+{
+"id": 2452,
+"es": "Número de reintentos automáticos sobre las peticiones fallidas, relacionadas con los fallos de comunicación existentes con la configuración destino del equipo."
+},
+{
+"id": 2453,
+"es": "En el caso actual, por ejemplo, haciendo uso de una configuración de comunicación TCP/IP, realiza los reintentos indicados en el caso de que la comunicación con la IP y puerto configurados sea rechazada, o no accesible."
+},
+{
+"id": 2454,
+"es": "Adicionalmente, por tratarse de la Ejecución Manual de peticiones, se configura:"
+},
+{
+"id": 2455,
+"es": "Selector de Peticiones: "
+},
+{
+"id": 2456,
+"es": "En función de la selección anterior (tipo de equipo) aparecerá un combo para seleccionar y configurar las peticiones correspondientes; dichas peticiones deben ser del tipo de equipo seleccionado anteriormente. Al seleccionar las peticiones, se podrán configurar sus parámetros."
+},
+{
+"id": 2457,
+"es": "Listado de peticiones:"
+},
+{
+"id": 2458,
+"es": "A su vez, se ha de tener en cuenta las siguientes consideraciones:"
+},
+{
+"id": 2459,
+"es": "Se ejecutarán las llamadas correspondientes en función de esta configuración."
+},
+{
+"id": 2460,
+"es": "Se debe seleccionar al menos un equipo/punto y una petición para la ejecución de la llamada."
+},
+{
+"id": 2461,
+"es": "Como puntos de destino de esa petición a generar, se puede seleccionar por:"
+},
+{
+"id": 2462,
+"es": "Punto de medida"
+},
+{
+"id": 2463,
+"es": "El sistema permite la ejecución de llamadas manuales de telemetría a Puntos de Medida indistintamente si están activos o inactivos (estado del Punto de Medida)."
+},
+{
+"id": 2464,
+"es": "La única condición que tiene que cumplir es que esté asignado a un Equipo el cual tenga la configuración de telemetría activada."
+},
+{
+"id": 2465,
+"es": "En el buscador aparecerán disponibles para seleccionar aquellos Puntos de medida que estén asignados a un Equipo con la configuración de telemetría activada."
+},
+{
+"id": 2466,
+"es": "Grupo de puntos de medida"
+},
+{
+"id": 2467,
+"es": "El sistema permite la ejecución de llamadas manuales de telemetría a Equipos siempre y cuando tengan la configuración de telemetría activada. Incluso si no tiene un Punto de Medida asignado, se ejecuta la llamada."
+},
+{
+"id": 2468,
+"es": "En el buscador aparecerán disponibles para seleccionar aquellos Equipos que tengan la configuración de telemetría activada."
+},
+{
+"id": 2469,
+"es": "Grupo de equipos"
+},
+{
+"id": 2470,
+"es": "Actualmente y hasta desarrollar los evolutivos de Telemedición de IT2, cada petición incluye todas las propiedades asociadas a ambos protocolos (DLMS y STG) y es obligatorio, debido al componente web, el completar todos los parámetro. Sin embargo el protocolo asociado al equipo sobre el que se ejecuta la petición sólo utilizará las propiedades que requiera. Esto se modificará en la IT2 donde se tratarán las peticiones de forma independiente según su protocolo."
+},
+{
+"id": 2471,
+"es": "Esta entidad se utiliza para ejecución masiva de peticiones de manera planificada."
+},
+{
+"id": 2472,
+"es": "Una vez alcanzada la fecha planificada, el proceso se ejecutará de forma automática, siguiendo la configuración establecida. Los planificadores permiten también, llevar a cabo ejecuciones puntuales, haciendo click sobre el botón “Ejecutar”. Estos procesos se realizan igualmente con los parámetros predefinidos y se monitorizan de forma similar."
+},
+{
+"id": 2473,
+"es": "En esta ventana se muestran, para los diferentes planificadores de peticiones de la aplicación:"
+},
+{
+"id": 2474,
+"es": "Nombre del proceso planificado"
+},
+{
+"id": 2475,
+"es": "Fecha de Última ejecución: "
+},
+{
+"id": 2476,
+"es": "Indica la fecha y hora en la que se ejecutó el planificador por última vez. En caso de venir vacía significa que la planificación no se ha ejecutado nunca."
+},
+{
+"id": 2477,
+"es": "Fecha Próxima ejecución: "
+},
+{
+"id": 2478,
+"es": "Indica la siguiente fecha y hora en la que se ejecutará el proceso"
+},
+{
+"id": 2479,
+"es": "Planificación: "
+},
+{
+"id": 2480,
+"es": "Indica la configuración de ejecuciones que sigue el proceso en cuestión. Algunos ejemplos de planificaciones son: A las 11:00 el día 5 cada 1 meses, A las 23:00 el lunes."
+},
+{
+"id": 2481,
+"es": "El componente de planificación tiene formato cron por lo que la escala de tiempo con la que se debe configurar la "
+},
+{
+"id": 2482,
+"es": "planificación es en formato UTC."
+},
+{
+"id": 2483,
+"es": "En la pantalla resumen de las Ejecuciones Planificadas los "
+},
+{
+"id": 2484,
+"es": "campos de Última y Próxima ejecución aparecen en horario local"
+},
+{
+"id": 2485,
+"es": "Estado: "
+},
+{
+"id": 2486,
+"es": "Indica si el proceso está Activo o Deshabilitado. Cuando un proceso está Activo, una vez alcanzada la fecha de Próxima Ejecución se ejecutará automáticamente. De lo contrario, la planificación permanece en el sistema con su configuración predeterminada, pero no se ejecutará alcanzada la fecha."
+},
+{
+"id": 2487,
+"es": "Indica si el equipo es Padre (DCU) o Directo (Smart Meter)"
+},
+{
+"id": 2488,
+"es": "El proceso se ejecutará, de manera automática una vez alcanzada la fecha de Próxima Ejecución."
+},
+{
+"id": 2489,
+"es": "En la edición de la entidad se configura:"
+},
+{
+"id": 2490,
+"es": "Nombre y Descripción del Proceso"
+},
+{
+"id": 2491,
+"es": ": Identificadores del proceso a ejecutar. El nombre se utilizará para hacerle seguimiento en el Monitor correspondiente"
+},
+{
+"id": 2492,
+"es": "Planificación"
+},
+{
+"id": 2493,
+"es": ": Determinación de la frecuencia con la que se ejecutará el proceso, de forma: Minutal, Horaria, Diaria, Semanal, Mensual, Anual o por Ciclo de Facturación"
+},
+{
+"id": 2494,
+"es": "Estado del Planificador"
+},
+{
+"id": 2495,
+"es": ": Habilitado / Deshabilitado."
+},
+{
+"id": 2496,
+"es": "Padre (DCU) / Directo (Smart Meter)"
+},
+{
+"id": 2497,
+"es": "Selector de la prioridad de esta ejecución con respecto a las demás, entre los siguientes tipos: "
+},
+{
+"id": 2498,
+"es": "NORMAL, ALTA"
+},
+{
+"id": 2499,
+"es": "Número de reintentos automáticos sobre las comunicaciones fallidas."
+},
+{
+"id": 2500,
+"es": "Peticiones: "
+},
+{
+"id": 2501,
+"es": "Conjunto de peticiones a ejecutar, acompañados por sus parámetros de configuración. Al menos, será necesario seleccionar un caso para la ejecución."
+},
+{
+"id": 2502,
+"es": "Nivel 1: Monitor de Llamadas (Grupos de Llamada en Ejecución)"
+},
+{
+"id": 2503,
+"es": "Nivel 2: Detalle Monitor de Llamadas"
+},
+{
+"id": 2504,
+"es": "Nivel 3: Detalle Llamada"
+},
+{
+"id": 2505,
+"es": "Ejecución de Llamadas: Timeout"
+},
+{
+"id": 2506,
+"es": "Nivel 4: Detalle Proceso (Equipo)"
+},
+{
+"id": 2507,
+"es": "Nivel 5: Detalle Tarea"
+},
+{
+"id": 2508,
+"es": "En este módulo se monitorizan las diferentes solicitudes que se realizan a los medidores de campo en función de la configuración indicada anteriormente (tanto para llamada manual como planificada)."
+},
+{
+"id": 2509,
+"es": "Dicha monitorización se lleva a cabo en una vista con diferentes niveles de detalle. Hay que destacar que se visualizará en la misma vista tanto las llamadas realizadas como recibidas, en funcionamiento tanto síncrono como asíncrono."
+},
+{
+"id": 2510,
+"es": "A continuación, definimos los detalles de esta vista en función de sus diferentes niveles:"
+},
+{
+"id": 2511,
+"es": "Nivel 1: Monitor de Llamadas"
+},
+{
+"id": 2512,
+"es": " - Grupo de Llamada (Ejecución Manual o Planificada)"
+},
+{
+"id": 2513,
+"es": " - Una por cada dirección/equipo de comunicaciones"
+}
+]

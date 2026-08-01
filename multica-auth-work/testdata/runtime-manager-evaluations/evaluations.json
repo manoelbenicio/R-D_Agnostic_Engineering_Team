@@ -1,0 +1,484 @@
+{
+  "contract_version": "runtime-manager-evaluations.v1",
+  "frozen_commit": "a57c12e8424cd88cda178499563b69569d244d84",
+  "canonical_change": "credential-account-home-restoration",
+  "canonical_spec": {
+    "path": "openspec/changes/credential-account-home-restoration/specs/credential-account-home/spec.md",
+    "digest": "1cc2a91d7a0e0acdc7ab6d5f7d2ab9c708a50b227b66218fe5b4acb834c3e018",
+    "declared_requirements": 23
+  },
+  "pending_contracts": {
+    "note": "Vocabulary this suite asserts that has no product implementation yet. contract-binding.test.mjs recomputes both lists from real source and fails when either drifts, so an entry must be deleted as soon as its real contract lands.",
+    "unregistered_events": [
+      "runtime_binding:home_assigned",
+      "runtime_configuration:activated",
+      "runtime_configuration:applied",
+      "runtime_configuration:rolled_back",
+      "runtime_configuration:version_created",
+      "runtime_session:enrolled"
+    ],
+    "absent_source_symbols": [
+      "apply_class",
+      "effective_configuration_digest",
+      "runtime_binding",
+      "runtime_configuration",
+      "runtime_session"
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "golden-session-reuse",
+      "classification": "golden",
+      "title": "Reuse an owner-global accountless session with existing target rows",
+      "requirement_refs": ["REQ-03", "REQ-04"],
+      "operation": "reuse_runtime_session",
+      "state_before": {
+        "session_id": "33333333-3333-4333-8333-333333333333",
+        "target_workspace_id": "22222222-2222-4222-8222-222222222222",
+        "target_agent_id": "44444444-4444-4444-8444-444444444444",
+        "target_runtime_id": "55555555-5555-4555-8555-555555555555",
+        "daemon_id": "66666666-6666-4666-8666-666666666666",
+        "target_rows_exist": true,
+        "authorized": true
+      },
+      "request": {
+        "session_id": "33333333-3333-4333-8333-333333333333",
+        "workspace_id": "22222222-2222-4222-8222-222222222222",
+        "agent_id": "44444444-4444-4444-8444-444444444444",
+        "runtime_id": "55555555-5555-4555-8555-555555555555"
+      },
+      "expected": {
+        "decision": "accept",
+        "error_code": null,
+        "fail_closed": false,
+        "preserved_ids": {
+          "session_id": "33333333-3333-4333-8333-333333333333",
+          "agent_id": "44444444-4444-4444-8444-444444444444",
+          "runtime_id": "55555555-5555-4555-8555-555555555555",
+          "daemon_id": "66666666-6666-4666-8666-666666666666"
+        },
+        "created_resource_types": ["runtime_binding"],
+        "events": ["runtime_session:enrolled"],
+        "state_after": {
+          "binding_id": "77777777-7777-4777-8777-777777777777",
+          "home_assignment": null,
+          "agent_recreated": false,
+          "runtime_recreated": false,
+          "daemon_recreated": false
+        },
+        "assertions": [
+          "session remains accountless",
+          "subscription attachment remains a separate operation",
+          "existing agent runtime and daemon identities are reused"
+        ]
+      }
+    },
+    {
+      "id": "golden-exclusive-subscription-attach",
+      "classification": "golden",
+      "title": "Attach a healthy unassigned opaque home to an existing binding",
+      "requirement_refs": ["REQ-08"],
+      "operation": "attach_exclusive_subscription",
+      "state_before": {
+        "binding_id": "77777777-7777-4777-8777-777777777777",
+        "binding_generation": 12,
+        "catalog_generation": 41,
+        "home_ref": "home_opaque_02",
+        "home_state": "healthy",
+        "home_assigned": false
+      },
+      "request": {
+        "home_ref": "home_opaque_02",
+        "subscription_ref": "subscription_opaque_02",
+        "expected_binding_generation": 12,
+        "expected_catalog_generation": 41
+      },
+      "expected": {
+        "decision": "accept",
+        "error_code": null,
+        "fail_closed": false,
+        "preserved_ids": {
+          "session_id": "33333333-3333-4333-8333-333333333333",
+          "agent_id": "44444444-4444-4444-8444-444444444444",
+          "runtime_id": "55555555-5555-4555-8555-555555555555",
+          "daemon_id": "66666666-6666-4666-8666-666666666666",
+          "binding_id": "77777777-7777-4777-8777-777777777777"
+        },
+        "created_resource_types": ["home_assignment"],
+        "events": ["runtime_binding:home_assigned"],
+        "state_after": {
+          "binding_generation": 13,
+          "home_ref": "home_opaque_02",
+          "active_assignments_for_home": 1,
+          "agent_recreated": false,
+          "runtime_recreated": false,
+          "session_recreated": false,
+          "daemon_recreated": false
+        },
+        "assertions": [
+          "assignment is exclusive",
+          "only the opaque home reference crosses the product boundary",
+          "subscription attachment does not recreate persistent identities"
+        ]
+      }
+    },
+    {
+      "id": "golden-model-reasoning-hot-apply",
+      "classification": "golden",
+      "title": "Hot-apply a capability-valid per-runtime model and reasoning version",
+      "requirement_refs": ["REQ-09", "REQ-11", "REQ-12", "REQ-13"],
+      "operation": "hot_apply_model_reasoning",
+      "state_before": {
+        "binding_id": "77777777-7777-4777-8777-777777777777",
+        "binding_generation": 13,
+        "process_id": "runtime-process-01",
+        "active_version_id": "88888888-8888-4888-8888-888888888881",
+        "active_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "running_task_version_id": "88888888-8888-4888-8888-888888888881",
+        "capability_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "registered_apply_classes": {
+          "model.model_id": "hot",
+          "reasoning.mode": "hot",
+          "reasoning.budget": "hot"
+        }
+      },
+      "request": {
+        "expected_active_version_id": "88888888-8888-4888-8888-888888888881",
+        "expected_binding_generation": 13,
+        "configuration": {
+          "model_id": "provider-model-v2",
+          "reasoning_mode": "bounded",
+          "reasoning_budget": 6000
+        }
+      },
+      "expected": {
+        "decision": "accept",
+        "error_code": null,
+        "fail_closed": false,
+        "preserved_ids": {
+          "binding_id": "77777777-7777-4777-8777-777777777777",
+          "process_id": "runtime-process-01",
+          "running_task_version_id": "88888888-8888-4888-8888-888888888881"
+        },
+        "created_resource_types": ["runtime_configuration_version"],
+        "events": [
+          "runtime_configuration:version_created",
+          "runtime_configuration:activated",
+          "runtime_configuration:applied"
+        ],
+        "state_after": {
+          "active_version_id": "88888888-8888-4888-8888-888888888882",
+          "applied_version_id": "88888888-8888-4888-8888-888888888882",
+          "active_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "apply_class": "hot",
+          "daemon_acknowledged": true,
+          "process_restarted": false,
+          "running_task_version_id": "88888888-8888-4888-8888-888888888881",
+          "next_claim_version_id": "88888888-8888-4888-8888-888888888882"
+        },
+        "assertions": [
+          "capability validation performs no inference",
+          "model and reasoning apply only after daemon acknowledgement",
+          "running task snapshot remains pinned to its prior version"
+        ]
+      }
+    },
+    {
+      "id": "golden-rollback",
+      "classification": "golden",
+      "title": "Rollback by activating a prior immutable runtime configuration version",
+      "requirement_refs": ["REQ-02", "REQ-12", "REQ-13"],
+      "operation": "rollback_runtime_configuration",
+      "state_before": {
+        "binding_id": "77777777-7777-4777-8777-777777777777",
+        "process_id": "runtime-process-01",
+        "active_version_id": "88888888-8888-4888-8888-888888888882",
+        "history": [
+          "88888888-8888-4888-8888-888888888881",
+          "88888888-8888-4888-8888-888888888882"
+        ],
+        "running_task_version_id": "88888888-8888-4888-8888-888888888882"
+      },
+      "request": {
+        "target_version_id": "88888888-8888-4888-8888-888888888881",
+        "expected_active_version_id": "88888888-8888-4888-8888-888888888882",
+        "reason": "restore known-good capability set"
+      },
+      "expected": {
+        "decision": "accept",
+        "error_code": null,
+        "fail_closed": false,
+        "preserved_ids": {
+          "binding_id": "77777777-7777-4777-8777-777777777777",
+          "process_id": "runtime-process-01",
+          "running_task_version_id": "88888888-8888-4888-8888-888888888882"
+        },
+        "created_resource_types": ["activation_audit"],
+        "events": [
+          "runtime_configuration:rolled_back",
+          "runtime_configuration:applied"
+        ],
+        "state_after": {
+          "active_version_id": "88888888-8888-4888-8888-888888888881",
+          "history": [
+            "88888888-8888-4888-8888-888888888881",
+            "88888888-8888-4888-8888-888888888882"
+          ],
+          "history_mutated": false,
+          "daemon_acknowledged": true,
+          "running_task_version_id": "88888888-8888-4888-8888-888888888882",
+          "next_claim_version_id": "88888888-8888-4888-8888-888888888881"
+        },
+        "assertions": [
+          "rollback uses compare-and-swap",
+          "prior immutable versions are not rewritten",
+          "running task snapshot is not rewritten"
+        ]
+      }
+    },
+    {
+      "id": "golden-subagent-inheritance",
+      "classification": "golden",
+      "title": "Subagent inherits the parent snapshot and exclusive binding",
+      "requirement_refs": ["REQ-13", "REQ-14", "REQ-15"],
+      "operation": "spawn_subagent",
+      "state_before": {
+        "parent_task_id": "99999999-9999-4999-8999-999999999991",
+        "parent_snapshot": {
+          "session_id": "33333333-3333-4333-8333-333333333333",
+          "runtime_id": "55555555-5555-4555-8555-555555555555",
+          "agent_id": "44444444-4444-4444-8444-444444444444",
+          "workspace_id": "22222222-2222-4222-8222-222222222222",
+          "configuration_version_id": "88888888-8888-4888-8888-888888888882",
+          "effective_configuration_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "binding_id": "77777777-7777-4777-8777-777777777777",
+          "binding_generation": 13,
+          "home_ref": "home_opaque_02",
+          "catalog_generation": 41
+        },
+        "active_subagents": 1,
+        "subagent_limit": 3
+      },
+      "request": {
+        "parent_task_id": "99999999-9999-4999-8999-999999999991",
+        "task_overrides": {}
+      },
+      "expected": {
+        "decision": "accept",
+        "error_code": null,
+        "fail_closed": false,
+        "preserved_ids": {
+          "session_id": "33333333-3333-4333-8333-333333333333",
+          "runtime_id": "55555555-5555-4555-8555-555555555555",
+          "agent_id": "44444444-4444-4444-8444-444444444444",
+          "binding_id": "77777777-7777-4777-8777-777777777777",
+          "home_ref": "home_opaque_02"
+        },
+        "created_resource_types": [],
+        "events": [],
+        "state_after": {
+          "snapshot_equal_to_parent": true,
+          "persistent_runtime_rows_created": 0,
+          "persistent_session_rows_created": 0,
+          "persistent_home_assignments_created": 0,
+          "active_subagents": 2,
+          "subagent_limit": 3
+        },
+        "assertions": [
+          "subagent shares the parent binding and opaque home reference",
+          "subagent counts against configured concurrency",
+          "subagent creates no persistent runtime session or account-home row"
+        ]
+      }
+    },
+    {
+      "id": "forbidden-raw-path",
+      "classification": "forbidden",
+      "title": "Reject product-visible source-home path exposure",
+      "requirement_refs": ["REQ-01", "REQ-05", "REQ-20"],
+      "operation": "expose_raw_path",
+      "state_before": { "home_ref": "home_opaque_02" },
+      "request": {
+        "boundary": "product_api",
+        "field_name": "source_home_path",
+        "value_kind": "absolute_filesystem_path"
+      },
+      "expected": {
+        "decision": "reject",
+        "error_code": "invalid_argument",
+        "fail_closed": true,
+        "mutation_count": 0,
+        "side_effects": [],
+        "assertions": [
+          "response contains no raw path",
+          "only opaque home references may cross the boundary"
+        ]
+      }
+    },
+    {
+      "id": "forbidden-account-sharing",
+      "classification": "forbidden",
+      "title": "Reject sharing one active home across persistent bindings",
+      "requirement_refs": ["REQ-08", "REQ-15"],
+      "operation": "share_account_home",
+      "state_before": {
+        "home_ref": "home_opaque_02",
+        "active_binding_id": "77777777-7777-4777-8777-777777777777"
+      },
+      "request": {
+        "home_ref": "home_opaque_02",
+        "target_binding_id": "77777777-7777-4777-8777-777777777778"
+      },
+      "expected": {
+        "decision": "reject",
+        "error_code": "exclusive_assignment_conflict",
+        "fail_closed": true,
+        "mutation_count": 0,
+        "side_effects": [],
+        "assertions": [
+          "existing assignment remains unchanged",
+          "concurrency never authorizes account-home sharing"
+        ]
+      }
+    },
+    {
+      "id": "forbidden-credential-copy",
+      "classification": "forbidden",
+      "title": "Reject copying source credential material",
+      "requirement_refs": ["REQ-07", "REQ-21"],
+      "operation": "copy_source_credentials",
+      "state_before": { "home_ref": "home_opaque_02", "active_references": 0 },
+      "request": { "source_ref": "home_opaque_02", "target_kind": "task_local" },
+      "expected": {
+        "decision": "reject",
+        "error_code": "forbidden",
+        "fail_closed": true,
+        "mutation_count": 0,
+        "side_effects": [],
+        "assertions": ["source credential artifacts are never copied"]
+      }
+    },
+    {
+      "id": "forbidden-credential-move",
+      "classification": "forbidden",
+      "title": "Reject moving source credential material",
+      "requirement_refs": ["REQ-07", "REQ-21"],
+      "operation": "move_source_credentials",
+      "state_before": { "home_ref": "home_opaque_02", "active_references": 0 },
+      "request": { "source_ref": "home_opaque_02", "target_kind": "quarantine" },
+      "expected": {
+        "decision": "reject",
+        "error_code": "forbidden",
+        "fail_closed": true,
+        "mutation_count": 0,
+        "side_effects": [],
+        "assertions": ["quarantine is metadata-only and never moves source material"]
+      }
+    },
+    {
+      "id": "forbidden-credential-delete",
+      "classification": "forbidden",
+      "title": "Reject deleting source credential material",
+      "requirement_refs": ["REQ-07", "REQ-21"],
+      "operation": "delete_source_credentials",
+      "state_before": { "home_ref": "home_opaque_02", "retention_expired": true },
+      "request": { "source_ref": "home_opaque_02", "reason": "retention_expired" },
+      "expected": {
+        "decision": "reject",
+        "error_code": "forbidden",
+        "fail_closed": true,
+        "mutation_count": 0,
+        "side_effects": [],
+        "assertions": ["retention expiry may retire metadata only"]
+      }
+    },
+    {
+      "id": "forbidden-static-allowlist",
+      "classification": "forbidden",
+      "title": "Reject a fixed slot allowlist for controlled-root discovery",
+      "requirement_refs": ["REQ-05", "REQ-06"],
+      "operation": "configure_static_slot_allowlist",
+      "state_before": { "catalog_generation": 41 },
+      "request": { "allowed_slots": [1, 2, 3], "reject_overflow_children": true },
+      "expected": {
+        "decision": "reject",
+        "error_code": "invalid_configuration",
+        "fail_closed": true,
+        "mutation_count": 0,
+        "side_effects": [],
+        "assertions": [
+          "arbitrary valid immediate children remain discoverable",
+          "capacity is not encoded as a slot grammar"
+        ]
+      }
+    },
+    {
+      "id": "forbidden-cross-binding-fallback",
+      "classification": "forbidden",
+      "title": "Reject fallback across transport bindings",
+      "requirement_refs": ["REQ-01", "REQ-16"],
+      "operation": "fallback_across_transport_binding",
+      "state_before": {
+        "pinned_transport_binding": "omniroute",
+        "preferred_route_health": "unhealthy"
+      },
+      "request": {
+        "fallback_transport_binding": "native_credential_home",
+        "fallback_home_ref": "home_opaque_02"
+      },
+      "expected": {
+        "decision": "reject",
+        "error_code": "capability_unsupported",
+        "fail_closed": true,
+        "mutation_count": 0,
+        "side_effects": [],
+        "assertions": [
+          "pinned transport binding remains unchanged",
+          "no native home is resolved for an OmniRoute-bound task"
+        ]
+      }
+    },
+    {
+      "id": "forbidden-custom-infrastructure",
+      "classification": "forbidden",
+      "title": "Reject recreation or custom runtime infrastructure",
+      "requirement_refs": ["REQ-03", "REQ-04", "REQ-22"],
+      "operation": "create_custom_infrastructure",
+      "state_before": {
+        "existing_daemon_id": "66666666-6666-4666-8666-666666666666",
+        "existing_runtime_id": "55555555-5555-4555-8555-555555555555"
+      },
+      "request": {
+        "resource_types": ["daemon", "container", "runtime_installation", "agent"]
+      },
+      "expected": {
+        "decision": "reject",
+        "error_code": "forbidden",
+        "fail_closed": true,
+        "mutation_count": 0,
+        "side_effects": [],
+        "assertions": [
+          "existing ORQ2 daemon and rows must be reused",
+          "ORQ2-dev reservations remain immutable"
+        ]
+      }
+    },
+    {
+      "id": "forbidden-sharepoint",
+      "classification": "forbidden",
+      "title": "Reject SharePoint work in the current release boundary",
+      "requirement_refs": ["REQ-22"],
+      "operation": "perform_sharepoint_work",
+      "state_before": { "release_boundary": "non_production_first_wave" },
+      "request": { "integration": "SharePoint", "action": "read_or_write" },
+      "expected": {
+        "decision": "reject",
+        "error_code": "forbidden",
+        "fail_closed": true,
+        "mutation_count": 0,
+        "side_effects": [],
+        "assertions": ["SharePoint SPE-11 through SPE-17 remains prohibited"]
+      }
+    }
+  ]
+}
