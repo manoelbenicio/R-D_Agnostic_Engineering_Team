@@ -1,0 +1,3 @@
+# Exact large-file exceptions: path<TAB>bytes<TAB>blob_oid
+# Entries apply only to blobs from 10485760 through 100000000 bytes.
+# No exceptions are currently approved.

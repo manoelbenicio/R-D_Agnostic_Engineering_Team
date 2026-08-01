@@ -324,3 +324,13 @@ clean: ## Remove build caches, generated binaries, and temp files
 	rm -rf .turbo apps/*/.turbo packages/*/.turbo
 	rm -rf apps/*/*.tsbuildinfo packages/*/*.tsbuildinfo
 	@echo "✓ Clean complete."
+
+# ---------- Repository integrity ----------
+##@ Repository integrity
+
+repository-integrity: ## Scan currently staged blob identities
+	cd .. && python3 scripts/ops/git-object-size-gate.py --staged
+
+repository-integrity-tests: ## Run object-size and read-only autostop fixtures
+	cd .. && bash scripts/ops/tests/git-object-size-gate-test.sh
+	cd .. && bash scripts/ops/tests/agent-idle-autostop-harness.sh

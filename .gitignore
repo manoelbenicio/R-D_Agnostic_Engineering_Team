@@ -72,3 +72,9 @@ data_experts/
 
 # Vite cache
 .vite/
+
+# Local-only restricted artifacts; never publish.
+/c:Temp.json
+/inbox/onesait-metering-kb-20260728-ptBR.docx
+/inbox/onesait-metering-kb-20260728.docx
+/multica-senior-audit-session.json

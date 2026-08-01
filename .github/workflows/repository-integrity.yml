@@ -1,0 +1,35 @@
+name: Repository integrity
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  object-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan newly reachable objects
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          TIP_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            python3 scripts/ops/git-object-size-gate.py --range "$BASE_SHA..$TIP_SHA"
+          elif [[ -z "${BEFORE_SHA:-}" || "$BEFORE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            python3 scripts/ops/git-object-size-gate.py --range "$TIP_SHA"
+          else
+            python3 scripts/ops/git-object-size-gate.py --range "$BEFORE_SHA..$TIP_SHA"
+          fi
+      - name: Run integrity fixtures
+        run: bash scripts/ops/tests/git-object-size-gate-test.sh
