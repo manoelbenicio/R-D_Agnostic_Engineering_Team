@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "disposition": "deferred_not_sent",
+  "sent": false,
+  "execution_authorized": false,
+  "workspace_uuid": "56422d5a-539f-4973-ab1c-49beebbc45d0",
+  "issue_identifier": "SPE-4",
+  "issue_uuid": null,
+  "uuid_policy": "Do not invent or infer a UUID. Resolve SPE-4 within the exact workspace at execution time and require exactly one authoritative match.",
+  "purpose": "Document the exact Kanban operations that may be performed only after authorized issue UUID resolution and all preconditions. This file does not execute an API request.",
+  "current_router_handler_references": [
+    "server/cmd/server/router.go:723-739 - /api/issues/{id}/ PUT routes to h.UpdateIssue and POST /comments routes to h.CreateComment",
+    "server/internal/handler/issue.go:2289-2308 - UpdateIssueRequest.Status and Handler.UpdateIssue",
+    "server/internal/handler/comment.go:771-777,915-927 - CreateCommentRequest content/type and Handler.CreateComment"
+  ],
+  "preconditions": [
+    "An authorized operator resolves issue identifier SPE-4 inside workspace 56422d5a-539f-4973-ab1c-49beebbc45d0 to exactly one issue UUID through the current read contract.",
+    "The resolved issue belongs to the exact workspace and its human-readable identifier is exactly SPE-4; zero or multiple matches fail closed.",
+    "The operator verifies the current issue state immediately before each mutation and confirms that no concurrent or superseding transition has occurred.",
+    "The operator verifies the current API contract against server/cmd/server/router.go, server/internal/handler/issue.go, and server/internal/handler/comment.go before sending.",
+    "No credential, authentication material, production resource, runtime, daemon, or SharePoint operation is accessed or changed by this documentation payload.",
+    "K3 / SENIOR-DATA-SEMANTIC independent acceptance is mandatory before the final in_review transition. Producer completion alone is not acceptance."
+  ],
+  "idempotency": {
+    "resolution_key": {
+      "workspace_uuid": "56422d5a-539f-4973-ab1c-49beebbc45d0",
+      "issue_identifier": "SPE-4"
+    },
+    "status_rules": [
+      "Before PUT in_progress, read the issue. If status is already in_progress and no superseding state exists, treat that transition as satisfied and do not duplicate it.",
+      "Never regress an issue from in_review, done, cancelled, or another superseding state to in_progress.",
+      "Before PUT in_review, require recorded K3 / SENIOR-DATA-SEMANTIC independent acceptance and re-read the issue. If already in_review, treat the transition as satisfied; never regress a later state."
+    ],
+    "comment_rules": [
+      "Before POST, search existing SPE-4 comments for exact content equality with the planned content.",
+      "If an exact comment already exists, do not post a duplicate.",
+      "On an ambiguous timeout or transport failure, re-read comments before retrying; retry only when absence is proven."
+    ],
+    "failure_policy": "Fail closed on unresolved UUID, workspace mismatch, duplicate matches, contract drift, stale state, missing authorization, missing K3 independent acceptance, or ambiguous prior mutation outcome."
+  },
+  "operations_after_uuid_resolution": [
+    {
+      "order": 1,
+      "condition": "Authorized UUID resolution and all non-acceptance preconditions pass.",
+      "method": "PUT",
+      "path": "/api/issues/{issueUUID}/",
+      "body": {
+        "status": "in_progress"
+      }
+    },
+    {
+      "order": 2,
+      "condition": "Operation 1 is applied or idempotently satisfied and no superseding state exists.",
+      "method": "POST",
+      "path": "/api/issues/{issueUUID}/comments",
+      "body": {
+        "content": "SPE-4 documentation phase prepared: the K1-K3/C1-C5 ownership map, isolated future file/module/worktree locks, complete Multica dependency DAG and greenlight gates are frozen in .deploy-control/p0/evidence/spe4-multica-adjustment-ownership-manifest.md. The lock preserves exactly 3 Kiro + 5 Codex persistent agents/logical runtimes for the new workspace, nonpersistent subagents, the existing orq2-credential-runtime-v1 daemon/runtime rows, immutable ORQ2-dev 4 AGY (Antigravity) + 2 Codex + 2 Kiro exclusive assignments, the external deficit of at least two Codex homes, the no-copy/move/delete credential rule, the SPE-6 documentary correction, implementation/production NO-GO, and the SPE-11 through SPE-17 prohibition. No API, runtime, credential, daemon, production, auth, or SharePoint action was performed. K3 independent acceptance is required before in_review.",
+        "type": "comment"
+      }
+    },
+    {
+      "order": 3,
+      "condition": "Only after K3 / SENIOR-DATA-SEMANTIC independent acceptance is recorded and all final-transition preconditions pass.",
+      "method": "PUT",
+      "path": "/api/issues/{issueUUID}/",
+      "body": {
+        "status": "in_review"
+      }
+    }
+  ],
+  "execution_record": {
+    "resolved_issue_uuid": null,
+    "k3_independent_acceptance": false,
+    "requests_sent": 0,
+    "result": "not_sent"
+  }
+}
