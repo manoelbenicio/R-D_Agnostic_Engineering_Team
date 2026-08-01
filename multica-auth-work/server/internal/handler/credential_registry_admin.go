@@ -8,8 +8,20 @@ import (
 
 const (
 	credentialRegistryOpaqueReferenceMaxLength = 128
+	credentialRegistryDefaultPageLimit         = 50
+	credentialRegistryMaxPageLimit             = 100
+	credentialRegistryMaxCounterCardinality    = 64
 	credentialRegistryRedactedReference        = "[redacted]"
 	credentialRegistryUnavailableRequestID     = "unavailable"
+)
+
+var (
+	// ErrCredentialRegistryUnauthenticated is deliberately constant so malformed
+	// authentication material can never be reflected by a handler.
+	ErrCredentialRegistryUnauthenticated = errors.New("credential registry authentication failed")
+	// ErrCredentialRegistryForbidden is deliberately constant so authorization
+	// and tenant-guard internals can never disclose identities or paths.
+	ErrCredentialRegistryForbidden = errors.New("credential registry access denied")
 )
 
 // CredentialRegistryActor identifies an already-authenticated caller without
@@ -36,11 +48,81 @@ type CredentialRegistryWorkspaceGuard interface {
 	RequireDaemonWorkspace(ctx context.Context, actor CredentialRegistryActor, daemonID, workspaceID string) error
 }
 
+// CredentialRegistryBoundary applies the authentication and tenant checks that
+// every pathless registry handler must complete before invoking registry core.
+// It intentionally has no router, database, or registry-core dependency.
+type CredentialRegistryBoundary struct {
+	actorGuard     CredentialRegistryActorGuard
+	workspaceGuard CredentialRegistryWorkspaceGuard
+}
+
+func NewCredentialRegistryBoundary(actorGuard CredentialRegistryActorGuard, workspaceGuard CredentialRegistryWorkspaceGuard) (*CredentialRegistryBoundary, error) {
+	if actorGuard == nil || workspaceGuard == nil {
+		return nil, errors.New("credential registry guards are required")
+	}
+	return &CredentialRegistryBoundary{actorGuard: actorGuard, workspaceGuard: workspaceGuard}, nil
+}
+
+// AuthorizeWorkspace confines a human owner/admin operation to one validated
+// workspace. Task and machine actors are denied before any tenant lookup. Guard
+// errors are collapsed to a constant sentinel to prevent disclosure.
+func (b *CredentialRegistryBoundary) AuthorizeWorkspace(ctx context.Context, actor CredentialRegistryActor, workspaceID string) error {
+	if ctx == nil || actor.Validate() != nil {
+		return ErrCredentialRegistryUnauthenticated
+	}
+	if actor.Type != "human" {
+		return ErrCredentialRegistryForbidden
+	}
+	if validateCredentialRegistryOpaqueReference(workspaceID) != nil {
+		return ErrCredentialRegistryForbidden
+	}
+	if b == nil || b.actorGuard == nil || b.workspaceGuard == nil {
+		return ErrCredentialRegistryForbidden
+	}
+	if err := b.actorGuard.RequireOwnerOrWorkspaceAdmin(ctx, actor, workspaceID); err != nil {
+		return ErrCredentialRegistryForbidden
+	}
+	if err := b.workspaceGuard.RequireWorkspace(ctx, actor, workspaceID); err != nil {
+		return ErrCredentialRegistryForbidden
+	}
+	return nil
+}
+
+// AuthorizeDaemonReport confines a daemon report to the authenticated daemon
+// identity and its explicitly authorized workspace. A caller cannot ask the
+// workspace guard to authorize a different daemon ID.
+func (b *CredentialRegistryBoundary) AuthorizeDaemonReport(ctx context.Context, actor CredentialRegistryActor, daemonID, workspaceID string) error {
+	if ctx == nil || actor.Validate() != nil {
+		return ErrCredentialRegistryUnauthenticated
+	}
+	if actor.Type != "daemon" || actor.ID != daemonID {
+		return ErrCredentialRegistryForbidden
+	}
+	if validateCredentialRegistryOpaqueReference(daemonID) != nil || validateCredentialRegistryOpaqueReference(workspaceID) != nil {
+		return ErrCredentialRegistryForbidden
+	}
+	if b == nil || b.workspaceGuard == nil {
+		return ErrCredentialRegistryForbidden
+	}
+	if err := b.workspaceGuard.RequireDaemonWorkspace(ctx, actor, daemonID, workspaceID); err != nil {
+		return ErrCredentialRegistryForbidden
+	}
+	return nil
+}
+
 // CredentialHomeListRequest is the query DTO for the pathless catalog
 // projection. Cursor is opaque; it is never a filesystem cursor or path.
 type CredentialHomeListRequest struct {
 	Cursor string
 	Limit  int
+}
+
+// EffectiveLimit returns the bounded default used when limit is omitted.
+func (r CredentialHomeListRequest) EffectiveLimit() int {
+	if r.Limit == 0 {
+		return credentialRegistryDefaultPageLimit
+	}
+	return r.Limit
 }
 
 // CredentialHomeSummary is the complete public catalog projection. Its shape
@@ -262,8 +344,8 @@ func (r CredentialHomeListRequest) Validate() error {
 			return errors.New("cursor must be an opaque non-path reference")
 		}
 	}
-	if r.Limit < 0 {
-		return errors.New("limit must not be negative")
+	if r.Limit < 0 || r.Limit > credentialRegistryMaxPageLimit {
+		return fmt.Errorf("limit must be between 0 and %d", credentialRegistryMaxPageLimit)
 	}
 	return nil
 }
@@ -272,8 +354,8 @@ func (r CredentialHomeSummary) Validate() error {
 	if err := validateCredentialRegistryOpaqueReference(r.HomeRef); err != nil {
 		return errors.New("home_ref must be an opaque non-path reference")
 	}
-	if r.CatalogGeneration < 0 {
-		return errors.New("catalog_generation must not be negative")
+	if r.CatalogGeneration <= 0 {
+		return errors.New("catalog_generation must be greater than zero")
 	}
 	if !isCredentialRegistryToken(r.Provider) {
 		return errors.New("provider must be a non-path token")
@@ -288,6 +370,9 @@ func (r CredentialHomeSummary) Validate() error {
 }
 
 func (r CredentialHomeListResponse) Validate() error {
+	if len(r.Items) > credentialRegistryMaxPageLimit {
+		return fmt.Errorf("items must contain at most %d entries", credentialRegistryMaxPageLimit)
+	}
 	for i := range r.Items {
 		if err := r.Items[i].Validate(); err != nil {
 			return fmt.Errorf("items[%d]: %w", i, err)
@@ -305,18 +390,18 @@ func (r CredentialHomeAssignmentRequest) Validate() error {
 	if err := validateCredentialRegistryOpaqueReference(r.HomeRef); err != nil {
 		return errors.New("home_ref must be an opaque non-path reference")
 	}
-	if r.ExpectedBindingGeneration < 0 {
-		return errors.New("expected_binding_generation must not be negative")
+	if r.ExpectedBindingGeneration <= 0 {
+		return errors.New("expected_binding_generation must be greater than zero")
 	}
-	if r.ExpectedCatalogGeneration < 0 {
-		return errors.New("expected_catalog_generation must not be negative")
+	if r.ExpectedCatalogGeneration <= 0 {
+		return errors.New("expected_catalog_generation must be greater than zero")
 	}
 	return nil
 }
 
 func (r CredentialHomeReleaseRequest) Validate() error {
-	if r.ExpectedBindingGeneration < 0 {
-		return errors.New("expected_binding_generation must not be negative")
+	if r.ExpectedBindingGeneration <= 0 {
+		return errors.New("expected_binding_generation must be greater than zero")
 	}
 	return nil
 }
@@ -332,8 +417,8 @@ func (r CredentialHomeReconciliationResponse) Validate() error {
 	if err := validateCredentialRegistryOpaqueReference(r.OperationID); err != nil {
 		return errors.New("operation_id must be an opaque non-path reference")
 	}
-	if r.Generation < 0 {
-		return errors.New("generation must not be negative")
+	if r.Generation <= 0 {
+		return errors.New("generation must be greater than zero")
 	}
 	return validateCredentialRegistryCounters(r.Counters)
 }
@@ -342,8 +427,8 @@ func (r CredentialCatalogReconciliationReportRequest) Validate() error {
 	if err := validateCredentialRegistryOpaqueReference(r.DaemonID); err != nil {
 		return errors.New("daemon_id must be an opaque non-path reference")
 	}
-	if r.PreviousGeneration < 0 {
-		return errors.New("previous_generation must not be negative")
+	if r.PreviousGeneration <= 0 {
+		return errors.New("previous_generation must be greater than zero")
 	}
 	if r.Generation <= r.PreviousGeneration {
 		return errors.New("generation must be greater than previous_generation")
@@ -355,7 +440,7 @@ func (r CredentialCatalogReconciliationReportRequest) Validate() error {
 		return err
 	}
 	if !isCredentialRegistrySHA256(r.Digest) {
-		return errors.New("digest must be a SHA-256 hexadecimal value")
+		return errors.New("digest must be a raw lowercase 64-hex SHA-256 value")
 	}
 	return nil
 }
@@ -363,6 +448,12 @@ func (r CredentialCatalogReconciliationReportRequest) Validate() error {
 func validateCredentialRegistryCounters(counters map[string]int64) error {
 	if counters == nil {
 		return errors.New("counters are required")
+	}
+	if len(counters) == 0 {
+		return errors.New("counters must not be empty")
+	}
+	if len(counters) > credentialRegistryMaxCounterCardinality {
+		return fmt.Errorf("counters must contain at most %d entries", credentialRegistryMaxCounterCardinality)
 	}
 	for name, value := range counters {
 		if !isCredentialRegistryToken(name) {
@@ -385,7 +476,7 @@ func isCredentialRegistrySHA256(value string) bool {
 	}
 	for i := 0; i < len(value); i++ {
 		c := value[i]
-		if (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') {
+		if (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') {
 			continue
 		}
 		return false
