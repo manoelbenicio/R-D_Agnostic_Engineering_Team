@@ -4,7 +4,7 @@
   "canonical_change": "credential-account-home-restoration",
   "canonical_spec": {
     "path": "openspec/changes/credential-account-home-restoration/specs/credential-account-home/spec.md",
-    "digest": "sha256:1cc2a91d7a0e0acdc7ab6d5f7d2ab9c708a50b227b66218fe5b4acb834c3e018",
+    "digest": "1cc2a91d7a0e0acdc7ab6d5f7d2ab9c708a50b227b66218fe5b4acb834c3e018",
     "declared_requirements": 23
   },
   "pending_contracts": {
@@ -133,9 +133,9 @@
         "binding_generation": 13,
         "process_id": "runtime-process-01",
         "active_version_id": "88888888-8888-4888-8888-888888888881",
-        "active_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "active_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "running_task_version_id": "88888888-8888-4888-8888-888888888881",
-        "capability_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "capability_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "registered_apply_classes": {
           "model.model_id": "hot",
           "reasoning.mode": "hot",
@@ -169,7 +169,7 @@
         "state_after": {
           "active_version_id": "88888888-8888-4888-8888-888888888882",
           "applied_version_id": "88888888-8888-4888-8888-888888888882",
-          "active_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "active_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "apply_class": "hot",
           "daemon_acknowledged": true,
           "process_restarted": false,
@@ -250,7 +250,7 @@
           "agent_id": "44444444-4444-4444-8444-444444444444",
           "workspace_id": "22222222-2222-4222-8222-222222222222",
           "configuration_version_id": "88888888-8888-4888-8888-888888888882",
-          "effective_configuration_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "effective_configuration_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "binding_id": "77777777-7777-4777-8777-777777777777",
           "binding_generation": 13,
           "home_ref": "home_opaque_02",

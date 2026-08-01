@@ -96,7 +96,7 @@ test("fixture requirement refs exist in the real frozen OpenSpec requirement set
 
 test("frozen spec digest still matches the pinned canonical digest", async () => {
   const spec = await readRequired(suite.canonical_spec.path, "spec freeze binding");
-  const actual = `sha256:${createHash("sha256").update(spec).digest("hex")}`;
+  const actual = createHash("sha256").update(spec).digest("hex");
   assert.equal(
     actual,
     suite.canonical_spec.digest,

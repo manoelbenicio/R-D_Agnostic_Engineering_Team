@@ -16,9 +16,20 @@ It also contains fail-closed cases for raw-path exposure, account-home sharing, 
 
 The fixture uses only opaque synthetic identifiers. It contains no credential value, account identity, provider-native secret, or source-home filesystem path. It is evaluation data only: it does not perform inference, contact a runner, mutate production, deploy, push, or access SharePoint.
 
-## Digest normalization
+## Digest form
 
-Every digest is written as `sha256:<64 lowercase hex>`; a bare 64-hex string is rejected by both the schema (`$defs.digest`) and `validate.test.mjs`. Synthetic digests must stay single-nibble (`sha256:aaaa…`) so they can never be mistaken for a real hash. The one real digest is `canonical_spec.digest`, which pins the frozen spec file.
+Every digest — `active_digest`, `capability_digest`, `effective_configuration_digest` and
+`canonical_spec.digest` — is **raw lowercase, exactly 64 hexadecimal characters**. The `sha256:`
+prefix is forbidden, per clause 6 of the unified authority baseline frozen in commit `c35c200`
+(`.deploy-control/p0/evidence/spe4-spe5-unified-authority-baseline.md`): *"The effective
+configuration digest wire/storage form is raw lowercase 64 hexadecimal characters. The `sha256:`
+prefix is forbidden."*
+
+`$defs.digest` enforces `^[0-9a-f]{64}$`. `validate.test.mjs` rejects any `sha256:` occurrence in
+fixture data, rejects uppercase and over-length hex, and carries an explicit forbidden negative
+fixture proving the schema rejects a prefixed digest — the only place the prefix may appear.
+Synthetic digests must stay single-nibble (`aaaa…`) so they can never be mistaken for a real hash;
+the one real digest is `canonical_spec.digest`, which pins the frozen spec file.
 
 ## Real contract bindings
 
@@ -42,7 +53,8 @@ Run the focused dependency-free tests from `multica-auth-work`:
 
 ```bash
 node --test testdata/runtime-manager-evaluations/validate.test.mjs \
-             testdata/runtime-manager-evaluations/contract-binding.test.mjs
+             testdata/runtime-manager-evaluations/contract-binding.test.mjs \
+             testdata/runtime-manager-evaluations/hardening.test.mjs
 ```
 
-`validate.test.mjs` validates the fixture against `evaluation.schema.json`, verifies exact golden/forbidden operation coverage, digest normalization, and checks operation-specific identity, snapshot, exclusivity, hot-apply, rollback, inheritance, and fail-closed invariants. `contract-binding.test.mjs` enforces the bindings above.
+`validate.test.mjs` validates the fixture against `evaluation.schema.json`, verifies exact golden/forbidden operation coverage, digest normalization, and checks operation-specific identity, snapshot, exclusivity, hot-apply, rollback, inheritance, and fail-closed invariants. `contract-binding.test.mjs` enforces the bindings above. `hardening.test.mjs` adds the exclusivity-race, rollback, digest, pathless and exact-eight prohibition checks, each bound to committed spec text.

@@ -212,24 +212,43 @@ test("forbidden actions carry no outcome that could imply a write", () => {
   }
 });
 
-test("every digest is a normalized prefixed synthetic digest", () => {
+test("every digest is raw lowercase 64-hex, never prefixed", () => {
   const serialized = JSON.stringify(suite);
-  assert.doesNotMatch(
-    serialized,
-    /"[0-9a-fA-F]{64}"/,
-    "raw 64-hex digests must be normalized to the sha256:<hex> form",
-  );
-  const digests = serialized.match(/sha256:[0-9a-f]{64}/g) ?? [];
+  // Authority baseline clause 6 (commit c35c200): the effective configuration
+  // digest wire/storage form is raw lowercase 64 hexadecimal characters and the
+  // "sha256:" prefix is forbidden.
+  assert.doesNotMatch(serialized, /sha256:/, "the sha256: digest prefix is forbidden in fixture data");
+  assert.doesNotMatch(serialized, /"[0-9a-fA-F]{64}[0-9a-fA-F]+"/, "a digest must be exactly 64 hex characters");
+
+  const digests = serialized.match(/"[0-9a-fA-F]{64}"/g) ?? [];
   assert.ok(digests.length > 0, "suite must exercise at least one digest");
-  for (const digest of digests) {
-    const hex = digest.slice("sha256:".length);
-    if (hex === suite.canonical_spec.digest.slice("sha256:".length)) continue;
+  for (const quoted of digests) {
+    const hex = quoted.slice(1, -1);
+    assert.match(hex, /^[0-9a-f]{64}$/, `${hex} must be lowercase raw 64-hex`);
+    if (hex === suite.canonical_spec.digest) continue;
     assert.equal(
       new Set(hex).size,
       1,
-      `${digest} must stay a single-nibble synthetic value so it cannot be mistaken for a real digest`,
+      `${hex} must stay a single-nibble synthetic value so it cannot be mistaken for a real digest`,
     );
   }
+});
+
+test("a sha256:-prefixed digest is rejected by the schema", () => {
+  // Explicit forbidden negative fixture: the only place the prefix may appear.
+  const negative = structuredClone(suite);
+  negative.canonical_spec.digest = `sha256:${suite.canonical_spec.digest}`;
+  const errors = validate(negative, schema);
+  assert.notDeepEqual(errors, [], "schema must reject a sha256:-prefixed digest");
+
+  const scenarioNegative = structuredClone(suite);
+  const hot = scenarioNegative.scenarios.find(({ operation }) => operation === "hot_apply_model_reasoning");
+  hot.state_before.active_digest = `sha256:${hot.state_before.active_digest}`;
+  assert.notDeepEqual(
+    validate(scenarioNegative, schema),
+    [],
+    "schema must reject a prefixed digest inside a scenario snapshot",
+  );
 });
 
 test("fixtures contain no literal source-home path or credential payload", () => {
