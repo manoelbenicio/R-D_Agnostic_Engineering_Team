@@ -27,11 +27,30 @@ const (
 	FieldTransportBinding Field = "transport_binding"
 	FieldCLIKind          Field = "cli_kind"
 	FieldProvider         Field = "provider"
+	FieldSubscriptionRef  Field = "subscription_ref"
+	FieldProviderCatalog  Field = "provider_catalog_version"
+	FieldCapabilityDigest Field = "capability_digest"
 	FieldModel            Field = "model"
+	FieldReasoningMode    Field = "reasoning_mode"
 	FieldReasoningEffort  Field = "reasoning_effort"
+	FieldReasoningBudget  Field = "reasoning_budget"
+	FieldMaxContextTokens Field = "max_context_tokens"
 	FieldMaxInputTokens   Field = "max_input_tokens"
 	FieldMaxOutputTokens  Field = "max_output_tokens"
+	FieldMaxTotalTokens   Field = "max_total_tokens"
 	FieldMaxToolCalls     Field = "max_tool_calls"
+	FieldWallTimeoutMS    Field = "wall_timeout_ms"
+	FieldIdleTimeoutMS    Field = "idle_timeout_ms"
+	FieldConcurrency      Field = "concurrency"
+	FieldRetry            Field = "retry"
+	FieldFlags            Field = "flags"
+	FieldEnvironment      Field = "env"
+	FieldSkills           Field = "skills"
+	FieldMCPTools         Field = "mcp_tools"
+	FieldPermissions      Field = "permissions"
+	FieldEligibility      Field = "eligibility"
+	FieldHealth           Field = "health"
+	FieldFallback         Field = "fallback"
 )
 
 // The ordered field set, membership, reload class, and typed accessors all
@@ -55,27 +74,140 @@ type ProviderID string
 // ModelID identifies a model in a provider capability declaration.
 type ModelID string
 
-// ReasoningEffort is a provider-declared reasoning level.
+// ReasoningMode and ReasoningEffort are provider-declared reasoning controls.
+type ReasoningMode string
 type ReasoningEffort string
 
-// Limits contains optional task execution limits. Pointers distinguish unset
-// fields from explicit values, including invalid zero values.
+// Limits contains optional execution ceilings. Pointers distinguish omission
+// (inherit) from an explicit invalid zero.
 type Limits struct {
-	MaxInputTokens  *int64 `json:"max_input_tokens,omitempty"`
-	MaxOutputTokens *int64 `json:"max_output_tokens,omitempty"`
-	MaxToolCalls    *int64 `json:"max_tool_calls,omitempty"`
+	MaxContextTokens *int64 `json:"max_context_tokens,omitempty"`
+	MaxInputTokens   *int64 `json:"max_input_tokens,omitempty"`
+	MaxOutputTokens  *int64 `json:"max_output_tokens,omitempty"`
+	MaxTotalTokens   *int64 `json:"max_total_tokens,omitempty"`
+	MaxToolCalls     *int64 `json:"max_tool_calls,omitempty"`
+	WallTimeoutMS    *int64 `json:"wall_timeout_ms,omitempty"`
+	IdleTimeoutMS    *int64 `json:"idle_timeout_ms,omitempty"`
 }
 
-// Values is the typed runtime configuration payload. This contract
-// intentionally has no credential, token, cookie, endpoint, path, prompt, or
-// arbitrary map field.
+// ConcurrencyPolicy bounds reusable sessions, tasks, subagents and queueing
+// independently of physical account inventory.
+type ConcurrencyPolicy struct {
+	MaxSessions  *int64 `json:"max_sessions,omitempty"`
+	MaxTasks     *int64 `json:"max_tasks,omitempty"`
+	MaxSubagents *int64 `json:"max_subagents,omitempty"`
+	MaxQueue     *int64 `json:"max_queue,omitempty"`
+}
+
+// RetryPolicy is a bounded control-plane retry declaration.
+type RetryPolicy struct {
+	MaxAttempts      *int64   `json:"max_attempts,omitempty"`
+	BackoffMS        *int64   `json:"backoff_ms,omitempty"`
+	MaxBackoffMS     *int64   `json:"max_backoff_ms,omitempty"`
+	JitterPercent    *int64   `json:"jitter_percent,omitempty"`
+	DeadlineBudgetMS *int64   `json:"deadline_budget_ms,omitempty"`
+	RetryableClasses []string `json:"retryable_classes,omitempty"`
+}
+
+// FlagPolicy preserves CLI flag order. Values are validated as single safe
+// arguments and credential/path-bearing flags are rejected.
+type FlagPolicy struct {
+	Ordered []string `json:"ordered"`
+}
+
+// EnvironmentEntry allows either a bounded non-secret literal or an opaque
+// reference. Exactly one of Value and Reference may be present.
+type EnvironmentEntry struct {
+	Key       string  `json:"key"`
+	Value     *string `json:"value,omitempty"`
+	Reference *string `json:"reference,omitempty"`
+}
+
+type EnvironmentPolicy struct {
+	Entries []EnvironmentEntry `json:"entries"`
+}
+
+// VersionedRef is a secret-free immutable artifact reference.
+type VersionedRef struct {
+	ID      string `json:"id"`
+	Version string `json:"version"`
+	Digest  string `json:"digest"`
+}
+
+type SkillPolicy struct {
+	Allowed []VersionedRef `json:"allowed"`
+}
+
+type MCPToolRef struct {
+	ServerID  string `json:"server_id"`
+	ToolID    string `json:"tool_id"`
+	Scope     string `json:"scope"`
+	Version   string `json:"version"`
+	TimeoutMS *int64 `json:"timeout_ms,omitempty"`
+}
+
+type MCPToolPolicy struct {
+	Allowed []MCPToolRef `json:"allowed"`
+}
+
+// PermissionPolicy uses symbolic policy IDs only; raw filesystem paths and
+// inline network endpoints are not representable.
+type PermissionPolicy struct {
+	FilesystemPolicies []string `json:"filesystem_policies,omitempty"`
+	NetworkPolicies    []string `json:"network_policies,omitempty"`
+	ProcessGrants      []string `json:"process_grants,omitempty"`
+	ToolGrants         []string `json:"tool_grants,omitempty"`
+}
+
+type EligibilityPolicy struct {
+	Providers            []string `json:"providers,omitempty"`
+	RuntimeKinds         []string `json:"runtime_kinds,omitempty"`
+	DaemonClasses        []string `json:"daemon_classes,omitempty"`
+	WorkspaceClasses     []string `json:"workspace_classes,omitempty"`
+	RequiredCapabilities []string `json:"required_capabilities,omitempty"`
+}
+
+type HealthPolicy struct {
+	FreshnessTTLMS   *int64 `json:"freshness_ttl_ms,omitempty"`
+	ReadinessPercent *int64 `json:"readiness_percent,omitempty"`
+	CircuitState     string `json:"circuit_state,omitempty"`
+	ProbeClass       string `json:"probe_class,omitempty"`
+}
+
+type FallbackRoute struct {
+	RouteID        string   `json:"route_id"`
+	FailureClasses []string `json:"failure_classes,omitempty"`
+	MaxAttempts    *int64   `json:"max_attempts,omitempty"`
+}
+
+type FallbackPolicy struct {
+	Routes []FallbackRoute `json:"routes"`
+}
+
+// Values is the typed, pathless runtime configuration payload. It contains no
+// credential, cookie, endpoint, prompt, raw filesystem path or arbitrary map.
 type Values struct {
-	TransportBinding *TransportBinding `json:"transport_binding,omitempty"`
-	CLIKind          *CLIKind          `json:"cli_kind,omitempty"`
-	Provider         *ProviderID       `json:"provider,omitempty"`
-	Model            *ModelID          `json:"model,omitempty"`
-	ReasoningEffort  *ReasoningEffort  `json:"reasoning_effort,omitempty"`
-	Limits           Limits            `json:"limits"`
+	TransportBinding       *TransportBinding  `json:"transport_binding,omitempty"`
+	CLIKind                *CLIKind           `json:"cli_kind,omitempty"`
+	Provider               *ProviderID        `json:"provider,omitempty"`
+	SubscriptionRef        *string            `json:"subscription_ref,omitempty"`
+	ProviderCatalogVersion *string            `json:"provider_catalog_version,omitempty"`
+	CapabilityDigest       *string            `json:"capability_digest,omitempty"`
+	Model                  *ModelID           `json:"model,omitempty"`
+	ReasoningMode          *ReasoningMode     `json:"reasoning_mode,omitempty"`
+	ReasoningEffort        *ReasoningEffort   `json:"reasoning_effort,omitempty"`
+	ReasoningBudget        *int64             `json:"reasoning_budget,omitempty"`
+	Limits                 Limits             `json:"limits"`
+	Concurrency            *ConcurrencyPolicy `json:"concurrency,omitempty"`
+	Retry                  *RetryPolicy       `json:"retry,omitempty"`
+	Flags                  *FlagPolicy        `json:"flags,omitempty"`
+	Environment            *EnvironmentPolicy `json:"env,omitempty"`
+	Skills                 *SkillPolicy       `json:"skills,omitempty"`
+	MCPTools               *MCPToolPolicy     `json:"mcp_tools,omitempty"`
+	Permissions            *PermissionPolicy  `json:"permissions,omitempty"`
+	Eligibility            *EligibilityPolicy `json:"eligibility,omitempty"`
+	Health                 *HealthPolicy      `json:"health,omitempty"`
+	Fallback               *FallbackPolicy    `json:"fallback,omitempty"`
 }
 
 // Config is one versioned configuration layer. Delegability is a tri-state

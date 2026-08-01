@@ -42,7 +42,6 @@ import { DeleteRuntimeProfileDialog } from "./delete-runtime-profile-dialog";
 import {
   PROTOCOL_FAMILIES,
   buildRuntimeCatalog,
-  createProfileFormDefaults,
   validateProfileForm,
   type ProfileFormErrorField,
   type ProfileFormValues,
@@ -88,12 +87,6 @@ export function RuntimeProfilesDialog({
     entries.find((entry) => entry.id === selectedId) ?? null;
   const openCreateForm = () =>
     setState({ surface: "form", mode: "create", step: "family" });
-  // "Create from this" on a built-in reference card: seed the chosen family
-  // and jump straight to the details step, skipping the family picker.
-  const openCreateFromBuiltin = (family: RuntimeProtocolFamily) => {
-    setDraftFamily(family);
-    setState({ surface: "form", mode: "create", step: "details" });
-  };
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -185,7 +178,6 @@ export function RuntimeProfilesDialog({
                 setState({ surface: "form", mode: "edit", profile })
               }
               onDeleted={() => setSelectedId(null)}
-              onCreateFromBuiltin={openCreateFromBuiltin}
             />
           </div>
         )}
@@ -426,13 +418,11 @@ function DetailPanel({
   wsId,
   onEdit,
   onDeleted,
-  onCreateFromBuiltin,
 }: {
   entry: RuntimeCatalogEntry | null;
   wsId: string;
   onEdit: (profile: RuntimeProfile) => void;
   onDeleted: () => void;
-  onCreateFromBuiltin: (family: RuntimeProtocolFamily) => void;
 }) {
   const { t } = useT("runtimes");
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -457,37 +447,25 @@ function DetailPanel({
 
   if (entry.kind === "builtin") {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto p-6">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-md border bg-background">
-              <ProviderLogo provider={entry.protocolFamily} className="h-5 w-5" />
+      <div className="min-h-0 flex-1 overflow-y-auto p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-md border bg-background">
+            <ProviderLogo provider={entry.protocolFamily} className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-semibold capitalize">
+              {entry.protocolFamily}
+            </h3>
+            <span className="text-xs text-muted-foreground">
+              {t(($) => $.profiles.builtin_detail.read_only)}
             </span>
-            <div className="min-w-0">
-              <h3 className="truncate text-base font-semibold capitalize">
-                {entry.protocolFamily}
-              </h3>
-              <span className="text-xs text-muted-foreground">
-                {t(($) => $.profiles.builtin_detail.read_only)}
-              </span>
-            </div>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            {t(($) => $.profiles.builtin_detail.description, {
-              family: entry.protocolFamily,
-            })}
-          </p>
         </div>
-        <div className="flex shrink-0 justify-end gap-2 border-t bg-muted/30 px-6 py-3">
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => onCreateFromBuiltin(entry.protocolFamily)}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            {t(($) => $.profiles.builtin_detail.create_from_this)}
-          </Button>
-        </div>
+        <p className="mt-4 text-sm text-muted-foreground">
+          {t(($) => $.profiles.builtin_detail.description, {
+            family: entry.protocolFamily,
+          })}
+        </p>
       </div>
     );
   }
@@ -693,17 +671,11 @@ function ProfileDetailsForm({
   const createProfile = useCreateRuntimeProfile(wsId);
   const updateProfile = useUpdateRuntimeProfile(wsId);
 
-  // Edit reuses the existing profile; create pre-fills command + display name
-  // from the chosen family so there are no empty mystery fields.
-  const [values, setValues] = useState<ProfileFormValues>(() =>
-    profile
-      ? {
-          displayName: profile.display_name,
-          commandName: profile.command_name,
-          description: profile.description ?? "",
-        }
-      : createProfileFormDefaults(family),
-  );
+  const [values, setValues] = useState<ProfileFormValues>({
+    displayName: profile?.display_name ?? "",
+    commandName: profile?.command_name ?? "",
+    description: profile?.description ?? "",
+  });
   const [errors, setErrors] = useState<ProfileFormErrorField[]>([]);
   // Server-side error surfaced under the display-name field (duplicate) or
   // as a generic banner.

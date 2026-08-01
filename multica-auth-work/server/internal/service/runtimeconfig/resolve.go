@@ -1,5 +1,7 @@
 package runtimeconfig
 
+import "encoding/json"
+
 // Resolve validates and resolves platform, standard, runtime, and task layers.
 // It returns no partial configuration on any validation failure.
 func Resolve(input ResolveInput) (Effective, error) {
@@ -33,6 +35,28 @@ func Resolve(input ResolveInput) (Effective, error) {
 	return makeEffective(values, origins, policy), nil
 }
 
+// Materialize validates a complete stored configuration document and rebuilds
+// its digest without consulting mutable provider capabilities. Persistence
+// boundaries use this to prove document/digest integrity, including when the
+// formerly active model has since disappeared from the capability catalog.
+func Materialize(config *Config) (Effective, error) {
+	errs := newErrorCollector()
+	validateConfig(config, false, errs)
+	if config == nil {
+		errs.add(ErrRequiredField, Field("configuration"))
+	} else {
+		validateValues(config.Values, true, errs)
+	}
+	if failures := errs.errors(); len(failures) != 0 {
+		return Effective{}, failures
+	}
+	origins := make(map[Field]Source)
+	for _, field := range setFields(config.Values) {
+		origins[field] = SourceRuntime
+	}
+	return makeEffective(config.Values, origins, resolveDelegability(config)), nil
+}
+
 // ResolveSubagent inherits every parent effective field and policy, then
 // applies only explicitly delegated child task fields. Unlike normal layer
 // precedence, an explicitly delegated child field may replace its inherited
@@ -40,7 +64,7 @@ func Resolve(input ResolveInput) (Effective, error) {
 func ResolveSubagent(parent Effective, task *Config, capabilities ProviderCapabilities) (Effective, error) {
 	errs := newErrorCollector()
 	if parent.Version != VersionV1 {
-		errs.add(ErrInvalidVersion, Field("schema_version"))
+		errs.add(ErrInvalidVersion, Field("version"))
 	}
 	validateValues(parent.Values, true, errs)
 	for field := range parent.Delegable {
@@ -141,10 +165,16 @@ func setFields(values Values) []Field {
 }
 
 func cloneValues(values Values) Values {
+	// Values contains only bounded typed JSON data. A JSON round-trip keeps this
+	// clone exhaustive as the frozen registry grows and prevents nested slices
+	// from aliasing caller-owned configuration state.
+	raw, err := json.Marshal(values)
+	if err != nil {
+		panic("runtimeconfig: typed values could not be cloned: " + err.Error())
+	}
 	var clone Values
-	for _, field := range setFields(values) {
-		value, _ := fieldValue(values, field)
-		setField(&clone, field, value)
+	if err := json.Unmarshal(raw, &clone); err != nil {
+		panic("runtimeconfig: typed values clone could not be decoded: " + err.Error())
 	}
 	return clone
 }

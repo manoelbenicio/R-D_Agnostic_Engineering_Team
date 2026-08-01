@@ -57,23 +57,21 @@ type PrepareParams struct {
 	// substituted. Used by the local_directory project_resource flow
 	// (MUL-2663). When set, the envRoot/workdir directory is not created.
 	LocalWorkDir string
-	// CredentialAccountHome is the per-account credential
+	// CredentialAccountHome, when non-empty, is the per-account credential
 	// source directory for this task's provider. It is the single contract
 	// point for per-account OAuth isolation: the provider's home preparer
 	// seeds the task's credential from this dir (copied, isolated) instead of
-	// the shared global home. Credential-bearing Codex preparation fails closed
-	// when this is empty; its historical shared-home behavior is available only
-	// through the explicitly named legacy/admin helper in codex_home.go.
+	// the shared global home. Empty preserves the historical shared behavior
+	// exactly — full backward compatibility for every task/project/squad mode.
 	//
 	// The daemon resolves this from the agent→account assignment. Each vendor
 	// maps it onto its native isolation lever (Codex: CODEX_HOME source;
 	// Kiro: XDG_DATA_HOME / KIRO_API_KEY; Antigravity: HOME; Cline:
 	// CLINE_DATA_DIR; OpenCode/GLM: XDG_DATA_HOME + XDG_CONFIG_HOME).
-	// Empty is invalid for credential-bearing providers that require isolation.
+	// Empty = fallback.
 	CredentialAccountHome string
-	// CredentiallessGateway creates only controlled task-local state and must
-	// never seed provider auth or shared provider configuration. It is used
-	// exclusively by the default-off Agent Brain gateway-required path.
+	// CredentiallessGateway creates only controlled task-local state and never
+	// seeds provider authentication or shared provider configuration.
 	CredentiallessGateway bool
 	Task                  TaskContextForEnv // context data for writing files
 }
@@ -183,6 +181,9 @@ type Environment struct {
 	// OpenCode-compatible providers. OpenCode stores config under
 	// XDG_CONFIG_HOME/opencode/.
 	OpenCodeConfigHome string
+	// NIMCredentialPath is the per-task regular-file copy of the assigned
+	// account's NVIDIA_API_KEY. CredentialEnv reads only this copy.
+	NIMCredentialPath string
 	// OpenclawConfigPath is the path to the per-task synthesized OpenClaw
 	// config (set only for openclaw provider). The daemon exports this as
 	// OPENCLAW_CONFIG_PATH on the openclaw subprocess so its native skill
@@ -235,6 +236,12 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 	if _, err := os.Stat(envRoot); err == nil {
 		if params.CredentiallessGateway {
 			return nil, fmt.Errorf("execenv: credentialless gateway task root already exists; refusing to inspect or rewrite it")
+		}
+		// ORQ-21: an isolated per-account task root must never be inspected or
+		// rewritten. Reused state could leak another account's credential
+		// material into this task, so refuse instead of removing.
+		if params.CredentialAccountHome != "" {
+			return nil, fmt.Errorf("execenv: isolated task root already exists; refusing to inspect or rewrite it")
 		}
 		if err := os.RemoveAll(envRoot); err != nil {
 			return nil, fmt.Errorf("execenv: remove existing env: %w", err)
@@ -319,10 +326,16 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 
 	// Cline's native CLI isolation is CLINE_DATA_DIR plus sandbox knobs. Empty
 	// CredentialAccountHome = shared/global behavior (no isolated data dir).
-	if params.Provider == "cline" && params.CredentialAccountHome != "" {
+	if params.Provider == "cline" && (params.CredentialAccountHome != "" || params.CredentiallessGateway) {
 		clineDataDir := filepath.Join(envRoot, "cline-data-dir")
 		clineSandboxDataDir := filepath.Join(envRoot, "cline-sandbox-data")
-		if err := prepareClineHome(clineDataDir, ClineHomeOptions{AccountHome: params.CredentialAccountHome}, logger); err != nil {
+		var err error
+		if params.CredentiallessGateway {
+			err = prepareCredentiallessClineHome(clineDataDir)
+		} else {
+			err = prepareClineHome(clineDataDir, ClineHomeOptions{AccountHome: params.CredentialAccountHome}, logger)
+		}
+		if err != nil {
 			return nil, fmt.Errorf("execenv: prepare cline-data-dir: %w", err)
 		}
 		if err := os.MkdirAll(clineSandboxDataDir, 0o700); err != nil {
@@ -346,6 +359,16 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 		}
 		env.OpenCodeDataHome = opencodeDataHome
 		env.OpenCodeConfigHome = opencodeConfigHome
+	}
+
+	// NIM is a native HTTP runtime. Copy its assigned raw NVIDIA_API_KEY into
+	// the task root before exposing the value to the backend process.
+	if params.Provider == "nim" && params.CredentialAccountHome != "" {
+		nimCredentialPath, err := prepareNimHome(filepath.Join(envRoot, "nim-home"), NimHomeOptions{AccountHome: params.CredentialAccountHome}, logger)
+		if err != nil {
+			return nil, fmt.Errorf("execenv: prepare nim-home: %w", err)
+		}
+		env.NIMCredentialPath = nimCredentialPath
 	}
 
 	// For Cursor, materialize managed MCP into project-local config and use
@@ -411,8 +434,8 @@ type ReuseParams struct {
 	// reuse paths.
 	LocalDirectory bool
 	// CredentialAccountHome mirrors PrepareParams.CredentialAccountHome so the
-	// per-account OAuth isolation persists across session reuse. Empty fails
-	// closed for credential-bearing Codex reuse.
+	// per-account OAuth isolation persists across session reuse. Empty = shared
+	// fallback (historical behavior).
 	CredentialAccountHome string
 	CredentiallessGateway bool
 	Task                  TaskContextForEnv // refreshed context files / skills
@@ -530,20 +553,22 @@ func Reuse(params ReuseParams, logger *slog.Logger) *Environment {
 		agyHome := filepath.Join(env.RootDir, "antigravity-home")
 		if err := prepareAntigravityHome(agyHome, AntigravityHomeOptions{AccountHome: params.CredentialAccountHome}, logger); err != nil {
 			logger.Warn("execenv: refresh antigravity-home failed", "error", err)
-			// Fail closed on reuse. Returning nil makes the caller run the
-			// full Prepare path, which either creates a fresh isolated HOME
-			// from the same validated source or returns an explicit error.
-			return nil
 		} else {
 			env.AntigravityHome = agyHome
 		}
 	}
 
 	// Cline per-account isolation refreshed on reuse (mirror of Prepare).
-	if params.Provider == "cline" && params.CredentialAccountHome != "" {
+	if params.Provider == "cline" && (params.CredentialAccountHome != "" || params.CredentiallessGateway) {
 		clineDataDir := filepath.Join(env.RootDir, "cline-data-dir")
 		clineSandboxDataDir := filepath.Join(env.RootDir, "cline-sandbox-data")
-		if err := prepareClineHome(clineDataDir, ClineHomeOptions{AccountHome: params.CredentialAccountHome}, logger); err != nil {
+		var err error
+		if params.CredentiallessGateway {
+			err = prepareCredentiallessClineHome(clineDataDir)
+		} else {
+			err = prepareClineHome(clineDataDir, ClineHomeOptions{AccountHome: params.CredentialAccountHome}, logger)
+		}
+		if err != nil {
 			logger.Warn("execenv: refresh cline-data-dir failed", "error", err)
 		} else if err := os.MkdirAll(clineSandboxDataDir, 0o700); err != nil {
 			logger.Warn("execenv: refresh cline sandbox data dir failed", "error", err)
@@ -564,6 +589,16 @@ func Reuse(params ReuseParams, logger *slog.Logger) *Environment {
 		} else {
 			env.OpenCodeDataHome = opencodeDataHome
 			env.OpenCodeConfigHome = opencodeConfigHome
+		}
+	}
+
+	// NIM per-account credential refreshed on reuse (mirror of Prepare).
+	if params.Provider == "nim" && params.CredentialAccountHome != "" {
+		nimCredentialPath, err := prepareNimHome(filepath.Join(env.RootDir, "nim-home"), NimHomeOptions{AccountHome: params.CredentialAccountHome}, logger)
+		if err != nil {
+			logger.Warn("execenv: refresh nim-home failed", "error", err)
+		} else {
+			env.NIMCredentialPath = nimCredentialPath
 		}
 	}
 
@@ -649,6 +684,12 @@ func (e *Environment) CredentialEnv(provider string) map[string]string {
 				out["XDG_CONFIG_HOME"] = e.OpenCodeConfigHome
 			}
 			return out
+		}
+	case "nim":
+		if e.NIMCredentialPath != "" {
+			if key, err := readNIMAPIKey(e.NIMCredentialPath); err == nil {
+				return map[string]string{"NVIDIA_API_KEY": key}
+			}
 		}
 	}
 	return nil

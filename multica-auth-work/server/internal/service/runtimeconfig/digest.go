@@ -27,7 +27,7 @@ type canonicalEffective struct {
 // effective configurations identical regardless of their source layer.
 func (e Effective) CanonicalRedacted() ([]byte, error) {
 	if e.Version != VersionV1 {
-		return nil, ValidationErrors{{Code: ErrInvalidVersion, Field: Field("schema_version")}}
+		return nil, ValidationErrors{{Code: ErrInvalidVersion, Field: Field("version")}}
 	}
 	return canonicalRedacted(e.Values, e.Delegable)
 }

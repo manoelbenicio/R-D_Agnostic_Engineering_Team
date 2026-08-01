@@ -144,13 +144,50 @@ func setupHandlerTestFixture(ctx context.Context, pool *pgxpool.Pool) (string, s
 }
 
 func cleanupHandlerTestFixture(ctx context.Context, pool *pgxpool.Pool) error {
-	if _, err := pool.Exec(ctx, `DELETE FROM workspace WHERE slug = $1`, handlerTestWorkspaceSlug); err != nil {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
 		return err
 	}
-	if _, err := pool.Exec(ctx, `DELETE FROM "user" WHERE email = $1`, handlerTestEmail); err != nil {
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `DELETE FROM workspace WHERE slug = $1`, handlerTestWorkspaceSlug); err != nil {
 		return err
 	}
-	return nil
+	// Runtime Manager versions and activations are intentionally immutable in
+	// production. This synthetic fixture owns its tables, so temporarily disable
+	// only those two user triggers inside the cleanup transaction, remove audit
+	// rows in dependency order, and restore the triggers before commit.
+	if _, err := tx.Exec(ctx, `ALTER TABLE runtime_standard_activation DISABLE TRIGGER runtime_standard_activation_immutable`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `ALTER TABLE runtime_standard_version DISABLE TRIGGER runtime_standard_version_immutable`); err != nil {
+		return err
+	}
+	cleanupStatements := []string{
+		`UPDATE runtime_standard SET active_version_id = NULL
+		 WHERE owner_id IN (SELECT id FROM "user" WHERE email = $1)`,
+		`DELETE FROM runtime_standard_activation
+		 WHERE standard_id IN (SELECT id FROM runtime_standard WHERE owner_id IN (SELECT id FROM "user" WHERE email = $1))`,
+		`DELETE FROM runtime_standard_version
+		 WHERE standard_id IN (SELECT id FROM runtime_standard WHERE owner_id IN (SELECT id FROM "user" WHERE email = $1))`,
+		`DELETE FROM runtime_standard
+		 WHERE owner_id IN (SELECT id FROM "user" WHERE email = $1)`,
+	}
+	for _, statement := range cleanupStatements {
+		if _, err := tx.Exec(ctx, statement, handlerTestEmail); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(ctx, `ALTER TABLE runtime_standard_activation ENABLE TRIGGER runtime_standard_activation_immutable`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `ALTER TABLE runtime_standard_version ENABLE TRIGGER runtime_standard_version_immutable`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM "user" WHERE email = $1`, handlerTestEmail); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func newRequest(method, path string, body any) *http.Request {
@@ -192,7 +229,7 @@ func handlerTestRuntimeID(t *testing.T) string {
 
 	var runtimeID string
 	if err := testPool.QueryRow(context.Background(),
-		`SELECT id FROM agent_runtime WHERE workspace_id = $1 ORDER BY created_at ASC LIMIT 1`,
+		`SELECT id FROM agent_runtime WHERE workspace_id = $1 ORDER BY created_at ASC, id ASC LIMIT 1`,
 		testWorkspaceID,
 	).Scan(&runtimeID); err != nil {
 		t.Fatalf("failed to load handler test runtime: %v", err)

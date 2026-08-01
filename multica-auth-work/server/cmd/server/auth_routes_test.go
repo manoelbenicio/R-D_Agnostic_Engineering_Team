@@ -28,7 +28,10 @@ func (routerPasswordProvisioner) ProvisionPassword(context.Context, pgtype.UUID,
 }
 
 func TestPasswordAuthRoutes(t *testing.T) {
-	router, _ := NewRouterWithOptions(nil, realtime.NewHub(), events.New(), analytics.NoopClient{}, nil, RouterOptions{AuthProvider: routerAuthProvider{}})
+	router, _, err := NewRouterWithOptions(nil, realtime.NewHub(), events.New(), analytics.NoopClient{}, nil, RouterOptions{AuthProvider: routerAuthProvider{}})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	login := httptest.NewRecorder()
 	router.ServeHTTP(login, httptest.NewRequest(http.MethodPost, "/auth/login", strings.NewReader(`{"email":"u@example.com","password":"wrong"}`)))
@@ -46,10 +49,13 @@ func TestPasswordAuthRoutes(t *testing.T) {
 }
 
 func TestPasswordUpdateRouteRequiresAuthentication(t *testing.T) {
-	router, _ := NewRouterWithOptions(nil, realtime.NewHub(), events.New(), analytics.NoopClient{}, nil, RouterOptions{
+	router, _, err := NewRouterWithOptions(nil, realtime.NewHub(), events.New(), analytics.NoopClient{}, nil, RouterOptions{
 		AuthProvider:        routerAuthProvider{},
 		PasswordProvisioner: routerPasswordProvisioner{},
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	res := httptest.NewRecorder()
 	router.ServeHTTP(res, httptest.NewRequest(http.MethodPut, "/api/me/password", strings.NewReader(`{"new_password":"synthetic"}`)))

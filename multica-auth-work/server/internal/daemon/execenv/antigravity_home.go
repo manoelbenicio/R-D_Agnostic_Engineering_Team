@@ -7,10 +7,7 @@ import (
 	"path/filepath"
 )
 
-const (
-	antigravityCredentialRelDir  = ".gemini/antigravity-cli"
-	antigravityCredentialRelPath = antigravityCredentialRelDir + "/antigravity-oauth-token"
-)
+const antigravityCredentialRelDir = ".gemini/antigravity-cli"
 
 // AntigravityHomeOptions carries optional inputs for prepareAntigravityHome.
 type AntigravityHomeOptions struct {
@@ -21,9 +18,9 @@ type AntigravityHomeOptions struct {
 	AccountHome string
 }
 
-// prepareAntigravityHome restores only the per-account Antigravity OAuth token
-// into the isolated HOME for a task. Volatile sibling artifacts such as logs,
-// caches, and databases remain outside the task HOME.
+// prepareAntigravityHome restores the per-account Antigravity token directory
+// into the isolated HOME for a task. The caller wires that directory into HOME;
+// this helper only prepares the filesystem state.
 func prepareAntigravityHome(home string, opts AntigravityHomeOptions, logger *slog.Logger) error {
 	if opts.AccountHome == "" {
 		return nil
@@ -32,35 +29,19 @@ func prepareAntigravityHome(home string, opts AntigravityHomeOptions, logger *sl
 		return fmt.Errorf("antigravity home is empty")
 	}
 
-	for _, dir := range []string{
-		home,
-		filepath.Join(home, ".gemini"),
-		filepath.Join(home, antigravityCredentialRelDir),
-	} {
-		if err := os.MkdirAll(dir, 0o700); err != nil {
-			return fmt.Errorf("create antigravity credential directory %s: %w", dir, err)
-		}
-		if err := os.Chmod(dir, 0o700); err != nil {
-			return fmt.Errorf("chmod antigravity credential directory %s: %w", dir, err)
-		}
+	if err := os.MkdirAll(home, 0o700); err != nil {
+		return fmt.Errorf("create antigravity home: %w", err)
+	}
+	if err := os.Chmod(home, 0o700); err != nil {
+		return fmt.Errorf("chmod antigravity home: %w", err)
 	}
 
-	src := filepath.Join(opts.AccountHome, antigravityCredentialRelPath)
-	dst := filepath.Join(home, antigravityCredentialRelPath)
-	if info, err := os.Lstat(src); err != nil {
-		return fmt.Errorf("required per-account antigravity OAuth token is unavailable: %w", err)
-	} else if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
-		return fmt.Errorf("required per-account antigravity OAuth token must be a physical regular file")
+	src := filepath.Join(opts.AccountHome, antigravityCredentialRelDir)
+	dst := filepath.Join(home, antigravityCredentialRelDir)
+	if err := syncCredentialDir(src, dst); err != nil {
+		return fmt.Errorf("seed per-account antigravity token dir: %w", err)
 	}
-	if err := syncCredentialFile(src, dst); err != nil {
-		return fmt.Errorf("seed per-account antigravity OAuth token: %w", err)
-	}
-	// syncCredentialFile already creates credentials as 0600. Keep the
-	// explicit chmod as a postcondition in case that shared helper changes.
-	if err := os.Chmod(dst, 0o600); err != nil {
-		return fmt.Errorf("restrict per-account antigravity OAuth token: %w", err)
-	}
-	logCredentialFileState("execenv: antigravity OAuth token", dst, logger)
+	logCredentialDirState("execenv: antigravity token dir", dst, logger)
 	return nil
 }
 

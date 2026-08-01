@@ -7,6 +7,17 @@ RETURNING *;
 SELECT * FROM daemon_token
 WHERE token_hash = $1 AND expires_at > now();
 
+-- name: DeleteDaemonTokensByWorkspace :many
+WITH locked_workspace AS (
+    SELECT workspace.id
+    FROM workspace
+    WHERE workspace.id = $1
+    FOR UPDATE
+)
+DELETE FROM daemon_token
+WHERE workspace_id IN (SELECT locked_workspace.id FROM locked_workspace)
+RETURNING token_hash;
+
 -- name: DeleteDaemonTokensByWorkspaceAndDaemons :many
 -- Deletes every daemon_token row matching the (workspace_id, daemon_id)
 -- pairs implied by `daemon_ids`. Used by the member-revocation flow to

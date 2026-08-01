@@ -2,6 +2,7 @@ package runtimeconfig
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -39,11 +40,37 @@ func fullValues() Values {
 		Provider:         ptr(ProviderID("provider-a")),
 		Model:            ptr(ModelID("model-a")),
 		ReasoningEffort:  ptr(ReasoningEffort("medium")),
+		Limits:           Limits{MaxInputTokens: ptr(int64(6_000)), MaxOutputTokens: ptr(int64(3_000)), MaxToolCalls: ptr(int64(12))},
+	}
+}
+
+func fullRegistryValues() Values {
+	capabilityDigest, err := CapabilityDigest(testCapabilities())
+	if err != nil {
+		panic(err)
+	}
+	const artifactDigest = "0000000000000000000000000000000000000000000000000000000000000000"
+	return Values{
+		TransportBinding: ptr(TransportOmniRoute), CLIKind: ptr(CLIKind("codex")),
+		Provider: ptr(ProviderID("provider-a")), SubscriptionRef: ptr("subscription-a"),
+		ProviderCatalogVersion: ptr("v1"), CapabilityDigest: ptr(capabilityDigest),
+		Model: ptr(ModelID("model-a")), ReasoningMode: ptr(ReasoningMode("deliberate")),
+		ReasoningEffort: ptr(ReasoningEffort("medium")), ReasoningBudget: ptr(int64(1000)),
 		Limits: Limits{
-			MaxInputTokens:  ptr(int64(6_000)),
-			MaxOutputTokens: ptr(int64(3_000)),
-			MaxToolCalls:    ptr(int64(12)),
+			MaxContextTokens: ptr(int64(10_000)), MaxInputTokens: ptr(int64(6_000)),
+			MaxOutputTokens: ptr(int64(3_000)), MaxTotalTokens: ptr(int64(9_000)),
+			MaxToolCalls: ptr(int64(12)), WallTimeoutMS: ptr(int64(60_000)), IdleTimeoutMS: ptr(int64(10_000)),
 		},
+		Concurrency: &ConcurrencyPolicy{MaxSessions: ptr(int64(2)), MaxTasks: ptr(int64(4)), MaxSubagents: ptr(int64(3)), MaxQueue: ptr(int64(8))},
+		Retry:       &RetryPolicy{MaxAttempts: ptr(int64(3)), BackoffMS: ptr(int64(100)), MaxBackoffMS: ptr(int64(1000)), JitterPercent: ptr(int64(20)), DeadlineBudgetMS: ptr(int64(5000)), RetryableClasses: []string{"catalog_unavailable"}},
+		Flags:       &FlagPolicy{Ordered: []string{"--quiet"}},
+		Environment: &EnvironmentPolicy{Entries: []EnvironmentEntry{{Key: "MODE", Value: ptr("safe")}}},
+		Skills:      &SkillPolicy{Allowed: []VersionedRef{{ID: "skill-a", Version: "v1", Digest: artifactDigest}}},
+		MCPTools:    &MCPToolPolicy{Allowed: []MCPToolRef{{ServerID: "server-a", ToolID: "tool-a", Scope: "workspace", Version: "v1", TimeoutMS: ptr(int64(1000))}}},
+		Permissions: &PermissionPolicy{FilesystemPolicies: []string{"workspace-read"}, NetworkPolicies: []string{"catalog-only"}, ProcessGrants: []string{"approved-cli"}, ToolGrants: []string{"tool-a"}},
+		Eligibility: &EligibilityPolicy{Providers: []string{"provider-a"}, RuntimeKinds: []string{"cli"}, DaemonClasses: []string{"standard"}, WorkspaceClasses: []string{"trusted"}, RequiredCapabilities: []string{"tools"}},
+		Health:      &HealthPolicy{FreshnessTTLMS: ptr(int64(5000)), ReadinessPercent: ptr(int64(100)), CircuitState: "closed", ProbeClass: "catalog"},
+		Fallback:    &FallbackPolicy{Routes: []FallbackRoute{{RouteID: "route-b", FailureClasses: []string{"catalog_unavailable"}, MaxAttempts: ptr(int64(1))}}},
 	}
 }
 
@@ -321,7 +348,7 @@ func TestResolveFailClosedValidation(t *testing.T) {
 	if effective.Version != "" || effective.Digest != "" || effective.Values.Model != nil || effective.Origins != nil || effective.Delegable != nil {
 		t.Fatalf("failure returned partial effective config: %#v", effective)
 	}
-	assertErrorCode(t, err, ErrInvalidVersion, Field("schema_version"))
+	assertErrorCode(t, err, ErrInvalidVersion, Field("version"))
 	assertErrorCode(t, err, ErrRequiredField, FieldCLIKind)
 	assertErrorCode(t, err, ErrInvalidField, FieldMaxToolCalls)
 	assertErrorCode(t, err, ErrUnknownField, Field("unknown"))
@@ -464,14 +491,13 @@ func TestFrozenFieldRegistryContract(t *testing.T) {
 	// version bump, not an edit: the order is observable in ChangePlan and in
 	// the canonical digest input.
 	want := []Field{
-		FieldTransportBinding,
-		FieldCLIKind,
-		FieldProvider,
-		FieldModel,
-		FieldReasoningEffort,
-		FieldMaxInputTokens,
-		FieldMaxOutputTokens,
-		FieldMaxToolCalls,
+		FieldTransportBinding, FieldCLIKind, FieldProvider, FieldSubscriptionRef,
+		FieldProviderCatalog, FieldCapabilityDigest, FieldModel, FieldReasoningMode,
+		FieldReasoningEffort, FieldReasoningBudget, FieldMaxContextTokens,
+		FieldMaxInputTokens, FieldMaxOutputTokens, FieldMaxTotalTokens,
+		FieldMaxToolCalls, FieldWallTimeoutMS, FieldIdleTimeoutMS, FieldConcurrency,
+		FieldRetry, FieldFlags, FieldEnvironment, FieldSkills, FieldMCPTools,
+		FieldPermissions, FieldEligibility, FieldHealth, FieldFallback,
 	}
 	assertFields(t, Fields(), want)
 	assertFields(t, allFields, want)
@@ -517,7 +543,7 @@ func TestFrozenFieldRegistryContract(t *testing.T) {
 }
 
 func TestRegistryAccessorsRoundTripEveryField(t *testing.T) {
-	source := fullValues()
+	source := fullRegistryValues()
 	for _, field := range Fields() {
 		value, ok := fieldValue(source, field)
 		if !ok {
@@ -529,7 +555,7 @@ func TestRegistryAccessorsRoundTripEveryField(t *testing.T) {
 		if !ok {
 			t.Fatalf("field %q did not round trip", field)
 		}
-		if roundTripped != value {
+		if !reflect.DeepEqual(roundTripped, value) {
 			t.Fatalf("field %q round tripped to %v, want %v", field, roundTripped, value)
 		}
 		// Writing one field must not populate any other field, which is what
@@ -765,7 +791,7 @@ func TestActivationFailsClosedOnTamperedState(t *testing.T) {
 	unversioned := cloneActivation(activation)
 	unversioned.Active.Version = Version("v999")
 	_, _, err = Activate(&unversioned, second)
-	assertErrorCode(t, err, ErrInvalidVersion, Field("schema_version"))
+	assertErrorCode(t, err, ErrInvalidVersion, Field("version"))
 }
 
 func TestActivationSharesNoMutableStateWithCaller(t *testing.T) {
@@ -1164,4 +1190,69 @@ func TestCapabilityDigestFailsClosed(t *testing.T) {
 		}
 		assertErrorCode(t, err, testCase.code, testCase.field)
 	}
+}
+
+func TestExpandedPoliciesAreDeepCopied(t *testing.T) {
+	input := fullInput()
+	input.Platform.Values.Flags = &FlagPolicy{Ordered: []string{"--quiet"}}
+	input.Platform.Values.Retry = &RetryPolicy{MaxAttempts: ptr(int64(2)), RetryableClasses: []string{"catalog_unavailable"}}
+	effective, err := Resolve(input)
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	input.Platform.Values.Flags.Ordered[0] = "--changed"
+	input.Platform.Values.Retry.RetryableClasses[0] = "changed"
+	if effective.Values.Flags.Ordered[0] != "--quiet" || effective.Values.Retry.RetryableClasses[0] != "catalog_unavailable" {
+		t.Fatalf("effective policies alias caller: %+v %+v", effective.Values.Flags, effective.Values.Retry)
+	}
+}
+
+func TestMaterializeReproducesDigestWithoutCapabilities(t *testing.T) {
+	config := &Config{Version: VersionV1, Values: fullValues(), Delegability: map[Field]bool{FieldModel: true}}
+	first, err := Materialize(config)
+	if err != nil {
+		t.Fatalf("Materialize: %v", err)
+	}
+	second, err := Materialize(config)
+	if err != nil {
+		t.Fatalf("Materialize second: %v", err)
+	}
+	if first.Digest != second.Digest || !ValidDigest(first.Digest) {
+		t.Fatalf("digests = %q %q", first.Digest, second.Digest)
+	}
+}
+
+func TestExpandedPoliciesRejectSecretAndPathShapes(t *testing.T) {
+	for name, mutate := range map[string]func(*Values){
+		"credential flag": func(values *Values) { values.Flags = &FlagPolicy{Ordered: []string{"--credential-file=/tmp/key"}} },
+		"secret environment key": func(values *Values) {
+			values.Environment = &EnvironmentPolicy{Entries: []EnvironmentEntry{{Key: "API_TOKEN", Reference: ptr("ref-a")}}}
+		},
+		"path permission": func(values *Values) {
+			values.Permissions = &PermissionPolicy{FilesystemPolicies: []string{"/home/user"}}
+		},
+	} {
+		input := fullInput()
+		mutate(&input.Platform.Values)
+		if _, err := Resolve(input); err == nil {
+			t.Fatalf("%s accepted", name)
+		}
+	}
+}
+
+func TestCatalogIdentityAndExpandedTokenBounds(t *testing.T) {
+	input := fullInput()
+	input.Platform.Values.ProviderCatalogVersion = ptr("v2")
+	_, err := Resolve(input)
+	assertErrorCode(t, err, ErrInvalidCapabilities, FieldProviderCatalog)
+
+	input = fullInput()
+	input.Platform.Values.CapabilityDigest = ptr(strings.Repeat("0", DigestLength))
+	_, err = Resolve(input)
+	assertErrorCode(t, err, ErrInvalidCapabilities, FieldCapabilityDigest)
+
+	input = fullInput()
+	input.Platform.Values.Limits.MaxTotalTokens = ptr(int64(10_001))
+	_, err = Resolve(input)
+	assertErrorCode(t, err, ErrLimitExceeded, FieldMaxTotalTokens)
 }

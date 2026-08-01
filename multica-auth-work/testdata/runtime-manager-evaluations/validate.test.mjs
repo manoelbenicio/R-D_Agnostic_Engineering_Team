@@ -1,18 +1,13 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const [schema, suite] = await Promise.all([
-  readJson("evaluation.schema.json"),
-  readJson("evaluations.json"),
-]);
+import { loadSchema, loadSuite } from "./frozen-contracts.mjs";
 
-async function readJson(name) {
-  return JSON.parse(await readFile(join(here, name), "utf8"));
-}
+// The fixture and its schema are read from disk on purpose: they are the
+// artifacts under validation. Every *external* contract is read as a pinned Git
+// object instead, in contract-binding.test.mjs and hardening.test.mjs.
+const schema = loadSchema();
+const suite = loadSuite();
 
 function resolveRef(root, ref) {
   assert.match(ref, /^#\//, `only local schema refs are supported: ${ref}`);
@@ -243,7 +238,7 @@ test("a sha256:-prefixed digest is rejected by the schema", () => {
 
   const scenarioNegative = structuredClone(suite);
   const hot = scenarioNegative.scenarios.find(({ operation }) => operation === "hot_apply_model_reasoning");
-  hot.state_before.active_digest = `sha256:${hot.state_before.active_digest}`;
+  hot.state_before.configuration_digest = `sha256:${hot.state_before.configuration_digest}`;
   assert.notDeepEqual(
     validate(scenarioNegative, schema),
     [],

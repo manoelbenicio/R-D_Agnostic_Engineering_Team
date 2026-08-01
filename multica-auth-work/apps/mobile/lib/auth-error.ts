@@ -7,13 +7,11 @@
 export function mapAuthError(err: unknown, fallback: string): string {
   if (!(err instanceof Error)) return fallback;
   const msg = err.message.toLowerCase();
-  const status =
-    "status" in err ? (err as Error & { status?: unknown }).status : undefined;
-  if (
-    status === 401 ||
-    /invalid|incorrect|wrong|credential|unauthorized/.test(msg)
-  ) {
-    return "Invalid email or password.";
+  if (/invalid|incorrect|wrong/.test(msg)) {
+    return "That code didn't match. Double-check and try again.";
+  }
+  if (/expired/.test(msg)) {
+    return "That code has expired. Tap resend to get a new one.";
   }
   if (/rate.?limit|too many|throttle/.test(msg)) {
     return "Too many attempts. Wait a moment and try again.";

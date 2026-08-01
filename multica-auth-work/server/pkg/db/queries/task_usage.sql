@@ -4,8 +4,10 @@
 -- Without the conflict-side bump, a correction to historical token counts
 -- would never propagate to the rollup.
 -- thinking_level is nullable and reported by the daemon; COALESCE on conflict
--- keeps a previously recorded tier when a later report omits it, so a partial
--- re-report can never erase the tier that produced the tokens.
+-- keeps a previously recorded tier when a later legacy report omits it, so a
+-- partial re-report can never erase the tier that produced the tokens.
+-- price_version and computed_cost_usd are replaced as a pair from the same
+-- deterministic task effective time; both remain NULL when the row is unpriced.
 -- account_id is COPIED from the task, never accepted from the caller and never
 -- re-resolved here. agent_task_queue.credential_account_id is frozen at
 -- claim/dispatch (see ClaimAgentTask), so this row records the account that
@@ -19,9 +21,13 @@
 -- EXCLUDED.account_id) fills a NULL and is otherwise a no-op, so a recorded
 -- attribution is immutable. The reverse order would let a later report rewrite
 -- history after a rotation.
-INSERT INTO task_usage (task_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, thinking_level, account_id, updated_at)
+INSERT INTO task_usage (
+    task_id, provider, model,
+    input_tokens, output_tokens, cache_read_tokens, cache_write_tokens,
+    thinking_level, price_version, computed_cost_usd, account_id, updated_at
+)
 VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8,
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
     (SELECT q.credential_account_id FROM agent_task_queue q WHERE q.id = $1),
     now()
 )
@@ -32,6 +38,8 @@ DO UPDATE SET
     cache_read_tokens = EXCLUDED.cache_read_tokens,
     cache_write_tokens = EXCLUDED.cache_write_tokens,
     thinking_level = COALESCE(EXCLUDED.thinking_level, task_usage.thinking_level),
+    price_version = EXCLUDED.price_version,
+    computed_cost_usd = EXCLUDED.computed_cost_usd,
     account_id = COALESCE(task_usage.account_id, EXCLUDED.account_id),
     updated_at = now();
 

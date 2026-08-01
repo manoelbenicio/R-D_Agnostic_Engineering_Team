@@ -8,7 +8,12 @@
     "declared_requirements": 23
   },
   "pending_contracts": {
-    "note": "Vocabulary this suite asserts that has no product implementation yet. contract-binding.test.mjs recomputes both lists from real source and fails when either drifts, so an entry must be deleted as soon as its real contract lands.",
+    "note": "Vocabulary this suite binds to hand-written Runtime Manager adapters. contract-binding.test.mjs verifies implemented_source_symbols remain present outside generated storage and that absent_source_symbols remains the exact unresolved set.",
+    "adapter_scan_root": "multica-auth-work/server",
+    "adapter_scan_excludes": [
+      "multica-auth-work/server/pkg/db/generated"
+    ],
+    "adapter_scan_note": "Generated sqlc storage code is excluded deliberately. A schema column named runtime_binding or configuration_digest proves the C2 storage contract landed, not that a Runtime Manager adapter exists. Counting generated code as an implementation produced a false 'implemented' signal on trees that carry only the schema.",
     "unregistered_events": [
       "runtime_binding:home_assigned",
       "runtime_configuration:activated",
@@ -17,13 +22,15 @@
       "runtime_configuration:version_created",
       "runtime_session:enrolled"
     ],
-    "absent_source_symbols": [
+    "implemented_source_symbols": [
       "apply_class",
-      "effective_configuration_digest",
+      "capability_digest",
+      "configuration_digest",
       "runtime_binding",
       "runtime_configuration",
       "runtime_session"
-    ]
+    ],
+    "absent_source_symbols": []
   },
   "scenarios": [
     {
@@ -133,7 +140,7 @@
         "binding_generation": 13,
         "process_id": "runtime-process-01",
         "active_version_id": "88888888-8888-4888-8888-888888888881",
-        "active_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "configuration_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "running_task_version_id": "88888888-8888-4888-8888-888888888881",
         "capability_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "registered_apply_classes": {
@@ -146,6 +153,7 @@
         "expected_active_version_id": "88888888-8888-4888-8888-888888888881",
         "expected_binding_generation": 13,
         "configuration": {
+          "version": "v1",
           "model_id": "provider-model-v2",
           "reasoning_mode": "bounded",
           "reasoning_budget": 6000
@@ -169,7 +177,7 @@
         "state_after": {
           "active_version_id": "88888888-8888-4888-8888-888888888882",
           "applied_version_id": "88888888-8888-4888-8888-888888888882",
-          "active_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "configuration_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "apply_class": "hot",
           "daemon_acknowledged": true,
           "process_restarted": false,
@@ -250,7 +258,7 @@
           "agent_id": "44444444-4444-4444-8444-444444444444",
           "workspace_id": "22222222-2222-4222-8222-222222222222",
           "configuration_version_id": "88888888-8888-4888-8888-888888888882",
-          "effective_configuration_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "configuration_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "binding_id": "77777777-7777-4777-8777-777777777777",
           "binding_generation": 13,
           "home_ref": "home_opaque_02",

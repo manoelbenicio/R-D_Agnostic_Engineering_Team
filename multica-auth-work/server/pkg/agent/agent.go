@@ -79,10 +79,6 @@ type Session struct {
 	Messages <-chan Message
 	// Result receives exactly one value — the final outcome — then closes.
 	Result <-chan Result
-	// ProcessID is the OS PID of the launched agent CLI child process, set
-	// synchronously after cmd.Start (0 if the backend did not record it). It
-	// is real — never synthesized — and is used as the e2e HopCLI proc_id.
-	ProcessID int
 }
 
 // MessageType identifies the kind of Message.
@@ -127,7 +123,6 @@ type Result struct {
 	DurationMs int64
 	SessionID  string
 	Usage      map[string]TokenUsage // keyed by model name
-	ProcessID  int                   // real OS PID of the agent CLI child (0 if unknown); never synthesized
 }
 
 // Config configures a Backend instance.
@@ -144,7 +139,7 @@ type Config struct {
 }
 
 // New creates a Backend for the given agent type.
-// Supported types: "claude", "codebuddy", "cline", "codex", "copilot", "opencode", "openclaw", "hermes", "gemini", "pi", "cursor", "kimi", "kiro", "antigravity", "qoder".
+// Supported types: "claude", "codebuddy", "cline", "codex", "copilot", "nim", "opencode", "openclaw", "hermes", "gemini", "pi", "cursor", "kimi", "kiro", "antigravity", "qoder".
 //
 // SupportedTypes is the canonical whitelist of agent types eligible to back a
 // custom runtime profile. It MUST stay in lockstep with the
@@ -158,6 +153,7 @@ var SupportedTypes = []string{
 	"cline",
 	"codex",
 	"copilot",
+	"nim",
 	"opencode",
 	"openclaw",
 	"hermes",
@@ -197,10 +193,8 @@ func New(agentType string, cfg Config) (Backend, error) {
 		return &codexBackend{cfg: cfg}, nil
 	case "copilot":
 		return &copilotBackend{cfg: cfg}, nil
-	// "nim" (NVIDIA) intentionally has no native backend. NVIDIA is reached
-	// through OmniRoute like every other provider — Multica does not manage the
-	// vendor runtime — and the runtimeenv layer keeps brain.CLINIM
-	// fail-closed/unaccepted by design. New() therefore does not construct one.
+	case "nim":
+		return &nimBackend{cfg: cfg}, nil
 	case "opencode":
 		return &opencodeBackend{cfg: cfg}, nil
 	case "openclaw":
@@ -222,7 +216,7 @@ func New(agentType string, cfg Config) (Backend, error) {
 	case "qoder":
 		return &qoderBackend{cfg: cfg}, nil
 	default:
-		return nil, fmt.Errorf("unknown agent type: %q (supported: claude, codebuddy, cline, codex, copilot, opencode, openclaw, hermes, gemini, pi, cursor, kimi, kiro, antigravity, qoder)", agentType)
+		return nil, fmt.Errorf("unknown agent type: %q (supported: claude, codebuddy, cline, codex, copilot, nim, opencode, openclaw, hermes, gemini, pi, cursor, kimi, kiro, antigravity, qoder)", agentType)
 	}
 }
 
@@ -249,6 +243,7 @@ var launchHeaders = map[string]string{
 	"hermes":      "hermes acp",
 	"kimi":        "kimi acp",
 	"kiro":        "kiro-cli acp",
+	"nim":         "NVIDIA NIM (native HTTP)",
 	"openclaw":    "openclaw agent (json)",
 	"opencode":    "opencode run (json)",
 	"pi":          "pi (json mode)",

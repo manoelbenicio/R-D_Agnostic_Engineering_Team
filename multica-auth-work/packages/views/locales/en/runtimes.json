@@ -294,8 +294,7 @@
     "builtin_detail": {
       "title": "Built-in protocol family",
       "description": "{{family}} is a built-in protocol family. It can't be edited or removed.",
-      "read_only": "Read-only",
-      "create_from_this": "Create from this"
+      "read_only": "Read-only"
     },
     "detail": {
       "base_family": "Base protocol family",

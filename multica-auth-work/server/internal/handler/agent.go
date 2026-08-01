@@ -14,7 +14,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/analytics"
@@ -343,15 +342,17 @@ type ChatAttachmentMeta struct {
 // TaskAgentData holds agent info included in claim responses so the daemon
 // can set up the execution environment (branch naming, skill files, instructions).
 type TaskAgentData struct {
-	ID            string                   `json:"id"`
-	Name          string                   `json:"name"`
-	Instructions  string                   `json:"instructions"`
-	Skills        []service.AgentSkillData `json:"skills,omitempty"`
-	CustomEnv     map[string]string        `json:"custom_env,omitempty"`
-	CustomArgs    []string                 `json:"custom_args,omitempty"`
-	McpConfig     json.RawMessage          `json:"mcp_config,omitempty"`
-	Model         string                   `json:"model,omitempty"`
-	ThinkingLevel string                   `json:"thinking_level,omitempty"`
+	ID                           string                   `json:"id"`
+	Name                         string                   `json:"name"`
+	Instructions                 string                   `json:"instructions"`
+	Skills                       []service.AgentSkillData `json:"skills,omitempty"`
+	CustomEnv                    map[string]string        `json:"custom_env,omitempty"`
+	CustomArgs                   []string                 `json:"custom_args,omitempty"`
+	McpConfig                    json.RawMessage          `json:"mcp_config,omitempty"`
+	Model                        string                   `json:"model,omitempty"`
+	ThinkingLevel                string                   `json:"thinking_level,omitempty"`
+	CredentialAccountHome        string                   `json:"credential_account_home,omitempty"`
+	CredentialAssignmentRequired bool                     `json:"credential_assignment_required,omitempty"`
 	// RuntimeConfig is the agent's saved runtime_config JSON as-is. The
 	// daemon decodes it per-provider — e.g. the openclaw backend reads
 	// `mode` + `gateway.*` to choose between embedded and gateway routing
@@ -841,19 +842,6 @@ func (h *Handler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 		created, _ = h.Queries.GetAgent(r.Context(), created.ID)
 	}
 
-	if isFirstAgent {
-		if squads, err := h.Queries.ListSquads(r.Context(), wsUUID); err == nil {
-			for _, sq := range squads {
-				if !sq.LeaderID.Valid {
-					_, _ = h.Queries.UpdateSquad(r.Context(), db.UpdateSquadParams{
-						ID:       sq.ID,
-						LeaderID: created.ID,
-					})
-				}
-			}
-		}
-	}
-
 	resp := agentToResponse(created)
 	actorType, actorID := h.resolveActor(r, ownerID, workspaceID)
 	h.publish(protocol.EventAgentCreated, workspaceID, actorType, actorID, map[string]any{"agent": broadcastAgentResponse(resp)})
@@ -1032,9 +1020,7 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := db.UpdateAgentParams{
-		ID:                existing.ID,
-		ExpectedRuntimeID: existing.RuntimeID,
-		ExpectedModel:     existing.Model,
+		ID: existing.ID,
 	}
 	if req.Name != nil {
 		params.Name = pgtype.Text{String: *req.Name, Valid: true}
@@ -1128,8 +1114,17 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 		}
 		preserveGatewayRoute, err = resolveRuntimeRouteUpdate(existing.Model.String, currentProvider, targetProvider, req.Model)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
-			return
+			// Provider-prefixed runtime-native model IDs can parse as gateway
+			// routes. When the model is known incompatible with the target and
+			// no replacement was supplied, let the clearing path below handle it;
+			// genuine gateway routes still fail closed and require an atomic
+			// runtime_id + model replacement.
+			if req.Model == nil && agent.ModelKnownIncompatibleWithProvider(targetProvider, existing.Model.String) {
+				preserveGatewayRoute = false
+			} else {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
 		}
 	}
 	if req.Model != nil {
@@ -1207,10 +1202,6 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 
 	updated, err := h.Queries.UpdateAgent(r.Context(), params)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			writeError(w, http.StatusConflict, "agent changed concurrently; reload it and submit runtime_id with model atomically")
-			return
-		}
 		slog.Warn("update agent failed", append(logger.RequestAttrs(r), "error", err, "agent_id", id)...)
 		writeError(w, http.StatusInternalServerError, "failed to update agent: "+err.Error())
 		return

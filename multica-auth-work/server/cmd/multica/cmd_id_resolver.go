@@ -209,11 +209,11 @@ func fetchIssueRef(ctx context.Context, client *cli.APIClient, ref string) (reso
 	if err := client.GetJSON(ctx, "/api/issues/"+url.PathEscape(ref), &issue); err != nil {
 		return resolvedID{}, err
 	}
-	candidate := issueCandidate(issue)
-	if candidate.Display == "" {
-		candidate.Display = candidate.ID
+	c := issueCandidate(issue)
+	if c.Display == "" {
+		c.Display = c.ID
 	}
-	return resolvedID{ID: candidate.ID, Display: candidate.Display}, nil
+	return resolvedID{ID: c.ID, Display: c.Display}, nil
 }
 
 func fetchIssueRefStrict(ctx context.Context, client *cli.APIClient, ref string) (resolvedID, error) {

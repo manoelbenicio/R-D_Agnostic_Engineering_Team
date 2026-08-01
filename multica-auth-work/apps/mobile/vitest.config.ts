@@ -1,5 +1,4 @@
 import { defineConfig } from "vitest/config";
-import { resolve } from "node:path";
 
 // Mobile vitest is intentionally minimal — Node environment only, scoped to
 // pure-function tests in `lib/`. We don't ship jsdom or RN test renderers
@@ -11,11 +10,6 @@ import { resolve } from "node:path";
 // Co-located test files (foo.ts + foo.test.ts) match how the rest of the
 // monorepo organises vitest suites.
 export default defineConfig({
-  resolve: {
-    alias: {
-      "@": resolve(process.cwd()),
-    },
-  },
   test: {
     environment: "node",
     globals: true,

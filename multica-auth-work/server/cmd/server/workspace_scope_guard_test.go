@@ -1,5 +1,3 @@
-//go:build !offline
-
 package main
 
 import (

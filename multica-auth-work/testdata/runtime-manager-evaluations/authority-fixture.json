@@ -1,0 +1,40 @@
+{
+  "fixture_version": "authority-fixture.v1",
+  "purpose": "Git-free pinned authority for this evaluation module. The owner ruling rejected Git-dependent authority reads for consolidated tests, so the governing clause and every digest/vocabulary contract this suite enforces are pinned here and read with ordinary filesystem reads.",
+  "provenance": {
+    "authority_commit": "c35c200be62d63cb654638d5b142b2a8105c1484",
+    "authority_path": ".deploy-control/p0/evidence/spe4-spe5-unified-authority-baseline.md",
+    "authority_document_sha256": "cd156e4db5ac14854c124ca5d86cf0428ce002c2200209bdea88c873d4e34013",
+    "clause_number": 6,
+    "recorded_by": "lane E w7:p5",
+    "why_pinned": "The authority document is not present on disk in every worktree that must run this suite. Its digest anchors the pinned clause: when the document IS present under the resolved repository root, frozen-contracts.mjs verifies the document hash and relocates the clause inside it, so the pinned copy is upgraded to a real read wherever it can be."
+  },
+  "raw64_digest_clause": "6. The effective configuration digest wire/storage form is raw lowercase 64 hexadecimal characters. The `sha256:` prefix is forbidden.",
+  "clause_quoting_note": "raw64_digest_clause is a verbatim quotation of the authority document and MUST NOT be reworded. Its prose phrase 'effective configuration digest' names a concept, not a JSON field. The canonical JSON field name is configuration_digest; effective_configuration_digest is forbidden as a field name everywhere.",
+  "digest_form": {
+    "pattern": "^[0-9a-f]{64}$",
+    "forbidden_prefix": "sha256:",
+    "description": "Raw lowercase 64 hexadecimal characters. No prefix of any kind."
+  },
+  "canonical_digest_fields": {
+    "configuration_digest": "Immutable configuration/version digest. An active version is represented by active_version_id (or active_version) plus that version record's configuration_digest.",
+    "capability_digest": "Capability declaration/admission digest, covering values input, validation and activation result."
+  },
+  "forbidden_digest_fields": [
+    "active_digest",
+    "effective_configuration_digest"
+  ],
+  "canonical_document_discriminator": {
+    "field": "version",
+    "value": "v1",
+    "forbidden_fields": ["schema_version"],
+    "note": "Applies to runtime-manager JSON documents crossing the wire, including any issue.field label. This suite's own envelope key contract_version is the evaluation-module contract version and is a different thing; it is not a wire document discriminator."
+  },
+  "canonical_spec": {
+    "path": "openspec/changes/credential-account-home-restoration/specs/credential-account-home/spec.md",
+    "sha256": "1cc2a91d7a0e0acdc7ab6d5f7d2ab9c708a50b227b66218fe5b4acb834c3e018",
+    "declared_requirements": 23,
+    "note": "Read from disk under the resolved repository root and verified against this digest. A working-tree edit changes the hash and fails the gate, which is the same integrity guarantee the previous Git-object read provided."
+  },
+  "boundary": "Contains no credential value, account identity, provider-native secret, source-home filesystem path, or environment value. Evaluation metadata only."
+}

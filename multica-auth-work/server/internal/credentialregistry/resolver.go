@@ -1,141 +1,55 @@
-// Package credentialregistry resolves metadata-only, owner-approved credential
-// home assignments for native task admission. It never handles credential
-// values or raw host paths.
+// Package credentialregistry resolves metadata-only, owner-approved account
+// assignments for daemon task claims. It never queries credential values.
 package credentialregistry
 
 import (
 	"context"
 	"errors"
+	"fmt"
+	"path/filepath"
 	"strings"
-	"unicode"
+
+	"github.com/jackc/pgx/v5"
 )
 
 var (
-	ErrNoApprovedAssignment        = errors.New("credential registry: no approved assignment")
-	ErrProviderMismatch            = errors.New("credential registry: provider mismatch")
-	ErrExclusiveAssignmentConflict = errors.New("credential registry: exclusive assignment conflict")
-	ErrAccountAlreadyUsed          = ErrExclusiveAssignmentConflict
-	ErrAccountUnavailable          = errors.New("credential registry: account unavailable")
-	ErrInvalidMetadata             = errors.New("credential registry: invalid assignment metadata")
-	ErrGenerationConflict          = errors.New("credential registry: generation conflict")
-	ErrTaskConflict                = errors.New("credential registry: task claim conflict")
-	ErrCapacityExhausted           = errors.New("credential registry: task concurrency exhausted")
-	ErrRegistryUnavailable         = errors.New("credential registry: assignment store unavailable")
+	ErrNoApprovedAssignment = errors.New("credential registry: no approved assignment")
+	ErrProviderMismatch     = errors.New("credential registry: provider mismatch")
+	ErrAccountAlreadyUsed   = errors.New("credential registry: account assigned to multiple agents")
+	ErrAccountUnavailable   = errors.New("credential registry: account unavailable")
+	ErrInvalidMetadata      = errors.New("credential registry: invalid account metadata")
 )
 
-// HomeRef is an opaque catalog identifier. It is deliberately not a path or
-// an account identity. Only the daemon-local catalog may resolve it to a host
-// location.
-type HomeRef string
-
-// ApprovalState represents the durable owner decision for an assignment.
-type ApprovalState string
-
-const (
-	ApprovalPending  ApprovalState = "pending"
-	ApprovalApproved ApprovalState = "approved"
-	ApprovalRevoked  ApprovalState = "revoked"
-)
-
-// AccountStatus is the persisted availability state of the assigned account.
-type AccountStatus string
-
-const (
-	StatusAvailable AccountStatus = "available"
-	StatusLeased    AccountStatus = "leased"
-)
-
-// Candidate is the locked metadata-only snapshot validated before an atomic
-// reservation and returned after commit. Internal admission predicates are
-// excluded from JSON. The type intentionally has no account ID, source path,
-// credential reference, or secret.
-type Candidate struct {
-	TaskID                      string        `json:"-"`
-	TaskStatus                  string        `json:"-"`
-	BindingID                   string        `json:"-"`
-	AgentID                     string        `json:"-"`
-	WorkspaceID                 string        `json:"-"`
-	RuntimeID                   string        `json:"-"`
-	RuntimeSessionID            string        `json:"-"`
-	StandardVersionID           string        `json:"-"`
-	ConfigurationVersionID      string        `json:"-"`
-	ConfigurationDigest         string        `json:"-"`
-	CapabilityDigest            string        `json:"-"`
-	Provider                    string        `json:"-"`
-	HomeRef                     HomeRef       `json:"home_ref"`
-	BindingGeneration           uint64        `json:"binding_generation"`
-	AssignmentCatalogGeneration uint64        `json:"-"`
-	CatalogGeneration           uint64        `json:"catalog_generation"`
-	Approval                    ApprovalState `json:"-"`
-	Status                      AccountStatus `json:"-"`
-	WorktypeScope               string        `json:"-"`
-	AssignmentOwners            int           `json:"-"`
-	BindingAssignments          int           `json:"-"`
-	ActiveTasks                 int           `json:"-"`
-	TaskConcurrencyLimit        int           `json:"-"`
+// QueryRower is the read-only database surface used by Resolver.
+type QueryRower interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-// Request is the complete fenced identity supplied at admission. Both expected
-// generations are mandatory: accepting an unfenced claim would permit a revoked
-// or replaced assignment to be silently remapped.
-type Request struct {
-	TaskID                    string
-	BindingID                 string
-	AgentID                   string
-	WorkspaceID               string
-	Provider                  string
-	ExpectedBindingGeneration uint64
-	ExpectedCatalogGeneration uint64
-}
-
-// CandidateValidator is the sole admission authority. A Store must invoke it
-// after locking durable state and before mutating the task, reservation, or
-// snapshot. This prevents a validation failure from leaking capacity.
-type CandidateValidator func(Candidate) error
-
-// Store owns durable atomic mutations. ReserveAssignment must lock the exact
-// task, binding, assignment, and catalog state; invoke validate; and only then
-// atomically claim the task and persist its immutable snapshot. ReleaseAssignment
-// ends exactly that task's active reference. Neither operation may rotate or
-// remap a binding/home.
-type Store interface {
-	ReserveAssignment(ctx context.Context, request Request, validate CandidateValidator) (Candidate, error)
-	ReleaseAssignment(ctx context.Context, request ReleaseRequest) error
-}
-
-// ReleaseRequest identifies one previously persisted reservation. Generations
-// fence completion so it cannot decrement another task or replacement binding.
-type ReleaseRequest struct {
-	TaskID            string
-	BindingID         string
-	BindingGeneration uint64
-	CatalogGeneration uint64
-}
-
-// Assignment is the bounded claim snapshot that may cross into shared
-// admission code. It exposes only an opaque home reference and safe metadata.
+// Assignment contains only routing metadata. It deliberately has no secret
+// reference, credential format, token, cookie, or provider credential value.
 type Assignment struct {
-	HomeRef              HomeRef       `json:"home_ref"`
-	BindingGeneration    uint64        `json:"binding_generation"`
-	CatalogGeneration    uint64        `json:"catalog_generation"`
-	Provider             string        `json:"provider"`
-	Status               AccountStatus `json:"status"`
-	TaskConcurrencyLimit int           `json:"task_concurrency_limit"`
+	AccountID     string
+	TenantID      string
+	Vendor        string
+	HomeDir       string
+	ConfigDir     string
+	Status        string
+	WorktypeScope *string
 }
 
-// Resolver performs no lookup/retry cycle. Each Resolve call attempts exactly
-// one fenced reservation so a conflict can never fall through to another home.
+// Resolver reads the persisted agent -> account assignment and requires a
+// matching owner approval in the same tenant.
 type Resolver struct {
-	store Store
+	db QueryRower
 }
 
-func NewResolver(store Store) *Resolver {
-	return &Resolver{store: store}
+func NewResolver(db QueryRower) *Resolver {
+	return &Resolver{db: db}
 }
 
 // CanonicalProvider normalizes only established aliases. Unknown providers
-// are returned unchanged so they cannot silently inherit another provider's
-// approved home.
+// are returned unchanged so they cannot silently inherit another vendor's
+// approved account.
 func CanonicalProvider(provider string) string {
 	switch strings.ToLower(strings.TrimSpace(provider)) {
 	case "agy":
@@ -145,9 +59,8 @@ func CanonicalProvider(provider string) string {
 	}
 }
 
-// RequiresApprovedAssignment identifies native credential-bearing providers
-// covered by the reviewed R3 contract. Discovery alone does not enroll another
-// provider.
+// RequiresApprovedAssignment identifies credential-bearing providers covered
+// by the ORQ-21 contract. Other runtimes keep their existing execution path.
 func RequiresApprovedAssignment(provider string) bool {
 	switch CanonicalProvider(provider) {
 	case "antigravity", "codex", "kiro":
@@ -157,134 +70,92 @@ func RequiresApprovedAssignment(provider string) bool {
 	}
 }
 
-// Resolve atomically reserves and returns one approved, exclusive, usable
-// assignment or fails closed. Concurrency comes from explicit policy and is
-// never inferred from the number of catalog homes.
-func (r *Resolver) Resolve(ctx context.Context, request Request) (Assignment, error) {
-	if r == nil || r.store == nil || strings.TrimSpace(request.TaskID) == "" ||
-		strings.TrimSpace(request.BindingID) == "" || strings.TrimSpace(request.AgentID) == "" ||
-		strings.TrimSpace(request.WorkspaceID) == "" || !RequiresApprovedAssignment(request.Provider) {
+// Resolve returns one approved assignment or a fail-closed error. The query
+// intentionally does not join credentials: secret_ref and credential values
+// are outside this package's data surface.
+func (r *Resolver) Resolve(ctx context.Context, agentID, provider string) (Assignment, error) {
+	if r == nil || r.db == nil {
 		return Assignment{}, ErrNoApprovedAssignment
 	}
-	if request.ExpectedBindingGeneration == 0 || request.ExpectedCatalogGeneration == 0 {
-		return Assignment{}, ErrGenerationConflict
-	}
 
-	provider := CanonicalProvider(request.Provider)
-	request.Provider = provider
-	candidate, err := r.store.ReserveAssignment(ctx, request, func(candidate Candidate) error {
-		return validateCandidate(request, candidate)
-	})
+	var assignment Assignment
+	var assignedToAnotherAgent bool
+	err := r.db.QueryRow(ctx, `
+		SELECT a.account_id::text,
+		       a.tenant_id::text,
+		       a.vendor,
+		       a.home_dir,
+		       a.config_dir,
+		       a.status,
+		       aa.worktype_scope,
+		       EXISTS (
+		           SELECT 1
+		             FROM assignments AS other
+		            WHERE other.account_id = ass.account_id
+		              AND other.agent_id <> ass.agent_id
+		       ) AS assigned_to_another_agent
+		  FROM assignments AS ass
+		  JOIN agent AS ag
+		    ON ag.id = ass.agent_id
+		  JOIN accounts AS a
+		    ON a.account_id = ass.account_id
+		  JOIN approved_accounts AS aa
+		    ON aa.account_id = a.account_id
+		   AND aa.tenant_id = a.tenant_id
+		   AND aa.allowed = true
+		 WHERE ass.agent_id = $1::uuid
+		   AND ag.workspace_id = a.tenant_id
+	`, agentID).Scan(
+		&assignment.AccountID,
+		&assignment.TenantID,
+		&assignment.Vendor,
+		&assignment.HomeDir,
+		&assignment.ConfigDir,
+		&assignment.Status,
+		&assignment.WorktypeScope,
+		&assignedToAnotherAgent,
+	)
 	if err != nil {
-		return Assignment{}, boundedStoreError(err)
-	}
-
-	return Assignment{
-		HomeRef:              candidate.HomeRef,
-		BindingGeneration:    candidate.BindingGeneration,
-		CatalogGeneration:    candidate.CatalogGeneration,
-		Provider:             provider,
-		Status:               candidate.Status,
-		TaskConcurrencyLimit: candidate.TaskConcurrencyLimit,
-	}, nil
-}
-
-// Release ends one active task reference. The durable store is responsible for
-// idempotency when the same task-completion signal is delivered more than once.
-func (r *Resolver) Release(ctx context.Context, request ReleaseRequest) error {
-	if r == nil || r.store == nil || strings.TrimSpace(request.TaskID) == "" ||
-		strings.TrimSpace(request.BindingID) == "" || request.BindingGeneration == 0 ||
-		request.CatalogGeneration == 0 {
-		return ErrGenerationConflict
-	}
-	if err := r.store.ReleaseAssignment(ctx, request); err != nil {
-		return boundedStoreError(err)
-	}
-	return nil
-}
-
-func validateCandidate(request Request, candidate Candidate) error {
-	// Identity and approval failures intentionally collapse to one error so a
-	// caller cannot enumerate cross-workspace or revoked assignments.
-	if candidate.TaskID != request.TaskID || candidate.BindingID != request.BindingID ||
-		candidate.AgentID != request.AgentID || candidate.WorkspaceID != request.WorkspaceID ||
-		candidate.Approval != ApprovalApproved {
-		return ErrNoApprovedAssignment
-	}
-	if candidate.Provider != request.Provider {
-		return ErrProviderMismatch
-	}
-	if candidate.TaskStatus != "queued" {
-		return ErrTaskConflict
-	}
-	if candidate.BindingGeneration != request.ExpectedBindingGeneration ||
-		candidate.CatalogGeneration != request.ExpectedCatalogGeneration ||
-		candidate.AssignmentCatalogGeneration != candidate.CatalogGeneration {
-		return ErrGenerationConflict
-	}
-	if candidate.AssignmentOwners > 1 {
-		return ErrExclusiveAssignmentConflict
-	}
-	if candidate.AssignmentOwners != 1 || candidate.BindingAssignments != 1 {
-		return ErrNoApprovedAssignment
-	}
-	if candidate.Status != StatusAvailable && candidate.Status != StatusLeased {
-		return ErrAccountUnavailable
-	}
-	if candidate.WorktypeScope != "GENERAL" || !ValidHomeRef(candidate.HomeRef) ||
-		candidate.BindingGeneration == 0 || candidate.CatalogGeneration == 0 ||
-		candidate.ActiveTasks < 0 || candidate.TaskConcurrencyLimit <= 0 ||
-		strings.TrimSpace(candidate.RuntimeID) == "" || strings.TrimSpace(candidate.RuntimeSessionID) == "" ||
-		strings.TrimSpace(candidate.StandardVersionID) == "" || strings.TrimSpace(candidate.ConfigurationVersionID) == "" ||
-		strings.TrimSpace(candidate.ConfigurationDigest) == "" || strings.TrimSpace(candidate.CapabilityDigest) == "" {
-		return ErrInvalidMetadata
-	}
-	if candidate.ActiveTasks >= candidate.TaskConcurrencyLimit {
-		return ErrCapacityExhausted
-	}
-	return nil
-}
-
-func boundedStoreError(err error) error {
-	for _, bounded := range []error{
-		ErrNoApprovedAssignment,
-		ErrProviderMismatch,
-		ErrExclusiveAssignmentConflict,
-		ErrAccountUnavailable,
-		ErrInvalidMetadata,
-		ErrGenerationConflict,
-		ErrTaskConflict,
-		ErrCapacityExhausted,
-	} {
-		if errors.Is(err, bounded) {
-			return bounded
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Assignment{}, ErrNoApprovedAssignment
 		}
+		return Assignment{}, fmt.Errorf("credential registry: resolve metadata: %w", err)
 	}
-	return ErrRegistryUnavailable
+
+	// The importer and the ORQ-12 migration own canonicalization at write
+	// time. Reads compare the persisted canonical vendor exactly so drift is
+	// rejected instead of being repaired independently by multiple readers.
+	if assignment.Vendor != CanonicalProvider(provider) {
+		return Assignment{}, ErrProviderMismatch
+	}
+	if assignedToAnotherAgent {
+		return Assignment{}, ErrAccountAlreadyUsed
+	}
+	// A durable assignments row identifies this agent as the lease owner and
+	// the duplicate check above proves no other agent owns the account.
+	// States that are neither available nor leased are never executable.
+	if assignment.Status != "available" && assignment.Status != "leased" {
+		return Assignment{}, ErrAccountUnavailable
+	}
+	if !validAbsoluteMetadataPath(assignment.HomeDir) {
+		return Assignment{}, ErrInvalidMetadata
+	}
+	if assignment.ConfigDir != "" && !validAbsoluteMetadataPath(assignment.ConfigDir) {
+		return Assignment{}, ErrInvalidMetadata
+	}
+	// GENERAL is the only implemented execution vocabulary. Other values are
+	// stored by the schema for future policy, but must not be represented as
+	// enforced until a task worktype exists and is compared here.
+	if assignment.WorktypeScope == nil || *assignment.WorktypeScope != "GENERAL" {
+		return Assignment{}, ErrInvalidMetadata
+	}
+	return assignment, nil
 }
 
-// ValidHomeRef accepts an opaque, non-path catalog identifier. It rejects
-// whitespace, control characters, URI/path separators, drive delimiters, and
-// path traversal tokens. Catalog issuance remains responsible for uniqueness
-// and non-reuse.
-func ValidHomeRef(ref HomeRef) bool {
-	value := string(ref)
-	if len(value) < 16 || len(value) > 128 || strings.TrimSpace(value) != value ||
-		value == "." || value == ".." {
+func validAbsoluteMetadataPath(path string) bool {
+	if path == "" || !filepath.IsAbs(path) {
 		return false
 	}
-	for _, r := range value {
-		if unicode.IsSpace(r) || unicode.IsControl(r) {
-			return false
-		}
-		switch r {
-		case '/', '\\', ':':
-			return false
-		}
-		if !(r >= 'a' && r <= 'z') && !(r >= 'A' && r <= 'Z') &&
-			!(r >= '0' && r <= '9') && r != '-' && r != '_' && r != '.' && r != '~' {
-			return false
-		}
-	}
-	return true
+	clean := filepath.Clean(path)
+	return clean != string(filepath.Separator) && clean == path
 }

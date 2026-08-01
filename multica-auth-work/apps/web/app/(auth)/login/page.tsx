@@ -108,17 +108,7 @@ function LoginPageContent() {
     void resolveLoggedInDestination(qc, hasOnboarded, list).then((dest) =>
       router.replace(dest),
     );
-  }, [
-    isLoading,
-    user,
-    router,
-    nextUrl,
-    cliCallbackRaw,
-    isDesktopHandoff,
-    hasOnboarded,
-    qc,
-    t,
-  ]);
+  }, [isLoading, user, router, nextUrl, cliCallbackRaw, isDesktopHandoff, hasOnboarded, qc]);
 
   const handleSuccess = async () => {
     // Read the latest user snapshot directly — the closure's `hasOnboarded`

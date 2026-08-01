@@ -296,16 +296,26 @@ func broadcastFailedTasks(ctx context.Context, queries *db.Queries, taskSvc *ser
 	}
 	// Fallback path used by tests that don't construct a TaskService:
 	// publish task:failed events with workspace IDs and reset stuck issues.
-	fallbackTaskSvc := &service.TaskService{Queries: queries, Bus: bus}
+	processedIssues := make(map[string]bool)
 	affectedAgents := make(map[string]pgtype.UUID)
 	for _, t := range tasks {
 		failureReason := "agent_error"
 		if t.FailureReason.Valid && t.FailureReason.String != "" {
 			failureReason = t.FailureReason.String
 		}
-		// Reuse the production reconciliation path so the fallback has the
-		// same atomic active-task guard and issue:updated event semantics.
-		workspaceID := fallbackTaskSvc.ReconcileFailedIssue(ctx, t, false)
+		workspaceID := ""
+		if t.IssueID.Valid {
+			if issue, err := queries.GetIssue(ctx, t.IssueID); err == nil {
+				workspaceID = util.UUIDToString(issue.WorkspaceID)
+				issueKey := util.UUIDToString(t.IssueID)
+				if issue.Status == "in_progress" && !processedIssues[issueKey] {
+					processedIssues[issueKey] = true
+					if hasActive, herr := queries.HasActiveTaskForIssue(ctx, t.IssueID); herr == nil && !hasActive {
+						queries.UpdateIssueStatus(ctx, db.UpdateIssueStatusParams{ID: t.IssueID, Status: "todo", WorkspaceID: issue.WorkspaceID})
+					}
+				}
+			}
+		}
 		bus.Publish(events.Event{
 			Type:        protocol.EventTaskFailed,
 			WorkspaceID: workspaceID,

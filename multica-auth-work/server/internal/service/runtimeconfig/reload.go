@@ -1,5 +1,7 @@
 package runtimeconfig
 
+import "reflect"
+
 // ClassifyField returns the reload behavior for a known field. The class is
 // read from the frozen registry, so a newly registered field cannot ship
 // without a reload class.
@@ -45,7 +47,7 @@ func ClassifyChanges(current, next Effective) (ChangePlan, error) {
 	for _, field := range allFields {
 		left, leftSet := fieldValue(current.Values, field)
 		right, rightSet := fieldValue(next.Values, field)
-		if leftSet == rightSet && (!leftSet || left == right) {
+		if leftSet == rightSet && (!leftSet || reflect.DeepEqual(left, right)) {
 			continue
 		}
 		class, _ := ClassifyField(field)
@@ -73,7 +75,7 @@ func policyDiffers(current, next map[Field]bool) bool {
 
 func validateEffectiveIntegrity(effective Effective, errs *errorCollector) {
 	if effective.Version != VersionV1 {
-		errs.add(ErrInvalidVersion, Field("schema_version"))
+		errs.add(ErrInvalidVersion, Field("version"))
 	}
 	validateValues(effective.Values, true, errs)
 	for field := range effective.Delegable {

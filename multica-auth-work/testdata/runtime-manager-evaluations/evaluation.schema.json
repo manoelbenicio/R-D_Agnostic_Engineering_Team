@@ -37,13 +37,35 @@
     "pending_contracts": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["note", "unregistered_events", "absent_source_symbols"],
+      "required": [
+        "note",
+        "adapter_scan_root",
+        "adapter_scan_excludes",
+        "adapter_scan_note",
+        "unregistered_events",
+        "implemented_source_symbols",
+        "absent_source_symbols"
+      ],
       "properties": {
         "note": { "type": "string", "minLength": 1 },
+        "adapter_scan_root": { "const": "multica-auth-work/server" },
+        "adapter_scan_excludes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "adapter_scan_note": { "type": "string", "minLength": 1 },
         "unregistered_events": {
           "type": "array",
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/eventName" }
+        },
+        "implemented_source_symbols": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
         },
         "absent_source_symbols": {
           "type": "array",
@@ -126,13 +148,21 @@
         "state_before": {
           "type": "object",
           "properties": {
-            "active_digest": { "$ref": "#/$defs/digest" },
             "capability_digest": { "$ref": "#/$defs/digest" },
-            "effective_configuration_digest": { "$ref": "#/$defs/digest" }
+            "configuration_digest": { "$ref": "#/$defs/digest" }
           }
         },
         "request": {
-          "type": "object"
+          "type": "object",
+          "properties": {
+            "configuration": {
+              "type": "object",
+              "required": ["version"],
+              "properties": {
+                "version": { "const": "v1" }
+              }
+            }
+          }
         },
         "expected": {
           "oneOf": [
@@ -196,9 +226,8 @@
         "state_after": {
           "type": "object",
           "properties": {
-            "active_digest": { "$ref": "#/$defs/digest" },
             "capability_digest": { "$ref": "#/$defs/digest" },
-            "effective_configuration_digest": { "$ref": "#/$defs/digest" }
+            "configuration_digest": { "$ref": "#/$defs/digest" }
           }
         },
         "assertions": {

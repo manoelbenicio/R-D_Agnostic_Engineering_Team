@@ -1,16 +1,151 @@
 package handler
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sort"
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/multica-ai/multica/server/internal/auth"
+	"github.com/redis/go-redis/v9"
 )
+
+// newWorkspaceCacheTestClient is a deliberately tiny in-process RESP2 server.
+// It keeps this integration test hermetic while exercising the real
+// DaemonTokenCache implementation; only GET, SET, and DEL are needed here.
+func newWorkspaceCacheTestClient(t *testing.T) *redis.Client {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen for cache fake: %v", err)
+	}
+	var mu sync.Mutex
+	values := map[string]string{}
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go serveWorkspaceCacheConn(conn, &mu, values)
+		}
+	}()
+	rdb := redis.NewClient(&redis.Options{Addr: ln.Addr().String(), Protocol: 2})
+	t.Cleanup(func() {
+		_ = rdb.Close()
+		_ = ln.Close()
+	})
+	return rdb
+}
+
+func serveWorkspaceCacheConn(conn net.Conn, mu *sync.Mutex, values map[string]string) {
+	defer conn.Close()
+	r := bufio.NewReader(conn)
+	w := bufio.NewWriter(conn)
+	for {
+		args, err := readRESPCommand(r)
+		if err != nil {
+			return
+		}
+		switch strings.ToUpper(args[0]) {
+		case "GET":
+			mu.Lock()
+			value, ok := values[args[1]]
+			mu.Unlock()
+			if !ok {
+				_, _ = w.WriteString("$-1\r\n")
+			} else {
+				_, _ = fmt.Fprintf(w, "$%d\r\n%s\r\n", len(value), value)
+			}
+		case "SET":
+			mu.Lock()
+			values[args[1]] = args[2]
+			mu.Unlock()
+			_, _ = w.WriteString("+OK\r\n")
+		case "DEL":
+			mu.Lock()
+			_, ok := values[args[1]]
+			delete(values, args[1])
+			mu.Unlock()
+			if ok {
+				_, _ = w.WriteString(":1\r\n")
+			} else {
+				_, _ = w.WriteString(":0\r\n")
+			}
+		default:
+			_, _ = w.WriteString("-ERR unsupported command\r\n")
+		}
+		if err := w.Flush(); err != nil {
+			return
+		}
+	}
+}
+
+func readRESPCommand(r *bufio.Reader) ([]string, error) {
+	header, err := r.ReadString('\n')
+	if err != nil {
+		return nil, err
+	}
+	if len(header) < 3 || header[0] != '*' {
+		return nil, errors.New("invalid RESP array")
+	}
+	count, err := strconv.Atoi(strings.TrimSpace(header[1:]))
+	if err != nil {
+		return nil, err
+	}
+	args := make([]string, count)
+	for i := range args {
+		lengthLine, err := r.ReadString('\n')
+		if err != nil || len(lengthLine) < 3 || lengthLine[0] != '$' {
+			return nil, errors.New("invalid RESP bulk string")
+		}
+		length, err := strconv.Atoi(strings.TrimSpace(lengthLine[1:]))
+		if err != nil {
+			return nil, err
+		}
+		buf := make([]byte, length+2)
+		if _, err := io.ReadFull(r, buf); err != nil {
+			return nil, err
+		}
+		args[i] = string(buf[:length])
+	}
+	return args, nil
+}
+
+type failingCommitStarter struct {
+	pool interface {
+		Begin(context.Context) (pgx.Tx, error)
+	}
+}
+
+func (s failingCommitStarter) Begin(ctx context.Context) (pgx.Tx, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return failingCommitTx{Tx: tx}, nil
+}
+
+type failingCommitTx struct{ pgx.Tx }
+
+func (tx failingCommitTx) Commit(ctx context.Context) error {
+	_ = tx.Tx.Rollback(ctx)
+	return errors.New("forced commit failure")
+}
 
 func TestCreateWorkspace_RejectsReservedSlug(t *testing.T) {
 	// Drive the test off the actual reservedSlugs map so the test can never
@@ -154,6 +289,19 @@ VALUES ($1, $2, 'admin')
 `, wsID, testUserID); err != nil {
 		t.Fatalf("create admin member: %v", err)
 	}
+	const tokenHash = "delete-workspace-non-owner-token"
+	if _, err := testPool.Exec(ctx, `
+INSERT INTO daemon_token (token_hash, workspace_id, daemon_id, expires_at)
+VALUES ($1, $2, 'non-owner-daemon', now() + interval '1 day')
+`, tokenHash, wsID); err != nil {
+		t.Fatalf("create daemon token: %v", err)
+	}
+	rdb := newWorkspaceCacheTestClient(t)
+	cache := auth.NewDaemonTokenCache(rdb)
+	previousCache := testHandler.DaemonTokenCache
+	testHandler.DaemonTokenCache = cache
+	t.Cleanup(func() { testHandler.DaemonTokenCache = previousCache })
+	cache.Set(ctx, tokenHash, auth.DaemonTokenIdentity{WorkspaceID: wsID, DaemonID: "non-owner-daemon"}, time.Hour)
 
 	w := httptest.NewRecorder()
 	req := newRequest("DELETE", "/api/workspaces/"+wsID, nil)
@@ -170,6 +318,16 @@ VALUES ($1, $2, 'admin')
 	}
 	if !exists {
 		t.Fatal("workspace was deleted despite non-owner request — handler-level check did not fire")
+	}
+	var tokenExists bool
+	if err := testPool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM daemon_token WHERE token_hash = $1)`, tokenHash).Scan(&tokenExists); err != nil {
+		t.Fatalf("verify daemon token: %v", err)
+	}
+	if !tokenExists {
+		t.Fatal("daemon token was deleted despite non-owner request")
+	}
+	if _, ok := cache.Get(ctx, tokenHash); !ok {
+		t.Fatal("daemon token cache was invalidated despite non-owner request")
 	}
 }
 
@@ -210,6 +368,45 @@ VALUES ($1, 123456789, 'multica-ai', 'multica', 3366, 987654321, 'abc123', 15368
 		t.Fatalf("create pending check suite: %v", err)
 	}
 
+	const unrelatedSlug = "handler-tests-delete-unrelated"
+	_, _ = testPool.Exec(ctx, `DELETE FROM workspace WHERE slug = $1`, unrelatedSlug)
+	var unrelatedWorkspaceID string
+	if err := testPool.QueryRow(ctx, `
+INSERT INTO workspace (name, slug, description) VALUES ('Unrelated Workspace', $1, '') RETURNING id
+`, unrelatedSlug).Scan(&unrelatedWorkspaceID); err != nil {
+		t.Fatalf("create unrelated workspace: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM workspace WHERE id = $1`, unrelatedWorkspaceID)
+	})
+
+	tokenHashes := []string{"delete-workspace-token-one", "delete-workspace-token-two"}
+	for i, hash := range tokenHashes {
+		if _, err := testPool.Exec(ctx, `
+INSERT INTO daemon_token (token_hash, workspace_id, daemon_id, expires_at)
+VALUES ($1, $2, $3, now() + interval '1 day')
+`, hash, wsID, fmt.Sprintf("deleted-daemon-%d", i)); err != nil {
+			t.Fatalf("create deleted-workspace daemon token: %v", err)
+		}
+	}
+	const unrelatedHash = "delete-workspace-unrelated-token"
+	if _, err := testPool.Exec(ctx, `
+INSERT INTO daemon_token (token_hash, workspace_id, daemon_id, expires_at)
+VALUES ($1, $2, 'unrelated-daemon', now() + interval '1 day')
+`, unrelatedHash, unrelatedWorkspaceID); err != nil {
+		t.Fatalf("create unrelated daemon token: %v", err)
+	}
+
+	rdb := newWorkspaceCacheTestClient(t)
+	cache := auth.NewDaemonTokenCache(rdb)
+	previousCache := testHandler.DaemonTokenCache
+	testHandler.DaemonTokenCache = cache
+	t.Cleanup(func() { testHandler.DaemonTokenCache = previousCache })
+	for i, hash := range tokenHashes {
+		cache.Set(ctx, hash, auth.DaemonTokenIdentity{WorkspaceID: wsID, DaemonID: fmt.Sprintf("deleted-daemon-%d", i)}, time.Hour)
+	}
+	cache.Set(ctx, unrelatedHash, auth.DaemonTokenIdentity{WorkspaceID: unrelatedWorkspaceID, DaemonID: "unrelated-daemon"}, time.Hour)
+
 	w := httptest.NewRecorder()
 	req := newRequest("DELETE", "/api/workspaces/"+wsID, nil)
 	req = withURLParam(req, "id", wsID)
@@ -233,6 +430,83 @@ VALUES ($1, 123456789, 'multica-ai', 'multica', 3366, 987654321, 'abc123', 15368
 	}
 	if pendingCount != 0 {
 		t.Fatalf("pending check suites were not cleaned up for deleted workspace: %d", pendingCount)
+	}
+	for _, hash := range tokenHashes {
+		var tokenExists bool
+		if err := testPool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM daemon_token WHERE token_hash = $1)`, hash).Scan(&tokenExists); err != nil {
+			t.Fatalf("verify deleted daemon token: %v", err)
+		}
+		if tokenExists {
+			t.Fatalf("daemon token %q still exists after workspace deletion", hash)
+		}
+		if _, ok := cache.Get(ctx, hash); ok {
+			t.Fatalf("daemon token %q remains cached after workspace deletion", hash)
+		}
+	}
+	var unrelatedExists bool
+	if err := testPool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM daemon_token WHERE token_hash = $1)`, unrelatedHash).Scan(&unrelatedExists); err != nil {
+		t.Fatalf("verify unrelated daemon token: %v", err)
+	}
+	if !unrelatedExists {
+		t.Fatal("unrelated workspace daemon token was deleted")
+	}
+	if _, ok := cache.Get(ctx, unrelatedHash); !ok {
+		t.Fatal("unrelated workspace daemon token was invalidated from cache")
+	}
+}
+
+func TestDeleteWorkspace_CommitFailurePreservesTokensAndCache(t *testing.T) {
+	ctx := context.Background()
+	const slug = "handler-tests-delete-commit-failure"
+	_, _ = testPool.Exec(ctx, `DELETE FROM workspace WHERE slug = $1`, slug)
+	var wsID string
+	if err := testPool.QueryRow(ctx, `
+INSERT INTO workspace (name, slug, description) VALUES ('Commit Failure', $1, '') RETURNING id
+`, slug).Scan(&wsID); err != nil {
+		t.Fatalf("create workspace: %v", err)
+	}
+	t.Cleanup(func() { _, _ = testPool.Exec(context.Background(), `DELETE FROM workspace WHERE id = $1`, wsID) })
+	if _, err := testPool.Exec(ctx, `INSERT INTO member (workspace_id, user_id, role) VALUES ($1, $2, 'owner')`, wsID, testUserID); err != nil {
+		t.Fatalf("create owner: %v", err)
+	}
+	const tokenHash = "delete-workspace-commit-failure-token"
+	if _, err := testPool.Exec(ctx, `
+INSERT INTO daemon_token (token_hash, workspace_id, daemon_id, expires_at)
+VALUES ($1, $2, 'commit-failure-daemon', now() + interval '1 day')
+`, tokenHash, wsID); err != nil {
+		t.Fatalf("create daemon token: %v", err)
+	}
+
+	rdb := newWorkspaceCacheTestClient(t)
+	cache := auth.NewDaemonTokenCache(rdb)
+	previousCache := testHandler.DaemonTokenCache
+	previousStarter := testHandler.TxStarter
+	testHandler.DaemonTokenCache = cache
+	testHandler.TxStarter = failingCommitStarter{pool: testPool}
+	t.Cleanup(func() {
+		testHandler.DaemonTokenCache = previousCache
+		testHandler.TxStarter = previousStarter
+	})
+	cache.Set(ctx, tokenHash, auth.DaemonTokenIdentity{WorkspaceID: wsID, DaemonID: "commit-failure-daemon"}, time.Hour)
+
+	w := httptest.NewRecorder()
+	req := withURLParam(newRequest("DELETE", "/api/workspaces/"+wsID, nil), "id", wsID)
+	testHandler.DeleteWorkspace(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500 on commit failure, got %d: %s", w.Code, w.Body.String())
+	}
+	var workspaceExists, tokenExists bool
+	if err := testPool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM workspace WHERE id = $1)`, wsID).Scan(&workspaceExists); err != nil {
+		t.Fatalf("verify workspace: %v", err)
+	}
+	if err := testPool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM daemon_token WHERE token_hash = $1)`, tokenHash).Scan(&tokenExists); err != nil {
+		t.Fatalf("verify daemon token: %v", err)
+	}
+	if !workspaceExists || !tokenExists {
+		t.Fatalf("commit failure did not preserve rows: workspace=%v token=%v", workspaceExists, tokenExists)
+	}
+	if _, ok := cache.Get(ctx, tokenHash); !ok {
+		t.Fatal("commit failure invalidated daemon token cache")
 	}
 }
 

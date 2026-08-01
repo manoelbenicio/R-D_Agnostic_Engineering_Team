@@ -1,59 +1,47 @@
-// SPE-7 hardening checks. Each one is bound to text that is really committed in
-// the canonical spec, and every expectation is recomputed rather than restated,
-// so the check keeps biting when either side moves.
+// SPE-7 hardening checks. Each is bound to clause text that is really committed
+// in the frozen canonical spec, read as an immutable Git object through the same
+// accessor `contract-binding.test.mjs` uses, so both files provably consume the
+// same frozen blob rather than two independently resolved copies.
 //
-// Covers the five reinforcement areas: exclusivity race, rollback, digest,
-// pathlessness, and the exact-eight prohibition coverage of the forbidden set.
+// Covers exclusivity race, rollback, digest, pathlessness, and the prohibition
+// coverage of the forbidden set.
 //
-// Reads only committed repository files. No source-home path, credential,
-// account identity, environment value or secret is imported or asserted here.
+// The SPE-18 capacity-envelope terminology (3 Kiro + 5 Codex) is reserved to
+// that lane, where its frozen-ceiling reading is BLOCKED, and is not reused
+// here: it has no bearing on prohibition coverage. No count invariant is
+// asserted over prohibition requirements either. The auditable property is that
+// every forbidden case binds at least one explicit prohibition clause, not that
+// the clause set totals any particular number.
+//
+// Reads only committed repository objects. No source-home path, credential,
+// account identity, environment value or secret is read or asserted.
 
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 
-const here = dirname(fileURLToPath(import.meta.url));
+import { frozenSpec, loadSuite, prohibitionClauses, requirementBodies } from "./frozen-contracts.mjs";
 
-async function exists(path) {
-  try {
-    await stat(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
+const suite = loadSuite();
+const spec = frozenSpec(suite);
+const bodies = requirementBodies(spec.text);
 
-async function repositoryRoot() {
-  let candidate = here;
-  for (let depth = 0; depth <= 8; depth += 1) {
-    if ((await exists(join(candidate, "openspec"))) && (await exists(join(candidate, "multica-auth-work")))) {
-      return candidate;
-    }
-    const parent = resolve(candidate, "..");
-    if (parent === candidate) break;
-    candidate = parent;
-  }
-  throw new Error("repository root not found: expected an ancestor containing openspec/ and multica-auth-work/");
-}
+assert.equal(
+  bodies.size,
+  suite.canonical_spec.declared_requirements,
+  "requirement split of the frozen blob disagrees with the pinned count",
+);
 
-const root = await repositoryRoot();
-const suite = JSON.parse(await readFile(join(here, "evaluations.json"), "utf8"));
-
-const specPath = join(root, suite.canonical_spec.path);
-assert.ok(await exists(specPath), `missing canonical spec ${suite.canonical_spec.path}`);
-const specText = await readFile(specPath, "utf8");
-
-// Split the spec into per-requirement bodies so a check can prove the clause it
-// relies on is really present instead of assuming it.
-const requirementBodies = (() => {
-  const parts = specText.split(/^### Requirement: (REQ-\d{2})[^\n]*$/m);
-  const bodies = new Map();
-  for (let index = 1; index < parts.length; index += 2) bodies.set(parts[index], parts[index + 1]);
-  return bodies;
-})();
-assert.equal(requirementBodies.size, suite.canonical_spec.declared_requirements, "requirement split disagrees with the pinned count");
+const FORBIDDEN_OPERATIONS = Object.freeze([
+  "expose_raw_path",
+  "share_account_home",
+  "copy_source_credentials",
+  "move_source_credentials",
+  "delete_source_credentials",
+  "configure_static_slot_allowlist",
+  "fallback_across_transport_binding",
+  "create_custom_infrastructure",
+  "perform_sharepoint_work",
+]);
 
 const scenarioById = new Map(suite.scenarios.map((item) => [item.id, item]));
 function scenario(id) {
@@ -62,11 +50,10 @@ function scenario(id) {
   return found;
 }
 function requirement(id) {
-  const body = requirementBodies.get(id);
-  assert.ok(body, `canonical spec does not declare ${id}`);
+  const body = bodies.get(id);
+  assert.ok(body, `frozen spec does not declare ${id}`);
   return body;
 }
-
 function stringValues(value, out = []) {
   if (typeof value === "string") out.push(value);
   else if (Array.isArray(value)) for (const item of value) stringValues(item, out);
@@ -74,33 +61,31 @@ function stringValues(value, out = []) {
   return out;
 }
 
-test("forbidden set covers exactly eight prohibition-bearing requirements", () => {
-  const prohibitionRequirements = [...requirementBodies.entries()]
-    .filter(([, body]) => /MUST NOT|MUST be forbidden/.test(body))
-    .map(([id]) => id);
-  assert.ok(prohibitionRequirements.length >= 8, "canonical spec must declare prohibitions");
-
+test("forbidden set covers exactly the nine declared forbidden operations", () => {
   const forbidden = suite.scenarios.filter(({ classification }) => classification === "forbidden");
-  assert.equal(forbidden.length, 9, "forbidden scenario count changed; re-derive the prohibition mapping");
+  assert.deepEqual(
+    forbidden.map(({ operation }) => operation),
+    [...FORBIDDEN_OPERATIONS],
+    "forbidden operation coverage must stay exact and ordered",
+  );
+  assert.equal(new Set(forbidden.map(({ operation }) => operation)).size, FORBIDDEN_OPERATIONS.length, "operations must be unique");
+});
 
-  // Nine scenarios collapse onto eight prohibition clauses because copy, move
-  // and delete are three refusals of the single REQ-07 source-data prohibition.
-  const covered = [
-    ...new Set(
-      forbidden.flatMap(({ requirement_refs }) => requirement_refs.filter((ref) => prohibitionRequirements.includes(ref))),
-    ),
-  ].sort();
-  assert.equal(covered.length, 8, `forbidden cases must bind exactly eight prohibitions, got ${covered.join(",")}`);
-
-  for (const item of forbidden) {
-    const bound = item.requirement_refs.filter((ref) => prohibitionRequirements.includes(ref));
-    assert.ok(bound.length > 0, `${item.id} binds no prohibition requirement`);
+test("every forbidden case binds an explicit prohibition clause of the frozen spec", () => {
+  for (const item of suite.scenarios.filter(({ classification }) => classification === "forbidden")) {
+    const clauses = item.requirement_refs.flatMap((ref) => prohibitionClauses(requirement(ref)).map((line) => [ref, line]));
+    assert.ok(
+      clauses.length > 0,
+      `${item.id} references ${item.requirement_refs.join(",")}, none of which states a MUST NOT or MUST-be-forbidden clause`,
+    );
+    for (const [ref, line] of clauses) {
+      assert.match(line, /MUST NOT|MUST be forbidden/, `${item.id} clause from ${ref} is not a prohibition`);
+    }
   }
 });
 
 test("exclusivity race refuses the second claimant without touching the first", () => {
-  const req = requirement("REQ-08");
-  assert.match(req, /#### Scenario: Concurrent assignment/, "REQ-08 must declare the concurrent-assignment scenario");
+  assert.match(requirement("REQ-08"), /#### Scenario: Concurrent assignment/, "REQ-08 must declare the concurrent-assignment scenario");
 
   const race = scenario("forbidden-account-sharing");
   assert.ok(race.requirement_refs.includes("REQ-08"), "race case must bind REQ-08");
@@ -121,8 +106,7 @@ test("exclusivity race refuses the second claimant without touching the first", 
 });
 
 test("rollback activates prior immutable history under compare-and-swap", () => {
-  const req = requirement("REQ-12");
-  assert.match(req, /rollback/i, "REQ-12 must govern rollback");
+  assert.match(requirement("REQ-12"), /rollback/i, "REQ-12 must govern rollback");
 
   const rollback = scenario("golden-rollback");
   assert.equal(
@@ -150,31 +134,26 @@ test("rollback activates prior immutable history under compare-and-swap", () => 
 });
 
 test("digests are raw 64-hex and map one-to-one with configuration versions", () => {
-  const req = requirement("REQ-12");
-  assert.match(req, /#### Scenario: Digest drift/, "REQ-12 must declare the digest-drift scenario");
+  assert.match(requirement("REQ-12"), /#### Scenario: Digest drift/, "REQ-12 must declare the digest-drift scenario");
 
   const shape = /^[0-9a-f]{64}$/;
-  const digestKeys = ["active_digest", "capability_digest", "effective_configuration_digest"];
+  const digestKeys = ["capability_digest", "configuration_digest"];
   const pairs = [];
   for (const item of suite.scenarios) {
-    const carriers = [item.state_before, item.expected.state_after, item.state_before?.parent_snapshot];
-    for (const side of carriers) {
+    for (const side of [item.state_before, item.expected.state_after, item.state_before?.parent_snapshot]) {
       if (!side) continue;
       for (const key of digestKeys) {
         if (side[key] === undefined) continue;
         assert.match(side[key], shape, `${item.id}.${key} must be raw lowercase 64-hex`);
       }
-      // Where a snapshot carries both spellings they must describe one digest.
-      if (side.active_digest && side.effective_configuration_digest) {
-        assert.equal(
-          side.effective_configuration_digest,
-          side.active_digest,
-          `${item.id} snapshot disagrees with itself on the effective digest`,
-        );
+      // configuration_digest is the single canonical name for the immutable
+      // configuration/version digest, so it pairs with whichever version id the
+      // object carries: the active version, or a snapshot's pinned version.
+      if (side.configuration_digest && side.active_version_id) {
+        pairs.push([side.active_version_id, side.configuration_digest]);
       }
-      if (side.active_digest && side.active_version_id) pairs.push([side.active_version_id, side.active_digest]);
-      if (side.effective_configuration_digest && side.configuration_version_id) {
-        pairs.push([side.configuration_version_id, side.effective_configuration_digest]);
+      if (side.configuration_digest && side.configuration_version_id) {
+        pairs.push([side.configuration_version_id, side.configuration_digest]);
       }
     }
   }
@@ -191,22 +170,20 @@ test("digests are raw 64-hex and map one-to-one with configuration versions", ()
 
   const hot = scenario("golden-model-reasoning-hot-apply");
   assert.notEqual(hot.expected.state_after.active_version_id, hot.state_before.active_version_id, "hot-apply must move the version");
-  assert.notEqual(hot.expected.state_after.active_digest, hot.state_before.active_digest, "a new version must drift the digest");
+  assert.notEqual(hot.expected.state_after.configuration_digest, hot.state_before.configuration_digest, "a new version must drift the digest");
 
   // The inherited parent snapshot must agree with the mapping hot-apply set, or
   // a subagent could run under a digest that never existed.
-  const child = scenario("golden-subagent-inheritance");
-  const snapshot = child.state_before.parent_snapshot;
+  const snapshot = scenario("golden-subagent-inheritance").state_before.parent_snapshot;
   assert.equal(
     byVersion.get(snapshot.configuration_version_id),
-    snapshot.effective_configuration_digest,
+    snapshot.configuration_digest,
     "inherited snapshot digest disagrees with the version/digest mapping of the suite",
   );
 });
 
 test("no value in the suite carries a filesystem path", () => {
-  const req = requirement("REQ-20");
-  assert.match(req, /raw paths?/i, "REQ-20 must forbid raw paths");
+  assert.match(requirement("REQ-20"), /raw paths?/i, "REQ-20 must forbid raw paths");
 
   const values = stringValues(suite);
   assert.ok(values.length > 0);

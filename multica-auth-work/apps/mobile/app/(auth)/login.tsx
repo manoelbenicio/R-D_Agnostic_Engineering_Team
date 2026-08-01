@@ -11,25 +11,23 @@ import { useAuthStore } from "@/data/auth-store";
 import { mapAuthError } from "@/lib/auth-error";
 
 export default function Login() {
-  const login = useAuthStore((s) => s.login);
+  const sendCode = useAuthStore((s) => s.sendCode);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async () => {
     const trimmed = email.trim();
-    if (!trimmed || !password) return;
+    if (!trimmed) return;
     void Haptics.selectionAsync();
     setSubmitting(true);
     setError(null);
     try {
-      await login(trimmed, password);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/");
+      await sendCode(trimmed);
+      router.push({ pathname: "/verify", params: { email: trimmed } });
     } catch (err) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(mapAuthError(err, "Couldn't sign in. Try again."));
+      setError(mapAuthError(err, "Couldn't send the code. Try again."));
     } finally {
       setSubmitting(false);
     }
@@ -49,7 +47,7 @@ export default function Login() {
                 Sign in to Multica
               </Text>
               <Text className="text-sm text-muted-foreground text-center">
-                Enter your email and password to continue.
+                Enter your email and we&apos;ll send you a verification code.
               </Text>
             </View>
           </View>
@@ -64,20 +62,7 @@ export default function Login() {
               value={email}
               onChangeText={setEmail}
               onSubmitEditing={onSubmit}
-              returnKeyType="next"
-              editable={!submitting}
-              invalid={!!error}
-            />
-            <TextField
-              autoCapitalize="none"
-              autoComplete="current-password"
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              onSubmitEditing={onSubmit}
-              returnKeyType="go"
-              secureTextEntry
-              textContentType="password"
+              returnKeyType="send"
               editable={!submitting}
               invalid={!!error}
             />
@@ -88,10 +73,10 @@ export default function Login() {
 
           <Button
             size="lg"
-            disabled={submitting || !email.trim() || !password}
+            disabled={submitting || !email.trim()}
             onPress={onSubmit}
           >
-            <Text>{submitting ? "Signing in..." : "Sign in"}</Text>
+            <Text>{submitting ? "Sending..." : "Send code"}</Text>
           </Button>
         </View>
       </KeyboardAvoidingView>

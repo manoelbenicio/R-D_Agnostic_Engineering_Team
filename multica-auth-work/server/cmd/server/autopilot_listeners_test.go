@@ -1,5 +1,3 @@
-//go:build !offline
-
 package main
 
 import (
@@ -8,8 +6,10 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/multica-ai/multica/server/internal/daemon/commitledger"
 	"github.com/multica-ai/multica/server/internal/events"
 	"github.com/multica-ai/multica/server/internal/service"
+	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
@@ -286,6 +286,20 @@ func TestAutopilotCreateIssueTaskRetryPendingKeepsRunOpen(t *testing.T) {
 
 	// max_attempts = 2 with attempt = 1 leaves budget for one auto-retry.
 	runTaskWithBudget(t, f.queries, f.taskID, 2)
+
+	// Automatic replay is fail-closed unless authoritative ledger state proves
+	// the parent had no tool activity. This fixture supplies that exact clean
+	// state; production behavior remains blocked when the hook or ledger is absent.
+	registry := commitledger.NewLedgerRegistry()
+	ledger, err := commitledger.New(commitledger.Config{
+		TaskID:     util.UUIDToString(f.taskID),
+		HMACSecret: []byte("0123456789abcdef0123456789abcdef"),
+	})
+	if err != nil {
+		t.Fatalf("create clean commit ledger: %v", err)
+	}
+	registry.Register(util.UUIDToString(f.taskID), ledger)
+	f.taskSvc.ReplayGateHook = commitledger.NewReplayGateHook(registry, nil)
 
 	// timeout is retryable, so FailTask enqueues a fresh attempt before it
 	// broadcasts the failure event.

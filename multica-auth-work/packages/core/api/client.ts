@@ -122,6 +122,23 @@ import type {
   CreateBillingCheckoutSessionResponse,
   BillingCheckoutSessionStatus,
   CreateBillingPortalSessionResponse,
+  RuntimeManagerPage,
+  RuntimeStandardSummary,
+  RuntimeStandardDetail,
+  RuntimeConfigurationVersion,
+  RuntimeConfigurationDocument,
+  RuntimeConfigurationValidation,
+  RuntimeSessionSummary,
+  RuntimeSessionEnrollment,
+  RuntimeBindingSummary,
+  RuntimeBindingDetail,
+  RuntimeHomeProjection,
+  CreateRuntimeStandardRequest,
+  CreateRuntimeSessionRequest,
+  RuntimeActivationRequest,
+  RuntimeRollbackRequest,
+  RuntimeBindingActivationRequest,
+  RuntimeActivationResult,
 } from "../types";
 import type { OnboardingCompletionPath } from "../onboarding/types";
 import type {
@@ -130,7 +147,7 @@ import type {
   ListCloudRuntimeNodesParams,
 } from "../runtimes/cloud-runtime";
 import { type Logger, noopLogger } from "../logger";
-import { createRequestId } from "../utils";
+import { createRequestId, createSafeId } from "../utils";
 import { getCurrentSlug } from "../platform/workspace-storage";
 import { parseWithFallback } from "./schema";
 import {
@@ -255,6 +272,27 @@ export class PreviewTooLargeError extends Error {
   }
 }
 
+function isRuntimeManagerApiPath(path: string): boolean {
+  return (
+    path.startsWith("/api/runtime-standards") ||
+    path.startsWith("/api/runtime-sessions") ||
+    /^\/api\/workspaces\/[^/]+\/(?:runtime-bindings|runtime-sessions|credential-homes)(?:\/|$)/.test(path)
+  );
+}
+
+function runtimeManagerErrorMessage(body: unknown, status: number): string {
+  if (typeof body === "object" && body !== null && "error" in body) {
+    const nested = (body as { error?: unknown }).error;
+    if (typeof nested === "object" && nested !== null && "code" in nested) {
+      const code = (nested as { code?: unknown }).code;
+      if (typeof code === "string" && /^[a-z][a-z0-9_]{0,63}$/.test(code)) {
+        return `Runtime Manager request failed (${code}; HTTP ${status}).`;
+      }
+    }
+  }
+  return `Runtime Manager request failed (HTTP ${status}).`;
+}
+
 // Thrown by getAttachmentTextContent when the server's text whitelist
 // rejects the content type. Normally the client's isPreviewable() guard
 // catches this earlier, but the two whitelists can drift — surfacing the
@@ -332,8 +370,15 @@ export class ApiClient {
   // both pieces have to come from a single read.
   private async parseErrorBody(res: Response, fallback: string): Promise<{ message: string; body: unknown }> {
     try {
-      const data = await res.json() as { error?: string };
-      const message = typeof data.error === "string" && data.error ? data.error : fallback;
+      const data = await res.json() as {
+        error?: string | { message?: string };
+      };
+      const message =
+        typeof data.error === "string" && data.error
+          ? data.error
+          : typeof data.error === "object" && data.error?.message
+            ? data.error.message
+            : fallback;
       return { message, body: data };
     } catch {
       return { message: fallback, body: undefined };
@@ -370,7 +415,11 @@ export class ApiClient {
 
     if (!res.ok) {
       if (res.status === 401) this.handleUnauthorized();
-      const { message, body } = await this.parseErrorBody(res, `API error: ${res.status} ${res.statusText}`);
+      const parsed = await this.parseErrorBody(res, `API error: ${res.status} ${res.statusText}`);
+      const message = isRuntimeManagerApiPath(path)
+        ? runtimeManagerErrorMessage(parsed.body, res.status)
+        : parsed.message;
+      const body = parsed.body;
       const logLevel = res.status === 404 ? "warn" : "error";
       this.logger[logLevel](`← ${res.status} ${path}`, { rid, duration: `${Date.now() - start}ms`, error: message });
       throw new ApiError(message, res.status, res.statusText, body);
@@ -905,6 +954,209 @@ export class ApiClient {
     if (params?.workspace_id) search.set("workspace_id", params.workspace_id);
     if (params?.owner) search.set("owner", params.owner);
     return this.fetch(`/api/runtimes?${search}`);
+  }
+
+  // Runtime Manager (SPE-6). These methods intentionally model only opaque,
+  // pathless control-plane resources. Every mutation supplies an idempotency
+  // key as required by the frozen contract.
+  private runtimeManagerHeaders(idempotencyKey?: string): Record<string, string> {
+    return { "Idempotency-Key": idempotencyKey ?? createSafeId() };
+  }
+
+  async listRuntimeStandards(params?: { cursor?: string; limit?: number }): Promise<RuntimeManagerPage<RuntimeStandardSummary>> {
+    const search = new URLSearchParams();
+    if (params?.cursor) search.set("cursor", params.cursor);
+    if (params?.limit !== undefined) search.set("limit", String(params.limit));
+    const query = search.toString();
+    return this.fetch(`/api/runtime-standards${query ? `?${query}` : ""}`);
+  }
+
+  async createRuntimeStandard(
+    data: CreateRuntimeStandardRequest,
+    idempotencyKey?: string,
+  ): Promise<RuntimeStandardDetail> {
+    return this.fetch("/api/runtime-standards", {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getRuntimeStandard(standardId: string): Promise<RuntimeStandardDetail> {
+    return this.fetch(`/api/runtime-standards/${encodeURIComponent(standardId)}`);
+  }
+
+  async createRuntimeStandardVersion(
+    standardId: string,
+    data: { configuration: RuntimeConfigurationDocument; reason: string },
+    idempotencyKey?: string,
+  ): Promise<RuntimeConfigurationVersion> {
+    return this.fetch(`/api/runtime-standards/${encodeURIComponent(standardId)}/versions`, {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: JSON.stringify(data),
+    });
+  }
+
+  async validateRuntimeStandardVersion(
+    standardId: string,
+    versionId: string,
+    idempotencyKey?: string,
+  ): Promise<RuntimeConfigurationValidation> {
+    return this.fetch(`/api/runtime-standards/${encodeURIComponent(standardId)}/versions/${encodeURIComponent(versionId)}/validate`, {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: "{}",
+    });
+  }
+
+  async activateRuntimeStandardVersion(
+    standardId: string,
+    versionId: string,
+    data: RuntimeActivationRequest,
+    idempotencyKey?: string,
+  ): Promise<RuntimeActivationResult> {
+    return this.fetch(`/api/runtime-standards/${encodeURIComponent(standardId)}/versions/${encodeURIComponent(versionId)}/activate`, {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: JSON.stringify(data),
+    });
+  }
+
+  async rollbackRuntimeStandard(
+    standardId: string,
+    data: RuntimeRollbackRequest,
+    idempotencyKey?: string,
+  ): Promise<RuntimeActivationResult> {
+    return this.fetch(`/api/runtime-standards/${encodeURIComponent(standardId)}/rollback`, {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listRuntimeSessions(params?: { cursor?: string; limit?: number }): Promise<RuntimeManagerPage<RuntimeSessionSummary>> {
+    const search = new URLSearchParams();
+    if (params?.cursor) search.set("cursor", params.cursor);
+    if (params?.limit !== undefined) search.set("limit", String(params.limit));
+    const query = search.toString();
+    return this.fetch(`/api/runtime-sessions${query ? `?${query}` : ""}`);
+  }
+
+  async createRuntimeSession(
+    data: CreateRuntimeSessionRequest,
+    idempotencyKey?: string,
+  ): Promise<RuntimeSessionSummary> {
+    return this.fetch("/api/runtime-sessions", {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: JSON.stringify(data),
+    });
+  }
+
+  async enrollRuntimeSession(
+    workspaceId: string,
+    sessionId: string,
+    data: { runtime_id: string; agent_id: string },
+    idempotencyKey?: string,
+  ): Promise<RuntimeSessionEnrollment> {
+    return this.fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/runtime-sessions/${encodeURIComponent(sessionId)}/enroll`, {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listRuntimeBindings(
+    workspaceId: string,
+    params?: { cursor?: string; limit?: number },
+  ): Promise<RuntimeManagerPage<RuntimeBindingSummary>> {
+    const search = new URLSearchParams();
+    if (params?.cursor) search.set("cursor", params.cursor);
+    if (params?.limit !== undefined) search.set("limit", String(params.limit));
+    const query = search.toString();
+    return this.fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/runtime-bindings${query ? `?${query}` : ""}`);
+  }
+
+  async getRuntimeBinding(workspaceId: string, bindingId: string): Promise<RuntimeBindingDetail> {
+    return this.fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/runtime-bindings/${encodeURIComponent(bindingId)}`);
+  }
+
+  async listRuntimeCredentialHomes(
+    workspaceId: string,
+    params?: { cursor?: string; limit?: number },
+  ): Promise<RuntimeManagerPage<RuntimeHomeProjection>> {
+    const search = new URLSearchParams();
+    if (params?.cursor) search.set("cursor", params.cursor);
+    if (params?.limit !== undefined) search.set("limit", String(params.limit));
+    const query = search.toString();
+    return this.fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/credential-homes${query ? `?${query}` : ""}`);
+  }
+
+  async assignRuntimeCredentialHome(
+    workspaceId: string,
+    bindingId: string,
+    data: { home_ref: string; expected_binding_generation: number; expected_catalog_generation: number },
+    idempotencyKey?: string,
+  ): Promise<RuntimeBindingDetail> {
+    return this.fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/runtime-bindings/${encodeURIComponent(bindingId)}/home-assignments`, {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createRuntimeBindingConfigurationVersion(
+    workspaceId: string,
+    bindingId: string,
+    data: { configuration: RuntimeConfigurationDocument; reason: string },
+    idempotencyKey?: string,
+  ): Promise<RuntimeConfigurationVersion> {
+    return this.fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/runtime-bindings/${encodeURIComponent(bindingId)}/configuration-versions`, {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: JSON.stringify(data),
+    });
+  }
+
+  async validateRuntimeBindingConfigurationVersion(
+    workspaceId: string,
+    bindingId: string,
+    versionId: string,
+    idempotencyKey?: string,
+  ): Promise<RuntimeConfigurationValidation> {
+    return this.fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/runtime-bindings/${encodeURIComponent(bindingId)}/configuration-versions/${encodeURIComponent(versionId)}/validate`, {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: "{}",
+    });
+  }
+
+  async activateRuntimeBindingConfigurationVersion(
+    workspaceId: string,
+    bindingId: string,
+    versionId: string,
+    data: RuntimeBindingActivationRequest,
+    idempotencyKey?: string,
+  ): Promise<RuntimeActivationResult> {
+    return this.fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/runtime-bindings/${encodeURIComponent(bindingId)}/configuration-versions/${encodeURIComponent(versionId)}/activate`, {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: JSON.stringify(data),
+    });
+  }
+
+  async rollbackRuntimeBindingConfiguration(
+    workspaceId: string,
+    bindingId: string,
+    data: RuntimeRollbackRequest,
+    idempotencyKey?: string,
+  ): Promise<RuntimeActivationResult> {
+    return this.fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/runtime-bindings/${encodeURIComponent(bindingId)}/rollback`, {
+      method: "POST",
+      headers: this.runtimeManagerHeaders(idempotencyKey),
+      body: JSON.stringify(data),
+    });
   }
 
   async listCloudRuntimeNodes(

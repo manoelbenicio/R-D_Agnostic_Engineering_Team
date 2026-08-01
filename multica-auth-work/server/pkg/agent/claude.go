@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -21,119 +20,6 @@ import (
 // with --output-format stream-json.
 type claudeBackend struct {
 	cfg Config
-}
-
-const redactedAgentArgValue = "[REDACTED]"
-
-var sensitiveAgentArgValueFlags = map[string]struct{}{
-	"-c": {}, "-m": {}, "-e": {},
-	"--api-base": {}, "--api-key": {}, "--auth": {}, "--auth-token": {},
-	"--authorization": {}, "--base-url": {}, "--client-secret": {},
-	"--codex-home": {}, "--config": {}, "--config-file": {}, "--config-profile": {},
-	"--cookie": {}, "--endpoint": {}, "--env": {}, "--header": {}, "--headers": {},
-	"--home": {}, "--json-schema": {}, "--key": {}, "--listen": {},
-	"--mcp-config": {}, "--model": {}, "--model-provider": {}, "--output-schema": {},
-	"--password": {}, "--plugin-dir": {}, "--profile": {}, "--provider": {},
-	"--resume": {}, "--session-id": {}, "--settings": {}, "--settings-file": {},
-	"--system-prompt": {}, "--append-system-prompt": {}, "--thread-id": {},
-	"--token": {}, "--url": {},
-}
-
-var sensitiveInlineArgMarkers = []string{
-	"api_key=", "api-key=", "apikey=", "access_token=", "access-token=",
-	"auth_token=", "auth-token=", "authorization=", "authorization:", "bearer ",
-	"cookie=", "cookie:", "password=", "client_secret=", "client-secret=",
-	"credential=", "private_key=", "private-key=", "secret=", "token=", "token:",
-	"base_url=", "base-url=", "endpoint=", "home=", "model=", "model_provider=",
-	"model-provider=", "provider=", "resume=", "settings=", "config=", "url=",
-}
-
-var sensitiveAgentArgTerms = map[string]struct{}{
-	"auth": {}, "authorization": {}, "config": {}, "credential": {}, "credentials": {},
-	"endpoint": {}, "home": {}, "key": {}, "model": {}, "provider": {}, "resume": {},
-	"routing": {}, "secret": {}, "settings": {}, "token": {}, "url": {},
-}
-
-// logAgentCommand keeps launch diagnostics useful without placing routing,
-// authentication, configuration, prompt, model, or resume values in logs.
-// The process still receives the original argv; only the log projection is
-// redacted.
-func logAgentCommand(logger *slog.Logger, execPath string, args []string) {
-	executable := filepath.Base(strings.TrimSpace(execPath))
-	if executable == "." || executable == "" {
-		executable = "unknown"
-	}
-	logger.Info("agent command", "exec", executable, "args", safeAgentArgvForLog(args), "arg_count", len(args))
-}
-
-func safeAgentArgvForLog(args []string) []string {
-	safe := make([]string, 0, len(args))
-	redactNext := false
-	for _, arg := range args {
-		if redactNext {
-			safe = append(safe, redactedAgentArgValue)
-			redactNext = false
-			continue
-		}
-
-		flag := arg
-		if index := strings.IndexByte(flag, '='); index >= 0 {
-			flag = flag[:index]
-		}
-		if isSensitiveAgentArgValueFlag(flag) {
-			if strings.Contains(arg, "=") {
-				safe = append(safe, flag+"="+redactedAgentArgValue)
-			} else {
-				safe = append(safe, arg)
-				redactNext = true
-			}
-			continue
-		}
-		safe = append(safe, redactSensitiveInlineArg(arg))
-	}
-	return safe
-}
-
-func isSensitiveAgentArgValueFlag(flag string) bool {
-	lower := strings.ToLower(flag)
-	if _, sensitive := sensitiveAgentArgValueFlags[lower]; sensitive {
-		return true
-	}
-	// This Claude switch is a standalone boolean despite its name. Treating it
-	// as value-bearing would hide the following, unrelated diagnostic flag.
-	if lower == "--strict-mcp-config" {
-		return false
-	}
-	name := strings.TrimLeft(strings.ReplaceAll(lower, "_", "-"), "-")
-	if strings.Contains(name, "base-url") || strings.Contains(name, "api-key") || strings.Contains(name, "client-secret") {
-		return true
-	}
-	for _, term := range strings.FieldsFunc(name, func(r rune) bool { return r == '-' || r == '.' }) {
-		if _, sensitive := sensitiveAgentArgTerms[term]; sensitive {
-			return true
-		}
-		if term == "apikey" || term == "authtoken" || term == "accesstoken" || term == "refreshtoken" {
-			return true
-		}
-	}
-	return false
-}
-
-func redactSensitiveInlineArg(arg string) string {
-	lower := strings.ToLower(arg)
-	for _, marker := range sensitiveInlineArgMarkers {
-		if !strings.Contains(lower, marker) {
-			continue
-		}
-		if index := strings.IndexByte(arg, '='); index > 0 {
-			return arg[:index+1] + redactedAgentArgValue
-		}
-		if index := strings.IndexByte(arg, ':'); index > 0 {
-			return arg[:index+1] + redactedAgentArgValue
-		}
-		return redactedAgentArgValue
-	}
-	return arg
 }
 
 func (b *claudeBackend) Execute(ctx context.Context, prompt string, opts ExecOptions) (*Session, error) {
@@ -179,7 +65,7 @@ func (b *claudeBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 
 	cmd := exec.CommandContext(runCtx, execPath, args...)
 	hideAgentWindow(cmd)
-	logAgentCommand(b.cfg.Logger, execPath, args)
+	b.cfg.Logger.Info("agent command", "exec", execPath, "args", args)
 	cmd.WaitDelay = 10 * time.Second
 	if opts.Cwd != "" {
 		cmd.Dir = opts.Cwd
@@ -212,7 +98,6 @@ func (b *claudeBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 		return nil, fmt.Errorf("start claude: %w", err)
 	}
 
-	// TODO(W3): implement OBS-5 CLI-process span here once W5 observability/e2e contract is published
 	b.cfg.Logger.Info("claude started", "pid", cmd.Process.Pid, "cwd", opts.Cwd, "model", opts.Model)
 
 	// cmd.Start() succeeded — transfer temp file ownership to the goroutine.
@@ -324,7 +209,6 @@ func (b *claudeBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 
 		// Wait for process exit
 		exitErr := cmd.Wait()
-
 		duration := time.Since(startTime)
 		// writeDone is buffered (cap 1) and the writer always sends — by the
 		// time cmd has exited, the prompt write has either succeeded, hit a
@@ -382,7 +266,7 @@ func (b *claudeBackend) Execute(ctx context.Context, prompt string, opts ExecOpt
 		}
 	}()
 
-	return &Session{Messages: msgCh, Result: resCh, ProcessID: cmd.Process.Pid}, nil
+	return &Session{Messages: msgCh, Result: resCh}, nil
 }
 
 func (b *claudeBackend) handleAssistant(msg claudeSDKMessage, ch chan<- Message, output *strings.Builder, usage map[string]TokenUsage) {
@@ -704,8 +588,8 @@ func buildClaudeArgs(opts ExecOptions, logger *slog.Logger) []string {
 	if opts.ThinkingLevel != "" {
 		// Slotted right after --model so the per-session effort runs
 		// against the same model selection the args advertise; the CLI
-		// itself accepts the flag in any order but this ordering keeps the
-		// redacted launch diagnostics structurally readable.
+		// itself accepts the flag in any order but this ordering makes
+		// the launch line readable in `agent command` logs.
 		args = append(args, "--effort", opts.ThinkingLevel)
 	}
 	if opts.MaxTurns > 0 {
@@ -974,15 +858,8 @@ func newLogWriter(logger *slog.Logger, prefix string) *logWriter {
 func (w *logWriter) Write(p []byte) (int, error) {
 	text := strings.TrimSpace(string(p))
 	if text != "" {
-		// text is raw subprocess stderr and may contain an echoed credential,
-		// token, or auth error body from the underlying CLI. Route it through
-		// redact.Text before it ever reaches the log message so a leaked
-		// secret shape is masked the same way any other logged string is,
-		// rather than relying only on the slog ReplaceAttr hook to catch it.
+		// Raw subprocess stderr may echo credentials or authentication bodies.
 		w.logger.Debug(w.prefix + redact.Text(text))
 	}
-	// The io.Writer contract is about bytes consumed from p, not bytes
-	// written to the log; report the original length regardless of
-	// redaction so callers relying on byte-count semantics are unaffected.
 	return len(p), nil
 }

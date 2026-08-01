@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiClient, ApiError } from "./client";
-import { ApiContractError } from "./schema";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -37,68 +36,6 @@ describe("ApiClient", () => {
     );
   });
 
-  it("createChatSession sends an explicit agent_id (direct-to-agent escape hatch)", async () => {
-    const session = {
-      id: "sess-1",
-      workspace_id: "ws-1",
-      agent_id: "agent-1",
-      creator_id: "user-1",
-      title: "T",
-      status: "active",
-      has_unread: false,
-      created_at: "2025-01-01T00:00:00Z",
-      updated_at: "2025-01-01T00:00:00Z",
-    };
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(session), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    const client = new ApiClient("https://api.example.test");
-
-    await expect(
-      client.createChatSession({ agent_id: "agent-1", title: "T" }),
-    ).resolves.toMatchObject({ id: "sess-1" });
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.example.test/api/chat/sessions",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ agent_id: "agent-1", title: "T" }),
-      }),
-    );
-  });
-
-  it("createChatSession omits agent_id for an untargeted chat (routes to default TL)", async () => {
-    const session = {
-      id: "sess-2",
-      workspace_id: "ws-1",
-      agent_id: "tl-agent",
-      creator_id: "user-1",
-      title: "Untargeted",
-      status: "active",
-      has_unread: false,
-      created_at: "2025-01-01T00:00:00Z",
-      updated_at: "2025-01-01T00:00:00Z",
-    };
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(session), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    const client = new ApiClient("https://api.example.test");
-
-    await expect(
-      client.createChatSession({ title: "Untargeted" }),
-    ).resolves.toMatchObject({ id: "sess-2" });
-    const body = fetchMock.mock.calls[0]![1]!.body as string;
-    expect(body).toBe(JSON.stringify({ title: "Untargeted" }));
-    expect(body).not.toContain("agent_id");
-  });
-
   it("rejects a malformed successful password login response", async () => {
     vi.stubGlobal(
       "fetch",
@@ -112,9 +49,8 @@ describe("ApiClient", () => {
     const client = new ApiClient("https://api.example.test");
 
     await expect(client.login("user@example.com", "secret")).rejects.toMatchObject({
-      name: ApiContractError.name,
-      message: "API response failed schema validation: POST /auth/login",
-      endpoint: "POST /auth/login",
+      message: "Invalid login response",
+      status: 502,
     });
   });
 
@@ -410,7 +346,7 @@ describe("ApiClient", () => {
     });
   });
 
-  it("fails closed when Cloud Runtime node responses drift", async () => {
+  it("falls back when Cloud Runtime node responses drift", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
@@ -429,12 +365,10 @@ describe("ApiClient", () => {
 
     const client = new ApiClient("https://api.example.test");
 
-    await expect(client.listCloudRuntimeNodes()).rejects.toThrow(
-      "API response failed schema validation",
-    );
+    await expect(client.listCloudRuntimeNodes()).resolves.toEqual([]);
     await expect(
       client.createCloudRuntimeNode({ instance_type: "g5.xlarge" }),
-    ).rejects.toThrow("API response failed schema validation");
+    ).resolves.toMatchObject({ id: "", status: "" });
   });
 
   it("deleteCloudRuntimeNode sends DELETE with JSON body containing instance id", async () => {
@@ -491,7 +425,7 @@ describe("ApiClient", () => {
       expect(att.download_url).toContain("Policy=");
     });
 
-    it("fails closed when the response is missing download_url", async () => {
+    it("falls back to an empty attachment when the response is missing download_url", async () => {
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue(
@@ -503,9 +437,13 @@ describe("ApiClient", () => {
       );
 
       const client = new ApiClient("https://api.example.test");
-      await expect(client.getAttachment("att-1")).rejects.toThrow(
-        "API response failed schema validation",
-      );
+      const att = await client.getAttachment("att-1");
+
+      // parseWithFallback returns the EMPTY_ATTACHMENT record so callers can
+      // safely read `download_url` without crashing — they'll see "" and
+      // surface a user-facing error instead of opening `undefined`.
+      expect(att.id).toBe("");
+      expect(att.download_url).toBe("");
     });
   });
 
@@ -709,7 +647,7 @@ describe("ApiClient", () => {
         },
       ],
       ["a null body", null],
-    ])("fails closed for %s", async (_label, body) => {
+    ])("falls back for %s", async (_label, body) => {
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue(
@@ -721,9 +659,10 @@ describe("ApiClient", () => {
       );
 
       const client = new ApiClient("https://api.example.test");
-      await expect(client.cancelTaskById("task-1")).rejects.toThrow(
-        "API response failed schema validation",
-      );
+      const result = await client.cancelTaskById("task-1");
+
+      expect(result.id).toBe("");
+      expect(result.cancelled_chat_message).toBeUndefined();
     });
   });
 

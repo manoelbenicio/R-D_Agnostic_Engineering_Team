@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/netip"
@@ -97,7 +98,10 @@ func parseTrustedProxies(raw string) []netip.Prefix {
 // keeps the default in-memory stores which are fine for single-node dev and
 // tests.
 func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus, analyticsClient analytics.Client, rdb *redis.Client) chi.Router {
-	r, _ := NewRouterWithOptions(pool, hub, bus, analyticsClient, rdb, RouterOptions{})
+	r, _, err := NewRouterWithOptions(pool, hub, bus, analyticsClient, rdb, RouterOptions{})
+	if err != nil {
+		panic(err)
+	}
 	return r
 }
 
@@ -117,6 +121,9 @@ type RouterOptions struct {
 	// PasswordProvisioner overrides local password persistence independently
 	// from login verification so a future Firebase adapter can own either side.
 	PasswordProvisioner handler.PasswordCredentialProvisioner
+	// RuntimeManager enables the classified Runtime Manager surface. Nil keeps
+	// the unreleased surface absent; a non-nil invalid authority fails startup.
+	RuntimeManager *RuntimeManagerOptions
 }
 
 // NewRouterWithOptions builds the fully-configured Chi router and
@@ -126,7 +133,7 @@ type RouterOptions struct {
 // context, calling Wait on shutdown) use the returned handler;
 // callers that only need the HTTP handler (tests, the simple
 // NewRouter shim) discard the second value.
-func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus, analyticsClient analytics.Client, rdb *redis.Client, opts RouterOptions) (chi.Router, *handler.Handler) {
+func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus, analyticsClient analytics.Client, rdb *redis.Client, opts RouterOptions) (chi.Router, *handler.Handler, error) {
 	queries := db.New(pool)
 	emailSvc := service.NewEmailService()
 	daemonHub := opts.DaemonHub
@@ -542,6 +549,23 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 		r.Post("/runtimes/{runtimeId}/recover-orphans", h.RecoverOrphanedTasks)
 		r.Post("/tasks/{taskId}/session", h.PinTaskSession)
 	})
+
+	// Runtime Manager is composed only when an explicit validated authority was
+	// supplied. Construction and mount errors abort router creation; no partial
+	// or unclassified surface is exposed.
+	runtimeManagerComposition, err := newRuntimeManagerComposition(pool, queries, opts.RuntimeManager)
+	if err != nil {
+		return nil, nil, fmt.Errorf("runtime manager startup: %w", err)
+	}
+	if runtimeManagerComposition != nil {
+		protectedRuntimeManager := r.With(
+			middleware.Auth(queries, patCache, cloudPATVerifier),
+			middleware.RefreshCloudFrontCookies(cfSigner),
+		)
+		if err := mountRuntimeManager(protectedRuntimeManager, runtimeManagerComposition); err != nil {
+			return nil, nil, fmt.Errorf("runtime manager mount: %w", err)
+		}
+	}
 
 	// Protected API routes
 	r.Group(func(r chi.Router) {
@@ -1022,7 +1046,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 		})
 	})
 
-	return r, h
+	return r, h, nil
 }
 
 // buildLarkConnectorFactory wires the real WS long-conn connector

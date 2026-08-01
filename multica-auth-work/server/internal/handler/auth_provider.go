@@ -135,6 +135,9 @@ func (p *PasswordAuthProvider) Login(ctx context.Context, email, password string
 // cookies. Firebase can revoke provider-side state in its implementation.
 func (p *PasswordAuthProvider) Logout(context.Context) error { return nil }
 
+// TODO(native-runtimes-onboarding/1.7): implement credential provisioning only
+// after the owner selects the operator seed/signup policy. Login must never
+// create a credential or claim an existing account.
 type PasswordCredentialProvisioner interface {
 	ProvisionPassword(ctx context.Context, userID pgtype.UUID, password string) error
 }

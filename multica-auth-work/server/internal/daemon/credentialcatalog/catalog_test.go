@@ -3,16 +3,23 @@
 package credentialcatalog
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
 	"syscall"
 	"testing"
 	"time"
+)
+
+var (
+	uuidPattern    = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
+	nameRefPattern = regexp.MustCompile(`^name_[A-Za-z0-9_-]{43}$`)
 )
 
 func newPrivateRoot(t *testing.T) string {
@@ -41,223 +48,634 @@ func writeFakeHome(t *testing.T, root, child string, provider Provider) (string,
 	return home, artifact
 }
 
+func testIdentity() CatalogIdentity {
+	return CatalogIdentity{WorkspaceID: "workspace-test", DaemonID: "daemon-test", CatalogID: "catalog-test"}
+}
+
+func testConfig(root string, provider Provider, store LifecycleStore) Config {
+	identity := testIdentity()
+	return Config{
+		Root: root, Provider: provider, Store: store,
+		WorkspaceID: identity.WorkspaceID, DaemonID: identity.DaemonID, CatalogID: identity.CatalogID,
+	}
+}
+
 func mustCatalog(t *testing.T, root string, provider Provider) (*Catalog, *MemoryLifecycleStore) {
 	t.Helper()
 	store := NewMemoryLifecycleStore()
-	catalog, err := New(Config{Root: root, Provider: provider, Store: store})
+	catalog, err := New(testConfig(root, provider, store))
 	if err != nil {
 		t.Fatal(err)
 	}
 	return catalog, store
 }
 
-func TestNilStoreRejectedFailClosed(t *testing.T) {
+func TestDependenciesAndCatalogIdentityFailClosed(t *testing.T) {
 	root := newPrivateRoot(t)
-	_, err := New(Config{Root: root, Provider: ProviderCodex, Store: nil})
-	if err != ErrMissingTombstoneStore {
-		t.Fatalf("err = %v, want ErrMissingTombstoneStore", err)
+	config := testConfig(root, ProviderCodex, nil)
+	if _, err := New(config); !errors.Is(err, ErrMissingTombstoneStore) {
+		t.Fatalf("nil store err = %v", err)
+	}
+	config.Store = NewMemoryLifecycleStore()
+	config.WorkspaceID = ""
+	if _, err := New(config); !errors.Is(err, ErrInvalidCatalogIdentity) {
+		t.Fatalf("missing identity err = %v", err)
+	}
+	if _, err := NewProductionLifecycleStore(nil); !errors.Is(err, ErrMissingProductionAdapter) {
+		t.Fatalf("nil production adapter err = %v", err)
 	}
 }
 
-func TestLayoutForMatchesDaemonProviderContracts(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		provider Provider
-		home     string
-		artifact string
-	}{
-		{ProviderAntigravity, "home", ".gemini/antigravity-cli/antigravity-oauth-token"},
-		{ProviderCodex, "codex", "auth.json"},
-		{ProviderKiro, "xdg-data", "kiro-cli/data.sqlite3"},
+func TestProductionStoreForwardsInjectedAdapter(t *testing.T) {
+	adapter := NewMemoryLifecycleStore()
+	production, err := NewProductionLifecycleStore(adapter)
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, test := range tests {
-		layout, ok := LayoutFor(test.provider)
-		if !ok || layout.HomeRelative() != test.home || layout.ArtifactRelative() != test.artifact {
-			t.Fatalf("layout %q = (%q, %q, %v)", test.provider, layout.HomeRelative(), layout.ArtifactRelative(), ok)
-		}
-		if err := validateLayout(layout); err != nil {
-			t.Fatalf("layout %q is unsafe: %v", test.provider, err)
-		}
+	root := newPrivateRoot(t)
+	writeFakeHome(t, root, "one", ProviderCodex)
+	catalog, err := New(testConfig(root, ProviderCodex, production))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := catalog.Reconcile(); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(adapter.Generations(testIdentity())); got != 1 {
+		t.Fatalf("forwarded generations = %d", got)
 	}
 }
 
-func TestReconcileDiscoversArbitraryImmediateChildren(t *testing.T) {
+func TestAppendOnlyGenerationContractCarriesC2Metadata(t *testing.T) {
 	root := newPrivateRoot(t)
-	children := []string{"account-blue", "customer.with.dots", "slot-999999", "z"}
-	for _, child := range children {
-		writeFakeHome(t, root, child, ProviderCodex)
+	writeFakeHome(t, root, "one", ProviderCodex)
+	catalog, store := mustCatalog(t, root, ProviderCodex)
+
+	first, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFakeHome(t, root, "two", ProviderCodex)
+	second, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.PreviousGeneration() != 0 || first.Generation() != 1 || first.ScanKind() != ScanStartup {
+		t.Fatalf("first generation = prev:%d current:%d kind:%q", first.PreviousGeneration(), first.Generation(), first.ScanKind())
+	}
+	if second.PreviousGeneration() != 1 || second.Generation() != 2 || second.ScanKind() != ScanPeriodic {
+		t.Fatalf("second generation = prev:%d current:%d kind:%q", second.PreviousGeneration(), second.Generation(), second.ScanKind())
+	}
+	if first.WorkspaceID() != testIdentity().WorkspaceID || first.DaemonID() != testIdentity().DaemonID || first.CatalogID() != testIdentity().CatalogID {
+		t.Fatalf("snapshot identity = %q/%q/%q", first.WorkspaceID(), first.DaemonID(), first.CatalogID())
+	}
+	if !validRaw64Digest(first.Digest()) || !validRaw64Digest(second.Digest()) || first.Digest() == second.Digest() {
+		t.Fatalf("digests = %q, %q", first.Digest(), second.Digest())
 	}
 
+	generations := store.Generations(testIdentity())
+	if len(generations) != 2 || len(generations[0].Entries) != 1 || len(generations[1].Entries) != 2 {
+		t.Fatalf("generation history lengths = %d/%d/%d", len(generations), len(generations[0].Entries), len(generations[1].Entries))
+	}
+	entry := generations[0].Entries[0]
+	if entry.State != StateHealthy || !entry.Approved || entry.TTL <= 0 || !entry.RetentionDeadline.After(entry.FirstSeenAt) || entry.HealthWatermark == nil {
+		t.Fatalf("incomplete persisted entry: %#v", entry)
+	}
+	if !uuidPattern.MatchString(entry.HomeRef) || !nameRefPattern.MatchString(entry.NameRef) || entry.HomeRef == entry.NameRef {
+		t.Fatalf("canonical refs home=%q name=%q", entry.HomeRef, entry.NameRef)
+	}
+	if err := store.AppendGeneration(context.Background(), generations[0]); !errors.Is(err, ErrGenerationConflict) {
+		t.Fatalf("reappend err = %v", err)
+	}
+
+	// Returned history is a deep copy; mutation cannot rewrite evidence.
+	generations[0].Entries[0].State = StateRetired
+	if got := store.Generations(testIdentity())[0].Entries[0].State; got != StateHealthy {
+		t.Fatalf("stored immutable entry changed to %q", got)
+	}
+}
+
+func TestRestartLoadsDurableTombstonesAndPreventsNameReuse(t *testing.T) {
+	root := newPrivateRoot(t)
+	store := NewMemoryLifecycleStore()
+	config := testConfig(root, ProviderCodex, store)
+	writeFakeHome(t, root, "restart-slot", ProviderCodex)
+	firstCatalog, err := New(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := firstCatalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldRef := first.Entries()[0].HomeRef()
+	if err := os.RemoveAll(filepath.Join(root, "restart-slot")); err != nil {
+		t.Fatal(err)
+	}
+	missing, err := firstCatalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if missing.MissingCount() != 1 || missing.TombstonedCount() != 0 {
+		t.Fatalf("first absence missing=%d tombstones=%d", missing.MissingCount(), missing.TombstonedCount())
+	}
+	retired, err := firstCatalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if retired.RetiredCount() != 1 || retired.TombstonedCount() != 1 || retired.Tombstones()[0].HomeRef() != oldRef {
+		t.Fatalf("retired=%d tombstones=%#v", retired.RetiredCount(), retired.Tombstones())
+	}
+
+	// Recreate the same candidate name with a different filesystem identity and restart.
+	writeFakeHome(t, root, "restart-slot", ProviderCodex)
+	restarted, err := New(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := restarted.AcquireRef(oldRef); !errors.Is(err, ErrHomeNotHealthy) {
+		t.Fatalf("restart acquire before startup scan err = %v", err)
+	}
+	if _, err := restarted.Revalidate(oldRef); !errors.Is(err, ErrHomeNotHealthy) {
+		t.Fatalf("restart revalidate before startup scan err = %v", err)
+	}
+	afterRestart, err := restarted.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if afterRestart.Generation() != 4 || afterRestart.HealthyCount() != 0 || afterRestart.QuarantinedCount() != 1 {
+		t.Fatalf("restart generation=%d healthy=%d quarantine=%d", afterRestart.Generation(), afterRestart.HealthyCount(), afterRestart.QuarantinedCount())
+	}
+	if afterRestart.Quarantined()[0].Reason() != ReasonTombstoned {
+		t.Fatalf("restart quarantine reason = %q", afterRestart.Quarantined()[0].Reason())
+	}
+
+	latest := store.Generations(testIdentity())[3]
+	var homeMarker, lifecycleMarker bool
+	for _, entry := range latest.Entries {
+		if entry.State == StateRetired && entry.ReasonCode == ReasonTombstoned && entry.HomeRef == oldRef && nameRefPattern.MatchString(entry.NameRef) {
+			homeMarker = true
+		}
+		if entry.State == State("tombstoned") || strings.HasPrefix(entry.HomeRef, "name_") {
+			t.Fatalf("invalid durable catalog entry: %#v", entry)
+		}
+	}
+	for _, record := range latest.Lifecycle {
+		if record.HomeRef == oldRef && record.ReasonCode == ReasonTombstoned && nameRefPattern.MatchString(record.NameRef) && record.Generation == latest.Generation {
+			lifecycleMarker = true
+		}
+	}
+	if !homeMarker || !lifecycleMarker {
+		t.Fatalf("durable tombstone markers home=%v lifecycle=%v", homeMarker, lifecycleMarker)
+	}
+}
+
+func TestActiveReferenceDrainsBeforeRetirement(t *testing.T) {
+	root := newPrivateRoot(t)
+	writeFakeHome(t, root, "active-slot", ProviderCodex)
+	catalog, _ := mustCatalog(t, root, ProviderCodex)
+	first, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := first.Entries()[0].HomeRef()
+	release, err := catalog.AcquireRef(ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(filepath.Join(root, "active-slot")); err != nil {
+		t.Fatal(err)
+	}
+	draining, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if draining.DrainingCount() != 1 || draining.Draining()[0].ActiveRefs() != 1 || draining.TombstonedCount() != 0 {
+		t.Fatalf("draining=%d refs=%d tombstones=%d", draining.DrainingCount(), draining.Draining()[0].ActiveRefs(), draining.TombstonedCount())
+	}
+	if _, err := catalog.AcquireRef(ref); !errors.Is(err, ErrHomeNotHealthy) {
+		t.Fatalf("new ref on draining home err = %v", err)
+	}
+	release()
+	retired, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if retired.DrainingCount() != 0 || retired.RetiredCount() != 1 || retired.TombstonedCount() != 1 {
+		t.Fatalf("retired lifecycle draining=%d retired=%d tombstones=%d", retired.DrainingCount(), retired.RetiredCount(), retired.TombstonedCount())
+	}
+}
+
+func TestReleaseRefPersistsImmediatelyAndRollsBackOnAppendFailure(t *testing.T) {
+	root := newPrivateRoot(t)
+	writeFakeHome(t, root, "release-slot", ProviderCodex)
+	catalog, store := mustCatalog(t, root, ProviderCodex)
+	first, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := first.Entries()[0].HomeRef()
+	if _, err := catalog.AcquireRef(ref); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(filepath.Join(root, "release-slot")); err != nil {
+		t.Fatal(err)
+	}
+	draining, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store.SetInjectFailAppend(true)
+	if err := catalog.ReleaseRef(ref); err == nil {
+		t.Fatal("expected release append failure")
+	}
+	current, _ := catalog.Current()
+	if current.Generation() != draining.Generation() || current.DrainingCount() != 1 || catalog.ActiveRefs(ref) != 1 || len(store.Generations(testIdentity())) != 2 {
+		t.Fatalf("failed release mutated state generation=%d draining=%d refs=%d history=%d", current.Generation(), current.DrainingCount(), catalog.ActiveRefs(ref), len(store.Generations(testIdentity())))
+	}
+	store.SetInjectFailAppend(false)
+	if err := catalog.ReleaseRef(ref); err != nil {
+		t.Fatal(err)
+	}
+	current, _ = catalog.Current()
+	generations := store.Generations(testIdentity())
+	if current.Generation() != draining.Generation()+1 || current.RetiredCount() != 1 || current.TombstonedCount() != 1 || catalog.ActiveRefs(ref) != 0 || len(generations) != 3 {
+		t.Fatalf("durable release generation=%d retired=%d tombstones=%d refs=%d history=%d", current.Generation(), current.RetiredCount(), current.TombstonedCount(), catalog.ActiveRefs(ref), len(generations))
+	}
+	latest := generations[2]
+	if latest.ScanKind != ScanRequested || len(latest.Lifecycle) != 1 || latest.Lifecycle[0].ReasonCode != ReasonTombstoned {
+		t.Fatalf("release generation lifecycle = %#v", latest)
+	}
+}
+
+func TestFailedRevalidatePersistsImmediatelyAndRollsBackOnAppendFailure(t *testing.T) {
+	root := newPrivateRoot(t)
+	_, artifact := writeFakeHome(t, root, "revalidate-slot", ProviderCodex)
+	catalog, store := mustCatalog(t, root, ProviderCodex)
+	first, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := first.Entries()[0].HomeRef()
+	if err := os.Chmod(artifact, 0o666); err != nil {
+		t.Fatal(err)
+	}
+	store.SetInjectFailAppend(true)
+	if _, err := catalog.Revalidate(ref); !errors.Is(err, ErrRevalidateFailed) {
+		t.Fatalf("failed persistence revalidation err = %v", err)
+	}
+	current, _ := catalog.Current()
+	if current.Generation() != first.Generation() || current.HealthyCount() != 1 || current.TombstonedCount() != 0 || len(store.Generations(testIdentity())) != 1 {
+		t.Fatalf("failed revalidation mutated state generation=%d healthy=%d tombstones=%d history=%d", current.Generation(), current.HealthyCount(), current.TombstonedCount(), len(store.Generations(testIdentity())))
+	}
+	store.SetInjectFailAppend(false)
+	if _, err := catalog.Revalidate(ref); !errors.Is(err, ErrRevalidateFailed) {
+		t.Fatalf("retry revalidation err = %v", err)
+	}
+	current, _ = catalog.Current()
+	generations := store.Generations(testIdentity())
+	if current.Generation() != first.Generation()+1 || current.HealthyCount() != 0 || current.TombstonedCount() != 1 || len(generations) != 2 {
+		t.Fatalf("durable revalidation generation=%d healthy=%d tombstones=%d history=%d", current.Generation(), current.HealthyCount(), current.TombstonedCount(), len(generations))
+	}
+	if generations[1].ScanKind != ScanRequested || len(generations[1].Lifecycle) != 1 || generations[1].Lifecycle[0].ReasonCode != ReasonTombstoned {
+		t.Fatalf("revalidation generation lifecycle = %#v", generations[1])
+	}
+}
+
+func TestTombstoneMetadataSurvivesRetentionWithoutPhysicalCopies(t *testing.T) {
+	root := newPrivateRoot(t)
+	writeFakeHome(t, root, "ephemeral-slot", ProviderKiro)
+	store := NewMemoryLifecycleStore()
+	config := testConfig(root, ProviderKiro, store)
+	config.RetentionPeriod = time.Millisecond
+	catalog, err := New(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref, nameRef := first.Entries()[0].HomeRef(), first.Entries()[0].NameRef()
+	if !nameRefPattern.MatchString(nameRef) {
+		t.Fatalf("name ref = %q", nameRef)
+	}
+	if err := os.RemoveAll(filepath.Join(root, "ephemeral-slot")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := catalog.Reconcile(); err != nil {
+		t.Fatal(err)
+	}
+	retired, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if retired.TombstonedCount() != 1 {
+		t.Fatalf("initial tombstones = %d", retired.TombstonedCount())
+	}
+	time.Sleep(5 * time.Millisecond)
+	afterDeadline, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if afterDeadline.TombstonedCount() != 1 || afterDeadline.Tombstones()[0].HomeRef() != ref {
+		t.Fatalf("expired metadata removed: %#v", afterDeadline.Tombstones())
+	}
+	children, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(children) != 0 {
+		t.Fatalf("catalog created historical physical folders: %#v", children)
+	}
+	writeFakeHome(t, root, "ephemeral-slot", ProviderKiro)
+	reuse, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reuse.HealthyCount() != 0 || reuse.QuarantinedCount() != 1 || reuse.Quarantined()[0].Reason() != ReasonTombstoned {
+		t.Fatalf("name reuse admitted after deadline: healthy=%d quarantine=%#v", reuse.HealthyCount(), reuse.Quarantined())
+	}
+	latest := store.Generations(testIdentity())[len(store.Generations(testIdentity()))-1]
+	if len(latest.Lifecycle) != 1 || latest.Lifecycle[0].NameRef != nameRef {
+		t.Fatalf("retained lifecycle metadata = %#v", latest.Lifecycle)
+	}
+}
+
+func TestPersistenceFailureDoesNotPublishOrMutateCandidateLifecycle(t *testing.T) {
+	root := newPrivateRoot(t)
+	writeFakeHome(t, root, "one", ProviderCodex)
+	catalog, store := mustCatalog(t, root, ProviderCodex)
+	first, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(filepath.Join(root, "one")); err != nil {
+		t.Fatal(err)
+	}
+	store.SetInjectFailAppend(true)
+	if _, err := catalog.Reconcile(); err == nil {
+		t.Fatal("expected append failure")
+	}
+	current, ok := catalog.Current()
+	if !ok || current.Generation() != first.Generation() || current.HealthyCount() != 1 {
+		t.Fatalf("published snapshot changed: ok=%v generation=%d healthy=%d", ok, current.Generation(), current.HealthyCount())
+	}
+	if got := len(store.Generations(testIdentity())); got != 1 {
+		t.Fatalf("durable history length after failure = %d", got)
+	}
+	store.SetInjectFailAppend(false)
+	retry, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if retry.Generation() != 2 || retry.PreviousGeneration() != 1 || retry.MissingCount() != 1 || retry.RetiredCount() != 0 {
+		t.Fatalf("retry generation=%d previous=%d missing=%d retired=%d", retry.Generation(), retry.PreviousGeneration(), retry.MissingCount(), retry.RetiredCount())
+	}
+}
+
+func TestOverflowAndHintLossAlwaysProduceCompleteScans(t *testing.T) {
+	root := newPrivateRoot(t)
+	writeFakeHome(t, root, "one", ProviderKiro)
+	catalog, store := mustCatalog(t, root, ProviderKiro)
+	if _, err := catalog.Reconcile(); err != nil {
+		t.Fatal(err)
+	}
+	writeFakeHome(t, root, "two", ProviderKiro)
+	overflow, err := catalog.NotifyWatcherOverflow()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if overflow.ScanKind() != ScanOverflow || overflow.HealthyCount() != 2 || catalog.WatcherOverflowCount() != 1 {
+		t.Fatalf("overflow kind=%q healthy=%d count=%d", overflow.ScanKind(), overflow.HealthyCount(), catalog.WatcherOverflowCount())
+	}
+	if err := os.RemoveAll(filepath.Join(root, "one")); err != nil {
+		t.Fatal(err)
+	}
+	hintLoss, err := catalog.NotifyHintLoss()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hintLoss.ScanKind() != ScanHintLoss || hintLoss.HealthyCount() != 1 || hintLoss.MissingCount() != 1 {
+		t.Fatalf("hint-loss kind=%q healthy=%d missing=%d", hintLoss.ScanKind(), hintLoss.HealthyCount(), hintLoss.MissingCount())
+	}
+	generations := store.Generations(testIdentity())
+	if len(generations) != 3 || len(generations[1].Entries) != 2 || generations[2].ScanKind != ScanHintLoss {
+		t.Fatalf("persisted full scans = %#v", generations)
+	}
+}
+
+func TestLaunchRevalidationFailsClosedAndBlocksReuse(t *testing.T) {
+	root := newPrivateRoot(t)
+	_, artifact := writeFakeHome(t, root, "launch-slot", ProviderAntigravity)
+	catalog, _ := mustCatalog(t, root, ProviderAntigravity)
+	snapshot, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := snapshot.Entries()[0].HomeRef()
+	if entry, err := catalog.Revalidate(ref); err != nil || entry.HomeRef() != ref {
+		t.Fatalf("healthy revalidation entry=%#v err=%v", entry, err)
+	}
+	if err := os.Chmod(artifact, 0o666); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := catalog.Revalidate(ref); !errors.Is(err, ErrRevalidateFailed) {
+		t.Fatalf("unsafe launch revalidation err = %v", err)
+	}
+	if _, err := catalog.AcquireRef(ref); !errors.Is(err, ErrHomeTombstoned) {
+		t.Fatalf("launch after failed revalidation err = %v", err)
+	}
+	persisted, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if persisted.HealthyCount() != 0 || persisted.TombstonedCount() != 1 {
+		t.Fatalf("post-revalidation healthy=%d tombstones=%d", persisted.HealthyCount(), persisted.TombstonedCount())
+	}
+}
+
+func TestWatermarkVocabularyDoesNotTruncateDiscovery(t *testing.T) {
+	root := newPrivateRoot(t)
+	for i := 0; i < 7; i++ {
+		writeFakeHome(t, root, fmt.Sprintf("slot-%02d", i), ProviderCodex)
+	}
+	store := NewMemoryLifecycleStore()
+	config := testConfig(root, ProviderCodex, store)
+	config.LowWatermark, config.HighWatermark, config.CriticalWatermark = 3, 5, 7
+	catalog, err := New(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.HealthyCount() != 7 || snapshot.Watermark() != WatermarkCritical || !snapshot.HighWatermarkExceeded() {
+		t.Fatalf("healthy=%d watermark=%q", snapshot.HealthyCount(), snapshot.Watermark())
+	}
+}
+
+func TestDiscoveryUsesMetadataOnlyAndSchemaStorableUUIDRefs(t *testing.T) {
+	root := newPrivateRoot(t)
+	_, artifact := writeFakeHome(t, root, "arbitrary.name", ProviderCodex)
+	catalog, _ := mustCatalog(t, root, ProviderCodex)
+	first, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := first.Entries()[0].HomeRef()
+	if !uuidPattern.MatchString(ref) {
+		t.Fatalf("home ref is not schema-storable UUID: %q", ref)
+	}
+	if err := os.Chmod(artifact, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	second, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.Entries()[0].HomeRef() != ref {
+		t.Fatal("metadata-only identity changed when artifact became unreadable")
+	}
+}
+
+func TestUnsafeCandidateMetadataIsQuarantined(t *testing.T) {
+	root := newPrivateRoot(t)
+	outside := filepath.Join(t.TempDir(), "outside")
+	if err := os.Mkdir(outside, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "alias")); err != nil {
+		t.Fatal(err)
+	}
 	catalog, _ := mustCatalog(t, root, ProviderCodex)
 	snapshot, err := catalog.Reconcile()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if snapshot.Generation() != 1 || snapshot.HealthyCount() != len(children) || snapshot.QuarantinedCount() != 0 {
-		t.Fatalf("snapshot generation=%d healthy=%d quarantined=%d", snapshot.Generation(), snapshot.HealthyCount(), snapshot.QuarantinedCount())
+	if snapshot.HealthyCount() != 0 || snapshot.QuarantinedCount() != 1 || snapshot.Quarantined()[0].Reason() != ReasonCandidateSymlink {
+		t.Fatalf("unsafe candidate result = %#v", snapshot.Quarantined())
 	}
-	for _, entry := range snapshot.Entries() {
-		if !strings.HasPrefix(entry.HomeRef(), "home_") || entry.Provider() != ProviderCodex || entry.State() != StateHealthy {
-			t.Fatalf("unexpected entry: ref=%q provider=%q state=%q", entry.HomeRef(), entry.Provider(), entry.State())
-		}
-		if filepath.Base(entry.ArtifactPath()) != "auth.json" {
-			t.Fatalf("artifact = %q", entry.ArtifactPath())
-		}
+	if !uuidPattern.MatchString(snapshot.Quarantined()[0].CandidateRef()) {
+		t.Fatalf("candidate ref is not UUID: %q", snapshot.Quarantined()[0].CandidateRef())
 	}
 }
 
-func TestReconcileDerivesEachProviderArtifact(t *testing.T) {
-	for _, provider := range []Provider{ProviderAntigravity, ProviderCodex, ProviderKiro} {
-		t.Run(string(provider), func(t *testing.T) {
-			root := newPrivateRoot(t)
-			home, artifact := writeFakeHome(t, root, "any-child-name", provider)
-			catalog, _ := mustCatalog(t, root, provider)
-			snapshot, err := catalog.Reconcile()
-			if err != nil {
-				t.Fatal(err)
-			}
-			entries := snapshot.Entries()
-			if len(entries) != 1 || entries[0].HomePath() != home || entries[0].ArtifactPath() != artifact {
-				t.Fatalf("entries = %#v, want home=%q artifact=%q", entries, home, artifact)
-			}
-		})
-	}
-}
-
-func TestReconcileRejectsUnsafeCandidateMetadata(t *testing.T) {
-	tests := []struct {
-		name   string
-		setup  func(t *testing.T, root string)
-		reason QuarantineReason
-	}{
-		{
-			name: "child_symlink",
-			setup: func(t *testing.T, root string) {
-				outside := filepath.Join(t.TempDir(), "outside")
-				if err := os.Mkdir(outside, 0o700); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.Symlink(outside, filepath.Join(root, "alias")); err != nil {
-					t.Fatal(err)
-				}
-			},
-			reason: ReasonCandidateSymlink,
-		},
-		{
-			name: "child_not_directory",
-			setup: func(t *testing.T, root string) {
-				if err := os.WriteFile(filepath.Join(root, "plain"), []byte("fixture"), 0o600); err != nil {
-					t.Fatal(err)
-				}
-			},
-			reason: ReasonCandidateNotDirectory,
-		},
-		{
-			name: "child_permissions",
-			setup: func(t *testing.T, root string) {
-				writeFakeHome(t, root, "open", ProviderCodex)
-				if err := os.Chmod(filepath.Join(root, "open"), 0o750); err != nil {
-					t.Fatal(err)
-				}
-			},
-			reason: ReasonPermissionsTooOpen,
-		},
-		{
-			name: "missing_artifact",
-			setup: func(t *testing.T, root string) {
-				if err := os.MkdirAll(filepath.Join(root, "missing", "codex"), 0o700); err != nil {
-					t.Fatal(err)
-				}
-			},
-			reason: ReasonLayoutMissing,
-		},
-		{
-			name: "artifact_symlink",
-			setup: func(t *testing.T, root string) {
-				_, artifact := writeFakeHome(t, root, "linked", ProviderCodex)
-				if err := os.Remove(artifact); err != nil {
-					t.Fatal(err)
-				}
-				target := filepath.Join(t.TempDir(), "target")
-				if err := os.WriteFile(target, []byte("fixture"), 0o600); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.Symlink(target, artifact); err != nil {
-					t.Fatal(err)
-				}
-			},
-			reason: ReasonLayoutSymlink,
-		},
-		{
-			name: "artifact_nonregular",
-			setup: func(t *testing.T, root string) {
-				_, artifact := writeFakeHome(t, root, "fifo", ProviderCodex)
-				if err := os.Remove(artifact); err != nil {
-					t.Fatal(err)
-				}
-				if err := syscall.Mkfifo(artifact, 0o600); err != nil {
-					t.Fatal(err)
-				}
-			},
-			reason: ReasonLayoutInvalidType,
-		},
-		{
-			name: "artifact_permissions",
-			setup: func(t *testing.T, root string) {
-				_, artifact := writeFakeHome(t, root, "open-file", ProviderCodex)
-				if err := os.Chmod(artifact, 0o640); err != nil {
-					t.Fatal(err)
-				}
-			},
-			reason: ReasonPermissionsTooOpen,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			root := newPrivateRoot(t)
-			test.setup(t, root)
-			catalog, _ := mustCatalog(t, root, ProviderCodex)
-			snapshot, err := catalog.Reconcile()
-			if err != nil {
-				t.Fatal(err)
-			}
-			quarantined := snapshot.Quarantined()
-			if snapshot.HealthyCount() != 0 || len(quarantined) != 1 || quarantined[0].Reason() != test.reason {
-				t.Fatalf("healthy=%d quarantine=%#v", snapshot.HealthyCount(), quarantined)
-			}
-			if !strings.HasPrefix(quarantined[0].CandidateRef(), "candidate_") {
-				t.Fatalf("candidate ref = %q", quarantined[0].CandidateRef())
-			}
-		})
-	}
-}
-
-func TestNewRejectsUncontrolledRoots(t *testing.T) {
+func TestDuplicateArtifactIdentityQuarantinesAllDeterministically(t *testing.T) {
 	root := newPrivateRoot(t)
-	if err := os.Chmod(root, 0o750); err != nil {
+	_, artifactA := writeFakeHome(t, root, "z-last", ProviderCodex)
+	_, artifactB := writeFakeHome(t, root, "a-first", ProviderCodex)
+	if err := os.Remove(artifactB); err != nil {
 		t.Fatal(err)
 	}
-	store := NewMemoryLifecycleStore()
-	if _, err := New(Config{Root: root, Provider: ProviderCodex, Store: store}); err == nil {
-		t.Fatal("expected permissive root rejection")
-	}
-
-	physical := newPrivateRoot(t)
-	link := filepath.Join(t.TempDir(), "root-link")
-	if err := os.Symlink(physical, link); err != nil {
+	if err := os.Link(artifactA, artifactB); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := New(Config{Root: link, Provider: ProviderCodex, Store: store}); err == nil {
-		t.Fatal("expected symlink root rejection")
+	catalog, _ := mustCatalog(t, root, ProviderCodex)
+	first, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	if _, err := New(Config{Root: "relative", Provider: ProviderCodex, Store: store}); err == nil {
-		t.Fatal("expected relative root rejection")
+	second, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstRefs, secondRefs := quarantineRefs(first), quarantineRefs(second)
+	if first.HealthyCount() != 0 || len(firstRefs) != 2 || strings.Join(firstRefs, ",") != strings.Join(secondRefs, ",") || !sort.StringsAreSorted(firstRefs) {
+		t.Fatalf("duplicate identity first=%v second=%v", firstRefs, secondRefs)
 	}
 }
 
-func TestOwnerCheckUsesEffectiveUID(t *testing.T) {
+func TestFailedFullScanDoesNotConsumeGeneration(t *testing.T) {
+	root := newPrivateRoot(t)
+	writeFakeHome(t, root, "one", ProviderCodex)
+	catalog, store := mustCatalog(t, root, ProviderCodex)
+	first, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	away := root + ".away"
+	if err := os.Rename(root, away); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := catalog.Reconcile(); err == nil {
+		t.Fatal("expected full scan failure")
+	}
+	if err := os.Rename(away, root); err != nil {
+		t.Fatal(err)
+	}
+	second, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Generation() != 1 || second.Generation() != 2 || len(store.Generations(testIdentity())) != 2 {
+		t.Fatalf("failed scan consumed generation: %d -> %d", first.Generation(), second.Generation())
+	}
+}
+
+func TestSnapshotAndStoreCopiesAreImmutable(t *testing.T) {
+	root := newPrivateRoot(t)
+	writeFakeHome(t, root, "one", ProviderKiro)
+	catalog, _ := mustCatalog(t, root, ProviderKiro)
+	snapshot, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := snapshot.Entries()[0].HomeRef()
+	entries := snapshot.Entries()
+	entries[0] = Entry{}
+	current, ok := catalog.Current()
+	if !ok || current.Entries()[0].HomeRef() != want || snapshot.Entries()[0].HomeRef() != want {
+		t.Fatal("published snapshot mutated through accessor")
+	}
+}
+
+func TestConcurrentAcquireReleaseRevalidateAndReconcile(t *testing.T) {
+	root := newPrivateRoot(t)
+	for i := 0; i < 4; i++ {
+		writeFakeHome(t, root, fmt.Sprintf("race-%d", i), ProviderCodex)
+	}
+	catalog, _ := mustCatalog(t, root, ProviderCodex)
+	snapshot, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	for _, entry := range snapshot.Entries() {
+		ref := entry.HomeRef()
+		for worker := 0; worker < 3; worker++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for i := 0; i < 12; i++ {
+					release, acquireErr := catalog.AcquireRef(ref)
+					if acquireErr == nil {
+						_, _ = catalog.Revalidate(ref)
+						release()
+					}
+					_, _ = catalog.NotifyHint("ignored-path")
+				}
+			}()
+		}
+	}
+	wg.Wait()
+	final, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if final.HealthyCount() != 4 {
+		t.Fatalf("final healthy count = %d", final.HealthyCount())
+	}
+}
+
+func TestLayoutAndOwnershipContracts(t *testing.T) {
+	for _, provider := range []Provider{ProviderAntigravity, ProviderCodex, ProviderKiro} {
+		layout, ok := LayoutFor(provider)
+		if !ok || validateLayout(layout) != nil {
+			t.Fatalf("invalid layout for %q", provider)
+		}
+	}
 	root := newPrivateRoot(t)
 	info, err := os.Lstat(root)
 	if err != nil {
@@ -273,454 +691,10 @@ func TestOwnerCheckUsesEffectiveUID(t *testing.T) {
 	}
 }
 
-func TestOpaqueRefUsesIdentityNotNameOrContents(t *testing.T) {
-	root := newPrivateRoot(t)
-	_, artifact := writeFakeHome(t, root, "first-name", ProviderCodex)
-	catalog, _ := mustCatalog(t, root, ProviderCodex)
-	first, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	firstRef := first.Entries()[0].HomeRef()
-
-	// Mode 000 makes the synthetic artifact unreadable to this process. A
-	// metadata-only scan still succeeds because it never opens the artifact.
-	if err := os.Chmod(artifact, 0o000); err != nil {
-		t.Fatal(err)
-	}
-	second, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if second.Entries()[0].HomeRef() != firstRef {
-		t.Fatal("reference changed when artifact mode changed")
-	}
-	if err := os.Chmod(artifact, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(artifact, []byte("different synthetic fixture content"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Rename(filepath.Join(root, "first-name"), filepath.Join(root, "renamed-arbitrarily")); err != nil {
-		t.Fatal(err)
-	}
-	third, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if third.Entries()[0].HomeRef() != firstRef {
-		t.Fatal("reference changed after content update or child rename")
-	}
-	if first.Generation() != 1 || second.Generation() != 2 || third.Generation() != 3 {
-		t.Fatalf("generations = %d, %d, %d", first.Generation(), second.Generation(), third.Generation())
-	}
-}
-
-func TestDuplicateArtifactIdentityQuarantinesEveryCandidateDeterministically(t *testing.T) {
-	root := newPrivateRoot(t)
-	_, artifactA := writeFakeHome(t, root, "z-last", ProviderCodex)
-	_, artifactB := writeFakeHome(t, root, "a-first", ProviderCodex)
-	if err := os.Remove(artifactB); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Link(artifactA, artifactB); err != nil {
-		t.Fatal(err)
-	}
-	catalog, _ := mustCatalog(t, root, ProviderCodex)
-
-	first, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	second, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if first.HealthyCount() != 0 || first.QuarantinedCount() != 2 {
-		t.Fatalf("healthy=%d quarantined=%d", first.HealthyCount(), first.QuarantinedCount())
-	}
-	firstRefs := quarantineRefs(first)
-	secondRefs := quarantineRefs(second)
-	if !reflect.DeepEqual(firstRefs, secondRefs) || !sort.StringsAreSorted(firstRefs) {
-		t.Fatalf("non-deterministic refs: first=%v second=%v", firstRefs, secondRefs)
-	}
-	for _, quarantine := range first.Quarantined() {
-		if quarantine.Reason() != ReasonFilesystemIdentityConflict || quarantine.State() != StateQuarantined {
-			t.Fatalf("quarantine = %#v", quarantine)
-		}
-	}
-}
-
-func TestStatesAreActuallyObservableAndActiveRefBlocksRetirement(t *testing.T) {
-	root := newPrivateRoot(t)
-	_, _ = writeFakeHome(t, root, "lifecycle-slot", ProviderCodex)
-	catalog, _ := mustCatalog(t, root, ProviderCodex)
-
-	// 1. Healthy State
-	snap1, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if snap1.HealthyCount() != 1 || snap1.Entries()[0].State() != StateHealthy {
-		t.Fatalf("healthy count = %d state = %q", snap1.HealthyCount(), snap1.Entries()[0].State())
-	}
-	homeRef := snap1.Entries()[0].HomeRef()
-
-	// Acquire active reference -> ActiveRef blocks retirement!
-	release, err := catalog.AcquireRef(homeRef)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Remove physical candidate directory
-	if err := os.RemoveAll(filepath.Join(root, "lifecycle-slot")); err != nil {
-		t.Fatal(err)
-	}
-
-	// 2. Draining State (because activeRef > 0)
-	snap2, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if snap2.HealthyCount() != 0 || snap2.DrainingCount() != 1 || snap2.Draining()[0].State() != StateDraining {
-		t.Fatalf("snap2 healthy=%d draining=%d", snap2.HealthyCount(), snap2.DrainingCount())
-	}
-
-	// Release active reference -> ActiveRef drops to 0, transitions to Retired and Tombstoned!
-	release()
-	snap3, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if snap3.HealthyCount() != 0 || snap3.DrainingCount() != 0 || snap3.TombstonedCount() != 1 {
-		t.Fatalf("snap3 healthy=%d draining=%d tombstoned=%d", snap3.HealthyCount(), snap3.DrainingCount(), snap3.TombstonedCount())
-	}
-}
-
-func TestRestartLoadsLifecycleMetadata(t *testing.T) {
-	root := newPrivateRoot(t)
-	storePath := filepath.Join(t.TempDir(), "store", "lifecycle.json")
-	fileStore, err := NewFileLifecycleStore(storePath, root)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Instance 1: Create candidate, reconcile, remove directory, reconcile
-	cat1, err := New(Config{Root: root, Provider: ProviderCodex, Store: fileStore})
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, _ = writeFakeHome(t, root, "restart-slot", ProviderCodex)
-	snap1, err := cat1.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if snap1.HealthyCount() != 1 {
-		t.Fatalf("snap1 healthy = %d", snap1.HealthyCount())
-	}
-
-	if err := os.RemoveAll(filepath.Join(root, "restart-slot")); err != nil {
-		t.Fatal(err)
-	}
-	_, err = cat1.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Instance 2: Restart Catalog with new instance from same root and file store
-	cat2, err := New(Config{Root: root, Provider: ProviderCodex, Store: fileStore})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Recreate physical directory with same name "restart-slot"
-	_, _ = writeFakeHome(t, root, "restart-slot", ProviderCodex)
-
-	snap2, err := cat2.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Must be quarantined as ReasonTombstoned across restart!
-	if snap2.HealthyCount() != 0 || snap2.QuarantinedCount() != 1 {
-		t.Fatalf("post-restart healthy=%d quarantined=%d", snap2.HealthyCount(), snap2.QuarantinedCount())
-	}
-	if snap2.Quarantined()[0].Reason() != ReasonTombstoned {
-		t.Fatalf("post-restart reason = %q, want ReasonTombstoned", snap2.Quarantined()[0].Reason())
-	}
-}
-
-func TestSaveLoadCorruptionFailsClosed(t *testing.T) {
-	root := newPrivateRoot(t)
-	storePath := filepath.Join(t.TempDir(), "store", "corrupt.json")
-	if err := os.MkdirAll(filepath.Dir(storePath), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(storePath, []byte("NOT_VALID_JSON_BINARY_CORRUPT{{{"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-
-	fileStore, err := NewFileLifecycleStore(storePath, root)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Loading corrupted file during New MUST fail closed!
-	if _, err := New(Config{Root: root, Provider: ProviderCodex, Store: fileStore}); err == nil {
-		t.Fatal("expected corrupted store loading to fail closed")
-	}
-}
-
-func TestPersistenceFailurePreventsPublication(t *testing.T) {
-	root := newPrivateRoot(t)
-	_, _ = writeFakeHome(t, root, "slot-1", ProviderCodex)
-	memStore := NewMemoryLifecycleStore()
-
-	catalog, err := New(Config{Root: root, Provider: ProviderCodex, Store: memStore})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	snap1, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if snap1.Generation() != 1 {
-		t.Fatalf("gen = %d, want 1", snap1.Generation())
-	}
-
-	// Inject store save failure -> Reconcile MUST fail closed and NOT consume generation or update current!
-	memStore.SetInjectFailSave(true)
-	writeFakeHome(t, root, "slot-2", ProviderCodex)
-
-	if _, err := catalog.Reconcile(); err == nil {
-		t.Fatal("expected persistence failure to abort publication")
-	}
-
-	// Current snapshot MUST retain prior complete generation 1 cleanly!
-	current, ok := catalog.Current()
-	if !ok || current.Generation() != 1 || current.HealthyCount() != 1 {
-		t.Fatalf("current generation = %d healthy = %d, want gen 1 healthy 1", current.Generation(), current.HealthyCount())
-	}
-}
-
-func TestFastLaunchRevalidation(t *testing.T) {
-	root := newPrivateRoot(t)
-	_, artifact := writeFakeHome(t, root, "revalidate-slot", ProviderAntigravity)
-	catalog, _ := mustCatalog(t, root, ProviderAntigravity)
-
-	snap, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	homeRef := snap.Entries()[0].HomeRef()
-
-	// Launch-time revalidation on healthy home passes fast
-	entry, err := catalog.Revalidate(homeRef)
-	if err != nil {
-		t.Fatalf("Revalidate healthy failed: %v", err)
-	}
-	if entry.HomeRef() != homeRef || entry.State() != StateHealthy {
-		t.Fatalf("entry = %#v", entry)
-	}
-
-	// Corrupt permissions on artifact -> launch revalidation fails and quarantines
-	if err := os.Chmod(artifact, 0o666); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := catalog.Revalidate(homeRef); err != ErrRevalidateFailed {
-		t.Fatalf("revalidate corrupted err = %v, want ErrRevalidateFailed", err)
-	}
-}
-
-func TestNotifyHintTriggersReconciliation(t *testing.T) {
-	root := newPrivateRoot(t)
-	writeFakeHome(t, root, "slot-initial", ProviderKiro)
-	catalog, _ := mustCatalog(t, root, ProviderKiro)
-
-	if _, err := catalog.Reconcile(); err != nil {
-		t.Fatal(err)
-	}
-
-	// Add new directory physically
-	writeFakeHome(t, root, "slot-hinted", ProviderKiro)
-
-	// NotifyHint must trigger reconciliation immediately
-	snap, err := catalog.NotifyHint("slot-hinted")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if snap.HealthyCount() != 2 {
-		t.Fatalf("healthy count after hint = %d, want 2", snap.HealthyCount())
-	}
-}
-
-func TestWatcherOverflowRecovery(t *testing.T) {
-	root := newPrivateRoot(t)
-	writeFakeHome(t, root, "slot-1", ProviderKiro)
-	catalog, _ := mustCatalog(t, root, ProviderKiro)
-
-	if _, err := catalog.Reconcile(); err != nil {
-		t.Fatal(err)
-	}
-
-	// Add new home physical dir out-of-band
-	writeFakeHome(t, root, "slot-2", ProviderKiro)
-
-	// Trigger watcher overflow recovery
-	snap, err := catalog.NotifyWatcherOverflow()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if catalog.WatcherOverflowCount() != 1 {
-		t.Fatalf("overflow count = %d, want 1", catalog.WatcherOverflowCount())
-	}
-	if snap.HealthyCount() != 2 {
-		t.Fatalf("healthy count after overflow recovery = %d, want 2", snap.HealthyCount())
-	}
-}
-
-func TestWatermarkEnforcementEmitsAdmissionDegradedWithoutTruncatingHealthyDiscovery(t *testing.T) {
-	root := newPrivateRoot(t)
-	for i := 0; i < 25; i++ {
-		writeFakeHome(t, root, fmt.Sprintf("child-%03d", i), ProviderCodex)
-	}
-
-	store := NewMemoryLifecycleStore()
-	catalog, err := New(Config{
-		Root:          root,
-		Provider:      ProviderCodex,
-		HighWatermark: 20,
-		LowWatermark:  15,
-		Store:         store,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	snap, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// ZERO healthy discovery entries sliced or dropped! All 25 remain in Healthy discovery.
-	if snap.HealthyCount() != 25 {
-		t.Fatalf("healthy count = %d, want 25 (no silent drop)", snap.HealthyCount())
-	}
-
-	// Watermark signal is emitted via AdmissionStatus and HighWatermarkExceeded
-	if snap.AdmissionStatus() != AdmissionDegraded || !snap.HighWatermarkExceeded() {
-		t.Fatalf("admission status=%q exceeded=%v", snap.AdmissionStatus(), snap.HighWatermarkExceeded())
-	}
-}
-
-func TestConcurrentAcquireReleaseRevalidateUnderRace(t *testing.T) {
-	root := newPrivateRoot(t)
-	for i := 0; i < 5; i++ {
-		writeFakeHome(t, root, fmt.Sprintf("race-slot-%d", i), ProviderCodex)
-	}
-
-	catalog, _ := mustCatalog(t, root, ProviderCodex)
-	snap, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var wg sync.WaitGroup
-	for _, entry := range snap.Entries() {
-		ref := entry.HomeRef()
-		for g := 0; g < 5; g++ {
-			wg.Add(1)
-			go func(r string) {
-				defer wg.Done()
-				for i := 0; i < 20; i++ {
-					rel, err := catalog.AcquireRef(r)
-					if err == nil {
-						_, _ = catalog.Revalidate(r)
-						time.Sleep(100 * time.Microsecond)
-						rel()
-					}
-					_, _ = catalog.NotifyHint("synthetic")
-				}
-			}(ref)
-		}
-	}
-	wg.Wait()
-
-	finalSnap, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if finalSnap.HealthyCount() != 5 {
-		t.Fatalf("final healthy count = %d, want 5", finalSnap.HealthyCount())
-	}
-}
-
 func quarantineRefs(snapshot Snapshot) []string {
 	refs := make([]string, 0, snapshot.QuarantinedCount())
 	for _, quarantine := range snapshot.Quarantined() {
 		refs = append(refs, quarantine.CandidateRef())
 	}
 	return refs
-}
-
-func TestSnapshotAccessorsCannotMutatePublishedGeneration(t *testing.T) {
-	root := newPrivateRoot(t)
-	writeFakeHome(t, root, "one", ProviderKiro)
-	catalog, _ := mustCatalog(t, root, ProviderKiro)
-	snapshot, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantRef := snapshot.Entries()[0].HomeRef()
-
-	entries := snapshot.Entries()
-	entries[0] = Entry{}
-	current, ok := catalog.Current()
-	if !ok || current.Entries()[0].HomeRef() != wantRef || snapshot.Entries()[0].HomeRef() != wantRef {
-		t.Fatal("published snapshot was mutated through accessor result")
-	}
-}
-
-func TestFailedFullScanDoesNotConsumeGeneration(t *testing.T) {
-	root := newPrivateRoot(t)
-	writeFakeHome(t, root, "one", ProviderCodex)
-	catalog, _ := mustCatalog(t, root, ProviderCodex)
-	first, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	away := root + ".away"
-	if err := os.Rename(root, away); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := catalog.Reconcile(); err == nil {
-		t.Fatal("expected missing controlled root to abort scan")
-	}
-	if err := os.Rename(away, root); err != nil {
-		t.Fatal(err)
-	}
-	second, err := catalog.Reconcile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if first.Generation() != 1 || second.Generation() != 2 {
-		t.Fatalf("failed scan consumed generation: first=%d second=%d", first.Generation(), second.Generation())
-	}
-}
-
-type syntheticOwnerInfo struct {
-	os.FileInfo
-	stat *syscall.Stat_t
-}
-
-func (info syntheticOwnerInfo) Sys() any { return info.stat }
-
-func TestPrivateMetadataRejectsWrongOwner(t *testing.T) {
-	wrongUID := uint32(os.Geteuid()) + 1
-	info := syntheticOwnerInfo{stat: &syscall.Stat_t{Uid: wrongUID}}
-	if reason := privateMetadataReason(info); reason != ReasonWrongOwner {
-		t.Fatalf("reason = %q, want %q", reason, ReasonWrongOwner)
-	}
 }

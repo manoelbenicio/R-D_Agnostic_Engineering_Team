@@ -39,7 +39,7 @@ func validateConfig(config *Config, taskLayer bool, errs *errorCollector) {
 		return
 	}
 	if config.Version != VersionV1 {
-		errs.add(ErrInvalidVersion, Field("schema_version"))
+		errs.add(ErrInvalidVersion, Field("version"))
 	}
 	validateValues(config.Values, false, errs)
 	for field := range config.Delegability {
@@ -75,11 +75,23 @@ func validateValues(values Values, requireCore bool, errs *errorCollector) {
 
 	validateIdentifier(values.CLIKind, FieldCLIKind, false, errs)
 	validateIdentifier(values.Provider, FieldProvider, false, errs)
+	validateIdentifier(values.SubscriptionRef, FieldSubscriptionRef, false, errs)
+	validateIdentifier(values.ProviderCatalogVersion, FieldProviderCatalog, false, errs)
+	if values.CapabilityDigest != nil && !ValidDigest(*values.CapabilityDigest) {
+		errs.add(ErrInvalidField, FieldCapabilityDigest)
+	}
 	validateIdentifier(values.Model, FieldModel, false, errs)
+	validateIdentifier(values.ReasoningMode, FieldReasoningMode, false, errs)
 	validateIdentifier(values.ReasoningEffort, FieldReasoningEffort, false, errs)
+	validatePositive(values.ReasoningBudget, FieldReasoningBudget, errs)
+	validatePositive(values.Limits.MaxContextTokens, FieldMaxContextTokens, errs)
 	validatePositive(values.Limits.MaxInputTokens, FieldMaxInputTokens, errs)
 	validatePositive(values.Limits.MaxOutputTokens, FieldMaxOutputTokens, errs)
+	validatePositive(values.Limits.MaxTotalTokens, FieldMaxTotalTokens, errs)
 	validatePositive(values.Limits.MaxToolCalls, FieldMaxToolCalls, errs)
+	validatePositive(values.Limits.WallTimeoutMS, FieldWallTimeoutMS, errs)
+	validatePositive(values.Limits.IdleTimeoutMS, FieldIdleTimeoutMS, errs)
+	validateExpandedPolicies(values, errs)
 }
 
 func validateIdentifier[T ~string](value *T, field Field, required bool, errs *errorCollector) {
@@ -106,6 +118,130 @@ func validatePositive(value *int64, field Field, errs *errorCollector) {
 	if value != nil && *value <= 0 {
 		errs.add(ErrInvalidField, field)
 	}
+}
+
+func validateExpandedPolicies(values Values, errs *errorCollector) {
+	if p := values.Concurrency; p != nil {
+		for _, value := range []*int64{p.MaxSessions, p.MaxTasks, p.MaxSubagents, p.MaxQueue} {
+			validatePositive(value, FieldConcurrency, errs)
+		}
+	}
+	if p := values.Retry; p != nil {
+		for _, value := range []*int64{p.MaxAttempts, p.BackoffMS, p.MaxBackoffMS, p.DeadlineBudgetMS} {
+			validatePositive(value, FieldRetry, errs)
+		}
+		if p.JitterPercent != nil && (*p.JitterPercent < 0 || *p.JitterPercent > 100) {
+			errs.add(ErrInvalidField, FieldRetry)
+		}
+		validateStringList(p.RetryableClasses, FieldRetry, errs)
+	}
+	if p := values.Flags; p != nil {
+		for _, flag := range p.Ordered {
+			lower := strings.ToLower(flag)
+			if flag == "" || flag != strings.TrimSpace(flag) || len(flag) > 512 || strings.ContainsAny(flag, "\r\n\x00") ||
+				strings.Contains(lower, "/home/") || strings.Contains(lower, "credential") || strings.Contains(lower, "password") || strings.Contains(lower, "token=") {
+				errs.add(ErrInvalidField, FieldFlags)
+			}
+		}
+	}
+	if p := values.Environment; p != nil {
+		seen := make(map[string]struct{}, len(p.Entries))
+		for _, entry := range p.Entries {
+			lower := strings.ToLower(entry.Key)
+			_, duplicate := seen[entry.Key]
+			seen[entry.Key] = struct{}{}
+			if !validEnvironmentKey(entry.Key) || duplicate || (entry.Value == nil) == (entry.Reference == nil) ||
+				strings.Contains(lower, "token") || strings.Contains(lower, "secret") || strings.Contains(lower, "password") || strings.Contains(lower, "credential") {
+				errs.add(ErrInvalidField, FieldEnvironment)
+			}
+			if entry.Value != nil && (len(*entry.Value) > 1024 || strings.ContainsAny(*entry.Value, "\x00\r\n")) {
+				errs.add(ErrInvalidField, FieldEnvironment)
+			}
+			if entry.Reference != nil {
+				validateIdentifier(entry.Reference, FieldEnvironment, true, errs)
+			}
+		}
+	}
+	if p := values.Skills; p != nil {
+		for _, ref := range p.Allowed {
+			validateVersionedRef(ref, FieldSkills, errs)
+		}
+	}
+	if p := values.MCPTools; p != nil {
+		for _, ref := range p.Allowed {
+			validateIdentifier(&ref.ServerID, FieldMCPTools, true, errs)
+			validateIdentifier(&ref.ToolID, FieldMCPTools, true, errs)
+			validateIdentifier(&ref.Scope, FieldMCPTools, true, errs)
+			validateIdentifier(&ref.Version, FieldMCPTools, true, errs)
+			validatePositive(ref.TimeoutMS, FieldMCPTools, errs)
+		}
+	}
+	if p := values.Permissions; p != nil {
+		validateStringList(p.FilesystemPolicies, FieldPermissions, errs)
+		validateStringList(p.NetworkPolicies, FieldPermissions, errs)
+		validateStringList(p.ProcessGrants, FieldPermissions, errs)
+		validateStringList(p.ToolGrants, FieldPermissions, errs)
+	}
+	if p := values.Eligibility; p != nil {
+		validateStringList(p.Providers, FieldEligibility, errs)
+		validateStringList(p.RuntimeKinds, FieldEligibility, errs)
+		validateStringList(p.DaemonClasses, FieldEligibility, errs)
+		validateStringList(p.WorkspaceClasses, FieldEligibility, errs)
+		validateStringList(p.RequiredCapabilities, FieldEligibility, errs)
+	}
+	if p := values.Health; p != nil {
+		validatePositive(p.FreshnessTTLMS, FieldHealth, errs)
+		if p.ReadinessPercent != nil && (*p.ReadinessPercent < 0 || *p.ReadinessPercent > 100) {
+			errs.add(ErrInvalidField, FieldHealth)
+		}
+		if p.CircuitState != "" {
+			validateIdentifier(&p.CircuitState, FieldHealth, false, errs)
+		}
+		if p.ProbeClass != "" {
+			validateIdentifier(&p.ProbeClass, FieldHealth, false, errs)
+		}
+	}
+	if p := values.Fallback; p != nil {
+		for _, route := range p.Routes {
+			validateIdentifier(&route.RouteID, FieldFallback, true, errs)
+			validateStringList(route.FailureClasses, FieldFallback, errs)
+			validatePositive(route.MaxAttempts, FieldFallback, errs)
+		}
+	}
+}
+
+func validateVersionedRef(ref VersionedRef, field Field, errs *errorCollector) {
+	validateIdentifier(&ref.ID, field, true, errs)
+	validateIdentifier(&ref.Version, field, true, errs)
+	if !ValidDigest(ref.Digest) {
+		errs.add(ErrInvalidField, field)
+	}
+}
+
+func validateStringList(values []string, field Field, errs *errorCollector) {
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		copy := value
+		_, duplicate := seen[value]
+		seen[value] = struct{}{}
+		validateIdentifier(&copy, field, true, errs)
+		if duplicate || strings.Contains(value, "/") || strings.Contains(value, "\\") {
+			errs.add(ErrInvalidField, field)
+		}
+	}
+}
+
+func validEnvironmentKey(key string) bool {
+	if key == "" || len(key) > 128 {
+		return false
+	}
+	for i, r := range key {
+		if r == '_' || unicode.IsLetter(r) || i > 0 && unicode.IsDigit(r) {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func validateCapabilities(capabilities ProviderCapabilities, errs *errorCollector) {
@@ -154,8 +290,19 @@ func validateEffectiveCapabilities(values Values, capabilities ProviderCapabilit
 	if values.ReasoningEffort != nil && !containsReasoning(modelCapabilities.ReasoningEfforts, *values.ReasoningEffort) {
 		errs.add(ErrUnsupportedReasoning, FieldReasoningEffort)
 	}
+	if values.ProviderCatalogVersion != nil && *values.ProviderCatalogVersion != string(capabilities.Version) {
+		errs.add(ErrInvalidCapabilities, FieldProviderCatalog)
+	}
+	if values.CapabilityDigest != nil {
+		digest, err := CapabilityDigest(capabilities)
+		if err != nil || *values.CapabilityDigest != digest {
+			errs.add(ErrInvalidCapabilities, FieldCapabilityDigest)
+		}
+	}
+	validateMaximum(values.Limits.MaxContextTokens, modelCapabilities.ContextWindowTokens, FieldMaxContextTokens, errs)
 	validateMaximum(values.Limits.MaxInputTokens, modelCapabilities.MaxInputTokens, FieldMaxInputTokens, errs)
 	validateMaximum(values.Limits.MaxOutputTokens, modelCapabilities.MaxOutputTokens, FieldMaxOutputTokens, errs)
+	validateMaximum(values.Limits.MaxTotalTokens, modelCapabilities.ContextWindowTokens, FieldMaxTotalTokens, errs)
 	validateMaximum(values.Limits.MaxToolCalls, modelCapabilities.MaxToolCalls, FieldMaxToolCalls, errs)
 
 	if values.Limits.MaxInputTokens != nil && values.Limits.MaxOutputTokens != nil {

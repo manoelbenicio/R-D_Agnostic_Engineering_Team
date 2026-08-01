@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -82,7 +81,7 @@ type Config struct {
 	CLIVersion                     string                // multica CLI version (e.g. "0.1.13")
 	LaunchedBy                     string                // "desktop" when spawned by the Electron app, empty for standalone
 	Profile                        string                // profile name (empty = default)
-	Agents                         map[string]AgentEntry // keyed by provider: claude, codebuddy, cline, codex, copilot, opencode, openclaw, hermes, gemini, pi, cursor, kimi, kiro, antigravity, qoder
+	Agents                         map[string]AgentEntry // keyed by provider: claude, codebuddy, cline, codex, copilot, nim, opencode, openclaw, hermes, gemini, pi, cursor, kimi, kiro, antigravity, qoder
 	WorkspacesRoot                 string                // base path for execution envs (default: ~/multica_workspaces)
 	KeepEnvAfterTask               bool                  // preserve env after task for debugging
 	HealthPort                     int                   // local HTTP port for health checks (default: 19514)
@@ -112,25 +111,63 @@ type Config struct {
 	// prefers a matching, executable override over resolving the profile's
 	// command_name on PATH. nil/empty means "always resolve via PATH".
 	ProfileCommandOverrides map[string]string
-	CommitLedgerHMACSecret  string // stable >=32-byte hex secret for pseudonymous tool tokens; empty disables ledger (fail-closed)
+	RotationDatabaseURL     string
 	AgentBrain              AgentBrainIntegrationConfig
+	Prodex                  ProdexConfig
+	L2Runtime               L2RuntimeConfig
 }
 
-// AgentBrainIntegrationConfig is the default-off G3 development wiring. It
-// carries neutral intent and reference-only configuration; credential values
-// and provider account identities are deliberately absent.
+// AgentBrainIntegrationConfig is default-off development wiring. It carries
+// neutral routing intent only; credential values and account identities are absent.
 type AgentBrainIntegrationConfig struct {
-	DevelopmentEnabled bool
-	Neutral            brain.Config
-	CLIKind            brain.CLIKind
-	RouteModel         brain.RouteModel
-	LegacyUses         []brain.LegacyUseMeasurement
-	// CapacityGateEnabled authorizes the canary tier-20 admission limit. It is
-	// honored ONLY together with Neutral.CapacityTier == CapacityTier20; tiers
-	// 50/100 remain evidence-required and are never raised by this gate. When
-	// false (default), the development gateway slice stays fail-closed at one
-	// development task.
+	DevelopmentEnabled  bool
+	Neutral             brain.Config
+	CLIKind             brain.CLIKind
+	RouteModel          brain.RouteModel
+	LegacyUses          []brain.LegacyUseMeasurement
 	CapacityGateEnabled bool
+}
+
+func (config AgentBrainIntegrationConfig) Validate() error {
+	if err := config.Neutral.Validate(); err != nil {
+		return err
+	}
+	if !config.DevelopmentEnabled {
+		return nil
+	}
+	if !config.Neutral.Gateway.Required {
+		return fmt.Errorf("agent brain requires OmniRoute fail-closed admission")
+	}
+	if config.Neutral.CapacityTier != brain.CapacityTier20 {
+		return fmt.Errorf("agent brain development mode is authorized only for the tier-20 schema")
+	}
+	switch config.CLIKind {
+	case brain.CLIClaudeCode, brain.CLICodex, brain.CLIOpenAICompatible:
+	default:
+		return fmt.Errorf("agent brain development mode supports only the accepted Claude Code, Codex, or OpenAI-compatible (Cline) frontend")
+	}
+	_, err := brain.ParseRouteModel(string(config.RouteModel))
+	return err
+}
+
+// effectiveAgentBrainCapacity fail-closes to one development task unless the
+// explicit gate and frozen canary-authorized tier-20 contract both apply.
+func effectiveAgentBrainCapacity(config AgentBrainIntegrationConfig) int {
+	if config.CapacityGateEnabled && config.Neutral.CapacityTier == brain.CapacityTier20 {
+		for _, definition := range brain.FrozenTierSchema() {
+			if definition.Tier == brain.CapacityTier20 && definition.State == brain.TierStateCanaryAuthorized {
+				return definition.MaxActiveTasks
+			}
+		}
+	}
+	return agentBrainDevelopmentMaxTasks
+}
+
+func effectiveTaskAdmissionLimit(config AgentBrainIntegrationConfig, requested int) int {
+	if config.DevelopmentEnabled && config.Neutral.Gateway.Required {
+		return effectiveAgentBrainCapacity(config)
+	}
+	return requested
 }
 
 type agentBrainBuiltInCLI struct {
@@ -138,9 +175,6 @@ type agentBrainBuiltInCLI struct {
 	Command  string
 }
 
-// agentBrainBuiltInCLIFor is the immutable gateway-mode executable mapping.
-// It deliberately contains no workspace profile, provider-account, or
-// operator-supplied command path input.
 func agentBrainBuiltInCLIFor(kind brain.CLIKind) (agentBrainBuiltInCLI, error) {
 	switch kind {
 	case brain.CLIClaudeCode:
@@ -154,9 +188,8 @@ func agentBrainBuiltInCLIFor(kind brain.CLIKind) (agentBrainBuiltInCLI, error) {
 	}
 }
 
-// resolveAgentBrainBuiltInEntry resolves only the canonical command from the
-// immutable CLIKind mapping. Gateway-required mode never honors MULTICA_*_PATH
-// or workspace profile command overrides for the credential-bearing child.
+// resolveAgentBrainBuiltInEntry resolves only the immutable CLIKind mapping;
+// gateway-required mode never honors operator path overrides.
 func resolveAgentBrainBuiltInEntry(kind brain.CLIKind) (string, AgentEntry, error) {
 	builtIn, err := agentBrainBuiltInCLIFor(kind)
 	if err != nil {
@@ -181,28 +214,29 @@ func resolveAgentBrainBuiltInEntry(kind brain.CLIKind) (string, AgentEntry, erro
 	return builtIn.Provider, AgentEntry{Path: filepath.Clean(absolute)}, nil
 }
 
-func (c AgentBrainIntegrationConfig) Validate() error {
-	if err := c.Neutral.Validate(); err != nil {
-		return err
-	}
-	if !c.DevelopmentEnabled {
-		return nil
-	}
-	if !c.Neutral.Gateway.Required {
-		return fmt.Errorf("agent brain requires OmniRoute fail-closed admission")
-	}
-	if c.Neutral.CapacityTier != brain.CapacityTier20 {
-		return fmt.Errorf("agent brain development mode is authorized only for the tier-20 schema")
-	}
-	switch c.CLIKind {
-	case brain.CLIClaudeCode, brain.CLICodex, brain.CLIOpenAICompatible:
-	default:
-		return fmt.Errorf("agent brain development mode supports only the accepted Claude Code, Codex, or OpenAI-compatible (Cline) frontend")
-	}
-	if _, err := brain.ParseRouteModel(string(c.RouteModel)); err != nil {
-		return err
-	}
-	return nil
+// ProdexConfig gates the near-term F0 path where Multica launches the pinned
+// prodex binary in place of raw codex while Rust/prodex remains the L2 runtime
+// authority. It is deliberately launch/lifecycle metadata only; Go does not
+// use this to route in-flight requests.
+type ProdexConfig struct {
+	Enabled             bool
+	Path                string
+	Version             string
+	Commit              string
+	SmartContextShadow  bool
+	SmartContextCanary  string
+	KillSwitchDefaultOn bool
+}
+
+// L2RuntimeConfig enables the target rpp.l2.v1 sidecar mode. It is separate
+// from ProdexConfig so the F0 prodex-as-is launch path remains unchanged
+// unless the sidecar contract is explicitly enabled.
+type L2RuntimeConfig struct {
+	Enabled     bool
+	BaseURL     string
+	BearerToken string
+	Timeout     time.Duration
+	PolicyID    string
 }
 
 // Overrides allows CLI flags to override environment variables and defaults.
@@ -227,14 +261,6 @@ type Overrides struct {
 	// resolves to enabled; the flag exists so users can opt out from the CLI.
 	DisableAutoUpdate       bool
 	AutoUpdateCheckInterval time.Duration // 0 = use env/default
-	AgentBrainDevelopment   *bool
-	AgentBrainGateway       *bool
-	AgentBrainControlURL    string
-	AgentBrainGatewayURL    string
-	AgentBrainSecretFile    string
-	AgentBrainCLIKind       string
-	AgentBrainRouteModel    string
-	AgentBrainCapacityTier  int
 }
 
 // LoadConfig builds the daemon configuration from environment variables
@@ -248,16 +274,6 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	serverBaseURL, err := NormalizeServerBaseURL(rawServerURL)
 	if err != nil {
 		return Config{}, err
-	}
-	agentBrainCfg, err := loadAgentBrainIntegrationConfig(overrides, serverBaseURL)
-	if err != nil {
-		return Config{}, err
-	}
-	if agentBrainCfg.DevelopmentEnabled {
-		serverBaseURL, err = NormalizeServerBaseURL(agentBrainCfg.Neutral.ControlURL)
-		if err != nil {
-			return Config{}, err
-		}
 	}
 
 	// Apply backend overrides from the CLI config file (issue #3875).
@@ -295,7 +311,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		// Per-machine custom-runtime command path overrides (MUL-3284).
 		// Copy into our own map so later mutation of the loaded config can't
 		// alias daemon state, and so an empty map normalizes to nil.
-		if !(agentBrainCfg.DevelopmentEnabled && agentBrainCfg.Neutral.Gateway.Required) && len(cliCfg.ProfileCommandOverrides) > 0 {
+		if len(cliCfg.ProfileCommandOverrides) > 0 {
 			profileCommandOverrides = make(map[string]string, len(cliCfg.ProfileCommandOverrides))
 			for id, path := range cliCfg.ProfileCommandOverrides {
 				if id == "" || strings.TrimSpace(path) == "" {
@@ -407,6 +423,12 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	if e, ok := probe("MULTICA_CLINE_PATH", "cline", "MULTICA_CLINE_MODEL"); ok {
 		agents["cline"] = e
 	}
+	// NIM is a native HTTP backend, not a CLI. Its runtime becomes available
+	// only when the operator supplies an NVIDIA API credential; it must never
+	// be gated on a fictitious `nim` executable.
+	if strings.TrimSpace(os.Getenv("NVIDIA_API_KEY")) != "" {
+		agents["nim"] = AgentEntry{Model: strings.TrimSpace(os.Getenv("MULTICA_NIM_MODEL"))}
+	}
 	// agy 1.0.6 added a `--model` flag (MUL-3125), so Antigravity now takes a
 	// model env like every other backend. MULTICA_ANTIGRAVITY_MODEL seeds the
 	// daemon-wide default; its value is the exact `agy models` display string
@@ -422,15 +444,19 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		}
 	}
 
-	if agentBrainCfg.DevelopmentEnabled && agentBrainCfg.Neutral.Gateway.Required {
-		provider, entry, resolveErr := resolveAgentBrainBuiltInEntry(agentBrainCfg.CLIKind)
-		if resolveErr != nil {
-			return Config{}, resolveErr
-		}
-		agents = map[string]AgentEntry{provider: entry}
+	prodexCfg, prodexEntry, err := loadProdexLaunchConfig()
+	if err != nil {
+		return Config{}, err
+	}
+	if prodexCfg.Enabled {
+		agents["codex"] = prodexEntry
+	}
+	l2Cfg, err := loadL2RuntimeConfig()
+	if err != nil {
+		return Config{}, err
 	}
 	if len(agents) == 0 {
-		return Config{}, fmt.Errorf("no agent runtime found: install claude, codebuddy, cline, codex, copilot, opencode, openclaw, hermes, gemini, pi, cursor-agent, kimi, kiro-cli, agy, or qodercli and ensure it is on PATH")
+		return Config{}, fmt.Errorf("no agent runtime found: install claude, codebuddy, cline, codex, copilot, opencode, openclaw, hermes, gemini, pi, cursor-agent, kimi, kiro-cli, agy, or qodercli and ensure it is on PATH, or set NVIDIA_API_KEY for NIM")
 	}
 
 	claudeArgs, err := shellArgsFromEnv("MULTICA_CLAUDE_ARGS")
@@ -444,10 +470,6 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	codebuddyArgs, err := shellArgsFromEnv("MULTICA_CODEBUDDY_ARGS")
 	if err != nil {
 		return Config{}, err
-	}
-	if agentBrainCfg.DevelopmentEnabled && agentBrainCfg.Neutral.Gateway.Required &&
-		(len(claudeArgs) != 0 || len(codexArgs) != 0 || len(codebuddyArgs) != 0) {
-		return Config{}, fmt.Errorf("daemon custom arguments are not permitted in gateway-required mode")
 	}
 
 	// Host info
@@ -511,7 +533,6 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	if overrides.MaxConcurrentTasks > 0 {
 		maxConcurrentTasks = overrides.MaxConcurrentTasks
 	}
-	maxConcurrentTasks = effectiveTaskAdmissionLimit(agentBrainCfg, maxConcurrentTasks)
 
 	// Profile
 	profile := overrides.Profile
@@ -627,6 +648,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	if overrides.AutoUpdateCheckInterval > 0 {
 		autoUpdateInterval = overrides.AutoUpdateCheckInterval
 	}
+
 	return Config{
 		ServerBaseURL:                  serverBaseURL,
 		DaemonID:                       daemonID,
@@ -657,213 +679,10 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		CodexArgs:                      codexArgs,
 		CodebuddyArgs:                  codebuddyArgs,
 		ProfileCommandOverrides:        profileCommandOverrides,
-		AgentBrain:                     agentBrainCfg,
+		RotationDatabaseURL:            strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		Prodex:                         prodexCfg,
+		L2Runtime:                      l2Cfg,
 	}, nil
-}
-
-func effectiveTaskAdmissionLimit(agentBrainCfg AgentBrainIntegrationConfig, requested int) int {
-	if agentBrainCfg.DevelopmentEnabled && agentBrainCfg.Neutral.Gateway.Required {
-		return effectiveAgentBrainCapacity(agentBrainCfg)
-	}
-	return requested
-}
-
-// effectiveAgentBrainCapacity returns the authorized concurrent-admission limit
-// for the development gateway slice. It fail-closes to one development task
-// unless the explicit capacity gate is enabled AND the configured tier is the
-// canary-authorized tier-20 in FrozenTierSchema. Tiers 50/100 are
-// evidence-required and are never honored here. Strict readiness/fail-closed
-// admission still applies to every task regardless of this limit.
-func effectiveAgentBrainCapacity(agentBrainCfg AgentBrainIntegrationConfig) int {
-	if agentBrainCfg.CapacityGateEnabled && agentBrainCfg.Neutral.CapacityTier == brain.CapacityTier20 {
-		for _, d := range brain.FrozenTierSchema() {
-			if d.Tier == brain.CapacityTier20 && d.State == brain.TierStateCanaryAuthorized {
-				return d.MaxActiveTasks
-			}
-		}
-	}
-	return agentBrainDevelopmentMaxTasks
-}
-
-func loadAgentBrainIntegrationConfig(overrides Overrides, legacyControlURL string) (AgentBrainIntegrationConfig, error) {
-	recorder := brain.NewMemoryLegacyUseRecorder()
-	translator, err := brain.NewCompatibilityTranslator(recorder)
-	if err != nil {
-		return AgentBrainIntegrationConfig{}, err
-	}
-	developmentValue, developmentSet := boolCandidate(overrides.AgentBrainDevelopment)
-	if !developmentSet {
-		developmentValue, developmentSet = os.LookupEnv("AGENT_BRAIN_DEVELOPMENT_ENABLED")
-	}
-	developmentEnabled := false
-	if developmentSet {
-		developmentEnabled, err = parseConfigBool(developmentValue, "AGENT_BRAIN_DEVELOPMENT_ENABLED")
-		if err != nil {
-			return AgentBrainIntegrationConfig{}, err
-		}
-	}
-
-	control, err := translator.ResolveConfig(context.Background(),
-		configCandidate(brain.EnvControlURL, overrides.AgentBrainControlURL, brain.SourceNeutralCLI),
-		configCandidate("MULTICA_SERVER_URL", overrides.ServerURL, brain.SourceLegacyCLI),
-		envConfigCandidate(brain.EnvControlURL, brain.SourceNeutralEnv, false),
-		envConfigCandidate("MULTICA_SERVER_URL", brain.SourceLegacyEnv, false),
-		brain.ConfigCandidate{Name: brain.EnvControlURL, Value: legacyControlURL, Source: brain.SourceDefault, Set: true},
-	)
-	if err != nil {
-		return AgentBrainIntegrationConfig{}, err
-	}
-
-	gatewayRequiredCLI, gatewayRequiredCLISet := boolCandidate(overrides.AgentBrainGateway)
-	gatewayRequired, err := translator.ResolveConfig(context.Background(),
-		brain.ConfigCandidate{Name: brain.EnvGatewayRequired, Value: gatewayRequiredCLI, Source: brain.SourceNeutralCLI, Set: gatewayRequiredCLISet},
-		envConfigCandidate(brain.EnvGatewayRequired, brain.SourceNeutralEnv, false),
-		brain.ConfigCandidate{Name: brain.EnvGatewayRequired, Value: "false", Source: brain.SourceDefault, Set: true},
-	)
-	if err != nil {
-		return AgentBrainIntegrationConfig{}, err
-	}
-	required, err := parseConfigBool(gatewayRequired.Value, brain.EnvGatewayRequired)
-	if err != nil {
-		return AgentBrainIntegrationConfig{}, err
-	}
-
-	gatewayURL, err := translator.ResolveConfig(context.Background(),
-		configCandidate(brain.EnvGatewayBaseURL, overrides.AgentBrainGatewayURL, brain.SourceNeutralCLI),
-		envConfigCandidate(brain.EnvGatewayBaseURL, brain.SourceNeutralEnv, false),
-		brain.ConfigCandidate{Name: brain.EnvGatewayBaseURL, Value: brain.DefaultHostGatewayURL, Source: brain.SourceDefault, Set: true},
-	)
-	if err != nil {
-		return AgentBrainIntegrationConfig{}, err
-	}
-
-	secretFile, err := translator.ResolveConfig(context.Background(),
-		configCandidate(brain.EnvGatewaySecretFile, overrides.AgentBrainSecretFile, brain.SourceNeutralCLI),
-		envConfigCandidate(brain.EnvGatewaySecretFile, brain.SourceNeutralEnv, false),
-		brain.ConfigCandidate{Name: brain.EnvGatewaySecretFile, Value: "", Source: brain.SourceDefault, Set: true},
-	)
-	if err != nil {
-		return AgentBrainIntegrationConfig{}, err
-	}
-	var secretRef brain.SecretFileRef
-	if strings.TrimSpace(secretFile.Value) != "" {
-		secretRef, err = brain.NewSecretFileRef(secretFile.Value)
-		if err != nil {
-			return AgentBrainIntegrationConfig{}, err
-		}
-	}
-
-	capacityCLI := ""
-	if overrides.AgentBrainCapacityTier != 0 {
-		capacityCLI = strconv.Itoa(overrides.AgentBrainCapacityTier)
-	}
-	legacyCapacityCLI := ""
-	if developmentEnabled && overrides.MaxConcurrentTasks != 0 {
-		legacyCapacityCLI = strconv.Itoa(overrides.MaxConcurrentTasks)
-	}
-	capacity, err := translator.ResolveConfig(context.Background(),
-		configCandidate(brain.EnvTaskCapacityTier, capacityCLI, brain.SourceNeutralCLI),
-		configCandidate("MULTICA_DAEMON_MAX_CONCURRENT_TASKS", legacyCapacityCLI, brain.SourceLegacyCLI),
-		envConfigCandidate(brain.EnvTaskCapacityTier, brain.SourceNeutralEnv, false),
-		conditionalEnvConfigCandidate(developmentEnabled, "MULTICA_DAEMON_MAX_CONCURRENT_TASKS", brain.SourceLegacyEnv, false),
-		brain.ConfigCandidate{Name: brain.EnvTaskCapacityTier, Value: "20", Source: brain.SourceDefault, Set: true},
-	)
-	if err != nil {
-		return AgentBrainIntegrationConfig{}, err
-	}
-	tierValue, err := strconv.Atoi(strings.TrimSpace(capacity.Value))
-	if err != nil {
-		return AgentBrainIntegrationConfig{}, fmt.Errorf("%s must be 20, 50, or 100", brain.EnvTaskCapacityTier)
-	}
-
-	// Explicit owner authorization for the canary tier-20 admission limit. This
-	// is NOT hardcoded: the gate is only consulted alongside CapacityTier==20
-	// (see effectiveAgentBrainCapacity), and tiers 50/100 remain blocked.
-	capacityGateEnabled := false
-	if v, ok := os.LookupEnv("AGENT_BRAIN_CAPACITY_GATE_ENABLED"); ok {
-		capacityGateEnabled, _ = strconv.ParseBool(strings.TrimSpace(v))
-	}
-
-	cliKindRaw := firstConfigured(overrides.AgentBrainCLIKind, os.Getenv("AGENT_BRAIN_CLI_KIND"))
-	routeModelRaw := firstConfigured(overrides.AgentBrainRouteModel, os.Getenv("AGENT_BRAIN_ROUTE_MODEL"))
-	var cliKind brain.CLIKind
-	var routeModel brain.RouteModel
-	if required && cliKindRaw != "" {
-		cliKind, err = brain.ParseCLIKind(cliKindRaw)
-		if err != nil {
-			return AgentBrainIntegrationConfig{}, err
-		}
-	}
-	if required && routeModelRaw != "" {
-		routeModel, err = brain.ParseRouteModel(routeModelRaw)
-		if err != nil {
-			return AgentBrainIntegrationConfig{}, err
-		}
-	}
-
-	result := AgentBrainIntegrationConfig{
-		DevelopmentEnabled: developmentEnabled,
-		Neutral: brain.Config{
-			ControlURL: control.Value,
-			Gateway: brain.GatewayConfig{
-				Required: required, BaseURL: gatewayURL.Value, SecretFile: secretRef, Readiness: brain.StrictReadinessPolicy(),
-			},
-			CapacityTier: brain.CapacityTier(tierValue),
-		},
-		CLIKind: cliKind, RouteModel: routeModel, LegacyUses: recorder.Snapshot(),
-		CapacityGateEnabled: capacityGateEnabled,
-	}
-	if err := result.Validate(); err != nil {
-		return AgentBrainIntegrationConfig{}, err
-	}
-	return result, nil
-}
-
-func configCandidate(name, value string, source brain.ValueSource) brain.ConfigCandidate {
-	value = strings.TrimSpace(value)
-	return brain.ConfigCandidate{Name: name, Value: value, Source: source, Set: value != ""}
-}
-
-func envConfigCandidate(name string, source brain.ValueSource, redactValue bool) brain.ConfigCandidate {
-	value, set := os.LookupEnv(name)
-	if redactValue && set {
-		value = "[legacy-value-redacted]"
-	}
-	return brain.ConfigCandidate{Name: name, Value: strings.TrimSpace(value), Source: source, Set: set}
-}
-
-func conditionalEnvConfigCandidate(enabled bool, name string, source brain.ValueSource, redactValue bool) brain.ConfigCandidate {
-	if !enabled {
-		return brain.ConfigCandidate{}
-	}
-	return envConfigCandidate(name, source, redactValue)
-}
-
-func boolCandidate(value *bool) (string, bool) {
-	if value == nil {
-		return "", false
-	}
-	return strconv.FormatBool(*value), true
-}
-
-func parseConfigBool(value, name string) (bool, error) {
-	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "1", "true", "yes", "on":
-		return true, nil
-	case "0", "false", "no", "off":
-		return false, nil
-	default:
-		return false, fmt.Errorf("%s must be a boolean", name)
-	}
-}
-
-func firstConfigured(values ...string) string {
-	for _, value := range values {
-		if value = strings.TrimSpace(value); value != "" {
-			return value
-		}
-	}
-	return ""
 }
 
 // officialCloudHost is the hostname of Multica's hosted cloud. It's the only
@@ -1231,4 +1050,13 @@ func applyOpenclawOverride(oc *cli.OpenClawOverride) {
 			_ = os.Setenv("OPENCLAW_STATE_DIR", oc.StateDir)
 		}
 	}
+}
+
+func firstConfigured(values ...string) string {
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			return value
+		}
+	}
+	return ""
 }

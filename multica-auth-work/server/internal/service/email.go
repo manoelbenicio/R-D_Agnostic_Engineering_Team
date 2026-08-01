@@ -3,10 +3,8 @@ package service
 import (
 	"crypto/tls"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"html"
-	"log/slog"
 	"mime"
 	"mime/quotedprintable"
 	"net"
@@ -18,15 +16,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/resend/resend-go/v2"
-
-	"github.com/multica-ai/multica/server/pkg/redact"
 )
 
 // maxSubjectFieldRunes bounds how much user-controlled text (workspace name,
 // inviter name) can land in an email Subject. Prevents attackers from stuffing
-
-var ErrEmailBackendNotConfigured = errors.New("email backend is not configured")
-
 // a full phishing pitch into a workspace name that gets sent from our domain.
 const maxSubjectFieldRunes = 60
 
@@ -231,7 +224,7 @@ func NewEmailService() *EmailService {
 	case client != nil:
 		fmt.Printf("EmailService: Resend API from=%s\n", from)
 	default:
-		fmt.Println("EmailService: disabled — configure SMTP_HOST or RESEND_API_KEY before sending email")
+		fmt.Println("EmailService: DEV mode — codes printed to stdout (set MULTICA_DEV_VERIFICATION_CODE in .env for a fixed local code)")
 	}
 
 	return &EmailService{
@@ -343,12 +336,7 @@ func (s *EmailService) SendVerificationCode(to, code string) error {
 		return s.sendSMTP(to, "Your Multica verification code", body)
 	}
 	if s.client == nil {
-		// DEV delivery tier (no SMTP relay, no Resend client): do not fail.
-		// Log a developer-visibility line with the one-time secret scrubbed
-		// through the shared redaction library so the code never reaches logs.
-		slog.Info("EmailService (dev): verification code email not delivered — no email backend configured",
-			"to", to,
-			"detail", redact.Text(fmt.Sprintf("secret=%s", code)))
+		fmt.Printf("[DEV] Verification code for %s: %s\n", to, code)
 		return nil
 	}
 	params := &resend.SendEmailRequest{
@@ -375,10 +363,7 @@ func (s *EmailService) SendInvitationEmail(to, inviterName, workspaceName, invit
 		return s.sendSMTP(to, params.Subject, params.Html)
 	}
 	if s.client == nil {
-		// DEV delivery tier: log the invitation without leaking the invite token.
-		slog.Info("EmailService (dev): invitation email not delivered — no email backend configured",
-			"to", to,
-			"detail", redact.Text(fmt.Sprintf("invitation token=%s", inviteURL)))
+		fmt.Printf("[DEV] Invitation email to %s: %s invited you to %s — %s\n", to, inviterName, workspaceName, inviteURL)
 		return nil
 	}
 	params := buildInvitationParams(s.fromEmail, to, inviterName, workspaceName, inviteURL)

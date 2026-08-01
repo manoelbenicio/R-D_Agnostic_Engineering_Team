@@ -184,45 +184,23 @@ func registerListeners(bus *events.Bus, b realtime.Broadcaster) {
 
 		if e.WorkspaceID != "" {
 			realtime.M.RecordEvent(e.Type)
-			// Terminal task events (completed/failed/cancelled) that carry BOTH a
-			// task_id and workspace_id are delivered through the TerminalBroadcaster
-			// seam when the configured broadcaster supports it, so the aggregate
-			// HopDelivery span (hop 7) is recorded exactly once through the SAME
-			// path that fans the frame out — the single-node Hub or the
-			// DualWrite+relay broadcaster, using one shared event id (no local
-			// duplicate, no relay bypass). meta is content-free (correlation +
-			// event kind only; the payload is never parsed here). All other events,
-			// and terminal events on a broadcaster without the capability, fall back
-			// to the normal workspace broadcast unchanged.
-			if isTerminalTaskEvent(e.Type) && e.TaskID != "" {
-				if tb, ok := b.(realtime.TerminalBroadcaster); ok {
-					tb.BroadcastTerminalToWorkspace(e.WorkspaceID, data, realtime.TerminalDeliveryMeta{
+			if e.TaskID != "" && realtime.IsTerminalDeliveryEvent(e.Type) {
+				if terminal, ok := b.(realtime.TerminalBroadcaster); ok {
+					terminal.BroadcastTerminalToWorkspace(e.WorkspaceID, data, realtime.TerminalDeliveryMeta{
 						TaskID:        e.TaskID,
 						ChatSessionID: e.ChatSessionID,
 						Event:         e.Type,
 					})
-					return
+				} else {
+					b.BroadcastToWorkspace(e.WorkspaceID, data)
 				}
+			} else {
+				b.BroadcastToWorkspace(e.WorkspaceID, data)
 			}
-			b.BroadcastToWorkspace(e.WorkspaceID, data)
 		} else if strings.HasPrefix(e.Type, "daemon:") {
 			realtime.M.RecordEvent(e.Type)
 			b.Broadcast(data)
 		}
 		// Otherwise drop — no global broadcast for non-daemon events without a workspace.
 	})
-}
-
-// isTerminalTaskEvent reports whether an event type is one of the terminal task
-// lifecycle events whose UI delivery is observed as the hop-7 aggregate
-// HopDelivery span. It mirrors realtime's terminal-event classification via the
-// exported realtime.EventTask* constants (the values a TerminalDeliveryMeta.Event
-// must carry for a span to be recorded).
-func isTerminalTaskEvent(eventType string) bool {
-	switch eventType {
-	case realtime.EventTaskCompleted, realtime.EventTaskFailed, realtime.EventTaskCancelled:
-		return true
-	default:
-		return false
-	}
 }

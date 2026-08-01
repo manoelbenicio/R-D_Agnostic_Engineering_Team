@@ -2563,9 +2563,9 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Cancel active tasks only for an explicit cancellation. Agent-managed
-	// done/in_review transitions must let the current run finish; in_review can
-	// also be the state in which a reviewer is dispatched.
+	// Cancel active tasks when the issue is cancelled by a user.
+	// This is distinct from agent-managed status transitions — cancellation
+	// is a user-initiated terminal action that should stop execution.
 	if statusChanged && issue.Status == "cancelled" {
 		h.TaskService.CancelTasksForIssue(r.Context(), issue.ID)
 	}
@@ -3054,8 +3054,7 @@ func (h *Handler) BatchUpdateIssues(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Cancel active tasks only for an explicit cancellation. Agent-managed
-		// done/in_review transitions must let the current run finish.
+		// Cancel active tasks when the issue is cancelled by a user.
 		if statusChanged && issue.Status == "cancelled" {
 			h.TaskService.CancelTasksForIssue(r.Context(), issue.ID)
 		}

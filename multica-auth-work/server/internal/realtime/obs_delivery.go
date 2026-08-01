@@ -24,7 +24,7 @@ const (
 	EventTaskCancelled = "task:cancelled"
 )
 
-func isTerminalDeliveryEvent(ev string) bool {
+func IsTerminalDeliveryEvent(ev string) bool {
 	switch ev {
 	case EventTaskCompleted, EventTaskFailed, EventTaskCancelled:
 		return true
@@ -141,7 +141,7 @@ func (o *deliveryObserver) buildSpan(sessionID string, delivered, backpressure i
 // calls for the same task still produce exactly one span. Returns true iff this
 // call emitted the span.
 func (o *deliveryObserver) emitTerminalDelivery(meta TerminalDeliveryMeta, delivered, backpressure int, latencyMs int64) bool {
-	if o == nil || !isTerminalDeliveryEvent(meta.Event) {
+	if o == nil || !IsTerminalDeliveryEvent(meta.Event) {
 		return false
 	}
 	taskID := strings.TrimSpace(meta.TaskID)
@@ -234,7 +234,7 @@ func (h *Hub) BroadcastTerminalDelivery(scopeType, scopeID string, message []byt
 		start = h.deliveryObs.now()
 	}
 	delivered, backpressure := h.deliverScopeCounting(scopeType, scopeID, message, eventID)
-	if h.deliveryObs == nil || !isTerminalDeliveryEvent(meta.Event) {
+	if h.deliveryObs == nil || !IsTerminalDeliveryEvent(meta.Event) {
 		return
 	}
 	latency := h.deliveryObs.now().Sub(start).Milliseconds()

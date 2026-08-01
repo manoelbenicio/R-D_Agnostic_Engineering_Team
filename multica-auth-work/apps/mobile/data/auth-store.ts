@@ -1,6 +1,6 @@
 /**
  * Mobile auth store — Zustand. Logic mirrors packages/core/auth/store.ts:
- *   - Token written ONLY after a successful password login response
+ *   - Token written ONLY on successful verifyCode
  *   - 401 → clear token; non-401 (5xx / network blip) → preserve token so
  *     the next launch can retry
  *   - logout = clear token + clear in-memory user + setToken(null)
@@ -19,7 +19,8 @@ interface AuthState {
   user: User | null;
   isLoading: boolean;
   initialize: () => Promise<void>;
-  login: (email: string, password: string) => Promise<User>;
+  sendCode: (email: string) => Promise<void>;
+  verifyCode: (email: string, code: string) => Promise<User>;
   logout: () => Promise<void>;
   /** Overwrite the in-memory user — call after PATCH /api/me so name/avatar
    *  edits land without a refetch. Server response is the source of truth. */
@@ -56,8 +57,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  login: async (email, password) => {
-    const { token, user } = await api.login(email, password);
+  sendCode: async (email) => {
+    await api.sendCode(email);
+  },
+
+  verifyCode: async (email, code) => {
+    const { token, user } = await api.verifyCode(email, code);
     await setToken(token);
     api.setToken(token);
     set({ user });

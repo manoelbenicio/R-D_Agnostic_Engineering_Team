@@ -314,13 +314,23 @@ func main() {
 	// shutdown so any pending bumps are flushed before we exit.
 	heartbeatScheduler := handler.NewBatchedHeartbeatScheduler(queries, handler.DefaultHeartbeatBatchInterval)
 
-	r, h := NewRouterWithOptions(pool, hub, bus, analyticsClient, storeRedis, RouterOptions{
+	runtimeManagerOptions, runtimeManagerErr := runtimeManagerOptionsFromEnv()
+	if runtimeManagerErr != nil {
+		slog.Error("runtime manager authority initialization failed (fail-closed)", "error", runtimeManagerErr)
+		os.Exit(1)
+	}
+	r, h, routerErr := NewRouterWithOptions(pool, hub, bus, analyticsClient, storeRedis, RouterOptions{
 		HTTPMetrics:        httpMetrics,
 		BusinessMetrics:    businessMetrics,
 		DaemonHub:          daemonHub,
 		DaemonWakeup:       daemonWakeup,
 		HeartbeatScheduler: heartbeatScheduler,
+		RuntimeManager:     runtimeManagerOptions,
 	})
+	if routerErr != nil {
+		slog.Error("server router initialization failed (fail-closed)", "error", routerErr)
+		os.Exit(1)
+	}
 
 	srv := &http.Server{
 		Addr:    ":" + port,
