@@ -33,15 +33,18 @@ the one real digest is `canonical_spec.digest`, which pins the frozen spec file.
 
 ## Real contract bindings
 
-`contract-binding.test.mjs` binds the fixture to contracts that exist in this repository today. Every expectation is recomputed from a real file; a missing input fails the run instead of skipping, so a green result cannot mean "not checked".
+Every external contract is read as an **immutable Git object at a pinned revision**, never from the mutable working tree or another checkout: a working-tree read would let an uncommitted edit silently satisfy a gate. `frozen-contracts.mjs` is the single accessor, so `contract-binding.test.mjs` and `hardening.test.mjs` provably consume the same frozen blob. A missing object is a hard failure, never a skip.
 
-| Binding | Real source | Effect |
+| Binding | Pinned source | Effect |
 | --- | --- | --- |
-| `requirement_refs` | `openspec/changes/credential-account-home-restoration/specs/credential-account-home/spec.md` | every referenced `REQ-NN` must be a declared requirement heading |
-| spec freeze | same file | its sha256 must equal `canonical_spec.digest`; a spec edit forces re-review |
-| event-name shape | `multica-auth-work/server/pkg/protocol/events.go` | fixture events must obey the product `subject:verb` contract, derived from the real declarations (verbs may contain `-`, as in `inbox:batch-read`) |
-| event registry gap | same file | `pending_contracts.unregistered_events` must equal the recomputed set of fixture events absent from the registry |
-| source gap | `multica-auth-work/server/**/*.go` | every `pending_contracts.absent_source_symbols` entry must still be absent |
+| `requirement_refs` | `suite.frozen_commit:canonical_spec.path` | every referenced `REQ-NN` must be a declared requirement of the frozen blob |
+| spec freeze | same blob | its sha256 must equal `canonical_spec.digest`; a spec edit forces re-review |
+| raw-64 digest form | `c35c200be62d63cb654638d5b142b2a8105c1484:.deploy-control/p0/evidence/spe4-spe5-unified-authority-baseline.md` | the authority clause is located in the pinned blob and enforced against every fixture digest. Read as a Git object precisely so the producer branch never merges the authority branch; K1 handles ancestry later |
+| event-name shape | `HEAD:multica-auth-work/server/pkg/protocol/events.go` | fixture events must obey the product `subject:verb` contract, derived from the real declarations (verbs may contain `-`, as in `inbox:batch-read`) |
+| event registry gap | same blob | `pending_contracts.unregistered_events` must equal the gap recomputed from the committed HEAD tree |
+| source gap | `git grep` over `HEAD:multica-auth-work/server` | every `pending_contracts.absent_source_symbols` entry must still be absent in that exact committed tree |
+
+Only `evaluations.json` and `evaluation.schema.json` are read from disk, because they are the artifacts under validation.
 
 ## Pending contracts, and why they are declared
 
@@ -57,4 +60,16 @@ node --test testdata/runtime-manager-evaluations/validate.test.mjs \
              testdata/runtime-manager-evaluations/hardening.test.mjs
 ```
 
-`validate.test.mjs` validates the fixture against `evaluation.schema.json`, verifies exact golden/forbidden operation coverage, digest normalization, and checks operation-specific identity, snapshot, exclusivity, hot-apply, rollback, inheritance, and fail-closed invariants. `contract-binding.test.mjs` enforces the bindings above. `hardening.test.mjs` adds the exclusivity-race, rollback, digest, pathless and exact-eight prohibition checks, each bound to committed spec text.
+`validate.test.mjs` validates the fixture against `evaluation.schema.json`, verifies exact golden/forbidden operation coverage, digest normalization, and checks operation-specific identity, snapshot, exclusivity, hot-apply, rollback, inheritance, and fail-closed invariants. `contract-binding.test.mjs` enforces the bindings above. `hardening.test.mjs` adds the exclusivity-race, rollback, digest, pathless and prohibition-coverage checks, each bound to clause text in the frozen spec blob.
+
+## Prohibition coverage, and a reserved term
+
+The forbidden set is pinned by its **nine declared operations**, in order, and every forbidden case
+must bind at least one explicit `MUST NOT` / `MUST be forbidden` clause located in the frozen spec
+blob. No count invariant is asserted over the prohibition requirements: how many distinct
+requirements the nine cases happen to touch is an observation, not a contract, and asserting it
+would freeze an incidental number.
+
+The term **exact-eight** is deliberately not used in this module. It is reserved to the SPE-18
+capacity envelope (`3 Kiro + 5 Codex`), whose frozen-ceiling reading is BLOCKED, and it has no
+bearing on prohibition coverage.
