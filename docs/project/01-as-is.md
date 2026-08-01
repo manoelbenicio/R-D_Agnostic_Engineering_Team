@@ -1,5 +1,15 @@
 # 01 — Estado Atual (AS-IS)
 
+> **Authority boundary — reconciled 2026-08-01**
+>
+> - **CURRENT_OBSERVED:** ORQ2 has eight intentional physical credential homes mapped one-to-one to eight legacy-registry terminals and live panes; no duplicate or unreferenced home was observed.
+> - **SOURCE_VALIDATED:** allocator-v2 and Runtime Manager/Postgres contracts exist in the reconciled candidate source, but allocator-v2 is not installed and Runtime Manager/Postgres account control is not deployed state. The installed registry remains legacy v1.
+> - **PLANNED:** automatic account rotation, Runtime Manager activation, Postgres-backed account control, and higher capacity profiles are TO-BE only.
+> - **CANONICAL AUTHORITY:** `credential-account-home-restoration` REQ-01..23 plus compatible qualified REQ-24..35 control. Discovery is dynamic and opaque; static slot-number grammars and allowlists are forbidden.
+> - **APPROVAL_GATED:** commit/push identity, production DB access, deployment, restart, ORQ1 cutover/rollout, allocator-v2 installation, and capacity expansion require separate evidence and fresh owner gates; none is authorized or performed by this candidate.
+> - **CHRONOLOGY:** any single-global-home or single-slot wording below describes historical behavior or a conditional migration starting point, not the current eight-home observed state.
+
+
 **Data:** 2026-07-01 · Verificado no servidor de produção (192.168.15.6) + código.
 
 ---
@@ -52,9 +62,9 @@ Já existe um app de auth de cliente (padrão `auth_routes.py`) que **armazena o
 de sessão OAuth / config-dir por conta e serve de volta AS-IS**. É o mesmo conceito
 que vamos reaproveitar — mesmos agentes, mesmos vendors, mesmo protocolo OAuth.
 
-## 6. Lacunas do AS-IS (o que falta)
+## 6. Lacunas do AS-IS histórico de julho (não são o estado observado atual)
 
-- G1: sem isolamento de credencial por conta (uma conta por vendor de cada vez).
+- G1 histórico: o baseline de julho não tinha isolamento de credencial por conta; a auditoria atual observa oito homes intencionais um-para-um, enquanto o rollout allocator-v2 segue não instalado.
 - G2: sem seleção/atribuição de conta → agente.
 - G3: sem detecção de esgotamento nem troca automática (Fase 2).
 - G4: sem observabilidade dedicada de credencial/cota/rotação.

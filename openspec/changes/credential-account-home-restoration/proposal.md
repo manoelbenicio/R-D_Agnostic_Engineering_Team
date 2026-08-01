@@ -1,117 +1,91 @@
-# Proposal — Credential Account Home Restoration
+# Proposal - Runtime Manager and Credential Account-Home Restoration
+
+## Authority amendment
+
+This canonical change and the reconciled `build-omniroute-agent-brain` change jointly freeze
+one transport authority. Every launch pins exactly one binding: `omniroute` or
+`native_credential_home`. With `omniroute`, OmniRoute is the sole inference router and the sole
+account/credential owner, and native homes are forbidden. With `native_credential_home`, R3
+resolves one approved exclusive opaque home for one existing logical runtime/agent before
+launch, the daemon supplies only daemon-local isolated-home references required by the native
+CLI, and OmniRoute is not used. Neither binding may fall back, translate, or rotate to the other.
+Both fail closed, preserve existing ORQ2-dev reservations, and expose no global HOME, raw path,
+account identity, or credential data through product APIs, events, logs, or evidence.
 
 ## Why
 
-Os runtimes **agy**, **codex** e **kiro** sao obrigatorios em todo cenario (decisao do owner).
-Hoje eles operam apenas com **uma conta por provider**, usando o HOME global do processo do
-daemon no ORQ1. Nao existe isolamento por conta, nao existe rotacao e nao existe atribuicao
-de custo por conta.
+The current slot allowlist and raw-path design cannot safely support reusable owner-global
+sessions, per-runtime configuration, dynamic capacity, or durable task attribution. The
+platform needs one frozen contract before schema, API, daemon, UI, and assurance streams can
+work independently without leaking paths or changing existing infrastructure.
 
-A causa nao e feature ausente: e **regressao**. O wiring correto existiu no commit `aa62401`
-(2026-07-02). O commit `31d50b9` (2026-07-05) condicionou esse wiring ao antigo L2; a remocao
-completa do resolver e o `CredentiallessGateway: true` incondicional ocorreram em `9ab80a6`.
+## What changes
 
-## What Changes
+- Add owner-global, immutable-versioned **Runtime Standards**.
+- Add owner-global, reusable, accountless **Runtime Sessions**. A session is logical
+  runtime/configuration identity, not a provider account, credential home, process, daemon,
+  container, workspace, project, squad, or agent.
+- Bind a workspace to existing runtime rows and the existing
+  `orq2-credential-runtime-v1` daemon; enrollment or subscription attachment never recreates
+  the agent, runtime row, or daemon.
+- Replace slot allowlists and raw paths with an opaque, dynamic controlled-root catalog.
+- Enforce one persistent agent, one runtime row, and one exclusive account-home binding;
+  subagents inherit and do not create persistent runtime rows.
+- Version each runtime configuration and resolve fields with strict precedence:
+  `platform > standard > runtime > explicitly delegable task`.
+- Cover provider/subscription selection, model, reasoning, context/output/token limits,
+  concurrency, timeout/retry, CLI flags, environment allowlist, skills, tools/MCP,
+  filesystem/network permissions, eligibility, health, and fallback.
+- Validate provider capabilities before activation; classify every field as delegable or not
+  and as hot-apply or restart-required.
+- Add activation, audit, redaction, drift, rollback, immutable task generation/version/digest
+  snapshots, lifecycle reconciliation, and retention contracts.
+- Freeze REST, event, authorization, error, and path-secrecy contracts plus migration names
+  130-134, subject to the mandatory registrar recheck immediately before implementation.
 
-- **RESTORED** resolucao de `CredentialAccountHome` por task e por provider no daemon.
-- **ADDED** ponte entre o registry de isolamento existente no ORQ2 e a selecao por task no daemon.
-- **MODIFIED** o caminho nativo volta a preparar e injetar o ambiente isolado; o caminho
-  gateway continua credentialless e nunca recebe `AccountHome`.
-- **ADDED** atribuicao deterministica e persistente por identidade estavel
-  `AGENT_CRED_ISOLATION_AGENT_ID + AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT`, com falha
-  fechada quando ausente ou invalida, sem identidade derivada de Herdr, pane, TTY, PID ou UUID
-  aleatorio.
-- **ADDED** cardinalidade fisica de exatamente uma pasta por binding ativo estavel, zero pastas
-  historicas, com tombstones de metadados preservados para nao-reuso e sem criacao de pasta pela
-  camada de catalogo.
-- **MODIFIED** o discovery de modelos AGY executa somente sob homes validados da allowlist,
-  sem herdar o HOME global do daemon.
-- **MODIFIED** o task-home AGY recebe somente o arquivo fisico
-  `antigravity-oauth-token`; logs, symlinks, caches e bancos do provider nao sao copiados.
-- **MODIFIED** o formulario de criar/duplicar agente persiste `thinking_level` quando o
-  catalogo estruturado do runtime oferece `thinking.supported_levels`; modelos AGY, cujo tier
-  ja faz parte do ID, continuam sem um segundo seletor.
-- **ADDED** snapshot imutavel da conta produtora no claim atomico da task e copia server-side
-  para `task_usage`, sem aceitar `account_id` do daemon.
-- **ADDED** migration canonica `128_task_usage_account_id`, com exclusividade duravel de conta,
-  rollback e preservacao de linhas legadas como nao atribuiveis.
+## Additive T2 and stable-allocator amendment
+
+Accepted Runtime Manager REQ-01..23 remain unchanged. Later ORQ2 requirements are incorporated as
+REQ-24..35 under accepted-REQ-05 precedence: provider-specific layout after dynamic opaque discovery, fail-closed path validation, Codex AccountHome, equal
+Prepare/Reuse coverage, stable agent/subscription identity, mandatory AGY/Codex/Kiro families, T2
+topology and durability, reasoning-wire preservation, immutable producer-account pricing snapshots,
+physical one-home-per-active-binding cardinality (never one global slot), and durable metadata tombstones. REQ-28 is future source-v2 rollout and REQ-30 is a non-authorizing owner-gated cutover condition. The accepted
+`omniroute` / `native_credential_home` bindings remain mutually exclusive; these additions do not
+authorize cross-binding fallback or source-home mutation.
+
+## Invariants
+
+1. One account-home is exclusively bound to at most one active agent/runtime binding.
+2. Runtime/session concurrency is policy-driven and independent of physical account count.
+3. No process copies, moves, deletes, truncates, sanitizes, overwrites, chmods, or exposes a
+   source credential home or credential artifact. Cleanup is limited to task-local non-source
+   material after active-reference checks.
+4. Discovery uses hints plus periodic full reconciliation, supports overflow, deduplicates by
+   filesystem identity, and publishes monotonic generations.
+5. Missing, stale, ambiguous, unhealthy, unsupported, unauthorized, or conflicting state
+   fails closed; it never falls back to a global HOME, static slot list, another workspace, or
+   an ORQ2-dev reservation.
+6. Running tasks pin their runtime/session, configuration version and digest, binding/catalog
+   generation and opaque account-home reference.
 
 ## Scope
 
-Vendors: **agy/antigravity, codex e kiro**.
-**Non-goals:** `cline`, `opencode` e qualquer outro provider.
+Canonical documentation and contracts for AGY/Antigravity, Codex, and Kiro on the existing
+ORQ2 daemon and existing Multica rows. The contracts are provider-extensible, but no other
+provider becomes eligible merely by being discovered.
 
-## Non-Goals
+## Non-goals
 
-- Reimplementar o isolamento fisico de credencial no ORQ2. Os scripts de isolamento existem e
-  operam. A composicao concreta do Runtime Manager em PostgreSQL **esta implementada e validada na
-  fonte compartilhada `spe6`** — idempotencia duravel de criacao e ativacao, locking de parent,
-  UUID esperado fail-closed, `apply_class` persistido, router, middleware e startup. O que falta e
-  a importacao seletiva com revisao na arvore de release aceita e a verificacao contra banco real.
-- Inventar, normalizar ou substituir o catalogo fornecido por cada runtime/provider.
-- Alterar o isolamento de slots existente no ORQ2.
+- No production deployment, restart, credential inspection, credential-home mutation, push or
+  publication is authorized by this contract reconciliation.
+- No fallback between `omniroute` and `native_credential_home`, no global HOME fallback, and no
+  physical-home deletion by catalog metadata lifecycle.
+- No claim that installed legacy registry v1 already enforces source v2 stable identity.
 
-## Impact
+## Current local release boundary
 
-- Isolamento e afinidade por conta passam a existir no executor T2.
-- Exige rebuild Go e relancamento do daemon (classe STOP-AND-WAIT).
-- A persistencia financeira foi implementada e passou no gate combinado ORQ-12/ORQ-21 em
-  `ea1eee7`; a integracao conjunta e a revisao independente continuam sendo gates de release.
-
-## Implementation update — 2026-07-28
-
-- `785a8ac` mantem linhas legadas `dispatched` com snapshot NULL visiveis ao reclaim, para que
-  o gate fail-closed do ORQ-21 possa cancela-las; reclaim nunca resolve ou inventa conta.
-- `ea1eee7` promove os arquivos staged para `128_task_usage_account_id.{up,down}.sql`, remove a
-  configuracao SQLC temporaria e regenera a saida canonica.
-- Gate descartavel: ORQ-12 19/19 em duas passagens, ORQ-21 handler 2/2 e registry 2/2 com
-  `orq21db`, integracao 19+2+2, todos sob race, zero skips; build, vet e gofmt limpos.
-- Os commits nao devem ser integrados isoladamente: ORQ-12 depende do cancelamento fail-closed
-  do stack ORQ-21 compativel.
-
-## Estado atual — 2026-08-01
-
-Release: **HOLD / NOT READY**. Nenhum push, deploy ou restart foi executado ou autorizado.
-
-- `go build ./...` na arvore aceita **passa**, apos companions aditivos exatos em
-  `internal/daemon/config.go`, `execenv/codex_home.go`, `execenv/cline_home.go`,
-  `internal/service/task.go`, `internal/middleware/request_logger.go` e o leitor de senha limitado
-  em `cmd/multica/cmd_user.go`. O bloqueio original `ExactEnv`/`deliveryObs` esta resolvido.
-- Suites de pacote verdes: `./pkg/redact`; `./pkg/agent` (7.969s); `./internal/realtime` completo (0.743s);
-  `./internal/realtime` (0.743s); `./internal/credentialregistry`;
-  `./internal/daemon/credentialcatalog` com e sem `-race`.
-- **Suites verdes nao implicam release.** A composicao concreta do Runtime Manager em PostgreSQL
-  esta implementada e validada na fonte compartilhada `spe6`: idempotencia duravel de criacao e
-  ativacao, locking de parent, UUID esperado fail-closed, `apply_class` persistido, e mount real
-  sob router com middleware no startup. O que falta e a importacao seletiva com revisao na arvore
-  de release aceita e a verificacao contra banco real; ate lá, nada disso esta alcancavel na arvore
-  aceita.
-- Os grupos de companions I, J, K e L foram executados e congelados na arvore aceita; os bloqueadores
-  de compilacao chegaram a zero. `go build ./...` e a varredura `go test -run ^$ ./...` passam, e
-  `go test ./cmd/multica` deixou de falhar. Suites completas dos pacotes afetados: `passwordtest`
-  0.244s, `auth` 0.997s, `middleware` 0.558s. **`internal/handler` nao conta como suite executada:**
-  a invocacao completa do pacote e compilacao mais skip do `TestMain` quando PostgreSQL esta ausente,
-  por isso a duracao proxima de zero; ela nao evidencia testes executados. A varredura `-run ^$` prova
-  compilacao, nao execucao de testes; nao houve execucao completa de testes de todo o repositorio.
-- Trabalho sistemico de companions na arvore aceita esta **pendente**; a importacao simbolo a
-  simbolo foi encerrada em favor de inventario e classificacao sistematicos.
-- O gate de banco real **passou** em PostgreSQL descartavel: migracao limpa ate 135; linhas
-  protegidas inalteradas no down/up reversivel 134, 133, 132; down de 131 recusado com SQLSTATE 55000
-  e a mensagem de politica exata; `TestRuntimeManagerReservationPrimitives` 0.165s; e
-  `go test -count=1 ./...` com `SPE6_RUNTIME_MANAGER_DATABASE_URL` apontando para o banco limpo
-  aprovando **todos** os pacotes, incluindo `pkg/db/generated` 0.160s e `daemon` 57.673s. Container
-  auto-limpo; nenhum estado persistente criado.
-- Falhas de redacao de stderr e de cleanup de arvore de processos em `pkg/agent` eram
-  **preexistentes**, nao regressoes desta integracao, e foram reparadas.
-- Nomes externos canonicos do Runtime Manager: `version` como discriminador de documento,
-  `configuration_digest` e `capability_digest` como digests, sempre hex minusculo de 64
-  caracteres sem prefixo. Nao existem `active_digest` nem
-  `effective_configuration_digest`. O `schema_version` interno do preimage de digest **permanece
-  inalterado**, pois renomea-lo mudaria todo digest ja produzido.
-- A correcao de identidade e cardinalidade e **somente de codigo-fonte**. O alocador instalado no
-  ORQ2 mantem o defeito de origem, portanto o crescimento ilimitado de pastas continua alcancavel
-  ate um rebuild e restart nao autorizados.
-- A arvore raiz destacada do ORQ2 **nao** e alvo de release. A fonte de integracao C2/C3 e
-  `worktrees/spe6-runtime-schema`; a importacao final e seletiva, sem merge de branch inteira.
-- Migration 128 verificada inalterada: up `4b0894920069336efc36db645b05fae775a3b130`, down
-  `a2b2ea2b56d10f57fe0144bc6998a88277039643`.
+The accepted source is composed locally and remains uncommitted and unpushed. Migrations 128-135,
+Runtime Manager API/UI, PostgreSQL behavior, N0v2 task-usage pricing, registry/catalog behavior and
+allocator-v2 source are present and independently byte-verified. Installed registry v1 and the eight
+owner-confirmed live homes are unchanged. Push, deployment and restart each require fresh explicit
+owner approval immediately before that action.

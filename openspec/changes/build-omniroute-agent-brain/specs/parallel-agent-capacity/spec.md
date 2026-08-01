@@ -15,15 +15,18 @@ Cancellation SHALL stop the child process and downstream request, persist one te
 - **THEN** execution stops, counters reconcile, the slot is released once and one cancelled terminal result is published
 
 ### Requirement: Evidence-based tiers
-Capacity tiers 20, 50 and 100 SHALL remain disabled until the exact deployed Main Brain/OmniRoute topology passes its approved workload and resource thresholds.
+Capacity tiers 20, 50 and 100 SHALL remain disabled until the exact deployed Main Brain and
+selected transport topology passes its approved workload and resource thresholds.
 
 #### Scenario: Higher tier lacks evidence
 - **WHEN** a requested tier has no accepted report
 - **THEN** Main Brain enforces the highest proven lower limit and exposes that effective limit
 
 ### Requirement: Failure isolation
-One task's timeout, gateway rejection, cancellation or terminal-persistence failure SHALL NOT leak credentials, corrupt another task's environment/session or release another task's slot.
+One task's timeout, transport rejection, cancellation or terminal-persistence failure SHALL NOT
+leak credentials or paths, mutate a source credential home, corrupt another task's
+environment/session, change transport binding, or release another task's slot.
 
-#### Scenario: One parallel task fails readiness
+#### Scenario: One parallel task fails transport readiness
 - **WHEN** one task is rejected while others are running
 - **THEN** only that task receives the fail-closed terminal disposition and other task lifecycle state remains intact

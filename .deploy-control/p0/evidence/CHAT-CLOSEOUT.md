@@ -1,62 +1,71 @@
-# CHAT-CLOSEOUT — chat orchestration routing (Tasks 1.2/1.3) closeout evidence
+# CHAT-CLOSEOUT — chat orchestration routing tasks 2.2/2.3
 
-- agent: `Opus48#A` · lane `CHAT-CLOSEOUT` · task `CHAT-ORCH-2.x` · pane `w6:p1`
-- date: 2026-07-22T12:04Z · Go `/home/ec2-user/goroot/go/bin/go` (go1.26.1), GOCACHE/GOTMPDIR=/tmp
-- lock: `.deploy-control/p0/evidence/CHAT-CLOSEOUT.md` only (no test-only fix required — see §3)
-- status: **BLOCKED** (concrete DB-unreachable blocker; focused test cannot execute)
+Status: **EVIDENCED COMPLETE (candidate-only)**. Application/release remains **HOLD** pending the manager-created persistent backup envelope and separately authorized integration.
 
-## 1. Reuse-only inspection (no rebuild, no broad tests)
+## Authority and frozen source
 
-- Accepted EV `.deploy-control/evidence/chat-orchestration-1.2-1.3.md`: implements default-squad TL
-  materialization (workspace.go/agent.go) and chat routing (chat.go); adds `TestCreateChatSession_Routing`.
-  That EV itself already recorded the offline test was **not executed** because the DB was unreachable.
-- Source `internal/handler/chat.go` `CreateChatSession`: routes an empty `agent_id` to the default
-  squad's `LeaderID` (TL), and an explicit `agent_id` directly to that agent (direct escape hatch).
-- Existing test `internal/handler/chat_test.go` `TestCreateChatSession_Routing` (REVIEWED by reading)
-  covers **both** required cases:
-  - **explicit `agent_id` → direct**: posts `{"agent_id": directAgentID}`, asserts
-    `directResp.AgentID == directAgentID`.
-  - **omitted target → TL**: clears squads, creates a squad, sets `LeaderID=squadTLID`, posts with no
-    `agent_id`, asserts `defaultResp.AgentID == squadTLID`.
-  No broad tests were added; no source changed.
+- Contract: `openspec/changes/chat-orchestration-standard/specs/chat-orchestration/spec.md`
+- Production source: `multica-auth-work/server/internal/handler/chat.go`
+  - SHA-256 `a2a71f47b4bbb2ee98671ca6232fa63cc4d76ec3ced438faa3220d1f61a7226c`
+- Exact PostgreSQL test: `multica-auth-work/server/internal/handler/chat_test.go`
+  - SHA-256 `23b5341bd6abaa596ec131b6affd07c59e6bec25fe1e7502dde1091377107014`
+  - function `TestCreateChatSession_Routing`
+- Runner: `/home/ec2-user/backups/multica-chat-routing-runner-20260801T131302Z/run-chat-routing.sh`
+  - SHA-256 `1f8786f1de5d007b385e28460898ad65d43ca10a0a0732af6ef062d6823c0254`
 
-## 2. Focused smoke — exact commands + exit codes (NO inference)
+The bounded repair routes omitted `agent_id` to the leader of exactly one active, workspace-scoped `Workspace Team`. Zero matches return 503 not configured; multiple matches return 503 ambiguous. An explicit `agent_id` remains the direct-to-agent escape hatch and continues through existing workspace, archived-agent, and private-access validation.
 
-Command (from `multica-auth-work/server`, GOCACHE/GOTMPDIR=/tmp):
-```
-/home/ec2-user/goroot/go/bin/go test ./internal/handler/ -run TestCreateChatSession_Routing -count=1
-→ ok  github.com/multica-ai/multica/server/internal/handler  0.065s   (exit 0)
-```
-**This exit 0 is NOT a real PASS.** The verbose run reveals the DB-dependent tests were SKIPPED, so
-`TestCreateChatSession_Routing` executed **zero** assertions:
-```
-/home/ec2-user/goroot/go/bin/go test ./internal/handler/ -run '^TestCreateChatSession_Routing$' -count=1 -v
-→ "Skipping tests: database not reachable: failed to connect to `user=multica database=multica`:
-   127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connect: connection refused"
-   (exit 0; no === RUN / --- PASS for the routing test)
-```
-Per the closeout rule, a zero-executed-test / skipped result is NOT PASS.
+## Sealed isolated PostgreSQL execution
 
-## 3. Test-only fix assessment
+- Run root: `/home/ec2-user/backups/multica-chat-routing-pg-20260801T132324Z`
+- Inner evidence manifest: `evidence.sha256`
+  - SHA-256 `5c247789397d3c462a70b19996a96d20e71bf7e1d2866f366a7a1ee8cd0d0476`
+  - verified `27/27` members
+- Outer seal file: `evidence.sha256.sha256`
+  - SHA-256 `d65e663250d3cf5b508af86a4886d485b043604c7ddace58d18a87706c241c7b`
+  - verified `1/1`
+- Summary: all `23` recorded gates have `rc=0`; `aggregate_rc=0`, `preseal_rc=0`.
+- Isolation proof: `fsync_on|tcp_disabled|private_socket|unix_connection=true|true|true|true`.
+- Provenance records `production_access=NONE`.
 
-None needed. The test is correct and covers both routing cases; it is unexecutable only because the
-DB is unreachable. `chat_test.go` was therefore NOT modified (kept out of the lock).
+### Normal invocation
 
-## 4. CONCRETE BLOCKER
+`go test -count=1 -v -run '^TestCreateChatSession_Routing$' ./internal/handler`
 
-- **Fact:** the handler test harness (`TestMain`) requires a reachable Postgres at `127.0.0.1:5432`
-  (`user=multica database=multica`) and **skips all DB-dependent tests** when it is not; the socket is
-  refused (`connect: connection refused` — no DB listening). `TestCreateChatSession_Routing` cannot run.
-- **Owner:** local test-environment / infra provisioner (via Manager `w5:p1` / Principal `w5:p9`).
-- **Next action:** bring up a reachable local Postgres (`multica/multica` @ 127.0.0.1:5432) or point the
-  harness at a reachable test DB, then re-run
-  `/home/ec2-user/goroot/go/bin/go test ./internal/handler/ -run TestCreateChatSession_Routing -count=1 -v`
-  and confirm `--- PASS: TestCreateChatSession_Routing` with both subpaths executing.
-- Credentials were **not** accessed or read; no attempt to start/patch the DB was made.
+- one root RUN and PASS;
+- four subtest RUN and PASS;
+- zero FAIL or SKIP;
+- explicit `agent_id`/literal `@agent` bypasses squad TL;
+- exactly one default squad routes to its TL;
+- missing default fails closed;
+- duplicate defaults fail closed.
 
-## 5. Explicit non-claims
+### Race invocation
 
-- Not claimed: that `TestCreateChatSession_Routing` executed or PASSED — it was **SKIPPED** (DB unreachable).
-- Not claimed: any end-to-end/UI/live verification; no inference; no live services accessed.
-- Routing coverage in §1 is **REVIEWED by source reading**, not verified by test execution.
-- No deploy/restart/credential access/inference; no source or test edits; no OpenSpec checkbox closed.
+`go test -race -count=1 -v -run '^TestCreateChatSession_Routing$' ./internal/handler`
+
+The race invocation produced the same one root plus four subtest RUN/PASS markers with zero FAIL/SKIP.
+
+### Persistence and cleanup
+
+The frozen test asserts both HTTP responses and persisted `chat_session.agent_id`. The direct case compares the persisted target with the independently created direct agent and rejects the independently created TL. The default case compares the persisted target with the independently created sole squad leader. Both fail-closed cases assert HTTP 503 and zero persisted matching sessions.
+
+Post-run cleanup evidence for both databases is:
+
+`user|workspace|routing_sessions|default_squads=0|0|0|0`
+
+PostgreSQL was stopped with immediate mode; `pg_ctl status` reports no server and the private socket directory contains no socket file. The preserved run root, data directory, and socket directory are mode `0700`; sealed evidence files are mode `0600`.
+
+## P2 disposition
+
+P2 post-execution PASS was received for the exact run, source pins, runner, nested seals, 23 zero-rc gates, normal/race markers, cleanup, isolation, and stop/socket evidence. P2 states task 2.2 is **EVIDENCED COMPLETE** and authorizes candidate-only closeout/refreeze.
+
+## Check-in supersession
+
+The historical target check-in `.deploy-control/p0/checkins/Opus48-A__CHAT-ORCH-2.x__20260722T120408Z.json` remains truthful as a BLOCKED record of the earlier unreachable-DB attempt. It is not rewritten or reinterpreted. Candidate check-in `.deploy-control/p0/checkins/Kiro__CHAT-ORCH-2.x__20260801T132600Z.json` supersedes it with the later sealed evidence and status DONE.
+
+## Scope and non-claims
+
+- Candidate-only writes under `/tmp/multica-contract-reconcile-wPp1`.
+- No target write, Git operation, network request, production DB access, credential inspection/mutation, deploy, restart, ORQ1 action, or service mutation is claimed.
+- No application/release approval is claimed. The manager must independently verify the frozen manifest and create the missing persistent backup envelope for all final target paths, including all 14 repository-root `docs/project` files.

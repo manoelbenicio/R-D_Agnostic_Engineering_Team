@@ -20,9 +20,15 @@ import (
 	"github.com/multica-ai/multica/server/pkg/protocol"
 )
 
-// chatSessionTitleMaxLen caps the rename input. Long enough to fit a
-// meaningful summary, short enough to keep the dropdown row scannable.
-const chatSessionTitleMaxLen = 200
+const (
+	// chatSessionTitleMaxLen caps the rename input. Long enough to fit a
+	// meaningful summary, short enough to keep the dropdown row scannable.
+	chatSessionTitleMaxLen = 200
+
+	// defaultChatSquadName is the workspace setup's canonical TL/Manager squad.
+	// An untargeted chat fails closed when this active squad is unavailable.
+	defaultChatSquadName = "Workspace Team"
+)
 
 // ---------------------------------------------------------------------------
 // Chat Sessions
@@ -45,17 +51,40 @@ func (h *Handler) CreateChatSession(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.AgentID == "" {
-		writeError(w, http.StatusBadRequest, "agent_id is required")
-		return
-	}
-	agentID, ok := parseUUIDOrBadRequest(w, req.AgentID, "agent_id")
-	if !ok {
-		return
-	}
 	workspaceUUID, ok := parseUUIDOrBadRequest(w, workspaceID, "workspace id")
 	if !ok {
 		return
+	}
+
+	var agentID pgtype.UUID
+	if req.AgentID == "" {
+		squads, err := h.Queries.ListSquads(r.Context(), workspaceUUID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to resolve default chat route")
+			return
+		}
+		matchCount := 0
+		for _, squad := range squads {
+			if squad.Name == defaultChatSquadName {
+				matchCount++
+				agentID = squad.LeaderID
+			}
+		}
+		switch matchCount {
+		case 0:
+			writeError(w, http.StatusServiceUnavailable, "default chat route is not configured")
+			return
+		case 1:
+			// Exactly one active workspace-scoped default squad is deterministic.
+		default:
+			writeError(w, http.StatusServiceUnavailable, "default chat route is ambiguous")
+			return
+		}
+	} else {
+		agentID, ok = parseUUIDOrBadRequest(w, req.AgentID, "agent_id")
+		if !ok {
+			return
+		}
 	}
 
 	// Verify agent exists in workspace.

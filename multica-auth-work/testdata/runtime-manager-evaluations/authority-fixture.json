@@ -32,8 +32,8 @@
   },
   "canonical_spec": {
     "path": "openspec/changes/credential-account-home-restoration/specs/credential-account-home/spec.md",
-    "sha256": "1cc2a91d7a0e0acdc7ab6d5f7d2ab9c708a50b227b66218fe5b4acb834c3e018",
-    "declared_requirements": 23,
+    "sha256": "a6b850345562698cec50dd42b99b6e3a14a97b43f6ae35c0e43a33602bea5e38",
+    "declared_requirements": 35,
     "note": "Read from disk under the resolved repository root and verified against this digest. A working-tree edit changes the hash and fails the gate, which is the same integrity guarantee the previous Git-object read provided."
   },
   "boundary": "Contains no credential value, account identity, provider-native secret, source-home filesystem path, or environment value. Evaluation metadata only."

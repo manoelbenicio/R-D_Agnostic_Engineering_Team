@@ -78,6 +78,10 @@
   </style>
 </head>
 <body>
+  <aside data-authority-boundary="2026-08-01" style="margin:16px auto;max-width:1180px;padding:14px 18px;border:1px solid #f59e0b;border-radius:10px;background:#1f2937;color:#f9fafb;line-height:1.45">
+    <strong>Authority boundary — reconciled 2026-08-01.</strong> CURRENT_OBSERVED: eight intentional physical homes map one-to-one to eight legacy-registry terminals and live panes. SOURCE_VALIDATED: allocator-v2 and Runtime Manager/Postgres contracts exist in candidate source, but allocator-v2 is not installed; the installed registry is legacy v1. PLANNED: Runtime Manager/Postgres account control and automatic rotation are TO-BE, not deployed. CANONICAL AUTHORITY: OpenSpec REQ-01..23 plus compatible qualified REQ-24..35; dynamic opaque discovery forbids static slot allowlists. APPROVAL_GATED: no production DB access, deploy, restart, ORQ1 rollout, remote publication, or capacity expansion is authorized or performed. Single-global wording is historical chronology only.
+  </aside>
+
   <header>
     <span class="tag">TO-BE · solução</span>
     <h1>Isolamento de Credencial por Conta — Estado Alvo</h1>
@@ -126,7 +130,7 @@
           <rect width="156" height="76" rx="10"></rect><text class="title" x="16" y="30">Tarefa → Agente</text><text class="meta" x="16" y="54">por tarefa</text>
         </g>
 
-        <g class="node resolve" transform="translate(315 142)" data-title="Resolver conta" data-kind="Atribuição" data-desc="Mapa agente → conta (superfície mínima de config). Lê a atribuição do Postgres. Sem atribuição → fallback ao comportamento global atual (compatível).">
+        <g class="node resolve" transform="translate(315 142)" data-title="Resolver conta" data-kind="Atribuição" data-desc="Atribuição validada sob catálogo dinâmico opaco. Sem binding elegível → fail closed; nunca fallback para HOME global, slot estático ou outra conta.">
           <rect width="150" height="76" rx="10"></rect><text class="title" x="16" y="30">Resolver conta</text><text class="meta" x="16" y="54">agente → conta</text>
         </g>
         <g class="node execenv" transform="translate(315 320)" data-title="Preparar + injetar" data-kind="execenv + daemon.go" data-desc="Restaura a credencial da conta AS-IS no diretório próprio (0700) e injeta a env var nativa: Codex CODEX_HOME, Kiro XDG_DATA_HOME/KIRO_API_KEY, Antigravity HOME. Cópia (não symlink) evita contaminar refresh entre contas.">

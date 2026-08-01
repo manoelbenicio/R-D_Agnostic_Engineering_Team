@@ -7,8 +7,8 @@
 > mutações, dispatch, login em nome de terceiros, leitura de secrets ou alteração de serviços.
 >
 > **Comece pelo guia focado:** [`MULTICA_HTTPS_ACCESS.md`](MULTICA_HTTPS_ACCESS.md) define a URL
-> canônica, explica por que SSH/túneis não fazem parte do acesso normal e registra a autoridade
-> atual da credencial owner no AWS Secrets Manager sem expor valores.
+> canônica, explica por que SSH/túneis não fazem parte do acesso normal e documenta o procedimento
+> autorizado de login sem expor valores de credenciais.
 
 ## 1. Resumo executivo
 
@@ -172,20 +172,13 @@ Página de login:
 https://orq1.tail96e2c0.ts.net/login
 ```
 
-O formulário implantado contém **e-mail**, senha e `Sign in`; o backend recebe `POST /auth/login`
+O formulário atual contém **e-mail**, senha e `Sign in`; o backend recebe `POST /auth/login`
 com os campos JSON `email` e `password`. O OpenSpec ativo usa o termo genérico username/password,
 mas o contrato executável atual é email/password.
 
-A credencial privilegiada de owner usada na validação de produção tem como autoridade o AWS Secrets
-Manager na conta `809809509961`, Região `sa-east-1`, secret
-`prod/multica/bootstrap-owner` (ARN confirmado
-`arn:aws:secretsmanager:sa-east-1:809809509961:secret:prod/multica/bootstrap-owner-3BIwjo`), chaves
-`email` e `password`, estágio `AWSCURRENT`. Isso é metadado, não valor secreto. Agentes nunca chamam
-`GetSecretValue`/`BatchGetSecretValue`; automação autorizada usa referências dinâmicas via `asm-exec`
-em runner revisado. Para o procedimento completo, ler [`MULTICA_HTTPS_ACCESS.md`](MULTICA_HTTPS_ACCESS.md).
-
-Credenciais são informadas somente no fluxo autorizado. Nunca enviar senha, cookie, JWT ou token em
-chat.
+A autoridade e o procedimento de uso da credencial owner são documentados em
+[`MULTICA_HTTPS_ACCESS.md`](MULTICA_HTTPS_ACCESS.md). Credenciais são informadas somente no fluxo
+autorizado. Nunca enviar senha, cookie, JWT ou token em chat.
 
 Sessões não são compartilhadas entre:
 

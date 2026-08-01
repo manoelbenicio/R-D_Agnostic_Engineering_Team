@@ -1,155 +1,291 @@
-# Design — Credential Account Home Restoration
+# Design - Runtime Manager and Opaque Account-Home Contracts
 
-> Regra: nada inventado. Cada afirmacao abaixo foi medida. Onde nao foi, esta marcado
-> NAO VERIFICADO.
+## 1. Authority and system boundary
 
-## 1. Fatos estabelecidos (medidos)
+This document is canonical for Runtime Standards, Runtime Sessions, workspace bindings,
+runtime configuration, native ORQ2 account-home selection, and task snapshots, together with
+the reconciled `build-omniroute-agent-brain` authority. Every launch pins exactly one immutable
+transport binding. `omniroute` means OmniRoute is the sole inference router and account/credential
+owner, the child is provider-credentialless, and no native home is resolved or supplied.
+`native_credential_home` means R3 resolves exactly one approved exclusive opaque home for one
+existing logical runtime/agent before launch, the daemon supplies only daemon-local isolated-home
+references required by that native CLI, and OmniRoute is not contacted or used. There is no
+fallback, translation, rotation, or silent remapping between bindings. Missing, ambiguous,
+stale, unauthorized, unhealthy, unsupported, or conflicting state fails closed.
 
-| # | Fato | Evidencia |
-|---|---|---|
-| F1 | Os isolamentos estao no **ORQ2** | `/home/ec2-user/.agent-cred-homes`, `drwx------`, 22 slots, host `ip-172-31-30-9` |
-| F2 | Scripts de isolamento fisico **existem e operam**; composicao de producao em Go **ausente** | `registry.json` 13183 B com `next_slot: 153`; `registry.lock`; backup `pre-orphan-cleanup.20260722T023208Z`; scripts em `~/.local/lib/agent-credential-isolation/scripts` |
-| F3 | Slot tem **raizes por provider**, nao e um HOME | `slot-140` contem `cline cline-sandbox codex home xdg-config xdg-data` |
-| F4 | 22/22 slots tem agy; **so 5 tem kiro** | slots 139, 140, 142, 143, 149. `slot-145` nao tem kiro |
-| F5 | Tabelas de conta do Multica estao **vazias** | Postgres ORQ1: `accounts=0 approved_accounts=0 assignments=0 agent=14` |
-| F6 | `daemon.go:3448` tem literal vazio | `credentialAccountHome := ""`, 3 ocorrencias no daemon, nenhuma atribuicao |
-| F7 | Regressao datada | `aa62401` criou o resolver; `31d50b9` o condicionou ao L2; `9ab80a6` removeu resolver/rotation store e tornou o gateway incondicional |
-| F8 | Preparadores **existem** | `execenv.go:287` codex, `:303` kiro, `:314` antigravity |
-| F9 | Modelos exigidos vem do provider | `HOME=<slot-145>/home agy models` retorna `claude-opus-4-6-thinking`, `claude-sonnet-4-6`, `gemini-3.1-pro-high/low`, `gemini-3.5-flash-*`, `gemini-3.6-flash-*` |
-| F10 | Gateway **nao** tem gemini 3.6 | `/v1/models` = 327 modelos, zero `gemini-3.6`; unico "3.6" e `oc/qwen3.6-plus-free` |
-| F11 | Discovery AGY nao recebia AccountHome | `handleModelList` chamava `agent.ListModels` sem HOME; `agy models` herdava o HOME global do daemon |
-| F12 | Backend ja persiste reasoning | `CreateAgentRequest`/`UpdateAgentRequest` e o registro `AgentData` possuem `ThinkingLevel`; PUT seguido de GET preservou `high` |
-| F13 | Formulario de criacao omitia reasoning | O inspetor ja usava `ThinkingPicker`, mas `CreateAgentDialog` nao renderizava o campo nem enviava `thinking_level` |
-| F14 | Copiar a arvore AGY inteira quebra o task-home | Os slots elegiveis possuem `cli.log` como symlink; `copyCredentialDir` o rejeita. Em mount namespace efemera, HOME contendo somente `antigravity-oauth-token` executou `agy models` com exit 0 e os 10 modelos obrigatorios |
+The design reuses existing agent rows, runtime rows, workspace, and
+`orq2-credential-runtime-v1`. It creates no daemon, container, runtime installation, agent,
+workspace, project, squad, or credential home. Existing ORQ2-dev bindings are immutable.
 
-## 2. Mapa de AccountHome por provider
+## 2. Canonical concepts and identities
 
-`AccountHome` **nao** e o slot. E uma raiz **dentro** do slot, especifica do vendor.
+All externally visible IDs are UUIDs or opaque non-path references.
 
-| Provider | AccountHome | Espera encontrar | Fonte |
-|---|---|---|---|
-| antigravity (agy) | `<slot>/home` | `.gemini/antigravity-cli/antigravity-oauth-token` | `credential_home.go` e `antigravity_home.go` |
-| kiro | `<slot>/xdg-data` | `kiro-cli/data.sqlite3` | `kiro_home.go:11` |
-| codex | `<slot>/codex` | `CODEX_HOME` source | `execenv.go:287` |
+- **Runtime Standard**: owner-global named policy; immutable versions, one active version.
+- **Runtime Session**: owner-global reusable accountless logical runtime identity. It names a
+  provider adapter/runtime family and configuration lineage, never an account or home.
+- **Workspace enrollment**: authorization for a workspace to project an owner-global session
+  onto an existing runtime row and existing daemon.
+- **Runtime binding**: `(workspace_id, agent_id, runtime_id, session_id)` plus active
+  configuration and optional exclusive opaque home assignment.
+- **Catalog entry**: daemon-local metadata for a discovered home. Product surfaces receive
+  `home_ref`, generation, provider, state and health only; never path, source identifier,
+  account identity, inode/device, credential filename or credential data.
+- **Configuration version**: immutable full runtime configuration document and digest.
+- **Task snapshot**: immutable claim-time IDs, versions, generations and digests.
 
-**Falha silenciosa:** `kiro_home.go:73-75` faz `if srcMissing { return nil }`. Raiz errada
-nao gera erro: semeia nada e o kiro roda **sem credencial**. O resolver deve validar a raiz e
-o artefato nativo antes de chamar `execenv`; erro de validacao bloqueia a task.
+A Runtime Session is deliberately accountless. Subscription/home enrollment is a separate
+exclusive binding operation and can change without changing session, agent, runtime, or daemon
+identity.
 
-## 3. Lacuna real: modelo de identidade
+## 3. Implemented additive migration chain
 
-O registry legado indexava slot por `terminal_id` efemero e persistia um UUID de fallback quando a
-consulta falhava, incrementando `next_slot` para cada identidade nao vista e produzindo crescimento
-ilimitado de pastas historicas.
+The accepted local source contains the byte-verified additive chain:
 
-O contrato corrigido usa identidade explicita e estavel: `AGENT_CRED_ISOLATION_AGENT_ID`, UUID
-canonico nao-zero, mais `AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT`, SHA-256 em 64 hex
-minusculos. Identidade ausente ou invalida falha antes de qualquer alocacao. Herdr, pane, TTY, PID,
-processo e UUID aleatorio deixam de ser fontes de identidade.
+1. `128_task_usage_account_id` - immutable producer-account attribution.
+2. `129_task_usage_price_snapshot` - paired `price_version` and `computed_cost_usd`.
+3. `130_runtime_standards` - standards and immutable versions.
+4. `131_runtime_sessions` - accountless sessions; down intentionally refuses with SQLSTATE `55000`.
+5. `132_credential_home_catalog` - pathless catalog metadata and generations.
+6. `133_runtime_bindings` - existing-row binding and exclusive assignment.
+7. `134_runtime_configuration_snapshots` - immutable versions, activation and task snapshots.
+8. `135_migration_checksums` - self-contained `schema_migrations` checksum support.
 
-A camada de metadados emite `home_ref` UUID canonico deterministico e `name_ref` canonico
-`name_<43>` separado, e nao cria diretorio fisico. **NAO VERIFICADO:** que a derivacao do
-`home_ref` usa exatamente esses dois insumos. Sem essa igualdade, pastas e entradas de catalogo nao
-correlacionam e a cardinalidade nao e verificavel.
+Rollback is forward-safe: reversible verification covers 134 through 132 down/up, migration 131
+refusal is asserted separately, and migrations 130/129/128 are not destructively crossed by the
+Runtime Manager rollback gate. Operational rollback activates prior immutable versions and never
+mutates source credential homes.
 
-## 4. Bloqueio de topologia
+## 4. Frozen configuration document
 
-Decisao escrita do owner: **T2**. O daemon substituto roda no ORQ2, onde os slots sao locais,
-e alcanca o backend loopback do ORQ1 por tunel SSH. O ORQ1 e encerrado somente depois dos tres
-runtimes obrigatorios estarem online no T2; nunca existem dois executores elegiveis durante
-uma task.
+Every standard version and runtime version carries these typed groups. Unknown fields are
+rejected, not ignored.
 
-## 5. Segundo bloqueio, especifico do codex
+| Group | Required contract |
+|---|---|
+| routing | `provider`, optional opaque `subscription_ref`, `transport_binding` (`omniroute` or `native_credential_home`) |
+| model | literal `model_id`, provider catalog/version, capability digest |
+| reasoning | mode/level/budget exactly as provider capability advertises; no ID normalization |
+| limits | context, input, output and total token ceilings; wall/idle timeout |
+| concurrency | session/task/subagent maxima and queue bounds, independent of account count |
+| retry | max attempts, backoff, jitter, retryable classes and deadline budget |
+| flags | ordered validated CLI flags; forbidden credential/path flags rejected |
+| env | key allowlist and non-secret values/references; no inherited ambient credential vars |
+| skills | allowed skill IDs and immutable versions/digests |
+| mcp_tools | allowed server/tool IDs, scopes, timeouts and versions; no inline secrets |
+| permissions | filesystem roots by symbolic policy, network egress policy, process/tool grants |
+| eligibility | provider/runtime/daemon/workspace predicates and required capabilities |
+| health | freshness TTL, readiness thresholds, circuit state and probe class |
+| fallback | ordered eligible routes, bounds and failure classes; never global HOME/cross-workspace |
 
-`daemon.go` passa `CredentiallessGateway: true` incondicionalmente e tambem chama
-`buildLaunch` mesmo sem plano Agent Brain. O invariante restaurado e:
+Each leaf is registered with: JSON type/schema, source, effective value, `delegable: true|false`,
+`apply_class: hot|restart`, capability predicate, redaction class, and audit representation.
+Unregistered leaves, unsupported values, and task overrides of non-delegable leaves fail before
+activation or launch.
 
-- plano gateway: `CredentiallessGateway=true`, nenhum `AccountHome`;
-- caminho nativo: `CredentiallessGateway=false`, `AccountHome` obrigatorio e ambiente de
-  credencial injetado somente a partir do task-home preparado.
+## 5. Precedence and inheritance
 
-## 6. Prepare/Reuse
+Effective configuration is deterministic per leaf:
 
-As condicoes existem nos caminhos Prepare e Reuse. Ambos recebem a mesma resolucao antes de
-qualquer preparacao. Reuse nao converte erro em fallback global.
+`platform constraint > active Runtime Standard version > active per-runtime version > explicit delegable task override`.
 
-## 7. Estrategia de atribuicao
+Higher policy constrains lower layers; a lower layer cannot widen a maximum, permission,
+eligibility set, network/filesystem scope, fallback set, or secret exposure. Omission inherits;
+explicit `null` is accepted only where the leaf schema defines clearing. The resolver emits a
+canonical JSON document and SHA-256 digest.
 
-Selecao deterministica a partir de
-`AGENT_CRED_ISOLATION_AGENT_ID + AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT`, com persistencia
-atomica `0600`. Round-robin foi rejeitado: quebra afinidade e atribuicao. Se um slot persistido
-deixa de ser elegivel, a task falha; remapeamento exige acao operacional explicita.
+Subagents inherit the parent's pinned task snapshot. They may receive only explicit task
+overrides marked delegable, within parent and platform bounds. They share the parent binding
+and home assignment, do not create persistent runtime/session rows, and count against configured
+concurrency, not against account inventory.
 
-A reconciliacao fisica e por binding, nunca por idade: exatamente uma pasta por binding ativo, zero
-pastas historicas, auditoria privilegiada de todos os processos via `/proc` exigida em producao,
-falha fechada sem remocao quando indisponivel, homes referenciados por processo vivo preservados, e
-adocao no lugar do unico slot legado ativo sem mover ou sobrescrever.
+## 6. Capability validation, activation and rollback
 
-A camada de metadados e independente: tombstones persistem para nao-reuso, prazos de retencao sao
-evidencia apenas e nunca apagam tombstone, e o catalogo nao cria nem remove pasta fisica.
+Creation stores an inactive immutable version. Validation is pure/control-plane and checks:
+provider/runtime version, model/reasoning combinations, all limits, flags/env, skills/MCP,
+permissions, eligibility, health and fallback compatibility. It returns field-addressed issues
+without credential reads or inference.
 
-## 8. Decisoes travadas
+Activation is compare-and-swap on expected active version and catalog/binding generation. It
+records actor, request/correlation ID, previous/new versions and digests, validation capability
+digest, apply class, reason, and timestamp. Secret/reference fields are redacted. Hot fields
+apply only after daemon acknowledgement. Restart-class changes remain pending until the existing
+runtime process restarts and acknowledges the version. Running tasks remain pinned unless a
+separately authorized hard revoke terminates them.
 
-1. T2 no ORQ2; nao ha mount nem copia global para o ORQ1.
-2. Isolamento nao sera reimplementado; sera integrado.
-3. agy/antigravity, codex e kiro obrigatorios; demais providers fora.
-4. Atribuicao deterministica por identidade estavel
-   `AGENT_CRED_ISOLATION_AGENT_ID + AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT`, nao
-   round-robin e nao identidade efemera.
-5. Ausencia, symlink, raiz errada ou artefato nativo ausente bloqueia a task.
-6. Discovery AGY usa somente homes validados da allowlist e tenta o proximo elegivel em falha.
-7. O task-home AGY recebe somente `antigravity-oauth-token` como arquivo fisico `0600`;
-   artefatos irmaos do provider nunca sao copiados.
-8. Retencao de pasta e por binding, nao por idade.
-9. Prazo de retencao de metadados e evidencia apenas e nunca apaga tombstone.
-10. A camada de catalogo nao cria, copia nem remove pasta fisica.
-11. Nomes externos canonicos do Runtime Manager: `version`, `configuration_digest` e
-    `capability_digest`, hex minusculo de 64 caracteres sem prefixo. O `schema_version` interno do
-    preimage de digest permanece inalterado, pois renomea-lo mudaria todo digest ja produzido.
+Rollback creates an auditable activation of a prior immutable version; it does not mutate
+history. Drift compares desired version/digest with daemon-applied version/digest. Drift,
+missing acknowledgement or unsupported capability blocks new claims for that binding.
 
-## 9. Reasoning por formato de catalogo
+## 7. Dynamic controlled-root catalog
 
-O wire existente permanece a autoridade. Kiro e Codex anunciam niveis estruturados em
-`thinking.supported_levels`; o formulario mostra um seletor separado e envia o token literal
-em `thinking_level`. AGY anuncia o tier dentro do proprio ID do modelo, portanto nao recebe
-um segundo seletor nem tem o ID normalizado. Trocar runtime ou modelo limpa um override que
-nao exista no novo catalogo.
+A daemon-local registry contains configured controlled roots, each validated as absolute,
+owner-controlled and non-overlapping. Roots and raw child paths never leave the daemon. Every
+arbitrary immediate child is a candidate; there is no slot number grammar, fixed slot range, or
+per-slot allowlist. Provider-specific layout validators inspect metadata only and MUST NOT open
+credential contents.
 
-## 10. Snapshot imutavel da conta produtora
+Reconciliation combines filesystem notifications as hints with periodic full scans. Hint loss,
+overflow, watcher restart, startup and interval expiry trigger a full scan. A new immutable
+snapshot is swapped atomically with a strictly increasing `catalog_generation`; partial scans
+never publish. Full scans discover overflow beyond prior capacity assumptions.
 
-O estado corrente de `assignments` nao e uma fonte historica. A conta que produziu uma task e
-congelada server-side em `agent_task_queue.credential_account_id` dentro do mesmo UPDATE
-atomico do claim. `task_usage.account_id` copia somente esse snapshot; o daemon nao envia e
-nao pode escolher o identificador financeiro.
+Entries deduplicate by stable filesystem identity inside a root. Aliases, hard-link/layout
+collisions, root escape, symlink traversal, wrong ownership/mode, duplicate provider identity,
+invalid layout and ambiguous bindings are quarantined. Quarantine is metadata-only.
 
-Os predicados de congelamento exigem tenant/workspace, provider canonico, aprovacao ativa,
-status `available|leased`, escopo `GENERAL` e assignment exclusiva. Reclaim preserva snapshot
-existente. Uma linha legada `dispatched` com snapshot NULL continua selecionavel, mas chega ao
-gate ORQ-21 e e cancelada fail-closed; ela nunca consulta a assignment viva nem recebe conta
-retroativa.
+Lifecycle states are `candidate`, `healthy`, `degraded`, `quarantined`, `missing`, `draining`,
+and `retired`. Metadata has `first_seen_at`, `last_seen_at`, `last_full_scan_at`, TTL, health
+watermark, missing watermark and retention deadline. Active task references prevent retirement.
+Missing entries remain tombstoned through TTL and retention; generation never decreases and
+opaque refs are never reused. Low/high/critical watermarks emit state changes and can close
+admission. No lifecycle action copies, moves, deletes, truncates, sanitizes, overwrites, chmods, changes
+ownership of, or authenticates a source home. Retention expiry may retire metadata only. Cleanup
+is limited to task-local non-source material and occurs only after active-reference checks.
 
-Migration `128_task_usage_account_id` adiciona as duas colunas UUID nullable, FKs com
-`ON DELETE SET NULL`, indices parciais, preflight/backfill canonico e unicidade de
-`assignments(account_id)`. NULL permanece um bucket explicito e honesto para uso legado ou
-nao atribuivel.
+## 8. Exclusive assignment and admission
 
-## 11. Riscos
+An active home assignment is unique by opaque `home_ref` and unique by binding. One persistent
+agent maps to one existing runtime row and one Runtime Session projection. A
+`native_credential_home` launch must have exactly one healthy exclusive assignment resolved by
+R3 and persisted before claim for that existing logical runtime/agent. The daemon resolves the
+opaque reference internally and supplies only isolated task-local home references required by
+the native CLI; no global HOME, source raw path, account identity, or credential value crosses a
+product/API/event/log boundary. Enrollment attaches a newly legitimate subscription/home to the
+existing binding without recreation. Deterministic initial assignment operates only among
+healthy, eligible, unassigned entries. It is not task-time rotation. Stale generations,
+conflicts and ORQ2-dev reservations fail closed.
 
-- Falha silenciosa do kiro por raiz errada (mitigado por validacao obrigatoria).
-- Symlinks e artefatos volateis no diretorio AGY (mitigado por copia allowlist do token).
-- Migration 128 e o stack ORQ-21 precisam entrar juntos; integrar ORQ-12 sozinho deixaria a
-  semantica de recusa das linhas legadas incompleta.
-- Binario do daemon roda de `/tmp/multica-auth-fixed`, volatil.
-- O alocador instalado no ORQ2 nao foi alterado. A correcao e apenas de codigo-fonte, portanto o
-  defeito de identidade permanece vivo em producao ate um rebuild e restart nao autorizados.
-- Componentes revisados passam isoladamente; um gate verde de pacote nao evidencia caminho
-  alcancavel na arvore aceita. A composicao concreta em PostgreSQL esta implementada e validada na
-  fonte compartilhada `spe6`, com idempotencia duravel, locking de parent, UUID esperado
-  fail-closed, `apply_class` persistido e mount sob router/middleware; o risco remanescente e a
-  importacao seletiva com revisao na arvore aceita e a verificacao contra banco real.
-- A arvore raiz destacada do ORQ2 nao e alvo de release; a fonte de integracao e
-  `worktrees/spe6-runtime-schema`, com importacao final seletiva.
-- O gate de banco foi executado e aprovado em PostgreSQL descartavel e limpo, com auto-limpeza e sem
-  estado persistente, incluindo suite completa com e sem `-race` e `go vet ./...`. O risco
-  remanescente nao e mais o banco, e sim a transferencia seletiva para a arvore aceita e os gates
-  consolidados no alvo.
+Concurrency limits are configuration policy and are independent of the number of catalog homes.
+A home is never shared merely to satisfy concurrency. An `omniroute` binding has no home
+assignment and requires OmniRoute readiness; a `native_credential_home` binding does not probe,
+contact, or use OmniRoute. Fallback may choose only a prevalidated route that preserves the
+pinned binding and, for native execution, the pinned exclusive `home_ref`. It MUST NOT switch,
+translate, rotate, or retry across bindings or homes. Global HOME, cross-workspace,
+stale-generation, and ORQ2-dev fallback are forbidden.
+
+## 9. Task snapshot
+
+At atomic claim, persist:
+
+- `runtime_session_id`, `runtime_id`, `agent_id`, `workspace_id`;
+- `runtime_standard_version_id`, `runtime_configuration_version_id`;
+- canonical `effective_configuration_digest`;
+- `runtime_binding_id`, `binding_generation`;
+- optional opaque `home_ref` and `catalog_generation` for native execution;
+- provider capability/catalog digest and snapshot creation time.
+
+Reuse/reclaim preserves the snapshot. No live lookup rewrites history. A stale/missing/revoked
+snapshot is refused or drained according to explicit revoke policy, never silently remapped.
+
+## 10. Frozen REST contracts
+
+All endpoints are JSON under `/api`, require authenticated human owner/admin unless explicitly
+marked daemon, apply workspace authorization where a workspace is present, and return only
+opaque IDs. Task actors cannot administer these resources.
+
+| Method and path | Purpose / body |
+|---|---|
+| `GET /api/runtime-standards` | list owner-global standards, redacted summaries |
+| `POST /api/runtime-standards` | create standard `{name, description}` |
+| `GET /api/runtime-standards/{standard_id}` | standard and active version |
+| `POST /api/runtime-standards/{standard_id}/versions` | create inactive `{configuration, reason}` |
+| `POST /api/runtime-standards/{standard_id}/versions/{version_id}/validate` | capability validation, no inference |
+| `POST /api/runtime-standards/{standard_id}/versions/{version_id}/activate` | `{expected_active_version_id, reason}` |
+| `POST /api/runtime-standards/{standard_id}/rollback` | `{target_version_id, expected_active_version_id, reason}` |
+| `GET /api/runtime-sessions` | list reusable accountless owner-global sessions |
+| `POST /api/runtime-sessions` | `{name, provider, runtime_kind, standard_id}` |
+| `GET /api/runtime-sessions/{session_id}` | redacted session detail |
+| `POST /api/workspaces/{workspace_id}/runtime-sessions/{session_id}/enroll` | `{runtime_id, agent_id}` existing rows only |
+| `DELETE /api/workspaces/{workspace_id}/runtime-sessions/{session_id}/enrollment` | drain/deactivate projection; no source mutation |
+| `GET /api/workspaces/{workspace_id}/runtime-bindings` | pathless binding/session/config/home-state list |
+| `GET /api/workspaces/{workspace_id}/runtime-bindings/{binding_id}` | redacted binding detail |
+| `POST /api/workspaces/{workspace_id}/runtime-bindings/{binding_id}/home-assignments` | `{home_ref, expected_binding_generation, expected_catalog_generation}` |
+| `DELETE /api/workspaces/{workspace_id}/runtime-bindings/{binding_id}/home-assignment` | `{expected_binding_generation, drain}` |
+| `POST /api/workspaces/{workspace_id}/runtime-bindings/{binding_id}/configuration-versions` | `{configuration, reason}` |
+| `POST /api/workspaces/{workspace_id}/runtime-bindings/{binding_id}/configuration-versions/{version_id}/validate` | effective validation |
+| `POST /api/workspaces/{workspace_id}/runtime-bindings/{binding_id}/configuration-versions/{version_id}/activate` | `{expected_active_version_id, expected_binding_generation, reason}` |
+| `POST /api/workspaces/{workspace_id}/runtime-bindings/{binding_id}/rollback` | `{target_version_id, expected_active_version_id, reason}` |
+| `GET /api/workspaces/{workspace_id}/credential-homes` | opaque catalog projection only |
+| `POST /api/workspaces/{workspace_id}/credential-homes/reconcile` | request full reconciliation; returns accepted operation ID |
+| `GET /api/workspaces/{workspace_id}/credential-homes/reconciliation/{operation_id}` | generation/result counters only |
+| `POST /api/daemon/credential-catalog/reconciliation` | daemon report `{daemon_id, previous_generation, generation, scan_kind, counters, digest}` |
+| `POST /api/daemon/runtime-bindings/{binding_id}/acknowledgements` | applied/restart/drift acknowledgement with versions/digests |
+
+Create returns 201, reads/updates 200, reconciliation request 202, and successful drain/delete
+204. Mutations require `Idempotency-Key`; replay returns the original result. Pagination uses
+`cursor`/`limit`; list responses are `{items, next_cursor}`.
+
+Canonical errors are `{error:{code,message,field?,request_id,retryable}}` with status:
+`400 invalid_argument`, `401 unauthenticated`, `403 forbidden`, `404 not_found`,
+`409 version_conflict|generation_conflict|exclusive_assignment_conflict|active_reference`,
+`412 capability_unsupported|health_stale|drift_detected`, `422 invalid_configuration`,
+`429 capacity_exhausted`, and `503 catalog_unavailable|daemon_not_ready`. Messages MUST NOT
+contain paths, account identities, credentials, environment values or provider response bodies.
+
+## 11. Frozen event contracts
+
+Events use the existing authenticated workspace stream. Envelope:
+`{type,event_id,occurred_at,workspace_id?,resource_type,resource_id,generation?,version_id?,digest?,data}`.
+Delivery is at-least-once; consumers deduplicate by `event_id`. Per-resource generations are
+monotonic; a gap triggers GET/full reconciliation, never inferred state.
+
+Frozen types: `runtime_standard.version_created`, `runtime_standard.activated`,
+`runtime_standard.rolled_back`, `runtime_session.created`, `runtime_session.enrolled`,
+`runtime_session.unenrolled`, `credential_catalog.reconciliation_started`,
+`credential_catalog.generation_published`, `credential_catalog.entry_state_changed`,
+`credential_catalog.watermark_changed`, `runtime_binding.home_assigned`,
+`runtime_binding.home_draining`, `runtime_binding.home_released`,
+`runtime_configuration.version_created`, `runtime_configuration.validation_failed`,
+`runtime_configuration.activated`, `runtime_configuration.restart_required`,
+`runtime_configuration.applied`, `runtime_configuration.drift_detected`,
+`runtime_configuration.rolled_back`, and `task.runtime_snapshot_pinned`.
+
+Event `data` contains only opaque refs, state, reason code, counters, apply class, versions and
+digests. No raw path, filesystem identity, account identity, credential name/value, CLI argv,
+environment value, prompt or provider response is permitted.
+
+## 12. Authorization and audit
+
+Owner may administer owner-global standards/sessions and all owned workspaces. Workspace admin
+may read owner-global reusable choices and administer bindings/configuration only in that
+workspace; it cannot alter global standards/sessions. Daemon credentials may report only for
+the daemon and workspace bindings explicitly authorized to them. Members and task actors are
+read-only only where separately granted; cross-workspace access is always denied.
+
+Every mutation, denial, activation, rollback, assignment, reconciliation, quarantine, drift and
+hard revoke is audited with actor type/opaque ID, workspace/resource IDs, request/event IDs,
+old/new versions or generations, redacted diff, reason code and UTC time. Audit and task
+snapshots are retained at least as long as task/usage evidence; catalog tombstones outlive the
+maximum task retention plus reconciliation TTL. Retention never authorizes source-home deletion.
+
+## 13. Repository/OpenSpec synchronization gate
+
+Before any future handoff or deployment, all affected OpenSpecs MUST strict-validate and a
+cross-authority scan MUST prove the active transport, credential ownership, lifecycle, rollback,
+and secrecy texts agree. The Git index and worktree MUST contain zero staged, modified, or
+untracked owned files. The exact local commit MUST be published to its configured non-main
+remote branch; local HEAD and upstream SHA MUST be identical, and ahead/behind MUST be `0/0`.
+Deployment evidence MUST pin that exact SHA. Pending owned files, a missing/non-main upstream,
+unpublished commits, SHA mismatch, or any divergence fails closed. This is a future handoff and
+deployment gate only; documenting it performs no publish or deployment.
+
+## 14. Stable physical allocator and T2 reconciliation
+
+Accepted REQ-05 dynamic opaque catalog discovery has precedence; static slot lists and slot-number authority are forbidden. The physical allocator validates a canonical non-zero `AGENT_CRED_ISOLATION_AGENT_ID` and a
+64-lowercase-hex `AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT` before allocation. It removes
+Herdr/pane/TTY/PID/random fallback identity and persists one physical home per stable active binding.
+Source v2 is a future separately authorized rollout, not installed state. Production reconciliation requires a privileged all-process `/proc` audit, preserves every live
+reference, fails closed when audit is unavailable, and never uses age as deletion authority.
+
+The catalog remains metadata-only. `home_ref` is a canonical UUID, `name_ref` is separate, immutable
+generations and tombstones survive restart, and no catalog action creates, copies or deletes a
+physical home. T2 keeps AGY/Antigravity, Codex and Kiro operational while preserving each runtime's
+reasoning wire format. `task_usage` receives only the claim-time producer-account snapshot plus the
+paired pricing snapshot; the daemon cannot select or rewrite financial attribution.
+
+## 15. Current state and action boundary
+
+Source composition and local validation are complete; installed registry v1 is not changed by this
+candidate. The candidate performs no Git operation, push, deployment, restart, credential access or
+credential-home mutation. External actions remain separately owner-gated.

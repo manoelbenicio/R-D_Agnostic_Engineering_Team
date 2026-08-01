@@ -2211,7 +2211,7 @@ func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
 			slog.Warn("upsert task usage failed", "task_id", taskID, "model", u.Model, "error", err)
 			continue
 		}
-		h.TaskService.CaptureTaskUsage(r.Context(), task, provider, u.Model, u.InputTokens, u.OutputTokens, u.CacheReadTokens, u.CacheWriteTokens)
+		h.TaskService.CaptureTaskUsage(r.Context(), task, provider, u.Model, thinkingLevel.String, effectiveAt, u.InputTokens, u.OutputTokens, u.CacheReadTokens, u.CacheWriteTokens)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})

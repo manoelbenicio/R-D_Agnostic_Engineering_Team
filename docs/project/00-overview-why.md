@@ -1,9 +1,19 @@
 # 00 — Visão Geral & Justificativa (Why)
 
+> **Authority boundary — reconciled 2026-08-01**
+>
+> - **CURRENT_OBSERVED:** ORQ2 has eight intentional physical credential homes mapped one-to-one to eight legacy-registry terminals and live panes; no duplicate or unreferenced home was observed.
+> - **SOURCE_VALIDATED:** allocator-v2 and Runtime Manager/Postgres contracts exist in the reconciled candidate source, but allocator-v2 is not installed and Runtime Manager/Postgres account control is not deployed state. The installed registry remains legacy v1.
+> - **PLANNED:** automatic account rotation, Runtime Manager activation, Postgres-backed account control, and higher capacity profiles are TO-BE only.
+> - **CANONICAL AUTHORITY:** `credential-account-home-restoration` REQ-01..23 plus compatible qualified REQ-24..35 control. Discovery is dynamic and opaque; static slot-number grammars and allowlists are forbidden.
+> - **APPROVAL_GATED:** commit/push identity, production DB access, deployment, restart, ORQ1 cutover/rollout, allocator-v2 installation, and capacity expansion require separate evidence and fresh owner gates; none is authorized or performed by this candidate.
+> - **CHRONOLOGY:** any single-global-home or single-slot wording below describes historical behavior or a conditional migration starting point, not the current eight-home observed state.
+
+
 **Projeto:** Isolamento de credencial OAuth por conta de agente (mudança cirúrgica)
 **Produto base:** Multica (mantido íntegro — sem reescrita)
 **Data:** 2026-07-01
-**Status:** Discovery concluído; implementação a iniciar (Codex piloto)
+**Historical July planning status (non-current):** Discovery concluído; implementação a iniciar (Codex piloto)
 
 ---
 
@@ -51,8 +61,8 @@ sobreposição, e (Fase 2) a troca ao esgotar a cota seja automática.
 
 | Fase | Escopo | Estado |
 |------|--------|--------|
-| **1** | Isolamento de credencial por conta (Codex → Kiro → Antigravity) | a iniciar |
-| **2** | Rotação automática ao esgotar cota/5h (detecção + troca + retomada) | desenhada |
+| **1** | Isolamento de credencial por conta (Codex → Kiro → Antigravity) | source validated in candidate; allocator-v2 rollout not installed |
+| **2** | Rotação automática ao esgotar cota/5h (detecção + troca + retomada) | planned / not deployed; evidence and owner gated |
 
 ## 6. Evidência da base de pesquisa
 

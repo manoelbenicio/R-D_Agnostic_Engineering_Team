@@ -1,5 +1,14 @@
 # Backlog — Detecção avançada de esgotamento (insight do operador, 2026-07-01)
 
+> **Supplemental authority disposition — reconciled 2026-08-01**
+>
+> - **STATUS:** historical research, test guidance, or source-staging evidence; it is not proof of installed or deployed behavior.
+> - **CURRENT_OBSERVED:** eight intentional physical homes map one-to-one to eight legacy-registry terminals and live panes; installed registry remains legacy v1.
+> - **SOURCE_VALIDATED:** allocator-v2, Runtime Manager/Postgres, and rotation components may exist in candidate source; allocator-v2 and Runtime Manager activation are not installed/deployed.
+> - **PLANNED / APPROVAL_GATED:** automatic rotation, production DB access, deploy, restart, ORQ1 rollout, remote publication, and 20/50/100 capacity profiles remain future evidence/owner gates.
+> - **AUTHORITY:** canonical OpenSpec REQ-01..23 plus compatible qualified REQ-24..35 controls; discovery is dynamic/opaque and no static slot allowlist is authoritative.
+
+
 Insight (Manoel): há DOIS sinais distintos do vendor sobre o limite de 5h, e eles
 não são a mesma coisa. Devemos aproveitá-los como camadas adicionais de detecção.
 
@@ -30,13 +39,13 @@ não são a mesma coisa. Devemos aproveitá-los como camadas adicionais de detec
 | Ativa (probe) | `/status` completo | injetar `/status` + parsear | ⬜ TODO |
 
 ## Itens de trabalho (fase futura)
-- [ ] Banner regex por vendor: "less than N% of your 5h limit left" → sinal de
+- [ ] [PLANNED — NOT DEPLOYED] Banner regex por vendor: "less than N% of your 5h limit left" → sinal de
       pré-esgotamento (rotação proativa antecipada). Distinguir de "limit reached".
-- [ ] Probe `/status`: mecanismo do daemon para injetar `/status` no pane e parsear:
+- [ ] [PLANNED — NOT DEPLOYED] Probe `/status`: mecanismo do daemon para injetar `/status` no pane e parsear:
       % restante 5h + horário de reset + limite semanal + janela de contexto.
-- [ ] Usar o reset time parseado como `CooldownUntil` EXATO no rotation.Account.
-- [ ] Modelar limite SEMANAL separado do 5h (duas janelas simultâneas por conta).
-- [ ] Cada vendor tem seu texto próprio de banner/status → tabela de padrões por
+- [ ] [PLANNED — NOT DEPLOYED] Usar o reset time parseado como `CooldownUntil` EXATO no rotation.Account.
+- [ ] [PLANNED — NOT DEPLOYED] Modelar limite SEMANAL separado do 5h (duas janelas simultâneas por conta).
+- [ ] [PLANNED — NOT DEPLOYED] Cada vendor tem seu texto próprio de banner/status → tabela de padrões por
       vendor, confirmada contra a tela real (mesma disciplina do detector atual).
 
 ## Modelos de cota REAIS por vendor (confirmado contra tela)

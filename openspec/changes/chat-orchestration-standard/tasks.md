@@ -17,7 +17,7 @@
 
 ## Verificação (Kiro valida)
 - [x] 2.1 Smoke: chat sem destino cai no TL; TL pergunta, delega a membro, sintetiza
-- [ ] 2.2 Smoke: chat `@codex` vai direto ao agente (escape hatch funciona)
-- [ ] 2.3 Check-ins DONE + evidência em `.deploy-control/`
+- [x] 2.2 Smoke: chat `@codex` vai direto ao agente (escape hatch funciona)
+- [x] 2.3 Check-ins DONE + evidência em `.deploy-control/`
 - [x] 2.4 Smoke de despacho nativo: ORQ-12 atribuido por Kanban gerou exatamente uma task;
   follow-up ocorreu somente apos terminal, sem duplicata Herdr

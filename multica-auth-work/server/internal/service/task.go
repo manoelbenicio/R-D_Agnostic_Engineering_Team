@@ -280,12 +280,12 @@ func (s *TaskService) captureTaskCancelled(ctx context.Context, task db.AgentTas
 	}
 }
 
-func (s *TaskService) CaptureTaskUsage(ctx context.Context, task db.AgentTaskQueue, provider, model string, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens int64) {
+func (s *TaskService) CaptureTaskUsage(ctx context.Context, task db.AgentTaskQueue, provider, model, thinkingLevel string, effectiveAt time.Time, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens int64) {
 	if s.Metrics == nil {
 		return
 	}
 	source, runtimeMode, _ := s.taskMetricsContext(ctx, task)
-	s.Metrics.RecordLLMUsage(source, runtimeMode, provider, model, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens)
+	s.Metrics.RecordTieredLLMUsage(source, runtimeMode, provider, model, thinkingLevel, effectiveAt, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens)
 }
 
 func (s *TaskService) CaptureQueuedExpiredTasks(ctx context.Context, tasks []db.AgentTaskQueue) {

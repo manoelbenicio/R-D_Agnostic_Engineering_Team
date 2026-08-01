@@ -4,8 +4,8 @@
   "canonical_change": "credential-account-home-restoration",
   "canonical_spec": {
     "path": "openspec/changes/credential-account-home-restoration/specs/credential-account-home/spec.md",
-    "digest": "1cc2a91d7a0e0acdc7ab6d5f7d2ab9c708a50b227b66218fe5b4acb834c3e018",
-    "declared_requirements": 23
+    "digest": "a6b850345562698cec50dd42b99b6e3a14a97b43f6ae35c0e43a33602bea5e38",
+    "declared_requirements": 35
   },
   "pending_contracts": {
     "note": "Vocabulary this suite binds to hand-written Runtime Manager adapters. contract-binding.test.mjs verifies implemented_source_symbols remain present outside generated storage and that absent_source_symbols remains the exact unresolved set.",

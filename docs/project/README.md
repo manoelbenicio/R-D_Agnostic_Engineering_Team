@@ -1,5 +1,15 @@
 # Documentação do Projeto — Isolamento de Credencial OAuth por Conta
 
+> **Authority boundary — reconciled 2026-08-01**
+>
+> - **CURRENT_OBSERVED:** ORQ2 has eight intentional physical credential homes mapped one-to-one to eight legacy-registry terminals and live panes; no duplicate or unreferenced home was observed.
+> - **SOURCE_VALIDATED:** allocator-v2 and Runtime Manager/Postgres contracts exist in the reconciled candidate source, but allocator-v2 is not installed and Runtime Manager/Postgres account control is not deployed state. The installed registry remains legacy v1.
+> - **PLANNED:** automatic account rotation, Runtime Manager activation, Postgres-backed account control, and higher capacity profiles are TO-BE only.
+> - **CANONICAL AUTHORITY:** `credential-account-home-restoration` REQ-01..23 plus compatible qualified REQ-24..35 control. Discovery is dynamic and opaque; static slot-number grammars and allowlists are forbidden.
+> - **APPROVAL_GATED:** commit/push identity, production DB access, deployment, restart, ORQ1 cutover/rollout, allocator-v2 installation, and capacity expansion require separate evidence and fresh owner gates; none is authorized or performed by this candidate.
+> - **CHRONOLOGY:** any single-global-home or single-slot wording below describes historical behavior or a conditional migration starting point, not the current eight-home observed state.
+
+
 Mudança **cirúrgica** no mecanismo de autenticação do Multica: separar credenciais
 OAuth por conta para eliminar sobreposição entre múltiplas contas do mesmo vendor,
 e (Fase 2) automatizar a troca ao esgotar a janela de ~5h. O produto permanece
@@ -28,10 +38,10 @@ e (Fase 2) automatizar a troca ao esgotar a janela de ~5h. O produto permanece
 
 ## Artefatos relacionados (OpenSpec)
 
-`openspec/changes/agent-credential-isolation/`:
-- `proposal.md`, `tasks.md`, `specs/.../spec.md` — a mudança formal.
-- `design.md` — escopo travado, gaps/riscos, decisões, achados de pesquisa.
-- `auth-inventory.md` — as três camadas de auth mapeadas nos 4 projetos.
+Autoridade canônica atual: `openspec/changes/credential-account-home-restoration/`:
+- `proposal.md`, `design.md`, `tasks.md`, `evidence.md` e `specs/credential-account-home/spec.md` — REQ-01..23 aceitos mais REQ-24..35 qualificados.
+
+Referência histórica somente: `openspec/changes/archive/2026-07-22-agent-credential-isolation/`. Seus inventários e planos não substituem a autoridade canônica nem comprovam estado instalado/deployed.
 
 ## Resumo executivo
 

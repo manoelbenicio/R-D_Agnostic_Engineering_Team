@@ -1,5 +1,14 @@
 # SPRINT-NEXT (Fase 3) — Vendors Kimchi + OpenCode + Cline
 
+> **Supplemental authority disposition — reconciled 2026-08-01**
+>
+> - **STATUS:** historical research, test guidance, or source-staging evidence; it is not proof of installed or deployed behavior.
+> - **CURRENT_OBSERVED:** eight intentional physical homes map one-to-one to eight legacy-registry terminals and live panes; installed registry remains legacy v1.
+> - **SOURCE_VALIDATED:** allocator-v2, Runtime Manager/Postgres, and rotation components may exist in candidate source; allocator-v2 and Runtime Manager activation are not installed/deployed.
+> - **PLANNED / APPROVAL_GATED:** automatic rotation, production DB access, deploy, restart, ORQ1 rollout, remote publication, and 20/50/100 capacity profiles remain future evidence/owner gates.
+> - **AUTHORITY:** canonical OpenSpec REQ-01..23 plus compatible qualified REQ-24..35 controls; discovery is dynamic/opaque and no static slot allowlist is authoritative.
+
+
 > **FRONTEIRA DURA.** Este documento é EXCLUSIVO da Fase 3 (Kimchi, OpenCode, Cline).
 > A Fase 2 em curso (Codex, Kiro, Antigravity) está fechada e NÃO deve ser tocada por
 > este plano. Nenhum código agora — este é o planejamento para o próximo sprint.

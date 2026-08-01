@@ -1,4 +1,4 @@
-> **Historical evidence — superseded.** This auxiliary document is not an active plan or runtime contract. The current owner-approved authority is `proposal.md`, `design.md`, `specs/**/spec.md`, and `tasks.md`, which require Main Brain → OmniRoute-only operation and fail-closed recovery. Any conflicting instruction below is preserved only as historical evidence and MUST NOT be executed.
+> **Historical evidence - superseded and non-normative.** Current authority is the reconciled `proposal.md`, `design.md`, `specs/**/spec.md`, and `tasks.md` together with `../credential-account-home-restoration/**`: exactly one `omniroute` or `native_credential_home` binding, no cross-mode fallback, and fail-closed admission. OmniRoute-only statements below apply only as historical evidence or within the `omniroute` binding and MUST NOT be read as universally forbidding approved native mode or authorizing source-home mutation.
 
 # Agent Brain and OmniRoute Architecture
 

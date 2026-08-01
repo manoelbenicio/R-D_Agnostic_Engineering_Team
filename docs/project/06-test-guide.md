@@ -1,5 +1,14 @@
 # Guia de Teste — Isolamento de Credencial + Rotação (Fase 1 + Fase 2)
 
+> **Supplemental authority disposition — reconciled 2026-08-01**
+>
+> - **STATUS:** historical research, test guidance, or source-staging evidence; it is not proof of installed or deployed behavior.
+> - **CURRENT_OBSERVED:** eight intentional physical homes map one-to-one to eight legacy-registry terminals and live panes; installed registry remains legacy v1.
+> - **SOURCE_VALIDATED:** allocator-v2, Runtime Manager/Postgres, and rotation components may exist in candidate source; allocator-v2 and Runtime Manager activation are not installed/deployed.
+> - **PLANNED / APPROVAL_GATED:** automatic rotation, production DB access, deploy, restart, ORQ1 rollout, remote publication, and 20/50/100 capacity profiles remain future evidence/owner gates.
+> - **AUTHORITY:** canonical OpenSpec REQ-01..23 plus compatible qualified REQ-24..35 controls; discovery is dynamic/opaque and no static slot allowlist is authoritative.
+
+
 Cópia de trabalho: `multica-auth-work/`. Nada aqui altera o source original nem exige commit.
 Todos os comandos usam containers (não precisa Go/psql instalados).
 
@@ -93,7 +102,7 @@ Sobe Prometheus (9090), Grafana (3000), Alertmanager (9093), postgres-exporter (
 ---
 
 ## D. Critérios de sucesso do teste de hoje
-- [ ] A1 verde (só o teste ambiental de symlink falha).
-- [ ] A2 rotação toda verde (incl. E2E quando entregue pelo CODEX-1).
-- [ ] A3 fallback verde (garantia AS-IS).
-- [ ] (Opcional) C4 observabilidade sobe e Grafana abre.
+- [ ] [PLANNED — NOT DEPLOYED] A1 verde (só o teste ambiental de symlink falha).
+- [ ] [PLANNED — NOT DEPLOYED] A2 rotação toda verde (incl. E2E quando entregue pelo CODEX-1).
+- [ ] [PLANNED — NOT DEPLOYED] A3 fallback verde (garantia AS-IS).
+- [ ] [PLANNED — NOT DEPLOYED] (Opcional) C4 observabilidade sobe e Grafana abre.

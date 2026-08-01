@@ -1,0 +1,35 @@
+{
+  "activity": "Superseding candidate-only closeout for chat routing tasks 2.2/2.3 using sealed isolated PostgreSQL normal/race evidence and p2 post-execution PASS",
+  "agent": "Kiro",
+  "blocker": null,
+  "depends_on": [
+    ".deploy-control/p0/checkins/Opus48-A__CHAT-ORCH-2.x__20260722T120408Z.json"
+  ],
+  "evidence": [
+    ".deploy-control/p0/evidence/CHAT-CLOSEOUT.md",
+    "/home/ec2-user/backups/multica-chat-routing-pg-20260801T132324Z/evidence.sha256",
+    "/home/ec2-user/backups/multica-chat-routing-pg-20260801T132324Z/evidence.sha256.sha256"
+  ],
+  "files_locked": [
+    ".deploy-control/p0/evidence/CHAT-CLOSEOUT.md",
+    ".deploy-control/p0/checkins/Kiro__CHAT-ORCH-2.x__20260801T132600Z.json",
+    "openspec/changes/chat-orchestration-standard/tasks.md"
+  ],
+  "finished_at": "2026-08-01T13:26:00Z",
+  "lane": "CHAT-CLOSEOUT",
+  "last_heartbeat_at": "2026-08-01T13:26:00Z",
+  "pane_id": "wP:p1",
+  "progress": 100,
+  "schema": "main-brain-p0-checkin.v1",
+  "started_at": "2026-08-01T13:23:08Z",
+  "status": "DONE",
+  "summary": "Chat routing closeout evidenced: explicit agent_id/literal @agent routes directly and bypasses the TL; omitted destination routes to exactly one active workspace default TL; missing and duplicate defaults fail closed. Sealed isolated PostgreSQL normal and race runs passed all four subtests with persisted-row assertions and complete cleanup.",
+  "supersedes": {
+    "path": ".deploy-control/p0/checkins/Opus48-A__CHAT-ORCH-2.x__20260722T120408Z.json",
+    "preserved": true,
+    "prior_status": "BLOCKED",
+    "reason": "The prior check-in truthfully records an earlier DB-unreachable skip; this new check-in records later independent sealed execution and does not rewrite the prior event."
+  },
+  "task": "CHAT-ORCH-2.x",
+  "validation": "P2 post-execution PASS tied to runner 1f8786f1de5d007b385e28460898ad65d43ca10a0a0732af6ef062d6823c0254 and run /home/ec2-user/backups/multica-chat-routing-pg-20260801T132324Z: inner 5c247789397d3c462a70b19996a96d20e71bf7e1d2866f366a7a1ee8cd0d0476 (27/27), outer d65e663250d3cf5b508af86a4886d485b043604c7ddace58d18a87706c241c7b (1/1), all 23 gates rc=0, normal/race each 1 root + 4 subtests PASS, cleanup 0|0|0|0, isolation all true, PostgreSQL stopped and socket absent."
+}

@@ -32,6 +32,144 @@ func withChatTestWorkspaceCtx(t *testing.T, req *http.Request) *http.Request {
 	return req.WithContext(middleware.SetMemberContext(req.Context(), testWorkspaceID, memberRow))
 }
 
+func TestCreateChatSession_Routing(t *testing.T) {
+	assertStoredSession := func(t *testing.T, response ChatSessionResponse, wantAgentID, wantTitle string) {
+		t.Helper()
+		t.Cleanup(func() {
+			testPool.Exec(context.Background(), `DELETE FROM chat_session WHERE id = $1`, response.ID)
+		})
+
+		if response.AgentID != wantAgentID {
+			t.Errorf("response agent_id = %s, want %s", response.AgentID, wantAgentID)
+		}
+
+		var workspaceID, agentID, creatorID, title, status string
+		if err := testPool.QueryRow(context.Background(), `
+			SELECT workspace_id, agent_id, creator_id, title, status
+			FROM chat_session
+			WHERE id = $1
+		`, response.ID).Scan(&workspaceID, &agentID, &creatorID, &title, &status); err != nil {
+			t.Fatalf("load persisted chat session %s: %v", response.ID, err)
+		}
+		if workspaceID != testWorkspaceID {
+			t.Errorf("persisted workspace_id = %s, want %s", workspaceID, testWorkspaceID)
+		}
+		if agentID != wantAgentID {
+			t.Errorf("persisted agent_id = %s, want %s", agentID, wantAgentID)
+		}
+		if creatorID != testUserID {
+			t.Errorf("persisted creator_id = %s, want %s", creatorID, testUserID)
+		}
+		if title != wantTitle {
+			t.Errorf("persisted title = %q, want %q", title, wantTitle)
+		}
+		if status != "active" {
+			t.Errorf("persisted status = %q, want active", status)
+		}
+	}
+
+	assertRoutingFailure := func(t *testing.T, title, wantError string) {
+		t.Helper()
+		req := newRequest(http.MethodPost, "/api/chat/sessions", map[string]any{
+			"title": title,
+		})
+		req = withChatTestWorkspaceCtx(t, req)
+		w := httptest.NewRecorder()
+
+		testHandler.CreateChatSession(w, req)
+
+		if w.Code != http.StatusServiceUnavailable {
+			t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusServiceUnavailable, w.Body.String())
+		}
+		var response map[string]string
+		if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+			t.Fatalf("decode error response: %v", err)
+		}
+		if response["error"] != wantError {
+			t.Errorf("error = %q, want %q", response["error"], wantError)
+		}
+
+		var sessionCount int
+		if err := testPool.QueryRow(context.Background(), `
+			SELECT count(*)
+			FROM chat_session
+			WHERE workspace_id = $1 AND title = $2
+		`, testWorkspaceID, title).Scan(&sessionCount); err != nil {
+			t.Fatalf("count chat sessions after routing failure: %v", err)
+		}
+		if sessionCount != 0 {
+			t.Errorf("persisted sessions after routing failure = %d, want 0", sessionCount)
+		}
+	}
+
+	t.Run("explicit agent_id literal @agent bypasses squad TL", func(t *testing.T) {
+		leaderID := createHandlerTestAgent(t, "Chat routing direct-case workspace TL", nil)
+		directAgentID := createHandlerTestAgent(t, "codex", nil)
+		if directAgentID == leaderID {
+			t.Fatalf("direct agent ID unexpectedly equals squad TL ID %s", leaderID)
+		}
+		createHandlerTestSquad(t, "Workspace Team", leaderID)
+
+		const title = "literal @codex direct route"
+		req := newRequest(http.MethodPost, "/api/chat/sessions", map[string]any{
+			"agent_id": directAgentID,
+			"title":    title,
+		})
+		req = withChatTestWorkspaceCtx(t, req)
+		w := httptest.NewRecorder()
+
+		testHandler.CreateChatSession(w, req)
+
+		if w.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		}
+		var response ChatSessionResponse
+		if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+			t.Fatalf("decode response: %v", err)
+		}
+		if response.AgentID == leaderID {
+			t.Errorf("explicit direct route selected squad TL %s", leaderID)
+		}
+		assertStoredSession(t, response, directAgentID, title)
+	})
+
+	t.Run("exactly one default squad routes to its TL", func(t *testing.T) {
+		leaderID := createHandlerTestAgent(t, "Chat routing sole workspace TL", nil)
+		createHandlerTestSquad(t, "Workspace Team", leaderID)
+
+		const title = "Untargeted default TL route"
+		req := newRequest(http.MethodPost, "/api/chat/sessions", map[string]any{
+			"title": title,
+		})
+		req = withChatTestWorkspaceCtx(t, req)
+		w := httptest.NewRecorder()
+
+		testHandler.CreateChatSession(w, req)
+
+		if w.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		}
+		var response ChatSessionResponse
+		if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+			t.Fatalf("decode response: %v", err)
+		}
+		assertStoredSession(t, response, leaderID, title)
+	})
+
+	t.Run("missing default squad fails closed", func(t *testing.T) {
+		assertRoutingFailure(t, "Untargeted missing default route", "default chat route is not configured")
+	})
+
+	t.Run("duplicate default squads fail closed", func(t *testing.T) {
+		firstLeaderID := createHandlerTestAgent(t, "Chat routing duplicate TL one", nil)
+		secondLeaderID := createHandlerTestAgent(t, "Chat routing duplicate TL two", nil)
+		createHandlerTestSquad(t, "Workspace Team", firstLeaderID)
+		createHandlerTestSquad(t, "Workspace Team", secondLeaderID)
+
+		assertRoutingFailure(t, "Untargeted ambiguous default route", "default chat route is ambiguous")
+	})
+}
+
 // TestSendChatMessage_LinksAttachments verifies that attachments uploaded
 // against a chat_session (chat_message_id NULL) are back-filled with the
 // message_id when SendChatMessage receives the matching attachment_ids.

@@ -21,24 +21,35 @@ fail() {
 }
 
 assert_equal() {
-  [[ "$1" == "$2" ]] || fail "value-mismatch: got=$1 want=$2"
+  [[ "$1" == "$2" ]] || fail 'value-mismatch'
 }
 
 assert_file() {
-  [[ -f "$1" && ! -L "$1" ]] || fail "expected-regular-file:$1"
+  [[ -f "$1" && ! -L "$1" ]] || fail 'expected-regular-file'
 }
 
 assert_dir() {
-  [[ -d "$1" && ! -L "$1" ]] || fail "expected-directory:$1"
+  [[ -d "$1" && ! -L "$1" ]] || fail 'expected-directory'
 }
 
 assert_absent() {
-  [[ ! -e "$1" && ! -L "$1" ]] || fail "expected-absent:$1"
+  [[ ! -e "$1" && ! -L "$1" ]] || fail 'expected-absent'
+}
+
+assert_not_symlink() {
+  [[ ! -L "$1" ]] || fail 'unexpected-symlink'
 }
 
 assert_content() {
   assert_file "$1"
   assert_equal "$(<"$1")" "$2"
+}
+
+assert_sentinel_free() {
+  local output_file="$1"
+  if grep -Fq -- "${SENTINEL}" "${output_file}"; then
+    fail 'sentinel-reached-captured-output'
+  fi
 }
 
 slot_count() {
@@ -48,6 +59,7 @@ slot_count() {
 
 chmod 700 "${TMP_DIR}"
 FIXTURE_ROOT="${TMP_DIR}/fixture"
+OUTSIDE_ROOT="${TMP_DIR}/synthetic-outside-root"
 HOST_HOME="${FIXTURE_ROOT}/host-home"
 HOST_XDG_DATA_HOME="${HOST_HOME}/.local/share"
 HOST_XDG_CONFIG_HOME="${HOST_HOME}/.config"
@@ -60,8 +72,67 @@ mkdir -p \
   "${HOST_XDG_DATA_HOME}/opencode" \
   "${HOST_XDG_DATA_HOME}/glm" \
   "${HOST_XDG_CONFIG_HOME}/opencode" \
-  "${HOST_XDG_CONFIG_HOME}/glm"
-chmod 700 "${FIXTURE_ROOT}" "${HOST_HOME}"
+  "${HOST_XDG_CONFIG_HOME}/glm" \
+  "${STATE_ROOT}/slots" \
+  "${OUTSIDE_ROOT}"
+chmod 700 "${FIXTURE_ROOT}" "${HOST_HOME}" "${STATE_ROOT}" "${OUTSIDE_ROOT}"
+FIXTURE_ROOT="$(cd -- "${FIXTURE_ROOT}" && pwd -P)"
+
+require_fixture_directory() {
+  local label="$1"
+  local path="$2"
+  local relative component cursor canonical found_symlink
+
+  [[ -n "${path}" && "${path}" == /* ]] || fail "path-contract:${label}:not-absolute"
+  case "/${path#/}/" in
+    *'/../'*) fail "path-contract:${label}:traversal" ;;
+  esac
+  [[ "${path}" == "${FIXTURE_ROOT}" || "${path}" == "${FIXTURE_ROOT}/"* ]] || \
+    fail "path-contract:${label}:outside-fixture"
+  [[ -d "${path}" && ! -L "${path}" ]] || fail "path-contract:${label}:absent-or-symlink"
+
+  relative="${path#"${FIXTURE_ROOT}"}"
+  relative="${relative#/}"
+  cursor="${FIXTURE_ROOT}"
+  local IFS='/'
+  read -r -a components <<<"${relative}"
+  for component in "${components[@]}"; do
+    [[ -n "${component}" ]] || continue
+    cursor="${cursor}/${component}"
+    [[ ! -L "${cursor}" ]] || fail "path-contract:${label}:symlink-component"
+  done
+  canonical="$(cd -- "${path}" && pwd -P)" || fail "path-contract:${label}:canonicalize"
+  [[ "${canonical}" == "${path}" ]] || fail "path-contract:${label}:non-canonical"
+  found_symlink="$(find -P "${path}" -type l -print -quit 2>/dev/null)" || \
+    fail "path-contract:${label}:scan"
+  [[ -z "${found_symlink}" ]] || fail "path-contract:${label}:nested-symlink"
+}
+
+require_fixture_directory fixture-root "${FIXTURE_ROOT}"
+require_fixture_directory host-home "${HOST_HOME}"
+require_fixture_directory host-xdg-data "${HOST_XDG_DATA_HOME}"
+require_fixture_directory host-xdg-config "${HOST_XDG_CONFIG_HOME}"
+require_fixture_directory state-root "${STATE_ROOT}"
+require_fixture_directory destination-slots "${STATE_ROOT}/slots"
+
+SENTINEL='TASK16_SYNTHETIC_SENTINEL_MUST_NOT_REACH_OUTPUT_7f921c'
+SENTINEL_FILE="${FIXTURE_ROOT}/synthetic-sentinel-credential.json"
+printf '%s\n' "${SENTINEL}" >"${SENTINEL_FILE}"
+(
+  assert_content "${SENTINEL_FILE}" "${SENTINEL}"
+) >"${TMP_DIR}/sentinel-match.stdout" 2>"${TMP_DIR}/sentinel-match.stderr"
+assert_sentinel_free "${TMP_DIR}/sentinel-match.stdout"
+assert_sentinel_free "${TMP_DIR}/sentinel-match.stderr"
+set +e
+(
+  assert_content "${SENTINEL_FILE}" 'different-synthetic-value'
+) >"${TMP_DIR}/sentinel-mismatch.stdout" 2>"${TMP_DIR}/sentinel-mismatch.stderr"
+rc=$?
+set -e
+(( rc != 0 )) || fail 'sentinel-mismatch-accepted'
+assert_sentinel_free "${TMP_DIR}/sentinel-mismatch.stdout"
+assert_sentinel_free "${TMP_DIR}/sentinel-mismatch.stderr"
+rm -f -- "${SENTINEL_FILE}"
 
 printf 'legacy-codex\n' >"${HOST_HOME}/.codex/auth.json"
 printf 'legacy-codex-config\n' >"${HOST_HOME}/.codex/config.toml"
@@ -112,6 +183,8 @@ run_binding() {
       unset AGENT_CRED_ISOLATION_ADOPT_SLOT
     fi
     export AGENT_CRED_ISOLATION_AUTOSTART=1
+    # The production script path is resolved relative to this harness.
+    # shellcheck disable=SC1090
     source "${SCRIPT}" || exit $?
     eval "${command}"
   )
@@ -124,6 +197,8 @@ capture_env() {
   local state_root="${4:-${STATE_ROOT}}"
   local adopt_slot="${5:-}"
   local reconcile="${6:-0}"
+  # Variables expand inside the evaluated task shell.
+  # shellcheck disable=SC2016
   run_binding "${agent_id}" "${fingerprint}" \
     'printf "%s|%s|%s|%s|%s|%s|%s|%s|%s\n" "$AGENT_CRED_ISOLATION_SLOT" "$AGENT_CRED_ISOLATION_SLOT_NAME" "$AGENT_CRED_ISOLATION_SLOT_ROOT" "$AGENT_CRED_ISOLATION_IDENTITY" "$CODEX_HOME" "$CLINE_DATA_DIR" "$HOME" "$XDG_DATA_HOME" "$XDG_CONFIG_HOME"' \
     "${state_root}" "${adopt_slot}" "${reconcile}" >"${output}"
@@ -136,6 +211,7 @@ assert_equal "${slot_a}" '1'
 assert_equal "${slot_name_a}" 'slot-01'
 assert_equal "${root_a}" "${STATE_ROOT}/slots/slot-01"
 [[ "${identity_a}" == sha256:* ]] || fail 'identity-key-format'
+assert_not_symlink "${codex_a}/auth.json"
 assert_content "${codex_a}/auth.json" 'legacy-codex'
 assert_content "${cline_a}/data/settings/providers.json" 'legacy-cline'
 assert_content "${home_a}/.gemini/antigravity-cli/antigravity-oauth-token" 'legacy-agy'
@@ -164,6 +240,7 @@ IFS='|' read -r slot_b slot_name_b root_b identity_b codex_b _ _ _ _ <"${TMP_DIR
 assert_equal "${slot_b}" '2'
 assert_equal "${slot_name_b}" 'slot-02'
 [[ "${identity_b}" != "${identity_a}" ]] || fail 'different-bindings-shared-identity'
+[[ "${root_b}" != "${root_a}" ]] || fail 'different-bindings-shared-root'
 printf 'account-B-marker\n' >"${codex_b}/auth.json"
 assert_content "${codex_a}/auth.json" 'account-A-marker'
 assert_content "${codex_b}/auth.json" 'account-B-marker'
@@ -359,4 +436,4 @@ if grep -Eiq 'HERDR_PANE_ID|command -v herdr|herdr pane|get.*terminal_id|tty 2>|
   fail 'forbidden-terminal-or-random-fallback-remains'
 fi
 
-printf 'PASS: stable agent/subscription identity, fail-closed validation, restart/relogin, concurrency, stale reconciliation, live-reference protection, and slot-185 adoption\n'
+printf 'PASS: stable agent/subscription identity, redacted synthetic-fixture hardening, fail-closed validation, restart/relogin, concurrency, stale reconciliation, live-reference protection, and slot-185 adoption\n'

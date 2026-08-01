@@ -1,5 +1,15 @@
 # 05 — Observabilidade (Grafana / Prometheus — easy deploy)
 
+> **Authority boundary — reconciled 2026-08-01**
+>
+> - **CURRENT_OBSERVED:** ORQ2 has eight intentional physical credential homes mapped one-to-one to eight legacy-registry terminals and live panes; no duplicate or unreferenced home was observed.
+> - **SOURCE_VALIDATED:** allocator-v2 and Runtime Manager/Postgres contracts exist in the reconciled candidate source, but allocator-v2 is not installed and Runtime Manager/Postgres account control is not deployed state. The installed registry remains legacy v1.
+> - **PLANNED:** automatic account rotation, Runtime Manager activation, Postgres-backed account control, and higher capacity profiles are TO-BE only.
+> - **CANONICAL AUTHORITY:** `credential-account-home-restoration` REQ-01..23 plus compatible qualified REQ-24..35 control. Discovery is dynamic and opaque; static slot-number grammars and allowlists are forbidden.
+> - **APPROVAL_GATED:** commit/push identity, production DB access, deployment, restart, ORQ1 cutover/rollout, allocator-v2 installation, and capacity expansion require separate evidence and fresh owner gates; none is authorized or performed by this candidate.
+> - **CHRONOLOGY:** any single-global-home or single-slot wording below describes historical behavior or a conditional migration starting point, not the current eight-home observed state.
+
+
 **Data:** 2026-07-01
 **Meta:** cada componente do fluxo de credencial/cota/rotação 100% monitorado,
 com deploy fácil via docker-compose.
@@ -113,8 +123,8 @@ scrape_configs:
 
 ## 7. Critérios de "monitorado de verdade"
 
-- [ ] Todo componente do fluxo expõe `/metrics`.
-- [ ] Existe painel Grafana para cada componente da §3.
-- [ ] Existe alerta para cada falha crítica da §4.
-- [ ] `docker compose up -d` sobe o stack completo já provisionado.
-- [ ] Nenhum segredo aparece em métrica, label ou log.
+- [ ] [PLANNED — NOT DEPLOYED] Todo componente do fluxo expõe `/metrics`.
+- [ ] [PLANNED — NOT DEPLOYED] Existe painel Grafana para cada componente da §3.
+- [ ] [PLANNED — NOT DEPLOYED] Existe alerta para cada falha crítica da §4.
+- [ ] [PLANNED — NOT DEPLOYED] `docker compose up -d` sobe o stack completo já provisionado.
+- [ ] [PLANNED — NOT DEPLOYED] Nenhum segredo aparece em métrica, label ou log.
