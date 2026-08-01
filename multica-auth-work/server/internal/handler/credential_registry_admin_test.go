@@ -556,6 +556,35 @@ func (g *credentialRegistryBoundaryGuard) RequireDaemonWorkspace(_ context.Conte
 	return g.daemonErr
 }
 
+// assertCredentialRegistryDenialIsOpaque proves a guard denial was collapsed to
+// the constant forbidden sentinel before leaving the boundary.
+//
+// The assertion compares against the sentinel text itself instead of hand-picked
+// substrings. Hand-picked substrings are unsound here: the sentinel legitimately
+// reads "credential registry access denied", so probing for a word like
+// "credential" flags correctly redacted output as a leak. Requiring the message
+// to equal the sentinel verbatim is strictly stronger, since any guard detail
+// that survived would change the message. Guard-detail tokens are then checked
+// individually, skipping tokens the sentinel itself contains.
+func assertCredentialRegistryDenialIsOpaque(t *testing.T, err error, guardErr error) {
+	t.Helper()
+	if !errors.Is(err, ErrCredentialRegistryForbidden) {
+		t.Fatalf("guard denial error = %v, want %v", err, ErrCredentialRegistryForbidden)
+	}
+	sentinel := ErrCredentialRegistryForbidden.Error()
+	if err.Error() != sentinel {
+		t.Fatalf("guard denial message = %q, want constant sentinel %q", err.Error(), sentinel)
+	}
+	for _, token := range strings.Fields(guardErr.Error()) {
+		if strings.Contains(sentinel, token) {
+			continue
+		}
+		if strings.Contains(err.Error(), token) {
+			t.Fatalf("guard denial leaked detail token %q: %v", token, err)
+		}
+	}
+}
+
 func TestCredentialRegistryBoundaryEnforcesHumanAndTenantConfinement(t *testing.T) {
 	if _, err := NewCredentialRegistryBoundary(nil, &credentialRegistryBoundaryGuard{}); err == nil {
 		t.Fatal("nil actor guard unexpectedly accepted")
@@ -588,22 +617,14 @@ func TestCredentialRegistryBoundaryEnforcesHumanAndTenantConfinement(t *testing.
 	}
 
 	guard.actorErr = errors.New("provider account /secret/owner path")
-	if err := boundary.AuthorizeWorkspace(context.Background(), actor, workspaceID); !errors.Is(err, ErrCredentialRegistryForbidden) {
-		t.Fatalf("actor guard error = %v", err)
-	} else if strings.Contains(err.Error(), "secret") || strings.Contains(err.Error(), "provider") {
-		t.Fatalf("actor guard detail leaked: %v", err)
-	}
+	assertCredentialRegistryDenialIsOpaque(t, boundary.AuthorizeWorkspace(context.Background(), actor, workspaceID), guard.actorErr)
 	if guard.workspaceCalls != 0 {
 		t.Fatal("workspace guard ran after actor denial")
 	}
 
 	guard.actorErr = nil
 	guard.workspaceErr = errors.New("cross-workspace /tenant/private")
-	if err := boundary.AuthorizeWorkspace(context.Background(), actor, workspaceID); !errors.Is(err, ErrCredentialRegistryForbidden) {
-		t.Fatalf("workspace guard error = %v", err)
-	} else if strings.Contains(err.Error(), "tenant") || strings.Contains(err.Error(), "private") {
-		t.Fatalf("workspace guard detail leaked: %v", err)
-	}
+	assertCredentialRegistryDenialIsOpaque(t, boundary.AuthorizeWorkspace(context.Background(), actor, workspaceID), guard.workspaceErr)
 
 	malformed := CredentialRegistryActor{Type: "human", ID: "/local/identity"}
 	if err := boundary.AuthorizeWorkspace(context.Background(), malformed, workspaceID); !errors.Is(err, ErrCredentialRegistryUnauthenticated) {
@@ -638,11 +659,7 @@ func TestCredentialRegistryBoundaryConfinesDaemonReports(t *testing.T) {
 	}
 
 	guard.daemonErr = errors.New("credential path /home/daemon/.config")
-	if err := boundary.AuthorizeDaemonReport(context.Background(), actor, actor.ID, workspaceID); !errors.Is(err, ErrCredentialRegistryForbidden) {
-		t.Fatalf("daemon guard error = %v", err)
-	} else if strings.Contains(err.Error(), "/home") || strings.Contains(err.Error(), "credential") {
-		t.Fatalf("daemon guard detail leaked: %v", err)
-	}
+	assertCredentialRegistryDenialIsOpaque(t, boundary.AuthorizeDaemonReport(context.Background(), actor, actor.ID, workspaceID), guard.daemonErr)
 
 	human := CredentialRegistryActor{Type: "human", ID: actor.ID}
 	if err := boundary.AuthorizeDaemonReport(context.Background(), human, human.ID, workspaceID); !errors.Is(err, ErrCredentialRegistryForbidden) {
