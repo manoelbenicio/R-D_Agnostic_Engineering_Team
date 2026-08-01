@@ -17,28 +17,48 @@ import (
 const privateModeMask = os.FileMode(0o077)
 
 var (
-	ErrInvalidRoot = errors.New("credential catalog: invalid controlled root")
-	ErrRootChanged = errors.New("credential catalog: controlled root identity changed")
+	ErrInvalidRoot     = errors.New("credential catalog: invalid controlled root")
+	ErrRootChanged     = errors.New("credential catalog: controlled root identity changed")
+	ErrHomeNotHealthy  = errors.New("credential catalog: home is not healthy")
+	ErrHomeTombstoned  = errors.New("credential catalog: home is tombstoned")
+	ErrHomeNotFound    = errors.New("credential catalog: home ref not found")
+	ErrRefUnderflow    = errors.New("credential catalog: active ref underflow")
+	ErrRevalidateFailed = errors.New("credential catalog: launch-time revalidation failed")
 )
 
-// Config defines one private controlled root and one provider layout. A
-// separate Catalog should be used for each provider/root authority boundary.
+// Config defines one private controlled root and one provider layout, along
+// with optional lifecycle, retention, and watermark parameters.
 type Config struct {
-	Root     string
-	Provider Provider
+	Root            string
+	Provider        Provider
+	TTL             time.Duration
+	RetentionPeriod time.Duration
+	HighWatermark   int
+	LowWatermark    int
 }
 
-// Catalog serializes complete scans and publishes a generation only after the
-// entire immediate-child scan and deterministic deduplication succeed.
+// Catalog serializes complete scans, manages lifecycle transitions (healthy,
+// draining, retired, tombstoned), tracks active reference counts, performs
+// fast launch-time revalidations, and handles watcher overflow recovery.
 type Catalog struct {
-	mu           sync.RWMutex
-	root         string
-	rootIdentity fileIdentity
-	provider     Provider
-	layout       Layout
-	generation   uint64
-	current      Snapshot
-	hasCurrent   bool
+	mu               sync.RWMutex
+	root             string
+	rootIdentity     fileIdentity
+	provider         Provider
+	layout           Layout
+	ttl              time.Duration
+	retentionPeriod  time.Duration
+	highWatermark    int
+	lowWatermark     int
+	generation       uint64
+	current          Snapshot
+	hasCurrent       bool
+	activeRefs       map[string]int
+	tombstones       map[string]time.Time
+	draining         map[string]discoveredHome
+	watcherOverflows uint64
+	lastOverflowAt   time.Time
+	lastHintAt       time.Time
 }
 
 // New validates the controlled root without reading any child artifact.
@@ -55,11 +75,36 @@ func New(config Config) (*Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	ttl := config.TTL
+	if ttl <= 0 {
+		ttl = 24 * time.Hour
+	}
+	retention := config.RetentionPeriod
+	if retention <= 0 {
+		retention = 7 * 24 * time.Hour
+	}
+	highWM := config.HighWatermark
+	if highWM <= 0 {
+		highWM = 10000
+	}
+	lowWM := config.LowWatermark
+	if lowWM <= 0 {
+		lowWM = 8000
+	}
+
 	return &Catalog{
-		root:         root,
-		rootIdentity: identity,
-		provider:     config.Provider,
-		layout:       layout,
+		root:            root,
+		rootIdentity:    identity,
+		provider:        config.Provider,
+		layout:          layout,
+		ttl:             ttl,
+		retentionPeriod: retention,
+		highWatermark:   highWM,
+		lowWatermark:    lowWM,
+		activeRefs:      make(map[string]int),
+		tombstones:      make(map[string]time.Time),
+		draining:        make(map[string]discoveredHome),
 	}, nil
 }
 
@@ -69,7 +114,10 @@ func New(config Config) (*Catalog, error) {
 func (c *Catalog) Reconcile() (Snapshot, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	return c.reconcileLocked()
+}
 
+func (c *Catalog) reconcileLocked() (Snapshot, error) {
 	rootIdentity, err := inspectControlledRoot(c.root)
 	if err != nil {
 		return Snapshot{}, err
@@ -78,13 +126,46 @@ func (c *Catalog) Reconcile() (Snapshot, error) {
 		return Snapshot{}, ErrRootChanged
 	}
 
-	snapshot, err := c.scanLocked()
+	c.pruneTombstonesLocked(time.Now().UTC())
+
+	snapshot, scannedHomes, err := c.scanLocked()
 	if err != nil {
 		return Snapshot{}, err
 	}
+
+	c.reconcileLifecycleLocked(scannedHomes)
+
+	// Filter out healthy entries that are tombstoned
+	healthyEntries := make([]Entry, 0, len(snapshot.entries))
+	for _, entry := range snapshot.entries {
+		if _, tomb := c.tombstones[entry.homeRef]; tomb {
+			continue
+		}
+		entry.activeRefs = c.activeRefs[entry.homeRef]
+		healthyEntries = append(healthyEntries, entry)
+	}
+
+	drainingEntries := make([]Entry, 0, len(c.draining))
+	for ref, home := range c.draining {
+		entry := home.entry
+		entry.state = StateDraining
+		entry.activeRefs = c.activeRefs[ref]
+		drainingEntries = append(drainingEntries, entry)
+	}
+
+	tombstonedList := make([]string, 0, len(c.tombstones))
+	for ref := range c.tombstones {
+		tombstonedList = append(tombstonedList, ref)
+	}
+
+	snapshot.entries = healthyEntries
+	snapshot.draining = drainingEntries
+	snapshot.tombstoned = tombstonedList
 	snapshot.generation = c.generation + 1
 	snapshot.capturedAt = time.Now().UTC()
 	sortSnapshot(&snapshot)
+
+	c.enforceWatermarksLocked(&snapshot)
 
 	c.generation = snapshot.generation
 	c.current = cloneSnapshot(snapshot)
@@ -102,24 +183,213 @@ func (c *Catalog) Current() (Snapshot, bool) {
 	return cloneSnapshot(c.current), true
 }
 
+// AcquireRef increments the active reference count for a healthy or draining home.
+// It returns a release function and an error if the home is tombstoned or unknown.
+func (c *Catalog) AcquireRef(homeRef string) (func(), error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, tomb := c.tombstones[homeRef]; tomb {
+		return nil, ErrHomeTombstoned
+	}
+
+	var found bool
+	if c.hasCurrent {
+		for _, entry := range c.current.entries {
+			if entry.homeRef == homeRef {
+				found = true
+				break
+			}
+		}
+		if !found {
+			for _, entry := range c.current.draining {
+				if entry.homeRef == homeRef {
+					found = true
+					break
+				}
+			}
+		}
+	}
+	if !found {
+		if _, drain := c.draining[homeRef]; drain {
+			found = true
+		}
+	}
+
+	if !found {
+		return nil, ErrHomeNotFound
+	}
+
+	c.activeRefs[homeRef]++
+
+	var once sync.Once
+	release := func() {
+		once.Do(func() {
+			_ = c.ReleaseRef(homeRef)
+		})
+	}
+	return release, nil
+}
+
+// ReleaseRef decrements the active reference count for a homeRef. If the home
+// is in draining state and activeRefs reaches 0, it transitions to tombstoned.
+func (c *Catalog) ReleaseRef(homeRef string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	count, exists := c.activeRefs[homeRef]
+	if !exists || count <= 0 {
+		return ErrRefUnderflow
+	}
+	count--
+	if count == 0 {
+		delete(c.activeRefs, homeRef)
+		if _, draining := c.draining[homeRef]; draining {
+			delete(c.draining, homeRef)
+			c.tombstones[homeRef] = time.Now().UTC()
+		}
+	} else {
+		c.activeRefs[homeRef] = count
+	}
+	return nil
+}
+
+// ActiveRefs returns the current active reference count for a homeRef.
+func (c *Catalog) ActiveRefs(homeRef string) int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.activeRefs[homeRef]
+}
+
+// Revalidate performs a fast launch-time metadata inspection of a single home
+// before task launch, confirming metadata safety without opening credential contents.
+func (c *Catalog) Revalidate(homeRef string) (Entry, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, tomb := c.tombstones[homeRef]; tomb {
+		return Entry{}, ErrHomeTombstoned
+	}
+
+	var targetEntry Entry
+	var found bool
+	if c.hasCurrent {
+		for _, e := range c.current.entries {
+			if e.homeRef == homeRef {
+				targetEntry = e
+				found = true
+				break
+			}
+		}
+	}
+	if !found {
+		return Entry{}, ErrHomeNotFound
+	}
+
+	// Re-verify controlled root identity
+	rootId, err := inspectControlledRoot(c.root)
+	if err != nil || rootId != c.rootIdentity {
+		return Entry{}, ErrRootChanged
+	}
+
+	// Inspect candidate home directory
+	candidateDir := filepath.Dir(targetEntry.homePath)
+	if filepath.Base(targetEntry.homePath) != c.layout.homeRelative {
+		candidateDir = filepath.Dir(targetEntry.homePath)
+	}
+	candidateName := filepath.Base(candidateDir)
+	discovered, quarantine := c.inspectCandidate(candidateDir, candidateName)
+	if quarantine != nil || discovered == nil || discovered.entry.homeRef != homeRef {
+		c.quarantineHomeLocked(homeRef, targetEntry)
+		return Entry{}, ErrRevalidateFailed
+	}
+
+	targetEntry.activeRefs = c.activeRefs[homeRef]
+	return targetEntry, nil
+}
+
+// NotifyHint signals a watcher event for a path.
+func (c *Catalog) NotifyHint(path string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.lastHintAt = time.Now().UTC()
+}
+
+// NotifyWatcherOverflow signals an inotify/fsnotify event loss or buffer overflow,
+// triggering an immediate full scan to restore full catalog consistency.
+func (c *Catalog) NotifyWatcherOverflow() (Snapshot, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.watcherOverflows++
+	c.lastOverflowAt = time.Now().UTC()
+	return c.reconcileLocked()
+}
+
+// WatcherOverflowCount returns the total number of watcher overflows recovered.
+func (c *Catalog) WatcherOverflowCount() uint64 {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.watcherOverflows
+}
+
+func (c *Catalog) quarantineHomeLocked(homeRef string, entry Entry) {
+	if count := c.activeRefs[homeRef]; count > 0 {
+		c.draining[homeRef] = discoveredHome{entry: entry}
+	} else {
+		c.tombstones[homeRef] = time.Now().UTC()
+	}
+}
+
+func (c *Catalog) reconcileLifecycleLocked(scannedHomes map[string]discoveredHome) {
+	if !c.hasCurrent {
+		return
+	}
+	// Check previously healthy entries
+	for _, prevEntry := range c.current.entries {
+		ref := prevEntry.homeRef
+		if _, exists := scannedHomes[ref]; !exists {
+			// Previously healthy home is now missing from scan
+			if count := c.activeRefs[ref]; count > 0 {
+				c.draining[ref] = discoveredHome{entry: prevEntry}
+			} else {
+				c.tombstones[ref] = time.Now().UTC()
+			}
+		}
+	}
+}
+
+func (c *Catalog) pruneTombstonesLocked(now time.Time) {
+	for ref, tombTime := range c.tombstones {
+		if now.Sub(tombTime) > c.retentionPeriod && c.activeRefs[ref] == 0 {
+			delete(c.tombstones, ref)
+		}
+	}
+}
+
+func (c *Catalog) enforceWatermarksLocked(snapshot *Snapshot) {
+	if len(snapshot.entries) > c.highWatermark {
+		// Retain up to lowWatermark entries deterministically
+		snapshot.entries = snapshot.entries[:c.lowWatermark]
+	}
+}
+
 type discoveredHome struct {
 	entry      Entry
 	homeID     fileIdentity
 	artifactID fileIdentity
 }
 
-func (c *Catalog) scanLocked() (Snapshot, error) {
+func (c *Catalog) scanLocked() (Snapshot, map[string]discoveredHome, error) {
 	directoryEntries, err := os.ReadDir(c.root)
 	if err != nil {
-		return Snapshot{}, fmt.Errorf("credential catalog: controlled root scan failed")
+		return Snapshot{}, nil, fmt.Errorf("credential catalog: controlled root scan failed")
 	}
-	// os.ReadDir currently sorts names, but sorting explicitly makes this
-	// contract independent of filesystem and implementation ordering.
 	sort.Slice(directoryEntries, func(i, j int) bool {
 		return directoryEntries[i].Name() < directoryEntries[j].Name()
 	})
 
 	discovered := make([]discoveredHome, 0, len(directoryEntries))
+	scannedMap := make(map[string]discoveredHome, len(directoryEntries))
 	quarantined := make([]Quarantine, 0)
 	for _, directoryEntry := range directoryEntries {
 		candidatePath := filepath.Join(c.root, directoryEntry.Name())
@@ -129,6 +399,7 @@ func (c *Catalog) scanLocked() (Snapshot, error) {
 			continue
 		}
 		discovered = append(discovered, *home)
+		scannedMap[home.entry.homeRef] = *home
 	}
 
 	conflicts := conflictingIndexes(discovered)
@@ -140,6 +411,7 @@ func (c *Catalog) scanLocked() (Snapshot, error) {
 				provider:     c.provider,
 				reason:       ReasonFilesystemIdentityConflict,
 			})
+			delete(scannedMap, home.entry.homeRef)
 			continue
 		}
 		entries = append(entries, home.entry)
@@ -149,7 +421,7 @@ func (c *Catalog) scanLocked() (Snapshot, error) {
 		provider:    c.provider,
 		entries:     entries,
 		quarantined: quarantined,
-	}, nil
+	}, scannedMap, nil
 }
 
 func (c *Catalog) inspectCandidate(candidatePath, candidateName string) (*discoveredHome, *Quarantine) {

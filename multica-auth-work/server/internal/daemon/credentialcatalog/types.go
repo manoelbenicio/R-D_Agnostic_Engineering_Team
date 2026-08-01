@@ -68,6 +68,10 @@ type State string
 const (
 	StateHealthy     State = "healthy"
 	StateQuarantined State = "quarantined"
+	StateMissing     State = "missing"
+	StateDraining    State = "draining"
+	StateRetired     State = "retired"
+	StateTombstoned  State = "tombstoned"
 )
 
 // QuarantineReason is a stable, pathless reason code.
@@ -84,6 +88,8 @@ const (
 	ReasonWrongOwner                 QuarantineReason = "wrong_owner"
 	ReasonPermissionsTooOpen         QuarantineReason = "permissions_too_open"
 	ReasonFilesystemIdentityConflict QuarantineReason = "filesystem_identity_conflict"
+	ReasonTombstoned                 QuarantineReason = "tombstoned"
+	ReasonRevalidationFailed         QuarantineReason = "revalidation_failed"
 )
 
 // Entry is an immutable, daemon-local catalog entry. Paths are intentionally
@@ -95,6 +101,7 @@ type Entry struct {
 	state        State
 	homePath     string
 	artifactPath string
+	activeRefs   int
 }
 
 func (e Entry) HomeRef() string      { return e.homeRef }
@@ -102,6 +109,7 @@ func (e Entry) Provider() Provider   { return e.provider }
 func (e Entry) State() State         { return e.state }
 func (e Entry) HomePath() string     { return e.homePath }
 func (e Entry) ArtifactPath() string { return e.artifactPath }
+func (e Entry) ActiveRefs() int      { return e.activeRefs }
 
 // Quarantine records only an opaque candidate reference and a reason code.
 // It deliberately contains no child name, raw path, account identity, or
@@ -126,6 +134,8 @@ type Snapshot struct {
 	provider    Provider
 	entries     []Entry
 	quarantined []Quarantine
+	draining    []Entry
+	tombstoned  []string
 }
 
 func (s Snapshot) Generation() uint64    { return s.generation }
@@ -140,13 +150,25 @@ func (s Snapshot) Quarantined() []Quarantine {
 	return append([]Quarantine(nil), s.quarantined...)
 }
 
+func (s Snapshot) Draining() []Entry {
+	return append([]Entry(nil), s.draining...)
+}
+
+func (s Snapshot) Tombstoned() []string {
+	return append([]string(nil), s.tombstoned...)
+}
+
 func (s Snapshot) HealthyCount() int     { return len(s.entries) }
 func (s Snapshot) QuarantinedCount() int { return len(s.quarantined) }
+func (s Snapshot) DrainingCount() int    { return len(s.draining) }
+func (s Snapshot) TombstonedCount() int  { return len(s.tombstoned) }
 
 func cloneSnapshot(source Snapshot) Snapshot {
 	clone := source
 	clone.entries = source.Entries()
 	clone.quarantined = source.Quarantined()
+	clone.draining = source.Draining()
+	clone.tombstoned = source.Tombstoned()
 	return clone
 }
 
@@ -160,4 +182,8 @@ func sortSnapshot(snapshot *Snapshot) {
 		}
 		return snapshot.quarantined[i].reason < snapshot.quarantined[j].reason
 	})
+	sort.Slice(snapshot.draining, func(i, j int) bool {
+		return snapshot.draining[i].homeRef < snapshot.draining[j].homeRef
+	})
+	sort.Strings(snapshot.tombstoned)
 }

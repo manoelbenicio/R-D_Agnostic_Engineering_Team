@@ -3,13 +3,16 @@
 package credentialcatalog
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
+	"time"
 )
 
 func newPrivateRoot(t *testing.T) string {
@@ -332,6 +335,188 @@ func TestDuplicateArtifactIdentityQuarantinesEveryCandidateDeterministically(t *
 		if quarantine.Reason() != ReasonFilesystemIdentityConflict || quarantine.State() != StateQuarantined {
 			t.Fatalf("quarantine = %#v", quarantine)
 		}
+	}
+}
+
+func TestActiveRefCountingAndDrainingLifecycle(t *testing.T) {
+	root := newPrivateRoot(t)
+	_, _ = writeFakeHome(t, root, "active-slot", ProviderCodex)
+	catalog := mustCatalog(t, root, ProviderCodex)
+
+	snap1, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap1.HealthyCount() != 1 {
+		t.Fatalf("healthy count = %d", snap1.HealthyCount())
+	}
+	homeRef := snap1.Entries()[0].HomeRef()
+
+	// Acquire active ref
+	release, err := catalog.AcquireRef(homeRef)
+	if err != nil {
+		t.Fatalf("AcquireRef failed: %v", err)
+	}
+	if catalog.ActiveRefs(homeRef) != 1 {
+		t.Fatalf("active refs = %d, want 1", catalog.ActiveRefs(homeRef))
+	}
+
+	// Remove physical home directory while active ref is held -> transitions to Draining
+	if err := os.RemoveAll(filepath.Join(root, "active-slot")); err != nil {
+		t.Fatal(err)
+	}
+
+	snap2, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap2.HealthyCount() != 0 || snap2.DrainingCount() != 1 {
+		t.Fatalf("snap2 healthy=%d draining=%d", snap2.HealthyCount(), snap2.DrainingCount())
+	}
+	if snap2.Draining()[0].HomeRef() != homeRef {
+		t.Fatalf("draining ref = %q, want %q", snap2.Draining()[0].HomeRef(), homeRef)
+	}
+
+	// Release active ref -> transitions to Tombstoned
+	release()
+	if catalog.ActiveRefs(homeRef) != 0 {
+		t.Fatalf("active refs after release = %d, want 0", catalog.ActiveRefs(homeRef))
+	}
+
+	snap3, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap3.HealthyCount() != 0 || snap3.DrainingCount() != 0 || snap3.TombstonedCount() != 1 {
+		t.Fatalf("snap3 healthy=%d draining=%d tombstoned=%d", snap3.HealthyCount(), snap3.DrainingCount(), snap3.TombstonedCount())
+	}
+
+	// Attempting AcquireRef on tombstoned ref must fail
+	if _, err := catalog.AcquireRef(homeRef); err != ErrHomeTombstoned {
+		t.Fatalf("acquire tombstoned err = %v, want ErrHomeTombstoned", err)
+	}
+}
+
+func TestFastLaunchRevalidation(t *testing.T) {
+	root := newPrivateRoot(t)
+	_, artifact := writeFakeHome(t, root, "revalidate-slot", ProviderAntigravity)
+	catalog := mustCatalog(t, root, ProviderAntigravity)
+
+	snap, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	homeRef := snap.Entries()[0].HomeRef()
+
+	// Launch-time revalidation on healthy home passes fast
+	entry, err := catalog.Revalidate(homeRef)
+	if err != nil {
+		t.Fatalf("Revalidate healthy failed: %v", err)
+	}
+	if entry.HomeRef() != homeRef || entry.State() != StateHealthy {
+		t.Fatalf("entry = %#v", entry)
+	}
+
+	// Corrupt permissions on artifact -> launch revalidation fails and quarantines
+	if err := os.Chmod(artifact, 0o666); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := catalog.Revalidate(homeRef); err != ErrRevalidateFailed {
+		t.Fatalf("revalidate corrupted err = %v, want ErrRevalidateFailed", err)
+	}
+}
+
+func TestWatcherOverflowRecovery(t *testing.T) {
+	root := newPrivateRoot(t)
+	writeFakeHome(t, root, "slot-1", ProviderKiro)
+	catalog := mustCatalog(t, root, ProviderKiro)
+
+	if _, err := catalog.Reconcile(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Add new home physical dir out-of-band
+	writeFakeHome(t, root, "slot-2", ProviderKiro)
+
+	// Trigger watcher overflow recovery
+	snap, err := catalog.NotifyWatcherOverflow()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if catalog.WatcherOverflowCount() != 1 {
+		t.Fatalf("overflow count = %d, want 1", catalog.WatcherOverflowCount())
+	}
+	if snap.HealthyCount() != 2 {
+		t.Fatalf("healthy count after overflow recovery = %d, want 2", snap.HealthyCount())
+	}
+}
+
+func TestWatermarkEnforcementScale(t *testing.T) {
+	root := newPrivateRoot(t)
+	for i := 0; i < 25; i++ {
+		writeFakeHome(t, root, fmt.Sprintf("child-%03d", i), ProviderCodex)
+	}
+
+	// Config with HighWatermark=20, LowWatermark=15
+	catalog, err := New(Config{
+		Root:          root,
+		Provider:      ProviderCodex,
+		HighWatermark: 20,
+		LowWatermark:  15,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	snap, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if snap.HealthyCount() != 15 {
+		t.Fatalf("healthy count after watermark enforcement = %d, want 15", snap.HealthyCount())
+	}
+}
+
+func TestConcurrentAcquireReleaseRevalidateUnderRace(t *testing.T) {
+	root := newPrivateRoot(t)
+	for i := 0; i < 5; i++ {
+		writeFakeHome(t, root, fmt.Sprintf("race-slot-%d", i), ProviderCodex)
+	}
+
+	catalog := mustCatalog(t, root, ProviderCodex)
+	snap, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var wg sync.WaitGroup
+	for _, entry := range snap.Entries() {
+		ref := entry.HomeRef()
+		for g := 0; g < 5; g++ {
+			wg.Add(1)
+			go func(r string) {
+				defer wg.Done()
+				for i := 0; i < 20; i++ {
+					rel, err := catalog.AcquireRef(r)
+					if err == nil {
+						_, _ = catalog.Revalidate(r)
+						time.Sleep(100 * time.Microsecond)
+						rel()
+					}
+					catalog.NotifyHint("synthetic")
+				}
+			}(ref)
+		}
+	}
+	wg.Wait()
+
+	finalSnap, err := catalog.Reconcile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if finalSnap.HealthyCount() != 5 {
+		t.Fatalf("final healthy count = %d, want 5", finalSnap.HealthyCount())
 	}
 }
 
