@@ -62,17 +62,25 @@ type Candidate struct {
 	ConfigurationDigest         string        `json:"-"`
 	CapabilityDigest            string        `json:"-"`
 	Provider                    string        `json:"-"`
+	SessionProvider             string        `json:"-"`
 	HomeRef                     HomeRef       `json:"home_ref"`
 	BindingGeneration           uint64        `json:"binding_generation"`
 	AssignmentCatalogGeneration uint64        `json:"-"`
 	CatalogGeneration           uint64        `json:"catalog_generation"`
 	Approval                    ApprovalState `json:"-"`
 	Status                      AccountStatus `json:"-"`
-	WorktypeScope               string        `json:"-"`
+	BindingState                string        `json:"-"`
+	TransportBinding            string        `json:"-"`
+	AssignmentState             string        `json:"-"`
+	CatalogState                string        `json:"-"`
+	CatalogEntryState           string        `json:"-"`
+	HealthFresh                 bool          `json:"-"`
 	AssignmentOwners            int           `json:"-"`
 	BindingAssignments          int           `json:"-"`
 	ActiveTasks                 int           `json:"-"`
 	TaskConcurrencyLimit        int           `json:"-"`
+	ExistingSnapshot            bool          `json:"-"`
+	SnapshotMatches             bool          `json:"-"`
 }
 
 // Request is the complete fenced identity supplied at admission. Both expected
@@ -211,10 +219,15 @@ func validateCandidate(request Request, candidate Candidate) error {
 		candidate.Approval != ApprovalApproved {
 		return ErrNoApprovedAssignment
 	}
-	if candidate.Provider != request.Provider {
+	if candidate.Provider != request.Provider || candidate.SessionProvider != request.Provider {
 		return ErrProviderMismatch
 	}
-	if candidate.TaskStatus != "queued" {
+	if candidate.ExistingSnapshot {
+		if !candidate.SnapshotMatches || (candidate.TaskStatus != "dispatched" &&
+			candidate.TaskStatus != "running" && candidate.TaskStatus != "waiting_local_directory") {
+			return ErrTaskConflict
+		}
+	} else if candidate.TaskStatus != "queued" {
 		return ErrTaskConflict
 	}
 	if candidate.BindingGeneration != request.ExpectedBindingGeneration ||
@@ -228,10 +241,13 @@ func validateCandidate(request Request, candidate Candidate) error {
 	if candidate.AssignmentOwners != 1 || candidate.BindingAssignments != 1 {
 		return ErrNoApprovedAssignment
 	}
-	if candidate.Status != StatusAvailable && candidate.Status != StatusLeased {
+	if candidate.BindingState != "active" || candidate.TransportBinding != "native_credential_home" ||
+		candidate.AssignmentState != "active" || candidate.CatalogState != "available" ||
+		candidate.CatalogEntryState != "healthy" || !candidate.HealthFresh ||
+		(candidate.Status != StatusAvailable && candidate.Status != StatusLeased) {
 		return ErrAccountUnavailable
 	}
-	if candidate.WorktypeScope != "GENERAL" || !ValidHomeRef(candidate.HomeRef) ||
+	if !ValidHomeRef(candidate.HomeRef) ||
 		candidate.BindingGeneration == 0 || candidate.CatalogGeneration == 0 ||
 		candidate.ActiveTasks < 0 || candidate.TaskConcurrencyLimit <= 0 ||
 		strings.TrimSpace(candidate.RuntimeID) == "" || strings.TrimSpace(candidate.RuntimeSessionID) == "" ||
@@ -239,7 +255,7 @@ func validateCandidate(request Request, candidate Candidate) error {
 		strings.TrimSpace(candidate.ConfigurationDigest) == "" || strings.TrimSpace(candidate.CapabilityDigest) == "" {
 		return ErrInvalidMetadata
 	}
-	if candidate.ActiveTasks >= candidate.TaskConcurrencyLimit {
+	if !candidate.ExistingSnapshot && candidate.ActiveTasks >= candidate.TaskConcurrencyLimit {
 		return ErrCapacityExhausted
 	}
 	return nil
