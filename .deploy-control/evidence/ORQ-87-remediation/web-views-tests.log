@@ -1,0 +1,19 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:27:36Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work
+command=corepack pnpm@10.28.2 --filter @multica/views exec vitest run auth/login-page.test.tsx auth/auth-locale-parity.test.ts locales/parity.test.ts --maxWorkers=1
+network=disabled after frozen dependency installation
+--- output ---
+
+ RUN  v4.1.0 /home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/packages/views
+
+
+ Test Files  3 passed (3)
+      Tests  177 passed (177)
+   Start at  20:27:36
+   Duration  5.58s (transform 623ms, setup 318ms, import 1.12s, tests 922ms, environment 2.85s)
+
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T20:27:42Z

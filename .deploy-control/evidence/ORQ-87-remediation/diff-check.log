@@ -1,0 +1,9 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:33:20Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims
+command=git diff --cached --check
+--- output ---
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T20:33:20Z

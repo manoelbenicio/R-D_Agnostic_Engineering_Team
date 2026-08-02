@@ -1,0 +1,73 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:26:27Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work
+command=env COREPACK_HOME=/tmp/orq87-corepack COREPACK_ENABLE_NETWORK=1 NPM_CONFIG_USERCONFIG=/dev/null NPM_CONFIG_GLOBALCONFIG=/dev/null npm_config_registry=https://registry.npmjs.org/ GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null GIT_TERMINAL_PROMPT=0 CI=1 corepack pnpm@10.28.2 install --frozen-lockfile --store-dir /tmp/orq87-pnpm-store
+package_json_sha256=ab8f7491634f8ee312e6dd90250583ac4ef88c6a00d62dbf3abb4cfe61556cd4
+pnpm_lock_sha256=7342e1255d6b0f687c6eb7edb326deca860621ea542c698e014bbea4b0339080
+package_manager=pnpm@10.28.2
+source=https://registry.npmjs.org/; frozen lockfile; user/global npm configuration disabled
+--- output ---
+Scope: all 10 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +2004
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 2004, reused 0, downloaded 114, added 82
+Progress: resolved 2004, reused 0, downloaded 288, added 165
+Progress: resolved 2004, reused 0, downloaded 536, added 362
+Progress: resolved 2004, reused 0, downloaded 700, added 484
+Progress: resolved 2004, reused 0, downloaded 835, added 560
+Progress: resolved 2004, reused 0, downloaded 853, added 569
+Progress: resolved 2004, reused 0, downloaded 953, added 621
+Progress: resolved 2004, reused 0, downloaded 1073, added 701
+Progress: resolved 2004, reused 0, downloaded 1244, added 820
+Progress: resolved 2004, reused 0, downloaded 1374, added 938
+Progress: resolved 2004, reused 0, downloaded 1465, added 1025
+Progress: resolved 2004, reused 0, downloaded 1545, added 1048
+Progress: resolved 2004, reused 0, downloaded 1690, added 1153
+Progress: resolved 2004, reused 0, downloaded 1749, added 1208
+Progress: resolved 2004, reused 0, downloaded 1773, added 1220
+Progress: resolved 2004, reused 0, downloaded 1892, added 1285
+Progress: resolved 2004, reused 0, downloaded 1953, added 1509
+Progress: resolved 2004, reused 0, downloaded 1954, added 1776
+Progress: resolved 2004, reused 0, downloaded 1954, added 1971
+Progress: resolved 2004, reused 0, downloaded 1954, added 2004, done
+.../node_modules/electron postinstall$ node install.js
+.../esbuild@0.25.12/node_modules/esbuild postinstall$ node install.js
+.../esbuild@0.25.12/node_modules/esbuild postinstall: Done
+.../node_modules/electron postinstall: Done
+
+devDependencies:
++ @playwright/test 1.58.2
++ @types/node 25.5.0
++ @types/pg 8.20.0
++ pg 8.20.0
++ turbo 2.9.5
++ typescript 5.9.3
+
+apps/docs postinstall$ fumadocs-mdx
+apps/docs postinstall: [MDX] types generated
+apps/docs postinstall: Done
+apps/desktop postinstall$ electron-builder install-app-deps
+apps/desktop postinstall:   • electron-builder  version=26.8.1
+apps/desktop postinstall:   • loaded configuration  file=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/apps/desktop/electron-builder.yml
+apps/desktop postinstall:   • packageManager not detected by file, falling back to environment detection  resolvedPackageManager=pnpm detected=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/apps/desktop
+apps/desktop postinstall:   • detected workspace root for project using packageManager field  pm=pnpm config=pnpm@10.28.2 resolved=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work projectDir=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/apps/desktop
+apps/desktop postinstall:   • executing @electron/rebuild  electronVersion=39.8.7 arch=x64 buildFromSource=false workspaceRoot=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work projectDir=./ appDir=./
+apps/desktop postinstall:   • installing native dependencies  arch=x64
+apps/desktop postinstall:   • completed installing native dependencies
+apps/desktop postinstall: Done
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: core-js@3.49.0, electron-winstaller@5.4.0,          │
+│   msw@2.12.14, protobufjs@7.5.5, sharp@0.34.5, unicode-animations@1.0.3,     │
+│   unrs-resolver@1.12.0.                                                      │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+Done in 39.3s using pnpm v10.28.2
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T20:27:07Z

@@ -1,0 +1,19 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:27:34Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work
+command=corepack pnpm@10.28.2 --filter @multica/core exec vitest run api/client.test.ts auth/service.test.ts auth/store.test.ts
+network=disabled after frozen dependency installation
+--- output ---
+
+ RUN  v4.1.0 /home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/packages/core
+
+
+ Test Files  3 passed (3)
+      Tests  33 passed (33)
+   Start at  20:27:35
+   Duration  644ms (transform 602ms, setup 0ms, import 935ms, tests 96ms, environment 0ms)
+
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T20:27:36Z

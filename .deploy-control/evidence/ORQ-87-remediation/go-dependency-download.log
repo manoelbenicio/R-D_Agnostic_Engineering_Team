@@ -1,0 +1,12 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:24:12Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/server
+command=env GOTOOLCHAIN=local GOENV=off GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOPRIVATE= GONOPROXY= GONOSUMDB= GOMODCACHE=/tmp/orq87-go/mod GOCACHE=/tmp/orq87-go/build GOPATH=/tmp/orq87-go/path GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null GIT_TERMINAL_PROMPT=0 go mod download
+go_mod_sha256=751b8f34c7f59a7332281a878d1781edf83fd354397af1c1cd1492fa46440212
+go_sum_sha256=5d3b288a17bae9685b103c183b5b2ad7fa440f25484de6fd8ece7aac7f91ece5
+source=https://proxy.golang.org with direct fallback configured; transport path was not logged; this provenance is superseded by go-official-reverification.log
+--- output ---
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T20:24:16Z

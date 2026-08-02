@@ -1,0 +1,12 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:24:34Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/server
+command=go test ./internal/daemon/execenv ./internal/rotation ./internal/daemon -run \^\(TestPrepareNimHome\|TestNIM\|TestLoadConfig_\(ProbesClineAndNIMCredential\|SkipsNIMWithoutCredential\)\|TestRequiresCredentialIsolationIncludesNIM\|TestReportModelListResult_\) -count=1
+--- output ---
+ok  	github.com/multica-ai/multica/server/internal/daemon/execenv	0.006s
+ok  	github.com/multica-ai/multica/server/internal/rotation	0.027s
+ok  	github.com/multica-ai/multica/server/internal/daemon	0.167s
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T20:25:33Z

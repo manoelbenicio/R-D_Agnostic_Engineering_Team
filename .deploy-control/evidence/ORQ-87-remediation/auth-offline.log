@@ -1,0 +1,14 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:25:33Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/server
+command=env APP_ENV=test DATABASE_URL=://offline-invalid go test -tags=offline -count=1 ./internal/auth ./internal/middleware ./internal/handler/passwordtest ./cmd/multica ./cmd/server -run Test\(ValidateJWTConfiguration\|HasRecentAuthentication\|RateLimit_NilRedis\|RateLimit_RedisErrorUsesLocalFallback\|BoundedLocalRateLimiter\|Auth_VerifiedJWT\|Auth_IssuedAt\|PostgresPasswordCredentialStore\|UpdatePassword\|PasswordLoginMints\|PasswordAuthRoutes\|PasswordUpdateRoute\|ReadPassword\|UserPasswordUpdate\|RunUserPasswordUpdate\|PasswordPrompt\)
+--- output ---
+ok  	github.com/multica-ai/multica/server/internal/auth	0.034s
+ok  	github.com/multica-ai/multica/server/internal/middleware	0.019s
+ok  	github.com/multica-ai/multica/server/internal/handler/passwordtest	0.279s
+ok  	github.com/multica-ai/multica/server/cmd/multica	0.052s
+ok  	github.com/multica-ai/multica/server/cmd/server	0.075s
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T20:25:58Z

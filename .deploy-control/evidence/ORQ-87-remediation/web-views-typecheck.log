@@ -1,0 +1,14 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:27:55Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work
+command=corepack pnpm@10.28.2 --filter @multica/views typecheck
+network=disabled after frozen dependency installation
+--- output ---
+
+> @multica/views@0.0.0 typecheck /home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/packages/views
+> tsc --noEmit
+
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T20:28:29Z

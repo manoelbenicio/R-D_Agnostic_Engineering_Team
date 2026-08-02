@@ -1,0 +1,22 @@
+path	acceptance_evidence
+.deploy-control/evidence/ORQ-87-remediation/captured-artifacts.sha256	integrity manifest for remediation evidence excluding itself
+.deploy-control/evidence/ORQ-87-remediation/changed-file-map.tsv	exact changed-file allowlist and acceptance mapping
+.deploy-control/evidence/ORQ-87-remediation/auth-offline.log	1.7 focused backend auth execution
+.deploy-control/evidence/ORQ-87-remediation/backend-build.log	2.4a server and CLI binary compilation
+.deploy-control/evidence/ORQ-87-remediation/backend-vet.log	2.4a scoped backend vet
+.deploy-control/evidence/ORQ-87-remediation/dependency-integrity.log	lock and module integrity plus tool versions
+.deploy-control/evidence/ORQ-87-remediation/diff-check.log	final repository diff whitespace validation
+.deploy-control/evidence/ORQ-87-remediation/go-dependency-download.log	Go dependency provenance and download result
+.deploy-control/evidence/ORQ-87-remediation/go-official-reverification.log	official-only fresh-cache Go resolution and offline verification
+.deploy-control/evidence/ORQ-87-remediation/native-daemon.log	1.4 partial and 2.1/2.3 execution
+.deploy-control/evidence/ORQ-87-remediation/openspec-validate.log	strict native-runtimes-onboarding OpenSpec validation
+.deploy-control/evidence/ORQ-87-remediation/pnpm-dependency-install.log	pnpm dependency provenance and frozen-lock result
+.deploy-control/evidence/ORQ-87-remediation/validation-summary.md	claim delta, results, residual boundary, review request
+.deploy-control/evidence/ORQ-87-remediation/web-app-tests.log	1.5/1.6 focused app assertions
+.deploy-control/evidence/ORQ-87-remediation/web-app-typecheck.log	1.5/1.6 app typecheck
+.deploy-control/evidence/ORQ-87-remediation/web-build.log	1.6/2.5a preserved production-build failure
+.deploy-control/evidence/ORQ-87-remediation/web-core-tests.log	1.5 focused auth/API assertions
+.deploy-control/evidence/ORQ-87-remediation/web-core-typecheck.log	1.5 core typecheck
+.deploy-control/evidence/ORQ-87-remediation/web-views-tests.log	1.5/1.6 focused login/i18n assertions
+.deploy-control/evidence/ORQ-87-remediation/web-views-typecheck.log	1.5/1.6 views typecheck
+openspec/changes/native-runtimes-onboarding/tasks.md	current bounded claim delta and retained open criteria

@@ -1,0 +1,9 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:26:07Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/server
+command=go build ./cmd/server ./cmd/multica
+--- output ---
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T20:26:11Z

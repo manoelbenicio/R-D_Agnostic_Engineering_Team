@@ -1,0 +1,10 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:32:31Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims
+command=openspec validate native-runtimes-onboarding --type change --strict --no-interactive
+--- output ---
+Change 'native-runtimes-onboarding' is valid
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T20:32:31Z

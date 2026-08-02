@@ -1,0 +1,94 @@
+ORQ-87 remediation command evidence
+start_utc=2026-08-02T20:29:02Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work
+command=env HTTP_PROXY=http://127.0.0.1:9 HTTPS_PROXY=http://127.0.0.1:9 ALL_PROXY=http://127.0.0.1:9 NO_PROXY=localhost\,127.0.0.1 NEXT_TELEMETRY_DISABLED=1 corepack pnpm@10.28.2 --filter @multica/web build
+network=disabled after frozen dependency installation
+--- output ---
+
+> @multica/web@0.2.0 build /home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/apps/web
+> next build
+
+◇ injected env (0) from ../../.env // tip: ⌘ suppress logs { quiet: true }
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+▲ Next.js 16.2.6 (Turbopack)
+
+  Creating an optimized production build ...
+◇ injected env (0) from ../../.env // tip: ◈ secrets for agents [www.dotenvx.com]
+Turbopack build encountered 3 warnings:
+[next]/internal/font/google/geist_mono_697ddf31.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_697ddf31.module.css
+    [next]/internal/font/google/geist_mono_697ddf31.js
+    ./apps/web/app/layout.tsx
+
+
+[next]/internal/font/google/inter_5901b7c6.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/inter_5901b7c6.module.css
+    [next]/internal/font/google/inter_5901b7c6.js
+    ./apps/web/app/layout.tsx
+
+
+[next]/internal/font/google/source_serif_4_39c0f259.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,200..900;1,200..900&display=swap
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/source_serif_4_39c0f259.module.css
+    [next]/internal/font/google/source_serif_4_39c0f259.js
+    ./apps/web/app/layout.tsx
+
+
+
+> Build error occurred
+Error: Turbopack build failed with 3 errors:
+[next]/internal/font/google/geist_mono_697ddf31.module.css
+next/font: error:
+Failed to fetch `Geist Mono` from Google Fonts.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_697ddf31.module.css
+    [next]/internal/font/google/geist_mono_697ddf31.js
+    ./apps/web/app/layout.tsx
+
+
+[next]/internal/font/google/inter_5901b7c6.module.css
+next/font: error:
+Failed to fetch `Inter` from Google Fonts.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/inter_5901b7c6.module.css
+    [next]/internal/font/google/inter_5901b7c6.js
+    ./apps/web/app/layout.tsx
+
+
+[next]/internal/font/google/source_serif_4_39c0f259.module.css
+next/font: error:
+Failed to fetch `Source Serif 4` from Google Fonts.
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/source_serif_4_39c0f259.module.css
+    [next]/internal/font/google/source_serif_4_39c0f259.js
+    ./apps/web/app/layout.tsx
+
+
+    at ignore-listed frames
+/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/apps/web:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @multica/web@0.2.0 build: `next build`
+Exit status 1
+
+--- result ---
+exit_code=1
+end_utc=2026-08-02T20:29:39Z

@@ -1,0 +1,12 @@
+ORQ-87 official-only Go provenance reverification
+start_utc=2026-08-02T20:31:59Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/server
+command=env GOTOOLCHAIN=local GOENV=off GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOPRIVATE= GONOPROXY= GONOSUMDB= GOMODCACHE=/tmp/orq87-go-official/mod GOCACHE=/tmp/orq87-go-official/build GOPATH=/tmp/orq87-go-official/path GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null GIT_TERMINAL_PROMPT=0 go mod download
+source=https://proxy.golang.org only; no direct fallback
+--- download output ---
+all modules verified
+
+--- result ---
+download_exit_code=0
+offline_verify_exit_code=0
+end_utc=2026-08-02T20:32:02Z

@@ -1,0 +1,14 @@
+ORQ-87 remediation dependency integrity
+start_utc=2026-08-02T20:30:19Z
+go_version=go version go1.26.1 linux/amd64
+node_version=v22.23.1
+corepack_version=0.34.6
+pnpm_version=10.28.2
+751b8f34c7f59a7332281a878d1781edf83fd354397af1c1cd1492fa46440212  /home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/server/go.mod
+5d3b288a17bae9685b103c183b5b2ad7fa440f25484de6fd8ece7aac7f91ece5  /home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/server/go.sum
+ab8f7491634f8ee312e6dd90250583ac4ef88c6a00d62dbf3abb4cfe61556cd4  /home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/package.json
+7342e1255d6b0f687c6eb7edb326deca860621ea542c698e014bbea4b0339080  /home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/pnpm-lock.yaml
+command=go mod verify (isolated task cache; network disabled)
+all modules verified
+go_mod_verify_exit_code=0
+end_utc=2026-08-02T20:30:20Z
