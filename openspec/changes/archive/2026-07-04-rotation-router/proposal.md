@@ -1,11 +1,20 @@
 # Proposal — Rotation Router (policy-driven, self-hosted)
 
-> **⚠️ SUPERSEDED (2026-07-04) por `openspec/changes/rotation-parity-polyglot/` + `docs/rotation-parity-polyglot/02_ADR-001-arquitetura.md`.**
+> **⚠️ SUPERSEDED (2026-07-04).** O sucessor histórico `rotation-parity-polyglot`
+> permanece preservado no Git como tree `60315448dc1929dd7c5bb95453637bda7232ab2d`
+> no commit `52cdd877e1941872ac4651df5360ff885afd16ad`; o ADR histórico é o blob
+> `f0f2083116b8cc9025995514f5bdde8ec7d51748` nesse commit. Esses arquivos foram
+> removidos da árvore atual por `9ab80a6f0d34d594193855cf1e659ee633a45ccc`.
+> O sucessor documental aceito na linhagem atual é
+> `openspec/changes/document-multica-gateway-selection-lifecycle/`, que preserva a
+> implementação Multica AS-IS e não autoriza mudança de runtime, credencial, produção
+> ou arquitetura.
 > A **autoridade de runtime** deste router (seleção/rotação/fallback/loadbalance/proactive_reset em voo)
 > foi **absorvida pelo `prodex`/Rust L2** (arquitetura polyglot; ver ADR-001). **Permanece válido como
 > CONTROL PLANE Go:** Account Registry, approved-accounts por tenant (migration 124), observability e
 > KPI Savings. O código de seleção runtime em Go (policy/fallback/loadbalance/proactive_reset) fica como
 > referência/legado; a decisão de request em voo passa ao L2. Nada aqui deve ser tratado como runtime ativo.
+> Este parágrafo é preservado como rationale histórico de 2026-07-04 e não substitui a autoridade atual acima.
 
 
 ## Why

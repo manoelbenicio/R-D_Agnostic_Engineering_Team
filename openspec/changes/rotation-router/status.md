@@ -1,10 +1,21 @@
 # Status: rotation-router
 
 > **Status:** SUPERSEDED
-> **Superseded by:** `openspec/changes/rotation-parity-polyglot/`
+> **Current documentation successor:** `openspec/changes/document-multica-gateway-selection-lifecycle/`
 > **Decision date:** 2026-07-04
 > **Decision authority:** Product Owner (Manoel Benicio) + Codex R&D Engineering Team + Orchestration (Opus 4.8)
-> **ADR reference:** `docs/rotation-parity-polyglot/02_ADR-001-arquitetura.md`
+> **Historical successor:** `rotation-parity-polyglot` tree `60315448dc1929dd7c5bb95453637bda7232ab2d`
+> at commit `52cdd877e1941872ac4651df5360ff885afd16ad`
+> **Historical ADR:** blob `f0f2083116b8cc9025995514f5bdde8ec7d51748` at that commit
+
+## Current-lineage correction (2026-08-02)
+
+The historical successor and ADR named above are not present in the current tree; they
+were removed by commit `9ab80a6f0d34d594193855cf1e659ee633a45ccc`. The accepted current
+documentation lineage is `openspec/changes/document-multica-gateway-selection-lifecycle/`,
+whose authority preserves the Multica implementation AS-IS and does not authorize runtime,
+credential, production, or architecture changes. The 2026-07-04 rationale below is retained
+as historical context and does not override that current authority.
 
 ## Summary
 
@@ -45,11 +56,14 @@ Per ADR-001 (Alternative A+D chosen):
 | 2026-06-XX | rotation-router proposed (Go-only design) |
 | 2026-07-04 | ADR-001 accepted — polyglot architecture (Go L4 + Rust L2) |
 | 2026-07-04 | rotation-router SUPERSEDED by rotation-parity-polyglot |
+| 2026-07-24 | historical rotation-parity-polyglot files removed from the current tree by `9ab80a6f0d34d594193855cf1e659ee633a45ccc` |
+| 2026-08-02 | current documentation successor corrected to `document-multica-gateway-selection-lifecycle` |
 
 ## Related Files
 
-- `openspec/changes/rotation-router/proposal.md` — original proposal (has SUPERSEDED banner)
-- `openspec/changes/rotation-router/design.md` — original design (reference/legacy)
-- `openspec/changes/rotation-router/tasks.md` — original tasks (no longer active)
-- `openspec/changes/rotation-parity-polyglot/` — successor change
-- `docs/rotation-parity-polyglot/02_ADR-001-arquitetura.md` — architecture decision
+- `openspec/changes/archive/2026-07-04-rotation-router/proposal.md` — archived original proposal
+- `openspec/changes/archive/2026-07-04-rotation-router/design.md` — archived original design
+- `openspec/changes/archive/2026-07-04-rotation-router/tasks.md` — archived original tasks
+- `openspec/changes/document-multica-gateway-selection-lifecycle/` — accepted current documentation successor
+- Historical rotation-parity-polyglot change tree: `60315448dc1929dd7c5bb95453637bda7232ab2d`
+- Historical ADR blob: `f0f2083116b8cc9025995514f5bdde8ec7d51748`
