@@ -25,6 +25,12 @@ e só então **delega** aos agentes envolvidos — sintetizando o resultado. O l
 - O General Tech Leader continua decidindo prioridade, escopo, aceite e integracao; o operador
   do Kanban executa somente transicoes e despachos explicitamente autorizados.
 
+## Provenance & Evidence Boundary (ORQ-88 / REC-CHAT-CLAIMS-01)
+- Authoritative Candidate OID: `a5aa53e8e89d2845cacfbc82ca851fbd18f9a505` (Tree OID: `b3d3f484fa7204308d085c17a99db8fe7b586f6e`).
+- 12 OpenSpec claims reconciled: DIRECT 3 (`1.3`, `2.2`, `2.3`), CORROBORATED 5 (`0.1`, `0.2`, `0.3`, `1.1`, `1.4`), CLAIMED 3 (`1.2`, `1.5`, `2.1`), MISSING 1 (`2.4`), CONTRADICTED 0.
+- Sealed isolated PostgreSQL execution verified via E1 (`CHAT-CLOSEOUT.md`, inner SHA-256 `5c247789...`).
+- Open gaps preserved: Task 1.2 (isolated PG test required), Task 2.1 (live LLM synthesis unproven), Task 2.4 (native Kanban dispatch missing), and Root Owner attribution waiver requirement for `1.1`/`1.4` checkbox authority.
+
 ## Non-goals
 - Impedir conversa direta com um agente (o escape hatch é requisito).
 - Forçar OpenSpec explore em toda task (é a critério do leader quando há dúvida/complexidade).
