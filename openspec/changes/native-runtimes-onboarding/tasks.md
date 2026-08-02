@@ -6,25 +6,29 @@
 - [x] 1.1 Agent-1: `server/pkg/agent/nim.go` — backend NIM OpenAI-compatible (SSE, loop agêntico, usageMetadata→TokenUsage) + testes — VALIDADO Kiro (container `pkg/agent` verde)
 - [x] 1.2 Agent-2: isolamento/rotação NIM — `execenv/nim_home.go`, `rotation_detector_nim.go`, `rotation/detector_nim.go` + testes
 - [x] 1.3 Agent-3: `server/pkg/agent/cline.go` — backend nativo Cline 3.x via `cline --acp` (ACP JSON-RPC 2.0 por stdin/stdout); `--json` é modo separado incompatível e é filtrado, conforme teste direto do argv
-- [x] 1.4 Agent-4: descoberta de modelos — timeout + cache + surface de erro no fluxo model-list; UI popula — VALIDADO Kiro (container `pkg/agent` + `internal/daemon` verdes)
-- [x] 1.5 Agent-5 onboarding frontend — COMPLETE in the accepted 3,189-path source baseline; source parity plus core/views/repository typecheck and production web-build evidence are recorded in `reconciliation/SOURCE_PARITY_EVIDENCE.md`. This closes source implementation only and claims no deployed onboarding UAT.
-- [x] 1.6 Agent-6 design parity/i18n/web QA — COMPLETE in the accepted source baseline; core/views tests and typechecks, repository typecheck, and production web build passed in the cited parity evidence. This closes local source/test acceptance only.
-- [x] 1.7 Agent-1 (BACKEND, novo — desbloqueia 1.5): `POST /auth/login` (username/senha) em `cmd/server/router.go` + credential store (Postgres, hash bcrypt/argon2) atrás de interface `AuthProvider` (Firebase-ready, sem rework); remover `/auth/send-code` + `/auth/verify-code`; manter `/auth/google` + `/auth/logout`. Contrato request/response coordenado pelo Kiro com Agent-5 (`packages/core/api/client.ts` + UI).
+- [ ] 1.4 Agent-4: descoberta de modelos — REOPEN. ORQ-87 proved the current `pkg/agent` timeout/cache slice, but the candidate-bound `internal/daemon` slice could not compile offline because required Go modules were absent from the isolated cache.
+- [ ] 1.5 Agent-5 onboarding frontend — REOPEN. Candidate bytes are pinned by ORQ-87, but current frontend tests/typecheck did not execute because pnpm 10.28.2 and the dependency tree were unavailable offline. No `reconciliation/SOURCE_PARITY_EVIDENCE.md` exists.
+- [ ] 1.6 Agent-6 design parity/i18n/web QA — REOPEN. Earlier evidence records scoped tests and typechecks, but also records the production web build as blocked/non-claim; ORQ-87 could not execute the current web toolchain offline.
+- [ ] 1.7 Agent-1 backend password auth — REOPEN. Candidate bytes, including `auth_routes_test.go`, are pinned by ORQ-87, but the focused current auth suite could not compile offline because required Go modules were absent. Historical attribution and residual-scope qualifications remain.
 
 ## Wave 2 — integração (Kiro)
-- [x] 2.1 Wiring `config.go`: probes `nim` e `cline`
+- [ ] 2.1 Wiring `config.go`: probes `nim` e `cline` — REOPEN pending candidate-bound daemon-package execution.
 - [x] 2.2 Wiring `agent.go`: `New()` cases + `SupportedTypes` (nim, cline)
-- [x] 2.3 `requiresCredentialIsolation` += `nim`
-- [x] 2.4a Backend binary/image build scope — COMPLETE by accepted Go compile/build/vet evidence in `reconciliation/SOURCE_PARITY_EVIDENCE.md`.
-- [x] 2.4b Daemon restart and online `nim`/`cline` rollout — SUPERSEDED as a local-RC acceptance item; no restart or rollout was performed. Any future execution is controlled by the owner-gated rollout/restart requirements in `credential-account-home-restoration`.
-- [x] 2.5a Production web build scope — COMPLETE by the accepted web-build and repository typecheck evidence in `reconciliation/SOURCE_PARITY_EVIDENCE.md`.
-- [x] 2.5b Local web service startup and live onboarding validation — SUPERSEDED as a local-RC acceptance item; service startup/UAT was not performed and remains under the existing rollout approval gates.
+- [ ] 2.3 `requiresCredentialIsolation` += `nim` — REOPEN pending candidate-bound daemon-package execution.
+- [ ] 2.4a Backend binary/image build scope — OPEN. ORQ-87's offline build and vet attempts stopped at missing-module setup; no binary/image acceptance is claimed.
+- [ ] 2.4b Daemon restart and online `nim`/`cline` rollout — NOT PERFORMED and outside ORQ-87. Supersession is a scope disposition, not completed acceptance.
+- [ ] 2.5a Production web build scope — OPEN. ORQ-87's forced-offline invocation stopped before build because the pinned pnpm toolchain was unavailable.
+- [ ] 2.5b Local web service startup and live onboarding validation — NOT PERFORMED and outside ORQ-87.
 
 ## Wave 3 — verificação (Kiro valida)
-- [x] 3.1 Go + web source tests — COMPLETE by accepted core/views tests and typechecks, repository typecheck, web build, and Go compile/build/vet evidence. DB-dependent reservation tests remain governed by their explicit external-DB gate and are not misreported as run here.
-- [x] 3.2 `nim`/`cline` deployed smoke — SUPERSEDED / NOT CURRENT local-RC acceptance. No deployed task smoke occurred; future smoke belongs to the owner-approved rollout gate.
-- [x] 3.3 Deployed onboarding UAT — SUPERSEDED / NOT CURRENT local-RC acceptance. No deployment UAT occurred; future UAT belongs to rollout authorization and evidence.
-- [x] 3.4 Integration closure — COMPLETE for the candidate by `reconciliation/SECOND_CHANGE_REVIEW.md`, `reconciliation/SOURCE_PARITY_EVIDENCE.md`, strict OpenSpec evidence, and Council-directed reconciliation records. This does not claim commit, push, deploy, restart, or UAT.
+- [ ] 3.1 Go + web source tests — OPEN. ORQ-87 has one current bounded Go package pass; remaining Go and web slices have preserved setup failures, not passing assertions.
+- [ ] 3.2 `nim`/`cline` deployed smoke — NOT PERFORMED and explicitly outside ORQ-87.
+- [ ] 3.3 Deployed onboarding UAT — NOT PERFORMED and explicitly outside ORQ-87.
+- [ ] 3.4 Integration closure — OPEN. Neither `reconciliation/SECOND_CHANGE_REVIEW.md` nor `reconciliation/SOURCE_PARITY_EVIDENCE.md` exists, and ORQ-87 did not fabricate either artifact.
 
 ## Decisão (resolvida pelo dono — 2026-07-12)
 - [x] 0.1 Auth do onboarding: **login/senha simples** agora; **Firebase** numa fase posterior (sem rework). Task 1.5 desbloqueada.
+
+## ORQ-87 candidate-bound reconciliation — 2026-08-02
+
+The recovered all-checked state was invalid. The reconciled classification is five bounded-direct criteria (`0.1`, `1.1`, `1.2`, `1.3`, `2.2`), five reopened criteria (`1.4`, `1.5`, `1.7`, `2.1`, `2.3`), and nine contradicted completion claims reopened above (`1.6`, `2.4a`, `2.4b`, `2.5a`, `2.5b`, `3.1`, `3.2`, `3.3`, `3.4`). Exact candidate hashes, commands, exit codes, contradictions, and residuals are recorded under `.deploy-control/evidence/ORQ-87/`.

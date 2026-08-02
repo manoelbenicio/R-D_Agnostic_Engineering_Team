@@ -1,0 +1,17 @@
+path	acceptance_or_evidence_mapping
+openspec/changes/native-runtimes-onboarding/tasks.md	0.1-3.4: replace invalid 19/19 state with 5 bounded-direct and 14 open criteria
+openspec/changes/native-runtimes-onboarding/proposal.md	0.1-3.4: record candidate-bound claim reconciliation and explicit non-claims
+.deploy-control/evidence/ORQ-87/reconciliation.md	0.1-3.4: criterion matrix, command outcomes, contradictions, and residual reopen boundary
+.deploy-control/evidence/ORQ-87/candidate-identity.tsv	0.1-3.4: exact baseline commit/tree/branch binding
+.deploy-control/evidence/ORQ-87/candidate-source-manifest.tsv	0.1-3.4: exact baseline Git blob OID and SHA-256 binding for 64 scoped paths
+.deploy-control/evidence/ORQ-87/native-agent.log	1.1,1.3,1.4,2.2: focused current candidate assertions
+.deploy-control/evidence/ORQ-87/native-daemon.log	1.2,1.4,2.1,2.3: preserved offline module-cache setup failure
+.deploy-control/evidence/ORQ-87/auth-offline.log	1.7: preserved offline module-cache setup failure
+.deploy-control/evidence/ORQ-87/backend-vet.log	2.4a,3.1: preserved offline module-cache setup failure
+.deploy-control/evidence/ORQ-87/backend-build.log	2.4a,3.1: preserved offline module-cache setup failure
+.deploy-control/evidence/ORQ-87/web-toolchain.log	1.5,1.6,2.5a,3.1: pinned pnpm availability failure with network disabled
+.deploy-control/evidence/ORQ-87/web-tests.log	1.5,1.6,3.1: preserved pre-execution pnpm setup failure
+.deploy-control/evidence/ORQ-87/web-typecheck.log	1.5,1.6,3.1: preserved pre-execution pnpm setup failure
+.deploy-control/evidence/ORQ-87/web-build.log	1.6,2.5a,3.1: preserved pre-execution pnpm setup failure
+.deploy-control/evidence/ORQ-87/openspec-validate.log	0.1-3.4: strict OpenSpec structural validation
+.deploy-control/evidence/ORQ-87/captured-artifacts.sha256	0.1-3.4: integrity manifest for all evidence artifacts except itself

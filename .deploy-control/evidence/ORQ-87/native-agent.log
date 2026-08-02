@@ -1,0 +1,10 @@
+ORQ-87 command evidence
+start_utc=2026-08-02T18:50:09Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/server
+command=env GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off go test ./pkg/agent -run \^\(TestNIM\|TestExecuteNIMTool\|TestCline\|TestNewReturns\(Cline\|NIM\)Backend\|TestSupportedTypes\|TestCachedDiscovery\|TestExecutableDiscoveryKeys\|TestDiscoverACPModels\|TestListModelsCline\|TestNIMStaticModels\) -count=1
+--- output ---
+ok  	github.com/multica-ai/multica/server/pkg/agent	1.123s
+
+--- result ---
+exit_code=0
+end_utc=2026-08-02T18:50:28Z

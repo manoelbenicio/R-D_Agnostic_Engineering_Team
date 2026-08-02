@@ -36,3 +36,13 @@ código de email) por um login limpo no mesmo design do app.
   permanecem abertos e nao devem ser inferidos como prontos a partir dos avanços AGY.
 - Os agentes AGY criados no workspace e o reparo de model selection pertencem a outra frente;
   eles nao comprovam que NIM/Cline estejam online ou que o onboarding novo esteja aceito.
+
+## Candidate-bound claim reconciliation — 2026-08-02
+
+ORQ-87 invalidated the recovered 19/19 completion claim against candidate
+`c7f14ee13fa6357b4c67a8b1230fecc9bcd7c81e`. Five criteria retain bounded-direct
+source/offline evidence, five require candidate-bound reopening, and nine checked claims
+were contradicted by missing, blocked, superseded, or explicitly unperformed validation.
+The authoritative current checkbox state and evidence links are in `tasks.md` and
+`.deploy-control/evidence/ORQ-87/reconciliation.md`. This reconciliation makes no claim
+of live smoke, UAT, deployment, restart, production readiness, or Kanban completion.

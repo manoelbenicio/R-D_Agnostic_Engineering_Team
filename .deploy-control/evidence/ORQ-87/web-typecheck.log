@@ -1,0 +1,11 @@
+ORQ-87 command evidence
+start_utc=2026-08-02T18:51:57Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work
+command=env COREPACK_ENABLE_NETWORK=0 COREPACK_HOME=/home/ec2-user/worktrees/multica-orq87-native-claims/.deploy-control/evidence/ORQ-87/corepack-cache pnpm --filter @multica/core typecheck
+--- output ---
+! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-10.28.2.tgz
+Network access disabled by the environment; can't reach https://registry.npmjs.org/pnpm/-/pnpm-10.28.2.tgz
+
+--- result ---
+exit_code=1
+end_utc=2026-08-02T18:51:57Z

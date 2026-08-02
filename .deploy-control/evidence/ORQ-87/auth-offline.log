@@ -1,0 +1,183 @@
+ORQ-87 command evidence
+start_utc=2026-08-02T18:51:56Z
+cwd=/home/ec2-user/worktrees/multica-orq87-native-claims/multica-auth-work/server
+command=env APP_ENV=test DATABASE_URL=://offline-invalid GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off go test -tags=offline -count=1 ./internal/auth ./internal/middleware ./internal/handler/passwordtest ./cmd/multica ./cmd/server -run Test\(ValidateJWTConfiguration\|HasRecentAuthentication\|RateLimit_NilRedis\|RateLimit_RedisErrorUsesLocalFallback\|BoundedLocalRateLimiter\|Auth_VerifiedJWT\|Auth_IssuedAt\|PostgresPasswordCredentialStore\|UpdatePassword\|PasswordLoginMints\|PasswordAuthRoutes\|PasswordUpdateRoute\|ReadPassword\|UserPasswordUpdate\|RunUserPasswordUpdate\|PasswordPrompt\)
+--- output ---
+go: downloading github.com/golang-jwt/jwt/v5 v5.3.1
+go: downloading github.com/jackc/pgx/v5 v5.9.2
+go: downloading github.com/go-chi/chi/v5 v5.2.5
+go: downloading golang.org/x/crypto v0.35.0
+go: downloading github.com/redis/go-redis/v9 v9.18.0
+go: downloading github.com/spf13/cobra v1.10.2
+go: downloading github.com/go-chi/cors v1.2.2
+go: downloading github.com/spf13/pflag v1.0.9
+go: downloading golang.org/x/sys v0.35.0
+go: downloading github.com/aws/aws-sdk-go-v2 v1.41.5
+go: downloading github.com/aws/aws-sdk-go-v2/config v1.32.13
+go: downloading github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.41.5
+go: downloading github.com/google/uuid v1.6.0
+go: downloading github.com/gorilla/websocket v1.5.3
+go: downloading github.com/mattn/go-shellwords v1.0.13
+go: downloading golang.org/x/sync v0.20.0
+go: downloading github.com/lmittmann/tint v1.1.3
+go: downloading github.com/oklog/ulid/v2 v2.1.1
+go: downloading github.com/prometheus/client_golang v1.23.2
+go: downloading github.com/prometheus/client_model v0.6.2
+go: downloading google.golang.org/protobuf v1.36.8
+go: downloading github.com/resend/resend-go/v2 v2.28.0
+go: downloading github.com/robfig/cron/v3 v3.0.1
+go: downloading github.com/aws/aws-sdk-go-v2/credentials v1.19.13
+go: downloading github.com/aws/aws-sdk-go-v2/service/s3 v1.97.3
+go: downloading gopkg.in/yaml.v3 v3.0.1
+go: downloading github.com/pelletier/go-toml/v2 v2.3.0
+go: downloading github.com/cespare/xxhash/v2 v2.3.0
+# github.com/multica-ai/multica/server/internal/auth
+internal/auth/cloudfront.go:20:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/auth
+internal/auth/cloudfront.go:21:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/auth
+internal/auth/cloudfront.go:22:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/auth
+internal/auth/cloud_pat.go:15:2: module lookup disabled by GOPROXY=off
+FAIL	github.com/multica-ai/multica/server/internal/auth [setup failed]
+# github.com/multica-ai/multica/server/internal/middleware
+internal/middleware/request_logger.go:12:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/middleware
+internal/middleware/request_logger.go:13:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/middleware
+internal/middleware/auth.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/middleware
+internal/middleware/owner_lookup.go:7:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/middleware
+internal/middleware/auth.go:16:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/middleware
+internal/auth/cloudfront.go:20:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/middleware
+internal/auth/cloudfront.go:21:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/middleware
+internal/auth/cloudfront.go:22:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/middleware
+internal/auth/cloud_pat.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/internal/middleware
+pkg/db/generated/db.go:11:2: module lookup disabled by GOPROXY=off
+FAIL	github.com/multica-ai/multica/server/internal/middleware [setup failed]
+# github.com/multica-ai/multica/server/internal/handler/passwordtest
+internal/middleware/auth.go:15:2: module lookup disabled by GOPROXY=off
+FAIL	github.com/multica-ai/multica/server/internal/handler/passwordtest [setup failed]
+# github.com/multica-ai/multica/server/cmd/multica
+internal/auth/cloudfront.go:20:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/auth/cloudfront.go:21:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/auth/cloudfront.go:22:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/auth/cloud_pat.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/cli/flags.go:7:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/daemon/identity.go:10:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/daemon/wakeup.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/daemon/daemon.go:22:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/daemon/config.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/skill/frontmatter.go:10:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/daemon/runtimeenv/codex.go:9:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/middleware/request_logger.go:12:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/middleware/request_logger.go:13:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/middleware/owner_lookup.go:7:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/middleware/auth.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/realtime/obs_delivery.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/metrics/business.go:8:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/metrics/registry.go:8:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/metrics/server.go:8:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/metrics/testutil.go:7:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/rotation/loadbalance.go:3:8: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/daemon/brain_integration.go:28:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/logger/logger.go:10:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+internal/middleware/auth.go:16:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+pkg/db/generated/db.go:11:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+cmd/multica/cmd_auth.go:19:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/multica
+cmd/multica/password_terminal_linux.go:8:2: module lookup disabled by GOPROXY=off
+FAIL	github.com/multica-ai/multica/server/cmd/multica [setup failed]
+# github.com/multica-ai/multica/server/cmd/server
+internal/middleware/request_logger.go:12:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/middleware/request_logger.go:13:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+cmd/server/router.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/middleware/owner_lookup.go:7:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/middleware/auth.go:16:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/daemon/daemon.go:22:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/auth/cloudfront.go:20:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/auth/cloudfront.go:21:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/auth/cloudfront.go:22:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/auth/cloud_pat.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/daemon/wakeup.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/middleware/auth.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/realtime/obs_delivery.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/daemon/identity.go:10:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+pkg/db/generated/db.go:11:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/metrics/business.go:8:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/metrics/registry.go:8:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/metrics/server.go:8:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/metrics/testutil.go:7:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/service/email.go:18:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/service/cron.go:7:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/integrations/lark/ws_frame.go:7:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/logger/logger.go:10:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/skill/frontmatter.go:10:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/storage/s3.go:15:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/storage/s3.go:16:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/storage/s3.go:17:2: module lookup disabled by GOPROXY=off
+# github.com/multica-ai/multica/server/cmd/server
+internal/handler/auth_provider.go:11:2: module lookup disabled by GOPROXY=off
+FAIL	github.com/multica-ai/multica/server/cmd/server [setup failed]
+FAIL
+
+--- result ---
+exit_code=1
+end_utc=2026-08-02T18:51:57Z

@@ -1,0 +1,14 @@
+df4abbb17abf91b5fbfa75ec45dc62784a65a6061b9a293730f5fa9965660938  .deploy-control/evidence/ORQ-87/auth-offline.log
+2d4a25573d361d4d21807822e355896ae0b43301dc7d4434d37bf9ed27bbf507  .deploy-control/evidence/ORQ-87/backend-build.log
+770ae1d5a4eb3b4f87a2b781ffe477796b778ee23f4c8d7b48a7b6ce26a6cd2e  .deploy-control/evidence/ORQ-87/backend-vet.log
+2d524f046676f338a72324860698918db6aaaebcb90719660b1864b40108ead2  .deploy-control/evidence/ORQ-87/candidate-identity.tsv
+20174e60f8678211c093155e99810f8f712128a5ac2ab44e29d488ddb1ee855b  .deploy-control/evidence/ORQ-87/candidate-source-manifest.tsv
+03cdc66b7082a8e572f69189e54981a2257091c6c8e12e6581a236564791e259  .deploy-control/evidence/ORQ-87/changed-file-map.tsv
+840bb1739a1fd9ae523251e779d41ec6e7b98a730f9ae0f21f755a01a2802f8e  .deploy-control/evidence/ORQ-87/native-agent.log
+9a2c7b7da532135b20a08e1e312f4fb841f3bc4420b09634f9bea8e90458b61d  .deploy-control/evidence/ORQ-87/native-daemon.log
+453b51885019afb2edee001af89fc2f9b090f3d8028b25b28cfb87733c01be52  .deploy-control/evidence/ORQ-87/openspec-validate.log
+1dc2ffdd4d822cefb2bbbdd09bb3a842a007dd86848ef6d533ef3264089b723d  .deploy-control/evidence/ORQ-87/reconciliation.md
+924ed84848fcff1ec4c79e7d3105a24deeb2c2ff95d46c5504d02bd58b784ea0  .deploy-control/evidence/ORQ-87/web-build.log
+1c24425fa3f1761ef8300f17107ddfd843ffde569fec35ddf9a442570282d296  .deploy-control/evidence/ORQ-87/web-tests.log
+e806c61a1a8f557d3849ace3dafcc79b74fe1e0c02359dcb1f5ef4c98d59afed  .deploy-control/evidence/ORQ-87/web-toolchain.log
+20ff4954479e4c213572eb2982fe5424163ecb9a38336c387b3bfe8b992e389c  .deploy-control/evidence/ORQ-87/web-typecheck.log
