@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/multica-ai/multica/server/pkg/redact"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -356,7 +357,7 @@ func (v *CloudPATVerifier) fetch(ctx context.Context, token string) (CloudPATIde
 		if buf, _ := io.ReadAll(io.LimitReader(resp.Body, 512)); len(buf) > 0 {
 			snippet = strings.TrimSpace(string(buf))
 		}
-		slog.Warn("cloud_pat: verify returned non-200", "status", resp.StatusCode, "body", snippet)
+		slog.Warn("cloud_pat: verify returned non-200", "status", resp.StatusCode, "body", redact.Text(snippet))
 		return CloudPATIdentity{}, ErrCloudPATUnavailable
 	}
 

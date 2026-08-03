@@ -24,6 +24,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/logger"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
+	"github.com/multica-ai/multica/server/pkg/redact"
 )
 
 // SignupError represents signup restriction errors
@@ -653,7 +654,7 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if tokenResp.StatusCode != http.StatusOK {
-		slog.Error("google oauth token exchange returned error", "status", tokenResp.StatusCode, "body", string(tokenBody))
+		slog.Error("google oauth token exchange returned error", "status", tokenResp.StatusCode, "body", redact.Text(string(tokenBody)))
 		writeError(w, http.StatusBadRequest, "failed to exchange code with Google")
 		return
 	}

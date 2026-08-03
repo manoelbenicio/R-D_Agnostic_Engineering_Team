@@ -1,0 +1,7 @@
+0ab27373f609f4b06285d6a9d294df845f02db15a444453ab303486182c08616  /home/ec2-user/recovery-checkouts/ORQ-100-card.md
+a3ea3489451810a4ca5d988378d0582cae4c23d683e1e4d32e906e699c438d9a  /home/ec2-user/recovery-checkouts/ORQ-98.md
+e76fe6b26e93c41ece744247f4ce2c7fc1b11af89e50b29d08bf49dd13a6592d  /home/ec2-user/recovery-checkouts/ORQ-98-independent-review.md
+b1cd91db6fa3a40fba0eb9eb8e43a503f373f3209ab861f9abefb69af5c8952e  multica-auth-work/server/internal/auth/cloud_pat.go
+9e07d91e7a68220e1b34311efc96ff9401d22013476727f1e66dee7f4719c0ac  multica-auth-work/server/internal/handler/auth.go
+3f520f12d8653982378b367befe344c63c79b2d917f67918be890128e231169b  multica-auth-work/server/internal/auth/cloud_pat_site_log_redaction_test.go
+ada85b6404f6f1396bdbbabbb56285071fde9a01559bd6c697ab972ee6fb953a  multica-auth-work/server/internal/handler/orq98redaction/auth_log_redaction_test.go
