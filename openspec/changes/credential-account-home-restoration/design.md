@@ -3,15 +3,13 @@
 ## 1. Authority and system boundary
 
 This document is canonical for Runtime Standards, Runtime Sessions, workspace bindings,
-runtime configuration, native ORQ2 account-home selection, and task snapshots, together with
-the reconciled `build-omniroute-agent-brain` authority. Every launch pins exactly one immutable
-transport binding. `omniroute` means OmniRoute is the sole inference router and account/credential
-owner, the child is provider-credentialless, and no native home is resolved or supplied.
-`native_credential_home` means R3 resolves exactly one approved exclusive opaque home for one
-existing logical runtime/agent before launch, the daemon supplies only daemon-local isolated-home
-references required by that native CLI, and OmniRoute is not contacted or used. There is no
-fallback, translation, rotation, or silent remapping between bindings. Missing, ambiguous,
-stale, unauthorized, unhealthy, unsupported, or conflicting state fails closed.
+runtime configuration, native ORQ2 account-home selection, and task snapshots. The only current
+solution and transport binding is `native_credential_home`. OmniRouter/OmniRoute is not a current
+solution, fallback, credential authority, dependency, or acceptance source. R3 resolves exactly
+one approved exclusive opaque home for one existing logical runtime/agent before launch, and the
+daemon supplies only daemon-local isolated-home references required by that native CLI. There is
+no router, global HOME, cross-workspace, cross-home, stale-generation, or ORQ2-dev fallback.
+Missing, ambiguous, stale, unauthorized, unhealthy, unsupported, or conflicting state fails closed.
 
 The design reuses existing agent rows, runtime rows, workspace, and
 `orq2-credential-runtime-v1`. It creates no daemon, container, runtime installation, agent,
@@ -63,7 +61,7 @@ rejected, not ignored.
 
 | Group | Required contract |
 |---|---|
-| routing | `provider`, optional opaque `subscription_ref`, `transport_binding` (`omniroute` or `native_credential_home`) |
+| routing | `provider`, optional opaque `subscription_ref`, `transport_binding` fixed to `native_credential_home` |
 | model | literal `model_id`, provider catalog/version, capability digest |
 | reasoning | mode/level/budget exactly as provider capability advertises; no ID normalization |
 | limits | context, input, output and total token ceilings; wall/idle timeout |
@@ -76,7 +74,7 @@ rejected, not ignored.
 | permissions | filesystem roots by symbolic policy, network egress policy, process/tool grants |
 | eligibility | provider/runtime/daemon/workspace predicates and required capabilities |
 | health | freshness TTL, readiness thresholds, circuit state and probe class |
-| fallback | ordered eligible routes, bounds and failure classes; never global HOME/cross-workspace |
+| fallback | ordered provider/model attempts, bounds and failure classes within the pinned native home; never router, another home, global HOME or cross-workspace |
 
 Each leaf is registered with: JSON type/schema, source, effective value, `delegable: true|false`,
 `apply_class: hot|restart`, capability predicate, redaction class, and audit representation.
@@ -139,9 +137,21 @@ and `retired`. Metadata has `first_seen_at`, `last_seen_at`, `last_full_scan_at`
 watermark, missing watermark and retention deadline. Active task references prevent retirement.
 Missing entries remain tombstoned through TTL and retention; generation never decreases and
 opaque refs are never reused. Low/high/critical watermarks emit state changes and can close
-admission. No lifecycle action copies, moves, deletes, truncates, sanitizes, overwrites, chmods, changes
-ownership of, or authenticates a source home. Retention expiry may retire metadata only. Cleanup
-is limited to task-local non-source material and occurs only after active-reference checks.
+admission. Catalog lifecycle never copies, moves, deletes, truncates, sanitizes, overwrites,
+chmods, changes ownership of, or authenticates a source home; retention expiry retires metadata
+only. Active, draining, referenced, reserved, admissible, unproven, and quarantined homes remain
+physically preserved. Physical whole-home deletion belongs only to the separately accepted cleanup
+executor after the guarded state progression below.
+
+`PROTECTED_ACTIVE -> DRAINING_PROTECTED -> INACTIVE_PROVEN -> RETENTION_HOLD ->
+POLICY_NOT_RETAINED -> DELETION_ELIGIBLE` is the sole cleanup progression. `INACTIVE_PROVEN`
+requires released assignment, zero reservations and active references, non-admissibility, current
+unambiguous authority mapping, and successful authoritative reads/fences. Age greater than 24 hours
+is required to leave `RETENTION_HOLD`, but age or mtime is never sufficient. `DELETION_ELIGIBLE`
+also requires independently accepted ORQ-96 database/admission/fencing/no-bypass gates and a
+separate destructive cutover authorization. Any ambiguity or failed guard transitions to or remains
+`QUARANTINED_FAIL_CLOSED`; force semantics cannot bypass a guard. Durable tombstones survive any
+eventual physical deletion and remain non-reusable.
 
 ## 8. Exclusive assignment and admission
 
@@ -157,12 +167,11 @@ healthy, eligible, unassigned entries. It is not task-time rotation. Stale gener
 conflicts and ORQ2-dev reservations fail closed.
 
 Concurrency limits are configuration policy and are independent of the number of catalog homes.
-A home is never shared merely to satisfy concurrency. An `omniroute` binding has no home
-assignment and requires OmniRoute readiness; a `native_credential_home` binding does not probe,
-contact, or use OmniRoute. Fallback may choose only a prevalidated route that preserves the
-pinned binding and, for native execution, the pinned exclusive `home_ref`. It MUST NOT switch,
-translate, rotate, or retry across bindings or homes. Global HOME, cross-workspace,
-stale-generation, and ORQ2-dev fallback are forbidden.
+A home is never shared merely to satisfy concurrency. Every launch uses `native_credential_home`
+and the pinned exclusive `home_ref`. A bounded provider/model retry may run only when it preserves
+that exact native binding and home. It MUST NOT switch, translate, rotate, or retry through a
+router or another home. Global HOME, cross-workspace, stale-generation, and ORQ2-dev fallback are
+forbidden.
 
 ## 9. Task snapshot
 
@@ -257,7 +266,8 @@ Every mutation, denial, activation, rollback, assignment, reconciliation, quaran
 hard revoke is audited with actor type/opaque ID, workspace/resource IDs, request/event IDs,
 old/new versions or generations, redacted diff, reason code and UTC time. Audit and task
 snapshots are retained at least as long as task/usage evidence; catalog tombstones outlive the
-maximum task retention plus reconciliation TTL. Retention never authorizes source-home deletion.
+maximum task retention plus reconciliation TTL. Retention or age alone never authorizes source-home
+deletion; only the complete guarded cleanup progression in section 7 can establish eligibility.
 
 ## 13. Repository/OpenSpec synchronization gate
 
@@ -276,7 +286,8 @@ Accepted REQ-05 dynamic opaque catalog discovery has precedence; static slot lis
 64-lowercase-hex `AGENT_CRED_ISOLATION_SUBSCRIPTION_FINGERPRINT` before allocation. It removes
 Herdr/pane/TTY/PID/random fallback identity and persists one physical home per stable active binding.
 Source v2 is a future separately authorized rollout, not installed state. Production reconciliation requires a privileged all-process `/proc` audit, preserves every live
-reference, fails closed when audit is unavailable, and never uses age as deletion authority.
+reference, and fails closed when audit is unavailable. Age greater than 24 hours is a necessary
+post-inactivity policy guard, never a sufficient deletion authority.
 
 The catalog remains metadata-only. `home_ref` is a canonical UUID, `name_ref` is separate, immutable
 generations and tombstones survive restart, and no catalog action creates, copies or deletes a
@@ -286,6 +297,8 @@ paired pricing snapshot; the daemon cannot select or rewrite financial attributi
 
 ## 15. Current state and action boundary
 
-Source composition and local validation are complete; installed registry v1 is not changed by this
-candidate. The candidate performs no Git operation, push, deployment, restart, credential access or
-credential-home mutation. External actions remain separately owner-gated.
+Historical source-composition and validation evidence predates this authority correction and does
+not validate these amended bytes. ORQ-107/108/109 remain pending independent acceptance and do not
+authorize cleanup. Installed registry v1 is not changed by this documentation candidate. This
+candidate performs no push, deployment, restart, credential access, credential-home mutation, or
+destructive cutover. External actions remain separately owner-gated.

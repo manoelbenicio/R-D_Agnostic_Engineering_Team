@@ -4,23 +4,24 @@
 
 ### Requirement: REQ-01 Canonical authority and fail-closed boundary
 
-This change and the reconciled `build-omniroute-agent-brain` change MUST jointly govern Runtime
-Standards, Runtime Sessions, workspace bindings, runtime configuration, account-home selection,
-and task snapshots. Every launch MUST pin exactly one transport binding:
-`omniroute` or `native_credential_home`.
+This change MUST govern Runtime Standards, Runtime Sessions, workspace bindings, runtime
+configuration, account-home selection, and task snapshots. Every launch MUST use the owner-approved
+`native_credential_home` binding. OmniRouter/OmniRoute MUST NOT be a current solution, credential
+authority, dependency, acceptance source, or fallback.
 
-#### Scenario: OmniRoute binding
-- **WHEN** the pinned binding is `omniroute`
-- **THEN** OmniRoute MUST be the sole inference router and account/credential owner
-- **AND** the child MUST be provider-credentialless with no native home reference
-- **AND** missing gateway readiness MUST block launch
+#### Scenario: Router binding requested
+- **WHEN** configuration requests OmniRouter, OmniRoute, a credentialless gateway, or another
+  non-native binding
+- **THEN** validation and admission MUST fail closed before launch
+- **AND** the request MUST NOT become a credential authority, dependency, acceptance source, or
+  fallback route
 
 #### Scenario: Native credential-home binding
 - **WHEN** the pinned binding is `native_credential_home`
 - **THEN** R3 MUST resolve exactly one approved exclusive opaque home for one existing logical
   runtime/agent before launch
 - **AND** the daemon MUST supply only daemon-local isolated-home references required by the CLI
-- **AND** OmniRoute MUST NOT be probed, contacted, or used
+- **AND** OmniRouter/OmniRoute MUST NOT be probed, contacted, or used
 - **AND** global HOME, raw path, account identity, and credential data MUST NOT enter product
   APIs, events, logs, or evidence
 
@@ -86,7 +87,8 @@ interval expiry MUST trigger a complete scan.
 ### Requirement: REQ-07 Catalog lifecycle safety
 
 Catalog lifecycle MUST implement filesystem-identity deduplication, TTL, quarantine, active
-reference protection, watermarks, tombstones and retention.
+reference protection, watermarks, tombstones and retention. Catalog lifecycle alone MUST NOT
+authorize physical source-home deletion.
 
 #### Scenario: Home disappears while referenced
 - **WHEN** a home is absent from a full scan but an active task references its generation
@@ -95,6 +97,14 @@ reference protection, watermarks, tombstones and retention.
 - **AND** source data MUST NOT be copied, moved, deleted, truncated, sanitized, overwritten,
   chmodded, or have ownership changed
 - **AND** cleanup MUST be limited to task-local non-source material after active-reference checks
+
+#### Scenario: Whole-home deletion reaches policy eligibility
+- **WHEN** a home is authoritatively `INACTIVE_PROVEN`, older than 24 hours, non-admissible,
+  unambiguously mapped, and has zero assignments, reservations, and active references
+- **THEN** it MAY become `POLICY_NOT_RETAINED` but MUST NOT yet be physically deleted
+- **AND** physical whole-home deletion MUST require independently accepted ORQ-96
+  database/admission/fencing/no-bypass gates and separate destructive cutover authorization
+- **AND** age or mtime alone and force semantics MUST NOT bypass any guard
 
 #### Scenario: Duplicate or invalid identity
 - **WHEN** aliases, symlink escape, wrong ownership/mode, invalid layout or duplicate filesystem
@@ -119,7 +129,7 @@ and one binding MUST have at most one active home assignment.
 
 ### Requirement: REQ-09 Configuration completeness
 
-Every versioned runtime configuration MUST cover `transport_binding`, provider and opaque
+Every versioned runtime configuration MUST fix `transport_binding` to `native_credential_home`, and cover provider and opaque
 subscription reference, literal model,
 reasoning, context/input/output/total token limits, concurrency, timeout/retry, CLI flags,
 environment allowlist, skills, tools/MCP, filesystem/network permissions, eligibility, health
@@ -205,14 +215,14 @@ the count of catalog homes.
 ### Requirement: REQ-16 Controlled fallback
 
 Fallback MUST be ordered, bounded, capability-validated, health-gated and frozen in the task's
-effective configuration. Every fallback route MUST preserve the pinned transport binding and,
-for native execution, the pinned exclusive `home_ref`.
+effective configuration. Every retry route MUST preserve `native_credential_home` and the pinned
+exclusive `home_ref`.
 
 #### Scenario: Preferred route is unhealthy
 - **WHEN** the preferred route is unhealthy
-- **THEN** only a prevalidated eligible route within the same pinned binding MAY run
-- **AND** fallback, translation, rotation, or retry between `omniroute` and
-  `native_credential_home`, or between native homes, MUST be forbidden
+- **THEN** only a prevalidated eligible provider/model attempt on the same pinned native home MAY run
+- **AND** fallback, translation, rotation, or retry through OmniRouter/OmniRoute, another binding,
+  or another native home MUST be forbidden
 - **AND** global HOME, cross-workspace, stale-generation, and ORQ2-dev fallback MUST be forbidden
 
 ### Requirement: REQ-17 Frozen migration identities
@@ -274,8 +284,15 @@ retained through all active references and evidence windows.
 #### Scenario: Stale health or active reference
 - **WHEN** health TTL expires or retirement is requested for a referenced home
 - **THEN** new claims MUST fail with `health_stale` or `active_reference`
-- **AND** every source credential home MUST remain untouched regardless of TTL or retention age
+- **AND** every active, draining, referenced, reserved, admissible, unproven, or quarantined source
+  credential home MUST remain untouched regardless of TTL or retention age
 - **AND** only task-local non-source material MAY be cleaned after active-reference checks
+
+#### Scenario: Inactivity or authority is uncertain
+- **WHEN** inactivity, mapping, database state, fencing, process references, or filesystem boundary
+  cannot be proven authoritatively
+- **THEN** the home MUST remain `QUARANTINED_FAIL_CLOSED`, preserved, and non-admissible
+- **AND** age, mtime, local registry data, alert state, or force semantics MUST NOT authorize deletion
 
 ### Requirement: REQ-22 Existing ORQ2 topology and release boundary
 
@@ -333,14 +350,15 @@ O daemon MUST rejeitar todo AccountHome ausente, invalido ou fora do root autori
 
 ### Requirement: REQ-26 Codex honra AccountHome
 
-This requirement MUST specialize the accepted mutually exclusive transport binding and MUST NOT create a second transport authority.
+This requirement MUST specialize the accepted native-only transport binding and MUST NOT create a second transport authority.
 
-O daemon MUST separar o transporte credentialless do uso nativo de AccountHome pelo Codex.
+O daemon MUST usar AccountHome nativo pelo Codex e MUST rejeitar transporte credentialless.
 
 #### Scenario: Executar por gateway
 
 - **WHEN** existe plano gateway
-- **THEN** `CredentiallessGateway` MUST ser verdadeiro e `AccountHome` MUST estar vazio
+- **THEN** a configuracao e a admissao MUST falhar antes do launch
+- **AND** o gateway MUST NOT virar fallback, autoridade de credencial ou fonte de aceite
 
 #### Scenario: Executar nativamente
 
@@ -496,20 +514,29 @@ copiar somente esse snapshot para `task_usage`. O daemon MUST NOT enviar `accoun
 
 ### Requirement: REQ-34 Cardinalidade fisica das raizes de credencial
 
-Accepted REQ-05/07/21 lifecycle authority MUST have precedence. "Zero historicos" MUST mean zero unreferenced stale physical directories, not one global slot and not count-only proliferation. The owner-confirmed eight one-to-one live homes are compatible.
+Accepted REQ-05/07/21 lifecycle authority MUST have precedence. "Zero historicos" is a gated
+convergence objective after lawful cleanup, not an instantaneous invariant or count-only deletion
+authority. One admissible physical home per active stable binding remains exact. Non-admissible
+homes MAY exist only while protected by retention hold, pending policy/gates, or fail-closed
+quarantine.
 
-O numero de diretorios fisicos de credencial MUST ser exatamente igual ao numero de bindings
-ativos estaveis. Retencao por idade MUST NOT ser usada como politica.
+O numero de homes admissiveis MUST ser exatamente igual ao numero de bindings ativos estaveis.
+Um home `INACTIVE_PROVEN` MUST permanecer retido ate completar mais de 24 horas. Idade e necessaria
+para `POLICY_NOT_RETAINED`, mas nunca e autoridade suficiente de remocao.
 
 #### Scenario: Reconciliacao do conjunto ativo
 
 - **WHEN** a reconciliacao executa
-- **THEN** MUST existir exatamente um diretorio fisico por binding ativo estavel
-- **AND** diretorios historicos MUST ser zero
+- **THEN** MUST existir exatamente um home admissivel por binding ativo estavel
+- **AND** homes adicionais MUST estar nao-admissiveis em `RETENTION_HOLD`,
+  `POLICY_NOT_RETAINED` pendente, ou `QUARANTINED_FAIL_CLOSED`
+- **AND** diretorios historicos MUST convergir para zero somente depois que cada home passar por
+  todos os gates de cleanup e pela autorizacao destrutiva separada
 - **AND** a reconciliacao de producao MUST exigir auditoria de todos os processos via `/proc`
   com privilegio de root, falhando fechada e sem remover nada quando indisponivel
 - **AND** homes referenciados por processo vivo MUST ser preservados
-- **AND** a idade do diretorio MUST NOT ser criterio de remocao
+- **AND** idade maior que 24 horas MUST ser um criterio necessario somente depois de
+  `INACTIVE_PROVEN`, e MUST NOT ser criterio suficiente de remocao
 
 #### Scenario: Slot legado unico preexistente
 
@@ -521,7 +548,8 @@ This scenario is historical conditional chronology, not a statement that one glo
 
 ### Requirement: REQ-35 Tombstone de metadados e nao-reuso
 
-This requirement MUST specialize accepted REQ-07 and REQ-21; their catalog lifecycle, retention and source-preservation clauses MUST remain controlling.
+This requirement MUST specialize accepted REQ-07 and REQ-21; their catalog lifecycle, retention,
+protected-home preservation, and gated-cleanup clauses MUST remain controlling.
 
 A camada de metadados MUST preservar tombstones para garantir nao-reuso, independentemente da
 reconciliacao fisica.
@@ -540,6 +568,8 @@ reconciliacao fisica.
 - **THEN** o prazo MUST ser tratado como evidencia apenas
 - **AND** o tombstone MUST NOT ser apagado por expiracao de prazo
 - **AND** a camada de catalogo MUST NOT executar copia, remocao ou historico de pasta fisica
+- **AND** eventual remocao fisica por executor autorizado MUST preservar o tombstone duravel e o
+  nao-reuso
 
 #### Scenario: Correlacao entre metadados e pasta fisica
 
