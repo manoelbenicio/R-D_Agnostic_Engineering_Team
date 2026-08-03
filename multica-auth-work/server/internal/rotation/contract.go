@@ -216,10 +216,18 @@ type NativeRetirementResultV1 struct {
 	RequestBodyDigest    string
 }
 
-type NativeRotationRecoveryStore interface {
-	ListDueNativeRetirements(context.Context, time.Time, int32) ([]NativeRotationResultV1, error)
-	ScheduleNativeRetirement(context.Context, string, NativeRotationResultV1, time.Time) (NativeRetirementRequestV1, error)
-	RecordNativeRetirementResult(context.Context, NativeRetirementResultV1, time.Time) error
+// NativeRetirementTransitionV1 binds value-free transport evidence to the
+// immutable attempt identity. It contains no credential or home path.
+type NativeRetirementTransitionV1 struct {
+	AttemptID            string
+	RetirementRequestID  string
+	DaemonID             string
+	DaemonBootID         string
+	RuntimeSessionID     string
+	RuntimeBindingID     string
+	BindingGeneration    int64
+	ChannelBindingDigest string
+	RequestBodyDigest    string
 }
 
 var (

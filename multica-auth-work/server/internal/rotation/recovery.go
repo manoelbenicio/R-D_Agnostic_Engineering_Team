@@ -152,6 +152,95 @@ func (s *NativeRotationRecoveryScheduler) RecordResult(
 	return s.store.recordNativeRetirementResult(ctx, s.owner, result, now)
 }
 
+// Accept records the authenticated value-free delivery boundary. Authentication
+// and transport are section-5 concerns; this method only validates their
+// digests against the immutable stored attempt identity and performs the
+// scheduled -> accepted CAS/event transaction.
+func (s *NativeRotationRecoveryScheduler) Accept(
+	ctx context.Context,
+	transition NativeRetirementTransitionV1,
+) error {
+	if s == nil || s.store == nil {
+		return ErrInvalidNativeIdentity
+	}
+	return s.store.transitionNativeRetirementAttempt(
+		ctx, s.owner, transition, "scheduled", "accepted", "worker_accepted",
+	)
+}
+
+// MarkExecuting is the final durable authorization-to-execution boundary.
+// It performs no credential action and exposes no path.
+func (s *NativeRotationRecoveryScheduler) MarkExecuting(
+	ctx context.Context,
+	transition NativeRetirementTransitionV1,
+) error {
+	if s == nil || s.store == nil {
+		return ErrInvalidNativeIdentity
+	}
+	return s.store.transitionNativeRetirementAttempt(
+		ctx, s.owner, transition, "accepted", "executing", "worker_executing",
+	)
+}
+
+func (s *PGStore) transitionNativeRetirementAttempt(
+	ctx context.Context,
+	owner string,
+	transition NativeRetirementTransitionV1,
+	expectedState string,
+	nextState string,
+	reasonCode string,
+) error {
+	if len(transition.ChannelBindingDigest) != 64 ||
+		len(transition.RequestBodyDigest) != 64 {
+		return ErrInvalidNativeIdentity
+	}
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	q := dbgen.New(tx)
+	attempt, operation, epoch, err := discoverNativeRetirement(
+		ctx, q, transition.AttemptID, transition.RetirementRequestID,
+	)
+	if err != nil {
+		return err
+	}
+	if _, err := q.AcquireNativeRotationHomeLocks(ctx, []pgtype.UUID{attempt.HomeRef}); err != nil {
+		return err
+	}
+	if _, _, err := lockNativeRetirementChain(ctx, q, epoch, operation); err != nil {
+		return err
+	}
+	attempt, err = q.LockNativeRetirementAttempt(ctx, attempt.ID)
+	if err != nil || !retirementTransitionMatches(attempt, transition) ||
+		attempt.State != expectedState {
+		return ErrNativeCASConflict
+	}
+	advanced, err := q.AdvanceNativeRetirementAttempt(
+		ctx, dbgen.AdvanceNativeRetirementAttemptParams{
+			NextState: nextState, SchedulerOwner: owner,
+			ChannelBindingDigest: nativeText(transition.ChannelBindingDigest),
+			RequestBodyDigest:    nativeText(transition.RequestBodyDigest),
+			ID:                   attempt.ID, ExpectedState: expectedState,
+			ExpectedStateVersion: attempt.StateVersion,
+		},
+	)
+	if err != nil {
+		return err
+	}
+	if err := q.RecordNativeRetirementAttemptEvent(
+		ctx, dbgen.RecordNativeRetirementAttemptEventParams{
+			AttemptID: advanced.ID, StateVersion: advanced.StateVersion,
+			State: advanced.State, TransitionRequestID: nativeEventID(),
+			ReasonCode: reasonCode,
+		},
+	); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
 func (s *PGStore) recordNativeRetirementResult(
 	ctx context.Context,
 	owner string,
@@ -167,17 +256,9 @@ func (s *PGStore) recordNativeRetirementResult(
 	}
 	defer tx.Rollback(ctx)
 	q := dbgen.New(tx)
-	attempt, err := q.GetNativeRetirementAttempt(ctx, mustNativeUUID(result.AttemptID))
-	if err != nil || uuidString(attempt.RetirementRequestID) != result.RetirementRequestID {
-		return ErrNativeCASConflict
-	}
-	operation, err := q.GetNativeRotationOperation(ctx, attempt.OperationID)
-	if err != nil {
-		return err
-	}
-	epoch, err := q.GetNativeTaskHomeEpoch(ctx, dbgen.GetNativeTaskHomeEpochParams{
-		TaskID: attempt.TaskID, HomeEpoch: attempt.HomeEpoch,
-	})
+	attempt, operation, epoch, err := discoverNativeRetirement(
+		ctx, q, result.AttemptID, result.RetirementRequestID,
+	)
 	if err != nil {
 		return err
 	}
@@ -192,10 +273,10 @@ func (s *PGStore) recordNativeRetirementResult(
 	if err != nil {
 		return err
 	}
-	nextAttemptState := result.State
-	if nextAttemptState != "succeeded" && nextAttemptState != "retryable_failure" {
-		nextAttemptState = "quarantined"
+	if err := validateNativeRetirementResult(attempt, result); err != nil {
+		return err
 	}
+	nextAttemptState := result.State
 	nextAt := pgtype.Timestamptz{}
 	if nextAttemptState == "retryable_failure" && attempt.AttemptNumber < maxNativeRetirementAttempts {
 		nextAt = pgtype.Timestamptz{
@@ -271,6 +352,78 @@ func (s *PGStore) recordNativeRetirementResult(
 		}
 	}
 	return tx.Commit(ctx)
+}
+
+func discoverNativeRetirement(
+	ctx context.Context,
+	q *dbgen.Queries,
+	attemptID string,
+	retirementRequestID string,
+) (
+	dbgen.NativeRotationRetirementAttempt,
+	dbgen.NativeRotationOperation,
+	dbgen.RuntimeTaskHomeEpoch,
+	error,
+) {
+	attempt, err := q.GetNativeRetirementAttempt(ctx, mustNativeUUID(attemptID))
+	if err != nil || uuidString(attempt.RetirementRequestID) != retirementRequestID {
+		return dbgen.NativeRotationRetirementAttempt{},
+			dbgen.NativeRotationOperation{}, dbgen.RuntimeTaskHomeEpoch{},
+			ErrNativeCASConflict
+	}
+	operation, err := q.GetNativeRotationOperation(ctx, attempt.OperationID)
+	if err != nil {
+		return dbgen.NativeRotationRetirementAttempt{},
+			dbgen.NativeRotationOperation{}, dbgen.RuntimeTaskHomeEpoch{}, err
+	}
+	epoch, err := q.GetNativeTaskHomeEpoch(ctx, dbgen.GetNativeTaskHomeEpochParams{
+		TaskID: attempt.TaskID, HomeEpoch: attempt.HomeEpoch,
+	})
+	return attempt, operation, epoch, err
+}
+
+func retirementTransitionMatches(
+	attempt dbgen.NativeRotationRetirementAttempt,
+	transition NativeRetirementTransitionV1,
+) bool {
+	return uuidString(attempt.ID) == transition.AttemptID &&
+		uuidString(attempt.RetirementRequestID) == transition.RetirementRequestID &&
+		attempt.DaemonID == transition.DaemonID &&
+		uuidString(attempt.DaemonBootID) == transition.DaemonBootID &&
+		uuidString(attempt.RuntimeSessionID) == transition.RuntimeSessionID &&
+		uuidString(attempt.RuntimeBindingID) == transition.RuntimeBindingID &&
+		attempt.BindingGeneration == transition.BindingGeneration &&
+		(!attempt.ChannelBindingDigest.Valid ||
+			attempt.ChannelBindingDigest.String == transition.ChannelBindingDigest) &&
+		(!attempt.RequestBodyDigest.Valid ||
+			attempt.RequestBodyDigest.String == transition.RequestBodyDigest)
+}
+
+func validateNativeRetirementResult(
+	attempt dbgen.NativeRotationRetirementAttempt,
+	result NativeRetirementResultV1,
+) error {
+	if uuidString(attempt.RetirementRequestID) != result.RetirementRequestID ||
+		!attempt.ChannelBindingDigest.Valid ||
+		attempt.ChannelBindingDigest.String != result.ChannelBindingDigest ||
+		!attempt.RequestBodyDigest.Valid ||
+		attempt.RequestBodyDigest.String != result.RequestBodyDigest {
+		return ErrNativeCASConflict
+	}
+	switch result.State {
+	case "succeeded", "retryable_failure":
+		if attempt.State != "executing" {
+			return ErrNativeCASConflict
+		}
+	case "quarantined":
+		if attempt.State != "accepted" &&
+			attempt.State != "executing" {
+			return ErrNativeCASConflict
+		}
+	default:
+		return ErrInvalidNativeIdentity
+	}
+	return nil
 }
 
 func lockNativeRetirementChain(
