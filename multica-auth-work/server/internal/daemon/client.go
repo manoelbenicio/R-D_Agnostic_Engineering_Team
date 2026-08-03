@@ -200,6 +200,12 @@ type TaskMessageData struct {
 	Output  string         `json:"output,omitempty"`
 }
 
+// ReportCredentialSessionAlert sends a bounded, secret-free outcome through
+// the authenticated task-scoped daemon API.
+func (c *Client) ReportCredentialSessionAlert(ctx context.Context, taskID string, alert protocol.CredentialSessionAlertPayload) error {
+	return c.postJSON(ctx, fmt.Sprintf("/api/daemon/tasks/%s/credential-session-alert", taskID), alert, nil)
+}
+
 func (c *Client) ReportTaskMessages(ctx context.Context, taskID string, messages []TaskMessageData) error {
 	return c.postJSON(ctx, fmt.Sprintf("/api/daemon/tasks/%s/messages", taskID), map[string]any{
 		"messages": messages,
@@ -293,8 +299,8 @@ type (
 func (c *Client) SendHeartbeat(ctx context.Context, runtimeID string) (*HeartbeatResponse, error) {
 	var resp HeartbeatResponse
 	if err := c.postJSON(ctx, "/api/daemon/heartbeat", map[string]any{
-		"runtime_id":             runtimeID,
-		"supports_batch_import":  true,
+		"runtime_id":            runtimeID,
+		"supports_batch_import": true,
 	}, &resp); err != nil {
 		return nil, err
 	}

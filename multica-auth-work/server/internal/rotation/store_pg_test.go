@@ -182,6 +182,48 @@ func TestPGStoreGetAccountAndMissing(t *testing.T) {
 	}
 }
 
+func TestPGStoreCredentialExpiresAtUsesNewestAuthoritativeValue(t *testing.T) {
+	store := setupPGStore(t)
+	tenantID := uuid.NewString()
+	t.Cleanup(func() { cleanupPGTenant(t, store.pool, tenantID) })
+	accountID := seedPGAccount(t, store.pool, Account{Vendor: "codex", TenantID: tenantID})
+	older := time.Now().UTC().Add(20 * time.Minute).Truncate(time.Second)
+	newer := older.Add(time.Hour)
+	if _, err := store.pool.Exec(context.Background(), `
+		INSERT INTO credentials (account_id, vendor, secret_ref, format, expires_at, created_at)
+		VALUES ($1, 'codex', 'opaque-old', 'reference', $2, now() - interval '1 minute'),
+		       ($1, 'codex', 'opaque-new', 'reference', $3, now())
+	`, accountID, older, newer); err != nil {
+		t.Fatalf("seed credential expiry rows: %v", err)
+	}
+	got, err := store.CredentialExpiresAt(context.Background(), accountID)
+	if err != nil {
+		t.Fatalf("CredentialExpiresAt: %v", err)
+	}
+	if got == nil || !got.Truncate(time.Second).Equal(newer) {
+		t.Fatalf("CredentialExpiresAt = %v, want %v", got, newer)
+	}
+}
+
+func TestPGStoreCredentialExpiresAtPreservesNullAndMissing(t *testing.T) {
+	store := setupPGStore(t)
+	tenantID := uuid.NewString()
+	t.Cleanup(func() { cleanupPGTenant(t, store.pool, tenantID) })
+	accountID := seedPGAccount(t, store.pool, Account{Vendor: "kiro", TenantID: tenantID})
+	if got, err := store.CredentialExpiresAt(context.Background(), accountID); err != nil || got != nil {
+		t.Fatalf("missing credential expiry = (%v, %v), want (nil, nil)", got, err)
+	}
+	if _, err := store.pool.Exec(context.Background(), `
+		INSERT INTO credentials (account_id, vendor, secret_ref, format, expires_at)
+		VALUES ($1, 'kiro', 'opaque-null', 'reference', NULL)
+	`, accountID); err != nil {
+		t.Fatalf("seed NULL credential expiry: %v", err)
+	}
+	if got, err := store.CredentialExpiresAt(context.Background(), accountID); err != nil || got != nil {
+		t.Fatalf("NULL credential expiry = (%v, %v), want (nil, nil)", got, err)
+	}
+}
+
 func TestPGStoreUpdateAccountStatusAndRecordUsage(t *testing.T) {
 	store := setupPGStore(t)
 	tenantID := uuid.NewString()

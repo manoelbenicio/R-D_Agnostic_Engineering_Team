@@ -8,6 +8,7 @@ import { AppSidebar } from "./app-sidebar";
 import { DashboardGuard } from "./dashboard-guard";
 import { NavigationProgress } from "./navigation-progress";
 import { WorkspacePresencePrefetch } from "./workspace-presence-prefetch";
+import { useSessionMonitor } from "./use-session-monitor";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -25,6 +26,8 @@ export function DashboardLayout({
   searchSlot,
   loadingIndicator,
 }: DashboardLayoutProps) {
+  useSessionMonitor();
+
   return (
     <DashboardGuard
       loadingFallback={

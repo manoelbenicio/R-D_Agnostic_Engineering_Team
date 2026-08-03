@@ -39,8 +39,8 @@ const (
 type RotationReason string
 
 const (
-	ReasonQuotaReactive  RotationReason = "quota_exhausted_reactive"  // on-screen / 429
-	ReasonQuotaProactive RotationReason = "quota_forecast_proactive"  // ledger near cap
+	ReasonQuotaReactive  RotationReason = "quota_exhausted_reactive" // on-screen / 429
+	ReasonQuotaProactive RotationReason = "quota_forecast_proactive" // ledger near cap
 	ReasonLoginFailed    RotationReason = "login_failed"
 	ReasonManual         RotationReason = "manual"
 )
@@ -106,6 +106,12 @@ type Store interface {
 	Assign(ctx context.Context, agentID, accountID string) error
 	CurrentAssignment(ctx context.Context, agentID string) (accountID string, err error)
 	RecordRotation(ctx context.Context, agentID, fromAccountID, toAccountID string, reason RotationReason, at time.Time) error
+}
+
+// CredentialExpiryReader exposes the authoritative credentials.expires_at
+// timestamp without expanding the mutation-oriented Store contract.
+type CredentialExpiryReader interface {
+	CredentialExpiresAt(ctx context.Context, accountID string) (*time.Time, error)
 }
 
 // RotationService orchestrates the exhaustion→switch→resume loop. Implemented

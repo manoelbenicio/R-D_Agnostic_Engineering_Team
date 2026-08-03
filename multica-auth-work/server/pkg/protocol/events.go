@@ -24,6 +24,8 @@ const (
 	EventAgentCreated  = "agent:created"
 	EventAgentArchived = "agent:archived"
 	EventAgentRestored = "agent:restored"
+	// Credential session alerts are workspace-scoped and secret-free.
+	EventCredentialSessionAlert = "credential:session_alert"
 
 	// Task events (server <-> daemon).
 	// Each event maps to a status transition on agent_task_queue. Front-end
@@ -135,3 +137,20 @@ const (
 	EventLarkInstallationCreated = "lark_installation:created"
 	EventLarkInstallationRevoked = "lark_installation:revoked"
 )
+
+const (
+	CredentialSessionOutcomeRotated            = "rotated"
+	CredentialSessionOutcomeNoAccountAvailable = "no_account_available"
+	CredentialSessionOutcomeReassignmentFailed = "reassignment_failed"
+)
+
+// CredentialSessionAlertPayload is shared by the daemon report endpoint and
+// browser WebSocket event. The server resolves workspace and agent identity.
+type CredentialSessionAlertPayload struct {
+	TaskID    string `json:"task_id,omitempty"`
+	AgentID   string `json:"agent_id,omitempty"`
+	Provider  string `json:"provider"`
+	Outcome   string `json:"outcome"`
+	Reason    string `json:"reason,omitempty"`
+	ExpiresAt string `json:"expires_at,omitempty"`
+}

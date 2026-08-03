@@ -2031,6 +2031,73 @@ func (h *Handler) ReportTaskProgress(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+type credentialSessionAlertRequest struct {
+	Provider  string `json:"provider"`
+	Outcome   string `json:"outcome"`
+	Reason    string `json:"reason,omitempty"`
+	ExpiresAt string `json:"expires_at,omitempty"`
+}
+
+// ReportCredentialSessionAlert verifies daemon ownership from the task and
+// publishes only a bounded, secret-free payload to that workspace.
+func (h *Handler) ReportCredentialSessionAlert(w http.ResponseWriter, r *http.Request) {
+	var req credentialSessionAlertRequest
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2048))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	provider := strings.ToLower(strings.TrimSpace(req.Provider))
+	if !validCredentialAlertToken(provider, 32) || !validCredentialAlertOutcome(req.Outcome) ||
+		(req.Reason != "" && !validCredentialAlertToken(req.Reason, 64)) {
+		writeError(w, http.StatusBadRequest, "invalid credential session alert")
+		return
+	}
+	if req.ExpiresAt != "" {
+		expiresAt, err := time.Parse(time.RFC3339Nano, req.ExpiresAt)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid credential session expiry")
+			return
+		}
+		req.ExpiresAt = expiresAt.UTC().Format(time.RFC3339Nano)
+	}
+	taskID := chi.URLParam(r, "taskId")
+	task, workspaceID, ok := h.requireDaemonTaskAccessWithWorkspace(w, r, taskID)
+	if !ok {
+		return
+	}
+	payload := protocol.CredentialSessionAlertPayload{
+		TaskID: taskID, AgentID: uuidToString(task.AgentID), Provider: provider,
+		Outcome: req.Outcome, Reason: req.Reason, ExpiresAt: req.ExpiresAt,
+	}
+	h.publish(protocol.EventCredentialSessionAlert, workspaceID, "system", "", payload)
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func validCredentialAlertOutcome(outcome string) bool {
+	switch outcome {
+	case protocol.CredentialSessionOutcomeRotated,
+		protocol.CredentialSessionOutcomeNoAccountAvailable,
+		protocol.CredentialSessionOutcomeReassignmentFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+func validCredentialAlertToken(value string, max int) bool {
+	if value == "" || len(value) > max {
+		return false
+	}
+	for _, char := range value {
+		if (char < 'a' || char > 'z') && (char < '0' || char > '9') && char != '_' && char != '-' {
+			return false
+		}
+	}
+	return true
+}
+
 // CompleteTask marks a running task as completed.
 type TaskCompleteRequest struct {
 	PRURL     string `json:"pr_url"`

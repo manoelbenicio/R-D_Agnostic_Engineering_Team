@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -88,6 +89,30 @@ func (s *PGStore) GetAccount(ctx context.Context, accountID string) (Account, er
 		return Account{}, fmt.Errorf("rotation: get account: %w", err)
 	}
 	return account, nil
+}
+
+// CredentialExpiresAt returns the exact expires_at value from the newest
+// credential row. NULL and an absent row remain unknown rather than inferred.
+func (s *PGStore) CredentialExpiresAt(ctx context.Context, accountID string) (*time.Time, error) {
+	var expiresAt pgtype.Timestamptz
+	err := s.pool.QueryRow(ctx, `
+		SELECT expires_at
+		  FROM credentials
+		 WHERE account_id = $1
+		 ORDER BY created_at DESC, credential_id DESC
+		 LIMIT 1
+	`, accountID).Scan(&expiresAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("rotation: read credential expiry: %w", err)
+	}
+	if !expiresAt.Valid {
+		return nil, nil
+	}
+	exact := expiresAt.Time
+	return &exact, nil
 }
 
 func (s *PGStore) UpdateAccountStatus(ctx context.Context, accountID string, status AccountStatus, cooldownUntil *time.Time) error {

@@ -21,6 +21,7 @@ export type WSEventType =
   | "agent:created"
   | "agent:archived"
   | "agent:restored"
+  | "credential:session_alert"
   | "task:queued"
   | "task:dispatch"
   | "task:running"
@@ -124,6 +125,20 @@ export interface AgentArchivedPayload {
 
 export interface AgentRestoredPayload {
   agent: Agent;
+}
+
+export type CredentialSessionAlertOutcome =
+  | "rotated"
+  | "no_account_available"
+  | "reassignment_failed";
+
+export interface CredentialSessionAlertPayload {
+  task_id: string;
+  agent_id: string;
+  provider: string;
+  outcome: CredentialSessionAlertOutcome;
+  reason?: string;
+  expires_at?: string;
 }
 
 export interface InboxNewPayload {

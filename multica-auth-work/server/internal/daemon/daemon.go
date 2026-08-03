@@ -4292,6 +4292,7 @@ func (d *Daemon) rotateTaskWithReason(ctx context.Context, task Task, provider s
 	if d.rotationService == nil || task.AgentID == "" || task.WorkspaceID == "" {
 		return rotation.Account{}, false
 	}
+	expiresAt := d.credentialExpiresAtForTask(ctx, task, taskLog)
 	start := time.Now()
 	account, err := d.rotationService.OnExhaustion(ctx, task.AgentID, provider, task.WorkspaceID, reason, start)
 	durationSeconds := time.Since(start).Seconds()
@@ -4301,19 +4302,58 @@ func (d *Daemon) rotateTaskWithReason(ctx context.Context, task Task, provider s
 				d.credentialMetrics.SetAllAccountsExhausted(provider, true)
 			}
 			taskLog.Info("rotation: no account available; preserving current failure behavior", "provider", provider)
+			d.reportCredentialSessionAlert(ctx, task, provider, reason, protocol.CredentialSessionOutcomeNoAccountAvailable, expiresAt, taskLog)
 			return rotation.Account{}, false
 		}
 		if d.credentialMetrics != nil {
 			d.credentialMetrics.ObserveRotation(provider, string(reason), "error", durationSeconds)
 		}
 		taskLog.Warn("rotation: account rotation failed; preserving current failure behavior", "provider", provider, "error", err)
+		d.reportCredentialSessionAlert(ctx, task, provider, reason, protocol.CredentialSessionOutcomeReassignmentFailed, expiresAt, taskLog)
 		return rotation.Account{}, false
 	}
 	if d.credentialMetrics != nil {
 		d.credentialMetrics.SetAllAccountsExhausted(provider, false)
 		d.credentialMetrics.ObserveRotation(provider, string(reason), "ok", durationSeconds)
 	}
+	// OnExhaustion success is the durability boundary owned by the rotation
+	// service. Refresh expiry from the newly-current assignment, and never emit
+	// the browser success outcome before that boundary returns.
+	expiresAt = d.credentialExpiresAtForTask(ctx, task, taskLog)
+	d.reportCredentialSessionAlert(ctx, task, provider, reason, protocol.CredentialSessionOutcomeRotated, expiresAt, taskLog)
 	return account, true
+}
+
+func (d *Daemon) credentialExpiresAtForTask(ctx context.Context, task Task, taskLog *slog.Logger) string {
+	reader, ok := d.rotationStore.(rotation.CredentialExpiryReader)
+	if !ok || task.AgentID == "" {
+		return ""
+	}
+	accountID, err := d.rotationStore.CurrentAssignment(ctx, task.AgentID)
+	if err != nil || accountID == "" {
+		return ""
+	}
+	expiresAt, err := reader.CredentialExpiresAt(ctx, accountID)
+	if err != nil {
+		taskLog.Debug("rotation: credential expiry unavailable", "provider", task.Provider)
+		return ""
+	}
+	if expiresAt == nil {
+		return ""
+	}
+	return expiresAt.UTC().Format(time.RFC3339Nano)
+}
+
+func (d *Daemon) reportCredentialSessionAlert(ctx context.Context, task Task, provider string, reason rotation.RotationReason, outcome, expiresAt string, taskLog *slog.Logger) {
+	if d.client == nil || task.ID == "" {
+		return
+	}
+	alert := protocol.CredentialSessionAlertPayload{
+		Provider: provider, Outcome: outcome, Reason: string(reason), ExpiresAt: expiresAt,
+	}
+	if err := d.client.ReportCredentialSessionAlert(ctx, task.ID, alert); err != nil {
+		taskLog.Warn("rotation: credential session alert delivery failed", "provider", provider, "outcome", outcome)
+	}
 }
 
 func (d *Daemon) observeCredentialPrepare(provider, accountHome string, err error, seconds float64) {
