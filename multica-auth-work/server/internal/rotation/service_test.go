@@ -3,6 +3,7 @@ package rotation
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 )
@@ -24,7 +25,7 @@ func TestServiceOnExhaustionRotatesHappyPath(t *testing.T) {
 	if got.AccountID != "next" {
 		t.Fatalf("rotated account = %s, want next", got.AccountID)
 	}
-	assertSequence(t, auth.calls, []string{"logout:current", "login:next", "wait:session-next"})
+	assertSequence(t, auth.calls, []string{"login:next", "wait:session-next", "logout:current"})
 	if assigned := store.assignments["agent-1"]; assigned != "next" {
 		t.Fatalf("assignment = %s, want next", assigned)
 	}
@@ -58,7 +59,7 @@ func TestServiceOnExhaustionMarksFailedLoginDegradedAndTriesNext(t *testing.T) {
 	if status := store.accounts["first"].Status; status != StatusDegraded {
 		t.Fatalf("failed account status = %s, want degraded", status)
 	}
-	assertSequence(t, auth.calls, []string{"logout:current", "login:first", "login:second", "wait:session-second"})
+	assertSequence(t, auth.calls, []string{"login:first", "logout:first", "login:second", "wait:session-second", "logout:current"})
 	if assigned := store.assignments["agent-1"]; assigned != "second" {
 		t.Fatalf("assignment = %s, want second", assigned)
 	}
@@ -91,10 +92,14 @@ type rotationRecord struct {
 }
 
 type fakeStore struct {
-	accounts    map[string]Account
-	order       []string
-	assignments map[string]string
-	rotations   []rotationRecord
+	mu             sync.Mutex
+	accounts       map[string]Account
+	order          []string
+	assignments    map[string]string
+	rotations      []rotationRecord
+	atomicErr      error
+	currentReads   int
+	currentBarrier chan struct{}
 }
 
 func newFakeStore(accounts []Account) *fakeStore {
@@ -110,6 +115,8 @@ func newFakeStore(accounts []Account) *fakeStore {
 }
 
 func (s *fakeStore) ListAccounts(ctx context.Context, vendor, tenantID string) ([]Account, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	var out []Account
 	for _, accountID := range s.order {
 		account := s.accounts[accountID]
@@ -121,6 +128,8 @@ func (s *fakeStore) ListAccounts(ctx context.Context, vendor, tenantID string) (
 }
 
 func (s *fakeStore) GetAccount(ctx context.Context, accountID string) (Account, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	account, ok := s.accounts[accountID]
 	if !ok {
 		return Account{}, errors.New("account not found")
@@ -129,6 +138,8 @@ func (s *fakeStore) GetAccount(ctx context.Context, accountID string) (Account, 
 }
 
 func (s *fakeStore) UpdateAccountStatus(ctx context.Context, accountID string, status AccountStatus, cooldownUntil *time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	account, ok := s.accounts[accountID]
 	if !ok {
 		return errors.New("account not found")
@@ -140,6 +151,8 @@ func (s *fakeStore) UpdateAccountStatus(ctx context.Context, accountID string, s
 }
 
 func (s *fakeStore) RecordUsage(ctx context.Context, accountID string, tokensUsed int64, windowStart time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	account, ok := s.accounts[accountID]
 	if !ok {
 		return errors.New("account not found")
@@ -151,6 +164,8 @@ func (s *fakeStore) RecordUsage(ctx context.Context, accountID string, tokensUse
 }
 
 func (s *fakeStore) Assign(ctx context.Context, agentID, accountID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, ok := s.accounts[accountID]; !ok {
 		return errors.New("account not found")
 	}
@@ -159,10 +174,25 @@ func (s *fakeStore) Assign(ctx context.Context, agentID, accountID string) error
 }
 
 func (s *fakeStore) CurrentAssignment(ctx context.Context, agentID string) (string, error) {
-	return s.assignments[agentID], nil
+	s.mu.Lock()
+	assignment := s.assignments[agentID]
+	barrier := s.currentBarrier
+	if barrier != nil {
+		s.currentReads++
+		if s.currentReads == 2 {
+			close(barrier)
+		}
+	}
+	s.mu.Unlock()
+	if barrier != nil {
+		<-barrier
+	}
+	return assignment, nil
 }
 
 func (s *fakeStore) RecordRotation(ctx context.Context, agentID, fromAccountID, toAccountID string, reason RotationReason, at time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.rotations = append(s.rotations, rotationRecord{
 		agentID:       agentID,
 		fromAccountID: fromAccountID,
@@ -173,9 +203,153 @@ func (s *fakeStore) RecordRotation(ctx context.Context, agentID, fromAccountID, 
 	return nil
 }
 
+func TestServiceOnExhaustionConcurrentServicesPrepareOnce(t *testing.T) {
+	store := newFakeStore([]Account{
+		{AccountID: "current", Vendor: "codex", TenantID: "tenant-1", Priority: 1, Status: StatusLeased},
+		{AccountID: "next", Vendor: "codex", TenantID: "tenant-1", Priority: 2, Status: StatusAvailable},
+	})
+	store.assignments["agent-1"] = "current"
+	store.currentBarrier = make(chan struct{})
+	authA := &fakeAuthenticator{}
+	authB := &fakeAuthenticator{}
+	services := []*Service{
+		NewService(store, fakeDetector{}, authA),
+		NewService(store, fakeDetector{}, authB),
+	}
+	start := make(chan struct{})
+	errs := make(chan error, len(services))
+	var wg sync.WaitGroup
+	for _, service := range services {
+		service := service
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			_, err := service.OnExhaustion(context.Background(), "agent-1", "codex", "tenant-1", ReasonQuotaReactive, time.Now())
+			errs <- err
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	var successes int
+	for err := range errs {
+		if err == nil {
+			successes++
+		}
+	}
+	if successes != 1 {
+		t.Fatalf("successful rotations = %d, want 1", successes)
+	}
+	if got := len(authA.calls) + len(authB.calls); got != 3 {
+		t.Fatalf("authentication call count = %d, want one login/wait/logout sequence", got)
+	}
+	if got := store.assignments["agent-1"]; got != "next" {
+		t.Fatalf("assignment = %s, want next", got)
+	}
+	if len(store.rotations) != 1 {
+		t.Fatalf("rotation count = %d, want 1", len(store.rotations))
+	}
+}
+
+func (s *fakeStore) RotateAssignmentAtomic(
+	ctx context.Context,
+	agentID, expectedAccountID, nextAccountID string,
+	reason RotationReason,
+	at time.Time,
+	prepare func(context.Context) error,
+) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.assignments[agentID] != expectedAccountID {
+		return ErrStaleAssignment
+	}
+	if err := prepare(ctx); err != nil {
+		return err
+	}
+	if s.atomicErr != nil {
+		return s.atomicErr
+	}
+	s.assignments[agentID] = nextAccountID
+	s.rotations = append(s.rotations, rotationRecord{
+		agentID:       agentID,
+		fromAccountID: expectedAccountID,
+		toAccountID:   nextAccountID,
+		reason:        reason,
+		at:            at,
+	})
+	return nil
+}
+
+func TestServiceOnExhaustionAtomicFailurePreservesCurrentAndCleansNext(t *testing.T) {
+	store := newFakeStore([]Account{
+		{AccountID: "current", Vendor: "codex", TenantID: "tenant-1", Status: StatusLeased},
+		{AccountID: "next", Vendor: "codex", TenantID: "tenant-1", Status: StatusAvailable},
+	})
+	store.assignments["agent-1"] = "current"
+	store.atomicErr = errors.New("audit insert failed")
+	auth := &fakeAuthenticator{}
+	service := NewService(store, fakeDetector{}, auth)
+
+	_, err := service.OnExhaustion(context.Background(), "agent-1", "codex", "tenant-1", ReasonQuotaReactive, time.Now())
+	if !errors.Is(err, store.atomicErr) {
+		t.Fatalf("OnExhaustion error = %v, want %v", err, store.atomicErr)
+	}
+	if got := store.assignments["agent-1"]; got != "current" {
+		t.Fatalf("assignment = %s, want current", got)
+	}
+	if len(store.rotations) != 0 {
+		t.Fatalf("rotation count = %d, want 0", len(store.rotations))
+	}
+	assertSequence(t, auth.calls, []string{"login:next", "wait:session-next", "logout:next"})
+}
+
+func TestServiceOnExhaustionRequiresAtomicStoreBeforeAuthentication(t *testing.T) {
+	store := newFakeStore([]Account{
+		{AccountID: "current", Vendor: "codex", TenantID: "tenant-1", Status: StatusLeased},
+		{AccountID: "next", Vendor: "codex", TenantID: "tenant-1", Status: StatusAvailable},
+	})
+	store.assignments["agent-1"] = "current"
+	auth := &fakeAuthenticator{}
+
+	_, err := NewService(struct{ Store }{Store: store}, fakeDetector{}, auth).OnExhaustion(
+		context.Background(), "agent-1", "codex", "tenant-1", ReasonQuotaReactive, time.Now(),
+	)
+	if !errors.Is(err, ErrAtomicRotationRequired) {
+		t.Fatalf("OnExhaustion error = %v, want %v", err, ErrAtomicRotationRequired)
+	}
+	if len(auth.calls) != 0 {
+		t.Fatalf("authentication calls = %v, want none", auth.calls)
+	}
+}
+
+func TestServiceOnExhaustionWaitFailurePreservesCurrentAndCleansNext(t *testing.T) {
+	store := newFakeStore([]Account{
+		{AccountID: "current", Vendor: "codex", TenantID: "tenant-1", Status: StatusLeased},
+		{AccountID: "next", Vendor: "codex", TenantID: "tenant-1", Status: StatusAvailable},
+	})
+	store.assignments["agent-1"] = "current"
+	auth := &fakeAuthenticator{waitErrs: map[string]error{"session-next": errors.New("wait failed")}}
+	service := NewService(store, fakeDetector{}, auth, WithMaxLoginAttempts(1))
+
+	_, err := service.OnExhaustion(context.Background(), "agent-1", "codex", "tenant-1", ReasonQuotaReactive, time.Now())
+	if err == nil {
+		t.Fatal("OnExhaustion error = nil, want wait failure")
+	}
+	if got := store.assignments["agent-1"]; got != "current" {
+		t.Fatalf("assignment = %s, want current", got)
+	}
+	if len(store.rotations) != 0 {
+		t.Fatalf("rotation count = %d, want 0", len(store.rotations))
+	}
+	assertSequence(t, auth.calls, []string{"login:next", "wait:session-next", "logout:next"})
+}
+
 type fakeAuthenticator struct {
 	calls     []string
 	loginErrs map[string]error
+	waitErrs  map[string]error
 }
 
 func (a *fakeAuthenticator) Login(ctx context.Context, acc Account) (string, error) {
@@ -193,5 +367,8 @@ func (a *fakeAuthenticator) Logout(ctx context.Context, acc Account) error {
 
 func (a *fakeAuthenticator) WaitAuthenticated(ctx context.Context, sessionID string, timeout time.Duration) (bool, error) {
 	a.calls = append(a.calls, "wait:"+sessionID)
+	if err := a.waitErrs[sessionID]; err != nil {
+		return false, err
+	}
 	return true, nil
 }

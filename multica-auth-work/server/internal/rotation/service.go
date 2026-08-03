@@ -83,6 +83,10 @@ func (s *Service) OnExhaustion(ctx context.Context, agentID, vendor, tenantID st
 	if s.auth == nil {
 		return Account{}, errNilAuthenticator
 	}
+	atomicStore, ok := s.store.(AtomicRotationStore)
+	if !ok {
+		return Account{}, ErrAtomicRotationRequired
+	}
 
 	lock := s.agentLock(agentID)
 	lock.Lock()
@@ -92,12 +96,10 @@ func (s *Service) OnExhaustion(ctx context.Context, agentID, vendor, tenantID st
 	if err != nil {
 		return Account{}, err
 	}
+	var current Account
 	if fromAccountID != "" {
-		current, err := s.store.GetAccount(ctx, fromAccountID)
+		current, err = s.store.GetAccount(ctx, fromAccountID)
 		if err != nil {
-			return Account{}, err
-		}
-		if err := s.auth.Logout(ctx, current); err != nil {
 			return Account{}, err
 		}
 	}
@@ -115,15 +117,52 @@ func (s *Service) OnExhaustion(ctx context.Context, agentID, vendor, tenantID st
 		}
 		skip[next.AccountID] = struct{}{}
 
-		sessionID, err := s.auth.Login(ctx, next)
-		if err == nil {
-			var ok bool
-			ok, err = s.auth.WaitAuthenticated(ctx, sessionID, s.authTimeout)
-			if err == nil && !ok {
-				err = errAuthenticationRejected
-			}
-		}
+		prepared := false
+		var prepareErr error
+		err = atomicStore.RotateAssignmentAtomic(
+			ctx,
+			agentID,
+			fromAccountID,
+			next.AccountID,
+			reason,
+			now,
+			func(prepareCtx context.Context) error {
+				sessionID, loginErr := s.auth.Login(prepareCtx, next)
+				if loginErr != nil {
+					if cleanupErr := s.auth.Logout(prepareCtx, next); cleanupErr != nil {
+						loginErr = errors.Join(loginErr, cleanupErr)
+					}
+					prepareErr = loginErr
+					return loginErr
+				}
+				ok, waitErr := s.auth.WaitAuthenticated(prepareCtx, sessionID, s.authTimeout)
+				if waitErr == nil && !ok {
+					waitErr = errAuthenticationRejected
+				}
+				if waitErr != nil {
+					if cleanupErr := s.auth.Logout(prepareCtx, next); cleanupErr != nil {
+						prepareErr = errors.Join(waitErr, cleanupErr)
+						return prepareErr
+					}
+					prepareErr = waitErr
+					return waitErr
+				}
+				prepared = true
+				return nil
+			},
+		)
 		if err != nil {
+			if prepared {
+				if cleanupErr := s.auth.Logout(ctx, next); cleanupErr != nil {
+					err = errors.Join(err, cleanupErr)
+				}
+			}
+			if errors.Is(err, ErrStaleAssignment) {
+				return Account{}, err
+			}
+			if prepareErr == nil {
+				return Account{}, err
+			}
 			lastLoginErr = err
 			if updateErr := s.store.UpdateAccountStatus(ctx, next.AccountID, StatusDegraded, nil); updateErr != nil {
 				return Account{}, updateErr
@@ -131,11 +170,10 @@ func (s *Service) OnExhaustion(ctx context.Context, agentID, vendor, tenantID st
 			continue
 		}
 
-		if err := s.store.Assign(ctx, agentID, next.AccountID); err != nil {
-			return Account{}, err
-		}
-		if err := s.store.RecordRotation(ctx, agentID, fromAccountID, next.AccountID, reason, now); err != nil {
-			return Account{}, err
+		if fromAccountID != "" {
+			if err := s.auth.Logout(ctx, current); err != nil {
+				return next, err
+			}
 		}
 		return next, nil
 	}
