@@ -132,3 +132,21 @@ func assertAtomicRotationState(t *testing.T, store *PGStore, agentID, wantAssign
 		t.Fatalf("rotation events = %d, want %d", events, wantEvents)
 	}
 }
+
+func TestNativeRotationRejectsCrossLinkedIdentityBeforeDatabase(t *testing.T) {
+	request := nativeRotationTestRequest()
+	request.Target.WorkspaceID = uuid.NewString()
+	err := request.validate()
+	if !errors.Is(err, ErrInvalidNativeIdentity) {
+		t.Fatalf("validate error = %v, want ErrInvalidNativeIdentity", err)
+	}
+}
+
+func TestNativeRotationRejectsAccountLikeReducedIdentity(t *testing.T) {
+	request := nativeRotationTestRequest()
+	request.Target.RuntimeSessionID = ""
+	err := request.validate()
+	if !errors.Is(err, ErrInvalidNativeIdentity) {
+		t.Fatalf("validate error = %v, want ErrInvalidNativeIdentity", err)
+	}
+}

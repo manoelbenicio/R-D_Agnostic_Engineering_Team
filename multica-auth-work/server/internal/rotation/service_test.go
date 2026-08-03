@@ -3,6 +3,8 @@ package rotation
 import (
 	"context"
 	"errors"
+	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -371,4 +373,119 @@ func (a *fakeAuthenticator) WaitAuthenticated(ctx context.Context, sessionID str
 		return false, err
 	}
 	return true, nil
+}
+
+type fakeNativeStore struct {
+	calls []string
+}
+
+func (f *fakeNativeStore) ReserveNativeCandidate(_ context.Context, r NativeRotationRequestV1) (NativeHomeReceiptV1, error) {
+	f.calls = append(f.calls, "A1")
+	return receiptFor(r.Target, "pending_local", 1, ""), nil
+}
+
+func (f *fakeNativeStore) RecordNativePreparation(_ context.Context, r NativeRotationRequestV1, ok bool, digest string) (NativeHomeReceiptV1, error) {
+	if ok {
+		f.calls = append(f.calls, "A2-success")
+		return receiptFor(r.Target, "acquired", 2, digest), nil
+	}
+	f.calls = append(f.calls, "A2-failure")
+	return receiptFor(r.Target, "pending_local", 1, ""), nil
+}
+
+func (f *fakeNativeStore) CommitNativeSwap(_ context.Context, r NativeRotationRequestV1, digest string) (NativeRotationResultV1, error) {
+	f.calls = append(f.calls, "B")
+	return NativeRotationResultV1{
+		OperationRequestID: r.OperationRequestID,
+		Outcome:            NativeCommittedRetirementPending,
+		Current:            r.Current,
+		Target:             receiptFor(r.Target, "process_started", 3, digest),
+	}, nil
+}
+
+func (f *fakeNativeStore) ResolveNativeCommit(_ context.Context, r NativeRotationRequestV1) (NativeRotationResultV1, error) {
+	f.calls = append(f.calls, "C")
+	return unknownNativeResult(r), ErrNativeCommitUnknown
+}
+
+type fakeNativePreparer struct {
+	calls *[]string
+	err   error
+}
+
+func (f fakeNativePreparer) PrepareNativeHome(_ context.Context, _ NativeHomeReceiptV1) (string, error) {
+	*f.calls = append(*f.calls, "prepare-no-db-lock")
+	return strings.Repeat("a", 64), f.err
+}
+
+func TestNativeRotationPhasesDoNotSpanPreparation(t *testing.T) {
+	store := &fakeNativeStore{}
+	service := NewNativeService(store, fakeNativePreparer{calls: &store.calls})
+	result, err := service.RotateNative(context.Background(), nativeRotationTestRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Outcome != NativeCommittedRetirementPending {
+		t.Fatalf("outcome = %s", result.Outcome)
+	}
+	want := []string{"A1", "prepare-no-db-lock", "A2-success", "B"}
+	if !reflect.DeepEqual(store.calls, want) {
+		t.Fatalf("calls = %v, want %v", store.calls, want)
+	}
+}
+
+func TestNativeRotationPreparationFailureRemainsDurablyOwned(t *testing.T) {
+	store := &fakeNativeStore{}
+	service := NewNativeService(store, fakeNativePreparer{
+		calls: &store.calls, err: errors.New("definite local failure"),
+	})
+	result, err := service.RotateNative(context.Background(), nativeRotationTestRequest())
+	if err == nil {
+		t.Fatal("prepare failure returned nil error")
+	}
+	if result.Outcome != NativeDefinitelyNotCommitted {
+		t.Fatalf("outcome = %s", result.Outcome)
+	}
+	want := []string{"A1", "prepare-no-db-lock", "A2-failure"}
+	if !reflect.DeepEqual(store.calls, want) {
+		t.Fatalf("calls = %v, want %v", store.calls, want)
+	}
+}
+
+func nativeRotationTestRequest() NativeRotationRequestV1 {
+	current := NativeHomeIdentityV1{
+		TaskID:               "10000000-0000-4000-8000-000000000001",
+		WorkspaceID:          "10000000-0000-4000-8000-000000000002",
+		AgentID:              "10000000-0000-4000-8000-000000000003",
+		RuntimeID:            "10000000-0000-4000-8000-000000000004",
+		RuntimeSessionID:     "10000000-0000-4000-8000-000000000005",
+		DaemonID:             "daemon-a",
+		DaemonBootID:         "10000000-0000-4000-8000-000000000006",
+		Provider:             "codex",
+		RuntimeBindingID:     "10000000-0000-4000-8000-000000000007",
+		BindingGeneration:    1,
+		HomeAssignmentID:     "10000000-0000-4000-8000-000000000008",
+		CatalogID:            "10000000-0000-4000-8000-000000000009",
+		CatalogEntryID:       "10000000-0000-4000-8000-00000000000a",
+		CatalogGeneration:    1,
+		HomeRef:              "10000000-0000-4000-8000-00000000000b",
+		HomeEpoch:            1,
+		LifetimeID:           "10000000-0000-4000-8000-00000000000c",
+		AcquisitionRequestID: "10000000-0000-4000-8000-00000000000d",
+	}
+	target := current
+	target.HomeAssignmentID = "20000000-0000-4000-8000-000000000008"
+	target.CatalogEntryID = "20000000-0000-4000-8000-00000000000a"
+	target.HomeRef = "20000000-0000-4000-8000-00000000000b"
+	target.HomeEpoch = 2
+	target.LifetimeID = "20000000-0000-4000-8000-00000000000c"
+	target.AcquisitionRequestID = "20000000-0000-4000-8000-00000000000d"
+	return NativeRotationRequestV1{
+		OperationID:         "30000000-0000-4000-8000-000000000001",
+		OperationRequestID:  "30000000-0000-4000-8000-000000000002",
+		TransitionRequestID: "30000000-0000-4000-8000-000000000003",
+		AssignedBy:          "30000000-0000-4000-8000-000000000004",
+		Current:             receiptFor(current, "process_started", 3, strings.Repeat("b", 64)),
+		Target:              target, ReasonCode: "quota_exhausted_reactive",
+	}
 }

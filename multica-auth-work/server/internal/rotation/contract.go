@@ -17,7 +17,10 @@ package rotation
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // ErrNoAccountAvailable is returned by SelectNext when the vendor pool has no
@@ -125,4 +128,182 @@ type RotationService interface {
 	// OnExhaustion runs the full rotation for an agent whose current account
 	// is exhausted, returning the account it rotated to.
 	OnExhaustion(ctx context.Context, agentID, vendor, tenantID string, reason RotationReason, now time.Time) (Account, error)
+}
+
+// NativeHomeIdentityV1 is the complete pathless, value-free identity pinned by
+// runtime_task_home_epoch. All fields are server-derived; no account, path,
+// credential reference/value, token, or provider response is representable.
+type NativeHomeIdentityV1 struct {
+	TaskID               string
+	WorkspaceID          string
+	AgentID              string
+	RuntimeID            string
+	RuntimeSessionID     string
+	DaemonID             string
+	DaemonBootID         string
+	Provider             string
+	RuntimeBindingID     string
+	BindingGeneration    int64
+	HomeAssignmentID     string
+	CatalogID            string
+	CatalogEntryID       string
+	CatalogGeneration    int64
+	HomeRef              string
+	HomeEpoch            int64
+	LifetimeID           string
+	AcquisitionRequestID string
+}
+
+type NativeHomeFenceV1 struct {
+	LifetimeState         string
+	LifetimeStateVersion  int16
+	ProcessIdentityDigest string
+}
+
+type NativeHomeReceiptV1 struct {
+	Identity NativeHomeIdentityV1
+	Fence    NativeHomeFenceV1
+}
+
+type NativeRotationRequestV1 struct {
+	OperationID         string
+	OperationRequestID  string
+	TransitionRequestID string
+	AssignedBy          string
+	Current             NativeHomeReceiptV1
+	Target              NativeHomeIdentityV1
+	ReasonCode          string
+}
+
+type NativeRotationOutcome string
+
+const (
+	NativeDefinitelyNotCommitted     NativeRotationOutcome = "definitely_not_committed"
+	NativeCommittedRetirementPending NativeRotationOutcome = "committed_retirement_pending"
+	NativeCommittedRetired           NativeRotationOutcome = "committed_retired"
+	NativeCommitUnknownFenced        NativeRotationOutcome = "commit_unknown_fenced"
+	NativeStaleIdentityConflict      NativeRotationOutcome = "stale_identity_conflict"
+)
+
+type NativeRotationResultV1 struct {
+	OperationRequestID string
+	Outcome            NativeRotationOutcome
+	Current            NativeHomeReceiptV1
+	Target             NativeHomeReceiptV1
+	ReasonCode         string
+	RetryAt            *time.Time
+}
+
+type NativeRetirementRequestV1 struct {
+	AttemptID           string
+	RetirementRequestID string
+	OperationID         string
+	Retiring            NativeHomeReceiptV1
+	DaemonID            string
+	DaemonBootID        string
+	RuntimeSessionID    string
+	RuntimeBindingID    string
+	BindingGeneration   int64
+	AttemptNumber       int16
+}
+
+type NativeRetirementResultV1 struct {
+	AttemptID            string
+	RetirementRequestID  string
+	State                string
+	ResultCode           string
+	ChannelBindingDigest string
+	RequestBodyDigest    string
+}
+
+type NativeRotationRecoveryStore interface {
+	ListDueNativeRetirements(context.Context, time.Time, int32) ([]NativeRotationResultV1, error)
+	ScheduleNativeRetirement(context.Context, string, NativeRotationResultV1, time.Time) (NativeRetirementRequestV1, error)
+	RecordNativeRetirementResult(context.Context, NativeRetirementResultV1, time.Time) error
+}
+
+var (
+	ErrInvalidNativeIdentity = errors.New("rotation: invalid native identity")
+	ErrNativeCommitUnknown   = errors.New("rotation: native swap commit unknown and fenced")
+	ErrNativeCASConflict     = errors.New("rotation: native state changed")
+)
+
+// NativeRotationStore owns only durable database phases. Implementations must
+// commit before any local/provider operation and reacquire the full lock chain
+// for every later phase.
+type NativeRotationStore interface {
+	ReserveNativeCandidate(context.Context, NativeRotationRequestV1) (NativeHomeReceiptV1, error)
+	RecordNativePreparation(context.Context, NativeRotationRequestV1, bool, string) (NativeHomeReceiptV1, error)
+	CommitNativeSwap(context.Context, NativeRotationRequestV1, string) (NativeRotationResultV1, error)
+	ResolveNativeCommit(context.Context, NativeRotationRequestV1) (NativeRotationResultV1, error)
+}
+
+// NativeHomePreparer is a local-only port. The receipt remains opaque and
+// pathless at the server boundary. Implementations are section-5 wiring and are
+// intentionally not composed by this core commit.
+type NativeHomePreparer interface {
+	PrepareNativeHome(context.Context, NativeHomeReceiptV1) (processIdentityDigest string, err error)
+}
+
+func (i NativeHomeIdentityV1) validate() error {
+	for name, value := range map[string]string{
+		"task_id": i.TaskID, "workspace_id": i.WorkspaceID,
+		"agent_id": i.AgentID, "runtime_id": i.RuntimeID,
+		"runtime_session_id": i.RuntimeSessionID, "daemon_boot_id": i.DaemonBootID,
+		"runtime_binding_id": i.RuntimeBindingID,
+		"home_assignment_id": i.HomeAssignmentID, "catalog_id": i.CatalogID,
+		"catalog_entry_id": i.CatalogEntryID, "home_ref": i.HomeRef,
+		"lifetime_id":            i.LifetimeID,
+		"acquisition_request_id": i.AcquisitionRequestID,
+	} {
+		if _, err := uuid.Parse(value); err != nil {
+			return fmt.Errorf("%w: %s", ErrInvalidNativeIdentity, name)
+		}
+	}
+	if i.DaemonID == "" || len(i.DaemonID) > 128 {
+		return fmt.Errorf("%w: daemon_id", ErrInvalidNativeIdentity)
+	}
+	if i.Provider != "antigravity" && i.Provider != "codex" && i.Provider != "kiro" {
+		return fmt.Errorf("%w: provider", ErrInvalidNativeIdentity)
+	}
+	if i.BindingGeneration < 1 || i.CatalogGeneration < 1 || i.HomeEpoch < 1 {
+		return fmt.Errorf("%w: generation", ErrInvalidNativeIdentity)
+	}
+	return nil
+}
+
+func (r NativeRotationRequestV1) validate() error {
+	if err := r.Current.Identity.validate(); err != nil {
+		return err
+	}
+	if err := r.Target.validate(); err != nil {
+		return err
+	}
+	for name, value := range map[string]string{
+		"operation_id":          r.OperationID,
+		"operation_request_id":  r.OperationRequestID,
+		"transition_request_id": r.TransitionRequestID,
+		"assigned_by":           r.AssignedBy,
+	} {
+		if _, err := uuid.Parse(value); err != nil {
+			return fmt.Errorf("%w: %s", ErrInvalidNativeIdentity, name)
+		}
+	}
+	if r.Current.Identity.TaskID != r.Target.TaskID ||
+		r.Current.Identity.WorkspaceID != r.Target.WorkspaceID ||
+		r.Current.Identity.AgentID != r.Target.AgentID ||
+		r.Current.Identity.RuntimeID != r.Target.RuntimeID ||
+		r.Current.Identity.RuntimeSessionID != r.Target.RuntimeSessionID ||
+		r.Current.Identity.RuntimeBindingID != r.Target.RuntimeBindingID ||
+		r.Current.Identity.BindingGeneration != r.Target.BindingGeneration ||
+		r.Current.Identity.DaemonID != r.Target.DaemonID ||
+		r.Current.Identity.DaemonBootID != r.Target.DaemonBootID ||
+		r.Target.HomeEpoch != r.Current.Identity.HomeEpoch+1 ||
+		r.Target.HomeRef == r.Current.Identity.HomeRef {
+		return fmt.Errorf("%w: cross-linked epoch", ErrInvalidNativeIdentity)
+	}
+	if r.ReasonCode == "" || len(r.ReasonCode) > 64 {
+		return fmt.Errorf("%w: reason_code", ErrInvalidNativeIdentity)
+	}
+	return nil
 }

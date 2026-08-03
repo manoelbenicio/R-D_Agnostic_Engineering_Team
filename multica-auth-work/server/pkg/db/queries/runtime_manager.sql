@@ -300,6 +300,11 @@ WHERE c.id = @catalog_id
       SELECT 1 FROM runtime_home_assignment a
       WHERE a.home_ref = e.home_ref AND a.state IN ('active', 'draining')
   )
+  AND NOT EXISTS (
+      SELECT 1 FROM native_rotation_operation o
+      WHERE (o.current_home_ref = e.home_ref OR o.target_home_ref = e.home_ref)
+        AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
+  )
 ORDER BY e.home_ref
 LIMIT 1
 FOR UPDATE OF e SKIP LOCKED;
@@ -322,6 +327,11 @@ WHERE c.id = @catalog_id
   AND NOT EXISTS (
       SELECT 1 FROM runtime_home_assignment a
       WHERE a.home_ref = e.home_ref AND a.state IN ('active', 'draining')
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM native_rotation_operation o
+      WHERE (o.current_home_ref = e.home_ref OR o.target_home_ref = e.home_ref)
+        AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
   )
 FOR UPDATE OF e;
 
@@ -430,6 +440,22 @@ WHERE b.id = @binding_id
         AND e.state = 'healthy'
         AND e.health_watermark >= @health_fresh_after
         AND e.retention_deadline > now()
+        AND NOT EXISTS (
+            SELECT 1 FROM native_rotation_operation o
+            WHERE (
+                o.current_lifetime_id IN (
+                    SELECT l.id FROM runtime_home_lifetime l
+                    WHERE l.home_assignment_id = a.id
+                )
+                OR o.target_lifetime_id IN (
+                    SELECT l.id FROM runtime_home_lifetime l
+                    WHERE l.home_assignment_id = a.id
+                )
+                OR o.current_home_ref = a.home_ref
+                OR o.target_home_ref = a.home_ref
+            )
+              AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
+        )
   )
 RETURNING b.*;
 
@@ -442,7 +468,17 @@ RETURNING *;
 -- name: ReleaseRuntimeHomeAssignment :one
 UPDATE runtime_home_assignment
 SET state = 'released', released_at = now(), reason_code = sqlc.narg(reason_code)
-WHERE id = @id AND binding_id = @binding_id AND state = 'draining'
+WHERE runtime_home_assignment.id = @id
+  AND runtime_home_assignment.binding_id = @binding_id
+  AND runtime_home_assignment.state = 'draining'
+  AND NOT EXISTS (
+      SELECT 1 FROM native_rotation_operation o
+      WHERE (
+          o.current_home_ref = runtime_home_assignment.home_ref
+          OR o.target_home_ref = runtime_home_assignment.home_ref
+      )
+        AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
+  )
   AND NOT EXISTS (
       SELECT 1
       FROM runtime_task_snapshot s
@@ -591,6 +627,14 @@ WITH released AS (
     WHERE s.task_id = @task_id
       AND s.runtime_binding_id = @runtime_binding_id
       AND t.status NOT IN ('queued', 'dispatched', 'running', 'waiting_local_directory')
+      AND NOT EXISTS (
+          SELECT 1 FROM native_rotation_operation o
+          WHERE (
+              o.current_home_ref = s.home_ref
+              OR o.target_home_ref = s.home_ref
+          )
+            AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
+      )
     ON CONFLICT (task_id) DO NOTHING
     RETURNING runtime_binding_id
 )

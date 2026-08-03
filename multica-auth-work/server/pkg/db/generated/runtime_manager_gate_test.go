@@ -241,3 +241,25 @@ func mustGateUUID(t *testing.T, value string) pgtype.UUID {
 	}
 	return id
 }
+
+func TestRuntimeManagerNativeRotationUniversalFence(t *testing.T) {
+	for name, query := range map[string]string{
+		"select healthy": selectHealthyApprovedCredentialHomeForUpdate,
+		"get healthy":    getHealthyApprovedCredentialHomeForUpdate,
+		"reserve":        reserveNativeRuntimeBindingCapacity,
+		"release home":   releaseRuntimeHomeAssignment,
+		"release task":   releaseRuntimeTaskSnapshotCapacity,
+	} {
+		if !strings.Contains(query, "native_rotation_operation") ||
+			!strings.Contains(query, "committed_retired") ||
+			!strings.Contains(query, "aborted_candidate_retired") {
+			t.Fatalf("%s query lacks universal native rotation fence", name)
+		}
+	}
+	if !strings.Contains(acquireNativeRotationHomeLocks,
+		"multica_credential_home_advisory_key") ||
+		!strings.Contains(acquireNativeRotationHomeLocks, "SELECT DISTINCT") ||
+		!strings.Contains(acquireNativeRotationHomeLocks, "ORDER BY home_ref::text") {
+		t.Fatal("native rotation advisory acquisition is not shared, deduplicated and sorted")
+	}
+}

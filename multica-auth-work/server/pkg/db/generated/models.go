@@ -632,6 +632,71 @@ type Member struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
+type NativeRotationOperation struct {
+	ID                  pgtype.UUID        `json:"id"`
+	OperationRequestID  pgtype.UUID        `json:"operation_request_id"`
+	TaskID              pgtype.UUID        `json:"task_id"`
+	RuntimeBindingID    pgtype.UUID        `json:"runtime_binding_id"`
+	CurrentHomeEpoch    int64              `json:"current_home_epoch"`
+	CurrentHomeRef      pgtype.UUID        `json:"current_home_ref"`
+	CurrentAssignmentID pgtype.UUID        `json:"current_assignment_id"`
+	CurrentLifetimeID   pgtype.UUID        `json:"current_lifetime_id"`
+	TargetHomeEpoch     int64              `json:"target_home_epoch"`
+	TargetHomeRef       pgtype.UUID        `json:"target_home_ref"`
+	TargetAssignmentID  pgtype.UUID        `json:"target_assignment_id"`
+	TargetLifetimeID    pgtype.UUID        `json:"target_lifetime_id"`
+	State               string             `json:"state"`
+	StateVersion        int64              `json:"state_version"`
+	ReasonCode          string             `json:"reason_code"`
+	NextAttemptAt       pgtype.Timestamptz `json:"next_attempt_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+type NativeRotationOperationEvent struct {
+	OperationID         pgtype.UUID        `json:"operation_id"`
+	StateVersion        int64              `json:"state_version"`
+	State               string             `json:"state"`
+	TransitionRequestID pgtype.UUID        `json:"transition_request_id"`
+	ReasonCode          string             `json:"reason_code"`
+	OccurredAt          pgtype.Timestamptz `json:"occurred_at"`
+}
+
+type NativeRotationRetirementAttempt struct {
+	ID                   pgtype.UUID        `json:"id"`
+	RetirementRequestID  pgtype.UUID        `json:"retirement_request_id"`
+	OperationID          pgtype.UUID        `json:"operation_id"`
+	TaskID               pgtype.UUID        `json:"task_id"`
+	HomeEpoch            int64              `json:"home_epoch"`
+	LifetimeID           pgtype.UUID        `json:"lifetime_id"`
+	HomeRef              pgtype.UUID        `json:"home_ref"`
+	DaemonID             string             `json:"daemon_id"`
+	DaemonBootID         pgtype.UUID        `json:"daemon_boot_id"`
+	RuntimeSessionID     pgtype.UUID        `json:"runtime_session_id"`
+	RuntimeBindingID     pgtype.UUID        `json:"runtime_binding_id"`
+	BindingGeneration    int64              `json:"binding_generation"`
+	SchedulerOwner       string             `json:"scheduler_owner"`
+	AttemptNumber        int16              `json:"attempt_number"`
+	State                string             `json:"state"`
+	StateVersion         int64              `json:"state_version"`
+	LeaseExpiresAt       pgtype.Timestamptz `json:"lease_expires_at"`
+	ChannelBindingDigest pgtype.Text        `json:"channel_binding_digest"`
+	RequestBodyDigest    pgtype.Text        `json:"request_body_digest"`
+	ResultCode           pgtype.Text        `json:"result_code"`
+	NextAttemptAt        pgtype.Timestamptz `json:"next_attempt_at"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
+type NativeRotationRetirementAttemptEvent struct {
+	AttemptID           pgtype.UUID        `json:"attempt_id"`
+	StateVersion        int64              `json:"state_version"`
+	State               string             `json:"state"`
+	TransitionRequestID pgtype.UUID        `json:"transition_request_id"`
+	ReasonCode          string             `json:"reason_code"`
+	OccurredAt          pgtype.Timestamptz `json:"occurred_at"`
+}
+
 type NotificationPreference struct {
 	ID          pgtype.UUID        `json:"id"`
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`
@@ -759,6 +824,29 @@ type RuntimeConfigurationVersion struct {
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 }
 
+type RuntimeCredentialReadinessAttestation struct {
+	ID                pgtype.UUID        `json:"id"`
+	ProbeRequestID    pgtype.UUID        `json:"probe_request_id"`
+	WorkspaceID       pgtype.UUID        `json:"workspace_id"`
+	AgentID           pgtype.UUID        `json:"agent_id"`
+	RuntimeID         pgtype.UUID        `json:"runtime_id"`
+	RuntimeSessionID  pgtype.UUID        `json:"runtime_session_id"`
+	RuntimeBindingID  pgtype.UUID        `json:"runtime_binding_id"`
+	BindingGeneration int64              `json:"binding_generation"`
+	HomeAssignmentID  pgtype.UUID        `json:"home_assignment_id"`
+	CatalogID         pgtype.UUID        `json:"catalog_id"`
+	CatalogGeneration int64              `json:"catalog_generation"`
+	HomeRef           pgtype.UUID        `json:"home_ref"`
+	Provider          string             `json:"provider"`
+	DaemonID          string             `json:"daemon_id"`
+	DaemonBootID      pgtype.UUID        `json:"daemon_boot_id"`
+	State             string             `json:"state"`
+	ReasonCode        string             `json:"reason_code"`
+	ObservedAt        pgtype.Timestamptz `json:"observed_at"`
+	ExpiresAt         pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
 type RuntimeHomeAssignment struct {
 	ID                pgtype.UUID        `json:"id"`
 	BindingID         pgtype.UUID        `json:"binding_id"`
@@ -773,6 +861,42 @@ type RuntimeHomeAssignment struct {
 	AssignedAt        pgtype.Timestamptz `json:"assigned_at"`
 	ReleasedAt        pgtype.Timestamptz `json:"released_at"`
 	ReasonCode        pgtype.Text        `json:"reason_code"`
+}
+
+type RuntimeHomeLifetime struct {
+	ID                    pgtype.UUID        `json:"id"`
+	AcquisitionRequestID  pgtype.UUID        `json:"acquisition_request_id"`
+	TaskID                pgtype.UUID        `json:"task_id"`
+	RuntimeBindingID      pgtype.UUID        `json:"runtime_binding_id"`
+	BindingGeneration     int64              `json:"binding_generation"`
+	HomeAssignmentID      pgtype.UUID        `json:"home_assignment_id"`
+	WorkspaceID           pgtype.UUID        `json:"workspace_id"`
+	DaemonID              string             `json:"daemon_id"`
+	CatalogID             pgtype.UUID        `json:"catalog_id"`
+	CatalogGeneration     int64              `json:"catalog_generation"`
+	HomeRef               pgtype.UUID        `json:"home_ref"`
+	DaemonBootID          pgtype.UUID        `json:"daemon_boot_id"`
+	State                 string             `json:"state"`
+	ProcessIdentityDigest pgtype.Text        `json:"process_identity_digest"`
+	AcquiredAt            pgtype.Timestamptz `json:"acquired_at"`
+	ProcessStartedAt      pgtype.Timestamptz `json:"process_started_at"`
+	ReleasedAt            pgtype.Timestamptz `json:"released_at"`
+	StateVersion          int16              `json:"state_version"`
+	HomeEpoch             int64              `json:"home_epoch"`
+	AgentID               pgtype.UUID        `json:"agent_id"`
+	RuntimeID             pgtype.UUID        `json:"runtime_id"`
+	RuntimeSessionID      pgtype.UUID        `json:"runtime_session_id"`
+	Provider              string             `json:"provider"`
+	TransportBinding      string             `json:"transport_binding"`
+}
+
+type RuntimeHomeLifetimeEvent struct {
+	LifetimeID          pgtype.UUID        `json:"lifetime_id"`
+	StateVersion        int16              `json:"state_version"`
+	State               string             `json:"state"`
+	TransitionRequestID pgtype.UUID        `json:"transition_request_id"`
+	ReasonCode          pgtype.Text        `json:"reason_code"`
+	OccurredAt          pgtype.Timestamptz `json:"occurred_at"`
 }
 
 type RuntimeProfile struct {
@@ -850,6 +974,29 @@ type RuntimeStandardVersion struct {
 	Reason              string             `json:"reason"`
 	RequestID           string             `json:"request_id"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
+
+type RuntimeTaskHomeEpoch struct {
+	TaskID               pgtype.UUID        `json:"task_id"`
+	HomeEpoch            int64              `json:"home_epoch"`
+	WorkspaceID          pgtype.UUID        `json:"workspace_id"`
+	AgentID              pgtype.UUID        `json:"agent_id"`
+	RuntimeID            pgtype.UUID        `json:"runtime_id"`
+	RuntimeSessionID     pgtype.UUID        `json:"runtime_session_id"`
+	DaemonID             string             `json:"daemon_id"`
+	DaemonBootID         pgtype.UUID        `json:"daemon_boot_id"`
+	Provider             string             `json:"provider"`
+	TransportBinding     string             `json:"transport_binding"`
+	RuntimeBindingID     pgtype.UUID        `json:"runtime_binding_id"`
+	BindingGeneration    int64              `json:"binding_generation"`
+	HomeAssignmentID     pgtype.UUID        `json:"home_assignment_id"`
+	CatalogID            pgtype.UUID        `json:"catalog_id"`
+	CatalogEntryID       pgtype.UUID        `json:"catalog_entry_id"`
+	CatalogGeneration    int64              `json:"catalog_generation"`
+	HomeRef              pgtype.UUID        `json:"home_ref"`
+	LifetimeID           pgtype.UUID        `json:"lifetime_id"`
+	AcquisitionRequestID pgtype.UUID        `json:"acquisition_request_id"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 }
 
 type RuntimeTaskSnapshot struct {

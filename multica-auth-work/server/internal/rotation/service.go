@@ -21,8 +21,10 @@ type ServiceOption func(*Service)
 
 type Service struct {
 	store       Store
+	nativeStore NativeRotationStore
 	detector    ExhaustionDetector
 	auth        AccountAuthenticator
+	nativePrep  NativeHomePreparer
 	pool        *Pool
 	authTimeout time.Duration
 	maxAttempts int
@@ -55,6 +57,60 @@ func NewService(store Store, detector ExhaustionDetector, auth AccountAuthentica
 		s.maxAttempts = defaultMaxLoginAttempts
 	}
 	return s
+}
+
+// NewNativeService constructs only the pathless native rotation core. It does
+// not compose handlers, transport, credential execution, or production
+// scheduling.
+func NewNativeService(store NativeRotationStore, preparer NativeHomePreparer) *Service {
+	return &Service{nativeStore: store, nativePrep: preparer}
+}
+
+// RotateNative executes A1, performs local preparation after A1 commits, then
+// records A2 and performs B. A store commit ambiguity is resolved by the store
+// on a fresh transaction; this method never cleans either receipt on an
+// unknown outcome.
+func (s *Service) RotateNative(
+	ctx context.Context,
+	request NativeRotationRequestV1,
+) (NativeRotationResultV1, error) {
+	if s == nil || s.nativeStore == nil {
+		return NativeRotationResultV1{}, ErrAtomicRotationRequired
+	}
+	if s.nativePrep == nil {
+		return NativeRotationResultV1{}, errNilAuthenticator
+	}
+	if err := request.validate(); err != nil {
+		return NativeRotationResultV1{}, err
+	}
+
+	target, err := s.nativeStore.ReserveNativeCandidate(ctx, request)
+	if err != nil {
+		return NativeRotationResultV1{}, err
+	}
+
+	processDigest, prepareErr := s.nativePrep.PrepareNativeHome(ctx, target)
+	if prepareErr != nil {
+		if _, err := s.nativeStore.RecordNativePreparation(ctx, request, false, ""); err != nil {
+			return NativeRotationResultV1{}, errors.Join(prepareErr, err)
+		}
+		return NativeRotationResultV1{
+			OperationRequestID: request.OperationRequestID,
+			Outcome:            NativeDefinitelyNotCommitted,
+			Current:            request.Current,
+			Target:             target,
+			ReasonCode:         "candidate_preparation_failed",
+		}, prepareErr
+	}
+	if len(processDigest) != 64 {
+		return NativeRotationResultV1{}, ErrInvalidNativeIdentity
+	}
+	if _, err := s.nativeStore.RecordNativePreparation(
+		ctx, request, true, processDigest,
+	); err != nil {
+		return NativeRotationResultV1{}, err
+	}
+	return s.nativeStore.CommitNativeSwap(ctx, request, processDigest)
 }
 
 func WithAuthenticationTimeout(timeout time.Duration) ServiceOption {

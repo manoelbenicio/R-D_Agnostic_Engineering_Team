@@ -987,6 +987,11 @@ WHERE c.id = $1
       SELECT 1 FROM runtime_home_assignment a
       WHERE a.home_ref = e.home_ref AND a.state IN ('active', 'draining')
   )
+  AND NOT EXISTS (
+      SELECT 1 FROM native_rotation_operation o
+      WHERE (o.current_home_ref = e.home_ref OR o.target_home_ref = e.home_ref)
+        AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
+  )
 FOR UPDATE OF e
 `
 
@@ -2105,7 +2110,17 @@ func (q *Queries) RecordRuntimeStandardActivation(ctx context.Context, arg Recor
 const releaseRuntimeHomeAssignment = `-- name: ReleaseRuntimeHomeAssignment :one
 UPDATE runtime_home_assignment
 SET state = 'released', released_at = now(), reason_code = $1
-WHERE id = $2 AND binding_id = $3 AND state = 'draining'
+WHERE runtime_home_assignment.id = $2
+  AND runtime_home_assignment.binding_id = $3
+  AND runtime_home_assignment.state = 'draining'
+  AND NOT EXISTS (
+      SELECT 1 FROM native_rotation_operation o
+      WHERE (
+          o.current_home_ref = runtime_home_assignment.home_ref
+          OR o.target_home_ref = runtime_home_assignment.home_ref
+      )
+        AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
+  )
   AND NOT EXISTS (
       SELECT 1
       FROM runtime_task_snapshot s
@@ -2154,6 +2169,14 @@ WITH released AS (
     WHERE s.task_id = $3
       AND s.runtime_binding_id = $4
       AND t.status NOT IN ('queued', 'dispatched', 'running', 'waiting_local_directory')
+      AND NOT EXISTS (
+          SELECT 1 FROM native_rotation_operation o
+          WHERE (
+              o.current_home_ref = s.home_ref
+              OR o.target_home_ref = s.home_ref
+          )
+            AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
+      )
     ON CONFLICT (task_id) DO NOTHING
     RETURNING runtime_binding_id
 )
@@ -2233,6 +2256,22 @@ WHERE b.id = $1
         AND e.state = 'healthy'
         AND e.health_watermark >= $6
         AND e.retention_deadline > now()
+        AND NOT EXISTS (
+            SELECT 1 FROM native_rotation_operation o
+            WHERE (
+                o.current_lifetime_id IN (
+                    SELECT l.id FROM runtime_home_lifetime l
+                    WHERE l.home_assignment_id = a.id
+                )
+                OR o.target_lifetime_id IN (
+                    SELECT l.id FROM runtime_home_lifetime l
+                    WHERE l.home_assignment_id = a.id
+                )
+                OR o.current_home_ref = a.home_ref
+                OR o.target_home_ref = a.home_ref
+            )
+              AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
+        )
   )
 RETURNING b.id, b.enrollment_id, b.session_id, b.workspace_id, b.runtime_id, b.agent_id, b.transport_binding, b.generation, b.max_concurrent_tasks, b.active_task_count, b.state, b.created_by, b.created_at, b.updated_at, b.deactivated_at, b.active_configuration_version_id, b.effective_configuration_digest
 `
@@ -2373,6 +2412,11 @@ WHERE c.id = $1
   AND NOT EXISTS (
       SELECT 1 FROM runtime_home_assignment a
       WHERE a.home_ref = e.home_ref AND a.state IN ('active', 'draining')
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM native_rotation_operation o
+      WHERE (o.current_home_ref = e.home_ref OR o.target_home_ref = e.home_ref)
+        AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
   )
 ORDER BY e.home_ref
 LIMIT 1
