@@ -650,3 +650,163 @@ RETURNING b.*;
 SELECT *
 FROM runtime_task_snapshot_release
 WHERE task_id = @task_id;
+
+-- name: CreateCredentialReadinessProbeRequest :one
+INSERT INTO runtime_credential_readiness_probe_request (
+    probe_request_id, request_digest, task_id, home_epoch, workspace_id,
+    agent_id, runtime_id, runtime_session_id, daemon_id, daemon_boot_id,
+    provider, transport_binding, runtime_binding_id, binding_generation,
+    home_assignment_id, catalog_id, catalog_entry_id, catalog_generation,
+    home_ref, lifetime_id, acquisition_request_id
+)
+SELECT
+    @probe_request_id, @request_digest, e.task_id, e.home_epoch,
+    e.workspace_id, e.agent_id, e.runtime_id, e.runtime_session_id,
+    e.daemon_id, e.daemon_boot_id, e.provider, e.transport_binding,
+    e.runtime_binding_id, e.binding_generation, e.home_assignment_id,
+    e.catalog_id, e.catalog_entry_id, e.catalog_generation, e.home_ref,
+    e.lifetime_id, e.acquisition_request_id
+FROM runtime_task_home_epoch e
+WHERE e.task_id = @task_id
+  AND e.home_epoch = @home_epoch
+  AND e.daemon_boot_id = @daemon_boot_id
+  AND e.runtime_session_id = @runtime_session_id
+  AND e.runtime_binding_id = @runtime_binding_id
+  AND e.binding_generation = @binding_generation
+  AND e.home_assignment_id = @home_assignment_id
+  AND e.catalog_generation = @catalog_generation
+ON CONFLICT (probe_request_id) DO NOTHING
+RETURNING *;
+
+-- name: AcceptOrReplayCredentialReadinessResult :one
+WITH request_identity AS MATERIALIZED (
+    SELECT r.*
+    FROM runtime_credential_readiness_probe_request r
+    WHERE r.probe_request_id = @probe_request_id
+),
+home_lock AS MATERIALIZED (
+    SELECT pg_advisory_xact_lock(
+        multica_credential_home_advisory_key(r.home_ref)
+    )
+    FROM request_identity r
+),
+binding_lock AS MATERIALIZED (
+    SELECT b.id
+    FROM runtime_binding b, request_identity r, home_lock
+    WHERE b.id = r.runtime_binding_id
+    FOR UPDATE
+),
+assignment_lock AS MATERIALIZED (
+    SELECT a.id
+    FROM runtime_home_assignment a, request_identity r, binding_lock
+    WHERE a.id = r.home_assignment_id
+    FOR UPDATE
+),
+catalog_lock AS MATERIALIZED (
+    SELECT c.id
+    FROM credential_home_catalog c, request_identity r, assignment_lock
+    WHERE c.id = r.catalog_id
+    FOR UPDATE
+),
+entry_lock AS MATERIALIZED (
+    SELECT e.id
+    FROM credential_home_catalog_entry e, request_identity r, catalog_lock
+    WHERE e.id = r.catalog_entry_id
+    FOR UPDATE
+),
+locked_request AS MATERIALIZED (
+    SELECT r.*
+    FROM runtime_credential_readiness_probe_request r, entry_lock
+    WHERE r.probe_request_id = @probe_request_id
+    FOR UPDATE
+),
+inserted_attestation AS (
+    INSERT INTO runtime_credential_readiness_attestation (
+        probe_request_id, workspace_id, agent_id, runtime_id,
+        runtime_session_id, runtime_binding_id, binding_generation,
+        home_assignment_id, catalog_id, catalog_generation, home_ref,
+        provider, daemon_id, daemon_boot_id, state, reason_code,
+        observed_at, expires_at
+    )
+    SELECT
+        r.probe_request_id, r.workspace_id, r.agent_id, r.runtime_id,
+        r.runtime_session_id, r.runtime_binding_id, r.binding_generation,
+        r.home_assignment_id, r.catalog_id, r.catalog_generation, r.home_ref,
+        r.provider, r.daemon_id, r.daemon_boot_id, @state, @reason_code,
+        @probe_observed_at, transaction_timestamp() + interval '5 minutes'
+    FROM locked_request r
+    WHERE r.request_digest = @request_digest
+      AND @probe_observed_at >= r.issued_at
+      AND @probe_observed_at <= transaction_timestamp()
+      AND transaction_timestamp() <= r.request_expires_at
+    ON CONFLICT (probe_request_id) DO NOTHING
+    RETURNING *
+),
+inserted_result AS (
+    INSERT INTO runtime_credential_readiness_probe_result (
+        probe_request_id, attestation_id, result_digest, state, reason_code,
+        probe_observed_at
+    )
+    SELECT
+        a.probe_request_id, a.id, @result_digest, a.state, a.reason_code,
+        a.observed_at
+    FROM inserted_attestation a
+    RETURNING *
+)
+SELECT * FROM inserted_result
+UNION ALL
+SELECT existing.*
+FROM runtime_credential_readiness_probe_result existing
+JOIN runtime_credential_readiness_probe_request r
+  ON r.probe_request_id = existing.probe_request_id
+WHERE existing.probe_request_id = @probe_request_id
+  AND r.request_digest = @request_digest
+  AND existing.result_digest = @result_digest
+  AND existing.state = @state
+  AND existing.reason_code = @reason_code
+  AND existing.probe_observed_at = @probe_observed_at
+  AND NOT EXISTS (SELECT 1 FROM inserted_result)
+LIMIT 1;
+
+-- name: GetCurrentCredentialReadinessAttestation :one
+SELECT a.*
+FROM runtime_credential_readiness_attestation a
+JOIN runtime_credential_readiness_probe_result r
+  ON r.attestation_id = a.id
+JOIN runtime_credential_readiness_probe_request q
+  ON q.probe_request_id = r.probe_request_id
+JOIN runtime_task_home_epoch e
+  ON e.task_id = q.task_id
+ AND e.home_epoch = q.home_epoch
+JOIN runtime_binding b ON b.id = e.runtime_binding_id
+JOIN runtime_home_assignment h ON h.id = e.home_assignment_id
+JOIN credential_home_catalog c ON c.id = e.catalog_id
+JOIN credential_home_catalog_entry ce ON ce.id = e.catalog_entry_id
+JOIN runtime_home_lifetime l ON l.id = e.lifetime_id
+WHERE q.task_id = @task_id
+  AND q.home_epoch = @home_epoch
+  AND q.runtime_session_id = @runtime_session_id
+  AND q.daemon_boot_id = @daemon_boot_id
+  AND q.runtime_binding_id = @runtime_binding_id
+  AND q.binding_generation = @binding_generation
+  AND q.home_assignment_id = @home_assignment_id
+  AND q.catalog_generation = @catalog_generation
+  AND b.generation = q.binding_generation
+  AND b.state = 'active'
+  AND b.transport_binding = 'native_credential_home'
+  AND h.state = 'active'
+  AND c.generation = q.catalog_generation
+  AND c.state = 'available'
+  AND ce.generation = q.catalog_generation
+  AND ce.state = 'healthy'
+  AND ce.approved
+  AND l.state = 'process_started'
+  AND a.expires_at > transaction_timestamp()
+  AND NOT EXISTS (
+      SELECT 1 FROM native_rotation_operation o
+      WHERE o.task_id = q.task_id
+        AND (o.current_home_ref = q.home_ref OR o.target_home_ref = q.home_ref)
+        AND o.state NOT IN ('committed_retired', 'aborted_candidate_retired')
+  )
+ORDER BY r.accepted_at DESC, a.created_at DESC, a.id DESC
+LIMIT 1;

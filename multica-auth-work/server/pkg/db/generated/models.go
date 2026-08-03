@@ -847,6 +847,44 @@ type RuntimeCredentialReadinessAttestation struct {
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
+type RuntimeCredentialReadinessProbeRequest struct {
+	ProbeRequestID       pgtype.UUID        `json:"probe_request_id"`
+	RequestDigest        string             `json:"request_digest"`
+	TaskID               pgtype.UUID        `json:"task_id"`
+	HomeEpoch            int64              `json:"home_epoch"`
+	WorkspaceID          pgtype.UUID        `json:"workspace_id"`
+	AgentID              pgtype.UUID        `json:"agent_id"`
+	RuntimeID            pgtype.UUID        `json:"runtime_id"`
+	RuntimeSessionID     pgtype.UUID        `json:"runtime_session_id"`
+	DaemonID             string             `json:"daemon_id"`
+	DaemonBootID         pgtype.UUID        `json:"daemon_boot_id"`
+	Provider             string             `json:"provider"`
+	TransportBinding     string             `json:"transport_binding"`
+	RuntimeBindingID     pgtype.UUID        `json:"runtime_binding_id"`
+	BindingGeneration    int64              `json:"binding_generation"`
+	HomeAssignmentID     pgtype.UUID        `json:"home_assignment_id"`
+	CatalogID            pgtype.UUID        `json:"catalog_id"`
+	CatalogEntryID       pgtype.UUID        `json:"catalog_entry_id"`
+	CatalogGeneration    int64              `json:"catalog_generation"`
+	HomeRef              pgtype.UUID        `json:"home_ref"`
+	LifetimeID           pgtype.UUID        `json:"lifetime_id"`
+	AcquisitionRequestID pgtype.UUID        `json:"acquisition_request_id"`
+	IssuedAt             pgtype.Timestamptz `json:"issued_at"`
+	RequestExpiresAt     pgtype.Timestamptz `json:"request_expires_at"`
+}
+
+type RuntimeCredentialReadinessProbeResult struct {
+	ID              pgtype.UUID        `json:"id"`
+	ProbeRequestID  pgtype.UUID        `json:"probe_request_id"`
+	AttestationID   pgtype.UUID        `json:"attestation_id"`
+	ResultDigest    string             `json:"result_digest"`
+	State           string             `json:"state"`
+	ReasonCode      string             `json:"reason_code"`
+	ProbeObservedAt pgtype.Timestamptz `json:"probe_observed_at"`
+	AcceptedAt      pgtype.Timestamptz `json:"accepted_at"`
+	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
+}
+
 type RuntimeHomeAssignment struct {
 	ID                pgtype.UUID        `json:"id"`
 	BindingID         pgtype.UUID        `json:"binding_id"`
