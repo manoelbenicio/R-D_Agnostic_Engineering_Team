@@ -801,6 +801,7 @@ WHERE q.task_id = @task_id
   AND ce.state = 'healthy'
   AND ce.approved
   AND l.state = 'process_started'
+  AND a.state = 'ready'
   AND a.expires_at > transaction_timestamp()
   AND NOT EXISTS (
       SELECT 1 FROM native_rotation_operation o

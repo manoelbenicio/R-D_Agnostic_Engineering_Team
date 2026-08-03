@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
 func TestMigration138ImmutableAttestationUpdateDeleteRejected55006(t *testing.T) {
@@ -47,6 +50,10 @@ func TestMigration138ExactReplayReturnsOriginalWithoutExpiryExtension(t *testing
 		t.Fatalf("exact replay changed immutable result: first=%s/%s/%s second=%s/%s/%s",
 			firstID, firstAccepted, firstExpires, secondID, secondAccepted, secondExpires)
 	}
+	current, err := getCurrentMigration138(t, ctx, f)
+	if err != nil || current.State != "ready" {
+		t.Fatalf("generated current-read state=%q err=%v, want ready", current.State, err)
+	}
 }
 
 func TestMigration138ChangedReplayRejected(t *testing.T) {
@@ -58,11 +65,11 @@ func TestMigration138ChangedReplayRejected(t *testing.T) {
 
 	tx := beginMigration138Tx(t, ctx, f)
 	defer tx.Rollback(ctx)
-	var id string
-	err := tx.QueryRow(ctx, migration138AcceptOrReplaySQL,
-		migration138ProbeID, strings.Repeat("b", 64), "unready",
-		"probe_timeout", observed,
-	).Scan(&id, new(time.Time), new(time.Time))
+	_, err := db.New(tx).AcceptOrReplayCredentialReadinessResult(
+		ctx, migration138AcceptParams(
+			migration138ProbeID, "unready", "probe_timeout", observed,
+		),
+	)
 	if !errors.Is(err, pgx.ErrNoRows) {
 		t.Fatalf("changed replay err=%v, want no rows", err)
 	}
@@ -71,24 +78,21 @@ func TestMigration138ChangedReplayRejected(t *testing.T) {
 func TestMigration138ObservationAndServerExpiryBoundaries(t *testing.T) {
 	f, ctx := setupMigration138(t)
 	seedMigration138CurrentNativeEpoch(t, ctx, f)
-	insertMigration138Request(t, ctx, f, migration138ProbeID)
 
-	var issued time.Time
-	if err := migration138QueryRow(t, ctx, f,
-		`SELECT issued_at FROM runtime_credential_readiness_probe_request
-		 WHERE probe_request_id = $1`, migration138ProbeID,
-	).Scan(&issued); err != nil {
-		t.Fatal(err)
-	}
+	request := insertMigration138Request(t, ctx, f, migration138ProbeID)
+	issued := request.IssuedAt.Time
 	expectMigration138AcceptRejected(t, ctx, f, issued.Add(-time.Microsecond))
 	expectMigration138AcceptRejected(t, ctx, f, time.Now().Add(time.Minute))
 
 	_, accepted, expires := acceptMigration138(
-		t, ctx, f, migration138ProbeID, "ready", "ready", issued,
+		t, ctx, f, migration138ProbeID, "unready", "probe_timeout", issued,
 	)
 	if !expires.Equal(accepted.Add(5 * time.Minute)) {
 		t.Fatalf("server expiry=%s, want accepted+300s=%s",
 			expires, accepted.Add(5*time.Minute))
+	}
+	if _, err := getCurrentMigration138(t, ctx, f); !errors.Is(err, pgx.ErrNoRows) {
+		t.Fatalf("fresh exact unready current-read err=%v, want no rows", err)
 	}
 }
 
@@ -96,22 +100,29 @@ func TestMigration138CurrentGenerationAndDaemonBootRaceFailsClosed(t *testing.T)
 	f, ctx := setupMigration138(t)
 	seedMigration138CurrentNativeEpoch(t, ctx, f)
 
-	expectMigration138SQLState(t, ctx, f, fmt.Sprintf(`
-		INSERT INTO runtime_credential_readiness_probe_request (
-			probe_request_id, request_digest, task_id, home_epoch, workspace_id,
-			agent_id, runtime_id, runtime_session_id, daemon_id, daemon_boot_id,
-			provider, transport_binding, runtime_binding_id, binding_generation,
-			home_assignment_id, catalog_id, catalog_entry_id, catalog_generation,
-			home_ref, lifetime_id, acquisition_request_id
-		) SELECT
-			'%s', repeat('a', 64), task_id, home_epoch, workspace_id, agent_id,
-			runtime_id, runtime_session_id, daemon_id,
-			'00000000-0000-0000-0000-000000000099', provider,
-			transport_binding, runtime_binding_id, binding_generation,
-			home_assignment_id, catalog_id, catalog_entry_id,
-			catalog_generation, home_ref, lifetime_id, acquisition_request_id
-		FROM runtime_task_home_epoch WHERE task_id = '%s'`,
-		migration138ProbeID, migration138TaskID), "23514")
+	for name, mutate := range map[string]func(*db.CreateCredentialReadinessProbeRequestParams){
+		"daemon boot": func(arg *db.CreateCredentialReadinessProbeRequestParams) {
+			arg.DaemonBootID = mustMigration138UUID(
+				t, "00000000-0000-0000-0000-000000000099")
+		},
+		"binding generation": func(arg *db.CreateCredentialReadinessProbeRequestParams) {
+			arg.BindingGeneration = 2
+		},
+		"catalog generation": func(arg *db.CreateCredentialReadinessProbeRequestParams) {
+			arg.CatalogGeneration = 2
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			arg := migration138CreateParams(t, migration138ProbeID)
+			mutate(&arg)
+			tx := beginMigration138Tx(t, ctx, f)
+			defer tx.Rollback(ctx)
+			_, err := db.New(tx).CreateCredentialReadinessProbeRequest(ctx, arg)
+			if !errors.Is(err, pgx.ErrNoRows) {
+				t.Fatalf("stale authority create err=%v, want no rows", err)
+			}
+		})
+	}
 
 	insertMigration138Request(t, ctx, f, migration138ProbeID)
 	execMigration138(t, ctx, f, `
@@ -274,69 +285,21 @@ func seedMigration138CurrentNativeEpoch(
 
 func insertMigration138Request(
 	t *testing.T, ctx context.Context, f *fixture, probeID string,
-) {
+) db.RuntimeCredentialReadinessProbeRequest {
 	t.Helper()
-	execMigration138(t, ctx, f, fmt.Sprintf(`
-		INSERT INTO runtime_credential_readiness_probe_request (
-			probe_request_id, request_digest, task_id, home_epoch, workspace_id,
-			agent_id, runtime_id, runtime_session_id, daemon_id, daemon_boot_id,
-			provider, transport_binding, runtime_binding_id, binding_generation,
-			home_assignment_id, catalog_id, catalog_entry_id, catalog_generation,
-			home_ref, lifetime_id, acquisition_request_id
-		) SELECT
-			'%s', repeat('a', 64), task_id, home_epoch, workspace_id, agent_id,
-			runtime_id, runtime_session_id, daemon_id, daemon_boot_id, provider,
-			transport_binding, runtime_binding_id, binding_generation,
-			home_assignment_id, catalog_id, catalog_entry_id,
-			catalog_generation, home_ref, lifetime_id, acquisition_request_id
-		FROM runtime_task_home_epoch WHERE task_id = '%s' AND home_epoch = 1`,
-		probeID, migration138TaskID))
+	tx := beginMigration138Tx(t, ctx, f)
+	defer tx.Rollback(ctx)
+	request, err := db.New(tx).CreateCredentialReadinessProbeRequest(
+		ctx, migration138CreateParams(t, probeID),
+	)
+	if err != nil {
+		t.Fatalf("generated create probe request: %v", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatalf("commit generated probe request: %v", err)
+	}
+	return request
 }
-
-const migration138AcceptOrReplaySQL = `
-WITH inserted_attestation AS (
-	INSERT INTO runtime_credential_readiness_attestation (
-		probe_request_id, workspace_id, agent_id, runtime_id,
-		runtime_session_id, runtime_binding_id, binding_generation,
-		home_assignment_id, catalog_id, catalog_generation, home_ref,
-		provider, daemon_id, daemon_boot_id, state, reason_code,
-		observed_at, expires_at
-	)
-	SELECT
-		r.probe_request_id, r.workspace_id, r.agent_id, r.runtime_id,
-		r.runtime_session_id, r.runtime_binding_id, r.binding_generation,
-		r.home_assignment_id, r.catalog_id, r.catalog_generation, r.home_ref,
-		r.provider, r.daemon_id, r.daemon_boot_id, $3, $4, $5,
-		transaction_timestamp() + interval '5 minutes'
-	FROM runtime_credential_readiness_probe_request r
-	WHERE r.probe_request_id = $1
-	  AND r.request_digest = repeat('a', 64)
-	  AND $5 >= r.issued_at
-	  AND $5 <= transaction_timestamp()
-	  AND transaction_timestamp() <= r.request_expires_at
-	ON CONFLICT (probe_request_id) DO NOTHING
-	RETURNING *
-),
-inserted_result AS (
-	INSERT INTO runtime_credential_readiness_probe_result (
-		probe_request_id, attestation_id, result_digest, state, reason_code,
-		probe_observed_at
-	)
-	SELECT probe_request_id, id, $2, state, reason_code, observed_at
-	FROM inserted_attestation
-	RETURNING *
-)
-SELECT id, accepted_at, expires_at FROM inserted_result
-UNION ALL
-SELECT x.id, x.accepted_at, x.expires_at
-FROM runtime_credential_readiness_probe_result x
-WHERE x.probe_request_id = $1
-  AND x.result_digest = $2
-  AND x.state = $3
-  AND x.reason_code = $4
-  AND x.probe_observed_at = $5
-  AND NOT EXISTS (SELECT 1 FROM inserted_result)
-LIMIT 1`
 
 func acceptMigration138(
 	t *testing.T,
@@ -348,18 +311,16 @@ func acceptMigration138(
 	t.Helper()
 	tx := beginMigration138Tx(t, ctx, f)
 	defer tx.Rollback(ctx)
-	var id string
-	var accepted, expires time.Time
-	err := tx.QueryRow(ctx, migration138AcceptOrReplaySQL,
-		probeID, strings.Repeat("b", 64), state, reason, observed,
-	).Scan(&id, &accepted, &expires)
+	result, err := db.New(tx).AcceptOrReplayCredentialReadinessResult(
+		ctx, migration138AcceptParams(probeID, state, reason, observed),
+	)
 	if err != nil {
 		t.Fatalf("accept/replay probe result: %v", err)
 	}
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatalf("commit probe result: %v", err)
 	}
-	return id, accepted, expires
+	return migration138UUIDString(result.ID), result.AcceptedAt.Time, result.ExpiresAt.Time
 }
 
 func expectMigration138AcceptRejected(
@@ -368,10 +329,11 @@ func expectMigration138AcceptRejected(
 	t.Helper()
 	tx := beginMigration138Tx(t, ctx, f)
 	defer tx.Rollback(ctx)
-	var id string
-	err := tx.QueryRow(ctx, migration138AcceptOrReplaySQL,
-		migration138ProbeID, strings.Repeat("b", 64), "ready", "ready", observed,
-	).Scan(&id, new(time.Time), new(time.Time))
+	_, err := db.New(tx).AcceptOrReplayCredentialReadinessResult(
+		ctx, migration138AcceptParams(
+			migration138ProbeID, "ready", "ready", observed,
+		),
+	)
 	if err == nil {
 		t.Fatal("invalid probe acceptance succeeded")
 	}
@@ -407,17 +369,88 @@ func execMigration138(
 	}
 }
 
-func migration138QueryRow(
-	t *testing.T,
-	ctx context.Context,
-	f *fixture,
-	statement string,
-	args ...any,
-) pgx.Row {
+func getCurrentMigration138(
+	t *testing.T, ctx context.Context, f *fixture,
+) (db.RuntimeCredentialReadinessAttestation, error) {
 	t.Helper()
 	tx := beginMigration138Tx(t, ctx, f)
-	t.Cleanup(func() { _ = tx.Rollback(context.Background()) })
-	return tx.QueryRow(ctx, statement, args...)
+	defer tx.Rollback(ctx)
+	return db.New(tx).GetCurrentCredentialReadinessAttestation(
+		ctx, db.GetCurrentCredentialReadinessAttestationParams{
+			TaskID:            mustMigration138UUID(t, migration138TaskID),
+			HomeEpoch:         1,
+			RuntimeSessionID:  mustMigration138UUID(t, "00000000-0000-0000-0000-000000000004"),
+			DaemonBootID:      mustMigration138UUID(t, "00000000-0000-0000-0000-000000000018"),
+			RuntimeBindingID:  mustMigration138UUID(t, "00000000-0000-0000-0000-000000000013"),
+			BindingGeneration: 1,
+			HomeAssignmentID:  mustMigration138UUID(t, "00000000-0000-0000-0000-000000000014"),
+			CatalogGeneration: 1,
+		},
+	)
+}
+
+func migration138CreateParams(
+	t *testing.T, probeID string,
+) db.CreateCredentialReadinessProbeRequestParams {
+	t.Helper()
+	return db.CreateCredentialReadinessProbeRequestParams{
+		ProbeRequestID:    mustMigration138UUID(t, probeID),
+		RequestDigest:     strings.Repeat("a", 64),
+		TaskID:            mustMigration138UUID(t, migration138TaskID),
+		HomeEpoch:         1,
+		DaemonBootID:      mustMigration138UUID(t, "00000000-0000-0000-0000-000000000018"),
+		RuntimeSessionID:  mustMigration138UUID(t, "00000000-0000-0000-0000-000000000004"),
+		RuntimeBindingID:  mustMigration138UUID(t, "00000000-0000-0000-0000-000000000013"),
+		BindingGeneration: 1,
+		HomeAssignmentID:  mustMigration138UUID(t, "00000000-0000-0000-0000-000000000014"),
+		CatalogGeneration: 1,
+	}
+}
+
+func migration138AcceptParams(
+	probeID, state, reason string, observed time.Time,
+) db.AcceptOrReplayCredentialReadinessResultParams {
+	return db.AcceptOrReplayCredentialReadinessResultParams{
+		ProbeRequestID:  mustMigration138UUIDValue(probeID),
+		State:           state,
+		ReasonCode:      reason,
+		ProbeObservedAt: pgtype.Timestamptz{Time: observed, Valid: true},
+		RequestDigest:   strings.Repeat("a", 64),
+		ResultDigest:    strings.Repeat("b", 64),
+	}
+}
+
+func mustMigration138UUID(t *testing.T, value string) pgtype.UUID {
+	t.Helper()
+	result, err := migration138UUID(value)
+	if err != nil {
+		t.Fatalf("parse test UUID %q: %v", value, err)
+	}
+	return result
+}
+
+func mustMigration138UUIDValue(value string) pgtype.UUID {
+	result, err := migration138UUID(value)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
+
+func migration138UUID(value string) (pgtype.UUID, error) {
+	decoded, err := hex.DecodeString(strings.ReplaceAll(value, "-", ""))
+	if err != nil || len(decoded) != 16 {
+		return pgtype.UUID{}, fmt.Errorf("invalid UUID")
+	}
+	var bytes [16]byte
+	copy(bytes[:], decoded)
+	return pgtype.UUID{Bytes: bytes, Valid: true}, nil
+}
+
+func migration138UUIDString(value pgtype.UUID) string {
+	raw := hex.EncodeToString(value.Bytes[:])
+	return fmt.Sprintf("%s-%s-%s-%s-%s",
+		raw[0:8], raw[8:12], raw[12:16], raw[16:20], raw[20:32])
 }
 
 func expectMigration138SQLState(
