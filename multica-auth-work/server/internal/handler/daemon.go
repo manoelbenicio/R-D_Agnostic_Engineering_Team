@@ -1235,6 +1235,11 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 
 	// Build response with fresh agent data (name + skills + custom_env + custom_args).
 	resp := taskToResponse(*task, runtimeWorkspaceID)
+	if snapshot, snapshotErr := h.Queries.GetRuntimeTaskSnapshot(r.Context(), task.ID); snapshotErr == nil &&
+		runtimeTaskSnapshotMatchesTask(snapshot, *task, runtimeWorkspaceID) &&
+		uuidToString(snapshot.RuntimeID) == uuidToString(runtime.ID) {
+		resp.RuntimeExecutionID, _ = runtimeTaskSnapshotExecutionID(snapshot)
+	}
 	if agent, err := h.Queries.GetAgent(r.Context(), task.AgentID); err == nil {
 		// Workspace-bound skills first, then platform built-in skills. Built-in
 		// names carry a "multica-" prefix so their on-disk slugs never collide
@@ -2033,10 +2038,56 @@ func (h *Handler) ReportTaskProgress(w http.ResponseWriter, r *http.Request) {
 }
 
 type credentialSessionAlertRequest struct {
-	Provider  string `json:"provider"`
-	Outcome   string `json:"outcome"`
-	Reason    string `json:"reason,omitempty"`
-	ExpiresAt string `json:"expires_at,omitempty"`
+	RuntimeExecutionID string `json:"runtime_execution_id"`
+	Provider           string `json:"provider"`
+	Outcome            string `json:"outcome"`
+	Reason             string `json:"reason,omitempty"`
+	ExpiresAt          string `json:"expires_at,omitempty"`
+}
+
+const runtimeExecutionIDPrefix = "rte1_"
+
+// runtimeTaskSnapshotExecutionID produces the value-free execution identifier
+// issued to the daemon at claim. Every component comes from the immutable
+// runtime_task_snapshot; the identifier contains no path or credential data.
+func runtimeTaskSnapshotExecutionID(snapshot db.RuntimeTaskSnapshot) (string, bool) {
+	identity := []string{
+		uuidToString(snapshot.TaskID),
+		uuidToString(snapshot.AgentID),
+		uuidToString(snapshot.WorkspaceID),
+		uuidToString(snapshot.RuntimeID),
+		uuidToString(snapshot.RuntimeSessionID),
+		uuidToString(snapshot.RuntimeBindingID),
+		strconv.FormatInt(snapshot.BindingGeneration, 10),
+		snapshot.TransportBinding,
+	}
+	for _, field := range identity[:6] {
+		if field == "" {
+			return "", false
+		}
+	}
+	if snapshot.BindingGeneration <= 0 || snapshot.TransportBinding != "native_credential_home" {
+		return "", false
+	}
+	sum := sha256.Sum256([]byte(strings.Join(identity, "\x00")))
+	return runtimeExecutionIDPrefix + hex.EncodeToString(sum[:]), true
+}
+
+func validRuntimeExecutionID(value string) bool {
+	if len(value) != len(runtimeExecutionIDPrefix)+sha256.Size*2 ||
+		!strings.HasPrefix(value, runtimeExecutionIDPrefix) {
+		return false
+	}
+	_, err := hex.DecodeString(value[len(runtimeExecutionIDPrefix):])
+	return err == nil
+}
+
+func runtimeTaskSnapshotMatchesTask(snapshot db.RuntimeTaskSnapshot, task db.AgentTaskQueue, workspaceID string) bool {
+	return uuidToString(snapshot.TaskID) == uuidToString(task.ID) &&
+		uuidToString(snapshot.AgentID) == uuidToString(task.AgentID) &&
+		uuidToString(snapshot.WorkspaceID) == workspaceID &&
+		uuidToString(snapshot.RuntimeID) != "" &&
+		uuidToString(snapshot.RuntimeID) == uuidToString(task.RuntimeID)
 }
 
 // ReportCredentialSessionAlert verifies daemon ownership from the task and
@@ -2054,7 +2105,8 @@ func (h *Handler) ReportCredentialSessionAlert(w http.ResponseWriter, r *http.Re
 		return
 	}
 	provider := strings.ToLower(strings.TrimSpace(req.Provider))
-	if !validCredentialAlertToken(provider, 32) || !validCredentialAlertOutcome(req.Outcome) ||
+	if !validRuntimeExecutionID(req.RuntimeExecutionID) ||
+		!validCredentialAlertToken(provider, 32) || !validCredentialAlertOutcome(req.Outcome) ||
 		(req.Reason != "" && !validCredentialAlertToken(req.Reason, 64)) {
 		writeError(w, http.StatusBadRequest, "invalid credential session alert")
 		return
@@ -2072,11 +2124,24 @@ func (h *Handler) ReportCredentialSessionAlert(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
-	if !task.RuntimeID.Valid {
+	snapshot, err := h.Queries.GetRuntimeTaskSnapshot(r.Context(), task.ID)
+	if err != nil {
+		if isNotFound(err) {
+			writeError(w, http.StatusNotFound, "task not found")
+			return
+		}
+		slog.Warn("credential session alert snapshot lookup failed", "task_id", taskID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to load task execution")
+		return
+	}
+	expectedExecutionID, exactSnapshot := runtimeTaskSnapshotExecutionID(snapshot)
+	if !exactSnapshot ||
+		req.RuntimeExecutionID != expectedExecutionID ||
+		!runtimeTaskSnapshotMatchesTask(snapshot, task, workspaceID) {
 		writeError(w, http.StatusNotFound, "task not found")
 		return
 	}
-	runtime, err := h.Queries.GetAgentRuntime(r.Context(), task.RuntimeID)
+	runtime, err := h.Queries.GetAgentRuntime(r.Context(), snapshot.RuntimeID)
 	if err != nil {
 		if isNotFound(err) {
 			writeError(w, http.StatusNotFound, "task not found")
@@ -2096,7 +2161,7 @@ func (h *Handler) ReportCredentialSessionAlert(w http.ResponseWriter, r *http.Re
 		return
 	}
 	payload := protocol.CredentialSessionAlertPayload{
-		TaskID: uuidToString(task.ID), AgentID: uuidToString(task.AgentID), Provider: runtimeProvider,
+		TaskID: uuidToString(snapshot.TaskID), AgentID: uuidToString(snapshot.AgentID), Provider: runtimeProvider,
 		Outcome: req.Outcome, Reason: req.Reason, ExpiresAt: req.ExpiresAt,
 	}
 	h.publish(protocol.EventCredentialSessionAlert, workspaceID, "system", "", payload)

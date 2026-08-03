@@ -29,6 +29,7 @@ import (
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	"github.com/multica-ai/multica/server/internal/rotation"
 	"github.com/multica-ai/multica/server/pkg/agent"
+	"github.com/multica-ai/multica/server/pkg/protocol"
 	"github.com/multica-ai/multica/server/pkg/taskfailure"
 )
 
@@ -4292,7 +4293,7 @@ func (d *Daemon) rotateTaskWithReason(ctx context.Context, task Task, provider s
 	if d.rotationService == nil || task.AgentID == "" || task.WorkspaceID == "" {
 		return rotation.Account{}, false
 	}
-	expiresAt := d.credentialExpiresAtForTask(ctx, task, taskLog)
+	expiresAt := d.credentialExpiresAtForTask(ctx, task, provider, taskLog)
 	start := time.Now()
 	account, err := d.rotationService.OnExhaustion(ctx, task.AgentID, provider, task.WorkspaceID, reason, start)
 	durationSeconds := time.Since(start).Seconds()
@@ -4319,12 +4320,12 @@ func (d *Daemon) rotateTaskWithReason(ctx context.Context, task Task, provider s
 	// OnExhaustion success is the durability boundary owned by the rotation
 	// service. Refresh expiry from the newly-current assignment, and never emit
 	// the browser success outcome before that boundary returns.
-	expiresAt = d.credentialExpiresAtForTask(ctx, task, taskLog)
+	expiresAt = d.credentialExpiresAtForTask(ctx, task, provider, taskLog)
 	d.reportCredentialSessionAlert(ctx, task, provider, reason, protocol.CredentialSessionOutcomeRotated, expiresAt, taskLog)
 	return account, true
 }
 
-func (d *Daemon) credentialExpiresAtForTask(ctx context.Context, task Task, taskLog *slog.Logger) string {
+func (d *Daemon) credentialExpiresAtForTask(ctx context.Context, task Task, provider string, taskLog *slog.Logger) string {
 	reader, ok := d.rotationStore.(rotation.CredentialExpiryReader)
 	if !ok || task.AgentID == "" {
 		return ""
@@ -4335,7 +4336,7 @@ func (d *Daemon) credentialExpiresAtForTask(ctx context.Context, task Task, task
 	}
 	expiresAt, err := reader.CredentialExpiresAt(ctx, accountID)
 	if err != nil {
-		taskLog.Debug("rotation: credential expiry unavailable", "provider", task.Provider)
+		taskLog.Debug("rotation: credential expiry unavailable", "provider", provider)
 		return ""
 	}
 	if expiresAt == nil {
@@ -4349,7 +4350,11 @@ func (d *Daemon) reportCredentialSessionAlert(ctx context.Context, task Task, pr
 		return
 	}
 	alert := protocol.CredentialSessionAlertPayload{
-		Provider: provider, Outcome: outcome, Reason: string(reason), ExpiresAt: expiresAt,
+		RuntimeExecutionID: task.RuntimeExecutionID,
+		Provider:           provider,
+		Outcome:            outcome,
+		Reason:             string(reason),
+		ExpiresAt:          expiresAt,
 	}
 	if err := d.client.ReportCredentialSessionAlert(ctx, task.ID, alert); err != nil {
 		taskLog.Warn("rotation: credential session alert delivery failed", "provider", provider, "outcome", outcome)

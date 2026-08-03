@@ -147,10 +147,11 @@ const (
 // CredentialSessionAlertPayload is shared by the daemon report endpoint and
 // browser WebSocket event. The server resolves workspace and agent identity.
 type CredentialSessionAlertPayload struct {
-	TaskID    string `json:"task_id,omitempty"`
-	AgentID   string `json:"agent_id,omitempty"`
-	Provider  string `json:"provider"`
-	Outcome   string `json:"outcome"`
-	Reason    string `json:"reason,omitempty"`
-	ExpiresAt string `json:"expires_at,omitempty"`
+	TaskID             string `json:"task_id,omitempty"`
+	AgentID            string `json:"agent_id,omitempty"`
+	RuntimeExecutionID string `json:"runtime_execution_id,omitempty"`
+	Provider           string `json:"provider"`
+	Outcome            string `json:"outcome"`
+	Reason             string `json:"reason,omitempty"`
+	ExpiresAt          string `json:"expires_at,omitempty"`
 }

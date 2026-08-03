@@ -40,11 +40,12 @@ type ProjectResourceData struct {
 // Task represents a claimed task from the server.
 // Agent data (name, skills) is populated by the claim endpoint.
 type Task struct {
-	ID          string `json:"id"`
-	AgentID     string `json:"agent_id"`
-	RuntimeID   string `json:"runtime_id"`
-	IssueID     string `json:"issue_id"`
-	WorkspaceID string `json:"workspace_id"`
+	ID                 string `json:"id"`
+	AgentID            string `json:"agent_id"`
+	RuntimeID          string `json:"runtime_id"`
+	RuntimeExecutionID string `json:"runtime_execution_id,omitempty"`
+	IssueID            string `json:"issue_id"`
+	WorkspaceID        string `json:"workspace_id"`
 	// RuntimeRouterOwner is persisted by the server when an external runtime
 	// owns in-flight routing for this task/session. rust_l2 means legacy Go
 	// rotation must not switch accounts or retry the task.

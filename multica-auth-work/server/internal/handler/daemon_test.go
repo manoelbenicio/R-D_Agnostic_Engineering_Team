@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -829,6 +830,143 @@ func TestGetTaskStatus_WithDaemonToken_CrossWorkspace(t *testing.T) {
 	}
 }
 
+func insertCredentialAlertRuntimeSnapshot(
+	t *testing.T,
+	ctx context.Context,
+	tx pgx.Tx,
+	runtimeID, agentID, taskID, daemonID string,
+) (db.RuntimeTaskSnapshot, string) {
+	t.Helper()
+
+	standardID := uuid.NewString()
+	standardVersionID := uuid.NewString()
+	sessionID := uuid.NewString()
+	enrollmentID := uuid.NewString()
+	catalogID := uuid.NewString()
+	catalogGenerationID := uuid.NewString()
+	catalogEntryID := uuid.NewString()
+	homeRef := uuid.NewString()
+	bindingID := uuid.NewString()
+	assignmentID := uuid.NewString()
+	configurationVersionID := uuid.NewString()
+	nameRef := "name_" + strings.Repeat("a", 11) + strings.ReplaceAll(uuid.NewString(), "-", "")
+
+	mustExec := func(label, sql string, args ...any) {
+		t.Helper()
+		if _, err := tx.Exec(ctx, sql, args...); err != nil {
+			t.Fatalf("%s: %v", label, err)
+		}
+	}
+	mustExec("create runtime standard", `
+		INSERT INTO runtime_standard (id, owner_id, name, request_id)
+		VALUES ($1, $2, $3, $4)
+	`, standardID, testUserID, "orq108-standard-"+uuid.NewString(), "orq108-standard-"+uuid.NewString())
+	mustExec("create runtime standard version", `
+		INSERT INTO runtime_standard_version (
+			id, standard_id, version_number, configuration, configuration_digest,
+			apply_class, created_by, reason, request_id
+		)
+		VALUES ($1, $2, 1, $3, repeat('1', 64), 'restart', $4, 'orq108', $5)
+	`, standardVersionID, standardID,
+		`{"routing":{"provider":"codex","transport_binding":"native_credential_home"}}`,
+		testUserID, "orq108-standard-version-"+uuid.NewString())
+	mustExec("activate runtime standard version", `
+		UPDATE runtime_standard SET active_version_id = $2 WHERE id = $1
+	`, standardID, standardVersionID)
+	mustExec("create runtime session", `
+		INSERT INTO runtime_session (
+			id, owner_id, standard_id, name, provider, runtime_kind, created_by
+		)
+		VALUES ($1, $2, $3, $4, 'codex', 'native', $2)
+	`, sessionID, testUserID, standardID, "orq108-session-"+uuid.NewString())
+	mustExec("create runtime enrollment", `
+		INSERT INTO runtime_session_enrollment (
+			id, session_id, workspace_id, runtime_id, agent_id, enrolled_by
+		)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, enrollmentID, sessionID, testWorkspaceID, runtimeID, agentID, testUserID)
+	mustExec("create credential catalog", `
+		INSERT INTO credential_home_catalog (
+			id, workspace_id, daemon_id, generation, lifecycle_generation
+		)
+		VALUES ($1, $2, $3, 1, 1)
+	`, catalogID, testWorkspaceID, daemonID)
+	mustExec("create credential catalog generation", `
+		INSERT INTO credential_home_catalog_generation (
+			id, catalog_id, previous_generation, generation, scan_kind, counters,
+			catalog_digest, started_at
+		)
+		VALUES ($1, $2, 0, 1, 'startup', '{"healthy":1}', repeat('2', 64), now())
+	`, catalogGenerationID, catalogID)
+	mustExec("create credential catalog entry", `
+		INSERT INTO credential_home_catalog_entry (
+			id, generation_id, catalog_id, generation, home_ref, name_ref, provider,
+			approved, state, active_refs, first_seen_at, last_seen_at,
+			last_full_scan_at, health_watermark, ttl_nanoseconds, retention_deadline
+		)
+		VALUES (
+			$1, $2, $3, 1, $4, $5, 'codex',
+			true, 'healthy', 0, now(), now(), now(), now(),
+			3600000000000, now() + interval '30 days'
+		)
+	`, catalogEntryID, catalogGenerationID, catalogID, homeRef, nameRef)
+	mustExec("create runtime binding", `
+		INSERT INTO runtime_binding (
+			id, enrollment_id, session_id, workspace_id, runtime_id, agent_id,
+			transport_binding, created_by
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, 'native_credential_home', $7)
+	`, bindingID, enrollmentID, sessionID, testWorkspaceID, runtimeID, agentID, testUserID)
+	mustExec("create runtime home assignment", `
+		INSERT INTO runtime_home_assignment (
+			id, binding_id, workspace_id, catalog_id, catalog_entry_id,
+			catalog_generation, home_ref, binding_generation, assigned_by
+		)
+		VALUES ($1, $2, $3, $4, $5, 1, $6, 1, $7)
+	`, assignmentID, bindingID, testWorkspaceID, catalogID, catalogEntryID, homeRef, testUserID)
+	mustExec("create runtime configuration version", `
+		INSERT INTO runtime_configuration_version (
+			id, binding_id, version_number, configuration, configuration_digest,
+			apply_class, created_by, reason, request_id
+		)
+		VALUES (
+			$1, $2, 1, '{"limits":{"max_concurrent_tasks":1}}',
+			repeat('3', 64), 'restart', $3, 'orq108', $4
+		)
+	`, configurationVersionID, bindingID, testUserID, "orq108-binding-version-"+uuid.NewString())
+	mustExec("activate runtime configuration", `
+		UPDATE runtime_binding
+		SET active_configuration_version_id = $2,
+		    effective_configuration_digest = repeat('4', 64),
+		    active_task_count = 1
+		WHERE id = $1
+	`, bindingID, configurationVersionID)
+	mustExec("create immutable runtime task snapshot", `
+		INSERT INTO runtime_task_snapshot (
+			task_id, runtime_session_id, runtime_id, agent_id, workspace_id,
+			runtime_standard_version_id, runtime_configuration_version_id,
+			effective_configuration_digest, runtime_binding_id, binding_generation,
+			transport_binding, home_assignment_id, home_ref, catalog_generation,
+			capability_digest
+		)
+		VALUES (
+			$1, $2, $3, $4, $5, $6, $7, repeat('4', 64), $8, 1,
+			'native_credential_home', $9, $10, 1, repeat('5', 64)
+		)
+	`, taskID, sessionID, runtimeID, agentID, testWorkspaceID, standardVersionID,
+		configurationVersionID, bindingID, assignmentID, homeRef)
+
+	snapshot, err := db.New(tx).GetRuntimeTaskSnapshot(ctx, parseUUID(taskID))
+	if err != nil {
+		t.Fatalf("load immutable runtime task snapshot: %v", err)
+	}
+	executionID, ok := runtimeTaskSnapshotExecutionID(snapshot)
+	if !ok {
+		t.Fatal("immutable runtime task snapshot did not produce an execution identifier")
+	}
+	return snapshot, executionID
+}
+
 func TestReportCredentialSessionAlert_BindsExactDaemonTaskRuntime(t *testing.T) {
 	if testHandler == nil || testPool == nil {
 		t.Skip("database not available")
@@ -839,7 +977,7 @@ func TestReportCredentialSessionAlert_BindsExactDaemonTaskRuntime(t *testing.T) 
 		daemonID      = "orq108-daemon"
 		otherDaemonID = "orq108-other-daemon"
 	)
-	var runtimeID, otherRuntimeID string
+	var runtimeID, sameDaemonRuntimeID, otherRuntimeID string
 	if err := testPool.QueryRow(ctx, `
 		INSERT INTO agent_runtime (
 			workspace_id, daemon_id, name, runtime_mode, provider,
@@ -852,6 +990,19 @@ func TestReportCredentialSessionAlert_BindsExactDaemonTaskRuntime(t *testing.T) 
 	}
 	t.Cleanup(func() {
 		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_runtime WHERE id = $1`, runtimeID)
+	})
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent_runtime (
+			workspace_id, daemon_id, name, runtime_mode, provider,
+			status, device_info, metadata, owner_id, last_seen_at
+		)
+		VALUES ($1, $2, $3, 'local', 'codex', 'online', '', '{}'::jsonb, $4, now())
+		RETURNING id
+	`, testWorkspaceID, daemonID, "orq108-alert-rebound-"+uuid.NewString(), testUserID).Scan(&sameDaemonRuntimeID); err != nil {
+		t.Fatalf("create same-daemon rebound runtime: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_runtime WHERE id = $1`, sameDaemonRuntimeID)
 	})
 	if err := testPool.QueryRow(ctx, `
 		INSERT INTO agent_runtime (
@@ -908,7 +1059,7 @@ func TestReportCredentialSessionAlert_BindsExactDaemonTaskRuntime(t *testing.T) 
 	}
 	t.Cleanup(func() { _, _ = testPool.Exec(context.Background(), `DELETE FROM issue WHERE id = $1`, issueID) })
 
-	var taskID, otherRuntimeTaskID, noRuntimeTaskID string
+	var taskID, otherRuntimeTaskID, noSnapshotTaskID string
 	if err := testPool.QueryRow(ctx, `
 		INSERT INTO agent_task_queue (agent_id, runtime_id, issue_id, status, priority)
 		VALUES ($1, $2, $3, 'running', 0)
@@ -930,19 +1081,30 @@ func TestReportCredentialSessionAlert_BindsExactDaemonTaskRuntime(t *testing.T) 
 		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_task_queue WHERE id = $1`, otherRuntimeTaskID)
 	})
 	if err := testPool.QueryRow(ctx, `
-		INSERT INTO agent_task_queue (agent_id, issue_id, status, priority)
-		VALUES ($1, $2, 'running', 0)
+		INSERT INTO agent_task_queue (agent_id, runtime_id, issue_id, status, priority)
+		VALUES ($1, $2, $3, 'running', 0)
 		RETURNING id
-	`, agentID, issueID).Scan(&noRuntimeTaskID); err != nil {
-		t.Fatalf("create no-runtime task: %v", err)
+	`, agentID, runtimeID, issueID).Scan(&noSnapshotTaskID); err != nil {
+		t.Fatalf("create no-snapshot task: %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_task_queue WHERE id = $1`, noRuntimeTaskID)
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_task_queue WHERE id = $1`, noSnapshotTaskID)
 	})
+
+	tx, err := testPool.Begin(ctx)
+	if err != nil {
+		t.Fatalf("begin snapshot fixture transaction: %v", err)
+	}
+	defer func() { _ = tx.Rollback(context.Background()) }()
+	_, executionID := insertCredentialAlertRuntimeSnapshot(t, ctx, tx, runtimeID, agentID, taskID, daemonID)
+	alertHandler := *testHandler
+	alertHandler.Queries = db.New(tx)
+	alertHandler.DB = tx
+	alertHandler.Bus = events.New()
 
 	published := 0
 	var publishedEvent events.Event
-	testHandler.Bus.Subscribe(protocol.EventCredentialSessionAlert, func(event events.Event) {
+	alertHandler.Bus.Subscribe(protocol.EventCredentialSessionAlert, func(event events.Event) {
 		payload, ok := event.Payload.(protocol.CredentialSessionAlertPayload)
 		if !ok || payload.TaskID != taskID {
 			return
@@ -962,10 +1124,13 @@ func TestReportCredentialSessionAlert_BindsExactDaemonTaskRuntime(t *testing.T) 
 		req.Header.Set("Content-Type", "application/json")
 		req = req.WithContext(middleware.WithDaemonContext(req.Context(), workspace, requestDaemon))
 		req = withURLParam(req, "taskId", requestTaskID)
-		testHandler.ReportCredentialSessionAlert(w, req)
+		alertHandler.ReportCredentialSessionAlert(w, req)
 		return w
 	}
-	validBody := `{"provider":"codex","outcome":"rotated"}`
+	validBody := fmt.Sprintf(
+		`{"runtime_execution_id":%q,"provider":"codex","outcome":"rotated"}`,
+		executionID,
+	)
 
 	tests := []struct {
 		name        string
@@ -1001,14 +1166,12 @@ func TestReportCredentialSessionAlert_BindsExactDaemonTaskRuntime(t *testing.T) 
 			wantStatus: http.StatusNotFound,
 		},
 		{
-			name: "task has no runtime snapshot", requestTask: noRuntimeTaskID,
-			workspace: testWorkspaceID, daemon: daemonID, body: validBody,
-			wantStatus: http.StatusNotFound,
-		},
-		{
 			name: "provider differs from authoritative runtime", requestTask: taskID,
 			workspace: testWorkspaceID, daemon: daemonID,
-			body:       `{"provider":"kiro","outcome":"rotated"}`,
+			body: fmt.Sprintf(
+				`{"runtime_execution_id":%q,"provider":"kiro","outcome":"rotated"}`,
+				executionID,
+			),
 			wantStatus: http.StatusNotFound,
 		},
 	}
@@ -1024,6 +1187,55 @@ func TestReportCredentialSessionAlert_BindsExactDaemonTaskRuntime(t *testing.T) 
 			}
 		})
 	}
+
+	t.Run("same-daemon stale rebound", func(t *testing.T) {
+		if _, err := tx.Exec(ctx, `
+			UPDATE agent_task_queue SET runtime_id = $2 WHERE id = $1
+		`, taskID, sameDaemonRuntimeID); err != nil {
+			t.Fatalf("rebind mutable task row: %v", err)
+		}
+		t.Cleanup(func() {
+			_, _ = tx.Exec(context.Background(), `
+				UPDATE agent_task_queue SET runtime_id = $2 WHERE id = $1
+			`, taskID, runtimeID)
+		})
+		before := published
+		w := call(taskID, testWorkspaceID, daemonID, validBody)
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("status = %d, want %d: %s", w.Code, http.StatusNotFound, w.Body.String())
+		}
+		if published != before {
+			t.Fatalf("stale rebound request published %d event(s)", published-before)
+		}
+	})
+
+	t.Run("missing or mismatched immutable snapshot", func(t *testing.T) {
+		t.Run("missing snapshot", func(t *testing.T) {
+			before := published
+			w := call(noSnapshotTaskID, testWorkspaceID, daemonID, validBody)
+			if w.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want %d: %s", w.Code, http.StatusNotFound, w.Body.String())
+			}
+			if published != before {
+				t.Fatalf("missing-snapshot request published %d event(s)", published-before)
+			}
+		})
+		t.Run("mismatched snapshot identifier", func(t *testing.T) {
+			wrongExecutionID := runtimeExecutionIDPrefix + strings.Repeat("0", sha256.Size*2)
+			body := fmt.Sprintf(
+				`{"runtime_execution_id":%q,"provider":"codex","outcome":"rotated"}`,
+				wrongExecutionID,
+			)
+			before := published
+			w := call(taskID, testWorkspaceID, daemonID, body)
+			if w.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want %d: %s", w.Code, http.StatusNotFound, w.Body.String())
+			}
+			if published != before {
+				t.Fatalf("mismatched-snapshot request published %d event(s)", published-before)
+			}
+		})
+	})
 
 	w := call(taskID, testWorkspaceID, daemonID, validBody)
 	if w.Code != http.StatusOK {
