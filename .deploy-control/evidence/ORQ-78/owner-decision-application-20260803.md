@@ -5,6 +5,10 @@
 - Candidate before this artifact: `b4535a8f95cea396f2fcc20e89554b2b0e2f88e4`.
 - Evidence source commit for historical CREDISO bytes: `da42282372d42f61c24c3b8b67bc79e86dc85473`.
 
+## Owner authorization
+
+The Root Owner explicitly authorized all previously recorded selections in the active orchestration session on 2026-08-03 (America/Sao_Paulo): `G01-B`, `G02-A`, `G03-A`, `G06-B`, `G08-A`, `ORQ-100-SECURITY=ACCEPT_DOCUMENTED_HISTORICAL_LIMITATION`, `AD-IF05=OPTION-A`, and `ORQ-96-IMPLEMENTATION=AUTHORIZED`. The later instruction “approved for all” reaffirmed that authorization. This record preserves the decisions without copying credentials, tokens, or other secret material.
+
 ## GAP-01 — G01-B
 
 Root Owner waived only the irrecoverable historical producer/pre-edit attribution. No producer identity or check-in is inferred or fabricated.
@@ -44,7 +48,7 @@ Exact historical redaction-core byte identities:
 | `da422823...:multica-auth-work/server/pkg/redact/redact_test.go` | `f30fb8cd4c7dac1dfede4649557a4d96b31eb153` | `5a37941a1c7f1bd7263368a6479104c81300f7981e9f47bfb6b0cd17a602fec9` |
 | Current `.planning/agent-brain-v3/evidence/credential-isolation-redact-core-review.md` | `e30d767789f659b21f07974586a07cf835dcc787` | `521cef3196ca3c8b0c98b1ecdb120407c217d33c060660350783ac09e7fa8c12` |
 
-The exact core pin is established. A distinct independent security review remains required by `G06-B`; prior technical reproduction should be reused rather than rerun.
+The exact core pin is established. A distinct independent Codex security review completed on 2026-08-03 against these exact pinned bytes and returned `PASS` for the redaction core. The reviewer confirmed key-aware structured redaction, common-secret and JSON-field masking, non-mutating recursive sanitization, cycle/depth fail-closed behavior, typed-nil handling, and safe primitive preservation. It reused the accepted focused ×20/race, build/vet, and clean-room reproduction evidence; no tests were rerun. This verdict is intentionally limited to the pinned redaction-core bytes and does not assert that every application call site invokes the sanitizer.
 
 ## GAP-08 — G08-A
 
@@ -55,4 +59,4 @@ Historical setter/pre-edit attribution for Chat 1.1/1.4 is waived. Their technic
 - No credential home, credential value, authentication material, runtime, service, timer, production resource, or remote ref was accessed or mutated to create this artifact.
 - No historical producer, reviewer, check-in, hash, or test result was invented.
 - No broad scan, 140-commit rescan, technical test rerun, or product-code change was performed.
-- This artifact applies decisions and exact pins only. GAP-02/GAP-03 conformance and GAP-06 distinct security review remain explicit bounded deltas.
+- This artifact applies decisions and exact pins only. GAP-02/GAP-03 conformance remain explicit bounded deltas. The distinct G06 security-review delta is closed for the exact pinned redaction-core bytes only.
