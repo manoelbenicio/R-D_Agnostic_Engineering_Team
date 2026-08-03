@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"sort"
@@ -2048,6 +2049,10 @@ func (h *Handler) ReportCredentialSessionAlert(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
 	provider := strings.ToLower(strings.TrimSpace(req.Provider))
 	if !validCredentialAlertToken(provider, 32) || !validCredentialAlertOutcome(req.Outcome) ||
 		(req.Reason != "" && !validCredentialAlertToken(req.Reason, 64)) {
@@ -2067,8 +2072,31 @@ func (h *Handler) ReportCredentialSessionAlert(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
+	if !task.RuntimeID.Valid {
+		writeError(w, http.StatusNotFound, "task not found")
+		return
+	}
+	runtime, err := h.Queries.GetAgentRuntime(r.Context(), task.RuntimeID)
+	if err != nil {
+		if isNotFound(err) {
+			writeError(w, http.StatusNotFound, "task not found")
+			return
+		}
+		slog.Warn("credential session alert runtime lookup failed", "task_id", taskID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to load task runtime")
+		return
+	}
+	runtimeProvider := normalizeProvider(runtime.Provider)
+	if uuidToString(runtime.WorkspaceID) != workspaceID ||
+		!runtime.DaemonID.Valid ||
+		runtime.DaemonID.String != middleware.DaemonIDFromContext(r.Context()) ||
+		runtimeProvider == "" ||
+		runtimeProvider != provider {
+		writeError(w, http.StatusNotFound, "task not found")
+		return
+	}
 	payload := protocol.CredentialSessionAlertPayload{
-		TaskID: taskID, AgentID: uuidToString(task.AgentID), Provider: provider,
+		TaskID: uuidToString(task.ID), AgentID: uuidToString(task.AgentID), Provider: runtimeProvider,
 		Outcome: req.Outcome, Reason: req.Reason, ExpiresAt: req.ExpiresAt,
 	}
 	h.publish(protocol.EventCredentialSessionAlert, workspaceID, "system", "", payload)

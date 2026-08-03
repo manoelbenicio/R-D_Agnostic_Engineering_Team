@@ -36,8 +36,8 @@ describe("useSessionMonitor", () => {
   it("emits success only for a valid rotated event", () => {
     renderHook(() => useSessionMonitor());
     subscribedHandler()({
-      task_id: "task-1",
-      agent_id: "agent-1",
+      task_id: "11111111-1111-4111-8111-111111111111",
+      agent_id: "22222222-2222-4222-8222-222222222222",
       provider: "codex",
       outcome: "rotated",
     });
@@ -49,25 +49,40 @@ describe("useSessionMonitor", () => {
     const handler = subscribedHandler();
     handler({ provider: "codex", outcome: "rotated" });
     handler({
-      task_id: "task-1",
-      agent_id: "agent-1",
+      task_id: "11111111-1111-4111-8111-111111111111",
+      agent_id: "22222222-2222-4222-8222-222222222222",
       provider: "codex",
       outcome: "unknown",
     });
     handler({
-      task_id: "task-1",
-      agent_id: "agent-1",
+      task_id: "11111111-1111-4111-8111-111111111111",
+      agent_id: "22222222-2222-4222-8222-222222222222",
       provider: "codex",
       outcome: "rotated",
       expires_at: "invalid",
     });
     handler({
-      task_id: "task-1",
-      agent_id: "agent-1",
+      task_id: "11111111-1111-4111-8111-111111111111",
+      agent_id: "22222222-2222-4222-8222-222222222222",
       provider: "codex",
       outcome: "rotated",
       reason: { leaked: "unbounded" },
     });
+    for (const [taskId, agentId] of [
+      ["", "22222222-2222-4222-8222-222222222222"],
+      ["11111111-1111-4111-8111-111111111111", ""],
+      ["not-a-task-id", "22222222-2222-4222-8222-222222222222"],
+      ["11111111-1111-4111-8111-111111111111", "not-an-agent-id"],
+      ["t".repeat(129), "22222222-2222-4222-8222-222222222222"],
+      ["11111111-1111-4111-8111-111111111111", "a".repeat(129)],
+    ]) {
+      handler({
+        task_id: taskId,
+        agent_id: agentId,
+        provider: "codex",
+        outcome: "rotated",
+      });
+    }
     expect(toast.success).not.toHaveBeenCalled();
     expect(toast.warning).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
@@ -77,8 +92,8 @@ describe("useSessionMonitor", () => {
     renderHook(() => useSessionMonitor());
     const handler = subscribedHandler();
     const failure = {
-      task_id: "task-1",
-      agent_id: "agent-1",
+      task_id: "11111111-1111-4111-8111-111111111111",
+      agent_id: "22222222-2222-4222-8222-222222222222",
       provider: "kiro",
       outcome: "reassignment_failed",
     };

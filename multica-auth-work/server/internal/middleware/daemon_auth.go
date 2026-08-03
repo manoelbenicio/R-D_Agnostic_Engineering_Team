@@ -59,6 +59,23 @@ func WithDaemonContext(ctx context.Context, workspaceID, daemonID string) contex
 	return ctx
 }
 
+// RequireDaemonToken is a route-specific guard for daemon endpoints that must
+// not accept the legacy PAT, cloud-PAT, or JWT fallbacks supported by
+// DaemonAuth. The authenticated workspace and daemon identities must both be
+// present so downstream ownership checks can bind server-side resources to
+// the exact daemon token principal.
+func RequireDaemonToken(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if DaemonAuthPathFromContext(r.Context()) != DaemonAuthPathDaemonToken ||
+			DaemonWorkspaceIDFromContext(r.Context()) == "" ||
+			DaemonIDFromContext(r.Context()) == "" {
+			writeError(w, http.StatusUnauthorized, "daemon token required")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // DaemonAuth validates daemon auth tokens (mdt_ prefix) or falls back to
 // JWT/PAT validation for backward compatibility with daemons that
 // authenticate via user tokens.

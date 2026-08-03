@@ -103,6 +103,79 @@ func TestDaemonAuth_MissingAuth(t *testing.T) {
 	}
 }
 
+func TestRequireDaemonToken_FailsClosedForFallbackAuthPaths(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+	}{
+		{name: "PAT", path: DaemonAuthPathPAT},
+		{name: "cloud PAT", path: DaemonAuthPathCloudPAT},
+		{name: "JWT", path: DaemonAuthPathJWT},
+		{name: "missing", path: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			handler := RequireDaemonToken(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				called = true
+				w.WriteHeader(http.StatusOK)
+			}))
+			req := httptest.NewRequest(http.MethodPost, "/api/daemon/tasks/task-id/credential-session-alert", nil)
+			ctx := context.WithValue(req.Context(), ctxKeyDaemonWorkspaceID, "workspace-id")
+			ctx = context.WithValue(ctx, ctxKeyDaemonID, "daemon-id")
+			ctx = context.WithValue(ctx, ctxKeyDaemonAuthPath, tt.path)
+			w := httptest.NewRecorder()
+
+			handler.ServeHTTP(w, req.WithContext(ctx))
+
+			if w.Code != http.StatusUnauthorized {
+				t.Fatalf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+			}
+			if called {
+				t.Fatal("fallback auth path reached protected handler")
+			}
+		})
+	}
+}
+
+func TestRequireDaemonToken_RequiresCompleteDaemonIdentity(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string
+		daemonID    string
+		wantStatus  int
+		wantCalled  bool
+	}{
+		{name: "missing workspace", daemonID: "daemon-id", wantStatus: http.StatusUnauthorized},
+		{name: "missing daemon", workspaceID: "workspace-id", wantStatus: http.StatusUnauthorized},
+		{
+			name: "complete daemon token identity", workspaceID: "workspace-id",
+			daemonID: "daemon-id", wantStatus: http.StatusNoContent, wantCalled: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			handler := RequireDaemonToken(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				called = true
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			req := httptest.NewRequest(http.MethodPost, "/api/daemon/tasks/task-id/credential-session-alert", nil)
+			req = req.WithContext(WithDaemonContext(req.Context(), tt.workspaceID, tt.daemonID))
+			w := httptest.NewRecorder()
+
+			handler.ServeHTTP(w, req)
+
+			if w.Code != tt.wantStatus {
+				t.Fatalf("status = %d, want %d", w.Code, tt.wantStatus)
+			}
+			if called != tt.wantCalled {
+				t.Fatalf("handler called = %v, want %v", called, tt.wantCalled)
+			}
+		})
+	}
+}
+
 // TestDaemonAuth_StripsClientSuppliedActorSource mirrors the
 // TestAuth_StripsClientSuppliedActorSource invariant for the daemon
 // auth path: a client supplying X-Actor-Source must NOT leak that
@@ -284,7 +357,6 @@ func TestDaemonAuth_MCN_FleetUnreachable(t *testing.T) {
 		t.Fatalf("expected 503 when fleet is unavailable, got %d", w.Code)
 	}
 }
-
 
 // TestDaemonAuth_MCN_OwnerNotInLocalDB pins the new owner-existence
 // guard end-to-end through the middleware. Cloud verifies the token

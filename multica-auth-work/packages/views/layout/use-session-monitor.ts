@@ -30,9 +30,13 @@ export function isExpiringSoon(
 function parseAlert(payload: unknown): CredentialSessionAlertPayload | null {
   if (!payload || typeof payload !== "object") return null;
   const value = payload as Record<string, unknown>;
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (
     typeof value.task_id !== "string" ||
+    !uuidPattern.test(value.task_id) ||
     typeof value.agent_id !== "string" ||
+    !uuidPattern.test(value.agent_id) ||
     typeof value.provider !== "string" ||
     !/^[a-z0-9_-]{1,32}$/.test(value.provider) ||
     typeof value.outcome !== "string" ||

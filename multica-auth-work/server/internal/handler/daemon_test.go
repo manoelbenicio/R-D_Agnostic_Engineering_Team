@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/multica-ai/multica/server/internal/auth"
 	"github.com/multica-ai/multica/server/internal/daemonws"
+	"github.com/multica-ai/multica/server/internal/events"
 	"github.com/multica-ai/multica/server/internal/middleware"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
@@ -825,6 +826,222 @@ func TestGetTaskStatus_WithDaemonToken_CrossWorkspace(t *testing.T) {
 	testHandler.GetTaskStatus(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("GetTaskStatus with correct workspace token: expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestReportCredentialSessionAlert_BindsExactDaemonTaskRuntime(t *testing.T) {
+	if testHandler == nil || testPool == nil {
+		t.Skip("database not available")
+	}
+
+	ctx := context.Background()
+	const (
+		daemonID      = "orq108-daemon"
+		otherDaemonID = "orq108-other-daemon"
+	)
+	var runtimeID, otherRuntimeID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent_runtime (
+			workspace_id, daemon_id, name, runtime_mode, provider,
+			status, device_info, metadata, owner_id, last_seen_at
+		)
+		VALUES ($1, $2, $3, 'local', 'codex', 'online', '', '{}'::jsonb, $4, now())
+		RETURNING id
+	`, testWorkspaceID, daemonID, "orq108-alert-"+uuid.NewString(), testUserID).Scan(&runtimeID); err != nil {
+		t.Fatalf("create runtime: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_runtime WHERE id = $1`, runtimeID)
+	})
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent_runtime (
+			workspace_id, daemon_id, name, runtime_mode, provider,
+			status, device_info, metadata, owner_id, last_seen_at
+		)
+		VALUES ($1, $2, $3, 'local', 'codex', 'online', '', '{}'::jsonb, $4, now())
+		RETURNING id
+	`, testWorkspaceID, otherDaemonID, "orq108-alert-other-"+uuid.NewString(), testUserID).Scan(&otherRuntimeID); err != nil {
+		t.Fatalf("create other runtime: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_runtime WHERE id = $1`, otherRuntimeID)
+	})
+
+	var agentID, otherAgentID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent (
+			workspace_id, name, runtime_mode, runtime_config, runtime_id,
+			visibility, max_concurrent_tasks, owner_id
+		)
+		VALUES ($1, $2, 'local', '{}'::jsonb, $3, 'private', 1, $4)
+		RETURNING id
+	`, testWorkspaceID, "orq108-alert-agent-"+uuid.NewString(), runtimeID, testUserID).Scan(&agentID); err != nil {
+		t.Fatalf("create agent: %v", err)
+	}
+	t.Cleanup(func() { _, _ = testPool.Exec(context.Background(), `DELETE FROM agent WHERE id = $1`, agentID) })
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent (
+			workspace_id, name, runtime_mode, runtime_config, runtime_id,
+			visibility, max_concurrent_tasks, owner_id
+		)
+		VALUES ($1, $2, 'local', '{}'::jsonb, $3, 'private', 1, $4)
+		RETURNING id
+	`, testWorkspaceID, "orq108-alert-other-agent-"+uuid.NewString(), otherRuntimeID, testUserID).Scan(&otherAgentID); err != nil {
+		t.Fatalf("create other agent: %v", err)
+	}
+	t.Cleanup(func() { _, _ = testPool.Exec(context.Background(), `DELETE FROM agent WHERE id = $1`, otherAgentID) })
+
+	var issueID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO issue (
+			workspace_id, title, status, priority, creator_id, creator_type,
+			number, position
+		)
+		VALUES (
+			$1, $2, 'in_progress', 'none', $3, 'member',
+			(SELECT COALESCE(MAX(number), 82649) + 1 FROM issue WHERE workspace_id = $1),
+			0
+		)
+		RETURNING id
+	`, testWorkspaceID, "orq108 alert "+uuid.NewString(), testUserID).Scan(&issueID); err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	t.Cleanup(func() { _, _ = testPool.Exec(context.Background(), `DELETE FROM issue WHERE id = $1`, issueID) })
+
+	var taskID, otherRuntimeTaskID, noRuntimeTaskID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent_task_queue (agent_id, runtime_id, issue_id, status, priority)
+		VALUES ($1, $2, $3, 'running', 0)
+		RETURNING id
+	`, agentID, runtimeID, issueID).Scan(&taskID); err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_task_queue WHERE id = $1`, taskID)
+	})
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent_task_queue (agent_id, runtime_id, issue_id, status, priority)
+		VALUES ($1, $2, $3, 'running', 0)
+		RETURNING id
+	`, otherAgentID, otherRuntimeID, issueID).Scan(&otherRuntimeTaskID); err != nil {
+		t.Fatalf("create other-runtime task: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_task_queue WHERE id = $1`, otherRuntimeTaskID)
+	})
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent_task_queue (agent_id, issue_id, status, priority)
+		VALUES ($1, $2, 'running', 0)
+		RETURNING id
+	`, agentID, issueID).Scan(&noRuntimeTaskID); err != nil {
+		t.Fatalf("create no-runtime task: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM agent_task_queue WHERE id = $1`, noRuntimeTaskID)
+	})
+
+	published := 0
+	var publishedEvent events.Event
+	testHandler.Bus.Subscribe(protocol.EventCredentialSessionAlert, func(event events.Event) {
+		payload, ok := event.Payload.(protocol.CredentialSessionAlertPayload)
+		if !ok || payload.TaskID != taskID {
+			return
+		}
+		published++
+		publishedEvent = event
+	})
+
+	call := func(requestTaskID, workspace, requestDaemon, body string) *httptest.ResponseRecorder {
+		t.Helper()
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(
+			http.MethodPost,
+			"/api/daemon/tasks/"+requestTaskID+"/credential-session-alert",
+			strings.NewReader(body),
+		)
+		req.Header.Set("Content-Type", "application/json")
+		req = req.WithContext(middleware.WithDaemonContext(req.Context(), workspace, requestDaemon))
+		req = withURLParam(req, "taskId", requestTaskID)
+		testHandler.ReportCredentialSessionAlert(w, req)
+		return w
+	}
+	validBody := `{"provider":"codex","outcome":"rotated"}`
+
+	tests := []struct {
+		name        string
+		requestTask string
+		workspace   string
+		daemon      string
+		body        string
+		wantStatus  int
+	}{
+		{
+			name: "malformed task ID", requestTask: "not-a-uuid",
+			workspace: testWorkspaceID, daemon: daemonID, body: validBody,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name: "trailing JSON value", requestTask: taskID,
+			workspace: testWorkspaceID, daemon: daemonID, body: validBody + `{}`,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name: "wrong workspace", requestTask: taskID,
+			workspace: "00000000-0000-0000-0000-000000000000", daemon: daemonID, body: validBody,
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name: "wrong daemon", requestTask: taskID,
+			workspace: testWorkspaceID, daemon: otherDaemonID, body: validBody,
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name: "task bound to another daemon runtime", requestTask: otherRuntimeTaskID,
+			workspace: testWorkspaceID, daemon: daemonID, body: validBody,
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name: "task has no runtime snapshot", requestTask: noRuntimeTaskID,
+			workspace: testWorkspaceID, daemon: daemonID, body: validBody,
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name: "provider differs from authoritative runtime", requestTask: taskID,
+			workspace: testWorkspaceID, daemon: daemonID,
+			body:       `{"provider":"kiro","outcome":"rotated"}`,
+			wantStatus: http.StatusNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			before := published
+			w := call(tt.requestTask, tt.workspace, tt.daemon, tt.body)
+			if w.Code != tt.wantStatus {
+				t.Fatalf("status = %d, want %d: %s", w.Code, tt.wantStatus, w.Body.String())
+			}
+			if published != before {
+				t.Fatalf("rejected request published %d event(s)", published-before)
+			}
+		})
+	}
+
+	w := call(taskID, testWorkspaceID, daemonID, validBody)
+	if w.Code != http.StatusOK {
+		t.Fatalf("valid alert status = %d, want %d: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if published != 1 {
+		t.Fatalf("published events = %d, want 1", published)
+	}
+	if publishedEvent.WorkspaceID != testWorkspaceID {
+		t.Fatalf("published workspace = %q, want %q", publishedEvent.WorkspaceID, testWorkspaceID)
+	}
+	payload, ok := publishedEvent.Payload.(protocol.CredentialSessionAlertPayload)
+	if !ok {
+		t.Fatalf("published payload type = %T", publishedEvent.Payload)
+	}
+	if payload.TaskID != taskID || payload.AgentID != agentID || payload.Provider != "codex" {
+		t.Fatalf("published identity = (%q, %q, %q), want (%q, %q, codex)",
+			payload.TaskID, payload.AgentID, payload.Provider, taskID, agentID)
 	}
 }
 
